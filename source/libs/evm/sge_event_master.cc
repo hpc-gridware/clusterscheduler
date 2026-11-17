@@ -98,7 +98,9 @@
 #include "sgeobj/cull/sge_event_request_EVR_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
+#include "sgeobj/tom/ocs_tom_EV.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
 #include "sgeobj/tom/ocs_tom_EVR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -421,22 +423,23 @@ static void       total_update(lListElem*, uint64_t gdi_session);
 static ocs::DataStore::Id ev_total_update_enter_global();
 static void       ev_total_update_leave_global(ocs::DataStore::Id active_ds);
 static void       build_subscription(lListElem*);
-static void       remove_event_client(lListElem **client, bool lock_event_master);
+static void       remove_event_client(ocs::tom::Element<ocs::tom::EV> client, bool lock_event_master);
 static void       check_send_new_subscribed_list(const subscription_t*,
                                                  const subscription_t*, lListElem*,
                                                  ev_event event);
 static int        eventclient_subscribed(const lListElem *, ev_event, const char*);
-static int        purge_event_list(lList* aList, uint32_t event_number);
+static int        purge_event_list(ocs::tom::List<ocs::tom::ET> event_list, uint32_t event_number);
 
-static lListElem* sge_create_event(uint32_t, uint64_t, ev_event, uint32_t, uint32_t, const char*, const char*, lList*);
+static ocs::tom::ElementPtr<ocs::tom::ET> sge_create_event(uint32_t, uint64_t, ev_event, uint32_t, uint32_t,
+                                                          const char*, const char*, lList*);
 static bool       add_list_event_for_client(uint32_t, uint64_t, ev_event, uint32_t, uint32_t, const char*, const char*, const char*, lList*, uint64_t);
 static void       add_list_event_direct(lListElem *event_client, lListElem *event, bool copy_event);
 static void       total_update_event(lListElem *event_client, ev_event type, bool new_subscription, uint64_t gdi_session);
 static bool       list_select(subscription_t*, int, lList**, lList*, const lCondition*, const lEnumeration*, const lDescr*, bool);
 static lListElem* elem_select(subscription_t*, lListElem*, const int[], const lCondition*, const lEnumeration*, const lDescr*, int);
-static lListElem* eventclient_list_locate_by_adress(const char*, const char*, uint32_t);
+static ocs::tom::Element<ocs::tom::EV> eventclient_list_locate_by_adress(const char*, const char*, uint32_t);
 static const lDescr* getDescriptorL(subscription_t*, const lList*, int);
-static lListElem* get_event_client(uint32_t id);
+static ocs::tom::Element<ocs::tom::EV> get_event_client(uint32_t id);
 static uint32_t   allocate_new_dynamic_id(lList **answer_list);
 static void       free_dynamic_id(lList **answer_list, uint32_t id);
 
@@ -449,10 +452,19 @@ sge_event_master_destroy_transaction_store(void *transaction_store) {
    sge_free(&t_store);
 }
 
+/**
+ * @brief Initialise a thread's event transaction storage
+ *
+ * Trivial and called once per thread: no DENTER.
+ *
+ * @param t_store the thread's transaction storage
+ */
 static void
 sge_event_master_init_transaction_store(event_master_transaction_t *t_store) {
    t_store->is_transaction = false;
-   t_store->transaction_requests = lCreateListHash("Event Master Requests", EVR_Type, false);
+   // thread local storage, freed in sge_event_master_destroy_transaction_store()
+   t_store->transaction_requests =
+      ocs::tom::ListPtr<ocs::tom::EVR>::create("Event Master Requests", ocs::tom::Hashing::Off).release();
 }
 
 /**
@@ -465,15 +477,20 @@ sge_event_master_init_transaction_store(event_master_transaction_t *t_store) {
  * @param arg the thread's @ref event_master_transaction_t
  */
 void sge_cleanup_event_master_control(void *arg) {
+   DENTER(TOP_LAYER);
+
    // there shouldn't be anybody left accessing the event master control anymore, but just to be sure
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    // remove leftover event clients
-   lListElem *event_client;
-   while ((event_client = lFirstRW(Event_Master_Control.clients)) != nullptr) {
-      DEBUG("event client " sge_u32 " (state: " sge_u32 ") is still registered at event master shutdown",
-            ocs::tom::get<EV_id>(event_client), ocs::tom::get<EV_state>(event_client));
-      remove_event_client(&event_client, false);
+   {
+      // the client list is owned by the event master; the handle lives only while the mutex is held
+      const ocs::tom::List<ocs::tom::EV> clients(Event_Master_Control.clients);
+      while (const auto event_client = clients.front()) {
+         DEBUG("event client " sge_u32 " (state: " sge_u32 ") is still registered at event master shutdown",
+               ocs::tom::get<EV_id>(event_client), ocs::tom::get<EV_state>(event_client));
+         remove_event_client(event_client, false);
+      }
    }
 
    // free data structures and pthread resources
@@ -486,6 +503,8 @@ void sge_cleanup_event_master_control(void *arg) {
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    pthread_mutex_destroy(&Event_Master_Control.mutex);
+
+   DRETURN_VOID;
 }
 
 static void sge_event_master_process_add_event_client(const lListElem *request, monitoring_t *monitor) {
@@ -519,7 +538,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
                          event_client_update_func_t update_func, void *update_func_arg) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::EV> ep;
    uint32_t id;
    uint32_t ed_time;
    const char *name;
@@ -587,7 +606,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
          ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, commproc_id);
 
          /* delete old event client entry, and we already hold the lock! */
-         remove_event_client(&ep, false);
+         remove_event_client(ep, false);
       }
 
       /* Otherwise, get a new dynamic event client id */
@@ -626,21 +645,23 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
          ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, commproc_id);
 
          /* delete old event client entry, and we already have the mutex! */
-         remove_event_client(&ep, false);
+         remove_event_client(ep, false);
       } else {
          INFO(MSG_EVE_REG_SUU, name, id, ed_time);
       }
    }
 
-   ep = lCopyElem(clio);
+   // the registration passed the structure check above, so it is of EV_Type; it may come from the network
+   auto new_client = ocs::tom::ConstElement<ocs::tom::EV>::from_typed(clio).clone();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-   ocs::tom::set<EV_update_function>(ep, (void*) update_func);
-   ocs::tom::set<EV_update_function_arg>(ep, update_func_arg);
+   ocs::tom::set<EV_update_function>(new_client, (void*) update_func);
+   ocs::tom::set<EV_update_function_arg>(new_client, update_func_arg);
 #pragma GCC diagnostic pop
    ocs::tom::set<EV_changed>(clio, false);
 
-   lAppendElem(Event_Master_Control.clients, ep);
+   // the client list is owned by the event master; the handle lives only while the mutex is held
+   ep = ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients).push_back(std::move(new_client));
 
    ocs::tom::set<EV_next_number>(ep, 1);
 
@@ -653,12 +674,14 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
 
    /* return new event client object to internal event client */
    if (eclpp != nullptr) {
-      lListElem *ret_el = lCopyElem(ep);
+      auto ret_el = ep.clone();
       if (*eclpp == nullptr) {
-         *eclpp = lCreateListHash("new event client", EV_Type, true);
+         // the out-parameter of the add function pointer stays raw; the caller owns the list
+         *eclpp = ocs::tom::ListPtr<ocs::tom::EV>::create("new event client").release();
       }
       ocs::tom::set<EV_changed>(ret_el, false);
-      lAppendElem(*eclpp, ret_el);
+      // the caller's list holds event clients (EV_Type), either created here or by the caller
+      ocs::tom::List<ocs::tom::EV>::from_typed(*eclpp).push_back(std::move(ret_el));
    }
 
    /* Start with no pending events. */
@@ -710,10 +733,12 @@ int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost
    auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
    ocs::tom::set<EVR_operation>(evr, EVR_MOD_EVC);
    ocs::tom::set<EVR_timestamp>(evr, sge_get_gmt64());
-   ocs::tom::set<EVR_event_client>(evr, lCopyElem(clio));
+   // the event client may come from the network, so it is not checked against EV_Type here
+   ocs::tom::set<EVR_event_client>(evr, ocs::tom::ConstElement<ocs::tom::EV>::from_typed(clio).clone());
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-   lAppendElem(Event_Master_Control.requests, std::move(evr));
+   // the request list is owned by the event master; the handle lives only while the mutex is held
+   ocs::tom::List<ocs::tom::EVR>(Event_Master_Control.requests).push_back(std::move(evr));
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, ocs::tom::get<EV_name>(clio), MSG_EVE_EVENTCLIENT);
@@ -755,15 +780,15 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-   lListElem *clio = ocs::tom::get<EVR_event_client>(request);
+   const auto clio = ocs::tom::get<EVR_event_client>(request);
 
    /* try to find event_client */
    uint32_t id = ocs::tom::get<EV_id>(clio);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-   lListElem *event_client = get_event_client(id);
+   const auto event_client = get_event_client(id);
 
-   if (event_client == nullptr) {
+   if (!event_client) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, id, "modify");
@@ -840,7 +865,7 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
          lXchgList(clio, EV_subscribed, &tmp_list);
       }
 #else
-      ocs::tom::set<EV_subscribed>(event_client, lCopyList("", ocs::tom::get<EV_subscribed>(clio)));
+      ocs::tom::set<EV_subscribed>(event_client, ocs::tom::get<EV_subscribed>(clio).clone(""));
 #endif
       ocs::tom::set<EV_sub_array>(event_client, new_sub);
       ocs::tom::set<EV_sub_array>(clio, nullptr);
@@ -893,15 +918,13 @@ void
 sge_remove_event_client(uint32_t event_client_id) {
    DENTER(TOP_LAYER);
 
-   lListElem *client;
-
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    DPRINTF("sge_remove_event_client id = %d\n", (int) event_client_id);
 
-   client = get_event_client(event_client_id);
+   const auto client = get_event_client(event_client_id);
 
-   if (client == nullptr) {
+   if (!client) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "remove");
       DRETURN_VOID;
@@ -973,10 +996,11 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
       range_list_initialize(&Event_Master_Control.client_ids, &answer_list);
       auto new_range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
       range_set_all_ids(*new_range, EV_ID_FIRST_DYNAMIC, max - 1 + EV_ID_FIRST_DYNAMIC, 1);
-      lAppendElem(Event_Master_Control.client_ids, std::move(new_range));
+      // the id range list is owned by the event master; the handle lives only while the mutex is held
+      ocs::tom::List<ocs::tom::RN>(Event_Master_Control.client_ids).push_back(std::move(new_range));
 
       /* and we have to remove the ids of our existing event clients from the range */
-      for_each_ep_lv(event_client, Event_Master_Control.clients) {
+      for (const auto event_client : ocs::tom::ConstList<ocs::tom::EV>(Event_Master_Control.clients)) {
          uint32_t event_client_id = ocs::tom::get<EV_id>(event_client);
          /* only for dynamic event clients */
          if (event_client_id >= EV_ID_FIRST_DYNAMIC) {
@@ -1032,7 +1056,8 @@ sge_get_num_event_clients() {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-   uint32_t ret = lGetNumberOfElem(Event_Master_Control.clients);
+   // the client list is owned by the event master; the handle lives only while the mutex is held
+   const auto ret = static_cast<uint32_t>(ocs::tom::ConstList<ocs::tom::EV>(Event_Master_Control.clients).size());
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    DRETURN(ret);
@@ -1057,7 +1082,7 @@ sge_has_event_client(uint32_t event_client_id) {
    bool ret;
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-   ret = (get_event_client(event_client_id) != nullptr) ? true : false;
+   ret = static_cast<bool>(get_event_client(event_client_id));
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    DRETURN(ret);
@@ -1115,7 +1140,7 @@ int
 sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_id, lList **alpp) {
    DENTER(TOP_LAYER);
 
-   lListElem *client = nullptr;
+   ocs::tom::Element<ocs::tom::EV> client;
    int ret = 0;
 
    if (event_client_id <= EV_ID_ANY) {
@@ -1127,7 +1152,7 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    client = get_event_client(event_client_id);
 
-   if (client != nullptr) {
+   if (client) {
       if (!manop_is_manager(packet) && (packet->uid != ocs::tom::get<EV_uid>(client))) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
          answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED,
@@ -1185,7 +1210,8 @@ int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **a
    }
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-   for_each_ep_lv(client, Event_Master_Control.clients) {
+   // the client list is owned by the event master; the handle lives only while the mutex is held
+   for (const auto client : ocs::tom::ConstList<ocs::tom::EV>(Event_Master_Control.clients)) {
       id = ocs::tom::get<EV_id>(client);
 
       /* Ignore clients with static ids. */
@@ -1356,25 +1382,23 @@ bool sge_add_list_event(uint64_t timestamp, ev_event type,
 }
 
 /**
- * @brief Add a list as event
+ * @brief Create an event
  *
  * Create ET_Type element and fill in the specified parameters.
- * The caller is responsible for freeing the memory again.
  *
- * @param event_client_id event client id
  * @param number the event number
  * @param timestamp event creation time, 0 -> use current time
  * @param type the event id
- * @param intkey additional data
- * @param intkey2 additional data
- * @param strkey additional data
- * @param strkey2 additional data
- * @param session events session key
- * @param list the list to deliver as event
+ * @param int_key additional data
+ * @param int_key2 additional data
+ * @param str_key additional data
+ * @param str_key2 additional data
+ * @param list the list to deliver as event (runtime typed payload), taken over by the event
+ * @return the event; the caller owns it
  *
- * @note MT-NOTE: sge_add_list_event() is MT safe.
+ * @note MT-NOTE: sge_create_event() is MT safe.
  */
-static lListElem*
+static ocs::tom::ElementPtr<ocs::tom::ET>
 sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type, const uint32_t int_key,
                  const uint32_t int_key2, const char *str_key, const char *str_key2, lList *list) {
    DENTER(TOP_LAYER);
@@ -1399,27 +1423,42 @@ sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type,
    // that is not commited later on.
    ocs::tom::set<ET_unique_id>(etp, 0);
 
-   DRETURN(etp.release());
+   DRETURN(etp);
 }
 
 /** @brief Add a unique ID to all events part of the evr
  *
- * @param evr - the event request object
- * @param unique_id - the unique ID to add
+ * Hot path: no DENTER.
+ *
+ * @param evr the event request object (EVR_Type)
+ * @param unique_id the unique ID to add
  */
 static void
-add_unique_id_to_evr(const lListElem *evr, const uint64_t unique_id) {
-   for_each_rw_lv(ev, ocs::tom::get<EVR_event_list>(evr)) {
+add_unique_id_to_evr(const ocs::tom::Element<ocs::tom::EVR> evr, const uint64_t unique_id) {
+   for (const auto ev : ocs::tom::get<EVR_event_list>(evr)) {
       ocs::tom::set<ET_unique_id>(ev, unique_id);
    }
 }
 
+/** @brief Number committed event requests and queue them for the event master
+ *
+ * Either a single request or a list of requests is passed, not both.
+ *
+ * @param evr a single event request (EVR_Type), consumed; or an empty handle
+ * @param evr_list a list of event requests (EVR_Type), whose elements are moved to the request queue; the
+ *                 list itself stays with the caller; or an empty handle
+ * @param gdi_session the session the change belongs to, for read-after-write
+ */
 static void
-add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, const uint64_t gdi_session) {
+add_list_event_for_client_after_commit(ocs::tom::ElementPtr<ocs::tom::EVR> &&evr,
+                                       const ocs::tom::List<ocs::tom::EVR> evr_list, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
+   // the request is consumed on every path
+   auto own_evr = std::move(evr);
+
    // Either we get a single evr or a list but not both
-   const bool single_evr = (evr != nullptr);
+   const bool single_evr = static_cast<bool>(own_evr);
 
    // Find the next unique ID for the event
    const uint64_t unique_id = oge_get_next_unique_event_id();
@@ -1427,9 +1466,9 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, const ui
    // Add a unique ID to events part of the commited evr or evr_list.
    // Check also if the event is execd related (like the config events)
    if (single_evr) {
-      add_unique_id_to_evr(evr, unique_id);
+      add_unique_id_to_evr(*own_evr, unique_id);
    } else {
-      for_each_rw_lv(tmp_evr, evr_list) {
+      for (const auto tmp_evr : evr_list) {
          add_unique_id_to_evr(tmp_evr, unique_id);
       }
    }
@@ -1439,10 +1478,14 @@ add_list_event_for_client_after_commit(lListElem *evr, lList *evr_list, const ui
 
    // Add the request to the event master request list
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-   if (single_evr) {
-      lAppendElem(Event_Master_Control.requests, evr);
-   } else {
-      lAppendList(Event_Master_Control.requests, evr_list);
+   {
+      // the request list is owned by the event master; the handle lives only while the mutex is held
+      const ocs::tom::List<ocs::tom::EVR> requests(Event_Master_Control.requests);
+      if (single_evr) {
+         requests.push_back(std::move(own_evr));
+      } else {
+         requests.splice(evr_list);
+      }
    }
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
@@ -1482,21 +1525,20 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
       timestamp = sge_get_gmt64();
    }
 
-   lListElem *evr = lCreateElem(EVR_Type);
+   auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
    ocs::tom::set<EVR_operation>(evr, EVR_ADD_EVENT);
    ocs::tom::set<EVR_timestamp>(evr, timestamp);
    ocs::tom::set<EVR_event_client_id>(evr, event_client_id);
    ocs::tom::set<EVR_session>(evr, session);
 
-   lList *etlp = lCreateListHash("Event_List", ET_Type, false);
-   ocs::tom::set<EVR_event_list>(evr, etlp);
+   auto etlp = ocs::tom::ListPtr<ocs::tom::ET>::create("Event_List", ocs::tom::Hashing::Off);
 
    /*
     * Create a new event elem (The event number is added when
     * qmaster adds the event to the event client data structure)
     */
-   lListElem *etp = sge_create_event(0, timestamp, type, int_key, int_key2, str_key, str_key2, list);
-   lAppendElem(etlp, etp);
+   etlp->push_back(sge_create_event(0, timestamp, type, int_key, int_key2, str_key, str_key2, list));
+   ocs::tom::set<EVR_event_list>(evr, std::move(etlp));
 
    /*
     * if we have a transaction open, add to the transaction
@@ -1505,9 +1547,10 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
     */
    GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
    if (t_store->is_transaction) {
-      lAppendElem(t_store->transaction_requests, evr);
+      // thread local storage of this thread's transaction
+      ocs::tom::List<ocs::tom::EVR>(t_store->transaction_requests).push_back(std::move(evr));
    } else {
-      add_list_event_for_client_after_commit(evr, nullptr, gdi_session);
+      add_list_event_for_client_after_commit(std::move(evr), nullptr, gdi_session);
    }
 
    DRETURN(true);
@@ -1535,21 +1578,22 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
    if (ec_id == EV_ID_ANY) {
       DPRINTF("Processing event for all clients\n");
 
-      lListElem *event = lFirstRW(event_list);
-      while (event != nullptr) {
+      while (const auto first = event_list.front()) {
          bool added = false;
-         event = lDechainElem(event_list, event);
+         // freed at the end of the iteration, every client gets a copy
+         const auto event = event_list.extract(first);
          type = static_cast<ev_event>(ocs::tom::get<ET_type>(event));
 
          sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-         for_each_rw_lv(event_client, Event_Master_Control.clients) {
+         // the client list is owned by the event master; the handle lives only while the mutex is held
+         for (const auto event_client : ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients)) {
             ec_id = ocs::tom::get<EV_id>(event_client);
 
             DPRINTF("Preparing event for client %ld\n", ec_id);
 
             if (eventclient_subscribed(event_client, type, session)) {
                added = true;
-               add_list_event_direct(event_client, event, true);
+               add_list_event_direct(event_client, event.get(), true);
                MONITOR_EDT_ADDED(monitor);
             }
          }
@@ -1558,35 +1602,30 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
          if (!added) {
             MONITOR_EDT_SKIP(monitor);
          }
-         lFreeElem(&event);
-         event = lFirstRW(event_list);
       }
    } else {
       DPRINTF("Processing event for client %d.\n", ec_id);
 
       sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-      lListElem *event_client = get_event_client(ec_id);
+      const auto event_client = get_event_client(ec_id);
 
       /* Skip bad client ids.  Events with bad client ids will be freed
        * when send is freed since we don't dechain them. */
-      if (event_client != nullptr) {
-         lListElem *event = lFirstRW(event_list);
-
-         while (event != nullptr) {
-            event = lDechainElem(event_list, event);
+      if (event_client) {
+         while (const auto first = event_list.front()) {
+            auto event = event_list.extract(first);
             type = static_cast<ev_event>(ocs::tom::get<ET_type>(event));
 
             if (eventclient_subscribed(event_client, type, session)) {
-               add_list_event_direct(event_client, event, false);
-               MONITOR_EDT_ADDED(monitor);
                /* We can't free the event when we're done because it now belongs
                 * to send_events(). */
+               add_list_event_direct(event_client, event.release(), false);
+               MONITOR_EDT_ADDED(monitor);
             } else {
                MONITOR_EDT_SKIP(monitor);
-               lFreeElem(&event);
+               // the handle frees the event at the end of the iteration
             }
-            event = lFirstRW(event_list);
          }
       }
 
@@ -1623,27 +1662,33 @@ sge_handle_event_ack(const uint32_t event_client_id, const uint32_t event_number
    ocs::tom::set<EVR_event_number>(evr, event_number);
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-   lAppendElem(Event_Master_Control.requests, std::move(evr));
+   // the request list is owned by the event master; the handle lives only while the mutex is held
+   ocs::tom::List<ocs::tom::EVR>(Event_Master_Control.requests).push_back(std::move(evr));
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    sge_event_master_flush_requests();
    DRETURN(true);
 }
 
+/**
+ * @brief Apply an acknowledgement request: purge the acknowledged events of the client
+ *
+ * @param request the event master request (EVR_Type) holding client id and event number
+ * @param monitor the monitoring of the calling thread
+ */
 static void
 sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   lListElem *client;
    uint32_t event_client_id;
 
    event_client_id = ocs::tom::get<EVR_event_client_id>(request);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   client = get_event_client(event_client_id);
+   const auto client = get_event_client(event_client_id);
 
-   if (client == nullptr) {
+   if (!client) {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "process acknowledgements");
    } else {
       uint32_t event_number = ocs::tom::get<EVR_event_number>(request);
@@ -1684,11 +1729,9 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor) {
 void sge_deliver_events_immediately(uint32_t event_client_id) {
    DENTER(TOP_LAYER);
 
-   lListElem *client = nullptr;
-
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   if ((client = get_event_client(event_client_id)) == nullptr) {
+   if (const auto client = get_event_client(event_client_id); !client) {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "deliver events immediately");
    } else {
       flush_events(client, 0);
@@ -1715,7 +1758,6 @@ void sge_deliver_events_immediately(uint32_t event_client_id) {
 int sge_resync_schedd(monitoring_t *monitor, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lListElem *client;
    int ret = -1;
 
    // total_update() reads the master lists, so this thread has to be in the GLOBAL data store -
@@ -1724,7 +1766,7 @@ int sge_resync_schedd(monitoring_t *monitor, uint64_t gdi_session) {
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   if ((client = get_event_client(EV_ID_SCHEDD)) != nullptr) {
+   if (const auto client = get_event_client(EV_ID_SCHEDD)) {
       ERROR(MSG_EVE_REINITEVENTCLIENT_S, ocs::tom::get<EV_name>(client));
 
       total_update(client, gdi_session);
@@ -1832,8 +1874,7 @@ void sge_event_master_wait_next() {
  *
  * removes an event client, marks the index as dirty and frees the memory
  *
- * @param client event client to remove
- * @param event_client_id event client id to remove
+ * @param client event client to remove, an element of the event client list; it dangles afterwards
  * @param lock_event_master shall the function acquire the event_master mutex
  *
  * @note MT-NOTE: remove_event_client() is not MT safe
@@ -1841,14 +1882,14 @@ void sge_event_master_wait_next() {
  *       - it assumes that the event client is locked before this method is called
  */
 static void
-remove_event_client(lListElem **client, bool lock_event_master) {
+remove_event_client(const ocs::tom::Element<ocs::tom::EV> client, const bool lock_event_master) {
    DENTER(TOP_LAYER);
 
-   uint32_t event_client_id = ocs::tom::get<EV_id>(*client);
-   INFO(MSG_EVE_UNREG_SU, ocs::tom::get<EV_name>(*client), event_client_id);
+   uint32_t event_client_id = ocs::tom::get<EV_id>(client);
+   INFO(MSG_EVE_UNREG_SU, ocs::tom::get<EV_name>(client), event_client_id);
 
    subscription_t *old_sub = nullptr;
-   old_sub = (subscription_t *)ocs::tom::get<EV_sub_array>(*client);
+   old_sub = (subscription_t *)ocs::tom::get<EV_sub_array>(client);
    if (old_sub) {
       /* now free event client subscription data */
       for (int i = 0; i < sgeE_EVENTSIZE; i++) {
@@ -1861,14 +1902,15 @@ remove_event_client(lListElem **client, bool lock_event_master) {
       }
 
       sge_free(&old_sub);
-      ocs::tom::set<EV_sub_array>(*client, nullptr);
+      ocs::tom::set<EV_sub_array>(client, nullptr);
    }
 
    if (lock_event_master) {
       sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    }
 
-   lRemoveElem(Event_Master_Control.clients, client);
+   // the client list is owned by the event master; the handle lives only while the mutex is held
+   ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients).erase(client);
    if (event_client_id >= EV_ID_FIRST_DYNAMIC) {
       lList *answer_list = nullptr;
       free_dynamic_id(&answer_list, event_client_id);
@@ -1906,7 +1948,6 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
    uint32_t timeout;
    uint32_t busy_handling;
    uint32_t scheduler_timeout = mconf_get_scheduler_timeout();
-   lListElem *event_client, *next_event_client;
    int ret;
    int commid;
    int deliver_interval;
@@ -1917,19 +1958,20 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    uint64_t now = sge_get_gmt64();
-   event_client = lFirstRW(Event_Master_Control.clients);
-   while (event_client != nullptr) {
+   // the client list is owned by the event master; the handles live only while the mutex is held
+   auto event_client = ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients).front();
+   while (event_client) {
       const char *host = nullptr;
       const char *commproc = nullptr;
       bool do_remove = false;
 
-      next_event_client = lNextRW(event_client);
+      const auto next_event_client = event_client.next();
 
       ec_id = ocs::tom::get<EV_id>(event_client);
 
       /* is the event client in state terminated? remove it */
       if (ocs::tom::get<EV_state>(event_client) == EV_terminated) {
-         remove_event_client(&event_client, false);
+         remove_event_client(event_client, false);
          /* we removed a client, continue with the next one */
          event_client = next_event_client;
          continue;
@@ -1980,9 +2022,8 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
        * when getting sgeE_ACK_TIMEOUT event.
        */
       if (now > (ocs::tom::get<EV_last_heard_from>(event_client) + sge_gmt32_to_gmt64(timeout))) {
-         lListElem *new_event = nullptr;
-         lList* tmp_event_list = nullptr;
-         lUlong tmp_cur_event_nr = 0;
+         ocs::tom::Element<ocs::tom::ET> new_event;
+         uint32_t tmp_cur_event_nr = 0;
          dstring buffer_wrapper;
          char buffer[256];
 
@@ -1995,16 +2036,17 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
 
          /* Create new ACK_TIMEOUT event and add it directly to the client event list */
          tmp_cur_event_nr = ocs::tom::get<EV_next_number>(event_client);
-         new_event = sge_create_event(tmp_cur_event_nr, now, sgeE_ACK_TIMEOUT, 0, 0, nullptr, nullptr, nullptr);
+         auto ack_timeout_event = sge_create_event(tmp_cur_event_nr, now, sgeE_ACK_TIMEOUT, 0, 0, nullptr, nullptr,
+                                                   nullptr);
          ocs::tom::List<ocs::tom::ET> tmp_event_list_et = ocs::tom::get<EV_events>(event_client);
 
-         if (tmp_event_list_et != nullptr) {
-            lAppendElem(tmp_event_list_et, new_event);
+         if (tmp_event_list_et) {
+            new_event = tmp_event_list_et.push_back(std::move(ack_timeout_event));
             DPRINTF("Added sgeE_ACK_TIMEOUT to already existing event report list\n");
          } else {
-            tmp_event_list = lCreateListHash("Events", ET_Type, false);
-            lAppendElem(tmp_event_list, new_event);
-            ocs::tom::set<EV_events>(event_client, tmp_event_list);
+            auto tmp_event_list = ocs::tom::ListPtr<ocs::tom::ET>::create("Events", ocs::tom::Hashing::Off);
+            new_event = tmp_event_list->push_back(std::move(ack_timeout_event));
+            ocs::tom::set<EV_events>(event_client, std::move(tmp_event_list));
             DPRINTF("Created new Events list with sgeE_ACK_TIMEOUT event\n");
          }
 
@@ -2073,7 +2115,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
          DPRINTF("REMOVE EVC because of timeout (%d s) (part 2/2)\n", timeout);
          ERROR(MSG_COM_ACKTIMEOUT4EV_SUSIS, ocs::tom::get<EV_name>(event_client), ocs::tom::get<EV_id>(event_client),
             commproc, (int) commid, host);
-         remove_event_client(&event_client, false);
+         remove_event_client(event_client, false);
       }
 
       event_client = next_event_client;
@@ -2204,7 +2246,9 @@ total_update(lListElem *event_client, uint64_t gdi_session) {
    lList *outer_requests = nullptr;
    if (outer_transaction) {
       outer_requests = t_store->transaction_requests;
-      t_store->transaction_requests = lCreateListHash("Event Master Requests", EVR_Type, false);
+      // thread local storage, freed below when the outer transaction is restored
+      t_store->transaction_requests =
+         ocs::tom::ListPtr<ocs::tom::EVR>::create("Event Master Requests", ocs::tom::Hashing::Off).release();
       t_store->is_transaction = false;
    }
 
@@ -2409,10 +2453,10 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
 /**
  * @brief Purge event list
  *
- * Remove all events from 'aList' which do have an event id less than or
+ * Remove all events from 'event_list' which do have an event id less than or
  * equal to 'event_number'.
  *
- * @param aList event list
+ * @param event_list event list (ET_Type) of an event client, may be an empty handle
  * @param event_number event
  *
  * @return number of events purged.
@@ -2424,34 +2468,42 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
  * @bug BUGBUG-AD: If 'event_number' == 0, not events will be purged. However zero is
  *      BUGBUG-AD: also the id of 'sgeE_ALL_EVENTS'. Is this behaviour correct?
  */
-static int purge_event_list(lList *event_list, uint32_t event_number) {
+static int purge_event_list(const ocs::tom::List<ocs::tom::ET> event_list, const uint32_t event_number) {
    DENTER(TOP_LAYER);
 
    int purged = 0;
-   lListElem *ev = nullptr;
 
    if (event_number == 0) {
       DRETURN(0);
    }
 
-   ev = lFirstRW(event_list);
+   auto ev = event_list.front();
 
-   while (ev != nullptr) {
-      lListElem *tmp = ev;
+   while (ev) {
+      const auto tmp = ev;
 
-      ev = lNextRW(ev);
+      ev = ev.next();
 
       if (ocs::tom::get<ET_number>(tmp) > event_number) {
          break;
       }
 
-      lRemoveElem(event_list, &tmp);
+      event_list.erase(tmp);
       purged++;
    }
 
    DRETURN(purged);
 } /* remove_events_from_client() */
 
+/**
+ * @brief Add one event to the event list of one client
+ *
+ * Reduces the payload to what the client subscribed and numbers the event. Hot path.
+ *
+ * @param event_client the event client (EV_Type)
+ * @param event the event (ET_Type); its payload is runtime typed
+ * @param copy_event true to add a copy and leave @p event to the caller; false to take @p event over
+ */
 static void add_list_event_direct(lListElem *event_client, lListElem *event,
                                   bool copy_event) {
    DENTER(TOP_LAYER);
@@ -2583,15 +2635,16 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    ocs::tom::set<ET_number>(ep, i);
 
    /* build a new event list if not exists */
-   lp = ocs::tom::get<EV_events>(event_client);
+   ocs::tom::List<ocs::tom::ET> events = ocs::tom::get<EV_events>(event_client);
 
-   if (lp == nullptr) {
-      lp=lCreateListHash("Events", ET_Type, false);
-      ocs::tom::set<EV_events>(event_client, lp);
+   if (!events) {
+      auto new_events = ocs::tom::ListPtr<ocs::tom::ET>::create("Events", ocs::tom::Hashing::Off);
+      events = *new_events;
+      ocs::tom::set<EV_events>(event_client, std::move(new_events));
    }
 
-   /* chain in new event */
-   lAppendElem(lp, ep);
+   /* chain in new event; ep is the event (ET_Type) or a copy of it, owned here */
+   events.push_back(ocs::tom::ElementPtr<ocs::tom::ET>::from_typed(ep));
 
    DPRINTF("%d %s\n", ocs::tom::get<EV_id>(event_client), event_text(ep, &buffer_wrapper));
 
@@ -2909,14 +2962,16 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
  * @param commproc commproc of the event client to search
  * @param id id of the event client to search
  *
- * @return event client object or nullptr.
+ * @return event client object or an empty handle.
  */
-static lListElem *
-eventclient_list_locate_by_adress(const char *host, const char *commproc, uint32_t id) {
+static ocs::tom::Element<ocs::tom::EV>
+eventclient_list_locate_by_adress(const char *host, const char *commproc, const uint32_t id) {
    DENTER(TOP_LAYER);
 
-   for_each_rw_lv(ep, Event_Master_Control.clients) {
-      if (ocs::tom::get<EV_commid>(ep) == id && !sge_hostcmp(ocs::tom::get<EV_host>(ep), host) && !strcmp(ocs::tom::get<EV_commproc>(ep), commproc)) {
+   // the client list is owned by the event master; the caller holds the mutex
+   for (const auto ep : ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients)) {
+      if (ocs::tom::get<EV_commid>(ep) == id && !sge_hostcmp(ocs::tom::get<EV_host>(ep), host) &&
+          !strcmp(ocs::tom::get<EV_commproc>(ep), commproc)) {
          DRETURN(ep);
       }
    }
@@ -2953,17 +3008,20 @@ static const lDescr *getDescriptorL(subscription_t *subscription,
 /**
  * @brief Gets the event client from the list
  *
- * Returns the event client with the given id, or nullptr if no such event
- * client exists.
+ * Returns the event client with the given id, or an empty handle if no such
+ * event client exists.
  *
  * @param id the client id
  *
- * @return The event client with the given id, or nullptr if no such event client exists.
+ * Trivial lookup on the delivery path: no DENTER.
+ *
+ * @return The event client with the given id, or an empty handle if no such event client exists.
  *
  * @note MT-NOTE: NOT thread safe.  Requires caller to hold Event_Master_Control.mutex.
  */
-static lListElem *get_event_client(uint32_t id) {
-   return ocs::tom::find_first_rw<EV_id>(Event_Master_Control.clients, id);
+static ocs::tom::Element<ocs::tom::EV> get_event_client(const uint32_t id) {
+   // the client list is owned by the event master and holds EV_Type elements
+   return ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients).find_first<EV_id>(id);
 }
 
 /**
@@ -3032,8 +3090,10 @@ sge_commit(uint64_t gdi_session) {
    if (t_store->is_transaction) {
       t_store->is_transaction = false;
 
-      if (lGetNumberOfElem(t_store->transaction_requests) > 0) {
-         add_list_event_for_client_after_commit(nullptr, t_store->transaction_requests, gdi_session);
+      // thread local storage of this thread's transaction
+      const ocs::tom::List<ocs::tom::EVR> transaction_requests(t_store->transaction_requests);
+      if (!transaction_requests.empty()) {
+         add_list_event_for_client_after_commit(nullptr, transaction_requests, gdi_session);
       }
    } else {
       WARNING("attempting to commit an event master transaction, but no transaction is open");
@@ -3145,7 +3205,7 @@ void sge_set_commit_required() {
 void sge_event_master_process_requests(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   lList *requests = nullptr;
+   ocs::tom::ListPtr<ocs::tom::EVR> requests;
 
    /*
     * get the request list
@@ -3153,18 +3213,18 @@ void sge_event_master_process_requests(monitoring_t *monitor) {
     */
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
-   if (lGetNumberOfElem(Event_Master_Control.requests) > 0) {
-      requests = Event_Master_Control.requests;
-      Event_Master_Control.requests = lCreateListHash("Event Master Requests", EVR_Type, false);
+   if (!ocs::tom::ConstList<ocs::tom::EVR>(Event_Master_Control.requests).empty()) {
+      // the request list is owned by the event master and of EVR_Type; this thread takes it over
+      requests = ocs::tom::ListPtr<ocs::tom::EVR>(Event_Master_Control.requests);
+      Event_Master_Control.requests =
+         ocs::tom::ListPtr<ocs::tom::EVR>::create("Event Master Requests", ocs::tom::Hashing::Off).release();
    }
 
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    /* if there have been any requests - process them */
-   if (requests != nullptr) {
-      lListElem *request = nullptr;
-
-      while ((request = lFirstRW(requests)) != nullptr) {
+   if (requests) {
+      while (const auto request = requests->front()) {
 #if 0
          DPRINTF("processing event master request: %d\n", lGetUlong(request, EVR_operation));
 #endif
@@ -3185,9 +3245,9 @@ void sge_event_master_process_requests(monitoring_t *monitor) {
                break;
          }
 
-         lRemoveElem(requests, &request);
+         requests->erase(request);
       }
-
-      lFreeList(&requests);
    }
+
+   DRETURN_VOID;
 }

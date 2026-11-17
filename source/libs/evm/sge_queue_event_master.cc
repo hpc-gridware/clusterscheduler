@@ -46,6 +46,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_qinstance.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "tom/ocs_Element.h"
 
 #include "evm/sge_event_master.h"
@@ -58,10 +59,24 @@
  * @param type the event type, one of the `sgeE_QINSTANCE_*` values
  * @param gdi_session the session the change belongs to, for read-after-write
  */
-void qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session) {
+void qinstance_add_event(const ocs::tom::Element<ocs::tom::QU> this_elem, const ev_event type,
+                         const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, 0, 0, ocs::tom::get<QU_qname>(this_elem), ocs::tom::get<QU_qhostname>(this_elem), nullptr, this_elem, gdi_session);
+   // a host field, handed on as a C string key
+   const char *qhostname = ocs::tom::get<QU_qhostname>(this_elem);
+   sge_add_event(0, type, 0, 0, ocs::tom::get<QU_qname>(this_elem), qhostname, nullptr, this_elem, gdi_session);
    DRETURN_VOID;
+}
+
+/**
+ * @brief qinstance_add_event() for an untyped caller
+ *
+ * @param this_elem the queue instance the event is about (QU_Type), owned by the master list
+ * @param type the event type, one of the `sgeE_QINSTANCE_*` values
+ * @param gdi_session the session the change belongs to, for read-after-write
+ */
+void qinstance_add_event(lListElem *this_elem, const ev_event type, const uint64_t gdi_session) {
+   qinstance_add_event(ocs::tom::Element<ocs::tom::QU>(this_elem), type, gdi_session);
 }
 
 /**

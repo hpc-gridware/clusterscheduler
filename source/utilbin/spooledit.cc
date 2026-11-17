@@ -52,7 +52,9 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -159,6 +161,12 @@ get_descr_from_key(const char *key) {
    DRETURN(descr);
 }
 
+/**
+ * @brief Print the keys of the spooled objects
+ *
+ * @param key the key pattern to list
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 static int
 list_objects(const char *key) {
    DENTER(TOP_LAYER);
@@ -166,7 +174,8 @@ list_objects(const char *key) {
    int   ret = EXIT_SUCCESS;
    bool  dbret = false;
    lList *answer_list = nullptr;
-   lList *stu_list = nullptr;
+   // out-parameter of spool_read_keys(), which hands the keys over raw
+   lList *stu_list_raw = nullptr;
 
    /* 
     * Start transaction to sync with other transaction-protected
@@ -177,18 +186,20 @@ list_objects(const char *key) {
       /*
        * Transaction started; read the list
        */
-      dbret = spool_read_keys(&answer_list, spool_get_default_context(), &stu_list, key);
+      dbret = spool_read_keys(&answer_list, spool_get_default_context(), &stu_list_raw, key);
    } else {
       answer_list_output(&answer_list);
       ret = EXIT_FAILURE;
    }
 
+   // the keys (STU_Type), freed when leaving the function
+   const auto stu_list = ocs::tom::ListPtr<ocs::tom::STU>::from_typed(stu_list_raw);
+
    if (dbret) {
       /*
        * Sucess: print out data.
        */
-      const lListElem *stu_elem = nullptr;
-      for_each_ep(stu_elem, stu_list) {
+      for (const auto stu_elem : *stu_list) {
          fprintf(stdout, "%s\n", ocs::tom::get<STU_name>(stu_elem));
       }
    } else {
@@ -206,7 +217,6 @@ list_objects(const char *key) {
       ret = EXIT_FAILURE;
    }
 
-   lFreeList(&stu_list);
    lFreeList(&answer_list);
 
    DRETURN(ret);

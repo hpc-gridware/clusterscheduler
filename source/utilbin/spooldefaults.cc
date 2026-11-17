@@ -55,7 +55,10 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -132,35 +135,49 @@ static int init_framework() {
    DRETURN(ret);
 }
 
+/**
+ * @brief Spool the global configuration read from a file
+ *
+ * @param argc number of command line arguments
+ * @param argv command line arguments; argv[2] is the file holding the global configuration
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 static int spool_configuration(int argc, char *argv[]) {
    DENTER(TOP_LAYER);
 
    int ret = EXIT_SUCCESS;
-   lListElem *conf = nullptr;
    lList *answer_list = nullptr;
    spooling_field *fields = sge_build_CONF_field_list(true);
 
-   conf = spool_flatfile_read_object(&answer_list, CONF_Type, nullptr,
-                                   fields, nullptr, false, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, argv[2]);
+   // read with the CONF_Type descriptor, so the element is of that type; freed when leaving the function
+   const auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(
+      spool_flatfile_read_object(&answer_list, CONF_Type, nullptr, fields, nullptr, false, &qconf_sfi,
+                                 SP_FORM_ASCII, nullptr, argv[2]));
    sge_free(&fields);
-   if (conf == nullptr) {
+   if (!conf) {
       ERROR(MSG_SPOOLDEFAULTS_CANTREADGLOBALCONF_S, argv[2]);
       ret = EXIT_FAILURE;
    } else {
       /* put config into a list - we can't spool free objects */
       ocs::tom::set<CONF_name>(conf, SGE_GLOBAL_NAME);
-      if (!spool_write_object(&answer_list, spool_get_default_context(), conf, SGE_GLOBAL_NAME, SGE_TYPE_CONFIG)) {
+      if (!spool_write_object(&answer_list, spool_get_default_context(), *conf, SGE_GLOBAL_NAME,
+                              SGE_TYPE_CONFIG)) {
          /* error output has been done in spooling function */
          ret = EXIT_FAILURE;
       }
       answer_list_output(&answer_list);
    }
-   lFreeElem(&conf);
 
    DRETURN(ret);
 }
 
+/**
+ * @brief Spool a local configuration read from a file, unless one of that name is spooled already
+ *
+ * @param argc number of command line arguments
+ * @param argv command line arguments; argv[2] is the file, argv[3] the name of the configuration
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 static int spool_local_conf(int argc, char *argv[]) {
    DENTER(TOP_LAYER);
 
@@ -173,24 +190,26 @@ static int spool_local_conf(int argc, char *argv[]) {
    } else {
       lList *answer_list = nullptr;
       spooling_field *fields = sge_build_CONF_field_list(true);
-      lListElem *conf = nullptr;
 
-      conf = spool_flatfile_read_object(&answer_list, CONF_Type, nullptr,
-                                   fields, nullptr, false, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, argv[2]);
+      // read with the CONF_Type descriptor, so the element is of that type; freed when leaving the block
+      const auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(
+         spool_flatfile_read_object(&answer_list, CONF_Type, nullptr, fields, nullptr, false, &qconf_sfi,
+                                    SP_FORM_ASCII, nullptr, argv[2]));
       sge_free(&fields);
 
-      if (conf == nullptr) {
+      if (!conf) {
          ERROR(MSG_SPOOLDEFAULTS_CANTREADLOCALCONF_S, argv[2]);
          ret = EXIT_FAILURE;
       } else {
          /* check if a config is already there */
-         lListElem *le = spool_read_object(nullptr, spool_get_default_context(), SGE_TYPE_CONFIG, argv[3]);
-         if (le == nullptr) {
+         // a configuration object (CONF_Type) as the spooling stores it; it used to be leaked
+         const auto le = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(
+            spool_read_object(nullptr, spool_get_default_context(), SGE_TYPE_CONFIG, argv[3]));
+         if (!le) {
             /* put config into a list - we can't spool free objects */
             ocs::tom::set<CONF_name>(conf, argv[3]);
-            if (!spool_write_object(&answer_list, spool_get_default_context(), 
-                                 conf, argv[3], SGE_TYPE_CONFIG)) {
+            if (!spool_write_object(&answer_list, spool_get_default_context(), *conf, argv[3],
+                                    SGE_TYPE_CONFIG)) {
                /* error output has been done in spooling function */
                ret = EXIT_FAILURE;
             } 
@@ -198,7 +217,6 @@ static int spool_local_conf(int argc, char *argv[]) {
             fprintf(stderr, "config already there!\n");
          }
          answer_list_output(&answer_list);
-         lFreeElem(&conf);
       }
       lFreeList(&answer_list);
    }
@@ -281,23 +299,34 @@ static int spool_usersets(int argc, char *argv[]) {
    return spool_object_list(argv[2], US_fields, &qconf_sfi, US_Type, SGE_TYPE_USERSET);
 }
 
+/**
+ * @brief Spool every object stored as a file in a directory
+ *
+ * Files whose name starts with a dot are skipped.
+ *
+ * @param directory the directory holding one file per object
+ * @param fields the spooling fields of the object type
+ * @param instr the flatfile format of the files
+ * @param descr the descriptor of the object type, known only at run time here
+ * @param obj_type the object type to spool the objects as
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 static int spool_object_list(const char *directory,
                              const spooling_field *fields,
                              const spool_flatfile_instr *instr,
                              const lDescr *descr,
-                             sge_object_type obj_type) {
+                             const sge_object_type obj_type) {
    DENTER(TOP_LAYER);
 
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;
    lListElem *ep;
-   lList *direntries;
-   const lListElem *direntry;
    const char *name;
    dstring file = DSTRING_INIT;
 
-   direntries = sge_get_dirents(directory);
-   for_each_ep(direntry, direntries) {
+   // the directory entries (ST_Type), freed when leaving the function
+   const auto direntries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(directory));
+   for (const auto direntry : *direntries) {
       name = ocs::tom::get<ST_name>(direntry);
       if (name[0] != '.') {
          sge_dstring_sprintf(&file, "%s/%s", directory, name);
@@ -315,7 +344,6 @@ static int spool_object_list(const char *directory,
          lFreeElem(&ep);
       }
    }
-   lFreeList(&direntries);
    sge_dstring_free(&file);
 
    lFreeList(&answer_list);
