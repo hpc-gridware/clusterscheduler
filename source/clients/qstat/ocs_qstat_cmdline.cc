@@ -52,36 +52,43 @@
 #include "msg_qstat.h"
 #include "msg_clients_common.h"
 
+/**
+ * @brief Parse the qstat/qselect switches from a default file (sge_qstat).
+ *
+ * The file is read directly. It used to be checked with sge_is_file() first
+ * and read afterwards, which left a window in which the path could be
+ * replaced (TOCTOU, CS-1972). A file that does not exist or cannot be read is
+ * not an error, the defaults are optional.
+ *
+ * @param switch_list receives the parsed switches
+ * @param answer_list receives parse errors
+ * @param mode        true for qselect, false for qstat
+ * @param file        path of the default file
+ * @return true on success or when the file is absent/unreadable, false on a
+ *         parse error or when @p switch_list is nullptr
+ */
 bool
 switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, int mode, const char *file)
 {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
-   if (switch_list == nullptr) {
-      ret = false;
-   } else {
-      if (!sge_is_file(file)) {
-         // it is ok if the file does not exist
-         ret = true;
-      } else {
-         char *file_as_string = nullptr;
-         int file_as_string_length;
 
-         file_as_string = sge_file2string(file, &file_as_string_length);
-         if (file_as_string == nullptr) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
-            ret = false;
-         } else {
-            char **token = stra_from_str(file_as_string, " \n\t");
-            ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, mode, token);
-            sge_strafree(&token);
-         }
-         sge_free(&file_as_string);
-      }
-   }  
-   DRETURN(ret); 
+   if (switch_list == nullptr) {
+      DRETURN(false);
+   }
+
+   int file_as_string_length;
+   char *file_as_string = sge_file2string(file, &file_as_string_length);
+   if (file_as_string == nullptr) {
+      // file does not exist or is not readable - both are acceptable
+      DRETURN(true);
+   }
+
+   char **token = stra_from_str(file_as_string, " \n\t");
+   bool ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, mode, token);
+   sge_strafree(&token);
+   sge_free(&file_as_string);
+
+   DRETURN(ret);
 }
 
 bool
