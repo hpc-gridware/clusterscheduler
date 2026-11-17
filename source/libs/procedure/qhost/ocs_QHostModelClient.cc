@@ -35,12 +35,43 @@
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_Request.h"
+#include "tom/ocs_List.h"
 
 #include "qstat/ocs_QStatParameter.h"
 #include "qhost/ocs_QHostModelClient.h"
 
+/** @brief The answer to one recorded GET request, as a typed list
+ *
+ * A GET of a target answers with a list of the target's type, so the list
+ * is wrapped with a check of its type.
+ *
+ * @tparam T the object type of the target
+ * @param answer_list receives error messages
+ * @param request the request the GET was recorded in, after wait()
+ * @param target the target of the GET
+ * @param id the id the GET was recorded with
+ * @return the owning handle on the list, empty if the answer held none
+ */
+template <ocs::tom::ObjectType T>
+static ocs::tom::ListPtr<T>
+get_list_response(lList **answer_list, const ocs::gdi::Request &request, const ocs::gdi::Target target,
+                  const int id) {
+   DENTER(TOP_LAYER);
+   lList *lp = nullptr;
+   request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, &lp);
+   DRETURN(ocs::tom::ListPtr<T>(lp));
+}
+
+/** @brief Fetch the lists from qmaster with one multi GDI request
+ * @param answer_list receives error messages
+ * @param hostname_list the hosts the user asked for; all hosts when empty
+ * @param user_name_list the users the user asked for; all users when empty
+ * @param show which of queues, jobs and resources were requested
+ * @return true when every list could be fetched
+ */
 bool
-ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show) {
+ocs::QHostModelClient::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+                                  const ocs::tom::ConstList<ocs::tom::ST> user_name_list, const uint32_t show) {
    DENTER(TOP_LAYER);
 
    // @todo Should be combined with the other GDI requests
@@ -162,7 +193,7 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
    */
 
    // Execution hosts
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::EH_LIST, eh_id, &exec_host_list_);
+   exec_host_list_ = get_list_response<ocs::tom::EH>(answer_list, gdi_multi, gdi::Target::EH_LIST, eh_id);
    if (answer_list_has_error(answer_list)) {
       answer_list_output(answer_list);
       DRETURN(false);
@@ -170,7 +201,7 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
 
    // Cluster queues
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::CQ_LIST, q_id, &queue_list_);
+      queue_list_ = get_list_response<ocs::tom::CQ>(answer_list, gdi_multi, gdi::Target::CQ_LIST, q_id);
       if (answer_list_has_error(answer_list)) {
          answer_list_output(answer_list);
          DRETURN(false);
@@ -179,7 +210,7 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
 
    // Jobs
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
-      gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::JB_LIST, j_id, &job_list_);
+      job_list_ = get_list_response<ocs::tom::JB>(answer_list, gdi_multi, gdi::Target::JB_LIST, j_id);
       if (answer_list_has_error(answer_list)) {
          answer_list_output(answer_list);
          DRETURN(false);
@@ -187,28 +218,28 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
    }
 
    // complexes
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::CE_LIST, ce_id, &centry_list_);
+   centry_list_ = get_list_response<ocs::tom::CE>(answer_list, gdi_multi, gdi::Target::CE_LIST, ce_id);
    if (answer_list_has_error(answer_list)) {
       answer_list_output(answer_list);
       DRETURN(false);
    }
 
    // PE's
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::PE_LIST, pe_id, &pe_list_);
+   pe_list_ = get_list_response<ocs::tom::PE>(answer_list, gdi_multi, gdi::Target::PE_LIST, pe_id);
    if (answer_list_has_error(answer_list)) {
       answer_list_output(answer_list);
       DRETURN(false);
    }
 
    // ACL's
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::US_LIST, acl_id, &acl_list_);
+   acl_list_ = get_list_response<ocs::tom::US>(answer_list, gdi_multi, gdi::Target::US_LIST, acl_id);
    if (answer_list_has_error(answer_list)) {
       answer_list_output(answer_list);
       DRETURN(false);
    }
 
    // get configuration
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::CONF_LIST, gc_id, &config_list_);
+   config_list_ = get_list_response<ocs::tom::CONF>(answer_list, gdi_multi, gdi::Target::CONF_LIST, gc_id);
    if (answer_list_has_error(answer_list)) {
       answer_list_output(answer_list);
       DRETURN(false);
@@ -218,7 +249,7 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
    //       adjustments, while the server context does. Kept as it was; aligning both is a change of its own.
    // An empty list, not nullptr: the sched helpers read nullptr as "fetch them from the data store of the
    // calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()).
-   job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
+   job_load_adjustments_ = ocs::tom::ListPtr<ocs::tom::CE>::create("load_adj_copy");
 
    DRETURN(true);
 }
@@ -232,18 +263,19 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
  * @return true when the lists could be prepared
  */
 bool
-ocs::QHostModelClient::prepare_data(lList **answer_list, lList *resource_match_list, const uint32_t show) const {
+ocs::QHostModelClient::prepare_data(lList **answer_list, const ocs::tom::List<ocs::tom::CE> resource_match_list,
+                                    const uint32_t show) const {
    DENTER(TOP_LAYER);
 
    // Common things that need to be done on client and server side
    QHostModelBase::prepare_data(answer_list, resource_match_list, show);
 
    // Prepare the configuration
-   if (lFirst(config_list_)) {
+   if (const auto global_conf = config_list_->front(); global_conf != nullptr) {
       const char *cell_root = bootstrap_get_cell_root();
       const uint32_t progid = component_get_component_id();
 
-      merge_configuration(nullptr, progid, cell_root, lFirstRW(config_list_), nullptr, nullptr);
+      merge_configuration(nullptr, progid, cell_root, global_conf, nullptr, nullptr);
    }
 
    DRETURN(true);

@@ -33,6 +33,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/parse.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 
 #include "qrstat/ocs_QRStatParameterClient.h"
 #include "ocs_client_parse.h"
@@ -72,6 +74,11 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList *
    DRETURN(ret);
 }
 
+/** @brief Interpret the parsed switches
+ * @param answer_list receives error messages
+ * @param cmdline the switches (`SPA_Type`); the ones handled are removed from it
+ * @return true when the switches are usable
+ */
 bool
 ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdline) {
    DENTER(TOP_LAYER);
@@ -79,7 +86,7 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
    bool ret = true;
 
    is_summary_ = true;
-   while (lGetNumberOfElem(*cmdline)) {
+   while (!ocs::tom::ConstList<ocs::tom::SPA>(*cmdline).empty()) {
       uint32_t value;
       char *argstr = nullptr;
 
@@ -90,9 +97,11 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
       }
 
       /* -u */
+      lList *users = user_list_.release();
       while (parse_multi_stringlist(cmdline, "-u", answer_list,
-                                    &user_list_, ST_Type, ST_name)) {
+                                    &users, ST_Type, ST_name)) {
       }
+      user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
 
       /* -explain */
       while (parse_flag(cmdline, "-explain", answer_list, &value)) {
@@ -139,11 +148,13 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
       }
 
       /* -ar */
-      while (parse_u_longlist(cmdline, "-ar", answer_list, &ar_id_list_)) {
+      lList *ar_ids = ar_id_list_.release();
+      while (parse_u_longlist(cmdline, "-ar", answer_list, &ar_ids)) {
          is_summary_ = false;
       }
+      ar_id_list_ = ocs::tom::ListPtr<ocs::tom::ULNG>::from_typed(ar_ids);
 
-      if (lGetNumberOfElem(*cmdline)) {
+      if (!ocs::tom::ConstList<ocs::tom::SPA>(*cmdline).empty()) {
          sge_usage(QRSTAT, stdout);
          answer_list_add(answer_list, MSG_PARSE_TOOMANYOPTIONS, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = false;

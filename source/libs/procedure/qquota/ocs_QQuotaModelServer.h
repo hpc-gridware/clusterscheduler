@@ -50,6 +50,6 @@ namespace ocs {
       QQuotaModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {};
       ~QQuotaModelServer() override = default;
 
-      bool fetch_data(lList **answer_list, const lList *host_list) override;
+      bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> host_list) override;
    };
 }

@@ -24,6 +24,9 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
 
 #include "procedure/ocs_ProcedureParameter.h"
 
@@ -55,8 +58,8 @@ namespace ocs {
 #pragma region Data
 
    protected:
-      lList *user_list_ = nullptr; ///< -u user_list
-      lList *ar_id_list_ = nullptr; ///< -ar ar_id
+      ocs::tom::ListPtr<ocs::tom::ST> user_list_;     ///< -u user_list
+      ocs::tom::ListPtr<ocs::tom::ULNG> ar_id_list_;  ///< -ar ar_id
       bool is_explain_ = false; ///< -explain
       bool is_summary_ = false; ///< show summary of selected ar's or all details of one or multiple ar's
       char user_[128] = ""; ///< executing user on client side
@@ -67,12 +70,12 @@ namespace ocs {
       /** @brief The users whose reservations to report
        * @return the user names, empty when all users were requested
        */
-      [[nodiscard]] lList *get_user_list() const { return user_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_user_list() const { return *user_list_; }
 
       /** @brief The reservations to report
        * @return the reservation ids, empty when all were requested
        */
-      [[nodiscard]] lList *get_ar_id_list() const { return ar_id_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ULNG> get_ar_id_list() const { return *ar_id_list_; }
 
       /** @brief Whether the user asked why a reservation is in an error state
        * @return true when `-explain` was given
@@ -108,7 +111,7 @@ namespace ocs {
       explicit QRStatParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name), nullptr) {
       };
 
-      ~QRStatParameter() override;
+      ~QRStatParameter() override = default;
 
 #pragma endregion
    };

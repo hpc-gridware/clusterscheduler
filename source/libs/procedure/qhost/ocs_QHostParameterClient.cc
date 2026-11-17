@@ -39,6 +39,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/parse.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 
 
 #include "ocs_client_parse.h"
@@ -54,6 +56,26 @@
 
 /** @brief The process environment, which the parameter parsing reads */
 extern char **environ;
+
+/** @brief parse_multi_stringlist() into an owning list handle
+ *
+ * The parser appends to the list it is given and creates it if there is none.
+ *
+ * @param switch_list the switches (`SPA_Type`); the one handled is removed from it
+ * @param opt the switch, e.g. `-u`
+ * @param answer_list receives error messages
+ * @param list the list the names are appended to
+ * @return true when the switch was found
+ */
+static bool
+parse_multi_stringlist_into(lList **switch_list, const char *opt, lList **answer_list,
+                            ocs::tom::ListPtr<ocs::tom::ST> &list) {
+   DENTER(TOP_LAYER);
+   lList *names = list.release();
+   const bool found = parse_multi_stringlist(switch_list, opt, answer_list, &names, ST_Type, ST_name);
+   list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(names);
+   DRETURN(found);
+}
 
 bool
 ocs::QHostParameterClient::show_usage(FILE *fp) {
@@ -168,6 +190,11 @@ ocs::QHostParameterClient::parse_cmdline_and_env(char **argv, [[maybe_unused]] c
    DRETURN(true);
 }
 
+/** @brief Interpret the parsed switches
+ * @param ppcmdline the switches (`SPA_Type`); the ones handled are removed from it
+ * @param alpp receives error messages
+ * @return 1 when the switches are usable, 2 after `-help`, 0 on an error
+ */
 int
 ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
    DENTER(TOP_LAYER);
@@ -177,7 +204,7 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
    char * argstr = nullptr;
    int ret = 1;
 
-   while (lGetNumberOfElem(*ppcmdline)) {
+   while (!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          usageshowed = true;
          show_usage(stdout);
@@ -185,11 +212,11 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
          goto exit;
       }
 
-      if (parse_multi_stringlist(ppcmdline, "-h", alpp, &hostname_list_, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(ppcmdline, "-h", alpp, hostname_list_)) {
          /*
          ** resolve hostnames and replace them in list
          */
-         for_each_rw_lv(ep, hostname_list_) {
+         for (const auto ep : *hostname_list_) {
             if (sge_resolve_host(ep, ST_name) != CL_RETVAL_OK) {
                char buf[BUFSIZ];
                snprintf(buf, sizeof(buf), MSG_SGETEXT_CANTRESOLVEHOST_S, ocs::tom::get<ST_name>(ep) );
@@ -200,7 +227,7 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
          continue;
       }
 
-      if (parse_multi_stringlist(ppcmdline, "-F", alpp, &resource_visible_list_, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(ppcmdline, "-F", alpp, resource_visible_list_)) {
          show_ |= QHOST_DISPLAY_RESOURCES;
          continue;
       }
@@ -220,12 +247,13 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
          continue;
       }
       while (parse_string(ppcmdline, "-l", alpp, &argstr)) {
-         resource_match_list_ = centry_list_parse_from_string(resource_match_list_, argstr, false);
+         resource_match_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
+            centry_list_parse_from_string(resource_match_list_.release(), argstr, false));
          sge_free(&argstr);
          continue;
       }
 
-      if (parse_multi_stringlist(ppcmdline, "-u", alpp, &user_name_list_, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(ppcmdline, "-u", alpp, user_name_list_)) {
          show_ |= QHOST_DISPLAY_JOBS;
          continue;
       }
@@ -316,26 +344,32 @@ bool ocs::QHostParameterClient::parse_parameters(lList **alpp, char **argv, char
       sge_exit(1);
    }
 
-   // find duplicates in file and commandline and remove them
-   for_each_ep_lv(switch_cmd, switches_cmd_line) {
-      lListElem *switch_default = nullptr;
+   // the parser hands over the switches it built
+   auto file_switches = ocs::tom::ListPtr<ocs::tom::SPA>(switches_default_files);
+   auto cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>(switches_cmd_line);
 
-      while ((switch_default = ocs::tom::find_first_rw<SPA_switch_val>(switches_default_files, ocs::tom::get<SPA_switch_val>(switch_cmd))) != nullptr) {
-         lRemoveElem(switches_default_files, &switch_default);
+   // find duplicates in file and commandline and remove them
+   for (const auto switch_cmd : *cmdline_switches) {
+      const char *switch_val = ocs::tom::get<SPA_switch_val>(switch_cmd);
+      for (auto switch_default = file_switches->find_first<SPA_switch_val>(switch_val); switch_default != nullptr;
+           switch_default = file_switches->find_first<SPA_switch_val>(switch_val)) {
+         file_switches->erase(switch_default);
       }
    }
 
    // merge the command line and the file options
-   if (lGetNumberOfElem(switches_cmd_line) > 0) {
-      lAddList(switches_cmd_line, &switches_default_files);
-   } else if (lGetNumberOfElem(switches_default_files) > 0) {
-      lAddList(switches_default_files, &switches_cmd_line);
-      switches_cmd_line = switches_default_files;
+   if (!cmdline_switches->empty()) {
+      cmdline_switches->splice(std::move(file_switches));
+   } else if (!file_switches->empty()) {
+      file_switches->splice(std::move(cmdline_switches));
+      cmdline_switches = std::move(file_switches);
    }
 
-   // parse the commandline
-   int is_ok = parse_switch_list(&switches_cmd_line, alpp);
-   lFreeList(&switches_cmd_line);
+   // parse the commandline; the parser takes the handled switches out of the list
+   lList *switches = cmdline_switches.release();
+   int is_ok = parse_switch_list(&switches, alpp);
+   cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(switches);
+   cmdline_switches.reset();
    if (is_ok == 0) {
       answer_list_output(alpp);
       sge_exit(1);

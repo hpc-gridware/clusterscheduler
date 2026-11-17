@@ -41,10 +41,14 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_href.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRF.h"
 #include "sgeobj/tom/ocs_tom_RQRL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sched/sort_hosts.h"
 
@@ -84,18 +88,31 @@ ocs::QQuotaController::qquota_get_next_filter(stringT filter, const char *cp) {
    return const_cast<char *>(slash + 1);
 }
 
+/** @brief Report one filter of a rule
+ *
+ * An expanded filter whose value is known is reported with that value,
+ * every other one with its scope and its excluded scope.
+ *
+ * @param os stream to write to
+ * @param filter the filter, nothing is reported for an empty handle
+ * @param name the name of the filter, e.g. `users`
+ * @param value the value the rule matched with, or nullptr
+ * @param view the view to report to
+ * @return none
+ */
 void
-ocs::QQuotaController::qquota_print_out_filter(std::ostream &os, lListElem *filter, const char *name, const char *value, QQuotaViewBase &view) {
+ocs::QQuotaController::qquota_print_out_filter(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::RQRF> filter,
+                                               const char *name, const char *value, QQuotaViewBase &view) {
    DENTER(TOP_LAYER);
 
    if (filter == nullptr) {
       DRETURN_VOID;
    }
    if (!ocs::tom::get<RQRF_expand>(filter) || value == nullptr) {
-      for (ocs::tom::ConstElement<ocs::tom::ST> scope : ocs::tom::get<RQRF_scope>(filter)) {
+      for (const auto scope : ocs::tom::get<RQRF_scope>(filter)) {
          view.report_limit_string_value(os, name, ocs::tom::get<ST_name>(scope), false);
       }
-      for (ocs::tom::ConstElement<ocs::tom::ST> scope : ocs::tom::get<RQRF_xscope>(filter)) {
+      for (const auto scope : ocs::tom::get<RQRF_xscope>(filter)) {
          view.report_limit_string_value(os, name, ocs::tom::get<ST_name>(scope), true);
       }
    } else {
@@ -104,10 +121,32 @@ ocs::QQuotaController::qquota_print_out_filter(std::ostream &os, lListElem *filt
    DRETURN_VOID;
 }
 
+/** @brief Report one limit of a rule, unless it was reported before
+ *
+ * With several values for one filter (`-u user1,user2`) the same row can
+ * match more than once; the key of each reported row is remembered.
+ *
+ * @param os stream to write to
+ * @param rqs the resource quota set of the rule
+ * @param rule the rule
+ * @param limit_name the limited resource
+ * @param type the type of the limited resource, for rendering the values
+ * @param usage the current usage
+ * @param limit the limit
+ * @param qfilter the values the rule matched with
+ * @param printed_rules the keys of the rows reported so far, extended by this one
+ * @param view the view to report to
+ * @return none
+ */
 void
-ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const lListElem *rqs, lListElem *rule, const char *limit_name,
-                                  ocs::CEntry::Type type, uint64_t usage, uint64_t limit, qquota_filter_t qfilter,
-                                  lList *printed_rules, QQuotaViewBase &view) {
+ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::RQS> rqs,
+                                             const ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *limit_name,
+                                             const ocs::CEntry::Type type, const uint64_t usage, const uint64_t limit,
+                                             const qquota_filter_t qfilter,
+                                             const ocs::tom::List<ocs::tom::ST> printed_rules,
+                                             QQuotaViewBase &view) {
+   DENTER(TOP_LAYER);
+
    // create a unique key
    std::ostringstream oss_key;
    oss_key << ocs::tom::get<RQS_name>(rqs) << "/" << ocs::tom::get<RQR_name>(rule) << "," << limit_name << ","
@@ -116,12 +155,12 @@ ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const lListElem *
            << (qfilter.host? qfilter.host: "");
 
    // check if output for the key was already done
-   if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(printed_rules, oss_key.str().c_str())) != nullptr) {
-      return;
+   if (printed_rules.find_first<ST_name>(oss_key.str().c_str()) != nullptr) {
+      DRETURN_VOID;
    }
 
    // remember the key to avoid duplicate output
-   ocs::tom::emplace_back<ST_name>(&printed_rules, oss_key.str().c_str());
+   printed_rules.emplace_back<ST_name>(oss_key.str().c_str());
 
    // make the output
    view.report_limit_rule_begin(os, ocs::tom::get<RQS_name>(rqs), ocs::tom::get<RQR_name>(rule));
@@ -132,17 +171,19 @@ ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const lListElem *
    qquota_print_out_filter(os, ocs::tom::get<RQR_filter_queues>(rule), "queues", qfilter.queue, view);
    qquota_print_out_filter(os, ocs::tom::get<RQR_filter_hosts>(rule), "hosts", qfilter.host, view);
    view.report_limit_rule_finished(os);
+
+   DRETURN_VOID;
 }
 
 /** @brief Run the request
  * @param parameter the parsed parameters
  * @param model the model, client or server side
  * @param view the view for the requested output format
+ * @return none
  */
 void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaModelBase &model, QQuotaViewBase &view) {
    DENTER(TOP_LAYER);
 
-   lListElem* exec_host = nullptr;
    std::ostringstream oss;
 
    qquota_filter_t qquota_filter = { "*", "*", "*", "*", "*" };
@@ -152,12 +193,13 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
 
 
    /* Hash list of already printed resource quota rules (possible with -u user1,user2,user3...) */
-   lList* printed_rules = lCreateList("rule_hash", ST_Type);
-   lListElem* global_host = host_list_locate(model.get_exec_host_list(), SGE_GLOBAL_NAME);
+   const auto printed_rules = ocs::tom::ListPtr<ocs::tom::ST>::create("rule_hash");
+   const auto global_host =
+      ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(model.get_exec_host_list(), SGE_GLOBAL_NAME));
 
    view.report_started(oss);
 
-   for_each_rw_lv(rqs, model.get_rqs_list()) {
+   for (const auto rqs : model.get_rqs_list()) {
       int rule_count = 1;
 
       DTRACE;
@@ -166,12 +208,12 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
          continue;
       }
 
-      for (ocs::tom::Element<ocs::tom::RQR> rule : ocs::tom::get<RQS_rule>(rqs)) {
-         const lListElem *user_ep = lFirst(parameter.get_user_list());
-         const lListElem *project_ep = lFirst(parameter.get_project_list());
-         const lListElem *pe_ep = lFirst(parameter.get_pe_list());
-         const lListElem *queue_ep = lFirst(parameter.get_cqueue_list());
-         const lListElem *host_ep = lFirst(parameter.get_host_list());
+      for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
+         auto user_ep = parameter.get_user_list().front();
+         auto project_ep = parameter.get_project_list().front();
+         auto pe_ep = parameter.get_pe_list().front();
+         auto queue_ep = parameter.get_cqueue_list().front();
+         auto host_ep = parameter.get_host_list().front();
          do {
             if (user_ep != nullptr) {
                DPRINTF("filter for user: %s\n", ocs::tom::get<ST_name>(user_ep));
@@ -199,10 +241,12 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                                  qquota_filter.queue, model.get_user_set_list(),
                                                  model.get_hgroup_list())) {
 
-                           for (ocs::tom::ConstElement<ocs::tom::RQRL> limit : ocs::tom::get<RQR_limit>(rule)) {
+                           for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
                               const char *limit_name = ocs::tom::get<RQRL_name>(limit);
-                              ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<RQRL_usage>(limit);
-                              lListElem *raw_centry = centry_list_locate(model.get_centry_list(), limit_name);
+                              const auto rue_list = ocs::tom::get<RQRL_usage>(limit);
+                              // the centry is changed below: CE_pj_doubleval carries each value to render
+                              const auto raw_centry = ocs::tom::Element<ocs::tom::CE>::from_typed(
+                                 centry_list_locate(model.get_centry_list(), limit_name));
 
                               if (raw_centry == nullptr) {
                                  /* undefined centries can be ignored */
@@ -211,9 +255,10 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                               }
                               // attribute type drives value parsing (RQRL_value) and
                               // human-readable rendering of the limit (CS-2348)
-                              const auto centry_type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(raw_centry));
+                              const auto centry_type =
+                                 static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(raw_centry));
 
-                              if (lList *rml = parameter.get_resource_match_list(); rml != nullptr &&
+                              if (const auto rml = parameter.get_resource_match_list(); rml != nullptr &&
                                   ((centry_list_locate(rml, limit_name) == nullptr) &&
                                   (centry_list_locate(rml, ocs::tom::get<CE_shortcut>(raw_centry)) == nullptr))) {
                                  DPRINTF("centry %s was not requested on CLI -> IGNORING\n", limit_name);
@@ -226,9 +271,10 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                               }
 
                               if (ocs::tom::get<CE_consumable>(raw_centry)) {
-                                 /* for consumables we need to walk through the utilization and search for matching values */
+                                 // for consumables we need to walk through the utilization and search for
+                                 // matching values
                                  DPRINTF("found centry %s - consumable\n", limit_name);
-                                 for (ocs::tom::ConstElement<ocs::tom::RUE> rue_elem : rue_list) {
+                                 for (const auto rue_elem : rue_list) {
                                     uint32_t dominant = 0;
                                     const char *rue_name = ocs::tom::get<RUE_name>(rue_elem);
                                     char *cp = nullptr;
@@ -241,9 +287,9 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                     cp = qquota_get_next_filter(user, rue_name);
                                     /* usergroups have the same beginning character @ as host groups */
                                     if (is_hgroup_name(qquota_filter.user)) {
-                                       lListElem *ugroup = nullptr;
-
-                                       if ((ugroup = ocs::tom::find_first_rw<US_name>(model.get_user_set_list(), &qquota_filter.user[1])) != nullptr) {
+                                       if (const auto ugroup =
+                                              model.get_user_set_list().find_first<US_name>(&qquota_filter.user[1]);
+                                           ugroup != nullptr) {
                                           if (sge_contained_in_access_list(user, nullptr, nullptr, ugroup) == 0) {
                                              continue;
                                           }
@@ -283,10 +329,12 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                     /* check host name */
                                     cp = qquota_get_next_filter(host, cp);
                                     if (is_hgroup_name(qquota_filter.host)) {
-                                       const lList *hgroup_list = model.get_hgroup_list();
-                                       if (lListElem *hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host); hgroup != nullptr) {
+                                       const auto hgroup_list = model.get_hgroup_list();
+                                       if (const auto hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host);
+                                           hgroup != nullptr) {
                                           lList *host_list = nullptr;
-                                          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &host_list, nullptr);
+                                          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &host_list,
+                                                                     nullptr);
 
                                           /*
                                            * The row is suppressed unless its host is a member of the
@@ -304,7 +352,8 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                            * A null list needs no case of its own; the lookup answers
                                            * "not a member" for it.
                                            */
-                                          if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(host_list, host)) == nullptr) {
+                                          if (static_cast<const lListElem *>(
+                                                 ocs::tom::find_first<HR_name>(host_list, host)) == nullptr) {
                                              lFreeList(&host_list);
                                              continue;
                                           }
@@ -318,26 +367,33 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                     }
                                     uint64_t limit_value;
                                     if (ocs::tom::get<RQRL_dynamic>(limit)) {
-                                       exec_host = host_list_locate(model.get_exec_host_list(), host);
-                                       limit_value = static_cast<uint64_t>(scaled_mixed_load(ocs::tom::get<RQRL_value>(limit), global_host, exec_host, model.get_centry_list(),
-                                                                                   model.get_job_load_adjustments()));
+                                       const auto exec_host = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(
+                                          host_list_locate(model.get_exec_host_list(), host));
+                                       limit_value = static_cast<uint64_t>(
+                                          scaled_mixed_load(ocs::tom::get<RQRL_value>(limit), global_host, exec_host,
+                                                            model.get_centry_list(),
+                                                            model.get_job_load_adjustments()));
                                        sge_dstring_sprintf(&limit_str, "%d", limit_value);
 
                                     } else {
                                        ocs::tom::set<CE_pj_doubleval>(raw_centry, ocs::tom::get<RQRL_dvalue>(limit));
-                                       sge_get_dominant_stringval(raw_centry, &dominant, &limit_str, nullptr, &limit_value);
+                                       sge_get_dominant_stringval(raw_centry, &dominant, &limit_str, nullptr,
+                                                                  &limit_value);
                                     }
 
                                     u_int64_t value_value;
-                                    ocs::tom::set<CE_pj_doubleval>(raw_centry, ocs::tom::get<RUE_utilized_now>(rue_elem));
-                                    sge_get_dominant_stringval(raw_centry, &dominant, &value_str, nullptr, &value_value);
+                                    ocs::tom::set<CE_pj_doubleval>(raw_centry,
+                                                                   ocs::tom::get<RUE_utilized_now>(rue_elem));
+                                    sge_get_dominant_stringval(raw_centry, &dominant, &value_str, nullptr,
+                                                               &value_value);
 
                                     qf.user = user;
                                     qf.project = project;
                                     qf.pe = pe;
                                     qf.queue = queue;
                                     qf.host = host;
-                                    qquota_print_out_rule(oss, rqs, rule, limit_name, centry_type, value_value, limit_value, qf, printed_rules, view);
+                                    qquota_print_out_rule(oss, rqs, rule, limit_name, centry_type, value_value,
+                                                          limit_value, qf, *printed_rules, view);
 
                                     sge_dstring_free(&limit_str);
                                     sge_dstring_free(&value_str);
@@ -362,16 +418,16 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                     limit_value = static_cast<uint64_t>(dval);
                                  }
                                  qquota_print_out_rule(oss, rqs, rule, limit_name,
-                                                       centry_type, 0, limit_value, qf, printed_rules, view);
+                                                       centry_type, 0, limit_value, qf, *printed_rules, view);
 
                               }
                            }
                         }
-                     } while ((host_ep = lNext(host_ep)));
-                  } while ((queue_ep = lNext(queue_ep)));
-               } while ((pe_ep = lNext(pe_ep)));
-            } while ((project_ep = lNext(project_ep)));
-         } while ((user_ep = lNext(user_ep)));
+                     } while ((host_ep = host_ep.next()) != nullptr);
+                  } while ((queue_ep = queue_ep.next()) != nullptr);
+               } while ((pe_ep = pe_ep.next()) != nullptr);
+            } while ((project_ep = project_ep.next()) != nullptr);
+         } while ((user_ep = user_ep.next()) != nullptr);
          rule_count++;
       }
    }

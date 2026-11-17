@@ -26,22 +26,33 @@
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 
 #include "ocs_QRStatModelServer.h"
 
 #include "msg_qrstat.h"
 
+/** @brief Fetch the advance reservations from the master list of qmaster
+ *
+ * The list is a selection of the master list, of a fixed type, so it is
+ * wrapped with a check of its type.
+ *
+ * @param answer_list receives error messages
+ * @param parameter the parsed parameters
+ * @return true when reservations were found or a summary was requested
+ */
 bool ocs::QRStatModelServer::fetch_data(lList **answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
    const lList *master_ar_list = *DataStore::get_master_list(SGE_TYPE_AR);
 
    lEnumeration *ar_what = get_ar_what(parameter);
    lCondition *ar_where = get_ar_where(parameter);
-   ar_list_ = lSelect("", master_ar_list, ar_where, ar_what);
+   ar_list_ = ocs::tom::ListPtr<ocs::tom::AR>(lSelect("", master_ar_list, ar_where, ar_what));
    lFreeWhat(&ar_what);
    lFreeWhere(&ar_where);
 
-   if (!parameter.is_summary() && lGetNumberOfElem(ar_list_) == 0) {
+   if (!parameter.is_summary() && ar_list_->empty()) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_GDI_AR_DOES_NOT_EXIT);
       DRETURN(false);
    }

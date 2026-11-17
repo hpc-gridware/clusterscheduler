@@ -27,6 +27,9 @@
 
 #include "cull/cull.h"
 #include "gdi/ocs_gdi_Packet.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "procedure/ocs_ProcedureParameter.h"
 
@@ -61,37 +64,44 @@ namespace ocs {
 #pragma region Data
 
    protected:
-      lList *hostname_list_ = nullptr;          ///< The hosts to report; empty means all
-      lList *user_name_list_ = nullptr;         ///< The users whose jobs to report; empty means all
-      lList *resource_match_list_ = nullptr;    ///< The `-l` filter: a host is reported only if it matches
-      lList *resource_visible_list_ = nullptr;  ///< The `-F` selection: which resources appear in the output
+      ocs::tom::ListPtr<ocs::tom::ST> hostname_list_;          ///< The hosts to report; empty means all
+      ocs::tom::ListPtr<ocs::tom::ST> user_name_list_;         ///< The users whose jobs to report; empty means all
+      /// The `-l` filter: a host is reported only if it matches
+      ocs::tom::ListPtr<ocs::tom::CE> resource_match_list_;
+      /// The `-F` selection: which resources appear in the output
+      ocs::tom::ListPtr<ocs::tom::ST> resource_visible_list_;
       uint32_t show_ = 0;                       ///< `QHOST_DISPLAY_*` bitmask: queues, jobs, resources
 
    public:
       /** @brief The hosts to report
        * @return the host names, empty when all hosts were requested
        */
-      [[nodiscard]] const lList *get_hostname_list() const { return hostname_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_hostname_list() const { return *hostname_list_; }
 
       /** @brief The users whose jobs to report
        * @return the user names, empty when all users were requested
        */
-      [[nodiscard]] const lList *get_user_name_list() const { return user_name_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_user_name_list() const { return *user_name_list_; }
 
       /** @brief The resource filter deciding which hosts are reported
+       *
+       * Has no caller and is therefore left with its raw return type.
+       *
        * @return the requested resources
        */
-      [[nodiscard]] const lList *get_resource_match_list() const { return resource_match_list_; }
+      [[nodiscard]] const lList *get_resource_match_list() const { return *resource_match_list_; }
 
       /** @brief The resource filter, to be filled in place before it is matched against the hosts
        * @return the requested resources
        */
-      [[nodiscard]] lList *get_resource_match_list_rw() { return resource_match_list_; }
+      [[nodiscard]] ocs::tom::List<ocs::tom::CE> get_resource_match_list_rw() { return *resource_match_list_; }
 
       /** @brief The resources the output is to show
        * @return the selected resources
        */
-      [[nodiscard]] const lList *get_resource_visible_list() const { return resource_visible_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_resource_visible_list() const {
+         return *resource_visible_list_;
+      }
 
       /** @brief What the user asked to see
        * @return a `QHOST_DISPLAY_*` bitmask
@@ -118,7 +128,7 @@ namespace ocs {
        * @param procedure_name the command being run
        */
       explicit QHostParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name), nullptr) {};
-      ~QHostParameter() override;
+      ~QHostParameter() override = default;
 #pragma endregion
 
 

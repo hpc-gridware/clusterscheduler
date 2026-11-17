@@ -24,6 +24,8 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "ocs_ProcedureParameter.h"
 
@@ -55,7 +57,7 @@ namespace ocs {
 
       static void show_ISO_8601_timestamp(std::ostream &os, uint64_t time);
 
-      static void show_resource_as_JSON_type(std::ostream &os, const lListElem *resource);
+      static void show_resource_as_JSON_type(std::ostream &os, ocs::tom::ConstElement<ocs::tom::CE> resource);
 
    public:
       /** @brief Build a view for one procedure call

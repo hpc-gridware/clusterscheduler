@@ -26,6 +26,12 @@
 #include <ostream>
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRF.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "ocs_QQuotaParameterClient.h"
 #include "ocs_QQuotaViewBase.h"
@@ -54,10 +60,13 @@ namespace ocs {
       std::ostream &out_;   ///< Where the view writes
    private:
       char *qquota_get_next_filter(stringT filter, const char *cp);
-      void qquota_print_out_rule(std::ostream &os, const lListElem *rqs, lListElem *rule, const char *limit_name,
-                                        ocs::CEntry::Type type, uint64_t usage_value, uint64_t limit_value, qquota_filter_t qfilter,
-                                        lList *printed_rules, QQuotaViewBase &view);
-      void qquota_print_out_filter(std::ostream &os, lListElem *filter, const char *name, const char *value, QQuotaViewBase &view);
+      void qquota_print_out_rule(std::ostream &os, ocs::tom::ConstElement<ocs::tom::RQS> rqs,
+                                 ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *limit_name,
+                                 ocs::CEntry::Type type, uint64_t usage_value, uint64_t limit_value,
+                                 qquota_filter_t qfilter, ocs::tom::List<ocs::tom::ST> printed_rules,
+                                 QQuotaViewBase &view);
+      void qquota_print_out_filter(std::ostream &os, ocs::tom::ConstElement<ocs::tom::RQRF> filter, const char *name,
+                                   const char *value, QQuotaViewBase &view);
    public:
 
       /** @brief Bind a controller to an output stream

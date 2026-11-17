@@ -28,6 +28,8 @@
 
 #include "cull/cull.h"
 #include "gdi/ocs_gdi_Packet.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 namespace ocs {
    /** @brief Base class for stored procedure arguments.
@@ -74,7 +76,7 @@ namespace ocs {
       std::string sub_procedure_name_; ///< Sub-procedure, if the command supports one (e.g. "qselect", "cq-view")
       OutputFormat output_format_ = OutputFormat::PLAIN; ///< Requested output format
       ExecContext exec_context_ = ExecContext::SERVER;   ///< Execution context
-      lList *env_variable_list_ = nullptr; ///< Environment variables required by the procedure
+      ocs::tom::ListPtr<ocs::tom::VA> env_variable_list_; ///< Environment variables required by the procedure
       gdi::Packet *packet_ = nullptr;      ///< Originating client packet; valid only in SERVER context
 
    public:
@@ -104,9 +106,12 @@ namespace ocs {
       void set_sub_procedure_name(const std::string &procedure_name) { sub_procedure_name_ = procedure_name; }
 
       /** @brief The environment the procedure needs
+       *
+       * Has no caller and is therefore left with its raw return type.
+       *
        * @return the variables, as a CULL list
        */
-      [[nodiscard]] const lList *get_env_variable_list() const { return env_variable_list_; }
+      [[nodiscard]] const lList *get_env_variable_list() const { return *env_variable_list_; }
 
       void add_variable(const char *name, const char *value);
 

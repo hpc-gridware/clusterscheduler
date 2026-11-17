@@ -251,9 +251,11 @@ void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time
  * DOUBLE as a JSON number, BOOL as `true`/`false`, and all others as an integer.
  *
  * @param os stream to write to
- * @param resource the resource element (`CE_Type`)
+ * @param resource the resource element
+ * @return none
  */
-void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lListElem *resource) {
+void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os,
+                                                   const ocs::tom::ConstElement<ocs::tom::CE> resource) {
    DENTER(TOP_LAYER);
    // get the dominant value of the resource for this host
    const auto type = static_cast<CEntry::Type>(ocs::tom::get<CE_valtype>(resource));

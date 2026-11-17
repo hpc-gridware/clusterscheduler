@@ -38,7 +38,7 @@ namespace ocs {
     */
    class QQuotaModelClient : public QQuotaModelBase {
    protected:
-      bool fetch_data(lList **answer_list, const lList *host_list) override;
+      bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> host_list) override;
    public:
       QQuotaModelClient() = default ;
       ~QQuotaModelClient() override = default;

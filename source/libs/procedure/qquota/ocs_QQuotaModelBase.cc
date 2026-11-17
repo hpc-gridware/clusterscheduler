@@ -32,20 +32,10 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "ocs_QQuotaModelBase.h"
 #include "ocs_QQuotaParameterClient.h"
-
-ocs::QQuotaModelBase::~QQuotaModelBase() {
-   DENTER(TOP_LAYER);
-   lFreeList(&rqs_list_);
-   lFreeList(&centry_list_);
-   lFreeList(&user_set_list_);
-   lFreeList(&hgroup_list_);
-   lFreeList(&exec_host_list_);
-   lFreeList(&job_load_adjustments_);
-   DRETURN_VOID;
-}
 
 /** @brief Fetch raw CULL lists into the member variables.
  *
@@ -55,9 +45,10 @@ ocs::QQuotaModelBase::~QQuotaModelBase() {
  * @param host_list the hosts the user asked for; all hosts when empty
  * @return true when everything could be fetched
  */
-bool ocs::QQuotaModelBase::fetch_data(lList **answer_list, const lList *host_list) {
+bool ocs::QQuotaModelBase::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> host_list) {
+   DENTER(TOP_LAYER);
    // Nothing to do here. Implemented in child classes.
-   return true;
+   DRETURN(true);
 }
 
 /** @brief Run the full pipeline: fetch_data, then hand off to the view.
@@ -115,10 +106,11 @@ lEnumeration *ocs::QQuotaModelBase::get_host_what() {
  * @param host_list the hosts the user asked for; all hosts when empty
  * @return the condition, which the caller owns
  */
-lCondition *ocs::QQuotaModelBase::get_host_where(const lList *host_list) {
+lCondition *ocs::QQuotaModelBase::get_host_where(const ocs::tom::ConstList<ocs::tom::ST> host_list) {
+   DENTER(TOP_LAYER);
    lCondition *where = nullptr;
 
-   for_each_ep_lv(ep, host_list) {
+   for (const auto ep : host_list) {
       lCondition *nw = lWhere("%T(%I h= %s)", EH_Type, EH_name, ocs::tom::get<ST_name>(ep));
       if (!where) {
          where = nw;
@@ -136,5 +128,5 @@ lCondition *ocs::QQuotaModelBase::get_host_where(const lList *host_list) {
    } else {
       where = nw;
    }
-   return where;
+   DRETURN(where);
 }

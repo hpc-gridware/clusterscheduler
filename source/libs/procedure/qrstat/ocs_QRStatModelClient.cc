@@ -25,6 +25,8 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -33,12 +35,24 @@
 #include "msg_qrstat.h"
 #include "ocs_QRStatParameterClient.h"
 
+/** @brief Fetch the advance reservations from qmaster with one GDI request
+ *
+ * A GET of the AR list answers with a list of that type, so the list is
+ * wrapped with a check of its type.
+ *
+ * @param answer_list receives error messages
+ * @param parameter the parsed parameters
+ * @return true when reservations were found or a summary was requested
+ */
 bool ocs::QRStatModelClient::fetch_data(lList **answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
 
    lEnumeration *what_ar = get_ar_what(parameter);
    lCondition *where_ar = get_ar_where(parameter);
-   *answer_list = gdi::Client::sge_gdi(gdi::Target::AR_LIST, gdi::Command::GET, gdi::SubCommand::NONE, &ar_list_, where_ar, what_ar);
+   lList *ar_list = nullptr;
+   *answer_list = gdi::Client::sge_gdi(gdi::Target::AR_LIST, gdi::Command::GET, gdi::SubCommand::NONE, &ar_list,
+                                       where_ar, what_ar);
+   ar_list_ = ocs::tom::ListPtr<ocs::tom::AR>(ar_list);
    lFreeWhere(&where_ar);
    lFreeWhat(&what_ar);
    if (answer_list_has_error(answer_list)) {
@@ -46,7 +60,7 @@ bool ocs::QRStatModelClient::fetch_data(lList **answer_list, QRStatParameter& pa
    }
    lFreeList(answer_list);
 
-   if (!parameter.is_summary() && lGetNumberOfElem(ar_list_) == 0) {
+   if (!parameter.is_summary() && ar_list_->empty()) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_GDI_AR_DOES_NOT_EXIT);
       DRETURN(false);
    }

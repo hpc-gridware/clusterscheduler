@@ -31,6 +31,7 @@
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "ocs_ProcedureParameter.h"
 
@@ -78,8 +79,8 @@ ocs::ProcedureParameter::get_bundle() {
 
    // environment
    ocs::tom::Element<ocs::tom::SPP> ep_spp_3 = ocs::tom::emplace_back<SPP_name>(&bundle, ENVIRONMENT);
-   ocs::tom::set<SPP_value_list>(ep_spp_3, lCopyList("", env_variable_list_));
-   DPRINTF("env_variable_list: " sge_u32 "\n", lGetNumberOfElem(env_variable_list_));
+   ocs::tom::set<SPP_value_list>(ep_spp_3, env_variable_list_->clone(""));
+   DPRINTF("env_variable_list: " sge_u32 "\n", static_cast<uint32_t>(env_variable_list_->size()));
 
    // exec_context can be ignored here. It is evaluated on client side only
    DRETURN(bundle);
@@ -90,6 +91,7 @@ ocs::ProcedureParameter::get_bundle() {
  * Called on the server side after the GDI request is received.
  *
  * @param bundle the received bundle
+ * @return none
  */
 void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    DENTER(TOP_LAYER);
@@ -113,10 +115,12 @@ void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    DPRINTF("output_format: %d\n", output_format_);
 
    // environment
+   // the bundle is an untyped value list, so the list taken out of it is not checked, as before
    ocs::tom::Element<ocs::tom::SPP> env_param = ocs::tom::find_first_rw<SPP_name>(bundle, ENVIRONMENT);
-   env_variable_list_ = nullptr;
-   ocs::tom::exchange<SPP_value_list>(env_param, &env_variable_list_);
-   DPRINTF("env_variable_list: " sge_u32 "\n", lGetNumberOfElem(env_variable_list_));
+   lList *env_variable_list_received = nullptr;
+   ocs::tom::exchange<SPP_value_list>(env_param, &env_variable_list_received);
+   env_variable_list_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(env_variable_list_received);
+   DPRINTF("env_variable_list: " sge_u32 "\n", static_cast<uint32_t>(env_variable_list_->size()));
 
    DRETURN_VOID;
 }
@@ -151,12 +155,18 @@ std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *
 }
 
 /** @brief Add one environment variable
+ *
+ * The list is created with the first variable, as the free emplace_back() creates it.
+ *
  * @param name the variable
  * @param value its value
+ * @return none
  */
 void ocs::ProcedureParameter::add_variable(const char *name, const char *value) {
    DENTER(TOP_LAYER);
-   ocs::tom::Element<ocs::tom::VA> elem = ocs::tom::emplace_back<VA_variable>(&env_variable_list_, name);
+   lList *env_variable_list = env_variable_list_.release();
+   const auto elem = ocs::tom::emplace_back<VA_variable>(&env_variable_list, name);
+   env_variable_list_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(env_variable_list);
    if (value != nullptr) {
       ocs::tom::set<VA_value>(elem, value);
    }
@@ -169,7 +179,9 @@ void ocs::ProcedureParameter::add_variable(const char *name, const char *value) 
  */
 const char *ocs::ProcedureParameter::get_variable(const char *name) const {
    DENTER(TOP_LAYER);
-   ocs::tom::ConstElement<ocs::tom::VA> elem = ocs::tom::find_first<VA_variable>(env_variable_list_, name);
+   // the free form on the raw list: the list came unchecked out of a received bundle, and the free
+   // lookup takes the soft path on a list of another type instead of throwing inside qmaster
+   const auto elem = ocs::tom::find_first<VA_variable>(env_variable_list_.get(), name);
    if (elem == nullptr) {
       DRETURN(nullptr);
    }

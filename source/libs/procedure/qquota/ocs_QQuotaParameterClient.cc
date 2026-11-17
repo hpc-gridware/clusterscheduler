@@ -35,6 +35,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_feature.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 
 #include "ocs_QQuotaParameterClient.h"
 #include "msg_qquota.h"
@@ -43,6 +45,26 @@
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "../msg_procedure.h"
+
+/** @brief parse_multi_stringlist() into an owning list handle
+ *
+ * The parser appends to the list it is given and creates it if there is none.
+ *
+ * @param switch_list the switches (`SPA_Type`); the one handled is removed from it
+ * @param opt the switch, e.g. `-u`
+ * @param answer_list receives error messages
+ * @param list the list the names are appended to
+ * @return true when the switch was found
+ */
+static bool
+parse_multi_stringlist_into(lList **switch_list, const char *opt, lList **answer_list,
+                            ocs::tom::ListPtr<ocs::tom::ST> &list) {
+   DENTER(TOP_LAYER);
+   lList *names = list.release();
+   const bool found = parse_multi_stringlist(switch_list, opt, answer_list, &names, ST_Type, ST_name);
+   list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(names);
+   DRETURN(found);
+}
 
 bool
 ocs::QQuotaParameterClient::show_usage(FILE *fp) {
@@ -169,6 +191,11 @@ ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, lList **sw
    DRETURN(ret);
 }
 
+/** @brief Interpret the parsed switches
+ * @param switch_list the switches (`SPA_Type`); the ones handled are removed from it
+ * @param answer_list receives error messages
+ * @return true when the switches are usable
+ */
 bool
 ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -180,38 +207,39 @@ ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answe
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
    */
-   while (lGetNumberOfElem(*switch_list)) {
+   while (!ocs::tom::ConstList<ocs::tom::SPA>(*switch_list).empty()) {
       if (parse_flag(switch_list, "-help", answer_list, &helpflag)) {
          show_usage(stdout);
          sge_exit(0);
          break;
       }
 
-      if (parse_multi_stringlist(switch_list, "-h", answer_list, &host_name_list_, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(switch_list, "-h", answer_list, host_name_list_)) {
          /*
          ** resolve hostnames and replace them in list
          */
-         for_each_rw_lv(ep, host_name_list_) {
+         for (const auto ep : *host_name_list_) {
             sge_resolve_host(ep, ST_name);
          }
          continue;
       }
 
       if (parse_string(switch_list, "-l", answer_list, &argstr)) {
-         resource_match_list_ = centry_list_parse_from_string(resource_match_list_, argstr, false);
+         resource_match_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
+            centry_list_parse_from_string(resource_match_list_.release(), argstr, false));
          sge_free(&argstr);
          continue;
       }
-      if (parse_multi_stringlist(switch_list, "-u", answer_list, &user_name_list, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(switch_list, "-u", answer_list, user_name_list)) {
          continue;
       }
-      if (parse_multi_stringlist(switch_list, "-pe", answer_list, &pe_name_list_, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(switch_list, "-pe", answer_list, pe_name_list_)) {
          continue;
       }
-      if (parse_multi_stringlist(switch_list, "-P", answer_list, &project_name_list_, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(switch_list, "-P", answer_list, project_name_list_)) {
          continue;
       }
-      if (parse_multi_stringlist(switch_list, "-q", answer_list, &queue_name_list_, ST_Type, ST_name)) {
+      if (parse_multi_stringlist_into(switch_list, "-q", answer_list, queue_name_list_)) {
          continue;
       }
 
@@ -253,9 +281,10 @@ ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answe
       }
    }
 
-   if (lGetNumberOfElem(*switch_list)) {
+   if (!ocs::tom::ConstList<ocs::tom::SPA>(*switch_list).empty()) {
       show_usage(stderr);
-      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_PARSE_TOOMANYOPTIONS);
+      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX,
+                              MSG_PARSE_TOOMANYOPTIONS);
       ret = false;
    }
 
@@ -280,6 +309,7 @@ bool ocs::QQuotaParameterClient::parse_parameters(lList **answer_list, char **ar
    get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QQUOTA_FILE);
    if (!parse_cmdline_from_file(sge_dstring_get_string(&file), &pcmdline, answer_list)) {
       sge_dstring_free(&file);
+      lFreeList(&pcmdline);
       DRETURN(false);
    }
 
@@ -287,6 +317,7 @@ bool ocs::QQuotaParameterClient::parse_parameters(lList **answer_list, char **ar
    get_user_home_file_path(&file, SGE_HOME_DEF_QQUOTA_FILE, user, answer_list);
    if (!parse_cmdline_from_file(sge_dstring_get_string(&file), &pcmdline, answer_list)) {
       sge_dstring_free(&file);
+      lFreeList(&pcmdline);
       DRETURN(false);
    }
 
@@ -302,5 +333,7 @@ bool ocs::QQuotaParameterClient::parse_parameters(lList **answer_list, char **ar
       DRETURN(false);
    }
 
+   // the handled switches were removed, but the list itself is still there
+   lFreeList(&pcmdline);
    DRETURN(true);
 }

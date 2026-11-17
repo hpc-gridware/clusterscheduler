@@ -28,12 +28,40 @@
 #include "sgeobj/sge_centry.h"
 
 #include "gdi/ocs_gdi_Request.h"
+#include "tom/ocs_List.h"
 
 #include "ocs_QQuotaModelClient.h"
 
 #include "ocs_QQuotaParameter.h"
 
-bool ocs::QQuotaModelClient::fetch_data(lList **answer_list, const lList *host_list) {
+/** @brief The answer to one recorded GET request, as a typed list
+ *
+ * A GET of a target answers with a list of the target's type, so the list
+ * is wrapped with a check of its type.
+ *
+ * @tparam T the object type of the target
+ * @param answer_list receives error messages
+ * @param request the request the GET was recorded in, after wait()
+ * @param target the target of the GET
+ * @param id the id the GET was recorded with
+ * @return the owning handle on the list, empty if the answer held none
+ */
+template <ocs::tom::ObjectType T>
+static ocs::tom::ListPtr<T>
+get_list_response(lList **answer_list, const ocs::gdi::Request &request, const ocs::gdi::Target target,
+                  const int id) {
+   DENTER(TOP_LAYER);
+   lList *lp = nullptr;
+   request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, &lp);
+   DRETURN(ocs::tom::ListPtr<T>(lp));
+}
+
+/** @brief Fetch the lists from qmaster with one multi GDI request
+ * @param answer_list receives error messages
+ * @param host_list the hosts the user asked for; all hosts when empty
+ * @return true when every list could be fetched
+ */
+bool ocs::QQuotaModelClient::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> host_list) {
    DENTER(TOP_LAYER);
 
    gdi::Request gdi_multi{};
@@ -94,32 +122,32 @@ bool ocs::QQuotaModelClient::fetch_data(lList **answer_list, const lList *host_l
 
    /* --- resource quota sets */
    lFreeList(answer_list);
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::RQS_LIST, rqs_id, &rqs_list_);
+   rqs_list_ = get_list_response<ocs::tom::RQS>(answer_list, gdi_multi, gdi::Target::RQS_LIST, rqs_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
 
    /* --- complex attribute */
    lFreeList(answer_list);
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::CE_LIST, ce_id, &centry_list_);
+   centry_list_ = get_list_response<ocs::tom::CE>(answer_list, gdi_multi, gdi::Target::CE_LIST, ce_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
    /* --- usersets */
    lFreeList(answer_list);
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::US_LIST, userset_id, &user_set_list_);
+   user_set_list_ = get_list_response<ocs::tom::US>(answer_list, gdi_multi, gdi::Target::US_LIST, userset_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
    /* --- hostgroups */
    lFreeList(answer_list);
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::HGRP_LIST, hgroup_id, &hgroup_list_);
+   hgroup_list_ = get_list_response<ocs::tom::HGRP>(answer_list, gdi_multi, gdi::Target::HGRP_LIST, hgroup_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
    /* --- exec hosts*/
    lFreeList(answer_list);
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::EH_LIST, eh_id, &exec_host_list_);
+   exec_host_list_ = get_list_response<ocs::tom::EH>(answer_list, gdi_multi, gdi::Target::EH_LIST, eh_id);
 
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
@@ -129,7 +157,7 @@ bool ocs::QQuotaModelClient::fetch_data(lList **answer_list, const lList *host_l
    //       adjustments, while the server context does. Kept as it was; aligning both is a change of its own.
    // An empty list, not nullptr: the sched helpers read nullptr as "fetch them from the data store of the
    // calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()).
-   job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
+   job_load_adjustments_ = ocs::tom::ListPtr<ocs::tom::CE>::create("load_adj_copy");
 
    DRETURN(true);
 }

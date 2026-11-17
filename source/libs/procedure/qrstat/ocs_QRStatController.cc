@@ -41,6 +41,8 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_qref.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_ARA.h"
 #include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
@@ -64,13 +66,14 @@
  * @param parameter the parsed parameters
  * @param model the model, client or server side
  * @param view the view for the requested output format
+ * @return none
  */
 void
 ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBase &model, QRStatViewBase &view) {
    DENTER(TOP_LAYER);
 
    view.report_start(out_);
-   for_each_ep_lv(ar, model.get_ar_list()) {
+   for (const auto ar : model.get_ar_list()) {
 
       view.report_ar_start(out_);
       view.report_ar_node_ulong(out_, "id", ocs::tom::get<AR_id>(ar));
@@ -103,23 +106,28 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             view.report_ar_node_string(out_, "binding", binding_string.c_str());
          }
 
-         if (static_cast<const lList *>(ocs::tom::get<AR_resource_list>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_resource_list>(ar) != nullptr) {
             view.report_resource_list_start(out_);
 
             for (ocs::tom::ConstElement<ocs::tom::CE> resource : ocs::tom::get<AR_resource_list>(ar)) {
                // get the dominant value of the resource for this host
                const auto type = static_cast<CEntry::Type>(ocs::tom::get<CE_valtype>(resource));
-               const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR || type == CEntry::Type::HOST || type == CEntry::Type::RESTR;
+               const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR ||
+                                      type == CEntry::Type::HOST || type == CEntry::Type::RESTR;
                const bool as_double = type == CEntry::Type::DOUBLE;
                const bool as_bool = type == CEntry::Type::BOOL;
                if (as_string) {
-                  view.report_resource_list_node_str(out_, ocs::tom::get<CE_name>(resource), ocs::tom::get<CE_stringval>(resource));
+                  view.report_resource_list_node_str(out_, ocs::tom::get<CE_name>(resource),
+                                                     ocs::tom::get<CE_stringval>(resource));
                } else if (as_double) {
-                  view.report_resource_list_node_double(out_, ocs::tom::get<CE_name>(resource), ocs::tom::get<CE_doubleval>(resource));
+                  view.report_resource_list_node_double(out_, ocs::tom::get<CE_name>(resource),
+                                                        ocs::tom::get<CE_doubleval>(resource));
                } else if (as_bool) {
-                  view.report_resource_list_node_bool(out_, ocs::tom::get<CE_name>(resource), ocs::tom::get<CE_doubleval>(resource) != 0);
+                  view.report_resource_list_node_bool(out_, ocs::tom::get<CE_name>(resource),
+                                                      ocs::tom::get<CE_doubleval>(resource) != 0);
                } else {
-                  view.report_resource_list_node_uint64(out_, ocs::tom::get<CE_name>(resource), static_cast<uint64_t>(ocs::tom::get<CE_doubleval>(resource)));
+                  view.report_resource_list_node_uint64(out_, ocs::tom::get<CE_name>(resource),
+                                                        static_cast<uint64_t>(ocs::tom::get<CE_doubleval>(resource)));
                }
             }
             view.report_resource_list_finish(out_);
@@ -129,7 +137,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             view.report_ar_node_boolean(out_, "error_handling", true);
          }
 
-         if (static_cast<const lList *>(ocs::tom::get<AR_granted_resources_list>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_granted_resources_list>(ar) != nullptr) {
             view.report_exec_binding_list_start(out_);
             for (ocs::tom::ConstElement<ocs::tom::GRU> resource : ocs::tom::get<AR_granted_resources_list>(ar)) {
                const char *hostname = ocs::tom::get<GRU_host>(resource);
@@ -150,7 +158,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
          // the resource maps the reservation holds, per host, with the granted ids. The
          // binding above comes from the same list but is reported on its own, so only
          // resource map entries are of interest here.
-         if (static_cast<const lList *>(ocs::tom::get<AR_granted_resources_list>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_granted_resources_list>(ar) != nullptr) {
             bool any = false;
 
             for (ocs::tom::ConstElement<ocs::tom::GRU> resource : ocs::tom::get<AR_granted_resources_list>(ar)) {
@@ -166,7 +174,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
                std::string text = std::string(ocs::tom::get<GRU_name>(resource)) + "=" +
                                   std::to_string(static_cast<uint32_t>(ocs::tom::get<GRU_amount>(resource)));
                ocs::tom::ConstList<ocs::tom::RESL> ids = ocs::tom::get<GRU_resource_map_list>(resource);
-               if (ids != nullptr && lGetNumberOfElem(ids) > 0) {
+               if (ids != nullptr && !ids.empty()) {
                   const char *sep = "(";
                   for (ocs::tom::ConstElement<ocs::tom::RESL> resl : ids) {
                      // the reader folds a repeated id into one element with a count, so
@@ -186,10 +194,11 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             }
          }
 
-         if (static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_granted_slots>(ar) != nullptr) {
             view.report_exec_queue_list_start(out_);
             for (ocs::tom::ConstElement<ocs::tom::JG> resource : ocs::tom::get<AR_granted_slots>(ar)) {
-               view.report_exec_queue_list_node(out_,ocs::tom::get<JG_qname>(resource), ocs::tom::get<JG_slots>(resource));
+               view.report_exec_queue_list_node(out_, ocs::tom::get<JG_qname>(resource),
+                                                ocs::tom::get<JG_slots>(resource));
             }
             view.report_exec_queue_list_finish(out_);
          }
@@ -198,19 +207,21 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
 
             range_list_print_to_string(ocs::tom::get<AR_pe_range>(ar), &pe_range_string, true, false, false);
             view.report_granted_parallel_environment_start(out_);
-            view.report_granted_parallel_environment_node(out_, ocs::tom::get<AR_pe>(ar), sge_dstring_get_string(&pe_range_string));
+            view.report_granted_parallel_environment_node(out_, ocs::tom::get<AR_pe>(ar),
+                                                          sge_dstring_get_string(&pe_range_string));
             view.report_granted_parallel_environment_finish(out_);
             sge_dstring_free(&pe_range_string);
          }
          if (ocs::tom::get<AR_allocation_rule>(ar) != nullptr) {
             view.report_ar_node_string(out_, "allocation_rule", ocs::tom::get<AR_allocation_rule>(ar));
          }
-         if (static_cast<const lList *>(ocs::tom::get<AR_master_queue_list>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_master_queue_list>(ar) != nullptr) {
             char tmp_buffer[MAX_STRING_SIZE];
             int fields[] = {QR_name, 0 };
             const char *delis[] = {" ", ",", ""};
-            uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), static_cast<const lList *>(ocs::tom::get<AR_master_queue_list>(ar)),
-                           fields, delis, FLG_NO_DELIS_STRINGS);
+            uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer),
+                           static_cast<const lList *>(ocs::tom::get<AR_master_queue_list>(ar)), fields, delis,
+                           FLG_NO_DELIS_STRINGS);
             view.report_ar_node_string(out_, "master hard queue_list", tmp_buffer);
          }
 
@@ -227,7 +238,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             sge_dstring_free(&mailopt);
          }
 
-         if (static_cast<const lList *>(ocs::tom::get<AR_mail_list>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_mail_list>(ar) != nullptr) {
             view.report_mail_list_start(out_);
             for (ocs::tom::ConstElement<ocs::tom::MR> mail : ocs::tom::get<AR_mail_list>(ar)) {
                const char *host=nullptr;
@@ -236,14 +247,14 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             }
             view.report_mail_list_finish(out_);
          }
-         if (static_cast<const lList *>(ocs::tom::get<AR_acl_list>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_acl_list>(ar) != nullptr) {
             view.report_acl_list_start(out_);
             for (ocs::tom::ConstElement<ocs::tom::ARA> acl : ocs::tom::get<AR_acl_list>(ar)) {
                view.report_acl_list_node(out_,ocs::tom::get<ARA_name>(acl));
             }
             view.report_acl_list_finish(out_);
          }
-         if (static_cast<const lList *>(ocs::tom::get<AR_xacl_list>(ar)) != nullptr) {
+         if (ocs::tom::get<AR_xacl_list>(ar) != nullptr) {
             view.report_xacl_list_start(out_);
             for (ocs::tom::ConstElement<ocs::tom::ARA> xacl : ocs::tom::get<AR_xacl_list>(ar)) {
                 view.report_xacl_list_node(out_, ocs::tom::get<ARA_name>(xacl));

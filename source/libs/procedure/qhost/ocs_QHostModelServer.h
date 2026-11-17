@@ -43,7 +43,8 @@ namespace ocs {
       
    protected:
 
-      bool fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show) override;
+      bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+                      ocs::tom::ConstList<ocs::tom::ST> user_name_list, uint32_t show) override;
 
    public:
 

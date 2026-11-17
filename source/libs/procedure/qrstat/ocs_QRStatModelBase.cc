@@ -30,17 +30,12 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
 #include "qrstat/ocs_QRStatModelBase.h"
 #include "qrstat/ocs_QRStatParameterClient.h"
-
-ocs::QRStatModelBase::~QRStatModelBase() {
-   DENTER(TOP_LAYER);
-   lFreeList(&ar_list_);
-   DRETURN_VOID;
-}
 
 /** @brief The advance reservation fields the report needs
  *
@@ -154,7 +149,7 @@ lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
    if (!parameter.is_summary()) {
       lCondition *where = nullptr;
 
-      for_each_ep_lv(elem, parameter.get_ar_id_list()) {
+      for (const auto elem : parameter.get_ar_id_list()) {
          lCondition *tmp_where = nullptr;
          uint32_t value = ocs::tom::get<ULNG_value>(elem);
 
@@ -173,7 +168,7 @@ lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
       parameter.transform_user_list();
 
       lCondition *where = nullptr;
-      for_each_ep_lv(elem, parameter.get_user_list()) {
+      for (const auto elem : parameter.get_user_list()) {
          const char *name = ocs::tom::get<ST_name>(elem);
 
          lCondition *tmp_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, name);
@@ -191,7 +186,7 @@ lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
          where_AR_Type = lAndWhere(where_AR_Type, where);
       }
    }
-   return where_AR_Type;
+   DRETURN(where_AR_Type);
 }
 
 /** @brief Fetch the AR list into ar_list_.

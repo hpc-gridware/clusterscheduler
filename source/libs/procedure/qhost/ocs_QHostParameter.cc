@@ -31,6 +31,7 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "qhost/ocs_QHostParameter.h"
 
@@ -38,13 +39,6 @@
 
 /** @brief The process environment, which the parameter parsing reads */
 extern char **environ;
-
-ocs::QHostParameter::~QHostParameter() {
-   lFreeList(&hostname_list_);
-   lFreeList(&user_name_list_);
-   lFreeList(&resource_match_list_);
-   lFreeList(&resource_visible_list_);
-}
 
 /** @brief Build the parameters on the server, from a received bundle
  * @param bundle the marshalled parameters
@@ -59,6 +53,14 @@ ocs::QHostParameter::QHostParameter(lList *bundle, gdi::Packet *packet) : Proced
    DRETURN_VOID;
 }
 
+/** @brief Fill the parameters from a received bundle
+ *
+ * The lists of the switches are taken out of the bundle, an untyped value
+ * list, so they are not checked, as before.
+ *
+ * @param bundle the marshalled parameters; the switch lists are moved out of it
+ * @return none
+ */
 void ocs::QHostParameter::set_bundle(const lList *bundle) {
    DENTER(TOP_LAYER);
 
@@ -71,28 +73,36 @@ void ocs::QHostParameter::set_bundle(const lList *bundle) {
    show_ = ocs::tom::get<ULNG_value>(lFirst(show_list));
 
    // -F
-   ocs::tom::Element<ocs::tom::SPP> resource_visible_param = ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_VISIBLE_LIST);
-   resource_visible_list_ = nullptr;
-   ocs::tom::exchange<SPP_value_list>(resource_visible_param, &resource_visible_list_);
+   ocs::tom::Element<ocs::tom::SPP> resource_visible_param =
+      ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_VISIBLE_LIST);
+   lList *resource_visible_list_received = nullptr;
+   ocs::tom::exchange<SPP_value_list>(resource_visible_param, &resource_visible_list_received);
+   resource_visible_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(resource_visible_list_received);
 
    // -l
    ocs::tom::Element<ocs::tom::SPP> resource_match_param = ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_LIST);
-   resource_match_list_ = nullptr;
-   ocs::tom::exchange<SPP_value_list>(resource_match_param, &resource_match_list_);
+   lList *resource_match_list_received = nullptr;
+   ocs::tom::exchange<SPP_value_list>(resource_match_param, &resource_match_list_received);
+   resource_match_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_match_list_received);
 
    // -u
    ocs::tom::Element<ocs::tom::SPP> user_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, USER_NAME_LIST);
-   user_name_list_ = nullptr;
-   ocs::tom::exchange<SPP_value_list>(user_name_param, &user_name_list_);
+   lList *user_name_list_received = nullptr;
+   ocs::tom::exchange<SPP_value_list>(user_name_param, &user_name_list_received);
+   user_name_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(user_name_list_received);
 
    // -h
    ocs::tom::Element<ocs::tom::SPP> host_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, HOSTNAME_LIST);
-   hostname_list_ = nullptr;
-   ocs::tom::exchange<SPP_value_list>(host_name_param, &hostname_list_);
+   lList *hostname_list_received = nullptr;
+   ocs::tom::exchange<SPP_value_list>(host_name_param, &hostname_list_received);
+   hostname_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(hostname_list_received);
 
    DRETURN_VOID;
 }
 
+/** @brief Marshal the parameters into a bundle for the server
+ * @return the bundle, which the caller owns; the switch lists are copies
+ */
 lList *ocs::QHostParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
@@ -102,19 +112,19 @@ lList *ocs::QHostParameter::get_bundle() {
 
    // -h
    ocs::tom::Element<ocs::tom::SPP> ep = ocs::tom::emplace_back<SPP_name>(&bundle, HOSTNAME_LIST);
-   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, hostname_list_));
+   ocs::tom::set<SPP_value_list>(ep, hostname_list_->clone());
 
    // -u
    ocs::tom::Element<ocs::tom::SPP> ep_spp = ocs::tom::emplace_back<SPP_name>(&bundle, USER_NAME_LIST);
-   ocs::tom::set<SPP_value_list>(ep_spp, lCopyList(nullptr, user_name_list_));
+   ocs::tom::set<SPP_value_list>(ep_spp, user_name_list_->clone());
 
    // -l
    ocs::tom::Element<ocs::tom::SPP> ep_spp_2 = ocs::tom::emplace_back<SPP_name>(&bundle, RESOURCE_LIST);
-   ocs::tom::set<SPP_value_list>(ep_spp_2, lCopyList(nullptr, resource_match_list_));
+   ocs::tom::set<SPP_value_list>(ep_spp_2, resource_match_list_->clone());
 
    // -F
    ocs::tom::Element<ocs::tom::SPP> ep_spp_3 = ocs::tom::emplace_back<SPP_name>(&bundle, RESOURCE_VISIBLE_LIST);
-   ocs::tom::set<SPP_value_list>(ep_spp_3, lCopyList(nullptr, resource_visible_list_));
+   ocs::tom::set<SPP_value_list>(ep_spp_3, resource_visible_list_->clone());
 
    // flags for used switches: -F -q -j -u
    lList *show_list = nullptr;

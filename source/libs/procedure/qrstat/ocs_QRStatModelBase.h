@@ -24,6 +24,8 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 
 #include "qrstat/ocs_QRStatParameterClient.h"
 
@@ -48,7 +50,7 @@ namespace ocs {
     */
    class QRStatModelBase {
    public:
-      lList *ar_list_ = nullptr; ///< Advance reservation list; populated by fetch_data().
+      ocs::tom::ListPtr<ocs::tom::AR> ar_list_; ///< Advance reservation list; populated by fetch_data().
 
    protected:
       static lEnumeration *get_ar_what(QRStatParameter& parameter);
@@ -61,11 +63,11 @@ namespace ocs {
       /** @brief The advance reservations being reported
        * @return the AR list
        */
-      [[nodiscard]] const lList *get_ar_list() const { return ar_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::AR> get_ar_list() const { return *ar_list_; }
 
    public:
       QRStatModelBase() = default;
-      virtual ~QRStatModelBase();
+      virtual ~QRStatModelBase() = default;
 
       bool make_snapshot(lList **answer_list, QRStatParameter &parameter);
    };

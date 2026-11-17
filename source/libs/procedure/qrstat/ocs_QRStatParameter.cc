@@ -33,6 +33,7 @@
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /** @brief Build the parameters on the server, from a received bundle
  * @param bundle the marshalled parameters
@@ -47,24 +48,33 @@ ocs::QRStatParameter::QRStatParameter(lList *bundle, gdi::Packet *packet) : Proc
    DRETURN_VOID;
 }
 
-ocs::QRStatParameter::~QRStatParameter() {
-   DENTER(TOP_LAYER);
-   lFreeList(&user_list_);
-   lFreeList(&ar_id_list_);
-   DRETURN_VOID;
-}
-
 /** @brief Resolve `-u *` and the empty user list into concrete names
  *
  * Called before the model runs, so that both execution contexts filter on
  * the same list. `*` becomes an empty list, meaning all users; an empty
  * list becomes the calling user.
+ *
+ * @return none
  */
 void ocs::QRStatParameter::transform_user_list() {
-   str_list_transform_user_list(&user_list_, nullptr,  user_);
+   DENTER(TOP_LAYER);
+   lList *user_list = user_list_.release();
+   str_list_transform_user_list(&user_list, nullptr,  user_);
+   user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(user_list);
+   DRETURN_VOID;
 }
 
+/** @brief Fill the parameters from a received bundle
+ *
+ * The lists of the switches are taken out of the bundle, an untyped value
+ * list, so they are not checked, as before.
+ *
+ * @param bundle the marshalled parameters; the switch lists are moved out of it
+ * @return none
+ */
 void ocs::QRStatParameter::set_bundle(const lList *bundle) {
+   DENTER(TOP_LAYER);
+
    // initialize parents member variables
    ProcedureParameter::set_bundle(bundle);
 
@@ -84,16 +94,24 @@ void ocs::QRStatParameter::set_bundle(const lList *bundle) {
    strncpy(user_, ocs::tom::get<ST_name>(lFirst(username_list)), sizeof(user_) - 1);
 
    // -u
-   ocs::tom::Element<ocs::tom::SPP> user_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, QRStatParameter::USER_NAME_LIST);
-   user_list_ = nullptr;
-   ocs::tom::exchange<SPP_value_list>(user_name_param, &user_list_);
+   ocs::tom::Element<ocs::tom::SPP> user_name_param =
+      ocs::tom::find_first_rw<SPP_name>(bundle, QRStatParameter::USER_NAME_LIST);
+   lList *user_list_received = nullptr;
+   ocs::tom::exchange<SPP_value_list>(user_name_param, &user_list_received);
+   user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(user_list_received);
 
    // -ar
    ocs::tom::Element<ocs::tom::SPP> ar_id_param = ocs::tom::find_first_rw<SPP_name>(bundle, AR_ID_LIST);
-   ar_id_list_ = nullptr;
-   ocs::tom::exchange<SPP_value_list>(ar_id_param, &ar_id_list_);
+   lList *ar_id_list_received = nullptr;
+   ocs::tom::exchange<SPP_value_list>(ar_id_param, &ar_id_list_received);
+   ar_id_list_ = ocs::tom::ListPtr<ocs::tom::ULNG>::from_typed(ar_id_list_received);
+
+   DRETURN_VOID;
 }
 
+/** @brief Marshal the parameters into a bundle for the server
+ * @return the bundle, which the caller owns; the switch lists are copies
+ */
 lList * ocs::QRStatParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
@@ -102,11 +120,11 @@ lList * ocs::QRStatParameter::get_bundle() {
 
    // -ar
    ocs::tom::Element<ocs::tom::SPP> ep = ocs::tom::emplace_back<SPP_name>(&bundle, AR_ID_LIST);
-   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, ar_id_list_));
+   ocs::tom::set<SPP_value_list>(ep, ar_id_list_->clone());
 
    // -u
    ocs::tom::Element<ocs::tom::SPP> ep_spp = ocs::tom::emplace_back<SPP_name>(&bundle, USER_NAME_LIST);
-   ocs::tom::set<SPP_value_list>(ep_spp, lCopyList(nullptr, user_list_));
+   ocs::tom::set<SPP_value_list>(ep_spp, user_list_->clone());
 
    // show summary or individual AR
    lList *username_list = nullptr;

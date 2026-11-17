@@ -23,6 +23,10 @@
  * @brief Parameters of `qquota`: what the call was asked to report
  */
 
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+
 #include "procedure/ocs_ProcedureParameter.h"
 
 namespace ocs {
@@ -54,43 +58,49 @@ namespace ocs {
 #pragma region Data
 
    protected:
-      lList *queue_name_list_ = nullptr;       ///< The cluster queues to report on, from `-q`; empty means all
-      lList *host_name_list_ = nullptr;        ///< The hosts to report on, from `-h`; empty means all
-      lList *pe_name_list_ = nullptr;          ///< The parallel environments to report on, from `-pe`; empty means all
-      lList *project_name_list_ = nullptr;     ///< The projects to report on, from `-P`; empty means all
-      lList *resource_match_list_ = nullptr;   ///< The resources to report on, from `-l`; empty means all
-      lList *user_name_list = nullptr;         ///< The users to report on, from `-u`; empty means the calling user
+      /// The cluster queues to report on, from `-q`; empty means all
+      ocs::tom::ListPtr<ocs::tom::ST> queue_name_list_;
+      /// The hosts to report on, from `-h`; empty means all
+      ocs::tom::ListPtr<ocs::tom::ST> host_name_list_;
+      /// The parallel environments to report on, from `-pe`; empty means all
+      ocs::tom::ListPtr<ocs::tom::ST> pe_name_list_;
+      /// The projects to report on, from `-P`; empty means all
+      ocs::tom::ListPtr<ocs::tom::ST> project_name_list_;
+      /// The resources to report on, from `-l`; empty means all
+      ocs::tom::ListPtr<ocs::tom::CE> resource_match_list_;
+      /// The users to report on, from `-u`; empty means the calling user
+      ocs::tom::ListPtr<ocs::tom::ST> user_name_list;
 
    public:
       /** @brief The hosts to report on
        * @return the host names, empty when the report is not restricted by host
        */
-      [[nodiscard]] lList *get_host_list() const { return host_name_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_host_list() const { return *host_name_list_; }
 
       /** @brief The resources to report on
        * @return the resource names, empty when the report is not restricted by resource
        */
-      [[nodiscard]] lList *get_resource_match_list() const { return resource_match_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::CE> get_resource_match_list() const { return *resource_match_list_; }
 
       /** @brief The users to report on
        * @return the user names
        */
-      [[nodiscard]] lList *get_user_list() const { return user_name_list; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_user_list() const { return *user_name_list; }
 
       /** @brief The parallel environments to report on
        * @return the PE names, empty when the report is not restricted by PE
        */
-      [[nodiscard]] lList *get_pe_list() const { return pe_name_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_pe_list() const { return *pe_name_list_; }
 
       /** @brief The projects to report on
        * @return the project names, empty when the report is not restricted by project
        */
-      [[nodiscard]] lList *get_project_list() const { return project_name_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_project_list() const { return *project_name_list_; }
 
       /** @brief The cluster queues to report on
        * @return the queue names, empty when the report is not restricted by queue
        */
-      [[nodiscard]] lList *get_cqueue_list() const { return queue_name_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_cqueue_list() const { return *queue_name_list_; }
 
 #pragma endregion
 
@@ -117,7 +127,7 @@ namespace ocs {
       explicit QQuotaParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name), nullptr) {
       };
 
-      ~QQuotaParameter() override;
+      ~QQuotaParameter() override = default;
 
 #pragma endregion
    };

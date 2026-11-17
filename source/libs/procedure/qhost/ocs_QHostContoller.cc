@@ -28,6 +28,7 @@
 
 #include "sgeobj/sge_host.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "qhost/ocs_QHostContoller.h"
 #include "qhost/ocs_QHostModelBase.h"
@@ -36,6 +37,7 @@
  * @param parameter the parsed parameters
  * @param model the model, client or server side
  * @param view the view for the requested output format
+ * @return none
  */
 void
 ocs::QHostController::process_request(QHostParameter &parameter, QHostModelBase &model, QHostViewBase &view) {
@@ -45,9 +47,10 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModelBase 
 
    // start report
    view.start(oss);
-   for_each_rw_lv(ep, model.get_exec_host_list()) {
+   for (const auto ep : model.get_exec_host_list()) {
 
-      // @todo when we have the code running as stored procedure we should find an early exit so that reader threads can shutdown fast
+      // @todo when we have the code running as stored procedure we should find an early exit so that reader
+      //       threads can shutdown fast
       // early termination if termination signal was received
       //if (shut_me_down) {
       //   DRETURN_VOID;

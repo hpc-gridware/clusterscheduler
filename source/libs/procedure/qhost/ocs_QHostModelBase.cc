@@ -36,6 +36,8 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_userset.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "sched/sge_select_queue.h"
@@ -43,19 +45,6 @@
 #include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostModelBase.h"
 
-
-ocs::QHostModelBase::~QHostModelBase() {
-   DENTER(TOP_LAYER);
-   lFreeList(&acl_list_);
-   lFreeList(&centry_list_);
-   lFreeList(&config_list_);
-   lFreeList(&exec_host_list_);
-   lFreeList(&job_list_);
-   lFreeList(&pe_list_);
-   lFreeList(&queue_list_);
-   lFreeList(&job_load_adjustments_);
-   DRETURN_VOID;
-}
 
 /** @brief Fetch raw CULL lists into the member variables.
  *
@@ -67,9 +56,11 @@ ocs::QHostModelBase::~QHostModelBase() {
  * @param show which of queues, jobs and resources were requested
  * @return true when everything could be fetched
  */
-bool ocs::QHostModelBase::fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show) {
+bool ocs::QHostModelBase::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+                                     const ocs::tom::ConstList<ocs::tom::ST> user_name_list, const uint32_t show) {
+   DENTER(TOP_LAYER);
    // Nothing common to do
-   return true;
+   DRETURN(true);
 }
 
 /** @brief Post-process fetched lists (e.g. resolve hostgroup references).
@@ -80,28 +71,29 @@ bool ocs::QHostModelBase::fetch_data(lList **answer_list, const lList *hostname_
  * @param show which of queues, jobs and resources were requested
  * @return true when the lists could be prepared
  */
-bool ocs::QHostModelBase::prepare_data(lList **answer_list, lList *resource_match_list, uint32_t show) const {
+bool ocs::QHostModelBase::prepare_data(lList **answer_list, const ocs::tom::List<ocs::tom::CE> resource_match_list,
+                                       const uint32_t show) const {
    DENTER(TOP_LAYER);
    // tag jobs for printing if they should be shown
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
-      for_each_ep_lv (job, job_list_) {
-         for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+      for (const auto job : *job_list_) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             ocs::tom::set<JAT_suitable>(ja_task, TAG_SHOW_IT);
          }
       }
    }
 
    // init steps required only if there is a resource match request (-l)
-   if (lGetNumberOfElem(resource_match_list)) {
+   if (!resource_match_list.empty()) {
 
       // prepare complex attribute list for matching
-      centry_list_init_double(centry_list_);
-      if (centry_list_fill_request(resource_match_list, answer_list, centry_list_, true, true, false)) {
+      centry_list_init_double(*centry_list_);
+      if (centry_list_fill_request(resource_match_list, answer_list, *centry_list_, true, true, false)) {
          DRETURN(false);
       }
 
       // initialize tag field for hosts
-      for_each_rw_lv(host, exec_host_list_) {
+      for (const auto host : *exec_host_list_) {
          ocs::tom::set<EH_tagged>(host, 0);
       }
    }
@@ -110,80 +102,91 @@ bool ocs::QHostModelBase::prepare_data(lList **answer_list, lList *resource_matc
 
 /** @brief Apply the resource-match filter to the exec host list.
  *
+ * Only the hosts that match the filter stay in the list; a list left empty
+ * is freed, as lSplit() freed it.
+ *
  * @param resource_match_list the resource filter the user gave
+ * @return none
  */
-void ocs::QHostModelBase::filter_data(const lList *resource_match_list) {
+void ocs::QHostModelBase::filter_data(const ocs::tom::ConstList<ocs::tom::CE> resource_match_list) {
    DENTER(TOP_LAYER);
 
    // early exit if there is no resource match request
-   if (lGetNumberOfElem(resource_match_list) == 0) {
+   if (resource_match_list.empty()) {
       DRETURN_VOID;
    }
 
    // we will modify the resource_match_list, so we need to work on a copy of it
-   lList *tmp_resource_list = lCopyList(nullptr, resource_match_list);
-   lListElem *global = ocs::tom::find_first_rw<EH_name>(exec_host_list_, SGE_GLOBAL_NAME);
-   bool is_selected = sge_select_queue(tmp_resource_list, nullptr, global, exec_host_list_,
-                                       centry_list_, true, -1, nullptr,
-                                       nullptr, nullptr);
+   const auto tmp_resource_list = resource_match_list.clone();
+   const auto global = exec_host_list_->find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
+   bool is_selected = sge_select_queue(*tmp_resource_list, ocs::tom::ConstElement<ocs::tom::QU>(), global,
+                                       *exec_host_list_, *centry_list_, true, -1,
+                                       ocs::tom::ConstList<ocs::tom::ST>(), ocs::tom::ConstList<ocs::tom::US>(),
+                                       ocs::tom::ConstElement<ocs::tom::JB>());
    if (is_selected) {
-      for_each_rw_lv(host, exec_host_list_) {
+      for (const auto host : *exec_host_list_) {
          ocs::tom::set<EH_tagged>(host, 1);
       }
    } else {
       // If there is hostname request, remove it as we cannot match hostname in sge_select_queue()
       // We will process this tmp_resource_list separately!
-      lListElem *host_match_elem = ocs::tom::find_first_rw<CE_name>(tmp_resource_list, "hostname");
-      if (host_match_elem != nullptr) {
-         lDechainElem(tmp_resource_list, host_match_elem);
+      ocs::tom::ElementPtr<ocs::tom::CE> host_match_elem;
+      if (const auto host_match = tmp_resource_list->find_first<CE_name>("hostname"); host_match != nullptr) {
+         host_match_elem = tmp_resource_list->extract(host_match);
       }
 
-      for_each_rw_lv(host, exec_host_list_) {
+      for (const auto host : *exec_host_list_) {
          const char *hostname = ocs::tom::get<EH_name>(host);
 
          // try to find a matching attribute
-         is_selected = sge_select_queue(tmp_resource_list, nullptr, host, exec_host_list_, centry_list_,
-                                     true, -1, nullptr, nullptr, nullptr);
+         is_selected = sge_select_queue(*tmp_resource_list, ocs::tom::ConstElement<ocs::tom::QU>(), host,
+                                        *exec_host_list_, *centry_list_, true, -1,
+                                        ocs::tom::ConstList<ocs::tom::ST>(), ocs::tom::ConstList<ocs::tom::US>(),
+                                        ocs::tom::ConstElement<ocs::tom::JB>());
          if (is_selected) {
             // this host is selected, tag it for output
             ocs::tom::set<EH_tagged>(host, 1);
 
             // if there is hostname request, check it here as sge_select_queue cannot handle it
-            if (host_match_elem != nullptr && sge_hostcmp(ocs::tom::get<CE_stringval>(host_match_elem), hostname) != 0 ) {
+            if (host_match_elem != nullptr &&
+                sge_hostcmp(ocs::tom::get<CE_stringval>(*host_match_elem), hostname) != 0) {
                ocs::tom::set<EH_tagged>(host, 0);
             }
          } else {
             ocs::tom::set<EH_tagged>(host, 0);
          }
       }
-      lFreeList(&tmp_resource_list);
-      if (host_match_elem != nullptr) {
-         lFreeElem(&host_match_elem);
-      }
    }
 
-   // Reduce the hostlist, only the tagged ones survive
-   lCondition *where = lWhere("%T(%I == %u)", EH_Type, EH_tagged, 1);
-   lSplit(&exec_host_list_, nullptr, nullptr, where);
-   lFreeWhere(&where);
+   // Reduce the hostlist, only the tagged ones survive; the others are freed with the list taken out
+   {
+      const auto untagged = exec_host_list_->split_off(ocs::tom::field<EH_tagged>() == 1u);
+   }
+   if (exec_host_list_ != nullptr && exec_host_list_->empty()) {
+      exec_host_list_.reset();
+   }
 
    DRETURN_VOID;
 }
 
-/** @brief Sort the exec host list for deterministic view output. */
+/** @brief Sort the exec host list for deterministic view output: the global host first, then by name
+ * @return none
+ */
 void ocs::QHostModelBase::sort_data() {
    DENTER(TOP_LAYER);
 
    // Find and de-chain the global host
-   lListElem *global_host = ocs::tom::find_first_rw<EH_name>(exec_host_list_, SGE_GLOBAL_NAME);
-   lDechainElem(exec_host_list_, global_host);
+   ocs::tom::ElementPtr<ocs::tom::EH> global_host;
+   if (const auto global = exec_host_list_->find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME)); global != nullptr) {
+      global_host = exec_host_list_->extract(global);
+   }
 
    // Sort remaining elements alphabetically
-   lPSortList(exec_host_list_, "%I+", EH_name);
+   exec_host_list_->sort<ocs::tom::asc<EH_name>>();
 
    // Re-insert global host at the beginning
    if (global_host != nullptr) {
-      lInsertElem(exec_host_list_, nullptr, global_host);
+      exec_host_list_->push_front(std::move(global_host));
    }
 
    DRETURN_VOID;
@@ -199,9 +202,9 @@ bool
 ocs::QHostModelBase::make_snapshot(lList **answer_list, QHostParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   const lList *hostname_list = parameter.get_hostname_list();
-   const lList *user_name_list = parameter.get_user_name_list();
-   lList *resource_match_list = parameter.get_resource_match_list_rw();
+   const auto hostname_list = parameter.get_hostname_list();
+   const auto user_name_list = parameter.get_user_name_list();
+   const auto resource_match_list = parameter.get_resource_match_list_rw();
    const uint32_t show = parameter.get_show();
 
    // fetch data from qmaster
@@ -227,11 +230,11 @@ ocs::QHostModelBase::make_snapshot(lList **answer_list, QHostParameter &paramete
  * @return the condition, which the caller owns; nullptr when no host was named
  */
 lCondition *
-ocs::QHostModelBase::get_host_where(const lList *hostname_list) {
+ocs::QHostModelBase::get_host_where(const ocs::tom::ConstList<ocs::tom::ST> hostname_list) {
    DENTER(TOP_LAYER);
    lCondition *where= nullptr;
 
-   for_each_ep_lv(host, hostname_list) {
+   for (const auto host : hostname_list) {
       lCondition *new_where = lWhere("%T(%I h= %s)", EH_Type, EH_name, ocs::tom::get<ST_name>(host));
       if (!where) {
          where = new_where;
@@ -276,11 +279,12 @@ lEnumeration *ocs::QHostModelBase::get_queue_what() {
  * @param show which of queues, jobs and resources were requested
  * @return the condition, which the caller owns
  */
-lCondition * ocs::QHostModelBase::get_job_where(const lList *user_name_list, const uint32_t show) {
+lCondition *ocs::QHostModelBase::get_job_where(const ocs::tom::ConstList<ocs::tom::ST> user_name_list,
+                                               const uint32_t show) {
    DENTER(TOP_LAYER);
    lCondition *where = nullptr;
 
-   for_each_rw_lv(user, user_name_list) {
+   for (const auto user : user_name_list) {
       lCondition *new_where = nullptr;
       if (const char *user_name = ocs::tom::get<ST_name>(user); is_pattern(user_name)) {
          new_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
@@ -295,7 +299,8 @@ lCondition * ocs::QHostModelBase::get_job_where(const lList *user_name_list, con
    }
 
    if (!(show & QSTAT_DISPLAY_PENDING)) {
-      lCondition *new_where = lWhere("%T(%I->%T(!(%I m= %u)))", JB_Type, JB_ja_tasks, JAT_Type, JAT_state, JQUEUED);
+      lCondition *new_where = lWhere("%T(%I->%T(!(%I m= %u)))", JB_Type, JB_ja_tasks, JAT_Type, JAT_state,
+                                     JQUEUED);
       if (where == nullptr) {
          where = new_where;
       } else {
