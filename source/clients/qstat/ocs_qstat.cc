@@ -1941,6 +1941,18 @@ static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handle
 }
 
 
+/**
+ * @brief Print the summary line of a cluster queue (qstat -g c) to stdout.
+ *
+ * The slot counts are unsigned and may be saturated at UINT32_MAX (CS-2368),
+ * so they are printed unsigned - as int they showed up negative.
+ *
+ * @param handler qstat cluster queue handler
+ * @param cqname  name of the cluster queue
+ * @param summary the summed up slot counts and load
+ * @param alpp    answer list, unused
+ * @return 0
+ */
 static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler,
                                                const char* cqname, cqueue_summary_t *summary,
                                                lList **alpp)
@@ -1961,24 +1973,24 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
       printf("%7s ", "-NA-");
    }
 
-   printf("%6d ", (int)summary->used);
-   printf("%6d ", (int)summary->resv);
-   printf("%6d ", (int)summary->available);
-   printf("%6d ", (int)summary->total);
-   printf("%6d ", (int)summary->temp_disabled);
-   printf("%6d ", (int)summary->manual_intervention);
+   printf("%6u ", (unsigned)summary->used);
+   printf("%6u ", (unsigned)summary->resv);
+   printf("%6u ", (unsigned)summary->available);
+   printf("%6u ", (unsigned)summary->total);
+   printf("%6u ", (unsigned)summary->temp_disabled);
+   printf("%6u ", (unsigned)summary->manual_intervention);
    if (show_states) {
-      printf("%5d ", (int)summary->suspend_manual);
-      printf("%5d ", (int)summary->suspend_threshold);
-      printf("%5d ", (int)summary->suspend_on_subordinate);
-      printf("%5d ", (int)summary->suspend_calendar);
-      printf("%5d ", (int)summary->unknown);
-      printf("%5d ", (int)summary->load_alarm);
-      printf("%5d ", (int)summary->disabled_manual);
-      printf("%5d ", (int)summary->disabled_calendar);
-      printf("%5d ", (int)summary->ambiguous);
-      printf("%5d ", (int)summary->orphaned);
-      printf("%5d ", (int)summary->error);
+      printf("%5u ", (unsigned)summary->suspend_manual);
+      printf("%5u ", (unsigned)summary->suspend_threshold);
+      printf("%5u ", (unsigned)summary->suspend_on_subordinate);
+      printf("%5u ", (unsigned)summary->suspend_calendar);
+      printf("%5u ", (unsigned)summary->unknown);
+      printf("%5u ", (unsigned)summary->load_alarm);
+      printf("%5u ", (unsigned)summary->disabled_manual);
+      printf("%5u ", (unsigned)summary->disabled_calendar);
+      printf("%5u ", (unsigned)summary->ambiguous);
+      printf("%5u ", (unsigned)summary->orphaned);
+      printf("%5u ", (unsigned)summary->error);
    }
    printf("\n");
 

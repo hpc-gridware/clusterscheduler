@@ -32,7 +32,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <algorithm>
 #include <cstring>
+#include <limits>
 
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
@@ -62,6 +64,53 @@
 #include "ocs_client_print.h"
 #include "uti/sge.h"
 
+/**
+ * @brief Add two u_long32, clamping to UINT32_MAX instead of wrapping.
+ *
+ * Unsigned overflow wraps rather than being UB, but a wrapped total is still
+ * wrong; this saturates instead. Used for the slot accumulators of
+ * cqueue_calculate_summary() (CS-2368, CWE-190).
+ *
+ * @param a first addend
+ * @param b second addend
+ * @return a + b, clamped to UINT32_MAX on overflow
+ */
+static u_long32 add_saturating_u32(const u_long32 a, const u_long32 b) {
+   if (a > std::numeric_limits<uint32_t>::max() - b) {
+      return std::numeric_limits<uint32_t>::max();
+   }
+   return a + b;
+}
+
+/**
+ * @brief Sum up the slot counts and the load of the queue instances of a cluster queue (qstat -g c).
+ *
+ * All slot counts saturate at UINT32_MAX instead of wrapping (CS-2368).
+ *
+ * @param cqueue                 the cluster queue
+ * @param exechost_list          execution hosts, for the load values
+ * @param centry_list            complex entries, for the load values
+ * @param load                   receives the average np_load_avg weighted by slots
+ * @param is_load_available      receives whether a load value was found
+ * @param used                   receives the used slots
+ * @param resv                   receives the reserved slots
+ * @param total                  receives the total slots
+ * @param suspend_manual         receives the slots in manually suspended instances
+ * @param suspend_threshold      receives the slots in instances suspended by threshold
+ * @param suspend_on_subordinate receives the slots in instances suspended on subordinate
+ * @param suspend_calendar       receives the slots in instances suspended by calendar
+ * @param unknown                receives the slots in instances in unknown state
+ * @param load_alarm             receives the slots in instances in load alarm
+ * @param disabled_manual        receives the slots in manually disabled instances
+ * @param disabled_calendar      receives the slots in instances disabled by calendar
+ * @param ambiguous              receives the slots in ambiguous instances
+ * @param orphaned               receives the slots in orphaned instances
+ * @param error                  receives the slots in instances in error state
+ * @param available              receives the slots still available
+ * @param temp_disabled          receives the slots in temporarily disabled instances
+ * @param manual_intervention    receives the slots in instances needing manual intervention
+ * @return true
+ */
 bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
                               double *load, bool *is_load_available, u_long32 *used, u_long32 *resv, u_long32 *total,
                               u_long32 *suspend_manual, u_long32 *suspend_threshold, u_long32 *suspend_on_subordinate,
@@ -95,14 +144,16 @@ bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_lis
 
          used_slots = qinstance_slots_used(qinstance);
          resv_slots = qinstance_slots_reserved_now(qinstance);
-         (*used) += used_slots;
-         (*resv) += resv_slots;
-         (*total) += slots;
+         // saturating adds: these u_long32 accumulators sum slot counts across all
+         // queue instances and must not wrap (CS-2368, CWE-190)
+         *used  = add_saturating_u32(*used, used_slots);
+         *resv  = add_saturating_u32(*resv, resv_slots);
+         *total = add_saturating_u32(*total, slots);
 
          if (!sge_get_double_qattr(&host_load_avg, LOAD_ATTR_NP_LOAD_AVG, qinstance, exechost_list, centry_list,
                                    &has_value_from_object)) {
             if (has_value_from_object) {
-               load_slots += slots;
+               load_slots = add_saturating_u32(load_slots, slots);
                *load += host_load_avg * slots;
             }
          }
@@ -114,54 +165,55 @@ bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_lis
          if (qinstance_state_is_manual_suspended(qinstance) || qinstance_state_is_unknown(qinstance) ||
              qinstance_state_is_manual_disabled(qinstance) || qinstance_state_is_ambiguous(qinstance) ||
              qinstance_state_is_error(qinstance)) {
-            *manual_intervention += slots;
+            *manual_intervention = add_saturating_u32(*manual_intervention, slots);
          } else if (qinstance_state_is_alarm(qinstance) || qinstance_state_is_cal_disabled(qinstance) ||
                     qinstance_state_is_orphaned(qinstance) || qinstance_state_is_susp_on_sub(qinstance) ||
                     qinstance_state_is_cal_suspended(qinstance) || qinstance_state_is_suspend_alarm(qinstance)) {
-            *temp_disabled += slots;
+            *temp_disabled = add_saturating_u32(*temp_disabled, slots);
          } else {
-            *available += slots;
-            used_available += used_slots;
+            *available = add_saturating_u32(*available, slots);
+            used_available = add_saturating_u32(used_available, used_slots);
          }
          if (qinstance_state_is_unknown(qinstance)) {
-            *unknown += slots;
+            *unknown = add_saturating_u32(*unknown, slots);
          }
          if (qinstance_state_is_alarm(qinstance)) {
-            *load_alarm += slots;
+            *load_alarm = add_saturating_u32(*load_alarm, slots);
          }
          if (qinstance_state_is_manual_disabled(qinstance)) {
-            *disabled_manual += slots;
+            *disabled_manual = add_saturating_u32(*disabled_manual, slots);
          }
          if (qinstance_state_is_cal_disabled(qinstance)) {
-            *disabled_calendar += slots;
+            *disabled_calendar = add_saturating_u32(*disabled_calendar, slots);
          }
          if (qinstance_state_is_ambiguous(qinstance)) {
-            *ambiguous += slots;
+            *ambiguous = add_saturating_u32(*ambiguous, slots);
          }
          if (qinstance_state_is_orphaned(qinstance)) {
-            *orphaned += slots;
+            *orphaned = add_saturating_u32(*orphaned, slots);
          }
          if (qinstance_state_is_manual_suspended(qinstance)) {
-            *suspend_manual += slots;
+            *suspend_manual = add_saturating_u32(*suspend_manual, slots);
          }
          if (qinstance_state_is_susp_on_sub(qinstance)) {
-            *suspend_on_subordinate += slots;
+            *suspend_on_subordinate = add_saturating_u32(*suspend_on_subordinate, slots);
          }
          if (qinstance_state_is_cal_suspended(qinstance)) {
-            *suspend_calendar += slots;
+            *suspend_calendar = add_saturating_u32(*suspend_calendar, slots);
          }
          if (qinstance_state_is_suspend_alarm(qinstance)) {
-            *suspend_threshold += slots;
+            *suspend_threshold = add_saturating_u32(*suspend_threshold, slots);
          }
          if (qinstance_state_is_error(qinstance)) {
-            *error += slots;
+            *error = add_saturating_u32(*error, slots);
          }
       }
       if (load_slots > 0) {
          *is_load_available = true;
          *load /= load_slots;
       }
-      *available -= used_available;
+      // saturated totals must not wrap below zero either
+      *available -= std::min(used_available, *available);
    }
    DRETURN(ret);
 }
