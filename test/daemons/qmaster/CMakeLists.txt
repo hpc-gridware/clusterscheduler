@@ -60,6 +60,13 @@ target_link_libraries(test_qmaster_procedure_mod PRIVATE procedure gdi sgeobj cu
 add_test(NAME test_qmaster_procedure_mod COMMAND test_qmaster_procedure_mod)
 set_tests_properties(test_qmaster_procedure_mod PROPERTIES DISABLED TRUE)
 
+# CS-3125: the structure check of GDI request data in the listener thread; needs a running qmaster
+add_executable(test_qmaster_request_structure test_qmaster_request_structure.cc)
+target_include_directories(test_qmaster_request_structure PRIVATE "./")
+target_link_libraries(test_qmaster_request_structure PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_qmaster_request_structure COMMAND test_qmaster_request_structure)
+set_tests_properties(test_qmaster_request_structure PROPERTIES DISABLED TRUE)
+
 add_executable(test_qmaster_rusage
       test_qmaster_rusage.cc
       ../../../source/daemons/qmaster/sge_rusage.cc)
@@ -146,6 +153,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_hgroup_reserved DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_hgroup_cache DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_procedure_mod DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_qmaster_request_structure DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_timed_event DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_rusage DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})

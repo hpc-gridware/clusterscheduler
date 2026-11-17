@@ -1124,7 +1124,7 @@ bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, lLis
  *
  * @param cqueue CQ_Type object to be verified, checked; may be nullptr
  * @param answer_list AN_Type list
- * @param reduced_elem reduced CQ_Type, unchecked: request data; may be nullptr
+ * @param reduced_elem reduced CQ_Type, checked; may be nullptr
  * @param in_master true if this function is called in the master code
  * @param master_calendar_list CAL_Type, checked; may be nullptr
  * @param master_ckpt_list CK_Type, checked; may be nullptr
@@ -1143,7 +1143,7 @@ bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem 
                               const lList *master_project_list, const lList *master_centry_list,
                               const lList *master_cqueue_list, const lList *master_hgroup_list) {
    return cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ>(cqueue), answer_list,
-                                   ocs::tom::ConstElement<ocs::tom::CQ>::from_typed(reduced_elem), in_master,
+                                   ocs::tom::ConstElement<ocs::tom::CQ>(reduced_elem), in_master,
                                    ocs::tom::ConstList<ocs::tom::CAL>(master_calendar_list),
                                    ocs::tom::ConstList<ocs::tom::CK>(master_ckpt_list),
                                    ocs::tom::ConstList<ocs::tom::PE>(master_pe_list),

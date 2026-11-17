@@ -544,7 +544,7 @@ bool qref_list_cq_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, co
 /**
  * @brief qref_list_cq_rejected() for an untyped caller
  *
- * @param qref_list the queue references to check (QR_Type), unchecked: request data; may be nullptr
+ * @param qref_list the queue references to check (QR_Type), checked; may be nullptr
  * @param cqname the cluster queue in question
  * @param hostname the host in question; nullptr checks the cluster queue alone
  * @param hgroup_list the host groups (HGRP_Type), checked; may be nullptr
@@ -552,7 +552,7 @@ bool qref_list_cq_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, co
  */
 bool qref_list_cq_rejected(const lList *qref_list, const char *cqname, const char *hostname,
                            const lList *hgroup_list) {
-   return qref_list_cq_rejected(ocs::tom::ConstList<ocs::tom::QR>::from_typed(qref_list), cqname, hostname,
+   return qref_list_cq_rejected(ocs::tom::ConstList<ocs::tom::QR>(qref_list), cqname, hostname,
                                 ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list));
 }
 
@@ -786,7 +786,7 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, lList
 /**
  * @brief qref_list_is_valid() for an untyped caller
  *
- * @param this_list QR_Type list, unchecked: request data; may be nullptr; changed in place
+ * @param this_list QR_Type list, checked; may be nullptr; changed in place
  * @param answer_list AN_Type
  * @param master_cqueue_list the cluster queues a reference may name (CQ_Type), checked
  * @param master_hgroup_list the host groups a reference may name (HGRP_Type), checked
@@ -796,7 +796,7 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, lList
  */
 bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list,
                         const lList *master_hgroup_list, const lList *master_centry_list) {
-   return qref_list_is_valid(ocs::tom::ConstList<ocs::tom::QR>::from_typed(this_list), answer_list,
+   return qref_list_is_valid(ocs::tom::ConstList<ocs::tom::QR>(this_list), answer_list,
                              ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
                              ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list),
                              ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));

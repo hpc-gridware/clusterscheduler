@@ -2103,6 +2103,76 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
    return ret;
 }
 
+/**
+ * @brief Verify that a list received from a client is of the expected type, recursively (CS-3125)
+ *
+ * Unlike object_list_verify_cull(), which requires the full descriptor of
+ * the type, a reduced descriptor of the type is accepted: request data is
+ * often reduced (qalter, qconf -mattr, the bridge). Checked are the type of
+ * the list, that every element has the layout of the list, and, through
+ * ocs_object_verify_type(), the sublists and subobjects of every element.
+ *
+ * The check reads static information only (descriptors and the subtypes of
+ * the fields), so it needs no lock.
+ *
+ * @param lp the list, or nullptr (nothing to verify)
+ * @param descr the descriptor of the expected type, or nullptr when the type of the list is not fixed
+ * @return true if the list and everything below it are of their expected types
+ */
+bool
+ocs_object_list_verify_type(const lList *lp, const lDescr *descr) {
+   if (lp == nullptr) {
+      return true;
+   }
+   const lDescr *list_descr = lGetListDescr(lp);
+   if (descr != nullptr && !ocs::tom::same_type(list_descr, descr)) {
+      return false;
+   }
+   for (const lListElem *ep = lFirst(lp); ep != nullptr; ep = lNext(ep)) {
+      if (!ocs::tom::same_layout(lGetElemDescr(ep), list_descr) || !ocs_object_verify_type(ep, nullptr)) {
+         return false;
+      }
+   }
+   return true;
+}
+
+/**
+ * @brief Verify that an element received from a client is of the expected type, recursively (CS-3125)
+ *
+ * The element's descriptor must describe the expected type, possibly
+ * reduced; every sublist and subobject it holds must be of the subtype its
+ * field declares (a field without a declared subtype is checked below its
+ * own level only).
+ *
+ * @param ep the element, or nullptr (nothing to verify)
+ * @param descr the descriptor of the expected type, or nullptr when the type is not fixed
+ * @return true if the element and everything below it are of their expected types
+ */
+bool
+ocs_object_verify_type(const lListElem *ep, const lDescr *descr) {
+   if (ep == nullptr) {
+      return true;
+   }
+   const lDescr *elem_descr = lGetElemDescr(ep);
+   if (descr != nullptr && !ocs::tom::same_type(elem_descr, descr)) {
+      return false;
+   }
+   for (const auto f : ocs_cull_present_fields(elem_descr)) {
+      const int nm = elem_descr[f.pos].nm;
+      const int type = mt_get_type(elem_descr[f.pos].mt);
+      if (type == lListT) {
+         if (!ocs_object_list_verify_type(lGetPosList(ep, f.pos), object_get_subtype(nm))) {
+            return false;
+         }
+      } else if (type == lObjectT) {
+         if (!ocs_object_verify_type(lGetPosObject(ep, f.pos), object_get_subtype(nm))) {
+            return false;
+         }
+      }
+   }
+   return true;
+}
+
 namespace {
    /**
     * @brief The key of a unique attribute in the form the hash table of the list compares

@@ -784,5 +784,6 @@
 #define MSG_QMASTER_REPAIREDREPEATEDKEYS_SS        _MESSAGE(34019, _(SFN " was spooled by an earlier version with repeated keys, kept once now: " SFNMAX))
 #define MSG_QMASTER_DUPLICATEOBJECT_SSSSS          _MESSAGE(34020, _(SFN " with " SFN " " SFQ " is spooled twice, as " SFQ " and " SFQ))
 #define MSG_QMASTER_UNIQUEKEYSFAILED_S             _MESSAGE(34021, _("the spool holds duplicate keys in unique attributes; remove one object of each duplicate, or the repeated entry, and start the qmaster again: " SFNMAX))
+#define MSG_QMASTER_REQUESTSTRUCTURE_SSSS          _MESSAGE(34022, _("refused request of " SFN "@" SFN ": the data of " SFN " " SFN " are not of the expected type"))
 
 // clang-format on

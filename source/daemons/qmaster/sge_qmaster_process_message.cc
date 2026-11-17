@@ -57,6 +57,8 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_RequestLimits.h"
 #include "sgeobj/sge_manop.h"
+#include "sgeobj/sge_object.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
@@ -262,6 +264,73 @@ sge_qmaster_process_message(monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_qmaster_process_message */
 
+/**
+ * @brief The descriptor of the objects a client sends for a target and command (CS-3125)
+ *
+ * Adding, modifying and copying send objects of the target's type; deleting
+ * and triggering send ID elements or (the bridge's deletion) objects of that
+ * type; procedures send parameter bundles. For any other command the type of
+ * the data is not fixed.
+ *
+ * @param task the request task
+ * @param data_descr the descriptor of the data the client sent
+ * @return the descriptor the data has to match, possibly reduced, or nullptr when its type is not fixed
+ */
+static const lDescr *
+ocs_request_data_type(const ocs::gdi::Task *task, const lDescr *data_descr) {
+   const gdi_object_t *object = get_gdi_object(task->target);
+   const lDescr *object_type = object != nullptr ? object->type : nullptr;
+   if (object_type == nullptr) {
+      // targets without generic handling, whose request data still has one type
+      switch (task->target) {
+         case ocs::gdi::Target::JB_LIST:    object_type = JB_Type;   break;
+         case ocs::gdi::Target::EV_LIST:    object_type = EV_Type;   break;
+         case ocs::gdi::Target::CONF_LIST:  object_type = CONF_Type; break;
+         case ocs::gdi::Target::SC_LIST:    object_type = SC_Type;   break;
+         case ocs::gdi::Target::STN_LIST:   object_type = STN_Type;  break;
+         case ocs::gdi::Target::ORDER_LIST: object_type = OR_Type;   break;
+         default:                           break;
+      }
+   }
+
+   switch (task->command) {
+      case ocs::gdi::Command::ADD:
+      case ocs::gdi::Command::MOD:
+      case ocs::gdi::Command::COPY:
+         return object_type;
+      case ocs::gdi::Command::DEL:
+      case ocs::gdi::Command::TRIGGER:
+         return ocs::tom::same_type(data_descr, ID_Type) ? ID_Type : object_type;
+      case ocs::gdi::Command::GET_PROCEDURE:
+      case ocs::gdi::Command::MOD_PROCEDURE:
+         return SPP_Type;
+      default:
+         return nullptr;
+   }
+}
+
+/**
+ * @brief Whether the data of a request task has the structure its target and command expect (CS-3125)
+ *
+ * The data list and everything below it must be of the expected types, a
+ * reduced descriptor of a type is accepted. Checked in the listener thread,
+ * before a worker takes the request: it reads static information only and
+ * needs no lock. Without the check a sublist of another type reached the
+ * object functions - with elements qmaster aborted at the first field
+ * access, an empty one was stored in the master object.
+ *
+ * @param task the request task
+ * @return true if the data is well typed or there is none
+ */
+static bool
+ocs_request_data_is_well_typed(const ocs::gdi::Task *task) {
+   const lList *data = task->data_list;
+   if (data == nullptr) {
+      return true;
+   }
+   return ocs_object_list_verify_type(data, ocs_request_data_type(task, lGetListDescr(data)));
+}
+
 /** @brief The data store that satisfies both of two requirements
  *
  * A request that touches several object types has to be answered from one
@@ -428,6 +497,20 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
          answer_list_add(&(packet->tasks[0]->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
+      }
+   }
+
+   // CS-3125: the data of every task must have the structure its target and command expect; a packet with
+   // one malformed task is refused as a whole, as the request limits below decide the whole packet at once
+   if (local_ret) {
+      for (const auto *task : packet->tasks) {
+         if (!ocs_request_data_is_well_typed(task)) {
+            WARNING(MSG_QMASTER_REQUESTSTRUCTURE_SSSS, packet->user, packet->host,
+                    ocs::gdi::to_string(task->command).c_str(), ocs::gdi::to_string(task->target).c_str());
+            answer_list_add(&(packet->tasks[0]->answer_list), SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            local_ret = false;
+            break;
+         }
       }
    }
 

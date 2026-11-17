@@ -167,6 +167,22 @@ namespace ocs::tom {
    }
 
    /**
+    * @brief Whether two descriptors describe the same object type, either of them possibly reduced (CS-3125)
+    *
+    * A reduced descriptor has the full length of its type and marks the
+    * fields it leaves out #OCS_CULL_ABSENT, so two descriptors of one type
+    * have the same length and, at every position, the same field number and
+    * field type - whichever fields each of them holds. Data received from a
+    * client is checked with this before qmaster works on it: it may be
+    * reduced, but it must be of the type the request is about.
+    *
+    * @param a the first descriptor, or nullptr
+    * @param b the second descriptor, or nullptr
+    * @return true if both describe the same type; false if they differ or one or both are nullptr
+    */
+   bool same_type(const lDescr *a, const lDescr *b) noexcept;
+
+   /**
     * @brief The position of a field an element must hold, with the field type it must have
     *
     * The checks of an accessor whose field number is known only at run time,

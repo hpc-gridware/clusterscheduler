@@ -275,6 +275,12 @@ bool
 object_verify_cull(const lListElem *ep, const lDescr *descr);
 
 bool
+ocs_object_list_verify_type(const lList *lp, const lDescr *descr);
+
+bool
+ocs_object_verify_type(const lListElem *ep, const lDescr *descr);
+
+bool
 ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const char *object_name);
 
 bool

@@ -2392,8 +2392,7 @@ int job_resolve_host_for_path_list(const ocs::tom::ConstElement<ocs::tom::JB> jo
    DENTER(TOP_LAYER);
    bool ret_error=false;
 
-   // the job may be a reduced request job from the network: wrapped unchecked, as the raw loop read it
-   for (const auto ep : ocs::tom::List<ocs::tom::PN>::from_typed(lGetListRW(job, name))) {
+   for (const auto ep : ocs::tom::List<ocs::tom::PN>(lGetListRW(job, name))) {
       int res = sge_resolve_host(ep, PN_host);
       DPRINTF("after sge_resolve_host() which returned %s\n", cl_get_error_text(res));
       if (res != CL_RETVAL_OK) {
@@ -3384,16 +3383,13 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, lList *
 /**
  * @brief job_verify_submitted_job() for an untyped caller
  *
- * The job comes unchecked out of a GDI request, so it is wrapped without the descriptor
- * check: job_verify() rejects an element of another type itself, as before.
- *
- * @param job the job to verify (JB_Type expected)
+ * @param job the job to verify (JB_Type), checked
  * @param answer_list answer list to pass back error messages
  *
  * @return as job_verify_submitted_job()
  */
 bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
-   return job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB>::from_typed(job), answer_list);
+   return job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB>(job), answer_list);
 }
 
 /**
@@ -3703,12 +3699,11 @@ void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom:
 /**
  * @brief set_context() for an untyped caller
  *
- * @param change the request, a `CX_Type` list, unchecked; nullptr clears the context
- * @param[in,out] job the job whose `JB_context` is changed (JB_Type), unchecked: request data
+ * @param change the request, a `CX_Type` list, checked; nullptr clears the context
+ * @param[in,out] job the job whose `JB_context` is changed (JB_Type), checked
  */
 void set_context(const lList *change, lListElem *job) {
-   // request data from the network: wrapped unchecked, the old code set it without a check
-   set_context(ocs::tom::ConstList<ocs::tom::CX>::from_typed(change), ocs::tom::Element<ocs::tom::JB>::from_typed(job));
+   set_context(ocs::tom::ConstList<ocs::tom::CX>(change), ocs::tom::Element<ocs::tom::JB>(job));
 }
 
 /**
@@ -4529,14 +4524,14 @@ void job_set_resource_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::
 /**
  * @brief job_set_resource_list() for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param resource_list the new list (CE_Type), checked; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
  */
 void job_set_resource_list(lListElem *job, lList *resource_list, const uint32_t scope, const bool hard) {
-   job_set_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                         ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list), scope,
+   job_set_resource_list(ocs::tom::Element<ocs::tom::JB>(job),
+                         ocs::tom::ListPtr<ocs::tom::CE>(resource_list), scope,
                          hard);
 }
 
@@ -4556,12 +4551,12 @@ void job_set_hard_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief job_set_hard_resource_list() for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param resource_list the new list (CE_Type), checked; ownership passes to the job
  */
 void job_set_hard_resource_list(lListElem *job, lList *resource_list) {
-   job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list));
+   job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB>(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>(resource_list));
 }
 
 /**
@@ -4581,13 +4576,13 @@ void job_set_hard_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief job_set_hard_resource_list() of one scope for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param resource_list the new list (CE_Type), checked; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  */
 void job_set_hard_resource_list(lListElem *job, lList *resource_list, const uint32_t scope) {
-   job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list),
+   job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB>(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>(resource_list),
                               scope);
 }
 
@@ -4607,12 +4602,12 @@ void job_set_soft_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief job_set_soft_resource_list() for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param resource_list the new list (CE_Type), checked; ownership passes to the job
  */
 void job_set_soft_resource_list(lListElem *job, lList *resource_list) {
-   job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list));
+   job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB>(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>(resource_list));
 }
 
 /**
@@ -4632,13 +4627,13 @@ void job_set_soft_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief job_set_soft_resource_list() of one scope for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param resource_list the new list (CE_Type), checked; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  */
 void job_set_soft_resource_list(lListElem *job, lList *resource_list, const uint32_t scope) {
-   job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list),
+   job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB>(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>(resource_list),
                               scope);
 }
 
@@ -4669,14 +4664,14 @@ void job_set_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
 /**
  * @brief job_set_queue_list() for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param queue_list the new list (QR_Type), checked; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
  */
 void job_set_queue_list(lListElem *job, lList *queue_list, const uint32_t scope, const bool hard) {
-   job_set_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                      ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list), scope, hard);
+   job_set_queue_list(ocs::tom::Element<ocs::tom::JB>(job),
+                      ocs::tom::ListPtr<ocs::tom::QR>(queue_list), scope, hard);
 }
 
 /**
@@ -4694,12 +4689,12 @@ void job_set_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom
 /**
  * @brief job_set_hard_queue_list() for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param queue_list the new list (QR_Type), checked; ownership passes to the job
  */
 void job_set_hard_queue_list(lListElem *job, lList *queue_list) {
-   job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                           ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list));
+   job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB>(job),
+                           ocs::tom::ListPtr<ocs::tom::QR>(queue_list));
 }
 
 /**
@@ -4719,13 +4714,13 @@ void job_set_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom
 /**
  * @brief job_set_hard_queue_list() of one scope for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param queue_list the new list (QR_Type), checked; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  */
 void job_set_hard_queue_list(lListElem *job, lList *queue_list, const uint32_t scope) {
-   job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                           ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list), scope);
+   job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB>(job),
+                           ocs::tom::ListPtr<ocs::tom::QR>(queue_list), scope);
 }
 
 /**
@@ -4745,13 +4740,13 @@ void job_set_soft_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom
 /**
  * @brief job_set_soft_queue_list() of one scope for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param queue_list the new list (QR_Type), checked; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  */
 void job_set_soft_queue_list(lListElem *job, lList *queue_list, const uint32_t scope) {
-   job_set_soft_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                           ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list), scope);
+   job_set_soft_queue_list(ocs::tom::Element<ocs::tom::JB>(job),
+                           ocs::tom::ListPtr<ocs::tom::QR>(queue_list), scope);
 }
 
 /**
@@ -4770,12 +4765,12 @@ void job_set_master_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief job_set_master_hard_queue_list() for an untyped caller
  *
- * @param[in,out] job the job to change (JB_Type), unchecked: request data
- * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param queue_list the new list (QR_Type), checked; ownership passes to the job
  */
 void job_set_master_hard_queue_list(lListElem *job, lList *queue_list) {
-   job_set_master_hard_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                                  ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list));
+   job_set_master_hard_queue_list(ocs::tom::Element<ocs::tom::JB>(job),
+                                  ocs::tom::ListPtr<ocs::tom::QR>(queue_list));
 }
 
 /**
