@@ -41,6 +41,11 @@
 
 #include "uti/sge_dstring.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+
 #include "sgeobj/cull/sge_range_RN_L.h"
 
 /// Passed where a function may either only parse its input or also apply it
@@ -65,25 +70,27 @@ typedef void (*range_remove_insert_t)(lList **, lList **, uint32_t);
  * range element
  */
 
-void
-range_get_all_ids(const lListElem *this_elem, uint32_t *min,
-                  uint32_t *max, uint32_t *step);
+void range_get_all_ids(ocs::tom::ConstElement<ocs::tom::RN> this_elem, uint32_t *min, uint32_t *max,
+                       uint32_t *step);
+OCS_TRANSITIONAL void range_get_all_ids(const lListElem *this_elem, uint32_t *min, uint32_t *max, uint32_t *step);
 
-void
-range_set_all_ids(lListElem *this_elem, uint32_t min,
-                  uint32_t max, uint32_t step);
+void range_set_all_ids(ocs::tom::Element<ocs::tom::RN> this_elem, uint32_t min, uint32_t max, uint32_t step);
+OCS_TRANSITIONAL void range_set_all_ids(lListElem *this_elem, uint32_t min, uint32_t max, uint32_t step);
 
-bool range_containes_id_less_than(const lListElem *this_elem, uint32_t id);
+bool range_containes_id_less_than(ocs::tom::ConstElement<ocs::tom::RN> this_elem, uint32_t id);
+OCS_TRANSITIONAL bool range_containes_id_less_than(const lListElem *this_elem, uint32_t id);
 
-bool range_is_id_within(const lListElem *this_range, uint32_t id);
+bool range_is_id_within(ocs::tom::ConstElement<ocs::tom::RN> this_range, uint32_t id);
+OCS_TRANSITIONAL bool range_is_id_within(const lListElem *this_range, uint32_t id);
 
-uint32_t range_get_number_of_ids(const lListElem *this_elem);
+uint32_t range_get_number_of_ids(ocs::tom::ConstElement<ocs::tom::RN> this_elem);
+OCS_TRANSITIONAL uint32_t range_get_number_of_ids(const lListElem *this_elem);
 
-void range_correct_end(lListElem *this_elem);
+void range_correct_end(ocs::tom::Element<ocs::tom::RN> this_elem);
+OCS_TRANSITIONAL void range_correct_end(lListElem *this_elem);
 
-void
-range_parse_from_string(lListElem **this_elem, lList **answer_list,
-                        const char *string, int step_allowed, int inf_allowed);
+[[nodiscard]] ocs::tom::ElementPtr<ocs::tom::RN>
+range_parse_from_string(lList **answer_list, const char *string, int step_allowed, int inf_allowed);
 
 bool
 range_parse_get_ids(const char *value, int step_allowed, uint32_t &start, uint32_t &end, uint32_t &step);
@@ -92,10 +99,10 @@ range_parse_get_ids(const char *value, int step_allowed, uint32_t &start, uint32
  * range list
  */
 
-void
-range_list_print_to_string(const lList *this_list,
-                           dstring *string, bool ignore_step,
-                           bool comma_as_separator, bool print_always_as_range);
+void range_list_print_to_string(ocs::tom::ConstList<ocs::tom::RN> this_list, dstring *string, bool ignore_step,
+                                bool comma_as_separator, bool print_always_as_range);
+OCS_TRANSITIONAL void range_list_print_to_string(const lList *this_list, dstring *string, bool ignore_step,
+                                                 bool comma_as_separator, bool print_always_as_range);
 
 void range_to_dstring(uint32_t start, uint32_t end, int step,
                       dstring *dyn_taskrange_str, int ignore_step,
@@ -109,39 +116,54 @@ void
 range_list_move_first_n_ids(lList **this_list, lList **answer_list,
                             lList **list, uint32_t n);
 
-bool range_list_is_id_within(const lList *this_list, uint32_t id);
+bool range_list_is_id_within(ocs::tom::ConstList<ocs::tom::RN> this_list, uint32_t id);
+OCS_TRANSITIONAL bool range_list_is_id_within(const lList *this_list, uint32_t id);
 
-bool range_list_is_empty(const lList *this_list);
+bool range_list_is_empty(ocs::tom::ConstList<ocs::tom::RN> this_list);
+OCS_TRANSITIONAL bool range_list_is_empty(const lList *this_list);
 
-void range_list_compress(lList *this_list);
+void range_list_compress(ocs::tom::List<ocs::tom::RN> this_list);
+OCS_TRANSITIONAL void range_list_compress(lList *this_list);
 
-void range_list_sort_uniq_compress(lList *this_list, lList **answer_list, bool correct_end);
+void range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN> this_list, lList **answer_list, bool correct_end);
+OCS_TRANSITIONAL void range_list_sort_uniq_compress(lList *this_list, lList **answer_list, bool correct_end);
 
-uint32_t range_list_get_first_id(const lList *this_list, lList **answer_list);
+uint32_t range_list_get_first_id(ocs::tom::ConstList<ocs::tom::RN> this_list, lList **answer_list);
+OCS_TRANSITIONAL uint32_t range_list_get_first_id(const lList *this_list, lList **answer_list);
 
-uint32_t range_list_get_last_id(const lList *this_list, lList **answer_list);
+uint32_t range_list_get_last_id(ocs::tom::ConstList<ocs::tom::RN> this_list, lList **answer_list);
+OCS_TRANSITIONAL uint32_t range_list_get_last_id(const lList *this_list, lList **answer_list);
 
-double range_list_get_average(const lList *this_list, uint32_t upperbound);
+double range_list_get_average(ocs::tom::ConstList<ocs::tom::RN> this_list, uint32_t upperbound);
+OCS_TRANSITIONAL double range_list_get_average(const lList *this_list, uint32_t upperbound);
 
 void range_list_initialize(lList **this_list, lList **answer_list);
 
-uint32_t range_list_get_number_of_ids(const lList *this_list);
+uint32_t range_list_get_number_of_ids(ocs::tom::ConstList<ocs::tom::RN> this_list);
+OCS_TRANSITIONAL uint32_t range_list_get_number_of_ids(const lList *this_list);
 
 bool
 range_list_parse_from_string(lList **this_list, lList **answer_list,
                              const char *string, bool just_parse,
                              bool step_allowed, bool inf_allowed);
 
-bool range_list_containes_id_less_than(const lList *range_list, uint32_t id);
+bool range_list_containes_id_less_than(ocs::tom::ConstList<ocs::tom::RN> range_list, uint32_t id);
+OCS_TRANSITIONAL bool range_list_containes_id_less_than(const lList *range_list, uint32_t id);
 
-void
-range_list_calculate_union_set(lList **this_list, lList **answer_list,
-                               const lList *list1, const lList *list2);
+void range_list_calculate_union_set(lList **this_list, lList **answer_list,
+                                    ocs::tom::ConstList<ocs::tom::RN> list1,
+                                    ocs::tom::ConstList<ocs::tom::RN> list2);
+OCS_TRANSITIONAL void range_list_calculate_union_set(lList **this_list, lList **answer_list,
+                                                     const lList *list1, const lList *list2);
 
-void
-range_list_calculate_difference_set(lList **this_list, lList **answer_list,
-                                    const lList *list1, const lList *list2);
+void range_list_calculate_difference_set(lList **this_list, lList **answer_list,
+                                         ocs::tom::ConstList<ocs::tom::RN> list1,
+                                         ocs::tom::ConstList<ocs::tom::RN> list2);
+OCS_TRANSITIONAL void range_list_calculate_difference_set(lList **this_list, lList **answer_list,
+                                                          const lList *list1, const lList *list2);
 
-void
-range_list_calculate_intersection_set(lList **this_list, lList **answer_list,
-                                      const lList *list1, const lList *list2);
+void range_list_calculate_intersection_set(lList **this_list, lList **answer_list,
+                                           ocs::tom::ConstList<ocs::tom::RN> list1,
+                                           ocs::tom::ConstList<ocs::tom::RN> list2);
+OCS_TRANSITIONAL void range_list_calculate_intersection_set(lList **this_list, lList **answer_list,
+                                                            const lList *list1, const lList *list2);
