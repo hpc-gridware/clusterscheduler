@@ -49,6 +49,8 @@
 
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "spool/sge_dirent.h"
 
@@ -60,30 +62,27 @@
  * `.` and `..` are left out. Used by the classic and flatfile backends to
  * walk a spool directory, and by `spooldefaults`.
  *
+ * The opendir() error path used to leave through a plain `return`, skipping
+ * the rmon_mexit() that DENTER's rmon_menter() paired with; it returns
+ * through DRETURN now.
+ *
  * @param path the directory to read
  *
- * @return the entries as an `ST_Type` list, to be freed by the caller, or
- *         nullptr on any error and for an empty directory - the two cases
- *         are not distinguishable from the return value
- *
- * @warning The `opendir()` error path leaves through a plain `return` rather
- *          than `DRETURN`, so it skips the `rmon_mexit()` that #DENTER's
- *          `rmon_menter()` paired with. With tracing enabled the trace
- *          indentation never comes back down after a failed open.
+ * @return the entries, or an empty handle on any error and for an empty
+ *         directory - the two cases are not distinguishable from the return value
  */
-lList *sge_get_dirents(const char *path) {
+ocs::tom::ListPtr<ocs::tom::ST> ocs_get_dirents(const char *path) {
    DENTER(TOP_LAYER);
 
-   lList *entries = nullptr;
-   DIR *cwd;
+   ocs::tom::ListPtr<ocs::tom::ST> entries;
    SGE_STRUCT_DIRENT *dent;
    char dirent[SGE_PATH_MAX*2];
 
-   cwd = opendir(path);
+   DIR *cwd = opendir(path);
 
    if (cwd == (DIR *) 0) {
       ERROR(MSG_FILE_CANTOPENDIRECTORYX_SS, path, strerror(errno));
-      return (nullptr);
+      DRETURN(entries);
    }
 
    while (SGE_READDIR_R(cwd, (SGE_STRUCT_DIRENT *)dirent, &dent)==0 && dent!=nullptr) {
@@ -91,9 +90,24 @@ lList *sge_get_dirents(const char *path) {
          continue;             
       if (strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, ".") == 0)
          continue;
-      ocs::tom::emplace_back<ST_name>(&entries, dent->d_name);
+      // the list is created with the first entry, so an empty directory gives an empty handle as before
+      if (!entries) {
+         entries = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      }
+      entries->emplace_back<ST_name>(dent->d_name);
    }
    closedir(cwd);
 
    DRETURN(entries);
+}
+
+/**
+ * @brief sge_get_dirents() for an untyped caller
+ *
+ * @param path the directory to read
+ *
+ * @return as ocs_get_dirents(), handed over raw (ST_Type), to be freed by the caller
+ */
+lList *sge_get_dirents(const char *path) {
+   return ocs_get_dirents(path).release();
 }

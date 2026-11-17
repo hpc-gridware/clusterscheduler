@@ -55,6 +55,8 @@
 #include "sgeobj/config.h"               /* add_nm_to_set */
 #include "sgeobj/sge_utility.h"          /* SGE_CHECK_POINTER_FALSE */
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "spool/sge_spooling_utilities.h"
 
@@ -235,13 +237,14 @@ spool_json_write_typed_number(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  * values fall back to the raw CE_stringval.
  *
  * @param writer  pretty-printer to emit into
- * @param ce      a CE_Type complex-entry element
+ * @param ce      a complex-entry element
  */
 static void
 spool_json_write_ce_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                          const lListElem *ce) {
-   const double dval = ocs::tom::get<CE_doubleval>(ce);
-   const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
+                          const ocs::tom::ConstElement<ocs::tom::CE> ce) {
+   DENTER(JSON_LAYER);
+   const double dval = ce.get<CE_doubleval>();
+   const auto type = static_cast<ocs::CEntry::Type>(ce.get<CE_valtype>());
    switch (type) {
       case ocs::CEntry::Type::DOUBLE:
       case ocs::CEntry::Type::INT:
@@ -254,29 +257,30 @@ spool_json_write_ce_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
          break;
       default: {
          /* STR/CSTR/HOST/RESTR/RSMAP and NONE (unfilled config): raw string value */
-         const char *s = ocs::tom::get<CE_stringval>(ce);
+         const char *s = ce.get<CE_stringval>();
          s != nullptr ? writer.String(s) : writer.Null();
          break;
       }
    }
+   DRETURN_VOID;
 }
 
 /**
  * @brief Write a complex-value / threshold sublist as a JSON array.
  *
- * Renders the CE_Type elements as { "name": <name>, "value": <typed> } objects.
+ * Renders the complex entries as { "name": <name>, "value": <typed> } objects.
  *
  * @param writer  pretty-printer to emit into
- * @param list    list of CE_Type complex-entry elements
+ * @param list    list of complex-entry elements, may be reduced
  */
 static void
 spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                          const lList *list) {
+                          const ocs::tom::ConstList<ocs::tom::CE> list) {
+   DENTER(JSON_LAYER);
    writer.StartArray();
-   const lListElem *ce;
-   for_each_ep(ce, list) {
+   for (const ocs::tom::ConstElement<ocs::tom::CE> ce : list) {
       writer.StartObject();
-      const char *cname = ocs::tom::get<CE_name>(ce);
+      const char *cname = ce.get<CE_name>();
       writer.Key("name");
       cname != nullptr ? writer.String(cname) : writer.Null();
       writer.Key("value");
@@ -284,6 +288,7 @@ spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
       writer.EndObject();
    }
    writer.EndArray();
+   DRETURN_VOID;
 }
 
 /**
@@ -774,7 +779,9 @@ spool_json_write_list_value(lList **answer_list, const lList *sub_list,
       writer.StartArray();
       writer.EndArray();
    } else if (spool_json_is_ce_list(sub_list)) {
-      spool_json_write_ce_array(writer, sub_list);
+      // a list with the complex-entry fields holds complex entries (CE_Type), possibly reduced; checked as the
+      // getters checked each element before
+      spool_json_write_ce_array(writer, ocs::tom::ConstList<ocs::tom::CE>(sub_list));
    } else if (sub_fields != nullptr && sub_fields[0].nm != NoName && sub_fields[0].name == nullptr) {
       if (!spool_json_write_positional_array(answer_list, sub_list, sub_fields, writer)) {
          return false;

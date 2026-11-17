@@ -62,8 +62,11 @@
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_RQRF.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
@@ -810,12 +813,25 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
    return fields;
 }
 
+/**
+ * @brief Read the queue sort method of the scheduler configuration
+ *
+ * The field reader of SC_queue_sort_method; the field table passes that
+ * field as @p nm, so it is not read. Without DENTER, as the other field
+ * readers.
+ *
+ * @param ep the scheduler configuration (SC_Type)
+ * @param nm the field to read, always SC_queue_sort_method
+ * @param buffer the text of the value, `load` or `seqno`; anything else leaves the field as it is
+ * @param alp receives messages for the caller, unused here
+ * @return 1
+ */
 static int read_SC_queue_sort_method(lListElem *ep, int nm,
                                      const char *buffer, lList **alp) {
    if (!strncasecmp(buffer, "load", 4)) {
-      lSetUlong(ep, nm, QSM_LOAD);
+      ocs::tom::set<SC_queue_sort_method>(ep, QSM_LOAD);
    } else if (!strncasecmp(buffer, "seqno", 5)) {
-      lSetUlong(ep, nm, QSM_SEQNUM);
+      ocs::tom::set<SC_queue_sort_method>(ep, QSM_SEQNUM);
    }
    
    return 1;
@@ -840,9 +856,22 @@ read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, lList **al
    DRETURN(1);
 }
 
+/**
+ * @brief Write the queue sort method of the scheduler configuration
+ *
+ * The field writer of SC_queue_sort_method; the field table passes that
+ * field as @p nm, so it is not read. Without DENTER, as the other field
+ * writers.
+ *
+ * @param ep the scheduler configuration (SC_Type)
+ * @param nm the field to write, always SC_queue_sort_method
+ * @param buffer receives `seqno` or `load`
+ * @param alp receives messages for the caller, unused here
+ * @return 1
+ */
 static int write_SC_queue_sort_method(const lListElem *ep, int nm,
                                       dstring *buffer, lList **alp) {
-   if (lGetUlong(ep, nm) == QSM_SEQNUM) {
+   if (ocs::tom::get<SC_queue_sort_method>(ep) == QSM_SEQNUM) {
       sge_dstring_append(buffer, "seqno");
    } else {
       sge_dstring_append(buffer, "load");
@@ -1471,11 +1500,23 @@ static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
    return 1;
 }
 
+/**
+ * @brief Write the host list of a cluster queue
+ *
+ * The field writer of CQ_hostlist; the field table passes that field as
+ * @p nm, so it is not read. Without DENTER, as the other field writers.
+ *
+ * @param ep the cluster queue (CQ_Type)
+ * @param nm the field to write, always CQ_hostlist
+ * @param buffer receives the host list, or `none`
+ * @param alp receives messages for the caller, unused here
+ * @return 1
+ */
 static int write_CQ_hostlist(const lListElem *ep, int nm,
                              dstring *buffer, lList **alp) {
-   const lList *lp = lGetList(ep, nm);
+   const auto lp = ocs::tom::get<CQ_hostlist>(ep);
    
-   if (lp != nullptr) {
+   if (lp) {
       href_list_append_to_dstring(lp, buffer);
    } else {
       sge_dstring_append(buffer, NONE_STR);
@@ -1490,13 +1531,13 @@ static int write_CQ_hostlist(const lListElem *ep, int nm,
  * of this format, so that it does not read as an instant in time.
  *
  * @param ep the execution host
- * @param nm the attribute to write, EH_auto_added_time
+ * @param nm the attribute to write, always EH_auto_added_time (the field table's), so it is not read
  * @param buffer receives the formatted value
  * @param alp receives messages for the caller, unused here
  * @return 1 on success
  */
 static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer, lList **alp) {
-   uint64_t auto_added_time = lGetUlong64(ep, nm);
+   const uint64_t auto_added_time = ocs::tom::get<EH_auto_added_time>(ep);
 
    if (auto_added_time == 0) {
       sge_dstring_append(buffer, NONE_STR);
@@ -1526,8 +1567,11 @@ static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
  *
  * Reads in a RQR Element from string
  *
- * @param ep Store for parsed Elem
- * @param nm nm to be parsed
+ * The field reader of the five RQR_filter_* fields; the field number varies
+ * per call, so the filter is stored through the untyped interface.
+ *
+ * @param ep Store for parsed Elem (RQR_Type)
+ * @param nm nm to be parsed, one of the RQR_filter_* fields
  * @param buffer String of the elem to be parsed
  * @param alp Answer list
  *
@@ -1539,11 +1583,12 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
                              lList **alp) {
    DENTER(TOP_LAYER);
 
-   lListElem *filter = nullptr;
-   int ret = 1;
+   int ret = 0;
 
-   if ((ret = rqs_parse_filter_from_string(&filter, buffer, alp)) == 1) {
-      lSetObject(ep, nm, filter);
+   if (auto filter = rqs_parse_filter_from_string(buffer, alp)) {
+      // the field number is known only at run time, so the filter is handed over raw
+      lSetObject(ep, nm, filter.release());
+      ret = 1;
    } 
 
    DRETURN(ret);
@@ -1554,8 +1599,12 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
  *
  * Prints out a RQR Element to a string
  *
- * @param ep Elem to be converted
- * @param nm nm of Elem
+ * The field writer of the five RQR_filter_* fields; the field number varies
+ * per call, so the filter is read through the untyped interface. Those
+ * fields hold a filter (RQRF_Type) only, so it is taken without a check.
+ *
+ * @param ep Elem to be converted (RQR_Type)
+ * @param nm nm of Elem, one of the RQR_filter_* fields
  * @param buffer Element as string
  * @param alp Answer List
  *
@@ -1565,5 +1614,8 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
  */
 static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
                        lList **alp) {
-   return rqs_append_filter_to_dstring(lGetObject(ep, nm), buffer, alp);
+   DENTER(TOP_LAYER);
+   const auto filter = ocs::tom::ConstElement<ocs::tom::RQRF>::from_typed(lGetObject(ep, nm));
+   const int ret = rqs_append_filter_to_dstring(filter, buffer, alp);
+   DRETURN(ret);
 }

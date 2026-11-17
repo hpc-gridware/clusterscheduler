@@ -81,6 +81,7 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_STU.h"
+#include "sgeobj/tom/ocs_tom_SU.h"
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
@@ -115,28 +116,30 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
  * Argv has as first (and currently only) parameter the Database URL.
  * It currently consists of the path to the database directory.
  *
+ * The return type is fixed by #spooling_create_context_func (the dynamic
+ * loader), so the context is handed over raw.
+ *
  * @param answer_list to return error messages
  * @param args arguments to the spooling method, see above.
  *
- * @return on success, the new spooling context, else nullptr
+ * @return on success, the new spooling context (SPC_Type), else nullptr
  */
 lListElem *
 spool_berkeleydb_create_context(lList **answer_list, const char *args) {
    DENTER(BDB_LAYER);
 
-   lListElem *context = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::SPC> context;
 
    /* check input parameter */
    if (args != nullptr) {
-      lListElem *rule, *type;
       bdb_info info;
       char *path   = nullptr;
 
       /* create spooling context */
-      context = spool_create_context(answer_list, "berkeleydb spooling");
+      context = ocs_spool_create_context(answer_list, "berkeleydb spooling");
 
       /* create rule and type for all objects spooled in the spool dir */
-      rule = spool_context_create_rule(answer_list, context,
+      const auto rule = spool_context_create_rule(answer_list, context.get(),
                                        "default rule",
                                        args,
                                        spool_berkeleydb_option_func,
@@ -160,11 +163,11 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args) {
 
       info = bdb_create(path);
       ocs::tom::set<SPR_clientdata>(rule, info);
-      type = spool_context_create_type(answer_list, context, SGE_TYPE_ALL);
+      const auto type = spool_context_create_type(answer_list, context.get(), SGE_TYPE_ALL);
       spool_type_add_rule(answer_list, type, rule, true);
    }
 
-   DRETURN(context);
+   DRETURN(context.release());
 }
 
 /**
@@ -436,7 +439,7 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
    const lDescr *descr;
    const char *table_name;
    bdb_info info;
-   lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
+   const auto master_suser_list = ocs::tom::List<ocs::tom::SU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER));
 
    info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    descr = object_type_get_descr(object_type);
@@ -572,7 +575,9 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                            }
                         }
                      }
-                     job_list_register_new_job(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
+                     job_list_register_new_job(
+                        ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+                        mconf_get_max_jobs(), 1);
                      suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
                      if (!ret) {
                         break;

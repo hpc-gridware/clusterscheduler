@@ -117,16 +117,19 @@ const char *get_classic_spooling_method()
  * rejected with an error; a bootstrap file still carrying it must be migrated to
  * a single spool directory path.
  *
+ * The return type is fixed by #spooling_create_context_func (the dynamic
+ * loader), so the context is handed over raw.
+ *
  * @param[out] answer_list  to return error messages
  * @param[in]  args         absolute spool directory path (the legacy
  *                          "<common_dir>;<spool_dir>" form is rejected)
- * @return on success the new spooling context, else nullptr
+ * @return on success the new spooling context (SPC_Type), else nullptr
  */
 lListElem *
 spool_classic_create_context(lList **answer_list, const char *args) {
    DENTER(TOP_LAYER);
 
-   lListElem *context = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::SPC> context;
 
    /* check parameter - must be set and be an absolute spool directory path */
    if (args == nullptr) {
@@ -158,7 +161,6 @@ spool_classic_create_context(lList **answer_list, const char *args) {
       } else {
          int i;
          flatfile_info *field_info;
-         lListElem *rule, *type;
 
          /* create info which fields to spool once */
          field_info = (flatfile_info *)sge_malloc(sizeof(flatfile_info) * SGE_TYPE_ALL);
@@ -253,10 +255,10 @@ spool_classic_create_context(lList **answer_list, const char *args) {
          }
 
          /* create spooling context */
-         context = spool_create_context(answer_list, "flatfile spooling");
+         context = ocs_spool_create_context(answer_list, "flatfile spooling");
 
          /* create rule and type for all objects spooled in the spool dir */
-         rule = spool_context_create_rule(answer_list, context,
+         const auto rule = spool_context_create_rule(answer_list, context.get(),
                                           "default rule (spool dir)",
                                           spool_dir,
                                           nullptr,
@@ -273,7 +275,7 @@ spool_classic_create_context(lList **answer_list, const char *args) {
                                           spool_default_validate_func,
                                           spool_default_validate_list_func);
          ocs::tom::set<SPR_clientdata>(rule, field_info);
-         type = spool_context_create_type(answer_list, context, SGE_TYPE_ALL);
+         const auto type = spool_context_create_type(answer_list, context.get(), SGE_TYPE_ALL);
          spool_type_add_rule(answer_list, type, rule, true);
 
          /* SGE_TYPE_CONFIG and SGE_TYPE_SCHEDD_CONF are deliberately not given
@@ -288,7 +290,7 @@ spool_classic_create_context(lList **answer_list, const char *args) {
       sge_free_saved_vars(strtok_context);
    }
 
-   DRETURN(context);
+   DRETURN(context.release());
 }
 
 /**
@@ -679,7 +681,7 @@ bool spool_classic_default_list_func(lList **answer_list,
             abs_dir = sge_dstring_sprintf(&abs_dir_dstring, "%s/%s", url,
                                           directory);
 
-            const auto direntries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(abs_dir));
+            const auto direntries = ocs_get_dirents(abs_dir);
 
             dstring spool_key = DSTRING_INIT;
             for (const ocs::tom::ConstElement<ocs::tom::ST> direntry : *direntries) {
@@ -698,9 +700,9 @@ bool spool_classic_default_list_func(lList **answer_list,
       switch(object_type) {
          case SGE_TYPE_CQUEUE:
             {
-               const lListElem *context = spool_get_default_context();
-               lListElem *type = spool_context_search_type(context, SGE_TYPE_QINSTANCE);
-               lListElem *rule = spool_type_search_default_rule(type);
+               const auto context = spool_get_default_context();
+               const auto type = spool_context_search_type(context, SGE_TYPE_QINSTANCE);
+               const auto rule = spool_type_search_default_rule(type);
                const char *url = ocs::tom::get<SPR_url>(rule);
 
                dstring key = DSTRING_INIT;
@@ -714,8 +716,7 @@ bool spool_classic_default_list_func(lList **answer_list,
                   ocs::spool::DuplicateFilter qinstance_filter(QU_Type, object_type_get_name(SGE_TYPE_QINSTANCE));
 
                   sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, queue.get<CQ_name>());
-                  const auto direntries =
-                          ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(sge_dstring_get_string(&dir)));
+                  const auto direntries = ocs_get_dirents(sge_dstring_get_string(&dir));
                   for (const ocs::tom::ConstElement<ocs::tom::ST> direntry : *direntries) {
                      const char *directory = direntry.get<ST_name>();
                      if (directory[0] != '.') {

@@ -61,20 +61,19 @@ static lList *Default_Spool_Context_List;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 /**
- * @brief Create a new spooing context
+ * @brief Create a new spooling context
  *
  * Create a new spooling context.
  *
  * @code
- * lListElem *context;
- * context = spool_create_context(answer_list, "my spooling context");
+ * auto context = ocs_spool_create_context(answer_list, "my spooling context");
  * ...
  * @endcode
  *
  * @param answer_list to return error messages
  * @param name name of the context
  *
- * @return the new spooling context
+ * @return the new spooling context, or an empty handle if @p name is nullptr
  *
  * @note Callers do not normally use this directly. Each backend provides a
  *       service function that creates its own context and fills it with the
@@ -83,11 +82,11 @@ static lList *Default_Spool_Context_List;
  *
  * @see #spool_free_context
  */
-lListElem *
-spool_create_context(lList **answer_list, const char *name) {
+ocs::tom::ElementPtr<ocs::tom::SPC>
+ocs_spool_create_context(lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::SPC> context;
 
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
@@ -95,13 +94,25 @@ spool_create_context(lList **answer_list, const char *name) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_CONTEXTNEEDSNAME);
    } else {
-      auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::create();
+      context = ocs::tom::ElementPtr<ocs::tom::SPC>::create();
       context->set<SPC_name>(name);
-      ep = context.release();
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
-   DRETURN(ep);
+   DRETURN(context);
+}
+
+/**
+ * @brief spool_create_context() for an untyped caller
+ *
+ * @param answer_list to return error messages
+ * @param name name of the context
+ *
+ * @return as ocs_spool_create_context(), handed over raw (SPC_Type)
+ */
+lListElem *
+spool_create_context(lList **answer_list, const char *name) {
+   return ocs_spool_create_context(answer_list, name).release();
 }
 
 /**
@@ -111,35 +122,36 @@ spool_create_context(lList **answer_list, const char *name) {
  * all allocated resources.
  *
  * @code
- * lListElem *context;
+ * auto context = ocs_spool_create_context(answer_list, "my spooling context");
  * ...
- * context = spool_free_context(answer_list, context);
+ * spool_free_context(answer_list, std::move(context));
  * @endcode
  *
+ * The function used to return nullptr for an assignment back to the
+ * caller's pointer; the owning handle is consumed instead. It has no caller.
+ *
  * @param answer_list to return error messages
- * @param context the context to free
+ * @param context the context to free, handed over
  *
- * @return nullptr
- *
- * @see #spool_create_context, #spool_shutdown_context
+ * @see #ocs_spool_create_context, #spool_shutdown_context
  */
-lListElem *
-spool_free_context(lList **answer_list, lListElem *context) {
+void
+spool_free_context(lList **answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&context) {
    DENTER(TOP_LAYER);
+   auto owned_context = std::move(context);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
   
-   if (context == nullptr) {
+   if (!owned_context) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S, 
                               __func__);
    } else {
-      spool_shutdown_context(answer_list, context);
-      // the caller hands the context over; the pointer returned afterwards is nullptr
-      ocs::tom::ElementPtr<ocs::tom::SPC>::from_typed(std::exchange(context, nullptr)).reset();
+      spool_shutdown_context(answer_list, owned_context.get());
+      owned_context.reset();
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
-   DRETURN(context);
+   DRETURN_VOID;
 }
 
 /**
@@ -516,15 +528,27 @@ bool spool_transaction(lList **answer_list, const lListElem *context,
  * The default context can be retrieved later with the function
  * spool_get_default_context().
  *
- * @param context the context to be the default context
+ * The parameter stays untyped: the qmaster, the spooling utilities and the
+ * tests pass the context the dynamic loader gave them raw.
+ *
+ * @param context the context to be the default context (SPC_Type), handed over to the default list;
+ *                nullptr is ignored
  *
  * @see #spool_get_default_context
  */
 void spool_set_default_context(lListElem *context) {
+   DENTER(TOP_LAYER);
    if (Default_Spool_Context_List == nullptr) {
-      Default_Spool_Context_List = lCreateList(nullptr, SPC_Type);
+      // process-lifetime static: no owning handle, the list is handed over raw
+      Default_Spool_Context_List = ocs::tom::ListPtr<ocs::tom::SPC>::create(nullptr).release();
    }
-   lAppendElem(Default_Spool_Context_List, context);
+   // lAppendElem() refused a nullptr element with an error return; the qmaster passes nullptr at shutdown
+   if (context != nullptr) {
+      // the caller hands the context over to the list
+      ocs::tom::List<ocs::tom::SPC>::from_typed(Default_Spool_Context_List)
+         .push_back(ocs::tom::ElementPtr<ocs::tom::SPC>(context));
+   }
+   DRETURN_VOID;
 }
 
 /**
@@ -533,11 +557,13 @@ void spool_set_default_context(lListElem *context) {
  * Retrieves a spooling context that has been set earlier using the function
  * spool_set_default_context()
  *
- * @return the spooling context, or nullptr, if no default context has been set.
+ * Without DENTER: called for every spooling operation of the qmaster.
+ *
+ * @return the spooling context, or an empty handle, if no default context has been set.
  *
  * @see #spool_set_default_context
  */
-lListElem *
+ocs::tom::Element<ocs::tom::SPC>
 spool_get_default_context() {
    // the list is created in spool_set_default_context() with SPC_Type
    return ocs::tom::List<ocs::tom::SPC>::from_typed(Default_Spool_Context_List).front();
@@ -566,10 +592,10 @@ spool_get_default_context() {
  * @param validate_func function validateing an individual object
  * @param validate_list_func function for validating the new list
  *
- * @return the new rule, if it could be created, else nullptr
+ * @return the new rule, if it could be created, else an empty handle
  */
-lListElem *
-spool_context_create_rule(lList **answer_list, lListElem *context,
+ocs::tom::Element<ocs::tom::SPR>
+spool_context_create_rule(lList **answer_list, const ocs::tom::Element<ocs::tom::SPC> context,
                           const char *name, const char *url,
                           spooling_option_func option_func,
                           spooling_startup_func startup_func,
@@ -586,7 +612,7 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
                           spooling_validate_list_func validate_list_func) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::SPR> ep;
 
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
@@ -594,12 +620,12 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
-   } else if (ocs::tom::get<SPC_rules>(context).find_first<SPR_name>(name)) {
+   } else if (context.get<SPC_rules>().find_first<SPR_name>(name)) {
       /* check for duplicates */
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_RULEALREADYEXISTS_SS, 
-                              name, ocs::tom::get<SPC_name>(context));
+                              name, context.get<SPC_name>());
    } else {
       /* create rule */
       auto rule = ocs::tom::ElementPtr<ocs::tom::SPR>::create();
@@ -619,13 +645,57 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
       rule->set<SPR_validate_func>((void *)validate_func);
       rule->set<SPR_validate_list_func>((void *)validate_list_func);
 
-      /* append rule to rule list; the context was already checked by the lookup above */
-      ep = ocs::tom::Element<ocs::tom::SPC>::from_typed(context).get_or_create<SPC_rules>("spooling rules")
-              .push_back(std::move(rule));
+      /* append rule to rule list */
+      ep = context.get_or_create<SPC_rules>("spooling rules").push_back(std::move(rule));
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
    DRETURN(ep);
+}
+
+/**
+ * @brief spool_context_create_rule() for an untyped caller
+ *
+ * @param answer_list to return error messages
+ * @param context the context to contain the new rule (SPC_Type), checked
+ * @param name the name of the rule
+ * @param url the name of the url
+ * @param option_func function to set options for the rule
+ * @param startup_func startup function for the rule
+ * @param shutdown_func shutdown function
+ * @param maintenance_func maintenance function (initialization, backup, etc.)
+ * @param trigger_func function for recurring housekeeping
+ * @param transaction_func function beginning, committing and rolling back
+ * @param list_func function reading a list of objects
+ * @param read_func function reading an individual object
+ * @param read_keys_func function listing the keys below a key
+ * @param write_func function writing an individual object
+ * @param delete_func function deleting an individual object
+ * @param validate_func function validating an individual object
+ * @param validate_list_func function for validating the new list
+ *
+ * @return as the typed form
+ */
+lListElem *
+spool_context_create_rule(lList **answer_list, lListElem *context,
+                          const char *name, const char *url,
+                          spooling_option_func option_func,
+                          spooling_startup_func startup_func,
+                          spooling_shutdown_func shutdown_func,
+                          spooling_maintenance_func maintenance_func,
+                          spooling_trigger_func trigger_func,
+                          spooling_transaction_func transaction_func,
+                          spooling_list_func list_func,
+                          spooling_read_func read_func,
+                          spooling_read_keys_func read_keys_func,
+                          spooling_write_func write_func,
+                          spooling_delete_func delete_func,
+                          spooling_validate_func validate_func,
+                          spooling_validate_list_func validate_list_func) {
+   return spool_context_create_rule(answer_list, ocs::tom::Element<ocs::tom::SPC>(context), name, url, option_func,
+                                    startup_func, shutdown_func, maintenance_func, trigger_func, transaction_func,
+                                    list_func, read_func, read_keys_func, write_func, delete_func, validate_func,
+                                    validate_list_func);
 }
 
 /**
@@ -636,23 +706,25 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
  * If no specific description for the given type is found, but a
  * default type description (for all object types) exists, this
  * default type description is returned.
+ * Without DENTER: called for every spooling operation of the qmaster.
  *
  * @param context the context to search
  * @param object_type the object type to search
  *
- * @return an object type description or nullptr, if none was found.
+ * @return an object type description or an empty handle, if none was found.
  */
-lListElem *
-spool_context_search_type(const lListElem *context,
-                          sge_object_type object_type) {
-   lListElem *ep;
+ocs::tom::Element<ocs::tom::SPT>
+spool_context_search_type(const ocs::tom::ConstElement<ocs::tom::SPC> context,
+                          const sge_object_type object_type) {
+   // the types are searched read-write, as the caller gets a mutable type description from a read-only context
+   const auto types = context.get<SPC_types>();
 
    /* search fitting rule */
-   ep = ocs::tom::find_first_rw<SPT_type>(ocs::tom::get<SPC_types>(context), object_type);
+   auto ep = ocs::tom::find_first_rw<SPT_type>(types, object_type);
 
    /* if no specific rule is found, return default rule */
-   if (ep == nullptr) {
-      ep = ocs::tom::find_first_rw<SPT_type>(ocs::tom::get<SPC_types>(context), SGE_TYPE_ALL);
+   if (!ep) {
+      ep = ocs::tom::find_first_rw<SPT_type>(types, SGE_TYPE_ALL);
    }
    
    return ep;
@@ -671,14 +743,14 @@ spool_context_search_type(const lListElem *context,
  * @param context the context to contain the new description
  * @param object_type the object type
  *
- * @return the new object type description
+ * @return the new object type description, or an empty handle if @p context is empty
  */
-lListElem *
-spool_context_create_type(lList **answer_list, lListElem *context,
-                          sge_object_type object_type) {
+ocs::tom::Element<ocs::tom::SPT>
+spool_context_create_type(lList **answer_list, const ocs::tom::Element<ocs::tom::SPC> context,
+                          const sge_object_type object_type) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::SPT> ep;
 
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
@@ -693,8 +765,7 @@ spool_context_create_type(lList **answer_list, lListElem *context,
       type->set<SPT_name>(object_type_get_name(object_type));
 
       /* append it to the types list of the context */
-      ep = ocs::tom::Element<ocs::tom::SPC>(context).get_or_create<SPC_types>("spooling object types")
-              .push_back(std::move(type));
+      ep = context.get_or_create<SPC_types>("spooling object types").push_back(std::move(type));
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
@@ -702,22 +773,39 @@ spool_context_create_type(lList **answer_list, lListElem *context,
 }
 
 /**
+ * @brief spool_context_create_type() for an untyped caller
+ *
+ * @param answer_list to return error messages
+ * @param context the context to contain the new description (SPC_Type), checked
+ * @param object_type the object type
+ *
+ * @return as the typed form
+ */
+lListElem *
+spool_context_create_type(lList **answer_list, lListElem *context, const sge_object_type object_type) {
+   return spool_context_create_type(answer_list, ocs::tom::Element<ocs::tom::SPC>(context), object_type);
+}
+
+/**
  * @brief Search the default rule
  *
  * Searches and returns the default spooling rule for a certain object type.
  *
+ * The rule is referenced through the Ref field SPTR_rule, which only
+ * spool_type_add_rule() sets, with a rule (SPR_Type); it is taken without a
+ * check. Without DENTER: called for every spooling operation of the qmaster.
+ *
  * @param spool_type the object type
  *
- * @return the default rule, or nullptr, if no rule could be found.
+ * @return the default rule, or an empty handle, if no rule could be found.
  */
-lListElem *
-spool_type_search_default_rule(const lListElem *spool_type) {
-   lListElem *rule = nullptr;
+ocs::tom::Element<ocs::tom::SPR>
+spool_type_search_default_rule(const ocs::tom::ConstElement<ocs::tom::SPT> spool_type) {
+   ocs::tom::Element<ocs::tom::SPR> rule;
 
-   ocs::tom::ConstList<ocs::tom::SPTR> lp = ocs::tom::get<SPT_rules>(spool_type);
-   for (ocs::tom::ConstElement<ocs::tom::SPTR> ep : lp) {
-      if (ocs::tom::get<SPTR_is_default>(ep)) {
-         rule = (lListElem *)ocs::tom::get<SPTR_rule>(ep);
+   for (const ocs::tom::ConstElement<ocs::tom::SPTR> ep : spool_type.get<SPT_rules>()) {
+      if (ep.get<SPTR_is_default>()) {
+         rule = ocs::tom::Element<ocs::tom::SPR>::from_typed(static_cast<lListElem *>(ep.get<SPTR_rule>()));
          break;
       }
    }
@@ -736,46 +824,61 @@ spool_type_search_default_rule(const lListElem *spool_type) {
  * @param rule the rule to add
  * @param is_default is the rule the default rule?
  *
- * @return the newly created mapping object between type and rule (SPTR_Type), or nullptr, if an error occurred.
+ * @return the newly created mapping object between type and rule, or an empty handle, if an error occurred.
  *
  * @see #spool_context_create_type, #spool_context_create_rule
  */
-lListElem *
-spool_type_add_rule(lList **answer_list, lListElem *spool_type,
-                    const lListElem *rule, lBool is_default) {
+ocs::tom::Element<ocs::tom::SPTR>
+spool_type_add_rule(lList **answer_list, const ocs::tom::Element<ocs::tom::SPT> spool_type,
+                    const ocs::tom::ConstElement<ocs::tom::SPR> rule, const lBool is_default) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::SPTR> ep;
 
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
-   if(spool_type == nullptr) {
+   if (!spool_type) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_NOVALIDSPOOLTYPE_S, __func__);
-   } else if(rule == nullptr) {
+   } else if (!rule) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDRULE_S,
                               __func__);
-   } else if(is_default && spool_type_search_default_rule(spool_type) != nullptr) {
+   } else if (is_default && spool_type_search_default_rule(spool_type)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_TYPEALREADYHASDEFAULTRULE_S, 
-                              ocs::tom::get<SPT_name>(spool_type));
+                              spool_type.get<SPT_name>());
    } else {
       /* create mapping object; the rule is referenced through a Ref field and so stays untyped */
       auto type_rule = ocs::tom::ElementPtr<ocs::tom::SPTR>::create();
       type_rule->set<SPTR_is_default>(is_default);
-      type_rule->set<SPTR_rule_name>(ocs::tom::get<SPR_name>(rule));
-      type_rule->set<SPTR_rule>((void *)rule);
+      type_rule->set<SPTR_rule_name>(rule.get<SPR_name>());
+      type_rule->set<SPTR_rule>((void *)rule.raw());
 
       /* append it to the list of mapping for this type */
-      ep = ocs::tom::Element<ocs::tom::SPT>(spool_type).get_or_create<SPT_rules>("spooling object type rules")
-              .push_back(std::move(type_rule));
+      ep = spool_type.get_or_create<SPT_rules>("spooling object type rules").push_back(std::move(type_rule));
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
    DRETURN(ep);
+}
+
+/**
+ * @brief spool_type_add_rule() for an untyped caller
+ *
+ * @param answer_list to return error messages
+ * @param spool_type the object type description (SPT_Type), checked
+ * @param rule the rule to add (SPR_Type), checked
+ * @param is_default is the rule the default rule?
+ *
+ * @return as the typed form
+ */
+lListElem *
+spool_type_add_rule(lList **answer_list, lListElem *spool_type, const lListElem *rule, const lBool is_default) {
+   return spool_type_add_rule(answer_list, ocs::tom::Element<ocs::tom::SPT>(spool_type),
+                              ocs::tom::ConstElement<ocs::tom::SPR>(rule), is_default);
 }
 
 /**
@@ -811,22 +914,19 @@ bool spool_read_list(lList **answer_list, const lListElem *context,
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      lListElem *type;
-
-      /* find the object type description */
-      type = spool_context_search_type(context, object_type);
-      if (type == nullptr) {
+      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
+                                                  object_type);
+      if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS, 
                                  object_type_get_name(object_type), 
                                  ocs::tom::get<SPC_name>(context));
       } else {
-         lListElem *rule;
-
          /* use the default rule to read list */
-         rule = spool_type_search_default_rule(type);
-         if (rule == nullptr) {
+         const auto rule = spool_type_search_default_rule(type);
+         if (!rule) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NODEFAULTRULEFORTYPEINCONTEXT_SS,
@@ -885,22 +985,19 @@ spool_read_object(lList **answer_list, const lListElem *context,
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      lListElem *type;
-
-      /* find the object type description */
-      type = spool_context_search_type(context, object_type);
-      if (type == nullptr) {
+      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
+                                                  object_type);
+      if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS,
                                  object_type_get_name(object_type), 
                                  ocs::tom::get<SPC_name>(context));
       } else {
-         lListElem *rule;
-
          /* use the default rule to read object */
-         rule = spool_type_search_default_rule(type);
-         if (rule == nullptr) {
+         const auto rule = spool_type_search_default_rule(type);
+         if (!rule) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NODEFAULTRULEFORTYPEINCONTEXT_SS,
@@ -1014,11 +1111,10 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      lListElem *type;
-
-      /* find the object type description */
-      type = spool_context_search_type(context, object_type);
-      if (type == nullptr) {
+      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
+                                                  object_type);
+      if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS,
@@ -1026,7 +1122,7 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
                                  ocs::tom::get<SPC_name>(context));
       } else {
          /* loop over all rules and call the writing callbacks */
-         ocs::tom::ConstList<ocs::tom::SPTR> type_rules = ocs::tom::get<SPT_rules>(type);
+         const auto type_rules = type.get<SPT_rules>();
          if (type_rules.empty()) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
@@ -1038,11 +1134,10 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
 
             /* spool using multiple rules */
             for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : type_rules) {
-               lListElem *rule;
-               spooling_write_func func;
-
-               rule = (lListElem *)ocs::tom::get<SPTR_rule>(type_rule);
-               func = (spooling_write_func)ocs::tom::get<SPR_write_func>(rule);
+               // the rule is referenced through a Ref field, set by spool_type_add_rule() with an SPR_Type rule
+               const auto rule = ocs::tom::ConstElement<ocs::tom::SPR>::from_typed(
+                  static_cast<const lListElem *>(type_rule.get<SPTR_rule>()));
+               auto func = (spooling_write_func)rule.get<SPR_write_func>();
                if (func == nullptr) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                           ANSWER_QUALITY_ERROR, 
@@ -1098,11 +1193,10 @@ bool spool_delete_object(lList **answer_list, const lListElem *context,
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      lListElem *type;
-
-      /* find the object type description */
-      type = spool_context_search_type(context, object_type);
-      if (type == nullptr) {
+      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
+                                                  object_type);
+      if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS,
@@ -1110,7 +1204,7 @@ bool spool_delete_object(lList **answer_list, const lListElem *context,
                                  ocs::tom::get<SPC_name>(context));
       } else {
          /* loop over all rules and call the deleting callbacks */
-         ocs::tom::ConstList<ocs::tom::SPTR> type_rules = ocs::tom::get<SPT_rules>(type);
+         const auto type_rules = type.get<SPT_rules>();
          if (type_rules.empty()) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
@@ -1122,11 +1216,10 @@ bool spool_delete_object(lList **answer_list, const lListElem *context,
 
             /* delete object using all spooling rules */
             for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : type_rules) {
-               lListElem *rule;
-               spooling_delete_func func;
-
-               rule = (lListElem *)ocs::tom::get<SPTR_rule>(type_rule);
-               func = (spooling_delete_func)ocs::tom::get<SPR_delete_func>(rule);
+               // the rule is referenced through a Ref field, set by spool_type_add_rule() with an SPR_Type rule
+               const auto rule = ocs::tom::ConstElement<ocs::tom::SPR>::from_typed(
+                  static_cast<const lListElem *>(type_rule.get<SPTR_rule>()));
+               auto func = (spooling_delete_func)rule.get<SPR_delete_func>();
                if (func == nullptr) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                           ANSWER_QUALITY_ERROR, 

@@ -33,6 +33,12 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
@@ -99,19 +105,21 @@ namespace ocs::spool::classic {
       bool ret = true;
 
       if (*ar_list == nullptr) {
+         // the caller's list is untyped (generic spool_read_list()), so the new list is handed over raw
          *ar_list = ocs::tom::ListPtr<ocs::tom::AR>::create(list_name).release();
-      }
-      if (*ar_list == nullptr) {
-         ret = false;
       }
 
       if (ret) {
-         const lList *master_centry_list = *DataStore::get_master_list(SGE_TYPE_CENTRY);
-         const lList *master_ckpt_list = *DataStore::get_master_list(SGE_TYPE_CKPT);
-         const lList *master_cqueue_list = *DataStore::get_master_list(SGE_TYPE_CQUEUE);
-         const lList *master_hgroup_list = *DataStore::get_master_list(SGE_TYPE_HGROUP);
-         const lList *master_pe_list = *DataStore::get_master_list(SGE_TYPE_PE);
-         const lList *master_userset_list = *DataStore::get_master_list(SGE_TYPE_USERSET);
+         const auto master_centry_list =
+            ocs::tom::ConstList<ocs::tom::CE>(*DataStore::get_master_list(SGE_TYPE_CENTRY));
+         const auto master_ckpt_list = ocs::tom::ConstList<ocs::tom::CK>(*DataStore::get_master_list(SGE_TYPE_CKPT));
+         const auto master_cqueue_list =
+            ocs::tom::ConstList<ocs::tom::CQ>(*DataStore::get_master_list(SGE_TYPE_CQUEUE));
+         const auto master_hgroup_list =
+            ocs::tom::ConstList<ocs::tom::HGRP>(*DataStore::get_master_list(SGE_TYPE_HGROUP));
+         const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*DataStore::get_master_list(SGE_TYPE_PE));
+         const auto master_userset_list =
+            ocs::tom::ConstList<ocs::tom::US>(*DataStore::get_master_list(SGE_TYPE_USERSET));
          lList *answer_list = nullptr;
 
          const auto ars = ocs::tom::List<ocs::tom::AR>(*ar_list);

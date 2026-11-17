@@ -61,8 +61,10 @@
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_SU.h"
 
 #include "spool/sge_dirent.h"
 
@@ -90,8 +92,8 @@ static int job_write_as_single_file(ocs::tom::ConstElement<ocs::tom::JB> job, ui
 static ocs::tom::ElementPtr<ocs::tom::JB> job_create_from_file(uint32_t job_id, uint32_t task_id,
                                                                sge_spool_flags_t flags);
 
-static int job_has_to_spool_one_file(ocs::tom::ConstElement<ocs::tom::JB> job, const lList *pe_list,
-                                     sge_spool_flags_t flags);
+static int job_has_to_spool_one_file(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                     ocs::tom::ConstList<ocs::tom::PE> pe_list, sge_spool_flags_t flags);
 
 static ocs::tom::ElementPtr<ocs::tom::PET> pe_task_create_from_file(uint32_t job_id, uint32_t ja_task_id,
                                                                     const char *pe_task_id, sge_spool_flags_t flags);
@@ -187,7 +189,7 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
    auto ja_tasks = ocs::tom::ListPtr<ocs::tom::JAT>::create("ja_tasks");
    sge_get_file_path(spool_dir_job, sizeof(spool_dir_job), JOB_SPOOL_DIR, FORMAT_DEFAULT, flags, job_id, ja_task_id,
                      nullptr);
-   const auto dir_entries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(spool_dir_job));
+   const auto dir_entries = ocs_get_dirents(spool_dir_job);
    for (const ocs::tom::ConstElement<ocs::tom::ST> dir_entry : *dir_entries) {
       const char *entry = dir_entry.get<ST_name>();
       // dot entries are ".", ".." and the dot files a write leaves behind when its rename failed or the
@@ -196,7 +198,7 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
          char spool_dir_tasks[SGE_PATH_MAX];
 
          snprintf(spool_dir_tasks, sizeof(spool_dir_tasks), SFN "/" SFN, spool_dir_job, entry);
-         const auto ja_task_entries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(spool_dir_tasks));
+         const auto ja_task_entries = ocs_get_dirents(spool_dir_tasks);
          for (const ocs::tom::ConstElement<ocs::tom::ST> ja_task_entry : *ja_task_entries) {
             const char *ja_task_string = ja_task_entry.get<ST_name>();
             if (ja_task_string[0] != '.') {
@@ -219,8 +221,7 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
                   ja_task = ocs::tom::ElementPtr<ocs::tom::JAT>::from_typed(lReadElemFromDisk(nullptr,
                                                                                               spool_path_ja_task,
                                                                                               JAT_Type, "ja_task"));
-                  const auto pe_task_entries =
-                          ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(spool_dir_pe_tasks));
+                  const auto pe_task_entries = ocs_get_dirents(spool_dir_pe_tasks);
                   for (const ocs::tom::ConstElement<ocs::tom::ST> pe_task_entry : *pe_task_entries) {
                      const char *pe_task_string = pe_task_entry.get<ST_name>();
                      if (pe_task_string[0] != '.' && strcmp(pe_task_string, "common")) {
@@ -354,7 +355,8 @@ int job_write_spool_file(const ocs::tom::Element<ocs::tom::JB> job, const uint32
       start = sge_get_gmt64();
    }
 
-   if (job_has_to_spool_one_file(job, *ocs::DataStore::get_master_list(SGE_TYPE_PE), flags)) {
+   const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   if (job_has_to_spool_one_file(job, master_pe_list, flags)) {
       ret = job_write_as_single_file(job, ja_taskid, flags);
    } else {
       if (!(flags & SPOOL_ONLY_JATASK) && !(flags & SPOOL_ONLY_PETASK)) {
@@ -405,8 +407,8 @@ int job_write_spool_file(lListElem *job, const uint32_t ja_taskid, const char *p
  *
  * @return 1 if the job is spooled as one file, else 0
  */
-static int job_has_to_spool_one_file(const ocs::tom::ConstElement<ocs::tom::JB> job, const lList *pe_list,
-                                     const sge_spool_flags_t flags) {
+static int job_has_to_spool_one_file(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                     const ocs::tom::ConstList<ocs::tom::PE> pe_list, const sge_spool_flags_t flags) {
    DENTER(TOP_LAYER);
 
    if ((flags & SPOOL_WITHIN_EXECD)) {
@@ -704,7 +706,8 @@ int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
 
    sge_dstring_init(&error_msg, error_msg_buffer, sizeof(error_msg_buffer));
 
-   one_file = job_has_to_spool_one_file(job, *ocs::DataStore::get_master_list(SGE_TYPE_PE), flags);
+   const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   one_file = job_has_to_spool_one_file(job, master_pe_list, flags);
    if (ja_taskid != 0 && pe_task_id != nullptr && !one_file) {
        char pe_task_spool_file[SGE_PATH_MAX];
 
@@ -855,7 +858,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
 
    // the directory entries (ST_Type) of the three directory levels; each list is freed when its level is done
    sge_get_file_path(first_dir, sizeof(first_dir), JOBS_SPOOL_DIR, FORMAT_FIRST_PART, flags, 0, 0, nullptr);
-   const auto first_direnties = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(first_dir));
+   const auto first_direnties = ocs_get_dirents(first_dir);
 
    if (first_direnties && !sge_silent_get()) {
       printf(MSG_CONFIG_READINGIN_S, list_name);
@@ -874,7 +877,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
       }
    
       snprintf(second_dir, sizeof(second_dir), SFN "/" SFN, first_dir, first_entry_string);
-      const auto second_direnties = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(second_dir));
+      const auto second_direnties = ocs_get_dirents(second_dir);
       for (const ocs::tom::ConstElement<ocs::tom::ST> second_direntry : *second_direnties) {
          char third_dir[SGE_PATH_MAX] = "";
          const char *second_entry_string = second_direntry.get<ST_name>();
@@ -887,7 +890,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
          } 
 
          snprintf(third_dir, sizeof(third_dir), SFN "/" SFN, second_dir, second_entry_string);
-         const auto third_direnties = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(third_dir));
+         const auto third_direnties = ocs_get_dirents(third_dir);
          for (const ocs::tom::ConstElement<ocs::tom::ST> third_direntry : *third_direnties) {
             char *lasts = nullptr;
             char job_dir[SGE_PATH_MAX] = "";
@@ -942,7 +945,8 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
                   ERROR(MSG_CONFIG_CANTFINDSCRIPTFILE_U, job->get<JB_job_number>());
                   // job_remove_spool_file() looks the job up in the master job list, so it is put there for the call
                   const auto added_job = job.get();
-                  job_list_add_job(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), "job list", job.release(), 0);
+                  job_list_add_job(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), "job list",
+                                   ocs::tom::Element<ocs::tom::JB>::from_typed(job.release()), 0);
                   job_remove_spool_file(job_id, 0, nullptr, SPOOL_DEFAULT);
                   ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)).erase(added_job);
                   continue;
@@ -965,12 +969,15 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
 
             job->set<JB_jid_successor_list>(nullptr);
             const auto added_job = job.get();
-            job_list_add_job(job_list, list_name, job.release(), 0);
+            job_list_add_job(job_list, list_name, ocs::tom::Element<ocs::tom::JB>::from_typed(job.release()), 0);
 
             bool in_execd = (flags & SPOOL_WITHIN_EXECD) > 0;
             if (!in_execd) {
-               job_list_register_new_job(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
-               lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
+               job_list_register_new_job(
+                  ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+                  mconf_get_max_jobs(), 1);
+               const auto master_suser_list =
+                  ocs::tom::List<ocs::tom::SU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER));
                suser_register_new_job(added_job, mconf_get_max_u_jobs(), 1, master_suser_list);
             }
          }

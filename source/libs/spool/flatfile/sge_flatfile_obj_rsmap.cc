@@ -223,7 +223,7 @@ parse_id_characteristics(const char *token, std::string &id_out, lList **alpp, c
  * @brief parse an entry of complex_values
  *
  * @param ep        CE_Type element which will store the complex_value
- * @param nm        attribute to fill in (CE_stringval)
+ * @param nm        attribute to fill in, always CE_stringval (the field table's), so it is not read
  * @param buf       string buffer with the complex value
  * @param alpp      for returning errors
  * @return          1 in case of success, else 0
@@ -283,8 +283,8 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
    struct saved_vars_s *context = nullptr;
    char *token;
    if ((token = sge_strtok_r(&cleaned[0], " (", &context))) {
-      // first token is the amount
-      lSetString(ep, nm, token);
+      // first token is the amount; the field table passes CE_stringval as nm, the writer reads it the same way
+      centry.set<CE_stringval>(token);
       uint32_t amount = SGE_STRTOU_LONG32(token);
 
       // the following tokens are individual ids or ranges

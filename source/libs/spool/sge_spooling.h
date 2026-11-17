@@ -48,6 +48,13 @@
 #include "sgeobj/cull/sge_spooling_SPT_L.h"
 #include "sgeobj/cull/sge_spooling_SPTR_L.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_SPC.h"
+#include "sgeobj/tom/ocs_tom_SPR.h"
+#include "sgeobj/tom/ocs_tom_SPT.h"
+#include "sgeobj/tom/ocs_tom_SPTR.h"
+
 /** @defgroup spool_framework Spooling framework
  * @brief An abstraction layer between what has to be spooled and where it goes
  *
@@ -245,20 +252,21 @@ typedef bool
 /** @} */
 
 /* creation and maintenance of the spooling context */
-lListElem *
-spool_create_context(lList **answer_list, const char *name);
+ocs::tom::ElementPtr<ocs::tom::SPC>
+ocs_spool_create_context(lList **answer_list, const char *name);
+OCS_TRANSITIONAL lListElem *spool_create_context(lList **answer_list, const char *name);
 
-lListElem *
-spool_free_context(lList **answer_list, lListElem *context);
+void
+spool_free_context(lList **answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&context);
 
 void 
 spool_set_default_context(lListElem *context);
 
-lListElem *
+ocs::tom::Element<ocs::tom::SPC>
 spool_get_default_context();
 
-lListElem *
-spool_context_create_rule(lList **answer_list, lListElem *context, 
+ocs::tom::Element<ocs::tom::SPR>
+spool_context_create_rule(lList **answer_list, ocs::tom::Element<ocs::tom::SPC> context,
                           const char *name, const char *url,
                           spooling_option_func option_func, 
                           spooling_startup_func startup_func, 
@@ -273,21 +281,39 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
                           spooling_delete_func delete_func,
                           spooling_validate_func validate_func,
                           spooling_validate_list_func validate_list_func);
+OCS_TRANSITIONAL lListElem *spool_context_create_rule(lList **answer_list, lListElem *context,
+                                                      const char *name, const char *url,
+                                                      spooling_option_func option_func,
+                                                      spooling_startup_func startup_func,
+                                                      spooling_shutdown_func shutdown_func,
+                                                      spooling_maintenance_func maintenance_func,
+                                                      spooling_trigger_func trigger_func,
+                                                      spooling_transaction_func transaction_func,
+                                                      spooling_list_func list_func,
+                                                      spooling_read_func read_func,
+                                                      spooling_read_keys_func read_keys_func,
+                                                      spooling_write_func write_func,
+                                                      spooling_delete_func delete_func,
+                                                      spooling_validate_func validate_func,
+                                                      spooling_validate_list_func validate_list_func);
 
-lListElem *
-spool_context_search_type(const lListElem *context, 
+ocs::tom::Element<ocs::tom::SPT>
+spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC> context, sge_object_type object_type);
+
+ocs::tom::Element<ocs::tom::SPT>
+spool_context_create_type(lList **answer_list, ocs::tom::Element<ocs::tom::SPC> context,
                           sge_object_type object_type);
+OCS_TRANSITIONAL lListElem *spool_context_create_type(lList **answer_list, lListElem *context,
+                                                      sge_object_type object_type);
 
-lListElem *
-spool_context_create_type(lList **answer_list, lListElem *context, 
-                          sge_object_type object_type);
+ocs::tom::Element<ocs::tom::SPR>
+spool_type_search_default_rule(ocs::tom::ConstElement<ocs::tom::SPT> spool_type);
 
-lListElem *
-spool_type_search_default_rule(const lListElem *spool_type);
-
-lListElem 
-*spool_type_add_rule(lList **answer_list, lListElem *spool_type, 
-                     const lListElem *rule, lBool is_default);
+ocs::tom::Element<ocs::tom::SPTR>
+spool_type_add_rule(lList **answer_list, ocs::tom::Element<ocs::tom::SPT> spool_type,
+                    ocs::tom::ConstElement<ocs::tom::SPR> rule, lBool is_default);
+OCS_TRANSITIONAL lListElem *spool_type_add_rule(lList **answer_list, lListElem *spool_type,
+                                                const lListElem *rule, lBool is_default);
 
 bool
 spool_set_option(lList **answer_list, lListElem *context, const char *option);
