@@ -60,6 +60,8 @@ typedef struct report_source {
 
 int sge_send_all_reports(uint64_t now, int which, report_source *report_sources);
 
+void sge_limit_report_times(uint64_t latest, report_source *report_sources);
+
 int sge_add_double2load_report(lList **lpp, const char *name, double value, const char *host, const char *units);
 int sge_add_int2load_report(lList **lpp, const char *name, int value, const char *host);
 int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host);

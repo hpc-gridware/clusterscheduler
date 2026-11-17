@@ -73,6 +73,27 @@ extern lUlong sge_execd_report_seqno;
 
 
 /**
+ * @brief Move the next send time of all report sources to a given time at the latest.
+ *
+ * A report source schedules its next report with the load_report_time valid when it sends one.
+ * When load_report_time is lowered, sge_qmaster expects reports in the new interval right away,
+ * so the reports scheduled with the old interval must not be sent later than the new interval.
+ *
+ * @param[in] latest the latest next send time, e.g. now + load_report_time
+ * @param[in,out] report_sources the report sources, terminated by an entry with type 0
+ */
+void
+sge_limit_report_times(uint64_t latest, report_source *report_sources) {
+   DENTER(TOP_LAYER);
+   for (int i = 0; report_sources[i].type; i++) {
+      if (report_sources[i].next_send > latest) {
+         report_sources[i].next_send = latest;
+      }
+   }
+   DRETURN_VOID;
+}
+
+/**
  * @brief Send whichever reports are due
  * @param now the current time
  * @param which a mask of the report types to consider, 0 for all of them

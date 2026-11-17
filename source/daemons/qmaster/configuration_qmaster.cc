@@ -80,6 +80,7 @@
 
 #include "configuration_qmaster.h"
 #include "ocs_ReportingFileWriter.h"
+#include "qmaster_to_execd.h"
 #include "sge.h"
 #include "ocs_FinishedJob.h"
 #include "ocs_SharetreeUsage.h"
@@ -126,6 +127,12 @@ get_entry_from_conf(lListElem *aConf, const char *anEntryName);
 
 static uint32_t
 sge_get_config_version_for_host(const char *aName);
+
+static void
+invalidate_load_report_intervals(const char *conf_name);
+
+static void
+notify_execds_about_conf_change(const char *conf_name);
 
 /** @brief Read the cluster configuration from the spool at startup
  *
@@ -329,9 +336,91 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    // the deleted configuration may have had the longest load_report_time
    sge_update_heard_from_timeout();
 
+   // the sge_execd of the host uses the global configuration from now on
+   invalidate_load_report_intervals(unique_name);
+   notify_execds_about_conf_change(unique_name);
+
    DRETURN(STATUS_OK);
 }
 
+
+/**
+ * @brief Forget the cached load_report_time of the hosts which use a changed configuration.
+ *
+ * sge_qmaster caches the load_report_time of a host in EH_load_report_interval (see
+ * load_report_interval()), it decides with it when a host is unheard. The cache was renewed only
+ * while the new-configuration flag was set, which the load value cleanup resets every 15 seconds -
+ * a host in unknown state at that moment, e.g. while its sge_execd restarts, kept the old value.
+ * After the load_report_time had been raised, the host was taken as unheard too early.
+ *
+ * @param[in] conf_name name of the changed configuration, "global" or a host name
+ */
+static void
+invalidate_load_report_intervals(const char *conf_name) {
+   DENTER(TOP_LAYER);
+
+   const bool is_global = strcmp(conf_name, SGE_GLOBAL_NAME) == 0;
+   for_each_rw_lv(hep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST)) {
+      if (is_global || sge_hostcmp(conf_name, lGetHost(hep, EH_name)) == 0) {
+         lSetUlong(hep, EH_load_report_interval, 0);
+      }
+   }
+
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Notify the sge_execds which use a changed configuration.
+ *
+ * An sge_execd gets a changed configuration only with the answer to its next report, up to
+ * one load_report_time later. Until then it works with the old one, e.g. it sends its reports
+ * in the old interval while sge_qmaster already expects them in a shorter new one (CS-3095).
+ * The notification makes the sge_execds fetch the configuration at once. A change of the
+ * global configuration notifies all sge_execds, which all request their configuration at the
+ * same time - in very large clusters qmaster_params NOTIFY_EXECDS_ON_CONF_CHANGE=false switches
+ * the notification off.
+ * sge_execds on hosts in unknown state and sge_execds without a connection to sge_qmaster, e.g.
+ * stopped ones, are not notified, they get the configuration when they register.
+ *
+ * @param[in] conf_name name of the changed configuration, "global" or a host name
+ */
+static void
+notify_execds_about_conf_change(const char *conf_name) {
+   DENTER(TOP_LAYER);
+
+   if (!mconf_get_notify_execds_on_conf_change()) {
+      DRETURN_VOID;
+   }
+
+   const bool is_global = strcmp(conf_name, SGE_GLOBAL_NAME) == 0;
+   for_each_rw_lv(hep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST)) {
+      const char *host = lGetHost(hep, EH_name);
+      if (strcmp(host, SGE_GLOBAL_NAME) == 0 || strcmp(host, SGE_TEMPLATE_NAME) == 0) {
+         continue;
+      }
+      if (!is_global && sge_hostcmp(conf_name, host) != 0) {
+         continue;
+      }
+      if (lGetUlong64(hep, EH_lt_heard_from) == 0) {
+         continue;
+      }
+      // an sge_execd stopped by a signal is taken as known until it is unheard, a notification
+      // would only fail to connect and make commlib log an error
+      unsigned long connect_time = 0;
+      cl_commlib_get_connect_time(cl_com_get_handle(to_cstr(QMASTER), 0), host, to_cstr(EXECD), 1,
+                                  &connect_time);
+      if (connect_time == 0) {
+         DPRINTF("no connection to %s on host %s, not notified about the new configuration\n",
+                 to_cstr(EXECD), host);
+         continue;
+      }
+      // a failed notification is not an error, the sge_execd gets the configuration with the
+      // answer to its next report
+      host_notify_about_new_conf(hep);
+   }
+
+   DRETURN_VOID;
+}
 
 /**
  * @brief Modify cluster configuration
@@ -474,6 +563,9 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
 
    // max_unheard or the load_report_time of any host may have changed
    sge_update_heard_from_timeout();
+
+   invalidate_load_report_intervals(unique_name);
+   notify_execds_about_conf_change(unique_name);
 
    DRETURN(STATUS_OK);
 }
