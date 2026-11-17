@@ -358,6 +358,16 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
    DRETURN(type);
 }
 
+/**
+ * @brief Unpack a GDI request, check the sender and queue it for execution
+ *
+ * The request is answered right away with an error, and never executed, when
+ * the sender cannot be verified (sge_security_verify_user(), CS-3128), a
+ * request limit is exceeded or the sender lacks the permission.
+ *
+ * @param aMsg the message received from the communication library
+ * @param monitor for monitoring qmaster threads
+ */
 static void
 do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -411,6 +421,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
          answer_list_add(&(packet->tasks[0]->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
+         local_ret = false;   // CS-3128: a refused sender must not have its request executed
       }
    }
 
