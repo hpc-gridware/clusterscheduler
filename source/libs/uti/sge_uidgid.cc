@@ -50,6 +50,15 @@
 #include <grp.h>
 #include <pthread.h>
 
+#ifndef __has_feature
+#  define __has_feature(x) 0
+#endif
+#if defined(LINUX) && (defined(__SANITIZE_ADDRESS__) || __has_feature(address_sanitizer))
+#  define OCS_SANITIZER_RESTORE_START_USER
+#  include <mutex>
+#  include <sys/prctl.h>
+#endif
+
 #include "uti/msg_utilib.h"
 #include "uti/sge_component.h"
 #include "uti/sge_log.h"
@@ -83,6 +92,46 @@ static admin_user_t admin_user = {PTHREAD_MUTEX_INITIALIZER, nullptr, (uid_t) -1
 static void set_admin_user(const char *user_name, uid_t, gid_t);
 
 static int get_admin_user(uid_t *, gid_t *);
+
+#ifdef OCS_SANITIZER_RESTORE_START_USER
+/**
+ * @brief Switches the effective user and group id back to root at process exit.
+ *
+ * Registered with atexit() by restore_start_user_at_exit(). It runs before the leak check of
+ * LeakSanitizer, which registers its own handler at process start. A process that runs as
+ * root with the effective ids of the admin user can not be attached to with ptrace by the
+ * helper thread of the leak check: its real and effective user ids differ, and the change of
+ * the effective ids cleared the dumpable flag of the process. The handler makes the ids equal
+ * again and sets the flag, which the change of the effective ids clears once more.
+ */
+static void
+switch2start_user_at_exit() {
+   if (getuid() == 0 && geteuid() != 0) {
+      if (seteuid(0) == 0 && setegid(getgid()) == 0) {
+         prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
+      }
+   }
+}
+#endif
+
+/**
+ * @brief Makes the leak check of LeakSanitizer work in a process started by root.
+ *
+ * A daemon started by root works with the effective ids of the admin user. When it exits, e.g.
+ * the parent process of sge_shadowd or sge_qmaster after daemonizing, the leak check of
+ * LeakSanitizer fails with "LeakSanitizer has encountered a fatal error" and exit code 1, see
+ * switch2start_user_at_exit(). Builds with AddressSanitizer on Linux register that handler
+ * once, all other builds do nothing.
+ */
+static void
+restore_start_user_at_exit() {
+#ifdef OCS_SANITIZER_RESTORE_START_USER
+   static std::once_flag registered;
+   std::call_once(registered, [] {
+      atexit(switch2start_user_at_exit);
+   });
+#endif
+}
 
 /**
  * \brief Return true/false if current real user is superuser (root/Administrator).
@@ -232,6 +281,7 @@ sge_switch2admin_user() {
             goto exit;
          }
       }
+      restore_start_user_at_exit();
    }
 
    // update component
