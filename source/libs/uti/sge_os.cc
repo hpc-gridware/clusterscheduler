@@ -31,6 +31,7 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+#include <algorithm>
 #include <filesystem>
 #include <string>
 
@@ -66,42 +67,34 @@
 
 static void sge_close_fd(int fd);
 
-/****** uti/os/sge_get_pids() *************************************************
-*  NAME
-*     sge_get_pids() -- Return all "pids" of a running processes 
-*
-*  SYNOPSIS
-*     int sge_get_pids(pid_t *pids, int max_pids, const char *name, 
-*                      const char *pscommand) 
-*
-*  FUNCTION
-*     Return all "pids" of a running processes with given "name". 
-*     Only first 8 characters of "name" are significant.
-*     Checks only basename of command after "/".
-*
-*  INPUTS
-*     pid_t *pids           - pid array
-*     int max_pids          - size of pid array
-*     const char *name      - name 
-*     const char *pscommand - ps commandline
-*
-*  RESULT
-*     int - Result 
-*         0 - No program with given name found
-*        >0 - Number of processes with "name" 
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTES: sge_get_pids() is not MT safe
-******************************************************************************/
-int sge_get_pids(pid_t *pids, int max_pids, const char *name,
-                 const char *pscommand) {
+/**
+ * @brief Return all "pids" of a running processes
+ *
+ * Return all "pids" of a running processes with given "name".
+ * Only first 8 characters of "name" are significant.
+ * Checks only basename of command after "/".
+ *
+ * @param pids receives the pids that were found; cleared first and grown as
+ *             needed, so the caller does not have to guess an upper bound. It
+ *             used to be a fixed array plus an element count, which invited
+ *             passing sizeof() instead of the count (CS-2531).
+ * @param name name
+ * @param pscommand ps commandline
+ *
+ * @return 0 - no program with given name found, >0 - number of processes with
+ *         "name", -1 - error
+ *
+ * @note MT-NOTES: sge_get_pids() is not MT safe
+ */
+int sge_get_pids(std::vector<pid_t> &pids, const char *name, const char *pscommand) {
    FILE *fp_in, *fp_out, *fp_err;
    char buf[10000], *ptr;
-   int num_of_pids = 0, last, len;
+   int last, len;
    pid_t pid, command_pid;
 
    DENTER(TOP_LAYER);
+
+   pids.clear();
 
    command_pid = sge_peopen("/bin/sh", 0, pscommand, nullptr, nullptr,
                             &fp_in, &fp_out, &fp_err, false);
@@ -110,7 +103,7 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
       DRETURN(-1);
    }
 
-   while (!feof(fp_out) && num_of_pids < max_pids) {
+   while (!feof(fp_out)) {
       if ((fgets(buf, sizeof(buf), fp_out))) {
          if ((len = strlen(buf))) {
 
@@ -141,47 +134,27 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
 
             /* check if process has given name */
             if (!strncmp(ptr, name, 8))
-               pids[num_of_pids++] = pid;
+               pids.push_back(pid);
          }
       }
    }
 
    sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
-   DRETURN(num_of_pids);
+   DRETURN(static_cast<int>(pids.size()));
 }
 
-/****** uti/os/sge_contains_pid() *********************************************
-*  NAME
-*     sge_contains_pid() -- Checks whether pid array contains pid 
-*
-*  SYNOPSIS
-*     int sge_contains_pid(pid_t pid, pid_t *pids, int npids) 
-*
-*  FUNCTION
-*     whether pid array contains pid 
-*
-*  INPUTS
-*     pid_t pid   - process id 
-*     pid_t *pids - pid array 
-*     int npids   - number of pids in array 
-*
-*  RESULT
-*     int - result state
-*         0 - pid was not found
-*         1 - pid was found
-*
-*  NOTES
-*     MT-NOTES: sge_contains_pid() is MT safe
-******************************************************************************/
-int sge_contains_pid(pid_t pid, pid_t *pids, int npids) {
-   int i;
-
-   for (i = 0; i < npids; i++) {
-      if (pids[i] == pid) {
-         return 1;
-      }
-   }
-   return 0;
+/**
+ * @brief Checks whether a pid list contains pid
+ *
+ * @param pid process id
+ * @param pids pid list
+ *
+ * @return true if pid was found
+ *
+ * @note MT-NOTES: sge_contains_pid() is MT safe
+ */
+bool sge_contains_pid(pid_t pid, const std::vector<pid_t> &pids) {
+   return std::find(pids.begin(), pids.end(), pid) != pids.end();
 }
 
 /****** uti/os/sge_checkprog() ************************************************

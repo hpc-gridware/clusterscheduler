@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include <set>
+#include <vector>
 
 #include <sys/types.h>
 
@@ -61,9 +62,9 @@ typedef enum uti_daemonize_state_type {
 } uti_daemonize_state_t;
 
 
-int sge_get_pids(pid_t *, int, const char *, const char *);
+int sge_get_pids(std::vector<pid_t> &pids, const char *name, const char *pscommand);
 
-int sge_contains_pid(pid_t, pid_t *, int);
+bool sge_contains_pid(pid_t pid, const std::vector<pid_t> &pids);
 
 int sge_checkprog(pid_t, const char *, const char *);
 

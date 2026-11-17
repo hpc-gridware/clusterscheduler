@@ -81,12 +81,19 @@ void usage_getprogs()
 }
 
    
-/*----------------------------------------------------------------------*/
+/**
+ * @brief Check whether a pid runs a program of a given name, or list all pids of that name
+ *
+ * @param argc argument count
+ * @param argv arguments, see usage_checkprog() and usage_getprogs()
+ * @return 0 if the program was found, 1 if not, 2 on a usage error or when the
+ *         ps command could not be spawned
+ */
 int main(int argc, char *argv[]) 
 {
    int res;
    pid_t pid = 0;
-   pid_t pids[10000];
+   std::vector<pid_t> pids;
    char *ptr;
    int checkit, i;
 
@@ -177,7 +184,7 @@ int main(int argc, char *argv[])
 		}
    }
    else {
-      res = sge_get_pids(pids, 10000, argv[1], PSCMD);
+      res = sge_get_pids(pids, argv[1], PSCMD);
       if (res == -1)
          printf(MSG_COMMAND_RUNPSCMDFAILED_S , PSCMD);
       else if (res == 0)
