@@ -122,8 +122,12 @@ ocs::gdi::Request::get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCom
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);
       }
+      // the response replaces the list of the caller: request() worked on a copy of it or took it
+      // over, so a list still found there belongs to the caller and is freed, e.g. the job sent with
+      // SGE_GDI_ADD and SGE_GDI_RETURN_NEW_VERSION
       lList *tmp_list = nullptr;
       lXchgList(map, MA_objects, &tmp_list);
+      lFreeList(olpp);
       *olpp = tmp_list;
    }
 

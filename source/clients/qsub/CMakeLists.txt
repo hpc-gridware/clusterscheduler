@@ -27,7 +27,6 @@ add_executable(
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc
-      ../../common/ocs_ClientSanitizerOptions.cc
       ../../libs/japi/japi.cc)
 target_include_directories(qsub PRIVATE ${SGE_INCLUDES})
 
