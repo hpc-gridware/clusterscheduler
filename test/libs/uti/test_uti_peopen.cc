@@ -32,8 +32,9 @@
  * the target user and verifies both the uid and the *primary* gid: before the
  * fix the gid check fails with gid 0, after the fix it passes.
  *
- * The regression test for CS-2356 needs no privileges and always runs: a
- * shell path longer than the fixed argv[0] buffer.
+ * Regression tests for CS-2356 and CS-2360 need no privileges and always run:
+ * a shell path longer than the fixed argv[0] buffer, and the exec failure
+ * message that used to be cut to sizeof(pointer) bytes.
  */
 
 #include <cstdio>
@@ -299,11 +300,33 @@ test_long_shell_path(int id, bool use_r) {
    CHECK(id + 1, label, spawned && out == "cs2356");
 }
 
-/** @brief Module test entry point for CS-2333 and CS-2356 (sge_peopen*).
+/** @brief CS-2360: the exec failure message reaches stderr in full.
+ *
+ * sge_peopen() wrote sizeof(const char *) bytes of the message, so only its
+ * first 8 characters arrived. A shell that does not exist makes the exec fail.
+ *
+ * @param id  the id of the first check
+ * @return nothing; CHECK records the results
+ */
+static void
+test_exec_failure_message(int id) {
+   char label[256];
+   std::string out;
+   std::string err;
+   const std::string expected = MSG_SYSTEM_EXECBINSHFAILED;
+
+   const bool spawned = spawn_and_read(false, "/nonexistent/cs2360/sh", "true", out, err);
+   CHECK(id, "PEOPEN: spawn with a shell that does not exist -> ok", spawned);
+   snprintf(label, sizeof(label), "PEOPEN: stderr -> got \"%s\", expected \"%s\"",
+            err.c_str(), expected.c_str());
+   CHECK(id + 1, label, spawned && err == expected);
+}
+
+/** @brief Module test entry point for CS-2333, CS-2356 and CS-2360 (sge_peopen*).
  *
  * PEOPEN-01/02 require root to exercise the user-switch path; the first test
  * argument optionally names the target user. Without root or a suitable user
- * these two scenarios are unsupported. PEOPEN-03 needs no privileges.
+ * these two scenarios are unsupported. PEOPEN-03/04 need no privileges.
  *
  * @param argc  argument count, see ocs_module_test.h for the frame's options
  * @param argv  argument vector
@@ -335,6 +358,12 @@ int main(int argc, char *argv[]) {
        {"spawn 'echo' under /bin/sh spelled with 300 leading slashes, through both variants"},
        "both spawns succeed and the command's output arrives",
        {}, {9, 10, 11, 12}, [] { test_long_shell_path(9, false); test_long_shell_path(11, true); }},
+      {"PEOPEN-04", "the exec failure message is written in full (CS-2360)",
+       "when the shell cannot be executed, sge_peopen() writes the whole error message to the "
+       "child's stderr, not just the first sizeof(pointer) bytes",
+       {"spawn through sge_peopen() with a shell that does not exist", "read the child's stderr"},
+       "stderr carries the complete message",
+       {}, {13, 14}, [] { test_exec_failure_message(13); }},
    });
    DRETURN(ret);
 }
