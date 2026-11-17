@@ -3328,16 +3328,6 @@ RestoreConfig()
             fi
          done
 
-         for f in $BUP_CLASSIC_COMMON_FILE_LIST; do
-            if [ -d /tmp/bup_tmp_$DATE/$f ]; then
-               if [ -f $SGE_ROOT/$SGE_CELL/common/$f ]; then
-                  #move the old configuration to keep backup
-                  ExecuteAsAdmin m -f $SGE_ROOT/$SGE_CELL/common/$f $SGE_ROOT/$SGE_CELL/common/$f.bak
-               fi
-               ExecuteAsAdmin $CP /tmp/bup_tmp_$DATE/$f $SGE_ROOT/$SGE_CELL/common
-            fi
-         done
-
          # CS-2352: "cp -R" above restored the spool objects with the modes from
          # the backup (dirs 0755, files up to 0666 & ~umask). Re-harden to
          # owner-only so the disclosure/tamper vectors stay closed after a restore.
@@ -3544,16 +3534,6 @@ RestoreConfig()
                   ExecuteAsAdmin mv -f $SGE_ROOT/$SGE_CELL/common/$f $SGE_ROOT/$SGE_CELL/common/$f.bak
                fi
                ExecuteAsAdmin $CPR $bup_file/$f $SGE_ROOT/$SGE_CELL/common
-            fi
-         done
-
-         for f in $BUP_CLASSIC_COMMON_FILE_LIST; do
-            if [ -f $bup_file/$f ]; then
-               if [ -f $SGE_ROOT/$SGE_CELL/common/$f ]; then
-                  #move the old configuration to keep backup
-                  ExecuteAsAdmin mv -f $SGE_ROOT/$SGE_CELL/common/$f $SGE_ROOT/$SGE_CELL/common/$f.bak
-               fi
-               ExecuteAsAdmin $CP $bup_file/$f $SGE_ROOT/$SGE_CELL/common
             fi
          done
 
