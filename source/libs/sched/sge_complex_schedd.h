@@ -67,8 +67,6 @@ ocs::tom::ListPtr<ocs::tom::CE>
 host_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
                          ocs::tom::ConstList<ocs::tom::CE> centry_list,
                          ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
-OCS_TRANSITIONAL int host_complexes2scheduler(lList **new_complex_list, lListElem *host, lList *exechost_list,
-                                              lList *complex_list, const lList *load_adjustments);
 
 ocs::tom::ListPtr<ocs::tom::CE>
 queue_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
@@ -80,9 +78,6 @@ get_attribute_by_name(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::Con
                       ocs::tom::ConstElement<ocs::tom::QU> queue, const char *attrname,
                       ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
                       uint64_t start_time, uint64_t duration);
-OCS_TRANSITIONAL lListElem *get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue,
-                                                   const char *attrname, const lList *centry_list,
-                                                   const lList *load_adjustments, uint64_t start_time, uint64_t duration);
 
 int compare_complexes(int slots, ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
                       ocs::tom::ConstElement<ocs::tom::CE> src_cplx, char *availability_text,

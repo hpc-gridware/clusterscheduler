@@ -667,32 +667,6 @@ host_complexes2scheduler(const ocs::tom::ConstElement<ocs::tom::EH> host,
 }
 
 /**
- * @brief host_complexes2scheduler() for an untyped caller
- *
- * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
- *                             previous list is freed
- * @param[in]  host            the execution host (`EH_Type`), or nullptr
- * @param[in]  exechost_list   all execution hosts (`EH_Type`)
- * @param[in]  centry_list     the system wide attribute configuration
- *                             (`CE_Type`)
- * @param[in]  load_adjustments the job load adjustments (`CE_Type`), or
- *                             nullptr
- *
- * @return always 0; the list host_complexes2scheduler() returns is in
- *         `new_centry_list`
- */
-int
-host_complexes2scheduler(lList **new_centry_list, lListElem *host, lList *exechost_list, lList *centry_list,
-                         const lList *load_adjustments) {
-   lFreeList(new_centry_list);
-   *new_centry_list = host_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::EH>(host),
-                                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
-                                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
-   return 0;
-}
-
-/**
  * @brief Builds the complete attribute list of one queue instance
  *
  * All templates are filled with the actual values of the queue, its host and
@@ -1298,29 +1272,6 @@ get_attribute_by_name(const ocs::tom::ConstElement<ocs::tom::EH> global, const o
       }
    }
    DRETURN(ret_el);
-}
-
-/**
- * @brief Returns an attribut by name, for a caller with untyped objects (N-X-2)
- *
- * @param global the global host (EH_Type), checked, or nullptr
- * @param host a given host (EH_Type), checked, or nullptr
- * @param queue a queue on the given host (QU_Type), checked, or nullptr
- * @param attrname the attribute name one is looking for
- * @param centry_list the system wide attribute config list (CE_Type), checked
- * @param load_adjustments the load adjustments (CE_Type), checked, or nullptr
- * @param start_time begin of the time interval one asks for the resource
- * @param duration the duration of the interval
- *
- * @return the element one is looking for (a copy) or nullptr.
- */
-lListElem *
-get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,
-                      const lList *centry_list, const lList *load_adjustments, uint64_t start_time, uint64_t duration) {
-   return get_attribute_by_name(ocs::tom::ConstElement<ocs::tom::EH>(global), ocs::tom::ConstElement<ocs::tom::EH>(host),
-                                ocs::tom::ConstElement<ocs::tom::QU>(queue), attrname,
-                                ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                                ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), start_time, duration).release();
 }
 
 #ifdef TEST
