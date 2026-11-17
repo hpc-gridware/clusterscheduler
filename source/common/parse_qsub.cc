@@ -2193,17 +2193,13 @@ DTRACE;
          DPRINTF("\"-@ %s\"\n", *sp);
 
          alp = parse_script_file(prog_number, *sp, "", pcmdline, envp, FLG_USE_NO_PSEUDOS); /* MT-NOTE: !!!! */
-         for_each_ep_lv(aep, alp) {
-            uint32_t quality;
-
-            quality = ocs::tom::get<AN_quality>(aep);
-            if (quality == ANSWER_QUALITY_ERROR) {
-               do_exit = 1;
-            }
-            lAppendElem(answer, lCopyElem(aep));
+         if (answer_list_has_error(&alp)) {
+            do_exit = 1;
          }
+         // the answer list is usually still nullptr here: lAppendElem() refused to append to it, so the
+         // errors of the options file were lost and the caller saw none (CS-3122)
+         answer_list_append_list(&answer, &alp);
 
-         lFreeList(&alp);
          if (do_exit) {
             DRETURN(answer);
          }
