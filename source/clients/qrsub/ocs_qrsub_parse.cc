@@ -99,7 +99,8 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, const ocs::tom::Element<ocs:
    ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-btype");
    if (ep != nullptr) {
       lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem != nullptr) {
+      // nullptr means failure, as in the other -b* branches (the check was inverted, CS-3119)
+      if (binding_elem == nullptr) {
          DRETURN(false);
       }
       ocs::tom::set<BN_new_type>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
