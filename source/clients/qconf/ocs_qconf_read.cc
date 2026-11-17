@@ -25,6 +25,7 @@
 #include <cstring>
 #include <format>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <unistd.h>
@@ -35,7 +36,10 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
@@ -107,23 +111,27 @@
  * because a directory holding some objects in full and others in part is worse
  * than no directory: nothing in it says which is which.
  *
+ * The pairs arrive through the untyped value list of the response entry, so they
+ * are wrapped without the descriptor check (from_typed); the typed field reads
+ * still check every element.
+ *
  * @param param   the invocation, whose operation is set for the call
  * @param sw      the export switch, named in the refusals
  * @param name    the object to export, nullptr for the run over everything
  * @param label   what the refusal calls the target - the name or the directory
  * @param model   the caller's model; it owns the response the pairs live in
- * @param objects receives the name/text pairs, on success only
  * @param alpp    the answer list of the operation
- * @return 0 when @p objects was filled, 1 when the export must not go ahead
+ * @return the name/text pairs (`VA_Type`, an empty handle for an export that matched
+ *         nothing), or no value when the export must not go ahead
  */
-static int
+static std::optional<ocs::tom::ConstList<ocs::tom::VA>>
 qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const char *name,
-                       const char *label, ocs::ProcedureModel &model, const lList **objects, lList **alpp) {
+                       const char *label, ocs::ProcedureModel &model, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
-      DRETURN(1);
+      DRETURN(std::nullopt);
    }
 
    qconf_op op;
@@ -143,24 +151,25 @@ qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const c
 
    if (!ok) {
       qconf_answer_take(alpp, &alp);
-      DRETURN(1);
+      DRETURN(std::nullopt);
    }
    lFreeList(&alp);
 
    if (model.get_reduction() != ocs::ProcedureParameter::REDUCTION_NONE) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_REDUCEDNOTEXPORTABLE_SS, sw, label);
-      DRETURN(1);
+      DRETURN(std::nullopt);
    }
 
    /* The entry being absent is not an empty export - it is a response that never
     * answered the question, and reporting "0 objects exported" for it would hand
     * back a successful exit code for a backup that did not happen. */
-   if (!model.get_export_objects(objects)) {
+   const lList *objects = nullptr;
+   if (!model.get_export_objects(&objects)) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNORESULT_S, sw);
-      DRETURN(1);
+      DRETURN(std::nullopt);
    }
 
-   DRETURN(0);
+   DRETURN(ocs::tom::ConstList<ocs::tom::VA>::from_typed(objects));
 }
 
 /**
@@ -331,6 +340,8 @@ qconf_export_make_dir(char *dir, const size_t size, const char *path, lList **al
 static int
 qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
                   const char *sw, const char *path, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
    const bool is_bulk = qconf_export_is_bulk(path);
 
@@ -338,19 +349,19 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
     * cannot be created is reported on its own and no request is sent for it. */
    char dir[4096] = {};
    if (is_bulk && !qconf_export_make_dir(dir, sizeof(dir), path, alpp)) {
-      return 1;
+      DRETURN(1);
    }
 
    if (!is_bulk && !qconf_name_is_fs_safe(path)) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTUNSAFENAME_S, path);
-      return 1;
+      DRETURN(1);
    }
 
    ocs::ProcedureModel model;
-   const lList *objects = nullptr;
-   if (qconf_export_procedure(param, sw, is_bulk ? nullptr : path,
-                              is_bulk ? dir : path, model, &objects, alpp) != 0) {
-      return 1;
+   const auto objects = qconf_export_procedure(param, sw, is_bulk ? nullptr : path, is_bulk ? dir : path, model,
+                                               alpp);
+   if (!objects) {
+      DRETURN(1);
    }
 
    int failures = 0;
@@ -358,10 +369,10 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
    if (is_bulk) {
       /* R5/KTD7: case-insensitive basename collision guard across the run. The
        * seen list holds the lowercased names already used. */
-      lList *seen = lCreateList("export seen", ST_Type);
-      const int n_total = (objects != nullptr) ? lGetNumberOfElem(objects) : 0;
+      const auto seen = ocs::tom::ListPtr<ocs::tom::ST>::create("export seen");
+      const int n_total = static_cast<int>(objects->size());
 
-      for_each_ep_lv(pair, objects) {
+      for (const auto pair : *objects) {
          const char *name = ocs::tom::get<VA_variable>(pair);
          if (!qconf_name_is_fs_safe(name)) {
             qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
@@ -371,24 +382,23 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          char lcbuf[1024];
          sge_strlcpy(lcbuf, name, sizeof(lcbuf));
          sge_strtolower(lcbuf, sizeof(lcbuf));
-         if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(seen, lcbuf)) != nullptr) {
+         if (seen->find_first<ST_name>(lcbuf) != nullptr) {
             qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTCOLLISION_SS, name, lcbuf);
             failures++;
             continue;
          }
-         ocs::tom::emplace_back<ST_name>(&seen, lcbuf);
+         seen->emplace_back<ST_name>(lcbuf);
 
          failures += qconf_export_write_one(os, ocs::tom::get<VA_value>(pair),
                                             qconf_export_dest(dir, name, suffix).c_str(), alpp);
       }
-      lFreeList(&seen);
 
       qconf_info(os, MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
    } else {
       /* Single mode keeps the spelling the user typed as the file name, the way
        * it always did: "qconf -Sconf GLOBAL" writes GLOBAL, and that file
        * re-imports to the same host key because the lookup folds case too. */
-      const lListElem *pair = lFirst(objects);
+      const auto pair = objects->front();
       if (pair == nullptr) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNOOBJECT_S, path);
          failures++;
@@ -398,7 +408,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
       }
    }
 
-   return failures;
+   DRETURN(failures);
 }
 
 /**
@@ -417,27 +427,30 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
 static int
 qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
                        const char *sw, const char *path, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    if (qconf_export_is_bulk(path)) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNODIRALLOWED_S, path);
-      return 1;
+      DRETURN(1);
    }
 
    ocs::ProcedureModel model;
-   const lList *objects = nullptr;
-   if (qconf_export_procedure(param, sw, nullptr, path, model, &objects, alpp) != 0) {
-      return 1;
+   const auto objects = qconf_export_procedure(param, sw, nullptr, path, model, alpp);
+   if (!objects) {
+      DRETURN(1);
    }
 
    /* A singleton that is not there is reported by the path that names a file for
     * it, because that is the name the user gave - the read answers an absent
     * object with an empty result and leaves the wording to the caller. */
-   const lListElem *pair = lFirst(objects);
+   const auto pair = objects->front();
    if (pair == nullptr) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNOOBJECT_S, path);
-      return 1;
+      DRETURN(1);
    }
 
-   return qconf_export_write_one(os, ocs::tom::get<VA_value>(pair), path, alpp);
+   const int ret = qconf_export_write_one(os, ocs::tom::get<VA_value>(pair), path, alpp);
+   DRETURN(ret);
 }
 
 bool

@@ -32,7 +32,10 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "gdi/ocs_gdi_Client.h"
 #include "msg_common.h"
 #include "msg_qconf.h"
@@ -78,14 +81,15 @@ qconf_control_kill_master([[maybe_unused]] const qconf_op &op, lList **alpp) {
  */
 static int
 qconf_control_kill_event_clients(const qconf_op &op, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    if (op.args[0] == "all") {
-      return qconf_control_kill(nullptr, EVENTCLIENT_KILL, alpp);
+      DRETURN(qconf_control_kill(nullptr, EVENTCLIENT_KILL, alpp));
    }
-   lList *lp = nullptr;
-   lString2List(op.args[0].c_str(), &lp, ID_Type, ID_str, ", ");
-   const int ret = qconf_control_kill(lp, EVENTCLIENT_KILL, alpp);
-   lFreeList(&lp);
-   return ret;
+   const auto ids = ocs::tom::ListPtr<ocs::tom::ID>::from_string<ID_str>(op.args[0].c_str(), ", ");
+   const int ret = qconf_control_kill(*ids, EVENTCLIENT_KILL, alpp);
+
+   DRETURN(ret);
 }
 
 /** @brief Start or stop qmaster threads by name
@@ -96,14 +100,15 @@ qconf_control_kill_event_clients(const qconf_op &op, lList **alpp) {
  */
 static int
 qconf_control_thread(const qconf_op &op, const uint32_t trigger, lList **alpp) {
-   lList *lp = nullptr;
-   lString2List(op.args[0].c_str(), &lp, ID_Type, ID_str, ", ");
-   for_each_rw_lv(ep, lp) {
+   DENTER(TOP_LAYER);
+
+   const auto ids = ocs::tom::ListPtr<ocs::tom::ID>::from_string<ID_str>(op.args[0].c_str(), ", ");
+   for (const auto ep : *ids) {
       ocs::tom::set<ID_action>(ep, trigger);
    }
-   const int ret = qconf_control_kill(lp, THREAD_START, alpp);
-   lFreeList(&lp);
-   return ret;
+   const int ret = qconf_control_kill(*ids, THREAD_START, alpp);
+
+   DRETURN(ret);
 }
 
 /** @brief "-at name,...": start qmaster threads
@@ -137,26 +142,27 @@ qconf_control_stop_thread(const qconf_op &op, lList **alpp) {
  */
 static int
 qconf_control_kill_execds(const qconf_op &op, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    int action_flag = EXECD_KILL;
    if (op.token == "-kej") {
       action_flag |= JOB_KILL;
    } else if (op.token != "-ke") {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, op.token.c_str(),
                    component_get_component_id());
-      return -1;
+      DRETURN(-1);
    }
    if (op.args.empty()) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, "%s", MSG_QCONF_NEEDAHOSTNAMEORALL);
-      return 1;
+      DRETURN(1);
    }
    if (op.args[0] == "all") {
-      return qconf_control_kill(nullptr, action_flag, alpp);
+      DRETURN(qconf_control_kill(nullptr, action_flag, alpp));
    }
-   lList *lp = nullptr;
-   lString2List(op.args[0].c_str(), &lp, EH_Type, EH_name, ", ");
-   const int ret = qconf_control_kill(lp, action_flag, alpp);
-   lFreeList(&lp);
-   return ret;
+   const auto hosts = ocs::tom::ListPtr<ocs::tom::EH>::from_string<EH_name>(op.args[0].c_str(), ", ");
+   const int ret = qconf_control_kill(*hosts, action_flag, alpp);
+
+   DRETURN(ret);
 }
 
 /** @brief "-cq queue,...": clean queues
@@ -166,15 +172,20 @@ qconf_control_kill_execds(const qconf_op &op, lList **alpp) {
  */
 static int
 qconf_control_clean_queues(const qconf_op &op, lList **alpp) {
-   lList *lp = nullptr;
-   lString2List(op.args[0].c_str(), &lp, ID_Type, ID_str, ", ");
-   for_each_rw_lv(ep, lp) {
+   DENTER(TOP_LAYER);
+
+   auto ids = ocs::tom::ListPtr<ocs::tom::ID>::from_string<ID_str>(op.args[0].c_str(), ", ");
+   for (const auto ep : *ids) {
       ocs::tom::set<ID_action>(ep, QI_DO_CLEAN);
    }
+   /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+   lList *lp = ids.release();
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
    lFreeList(&lp);
-   return qconf_answer_take(alpp, &alp);
+   const int ret = qconf_answer_take(alpp, &alp);
+
+   DRETURN(ret);
 }
 
 /** @brief "-tsm": trigger a scheduler monitoring run

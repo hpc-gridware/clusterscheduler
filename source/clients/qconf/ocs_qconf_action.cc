@@ -34,7 +34,10 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sge.h"
 #include "usage.h"
 #include "procedure/qconf/action/ocs_QConfActionParameter.h"
@@ -160,10 +163,11 @@ qconf_action_members_missing(const qconf_op &op, lList **alpp) {
  */
 static bool
 qconf_action_stnode_failed(const qconf_op &op) {
+   DENTER(TOP_LAYER);
+
    bool usage = false;
-   lList *args = nullptr;
-   lString2List(op.args[0].c_str(), &args, ST_Type, ST_name, ", ");
-   for_each_ep_lv(arg, args) {
+   const auto args = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(op.args[0].c_str(), ", ");
+   for (const auto arg : *args) {
       const char *text = ocs::tom::get<ST_name>(arg);
       const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
       int shares;
@@ -172,8 +176,8 @@ qconf_action_stnode_failed(const qconf_op &op) {
          break;
       }
    }
-   lFreeList(&args);
-   return usage;
+
+   DRETURN(usage);
 }
 
 /** @brief One switch served by qconf_run_action() */
@@ -282,12 +286,14 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
    }
 
    std::string arg = op.args[0];
-   lList *names = nullptr;
-   parse_name_list_to_cull(entry.add ? "host to add" : "host to del", &names, HR_Type, HR_name, arg.data());
+   lList *names_out = nullptr;
+   /* parse_name_list_to_cull() creates the list with HR_Type, so it is taken over unchecked */
+   parse_name_list_to_cull(entry.add ? "host to add" : "host to del", &names_out, HR_Type, HR_name, arg.data());
+   auto names = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(names_out);
 
    bool ok = true;
    std::vector<std::string> members;
-   for_each_rw_lv(name_ep, names) {
+   for (const auto name_ep : *names) {
       const char *name = ocs::tom::get<HR_name>(name_ep);
       if (name == nullptr) {
          ok = false;
@@ -303,7 +309,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
       }
       members.emplace_back(name);
    }
-   lFreeList(&names);
+   names.reset();
    if (members.empty()) {
       DRETURN(ok ? QConfOpResult::OK : QConfOpResult::FAILED);
    }

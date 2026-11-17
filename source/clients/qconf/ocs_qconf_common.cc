@@ -39,7 +39,10 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "sge.h"
 #include "usage.h"
@@ -339,12 +342,16 @@ qconf_read_file_text(const char *filename, std::string &text) {
  * (CS-2983). */
 
 const char *
-qconf_conf_host_of(const char *filepath, lListElem *host_ep) {
+qconf_conf_host_of(const char *filepath, const ocs::tom::Element<ocs::tom::EH> host_ep) {
+   DENTER(TOP_LAYER);
+
    const char *slash = strrchr(filepath, '/');
    const char *base = slash != nullptr ? slash + 1 : filepath;
    ocs::tom::set<EH_name>(host_ep, base);
    sge_resolve_host(host_ep, EH_name);   /* best-effort, like -Aconf/-dconf */
-   return ocs::tom::get<EH_name>(host_ep);
+   const char *hostname = ocs::tom::get<EH_name>(host_ep);
+
+   DRETURN(hostname);
 }
 
 bool
@@ -402,42 +409,55 @@ qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &
 
 void
 qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    std::string arg = op.args[0];
-   lList *hosts = nullptr;
-   parse_name_list_to_cull("hosts to change", &hosts, EH_Type, EH_name, arg.data());
-   for_each_rw_lv(host_ep, hosts) {
+   lList *hosts_out = nullptr;
+   /* parse_name_list_to_cull() creates the list with EH_Type, so it is taken over unchecked */
+   parse_name_list_to_cull("hosts to change", &hosts_out, EH_Type, EH_name, arg.data());
+   const auto hosts = ocs::tom::ListPtr<ocs::tom::EH>::from_typed(hosts_out);
+   for (const auto host_ep : *hosts) {
       if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
-         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S,
+                      static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
          failed = true;
          continue;
       }
       names.emplace_back(static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
    }
-   lFreeList(&hosts);
+
+   DRETURN_VOID;
 }
 
 void
 qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
                          [[maybe_unused]] lList **alpp) {
+   DENTER(TOP_LAYER);
+
    std::string arg = op.args[0];
-   lList *usersets = nullptr;
-   parse_name_list_to_cull("usersets", &usersets, US_Type, US_name, arg.data());
-   for_each_ep_lv(us_ep, usersets) {
+   lList *usersets_out = nullptr;
+   /* parse_name_list_to_cull() creates the list with US_Type, so it is taken over unchecked */
+   parse_name_list_to_cull("usersets", &usersets_out, US_Type, US_name, arg.data());
+   const auto usersets = ocs::tom::ListPtr<ocs::tom::US>::from_typed(usersets_out);
+   for (const auto us_ep : *usersets) {
       const char *name = ocs::tom::get<US_name>(us_ep);
       names.emplace_back(name != nullptr ? name : "");
    }
-   lFreeList(&usersets);
+
+   DRETURN_VOID;
 }
 
 void
 qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
                       [[maybe_unused]] lList **alpp) {
-   lList *users = nullptr;
-   lString2List(op.args[0].c_str(), &users, ST_Type, ST_name, ", ");
-   for_each_ep_lv(user_ep, users) {
+   DENTER(TOP_LAYER);
+
+   const auto users = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(op.args[0].c_str(), ", ");
+   for (const auto user_ep : *users) {
       names.emplace_back(ocs::tom::get<ST_name>(user_ep));
    }
-   lFreeList(&users);
+
+   DRETURN_VOID;
 }
 
 /** @brief The host list of the configuration switches, each host resolved (CS-2967)

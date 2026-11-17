@@ -33,7 +33,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "procedure/qconf/action/ocs_QConfActionParameter.h"
@@ -100,8 +102,8 @@ qconf_delete_send(const QConfObj o, const std::vector<std::string> &names, const
 }
 
 /** @brief The names of a parsed name list
- * @param o  the object type, whose name field the elements carry
- * @param lp the elements; consumed, set to nullptr
+ * @param o   the object type, whose name field the elements carry
+ * @param lpp the elements; consumed, set to nullptr
  * @return the names, in the order given
  */
 static std::vector<std::string>
@@ -201,27 +203,31 @@ struct qconf_names_ctx {
 /** @brief qconf_for_each_file callback: read one file's resource quota sets and
  *  queue their names (CS-2307)
  *
+ * The list is read with `RQS_Type`, so it is taken over without the descriptor check.
+ *
  * @param filepath the file to read
  * @param vctx     the qconf_names_ctx of the batch
  * @return 0 when the file was read, 1 otherwise
  */
 static int
 qconf_rqs_collect(const char *filepath, void *vctx) {
+   DENTER(TOP_LAYER);
+
    auto *ctx = static_cast<qconf_names_ctx *>(vctx);
    lList *alp = nullptr;
-   lList *l = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
-                                       &qconf_rqs_sfi, qconf_opt_format, nullptr, filepath);
-   if (qconf_answer_take(ctx->alpp, &alp) != 0 || l == nullptr) {
-      lFreeList(&l);
+   lList *read_out = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
+                                              &qconf_rqs_sfi, qconf_opt_format, nullptr, filepath);
+   const auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::from_typed(read_out);
+   if (qconf_answer_take(ctx->alpp, &alp) != 0 || rqs_list == nullptr) {
       ctx->n_fail++;
-      return 1;
+      DRETURN(1);
    }
-   for_each_ep_lv(e, l) {
-      ctx->names->emplace_back(ocs::tom::get<RQS_name>(e));
+   for (const auto rqs : *rqs_list) {
+      ctx->names->emplace_back(ocs::tom::get<RQS_name>(rqs));
       ctx->sources->emplace_back(filepath);
    }
-   lFreeList(&l);
-   return 0;
+
+   DRETURN(0);
 }
 
 /**

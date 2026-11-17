@@ -37,6 +37,8 @@
 #include "gdi/ocs_gdi_Target.h"
 #include "sgeobj/sge_answer.h"
 #include "spool/sge_spooling_utilities.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "tom/ocs_Element.h"
 #include "procedure/qconf/ocs_QConfObject.h"
 #include "procedure/qconf/ocs_QConfParameter.h"
 #include "procedure/qconf/write/ocs_QConfWriteParameter.h"
@@ -167,7 +169,7 @@ bool qconf_read_file_text(const char *filename, std::string &text);
  * @return the resolved host name, owned by @p host_ep
  */
 const char *
-qconf_conf_host_of(const char *filepath, lListElem *host_ep);
+qconf_conf_host_of(const char *filepath, ocs::tom::Element<ocs::tom::EH> host_ep);
 
 /** @brief Context for the config apply per-file callback. */
 struct qconf_conf_ctx {
@@ -311,6 +313,7 @@ qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &
  * @param names receives the names to edit
  * @param failed set when a host does not resolve
  * @param alpp the answer list of the operation
+ * @return none
  */
 void
 qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
@@ -324,6 +327,7 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
  * @param names receives the names to edit
  * @param failed unused, every name is served
  * @param alpp the answer list of the operation
+ * @return none
  */
 void
 qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
@@ -333,6 +337,7 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, bo
  * @param names receives the names to show
  * @param failed unused, every name is served
  * @param alpp the answer list of the operation
+ * @return none
  */
 void
 qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
