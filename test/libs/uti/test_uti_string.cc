@@ -92,6 +92,75 @@ bool test_sge_str_move_left() {
    return ret;
 }
 
+/**
+ * @brief Tests sge_strtok() including the continuation form (str == nullptr).
+ *
+ * @return true if all checks passed, false otherwise
+ */
+static bool test_sge_strtok() {
+   bool ret = true;
+
+   const char *expected[] = {"a", "b", "c"};
+   const char *t = sge_strtok("a:b:c", ":");
+   for (const char *e : expected) {
+      if (t == nullptr || strcmp(t, e) != 0) {
+         fprintf(stderr, "sge_strtok: expected \"%s\" but got \"%s\"\n", e, t != nullptr ? t : "(null)");
+         ret = false;
+      }
+      t = sge_strtok(nullptr, ":");
+   }
+   if (t != nullptr) {
+      fprintf(stderr, "sge_strtok: expected nullptr after the last token but got \"%s\"\n", t);
+      ret = false;
+   }
+
+   printf("sge_strtok: %s\n", ret ? "succeeded" : "failed");
+   return ret;
+}
+
+/**
+ * @brief Tests sge_jobname().
+ *
+ * sge_jobname() re-tokenizes a pointer into sge_strtok()'s own static buffer
+ * (first on ';', then on ' '), which is the overlapping copy fixed by CS-2362.
+ * Under ASAN/UBSan these cases detect a regression of that overlap.
+ *
+ * @return true if all checks passed, false otherwise
+ */
+static bool test_sge_jobname() {
+   bool ret = true;
+
+   struct {
+      const char *input;
+      const char *expected;
+   } cases[] = {
+      {"cd /home/me/5five; hostname", "cd"},
+      {"cat /tmp/5five", "cat"},
+      {"bla;blub", "bla"},
+      {"a b", "a"},
+      {"/home/me/4Ujob", "4Ujob"},
+   };
+   for (const auto &c : cases) {
+      const char *result = sge_jobname(c.input);
+      if (result == nullptr || strcmp(result, c.expected) != 0) {
+         fprintf(stderr, "sge_jobname(\"%s\"): expected \"%s\" but got \"%s\"\n",
+                 c.input, c.expected, result != nullptr ? result : "(null)");
+         ret = false;
+      }
+   }
+   if (sge_jobname(nullptr) != nullptr) {
+      fprintf(stderr, "sge_jobname(nullptr): expected nullptr\n");
+      ret = false;
+   }
+   if (sge_jobname("") != nullptr) {
+      fprintf(stderr, "sge_jobname(\"\"): expected nullptr\n");
+      ret = false;
+   }
+
+   printf("sge_jobname: %s\n", ret ? "succeeded" : "failed");
+   return ret;
+}
+
 int main(int argc, char *argv[]) {
    bool ret = true;
 
@@ -126,7 +195,15 @@ int main(int argc, char *argv[]) {
       ret = false;
    }
 
-   ret = test_sge_str_move_left();
+   if (!test_sge_str_move_left()) {
+      ret = false;
+   }
+   if (!test_sge_strtok()) {
+      ret = false;
+   }
+   if (!test_sge_jobname()) {
+      ret = false;
+   }
 
    return ret ? EXIT_SUCCESS : EXIT_FAILURE;
 }
