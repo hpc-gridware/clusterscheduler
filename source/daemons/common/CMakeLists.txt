@@ -34,7 +34,6 @@ set(LIBRARY_SOURCES
       setosjobid.cc
       shutdown.cc
       startprog.cc
-      unparse_job_cull.cc
 )
 set(LIBRARY_INCLUDES "./")
 

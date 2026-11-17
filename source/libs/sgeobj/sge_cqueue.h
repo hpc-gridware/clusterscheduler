@@ -131,9 +131,6 @@ bool cqueue_is_a_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
 OCS_TRANSITIONAL bool cqueue_is_a_href_referenced(const lListElem *this_elem, const lList *href_list,
                                                   bool only_hostlist);
 
-bool
-cqueue_list_add_cqueue(lList *this_list, lListElem *queue);
-
 bool cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list);
 OCS_TRANSITIONAL bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list);
 
@@ -186,14 +183,6 @@ void cqueue_list_set_tag(ocs::tom::List<ocs::tom::CQ> this_list, uint32_t tag_va
 ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
                                                              const char *full_name);
 OCS_TRANSITIONAL lListElem *cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name);
-
-bool
-cqueue_find_used_href(lListElem *this_elem, lList **answer_list, 
-                      lList **href_list);
-
-bool  
-cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
-                               const char *hgroup_or_hostname);
 
 bool cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list,
                        ocs::tom::ConstList<ocs::tom::US> attr_list, const char *hgroup_or_hostname);

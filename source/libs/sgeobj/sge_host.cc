@@ -480,34 +480,6 @@ bool host_is_referenced(const lListElem *host, lList **answer_list, const lList 
                              ocs::tom::ConstList<ocs::tom::HGRP>(hgrp_list));
 }
 
-/**
- * @brief Return a load value of an exec host
- *
- * Returns a certain load value for a certain host.
- *
- * @code
- * lListElem *host = lGetElemHost(Master_Host_List, EH_name, "myhost");
- * const char *value = host_get_load_value(host, "np_load_avg");
- * printf("The load on host myhost is %s\n", value);
- * @endcode
- *
- * @param host the host to query
- * @param name the name of the load value
- *
- * @return string describing the load value
- */
-const char *host_get_load_value(lListElem *host, const char *name) {
-   const char *value = nullptr;
-
-   if (host != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::HL> load = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
-      if (load != nullptr) {
-         value = ocs::tom::get<HL_value>(load);
-      }
-   }
-   return value;
-}
-
 /* MT-NOTE: sge_resolve_host() is MT safe */
 /**
  * @brief Replace a host name attribute with its resolved unique name
@@ -976,36 +948,6 @@ bool host_do_per_host_booking(const char **last_hostname, const char *hostname) 
    }
 
    return ret;
-}
-
-/** @brief Check if a host is visible to the user
- *
- * Manager see all hosts as well as all users. Only in the "department view" mode users would not see those hosts
- * where they have no access to.
- *
- * @param hep the host to check
- * @param is_manager true if the user is a manager
- * @param dept_view true if the user has department view
- * @param acl_list the list of ACLs
- * @return true if the host is visible
- */
-bool
-host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lList *acl_list) {
-   bool host_visible = true;
-
-   if (!is_manager && dept_view) {
-      const char *username = component_get_username();
-      const char *groupname = component_get_groupname();
-
-      int amount;
-      ocs_grp_elem_t *grp_array;
-      component_get_supplementray_groups(&amount, &grp_array);
-      lList *grp_list = grp_list_array2list(amount, grp_array);
-
-      host_visible = sge_has_access_(username, groupname, grp_list, ocs::tom::get<EH_acl>(hep), ocs::tom::get<EH_xacl>(hep), acl_list);
-      lFreeList(&grp_list);
-   }
-   return host_visible;
 }
 
 /** @brief Get the topology string that is currently in use on a host

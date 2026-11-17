@@ -210,10 +210,6 @@ OCS_TRANSITIONAL lListElem *hgroup_create(lList **answer_list, const char *name,
 bool hgroup_add_references(ocs::tom::Element<ocs::tom::HGRP> this_elem, lList **answer_list,
                            ocs::tom::ConstList<ocs::tom::HR> hostref_or_groupref);
 
-bool hgroup_find_references(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
-                            ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **used_hosts,
-                            lList **used_groups);
-
 bool hgroup_find_all_references(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
                                 ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **used_hosts,
                                 lList **used_groups, lList **used_matchers = nullptr,
@@ -241,13 +237,6 @@ OCS_TRANSITIONAL bool hgroup_find_referencees(const lListElem *this_elem, lList 
 ocs::tom::Element<ocs::tom::HGRP> hgroup_list_locate(ocs::tom::ConstList<ocs::tom::HGRP> this_list,
                                                      const char *group);
 OCS_TRANSITIONAL lListElem *hgroup_list_locate(const lList *this_list, const char *group);
-
-/**
- * @brief The host groups of the active data store
- *
- * @return a pointer to the master list of host groups
- */
-lList **hgroup_list_get_master_list();
 
 bool hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **answer_list,
                         ocs::tom::ConstList<ocs::tom::HR> href_list);

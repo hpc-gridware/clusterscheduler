@@ -544,21 +544,6 @@ spool_get_default_context() {
 }
 
 /**
- * @brief Search a certain rule
- *
- * Searches a certain rule (given by its name) in a given spooling context.
- *
- * @param context the context to search
- * @param name name of the rule
- *
- * @return the rule, if it exists, else nullptr
- */
-lListElem *
-spool_context_search_rule(const lListElem *context, const char *name) {
-   return ocs::tom::find_first_rw<SPR_name>(ocs::tom::get<SPC_rules>(context), name);
-}
-
-/**
  * @brief Create a rule in a spooling context
  *
  * Creates a rule in the given context and assigns it the given attributes.

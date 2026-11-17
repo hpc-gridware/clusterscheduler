@@ -105,14 +105,6 @@ namespace ocs {
        */
       void set_sub_procedure_name(const std::string &procedure_name) { sub_procedure_name_ = procedure_name; }
 
-      /** @brief The environment the procedure needs
-       *
-       * Has no caller and is therefore left with its raw return type.
-       *
-       * @return the variables, as a CULL list
-       */
-      [[nodiscard]] const lList *get_env_variable_list() const { return *env_variable_list_; }
-
       void add_variable(const char *name, const char *value);
 
       const char *get_variable(const char *name) const;

@@ -135,9 +135,6 @@ OCS_TRANSITIONAL uint32_t qinstance_slots_reserved(const lListElem *this_elem);
 void qinstance_set_conf_slots_used(ocs::tom::Element<ocs::tom::QU> this_elem);
 OCS_TRANSITIONAL void qinstance_set_conf_slots_used(lListElem *this_elem);
 
-bool qinstance_is_calendar_referenced(ocs::tom::ConstElement<ocs::tom::QU> this_elem,
-                                      ocs::tom::ConstElement<ocs::tom::CAL> calendar);
-
 int qinstance_debit_consumable(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ConstElement<ocs::tom::JB> job,
                                ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                                int slots, bool is_master_task, bool do_per_host_booking, bool *just_check);
@@ -151,24 +148,6 @@ OCS_TRANSITIONAL bool qinstance_message_add(lListElem *this_elem, uint32_t type,
 bool qinstance_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::QU> this_elem, uint32_t type);
 OCS_TRANSITIONAL bool qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type);
 
-/**
- * @brief Do all queues named in a reference list exist?
- *
- * @param[out] alpp receives the name of the first queue that does not exist
- * @param qr_list the queue references to check
- * @param attr_name the attribute the list belongs to, used in the message
- * @param obj_descr the kind of object holding the list, used in the message
- * @param obj_name the object's name, used in the message
- * @return 0 when every referenced queue exists
- *
- * @todo Rename from `queue` to `qinstance`.
- *
- * @warning Declared here but defined nowhere in the tree, and never called.
- */
-int queue_reference_list_validate(lList **alpp, lList *qr_list,
-                                  const char *attr_name, const char *obj_descr,
-                                  const char *obj_name);
-
 int rc_debit_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::PE> pe,
                         lListElem *ep, ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, int config_nm,
                         int actual_nm, const char *obj_name, bool is_master_task, bool do_per_host_booking,
@@ -180,8 +159,6 @@ int rc_debit_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Cons
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(ocs::tom::ConstList<ocs::tom::QU> this_list,
                                                                          lList **answer_list,
                                                                          const char *hostname_pattern);
-
-bool qinstance_list_verify_execd_job(ocs::tom::ConstList<ocs::tom::QU> queue_list, lList **answer_list);
 
 bool qinstance_verify(ocs::tom::ConstElement<ocs::tom::QU> qep, lList **answer_list);
 OCS_TRANSITIONAL bool qinstance_verify(const lListElem *qep, lList **answer_list);

@@ -312,35 +312,6 @@ bool qinstance_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_
 }
 
 /**
- * @brief Is the calendar referenced
- *
- * Is the "calendar" referenced in the qinstance "this_elem".
- *
- * @param this_elem QU_Type element
- * @param calendar CAL_Type element
- *
- * @return test result true  - is referenced false - is not referenced
- *
- * @note MT-NOTE: qinstance_is_calendar_referenced() is MT safe
- */
-bool qinstance_is_calendar_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_elem,
-                                      const ocs::tom::ConstElement<ocs::tom::CAL> calendar) {
-   DENTER(TOP_LAYER);
-
-   bool ret = false;
-   const char *queue_calendar = ocs::tom::get<QU_calendar>(this_elem);
-
-   if (queue_calendar != nullptr) {
-      const char *calendar_name = ocs::tom::get<CAL_name>(calendar);
-
-      if (calendar_name && !strcmp(queue_calendar, calendar_name)) {
-         ret = true;
-      }
-   }
-   DRETURN(ret);
-}
-
-/**
  * @brief Is a PE referenced
  *
  * Test is at least one PE is referenced by qinstance "this_elem"
@@ -1133,13 +1104,6 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
       }
    }
 
-#if 0
-   if (auto_slots != nullptr) {
-      // remove the auto_slots element, if it was created
-      lDechainElem(lGetListRW(ep, config_nm), auto_slots);
-      lFreeElem(&auto_slots);
-   }
-#endif
    DRETURN(mods);
 }
 
@@ -1175,39 +1139,6 @@ void qinstance_set_conf_slots_used(const ocs::tom::Element<ocs::tom::QU> this_el
  */
 void qinstance_set_conf_slots_used(lListElem *this_elem) {
    qinstance_set_conf_slots_used(ocs::tom::Element<ocs::tom::QU>(this_elem));
-}
-
-/**
- * @brief Verify a queue instance list
- *
- * Verify correctness of a queue instance list, that has been sent by qmaster
- * to execd as part of a job start order.
- *
- * @param queue_list the queue instance list, may be an empty handle
- * @param answer_list answer list to pass back error messages
- *
- * @return true: everything ok, else false
- *
- * @note MT-NOTE: qinstance_list_verify_execd_job() is MT safe
- *
- * @see #qinstance_verify
- */
-bool qinstance_list_verify_execd_job(const ocs::tom::ConstList<ocs::tom::QU> queue_list, lList **answer_list) {
-   DENTER(TOP_LAYER);
-
-   if (!queue_list) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                              MSG_NULLELEMENTPASSEDTO_S, __func__);
-      DRETURN(false);
-   } else {
-      for (const auto qep : queue_list) {
-         if (!qinstance_verify(qep, answer_list)) {
-            DRETURN(false);
-         }
-      }
-   }
-
-   DRETURN(true);
 }
 
 /**

@@ -207,9 +207,6 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 static bool
 job_redebit(const lListElem *old_job, const lListElem *new_job, lList **answer_list, uint32_t gdi_session);
 
-void
-set_context(lList *jbctx, lListElem *job);
-
 static uint32_t
 guess_highest_job_number();
 
@@ -902,15 +899,6 @@ verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_use
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-
-#if 0
-   /* case 2,5 */
-   if ((all_users_flag || user_list_flag) && jid_flag) {
-      ERROR(SFNMAX, MSG_SGETEXT_NOTALLOWEDTOSPECUSERANDJID);
-      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EUNKNOWN);
-   }
-#endif
 
    /* case 1,3: Only manager can modify all jobs of all users */
    if (all_users_flag && !jid_flag && !manop_is_manager(packet)) {
@@ -1748,20 +1736,6 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
       int is_sub_op_code = (op_code == MINUS_H_CMD_SUB);
       uint32_t old_hold = job_get_hold_state(job, jataskid);
       uint32_t new_hold;
-
-#if 0
-      DPRINTF("******** jo_id = %d\n", jobid );
-      DPRINTF("******** task_id = %d\n", jataskid );
-
-      DPRINTF("********** op_code_and_hold = %x\n", op_code_and_hold );
-      DPRINTF("******************* op_code = %x\n", op_code );
-      DPRINTF("*************is_sub_op_code = %x\n", is_sub_op_code);
-      DPRINTF("****************** old_hold = %x\n", old_hold);
-      DPRINTF("******************** target = %x\n", target );
-      DPRINTF("******* MINUS_H_TGT_SYSTEM  = %x\n", MINUS_H_TGT_SYSTEM );
-      DPRINTF("***** MINUS_H_TGT_OPERATOR  = %x\n", MINUS_H_TGT_OPERATOR );
-      DPRINTF("********* MINUS_H_TGT_USER  = %x\n", MINUS_H_TGT_USER);
-#endif
 
       if (!is_task_enrolled) {
          new_ja_task = job_get_ja_task_template_pending(job, jataskid);

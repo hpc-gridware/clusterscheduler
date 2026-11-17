@@ -106,13 +106,6 @@ namespace ocs {
        * @return the PE list
        */
       [[nodiscard]] virtual ocs::tom::ConstList<ocs::tom::PE> get_pe_list() const { return *pe_list_; }
-      /** @brief The access control lists
-       *
-       * Has no caller and is therefore left with its raw return type.
-       *
-       * @return access control lists
-       */
-      [[nodiscard]] virtual lList *get_acl_list() const { return *acl_list_; }
       /** @brief The job load adjustments of the scheduler configuration
        *
        * A copy taken with the snapshot, so the load values can be resolved after the data store lock was

@@ -128,8 +128,6 @@ bool host_is_referenced(const lListElem *host, lList **answer_list, ocs::tom::Co
 OCS_TRANSITIONAL bool host_is_referenced(const lListElem *host, lList **answer_list, const lList *queue_list,
                                          const lList *hgrp_list);
 
-const char *host_get_load_value(lListElem *host, const char *name);
-
 int sge_resolve_host(lListElem *ep, int nm);
 
 int sge_resolve_hostname(const char *hostname, char *unique, int nm);
@@ -176,8 +174,5 @@ int host_debit_binding(ocs::tom::Element<ocs::tom::EH> host, const char *ce_name
                        ocs::tom::ConstElement<ocs::tom::ST> resl, int slots, bool *just_check);
 
 bool host_do_per_host_booking(const char **last_hostname, const char *hostname);
-
-bool
-host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lList *acl_list);
 
 std::string host_get_topology_in_use(ocs::tom::ConstElement<ocs::tom::EH> host);

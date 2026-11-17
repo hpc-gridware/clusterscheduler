@@ -258,9 +258,6 @@ lListElem *
 spool_get_default_context();
 
 lListElem *
-spool_context_search_rule(const lListElem *context, const char *name);
-
-lListElem *
 spool_context_create_rule(lList **answer_list, lListElem *context, 
                           const char *name, const char *url,
                           spooling_option_func option_func, 

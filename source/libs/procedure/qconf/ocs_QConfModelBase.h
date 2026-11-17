@@ -132,25 +132,6 @@ namespace ocs {
        */
       [[nodiscard]] bool answered_with_template() const { return answered_with_template_; }
 
-      /** @brief The host groups a cluster queue is written in terms of (CS-2818)
-       *
-       * A queue's host list is the member list of its own `@@<queue>` group, and
-       * a queue domain has to be resolved against the graph, so the cluster queue
-       * read needs the groups next to the queues. Empty for every other read.
-       *
-       * @return them, or an empty handle
-       */
-      [[nodiscard]] ocs::tom::ConstList<ocs::tom::HGRP> get_hgroup_list() const { return *hgroup_list_; }
-
-      /** @brief The complex entries, when the output format needed them
-       *
-       * Fetched for JSON only, because that is the only format whose writer
-       * resolves a value's type. Empty otherwise.
-       *
-       * @return them, or an empty handle
-       */
-      [[nodiscard]] ocs::tom::ConstList<ocs::tom::CE> get_centry_list() const { return *centry_list_; }
-
       /** @brief One group of objects `qconf -sq` is to print (CS-2818)
        *
        * One per queue reference given, in the order they were given, because the
@@ -218,16 +199,6 @@ namespace ocs {
       [[nodiscard]] ocs::tom::Element<ocs::tom::STN> get_sharetree_root() const {
          return ocs::tom::Element<ocs::tom::STN>(lFirstRW(object_list_));
       }
-
-      /** @brief The queue references the operation was asked about (CS-2818)
-       *
-       * Parsed here because the filter is built from them, and kept so that the
-       * view iterates the same list instead of parsing the arguments again. Each
-       * entry may be a wildcard pattern and may name a host or a queue domain.
-       *
-       * @return them, or an empty handle for every other read
-       */
-      [[nodiscard]] ocs::tom::ConstList<ocs::tom::QR> get_qref_pattern_list() const { return *qref_pattern_list_; }
 
       /** @brief The descriptor of the object type
        * @return its row, or nullptr before make_snapshot()

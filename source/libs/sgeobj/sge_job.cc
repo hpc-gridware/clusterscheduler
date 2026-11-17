@@ -139,7 +139,7 @@
  *
  * @note MT-NOTE: job_get_ja_task_template_pending() is MT safe
  *
- * @see #job_get_ja_task_template_pending, #job_get_ja_task_template_hold, #job_get_ja_task_template
+ * @see #job_get_ja_task_template_pending, #job_get_ja_task_template_hold
  */
 ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                   const uint32_t ja_task_id) {
@@ -178,9 +178,7 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job, const uint32_t
  * The task number (JAT_task_number) of this template task will be
  * initialized with the value given by 'ja_task_id'.
  * The hold state of the task (JAT_hold) will be initialized with
- * the 'hold_state' value. The function job_get_ja_task_hold_state()
- * may be used to get the current hold state of an unenrolled
- * pending task.
+ * the 'hold_state' value.
  *
  * @param job JB_Type
  * @param ja_task_id array task number
@@ -188,7 +186,7 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job, const uint32_t
  *
  * @return template task (JAT_Type), an empty handle if the job has no template
  *
- * @see #job_get_ja_task_template_pending, #job_get_ja_task_hold_state, #job_get_ja_task_template
+ * @see #job_get_ja_task_template_pending
  */
 ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_hold(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                const uint32_t ja_task_id,
@@ -223,26 +221,6 @@ lListElem *job_get_ja_task_template_hold(const lListElem *job, const uint32_t ja
 }
 
 /**
- * @brief Create a ja task template
- *
- * The function returns a pointer to a template array task element.
- * This task represents a currently submitted pending task.
- *
- * @param job JB_Type
- * @param ja_task_id array task number
- *
- * @return template task (JAT_Type)
- *
- * @see #job_get_ja_task_template_pending, #job_get_ja_task_template_hold, #job_get_ja_task_hold_state, #job_get_ja_task_template
- */
-lListElem *job_get_ja_task_template(const lListElem *job,
-                                    uint32_t ja_task_id) {
-   uint32_t hold_state = job_get_ja_task_hold_state(job, ja_task_id);
-
-   return job_get_ja_task_template_hold(job, ja_task_id, hold_state);
-}
-
-/**
  * @brief Hold state of unenrolled task
  *
  * Returns the hold state of a task which is not enrolled in
@@ -264,19 +242,6 @@ static uint32_t job_accumulate_hold_flags(const lListElem *job, uint32_t ja_task
       }
    }
    return ret;
-}
-
-/**
- * @brief The hold state of one array task
- *
- * @param job the job the task belongs to
- * @param ja_task_id the task to ask about
- * @return the accumulated hold flags of that task
- */
-uint32_t job_get_ja_task_hold_state(const lListElem *job,
-                                    uint32_t ja_task_id) {
-   DENTER(TOP_LAYER);
-   DRETURN(job_accumulate_hold_flags(job, ja_task_id));
 }
 
 /**
@@ -1221,7 +1186,7 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job, const i
  *
  * @return true or false
  *
- * @see #job_is_parallel, #job_is_tight_parallel
+ * @see #job_is_tight_parallel
  */
 bool job_is_array(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    const uint32_t job_type = ocs::tom::get<JB_type>(job);
@@ -1241,22 +1206,6 @@ bool job_is_array(const lListElem *job) {
 }
 
 /**
- * @brief Is "job" a parallel job?
- *
- * This function returns true if "job" is a parallel job
- * (requesting a parallel environment).
- *
- * @param job JB_Type element
- *
- * @return true or false
- *
- * @see #job_is_array, #job_is_tight_parallel
- */
-bool job_is_parallel(const lListElem *job) {
-   return (ocs::tom::get<JB_pe>(job) != nullptr ? true : false);
-}
-
-/**
  * @brief Is "job" a tightly integrated par. job?
  *
  * This function returns true if "job" is really a tightly
@@ -1267,7 +1216,7 @@ bool job_is_parallel(const lListElem *job) {
  *
  * @return true or false
  *
- * @see #job_is_array, #job_is_parallel, #job_might_be_tight_parallel
+ * @see #job_is_array, #job_might_be_tight_parallel
  */
 bool job_is_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
                            const ocs::tom::ConstList<ocs::tom::PE> pe_list) {
@@ -1319,7 +1268,7 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list) {
  *
  * @return true or false
  *
- * @see #job_is_array, #job_is_parallel, #job_is_tight_parallel, #job_might_be_tight_parallel
+ * @see #job_is_array, #job_is_tight_parallel, #job_might_be_tight_parallel
  */
 bool job_might_be_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                  const ocs::tom::ConstList<ocs::tom::PE> pe_list) {
@@ -1779,7 +1728,7 @@ void job_initialize_env(lListElem *job, lList **answer_list, const lList *path_a
  *
  * @return value of "variable"
  *
- * @see #job_initialize_env, #job_set_env_string
+ * @see #job_initialize_env
  */
 const char *job_get_env_string(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *variable) {
    DENTER(TOP_LAYER);
@@ -1798,31 +1747,6 @@ const char *job_get_env_string(const ocs::tom::ConstElement<ocs::tom::JB> job, c
  */
 const char *job_get_env_string(const lListElem *job, const char *variable) {
    return job_get_env_string(ocs::tom::ConstElement<ocs::tom::JB>(job), variable);
-}
-
-/**
- * @brief Set value of certain job env variable
- *
- * Set the string "value" of the job environment "variable".
- * Please note: The "*_O_*" env variables get their final
- *              name shortly before job execution. Find more
- *              information in the comment of
- *              job_initialize_env()
- *
- * @param job JB_Type element
- * @param variable environment variable name
- * @param value new value
- *
- * @see #job_initialize_env, #job_get_env_string
- */
-void job_set_env_string(lListElem *job, const char *variable, const char *value) {
-   DENTER(TOP_LAYER);
-
-   lList *env_list = nullptr;
-   ocs::tom::exchange<JB_env_list>(job, &env_list);
-   var_list_set_string(&env_list, variable, value);
-   ocs::tom::exchange<JB_env_list>(job, &env_list);
-   DRETURN_VOID;
 }
 
 /**
@@ -2571,46 +2495,11 @@ const lListElem *job_get_request(const lListElem *job, const char *centry_name) 
    return job_get_request(ocs::tom::ConstElement<ocs::tom::JB>(job), centry_name);
 }
 
-const lListElem *
-/**
- * @brief A job's hard request for one resource, global or task specific
- *
- * The global request set is tried first; only when it does not name the
- * resource is the master or slave set consulted, which only a parallel job
- * has.
- *
- * @param job the job to search
- * @param name the resource to look for
- * @param is_master_task true to fall back to the master set, false to the slave set
- * @return the request, or nullptr when neither set names the resource
- */
-job_get_hard_request(const lListElem *job, const char *name, bool is_master_task) {
-   DENTER(TOP_LAYER);
-   const lListElem *ret = nullptr;
-
-   // a request can be either global
-   const lList *request_list = job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
-   if (request_list != nullptr) {
-      ret = ocs::tom::find_first<CE_name>(request_list, name);
-   }
-
-   // or (only for pe-jobs) a master or slave request
-   if (ret == nullptr) {
-      request_list = job_get_hard_resource_list(job, is_master_task ? JRS_SCOPE_MASTER : JRS_SCOPE_SLAVE);
-      if (request_list != nullptr) {
-         // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
-         ret = ocs::tom::find_first<CE_name>(request_list, name);
-      }
-   }
-
-   DRETURN(ret);
-}
-
 /**
  * @brief A job's hard request for one resource in one scope
  *
- * Unlike the overload taking `is_master_task`, this looks only in the scope
- * named and does not fall back to the global set.
+ * This looks only in the scope named and does not fall back to the global
+ * set.
  *
  * @param job the job to search (JB_Type)
  * @param name the resource to look for
@@ -2633,57 +2522,8 @@ job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char 
    DRETURN(ret);
 }
 
-bool
-/**
- * @brief How much of a consumable one task of the job needs
- *
- * Only hard requests are considered - there are no soft consumables. When the
- * job does not request the resource at all, the complex entry's default
- * request is used instead.
- *
- * @param job the job to read
- * @param[out] answer_list receives the message when the value cannot be parsed
- * @param name the consumable to ask about
- * @param[out] value receives the amount
- * @param complex_definition the resource's complex entry, for its default
- * @param is_master_task true for the master task, false for a slave task
- * @return true when a value was determined
- */
-job_get_contribution(const lListElem *job, lList **answer_list, const char *name, double *value,
-                     const lListElem *complex_definition, bool is_master_task) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-   const lListElem *centry = nullptr;
-   const char *value_string = nullptr;
-   char error_str[256];
-
-   // we only consider *hard* requests (consumables), there are no soft consumables
-   centry = job_get_hard_request(job, name, is_master_task);
-   if (centry != nullptr) {
-      // CS-537: the amount was parsed when the request was built and is kept in CE_doubleval.
-      // Parsing CE_stringval again would also be wrong for a resource map, whose string carries
-      // a bracketed parameter list after the amount.
-      *value = ocs::tom::get<CE_doubleval>(centry);
-   } else {
-      // if the job did not request the consumable, there might still be a default request
-      // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
-      value_string = ocs::tom::get<CE_defaultval>(complex_definition);
-      if (!(parse_ulong_val(value, nullptr, static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(complex_definition)), value_string,
-                            error_str, sizeof(error_str)-1))) {
-         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                 MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
-         ret = false;
-      }
-   }
-
-   DRETURN(ret);
-}
-
 /**
  * @brief How much of a consumable one scope of the job needs
- *
- * Like #job_get_contribution, but for an explicit scope.
  *
  * The amount stays an out-parameter: it is also written when false is
  * returned for a default request of 0.
@@ -2712,7 +2552,9 @@ job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job, lL
 
    // we only consider *hard* requests (consumables), there are no soft consumables
    if (const auto centry = job_get_hard_request(job, name, scope); centry) {
-      // CS-537: see job_get_contribution()
+      // CS-537: the amount was parsed when the request was built and is kept in CE_doubleval.
+      // Parsing CE_stringval again would also be wrong for a resource map, whose string carries
+      // a bracketed parameter list after the amount.
       *value = ocs::tom::get<CE_doubleval>(centry);
    } else {
       // if the job did not request the consumable, there might still be a default request
@@ -2727,9 +2569,6 @@ job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job, lL
       }
    }
    if (is_default_request && *value == 0) {
-#if 0
-      DPRINTF("job_get_contribution_by_scope: default request for %s is 0, ignoring\n", name);
-#endif
       ret = false;
    }
 
@@ -3509,13 +3348,6 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, lList *
    if (ret) {
       ret = object_verify_double_null(job, answer_list, JB_nurg);
    }
-// will be overwritten anyways
-#if 0
-   /* JB_nppri must be 0 */
-   if (ret) {
-      ret = object_verify_double_null(job, answer_list, JB_nppri);
-    }
-#endif
    /* JB_rrcontr must be 0 */
    if (ret) {
       ret = object_verify_double_null(job, answer_list, JB_rrcontr);
@@ -4413,19 +4245,6 @@ const lList *job_get_soft_resource_list(const lListElem *job) {
 }
 
 /**
- * @brief The soft resource requests of one scope
- *
- * @param job the job to read
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
- *
- * @see #job_get_resource_list
- */
-const lList *job_get_soft_resource_list(const lListElem *job, uint32_t scope) {
-   return job_get_resource_list(job, scope, false);
-}
-
-/**
  * @brief The global hard queue requests of a job
  *
  * @param job the job to read (JB_Type)
@@ -4629,19 +4448,6 @@ lList *job_get_hard_resource_listRW(lListElem *job) {
 }
 
 /**
- * @brief The hard resource requests of one scope
- *
- * @param job the job to read
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
- *
- * @see #job_get_resource_listRW
- */
-lList *job_get_hard_resource_listRW(lListElem *job, uint32_t scope) {
-   return job_get_resource_listRW(job, scope, true);
-}
-
-/**
  * @brief The global soft resource requests of a job
  *
  * @param job the job to read (JB_Type)
@@ -4661,19 +4467,6 @@ ocs::tom::List<ocs::tom::CE> job_get_soft_resource_listRW(const ocs::tom::Elemen
  */
 lList *job_get_soft_resource_listRW(lListElem *job) {
    return job_get_soft_resource_listRW(ocs::tom::Element<ocs::tom::JB>(job));
-}
-
-/**
- * @brief The soft resource requests of one scope
- *
- * @param job the job to read
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
- *
- * @see #job_get_resource_listRW
- */
-lList *job_get_soft_resource_listRW(lListElem *job, uint32_t scope) {
-   return job_get_resource_listRW(job, scope, false);
 }
 
 /**
@@ -4707,68 +4500,6 @@ ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(const ocs::tom::Element<ocs::t
  */
 lList *job_get_queue_listRW(lListElem *job, const uint32_t scope, const bool hard) {
    return job_get_queue_listRW(ocs::tom::Element<ocs::tom::JB>(job), scope, hard);
-}
-
-/**
- * @brief The global hard queue requests of a job
- *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
- *
- * @see #job_get_queue_listRW
- */
-lList *job_get_hard_queue_listRW(lListElem *job) {
-   return job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, true);
-}
-/**
- * @brief The hard queue requests of one scope
- *
- * @param job the job to read
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
- *
- * @see #job_get_queue_listRW
- */
-lList *job_get_hard_queue_listRW(lListElem *job, uint32_t scope) {
-   return job_get_queue_listRW(job, scope, true);
-}
-
-/**
- * @brief The global soft queue requests of a job
- *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
- *
- * @see #job_get_queue_listRW
- */
-lList *job_get_soft_queue_listRW(lListElem *job) {
-   return job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, false);
-}
-/**
- * @brief The soft queue requests of one scope
- *
- * @param job the job to read
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
- *
- * @see #job_get_queue_listRW
- */
-lList *job_get_soft_queue_listRW(lListElem *job, uint32_t scope) {
-   return job_get_queue_listRW(job, scope, false);
-}
-
-/**
- * @brief The queue requests of a job's master task, writable
- *
- * @param job the job to read
- * @return the list, or nullptr when the job has no master request set
- *
- * @warning Despite the name this returns the **soft** queue list - it passes
- *          `false` where #job_get_master_hard_queue_list passes `true`. The
- *          function currently has no callers.
- */
-lList *job_get_master_hard_queue_listRW(lListElem *job) {
-   return job_get_queue_listRW(job, JRS_SCOPE_MASTER, false);
 }
 
 /**
@@ -4995,18 +4726,6 @@ void job_set_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom
 void job_set_hard_queue_list(lListElem *job, lList *queue_list, const uint32_t scope) {
    job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
                            ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list), scope);
-}
-
-/**
- * @brief Replace the global soft queue requests of a job
- *
- * @param[in,out] job the job to change
- * @param queue_list the new list; ownership passes to the job
- *
- * @see #job_set_queue_list
- */
-void job_set_soft_queue_list(lListElem *job, lList *queue_list) {
-   job_set_queue_list(job, queue_list, JRS_SCOPE_GLOBAL, false);
 }
 
 /**
@@ -5811,13 +5530,6 @@ gdil_make_host_unique(const lList *gdil_in) {
    if (gdil_out->size() == 1) {
       DRETURN(gdil_out.release());
    }
-
-   // not required as long as only master host has a separate entry
-   // not to sort also ensures that the first entry shows the master host
-#if 0
-   // make entries for same host to appear in the list as consecutive entries
-   lPSortList(gdil_out, "%I+", JG_qhostname);
-#endif
 
    // first gdil that we will use to summarize the slots and the hostname
    auto first_gdil = gdil_out->front();

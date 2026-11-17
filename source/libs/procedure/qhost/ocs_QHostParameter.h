@@ -83,14 +83,6 @@ namespace ocs {
        */
       [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_user_name_list() const { return *user_name_list_; }
 
-      /** @brief The resource filter deciding which hosts are reported
-       *
-       * Has no caller and is therefore left with its raw return type.
-       *
-       * @return the requested resources
-       */
-      [[nodiscard]] const lList *get_resource_match_list() const { return *resource_match_list_; }
-
       /** @brief The resource filter, to be filled in place before it is matched against the hosts
        * @return the requested resources
        */

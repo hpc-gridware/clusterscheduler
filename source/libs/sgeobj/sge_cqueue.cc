@@ -626,31 +626,6 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
          }
       }
 
-#if 0
-      /*
-       * initialize uint32_t values (SGEEE attributes)
-       */
-      if (ret ) {
-         const uint32_t value[] = {
-            0, 0, 0 
-         }; 
-         const int attr[] = {
-            CQ_fshare, CQ_oticket, NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            lListElem *attr_elem = lAddElemHost(&attr_list, AULNG_href, 
-                                                HOSTREF_DEFAULT, AULNG_Type);
-
-            lSetUlong(attr_elem, AULNG_value, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
-#endif
-
       /*
        * qtype
        */
@@ -913,33 +888,6 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
  */
 bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
    return cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ>(this_elem), answer_list);
-}
-
-/**
- * @brief Add a cluster queue to its master list
- *
- * Add a cluster queue in its master list.
- *
- * @param this_list the master list to add to; nullptr uses the active data store's
- * @param queue CQ_Type
- *
- * @return error state true  - success false - error
- */
-bool cqueue_list_add_cqueue(lList *this_list, lListElem *queue) {
-   DENTER(TOP_LAYER);
-
-   bool ret = false;
-   static lSortOrder *so = nullptr;
-
-   if (queue != nullptr) {
-      if (so == nullptr) {
-         so = lParseSortOrderVarArg(CQ_Type, "%I+", CQ_name);
-      }
-
-      lInsertSorted(so, queue, this_list);
-      ret = true;
-   } 
-   DRETURN(ret);
 }
 
 /**
@@ -1603,101 +1551,6 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
 lListElem *cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, const bool raise_error) {
    return cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list), full_name, raise_error)
            .raw();
-}
-
-/**
- * @brief Finds used host references
- *
- * This function returns all host references in "href_list"
- * for which attribute specific overwritings exist in the cqueue
- * "this_elem".
- *
- * @param this_elem CQ_Type
- * @param answer_list AN_Type
- * @param href_list HR_Type
- *
- * @return error state true  - success false - error
- *
- * @note MT-NOTE: cqueue_find_used_href() is MT safe
- */
-bool cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
-                           lList **href_list) {
-   DENTER(CQUEUE_LAYER);
-
-   bool ret = true;
-
-   if (this_elem != nullptr) {
-      int index=0;
-
-      while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
-         int pos = lGetPosViaElem(this_elem,
-                            cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
-
-         if (pos >= 0) {
-            lList *list = lGetPosList(this_elem, pos);
-            const lListElem *elem = nullptr;
-
-            for_each_ep(elem, list) {
-               const char *attr_hostname = lGetHost(elem, 
-                                 cqueue_attribute_array[index].href_attr);
-
-               ret = href_list_add(href_list, answer_list, attr_hostname);
-            }
-         }
-         index++;
-      }
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Trash certain setting
- *
- * Trash all attribute specific overwritings in "this_elem" for
- * the give host or hgroup "hgroup_or_hostname". Errors will be
- * reported in "answer_list".
- *
- * @param this_elem CQ_Type
- * @param answer_list AN_Type
- * @param hgroup_or_hostname host or hgroup name
- *
- * @return error result true  - success false - error
- *
- * @note MT-NOTE: cqueue_trash_used_href_setting() is MT safe
- */
-bool cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
-                                    const char *hgroup_or_hostname) {
-   DENTER(CQUEUE_LAYER);
-
-   bool ret = true;
-
-   if (this_elem != nullptr) {
-      int index=0;
-
-      while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
-         int pos = lGetPosViaElem(this_elem,
-                            cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
-
-         if (pos >= 0) {
-            lList *list = lGetPosList(this_elem, pos);
-            lListElem *elem = nullptr;
-            lListElem *next_elem = nullptr;
-
-            next_elem = lFirstRW(list);
-            while ((elem = next_elem) != nullptr) {
-               const char *attr_hostname = lGetHost(elem, 
-                                 cqueue_attribute_array[index].href_attr);
-
-               next_elem = lNextRW(elem);
-               if (!sge_hostcmp(hgroup_or_hostname, attr_hostname)) {
-                  lRemoveElem(list, &elem);
-               }
-            }
-         }
-         index++;
-      }
-   }
-   DRETURN(ret);
 }
 
 /**

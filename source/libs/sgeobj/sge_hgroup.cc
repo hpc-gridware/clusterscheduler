@@ -847,44 +847,6 @@ bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
 }
 
 /**
- * @brief Find directly referenced hosts and groups
- *
- * Find all hgroups which are directly referenced by 'this_elem'
- * 'master_list' has to be the list of all existing hgroups.
- * 'used_hosts' and 'used_groups' will contain the names of
- * hosts and groups after a call to this function.
- *
- * @param this_elem HGRP_Type, may be an empty handle
- * @param answer_list AN_Type
- * @param master_list HGRP_Type list, may be an empty handle
- * @param used_hosts in-out: HR_Type list, or nullptr
- * @param used_groups in-out: HR_Type list, or nullptr
- *
- * @return Error state true  - Success false - Error
- */
-bool hgroup_find_references(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
-                            const ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **used_hosts,
-                            lList **used_groups) {
-   DENTER(HGROUP_LAYER);
-
-   bool ret = true;
-
-   if (this_elem && master_list) {
-      const char *name = ocs::tom::get<HGRP_name>(this_elem);
-      lList *raw_href_list = nullptr;   // HR_Type, created by href_list_add()
-
-      ret &= href_list_add(&raw_href_list, answer_list, name);
-      const auto href_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(raw_href_list);
-
-      if (ret) {
-         ret &= href_list_find_references(*href_list, answer_list, master_list,
-                                          used_hosts, used_groups);
-      }
-   }
-   DRETURN(ret);
-}
-
-/**
  * @brief Find groups refering to this group
  *
  * Find all hostgroups from 'master_list' which reference the

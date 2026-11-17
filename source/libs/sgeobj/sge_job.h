@@ -399,17 +399,6 @@ OCS_TRANSITIONAL uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id
 /* int job_add_job(lList **job_list, char *name, lListElem *job, int check,
                  int hash, htable* Job_Hash_Table); */
 
-/**
- * @brief Print a job list for debugging
- *
- * @param job_list the list to print
- *
- * @warning Declared here but defined nowhere in the tree, and never called.
- */
-void job_list_print(lList *job_list);
-
-lListElem *job_get_ja_task_template(const lListElem *job, uint32_t ja_task_id);
-
 ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_hold(ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                uint32_t ja_task_id, uint32_t hold_state);
 OCS_TRANSITIONAL lListElem *job_get_ja_task_template_hold(const lListElem *job, uint32_t ja_task_id,
@@ -430,8 +419,6 @@ OCS_TRANSITIONAL lListElem *job_create_task(lListElem *job, lList **answer_list,
 int job_list_add_job(lList **job_list, const char *name, ocs::tom::Element<ocs::tom::JB> job, int check);
 OCS_TRANSITIONAL int job_list_add_job(lList **job_list, const char *name, lListElem *job, int check);
 
-uint32_t job_get_ja_task_hold_state(const lListElem *job, uint32_t ja_task_id);
-
 void job_destroy_hold_id_lists(ocs::tom::ConstElement<ocs::tom::JB> job, lList *id_list[16]);
 OCS_TRANSITIONAL void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]);
 
@@ -443,8 +430,6 @@ OCS_TRANSITIONAL const char *job_get_shell_start_mode(const lListElem *queue, co
 
 bool job_is_array(ocs::tom::ConstElement<ocs::tom::JB> job);
 OCS_TRANSITIONAL bool job_is_array(const lListElem *job);
-
-bool job_is_parallel(const lListElem *job);
 
 bool job_is_tight_parallel(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::PE> pe_list);
 OCS_TRANSITIONAL bool job_is_tight_parallel(const lListElem *job, const lList *pe_list);
@@ -474,16 +459,6 @@ OCS_TRANSITIONAL uint32_t job_get_biggest_enrolled_task_id(const lListElem *job)
 int job_list_register_new_job(ocs::tom::ConstList<ocs::tom::JB> job_list, uint32_t max_jobs, int force_registration);
 OCS_TRANSITIONAL int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int force_registration);
 
-/**
- * @brief Render an array task list as a range string
- *
- * @param task_list the tasks to render
- * @param[out] range_string receives the rendered ranges
- *
- * @warning Declared here but defined nowhere in the tree, and never called.
- */
-void jatask_list_print_to_string(const lList *task_list, dstring *range_string);
-
 lList* ja_task_list_split_group(lList **task_list);
 
 int job_initialize_id_lists(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
@@ -497,9 +472,6 @@ OCS_TRANSITIONAL void job_initialize_env(lListElem *job, lList **answer_list, co
 
 const char *job_get_env_string(ocs::tom::ConstElement<ocs::tom::JB> job, const char *variable);
 OCS_TRANSITIONAL const char *job_get_env_string(const lListElem *job, const char *variable);
-
-void job_set_env_string(lListElem *job, const char *variable,
-                        const char *value);
 
 void job_check_correct_id_sublists(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
 OCS_TRANSITIONAL void job_check_correct_id_sublists(lListElem *job, lList **answer_list);
@@ -542,13 +514,6 @@ OCS_TRANSITIONAL int job_resolve_host_for_path_list(const lListElem *job, lList 
 
 ocs::tom::ConstElement<ocs::tom::CE> job_get_request(ocs::tom::ConstElement<ocs::tom::JB> job, const char *centry_name);
 OCS_TRANSITIONAL const lListElem *job_get_request(const lListElem *job, const char *centry_name);
-
-const lListElem *
-job_get_hard_request(const lListElem *job, const char *name, bool is_master_task);
-
-bool
-job_get_contribution(const lListElem *job, lList **answer_list, const char *name, double *value,
-                     const lListElem *complex_definition, bool is_master_task);
 
 bool job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, const char *name,
                                    double *value, ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
@@ -637,17 +602,6 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
 bool job_is_requesting_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, const char *resource_name);
 OCS_TRANSITIONAL bool job_is_requesting_consumable(const lListElem *jep, const char *resource_name);
 
-/**
- * @brief Give a job a default binding element
- *
- * @param jep the job to initialise
- * @return true when the element was created
- *
- * @warning Declared here but defined nowhere in the tree, and never called.
- */
-bool
-job_init_binding_elem(lListElem *jep);
-
 // Defines and Functions for Job Resource Sets (JRS_Type)
 
 /**
@@ -714,7 +668,6 @@ ocs::tom::ConstList<ocs::tom::CE> job_get_hard_resource_list(ocs::tom::ConstElem
 OCS_TRANSITIONAL const lList *job_get_hard_resource_list(const lListElem *job, uint32_t scope);
 ocs::tom::ConstList<ocs::tom::CE> job_get_soft_resource_list(ocs::tom::ConstElement<ocs::tom::JB> job);
 OCS_TRANSITIONAL const lList *job_get_soft_resource_list(const lListElem *job);
-const lList *job_get_soft_resource_list(const lListElem *job, uint32_t scope);
 
 ocs::tom::ConstList<ocs::tom::QR> job_get_hard_queue_list(ocs::tom::ConstElement<ocs::tom::JB> job);
 OCS_TRANSITIONAL const lList *job_get_hard_queue_list(const lListElem *job);
@@ -731,17 +684,10 @@ ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(ocs::tom::Element<ocs::tom:
 OCS_TRANSITIONAL lList *job_get_resource_listRW(lListElem *job, uint32_t scope, bool hard);
 ocs::tom::List<ocs::tom::CE> job_get_hard_resource_listRW(ocs::tom::Element<ocs::tom::JB> job);
 OCS_TRANSITIONAL lList *job_get_hard_resource_listRW(lListElem *job);
-lList *job_get_hard_resource_listRW(lListElem *job, uint32_t scope);
 ocs::tom::List<ocs::tom::CE> job_get_soft_resource_listRW(ocs::tom::Element<ocs::tom::JB> job);
 OCS_TRANSITIONAL lList *job_get_soft_resource_listRW(lListElem *job);
-lList *job_get_soft_resource_listRW(lListElem *job, uint32_t scope);
 ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(ocs::tom::Element<ocs::tom::JB> job, uint32_t scope, bool hard);
 OCS_TRANSITIONAL lList *job_get_queue_listRW(lListElem *job, uint32_t scope, bool hard);
-lList *job_get_hard_queue_listRW(lListElem *job);
-lList *job_get_hard_queue_listRW(lListElem *job, uint32_t scope);
-lList *job_get_soft_queue_listRW(lListElem *job);
-lList *job_get_soft_queue_listRW(lListElem *job, uint32_t scope);
-lList *job_get_master_hard_queue_listRW(lListElem *job);
 
 void job_set_resource_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list,
                            uint32_t scope, bool hard);
@@ -765,7 +711,6 @@ OCS_TRANSITIONAL void job_set_hard_queue_list(lListElem *job, lList *queue_list)
 void job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
                              uint32_t scope);
 OCS_TRANSITIONAL void job_set_hard_queue_list(lListElem *job, lList *queue_list, uint32_t scope);
-void job_set_soft_queue_list(lListElem *job, lList *queue_list);
 void job_set_soft_queue_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
                              uint32_t scope);
 OCS_TRANSITIONAL void job_set_soft_queue_list(lListElem *job, lList *queue_list, uint32_t scope);

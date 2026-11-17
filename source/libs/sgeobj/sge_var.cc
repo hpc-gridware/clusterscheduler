@@ -124,31 +124,6 @@ void var_list_set_string(lList **varl, const char *name, const char *value) {
 }
 
 /**
- * @brief Delete a variable
- *
- * Deletes the variable `name` from the list `varl` if it exists.
- *
- * @param varl VA_Type list
- * @param name the name of the variable
- *
- * @see #var_list_set_string
- */
-void var_list_delete_string(lList **varl, const char *name) {
-   DENTER(TOP_LAYER);
-
-   lListElem *elem;
-
-   if (varl == nullptr || name == nullptr) {
-      DRETURN_VOID;
-   }
-   elem = ocs::tom::find_first_rw<VA_variable>(*varl, name);
-   if (elem != nullptr) {
-      lRemoveElem(*varl, &elem);
-   }
-   DRETURN_VOID;
-}
-
-/**
  * @brief Add/change an variable
  *
  * If the variable `name` does not already exist in `varl`,
@@ -747,79 +722,5 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
    sge_free(&va_string);
    sge_free(&str_str);
    DRETURN(0);
-}
-
-/**
- * @brief Obtain value for environment name,
- *
- * Obtain value for environment name; check for any \n
- * characters in input string. Shell enters this character
- * for multi-line environment variables. If nothing found,
- * just store value in VA_Value member of *ep.
- *
- * Otherwise, count number of newline characters, figure out
- * string length and allocate new memory for the modified
- * string. Next, copy over string, skipping over \n characters.
- * Then, store value in VA_Value member of *ep.
- *
- * @param ep target list element
- * @param variable environment variable
- *
- * @note MT-NOTE: remove_newline_chars() is MT safe
- */
-
-void getenv_and_set(lListElem *ep, char *variable) {
-   const char *env_value = nullptr;
-   char *new_env_value = nullptr;
-   char *a = nullptr;
-   char *b = nullptr;
-   int i, nchars;
-   int newline_chars = 0;
-
-   env_value = sge_getenv(variable);
-   if (env_value == nullptr) {
-      ocs::tom::set<VA_value>(ep, nullptr);
-      return;
-   }
-   /*
-    * Any work to do? Check for any newline
-    * character.
-    */
-   a = strchr((char *)env_value, '\n');
-   if (a == nullptr) {
-      /*
-       * Nothing to do. Just leave it alone.
-       */
-      ocs::tom::set<VA_value>(ep, env_value);
-      return;
-   }
-   /*
-    * This is a multi-line environment variable. Allocate
-    * new string and copy over, but without newline chars.
-    */
-   nchars = strlen(env_value);
-   a = (char *)env_value;
-   newline_chars = 0;
-   for (i = 0; i < nchars; i++) {
-      if (*a == '\n') {
-         newline_chars++;
-      }
-      a++;
-   }
-   new_env_value = sge_malloc(nchars - newline_chars + 1);
-   a = new_env_value;
-   b = (char *)env_value;
-   for (i = 0; i < nchars; i++) {
-      if (*b != '\n') {
-         *a = *b;
-         a++;
-      }
-      b++;
-   }
-   *a = '\0';
-
-   ocs::tom::set<VA_value>(ep, new_env_value);
-   sge_free(&new_env_value);
-   return;
 }
 

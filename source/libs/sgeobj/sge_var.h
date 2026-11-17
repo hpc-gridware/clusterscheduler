@@ -71,7 +71,6 @@ const char *var_list_get_string(ocs::tom::ConstList<ocs::tom::VA> varl, const ch
 OCS_TRANSITIONAL const char *var_list_get_string(const lList *varl, const char *name);
 
 void var_list_set_string(lList **varl, const char *name, const char *value);
-void var_list_delete_string(lList **varl, const char *name);
 
 void var_list_set_int(lList **varl, const char *name, int value);
 
@@ -94,6 +93,4 @@ bool var_list_verify(ocs::tom::ConstList<ocs::tom::VA> lp, lList **answer_list);
 
 int var_list_parse_from_string(lList **lpp, const char *variable_str,
                                int check_environment);
-
-void getenv_and_set(lListElem *ep, char *variable);
 

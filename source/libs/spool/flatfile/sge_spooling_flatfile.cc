@@ -572,9 +572,6 @@ bool spool_classic_default_list_func(lList **answer_list,
             break;
          case SGE_TYPE_CQUEUE:
             directory = CQUEUE_DIR;
-            /* JG: TODO: we'll have to quicksort the queue list, see
-             * function cqueue_list_add_cqueue
-             */
             break;
          case SGE_TYPE_USERSET:
             directory = USERSET_DIR;

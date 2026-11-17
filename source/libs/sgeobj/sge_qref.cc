@@ -236,19 +236,6 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
 }
 
 /**
- * @brief Remove repeated queue references from a list
- *
- * A queue reference list is a set: a reference given twice adds nothing. The
- * first occurrence of each reference stays, later ones are removed, so that
- * the unique attribute QR_name holds each reference once (CS-3053).
- *
- * @param this_list QR_Type list, an empty handle is accepted
- */
-void ocs_qref_list_remove_duplicates(const ocs::tom::List<ocs::tom::QR> this_list) {
-   ocs_object_list_remove_repeated_keys(this_list, QR_name);
-}
-
-/**
  * @brief Add a queue reference to the list
  *
  * Add the queue reference "qref_string" to the QR_type list "this_list",
@@ -719,77 +706,6 @@ bool qref_list_host_rejected(const char *href, const char *hostname, const lList
 }
 
 /**
- * @brief Remove some elements from list
- *
- * Remove all elements from "this_list" where either the cluster
- * queue name is equivalent with the cluster queue part of "fullname"
- * or if the hostname is different from the hostname part of
- * "fullname". An emptied list is freed.
- *
- * @param this_list in-out: QR_Type list; freed and set to nullptr when it is left empty
- * @param full_name queue instance name
- *
- * @return error state true  - success false - error
- */
-bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   if (this_list != nullptr) {
-      dstring cqueue_buffer = DSTRING_INIT;
-      dstring host_or_hgroup_buffer = DSTRING_INIT;
-      dstring cqueue_buffer1 = DSTRING_INIT;
-      dstring host_or_hgroup_buffer1 = DSTRING_INIT;
-
-      if (!cqueue_name_split(full_name, &cqueue_buffer1, &host_or_hgroup_buffer1, nullptr,
-                        nullptr)) {
-         /* we got an syntax error while splitting */
-         ret = false;
-      } else {
-         const char *cqueue1 = sge_dstring_get_string(&cqueue_buffer1);
-         const char *host1 = sge_dstring_get_string(&host_or_hgroup_buffer1);
-         const auto qref_list = ocs::tom::List<ocs::tom::QR>(*this_list);
-
-         auto next_qref = qref_list.front();
-         while (const auto qref = next_qref) {
-            next_qref = qref.next();
-
-            const char *name = ocs::tom::get<QR_name>(qref);
-            if (!cqueue_name_split(name, &cqueue_buffer, &host_or_hgroup_buffer, nullptr,
-                              nullptr)) {
-               sge_dstring_clear(&cqueue_buffer);
-               sge_dstring_clear(&host_or_hgroup_buffer);
-               ret = false;
-               break;
-            }
-            const char *cqueue = sge_dstring_get_string(&cqueue_buffer);
-            const char *host = sge_dstring_get_string(&host_or_hgroup_buffer);
-
-            /*
-             * Same cluster queue or different host?
-             */
-            if (!sge_strnullcmp(cqueue1, cqueue) || sge_strnullcmp(host1, host)) {
-               qref_list.erase(qref);
-            }
-
-            sge_dstring_clear(&cqueue_buffer);
-            sge_dstring_clear(&host_or_hgroup_buffer);
-         }
-         if (qref_list.empty()) {
-            lFreeList(this_list);
-         }
-
-         sge_dstring_free(&cqueue_buffer);
-         sge_dstring_free(&host_or_hgroup_buffer);
-         sge_dstring_free(&cqueue_buffer1);
-         sge_dstring_free(&host_or_hgroup_buffer1);
-      }
-   }
-   DRETURN(ret);
-}
-
-/**
  * @brief Check queue reference list
  *
  * This function will be used to check the hard and soft queue list.
@@ -921,26 +837,6 @@ void qref_list_resolve_hostname(const ocs::tom::List<ocs::tom::QR> this_list) {
  */
 void qref_list_resolve_hostname(lList *this_list) {
    qref_list_resolve_hostname(ocs::tom::List<ocs::tom::QR>(this_list));
-}
-
-/**
- * @brief Resolve the host part of one queue reference
- *
- * A reference is written `cqueue@host`, and the host has to be brought into its
- * unique form before it is compared or stored. QR_name might be a pattern.
- *
- * @param[in,out] this_elem the reference to rewrite (QR_Type)
- */
-void qref_resolve_hostname(const ocs::tom::Element<ocs::tom::QR> this_elem) {
-   DENTER(TOP_LAYER);
-   const char *name = ocs::tom::get<QR_name>(this_elem);
-   if (name != nullptr) {
-      const std::string resolved = ocs_qref_resolved_name(name);
-      if (resolved != name) {
-         ocs::tom::set<QR_name>(this_elem, resolved.c_str());
-      }
-   }
-   DRETURN_VOID;
 }
 
 /**
