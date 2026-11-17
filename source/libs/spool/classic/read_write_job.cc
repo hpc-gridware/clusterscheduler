@@ -190,14 +190,16 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
    const auto dir_entries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(spool_dir_job));
    for (const ocs::tom::ConstElement<ocs::tom::ST> dir_entry : *dir_entries) {
       const char *entry = dir_entry.get<ST_name>();
-      if (strcmp(entry, ".") && strcmp(entry, "..") && strcmp(entry, "common")) {
+      // dot entries are ".", ".." and the dot files a write leaves behind when its rename failed or the
+      // daemon died before it (CS-3120): none of them is a task directory
+      if (entry[0] != '.' && strcmp(entry, "common")) {
          char spool_dir_tasks[SGE_PATH_MAX];
 
          snprintf(spool_dir_tasks, sizeof(spool_dir_tasks), SFN "/" SFN, spool_dir_job, entry);
          const auto ja_task_entries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(spool_dir_tasks));
          for (const ocs::tom::ConstElement<ocs::tom::ST> ja_task_entry : *ja_task_entries) {
             const char *ja_task_string = ja_task_entry.get<ST_name>();
-            if (strcmp(ja_task_string, ".") && strcmp(ja_task_string, "..")) {
+            if (ja_task_string[0] != '.') {
                char spool_dir_pe_tasks[SGE_PATH_MAX];
                ocs::tom::ElementPtr<ocs::tom::JAT> ja_task;
 
@@ -221,9 +223,7 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
                           ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(spool_dir_pe_tasks));
                   for (const ocs::tom::ConstElement<ocs::tom::ST> pe_task_entry : *pe_task_entries) {
                      const char *pe_task_string = pe_task_entry.get<ST_name>();
-                     if (strcmp(pe_task_string, ".") &&
-                         strcmp(pe_task_string, "..") &&
-                         strcmp(pe_task_string, "common")) {
+                     if (pe_task_string[0] != '.' && strcmp(pe_task_string, "common")) {
                         auto pe_task = pe_task_create_from_file(job_id, ja_task_id, pe_task_string, flags);
                         if (pe_task) {
                            if (!pe_tasks) {
@@ -591,6 +591,11 @@ static int ja_task_write_to_disk(const ocs::tom::Element<ocs::tom::JAT> ja_task,
          /* make spooling permanent = COMMIT */
          if (!ret && (rename(tmp_task_spool_file, task_spool_file) == -1)) {
             DTRACE;
+            ret = 1;    // the task is not spooled: report it (CS-3120)
+            goto error;
+         }
+         if (ret) {
+            // a failed write must not be hidden by the pe tasks written after it (CS-3120)
             goto error;
          }
       }
@@ -621,6 +626,11 @@ static int ja_task_write_to_disk(const ocs::tom::Element<ocs::tom::JAT> ja_task,
             /* make spooling permanent = COMMIT */
             if (!ret && (rename(tmp_pe_task_spool_file, pe_task_spool_file) == -1)) {
                DTRACE;
+               ret = 1;    // the pe task is not spooled: report it (CS-3120)
+               goto error;
+            }
+            if (ret) {
+               // a failed write must not be hidden by the next pe task (CS-3120)
                goto error;
             }
 
@@ -652,6 +662,7 @@ static int ja_task_write_to_disk(const ocs::tom::Element<ocs::tom::JAT> ja_task,
       /* make spooling permanent = COMMIT */
       if (!ret && (rename(tmp_task_spool_file, task_spool_file) == -1)) {
          DTRACE;
+         ret = 1;    // the task is not spooled: report it (CS-3120)
          goto error;
       }
    }

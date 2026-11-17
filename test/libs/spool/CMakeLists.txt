@@ -49,6 +49,12 @@ target_include_directories(test_spool_duplicates PRIVATE "./")
 target_link_libraries(test_spool_duplicates PRIVATE spool sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_duplicates COMMAND test_spool_duplicates)
 
+# CS-3120: a dot file left behind by a failed rename must not cost a job its tasks
+add_executable(test_spool_classic_job test_spool_classic_job.cc)
+target_include_directories(test_spool_classic_job PRIVATE "./")
+target_link_libraries(test_spool_classic_job PRIVATE spoolc_static spool gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_spool_classic_job COMMAND test_spool_classic_job)
+
 add_executable(test_spool test_spool.cc ../../../source/common/sig_handlers.cc)
 target_include_directories(test_spool PRIVATE "./")
 target_link_libraries(test_spool PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
@@ -65,4 +71,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_spool_performance DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_spool_utilities DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_spool_duplicates DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_spool_classic_job DESTINATION testbin/${SGE_ARCH})
 endif ()
