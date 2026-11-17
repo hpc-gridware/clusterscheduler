@@ -52,7 +52,9 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mailrec.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "mail.h"
 #include "sig_handlers.h"
@@ -76,18 +78,17 @@ static void sge_send_mail(uint32_t progid,
 /** @brief Send one message to every recipient in a list
  *
  * @param progid which daemon is sending
- * @param user_list mail recipients list (MR_Type)
+ * @param user_list mail recipients list (MR_Type), may be an empty handle
  * @param subj subject line
  * @param buf message contents
  * @param mail_type what the mail is about, used in the log
  */
-void cull_mail(uint32_t progid, const lList *user_list, const char *subj, const char *buf, const char *mail_type) {
+void cull_mail(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR> user_list, const char *subj,
+               const char *buf, const char *mail_type) {
    DENTER(TOP_LAYER);
 
    char *mailer;
    int mailer_has_subj_line;
-   const lListElem *ep;
-   const char *user, *host;
 
    mailer = mconf_get_mailer();
    mailer_has_subj_line = 1;
@@ -97,9 +98,10 @@ void cull_mail(uint32_t progid, const lList *user_list, const char *subj, const 
    }
 
    if (user_list) {
-      for_each_ep(ep, user_list) {
-         user = ocs::tom::get<MR_user>(ep);
-         host = ocs::tom::get<MR_host>(ep);
+      for (const auto ep : user_list) {
+         const char *user = ocs::tom::get<MR_user>(ep);
+         // a host field, handed into varargs below
+         const char *host = ocs::tom::get<MR_host>(ep);
          if (!user && !host) {
             ERROR(SFNMAX, MSG_MAIL_EMPTYUSERHOST);
             sge_free(&mailer);

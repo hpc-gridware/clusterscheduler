@@ -44,6 +44,8 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/sge_sched_conf_mirror.h"
@@ -72,25 +74,18 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                                sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
 
+   // in-out parameter of sconf_set_config(), which takes the list over on success
    lList *list = nullptr;
    lList *answer_list = nullptr;
-   const lDescr *list_descr;
 
-   lList *data_list;
-   lListElem *ep = nullptr;
-
-   list_descr = SC_Type;
-
-   if ((data_list = ocs::tom::get<ET_new_version>(event)) != nullptr) {
-      if ((ep = lFirstRW(data_list)) != nullptr) {
-         ep = lDechainElem(data_list, ep);
-      }
-   }
+   // the event carries the scheduler configuration (SC_Type); taken without a check, as the untyped code did
+   const auto data_list = ocs::tom::List<ocs::tom::SC>::from_typed(ocs::tom::get<ET_new_version>(event));
 
    /* if neccessary, create list and copy schedd info */
-   if (ep != nullptr) {
-      list = lCreateList("schedd config", list_descr);
-      lAppendElem(list, ep);
+   if (const auto ep = data_list.front(); ep) {
+      auto new_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd config");
+      new_list->push_back(data_list.extract(ep));
+      list = new_list.release();
    }
 
    if (!sconf_set_config(&list, &answer_list)) {

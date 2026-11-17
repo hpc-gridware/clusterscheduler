@@ -40,7 +40,9 @@
 #include "uti/sge_log.h"
 
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "mir/sge_mirror.h"
 
@@ -177,10 +179,13 @@ ocs::MirrorDataStore::block_till_initial_events_handled() {
 }
 
 /**
- * Block till event master has new events to get processed.
+ * @brief Block till event master has new events to get processed.
+ *
  * MirrorDataStore::wakeup() can be used to wakeup a thread that is blocking in this call.
  *
- * @param event_list List of new events
+ * The parameter stays untyped: the method is virtual and is overridden outside this library.
+ *
+ * @param event_list List of new events (ET_Type); untouched if no events arrived
  */
 void
 ocs::MirrorDataStore::wait_for_event(lList **event_list) {
@@ -228,7 +233,7 @@ ocs::MirrorDataStore::wait_for_event(lList **event_list) {
 
    // acknowledge events
    if (do_ack) {
-      if (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(*event_list, sgeE_ACK_TIMEOUT)) != nullptr) {
+      if (ocs::tom::find_first<ET_type>(*event_list, sgeE_ACK_TIMEOUT)) {
          evc->ec_mark4registration(evc);
       }
       evc->ec_ack(evc);
@@ -261,7 +266,7 @@ ocs::MirrorDataStore::unlock() {
 }
 
 /**
- * Mirror threads main routine.
+ * @brief Mirror threads main routine.
  *
  * Does the setup of a qmaster thread (with monitor, profiling, ...) but without commlib. Can therefor not
  * communicate with other daemons or clients.
@@ -350,9 +355,9 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
       DPRINTF("registered at event mirror and subscribed events\n");
    }
 
-   // do not exit even if event client shutdown event is received. We want the thread only to terminate in the cancellation
-   // point to enforce that: other threads (accessing the data store) terminate before us and we need to do the
-   // cleanup (free of data store memory and more) at the cancellation point
+   // do not exit even if event client shutdown event is received. We want the thread only to terminate in the
+   // cancellation point to enforce that: other threads (accessing the data store) terminate before us and we need to
+   // do the cleanup (free of data store memory and more) at the cancellation point
 
    // the thread shall only terminate in pthread_testcancel() to ensure that proper cleanup is done
    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
@@ -360,15 +365,18 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
    volatile bool do_qmaster_shutdown = false;
    while (true) {
-      lList *event_list = nullptr;
+      // out-parameter of wait_for_event(), which is virtual and hands the events over raw
+      lList *event_list_raw = nullptr;
 
       // wait for new events
-      MONITOR_IDLE_TIME(wait_for_event(&event_list), (&monitor), mconf_get_monitoring_options());
+      MONITOR_IDLE_TIME(wait_for_event(&event_list_raw), (&monitor), mconf_get_monitoring_options());
+      // the event master delivers ET_Type events
+      auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(event_list_raw);
 
       // if we lost connection we have to register again
       if (evc->ec_need_new_registration(evc)) {
          DPRINTF("event mirror thread lost connection to event master thread\n");
-         lFreeList(&event_list);
+         event_list.reset();
          if (evc->ec_register(evc, false, nullptr)) {
             DPRINTF("re-registered at event master!\n");
          }
@@ -376,19 +384,20 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
       // did we receive a shutdown event?
       bool do_shutdown = false;
-      if (event_list != nullptr) {
-         // if we receive a shutdown event for the event client we will re-register with the next iteration of the main loop
-         bool do_event_client_shutdown = (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(event_list, sgeE_SHUTDOWN)) != nullptr);
+      if (event_list) {
+         // if we receive a shutdown event for the event client we will re-register with the next iteration of the
+         // main loop
+         const bool do_event_client_shutdown = static_cast<bool>(event_list->find_first<ET_type>(sgeE_SHUTDOWN));
 
          // if we receive a qmaster shutdown event we will terminate this qmaster thread
-         do_qmaster_shutdown = (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(event_list, sgeE_QMASTER_GOES_DOWN)) != nullptr);
+         do_qmaster_shutdown = static_cast<bool>(event_list->find_first<ET_type>(sgeE_QMASTER_GOES_DOWN));
          do_shutdown = do_event_client_shutdown || do_qmaster_shutdown;
 
          if (do_shutdown) {
             DPRINTF("received event to shutdown\n");
 
             // no need to handle the events if we shut down afterward
-            lFreeList(&event_list);
+            event_list.reset();
          }
       }
 
@@ -409,19 +418,19 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
             if (got_lock) {
                // find the biggest unique ID of the events that we have to process
                bool found_last_event = false;
-               const lListElem *last_event = lLast(event_list);
+               const auto last_event = event_list->back();
                uint64_t last_unique_id;
-               if (last_event != nullptr) {
+               if (last_event) {
                   last_unique_id = ocs::tom::get<ET_unique_id>(last_event);
                   found_last_event = true;
                }
 
                // process the events
-               sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
+               sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, *event_list);
                if (mirror_ret == SGE_EM_OK) {
                   // the first handling of non-empty event_list (== the initial list events)
                   // will cause the data store to be ready for other threads (listener, reader, scheduler, ...)
-                  if (event_list != nullptr) {
+                  if (event_list) {
                      did_handle_initial_events = true;
                   }
 
@@ -434,7 +443,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
                } else {
                   DPRINTF("error during event processing\n");
                }
-               lFreeList(&event_list);
+               event_list.reset();
 
                // Unlock the data store
                unlock();

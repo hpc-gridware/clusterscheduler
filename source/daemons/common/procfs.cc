@@ -84,6 +84,8 @@ int verydummyprocfs;
 #include "cull/cull.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_GR.h"
+#include "sgeobj/tom/ocs_tom_PRO.h"
+#include "tom/ocs_List.h"
 
 #include <cinttypes>
 #include "sgedefs.h"
@@ -450,7 +452,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 #if defined(LINUX)
    char buffer[BIGLINE]{};
 
-   lListElem *pr = nullptr;
+   // the entry of the process in the process table, which owns it
+   ocs::tom::Element<ocs::tom::PRO> pr;
    SGE_STRUCT_STAT fst;
    unsigned long utime{}, stime{}, vsize{}, pid{};
    unsigned long long iow{};
@@ -523,7 +526,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
 #if defined(LINUX)
       // check only processes that belong to a job
-      if ((pr = get_pr(atoi(pidname))) != nullptr) {
+      // the process table holds PRO_Type elements, so the entry is checked against its fixed type
+      if ((pr = ocs::tom::Element<ocs::tom::PRO>(get_pr(atoi(pidname))))) {
          /* set process as still running */
          ocs::tom::set<PRO_run>(pr, true);
          if (ocs::tom::get<PRO_rel>(pr) != true) {
@@ -610,11 +614,13 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
             continue;
          }
 
-         if (pr == nullptr) {
-            pr = lCreateElem(PRO_Type);
-            ocs::tom::set<PRO_pid>(pr, pid);
-            ocs::tom::set<PRO_rel>(pr, false);
-            append_pr(pr);
+         if (!pr) {
+            auto new_pr = ocs::tom::ElementPtr<ocs::tom::PRO>::create();
+            ocs::tom::set<PRO_pid>(new_pr, pid);
+            ocs::tom::set<PRO_rel>(new_pr, false);
+            pr = new_pr.get();
+            // the process table takes the element over
+            append_pr(new_pr.release());
          }
 
          ocs::tom::set<PRO_utime>(pr, utime);
@@ -634,7 +640,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        */
       {
          char procnam[1024];
-         lList *groupTable = ocs::tom::get<PRO_groups>(pr);
+         const auto groupTable = ocs::tom::get<PRO_groups>(pr);
 
          sprintf(procnam, PROC_DIR "/%s/status", dent->d_name);
          if (SGE_STAT(procnam, &fst) != 0) {
@@ -648,8 +654,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          }
 
          groups = 0;
-         if (fst.st_mtime < last_time && groupTable != nullptr) {
-            for_each_ep_lv(group, groupTable) {
+         if (fst.st_mtime < last_time && groupTable) {
+            for (const auto group : groupTable) {
                list[groups] = ocs::tom::get<GR_group>(group);
                groups++;
             }
@@ -671,7 +677,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                      long group = atol(token);
                      list[groups] = group;
                      ocs::tom::set<GR_group>(gr, group);
-                     lAppendElem(*groupTable, std::move(gr));
+                     groupTable->push_back(std::move(gr));
                      groups++;
                   }
                   break;
@@ -733,7 +739,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          
          job_elem = LNK_DATA(curr, job_elem_t, link);
          for (group=0; !found_it && group<groups; group++) {
-            if ((gid_t)job_elem->job.jd_jid == list[group]) {  // @todo: is this correct? jd_jid is a pid_t, list[group] gid_t
+            // @todo: is this correct? jd_jid is a pid_t, list[group] gid_t
+            if ((gid_t)job_elem->job.jd_jid == list[group]) {
 #if defined(LINUX)
                // mark this process as relevant
                ocs::tom::set<PRO_rel>(pr, true);

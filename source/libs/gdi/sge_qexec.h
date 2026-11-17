@@ -38,6 +38,9 @@
  */
 
 #include "sgeobj/cull/sge_qexec_RT_L.h"
+#include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
+#include "tom/ocs_List.h"
 
 /// Identifier of a remote task, as returned by #sge_qexecve
 typedef char *sge_tid_t;
@@ -67,7 +70,8 @@ enum {
 #define QTERMSIG(status)    (0)
 #endif
 sge_tid_t sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
-                      const lList *environment, const lList *path_aliases, const char *cert);
+                      ocs::tom::ConstList<ocs::tom::VA> environment, ocs::tom::ConstList<ocs::tom::PA> path_aliases,
+                      const char *cert);
 
 int sge_qwaittid(sge_tid_t tid, int *status, int options);
 

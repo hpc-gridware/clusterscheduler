@@ -96,8 +96,9 @@ const char *qexec_last_err() {
  * @param hostname name of the host on which to start the task
  * @param queuename queue to start the task in, or nullptr to let qmaster choose
  * @param cwd working directory for the task, or nullptr for the job's
- * @param environment list containing environment variable settings for the task that override the default environment
- * @param path_aliases optional a path alias list
+ * @param environment list containing environment variable settings for the task that override the default
+ *        environment (VA_Type), may be an empty handle
+ * @param path_aliases optional a path alias list (PA_Type), may be an empty handle
  * @param cert the security credential to pass to the execution host, or nullptr
  *
  * @return the task id, if the task can be executed, a value <= 0 indicates an error.
@@ -105,8 +106,9 @@ const char *qexec_last_err() {
  * @note MT-NOTE: sge_qexecve() is not MT safe
  */
 sge_tid_t
-sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const lList *environment,
-            const lList *path_aliases, const char *cert) {
+sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
+            const ocs::tom::ConstList<ocs::tom::VA> environment, const ocs::tom::ConstList<ocs::tom::PA> path_aliases,
+            const char *cert) {
    DENTER(TOP_LAYER);
 
    char myname[256];
@@ -165,12 +167,12 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       ocs::tom::set<PETR_cwd>(petrep, cwd);
    }
 
-   if (environment != nullptr) {
-      ocs::tom::set<PETR_environment>(petrep, lCopyList("environment", environment));
+   if (environment) {
+      ocs::tom::set<PETR_environment>(petrep, environment.clone("environment"));
    }
 
-   if (path_aliases != nullptr) {
-      ocs::tom::set<PETR_path_aliases>(petrep, lCopyList("path_aliases", path_aliases));
+   if (path_aliases) {
+      ocs::tom::set<PETR_path_aliases>(petrep, path_aliases.clone("path_aliases"));
    }
 
 #if defined(OCS_WITH_OPENSSL)

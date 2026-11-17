@@ -64,7 +64,9 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "evc/msg_evclib.h"
 #include "mir/msg_mirlib.h"
@@ -94,8 +96,8 @@ typedef struct {
    bool filtered;                         ///< subscribed with a where-filter, so the local list is a subset
 } mirror_description;
 
-static sge_mirror_error 
-sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list);
+static sge_mirror_error
+sge_mirror_process_event_list_(sge_evc_class_t *evc, ocs::tom::List<ocs::tom::ET> event_list);
 
 #ifdef SOLARIS
 #pragma no_inline(sge_mirror_process_event_list,sge_mirror_process_event_list_)
@@ -1096,15 +1098,17 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
 sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
 
-   lList *event_list = nullptr;
+   // out-parameter of the event client, which hands the events over raw
+   lList *event_list_raw = nullptr;
    sge_mirror_error ret = SGE_EM_OK;
    static int test_debug = 0;
 
    /// ec2_get()
-   if (evc && evc->ec_get(evc, &event_list, false)) {
-      if (event_list != nullptr) {
-         ret = sge_mirror_process_event_list(evc, event_list);
-         lFreeList(&event_list);
+   if (evc && evc->ec_get(evc, &event_list_raw, false)) {
+      // the event client delivers ET_Type events
+      const auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(event_list_raw);
+      if (event_list) {
+         ret = sge_mirror_process_event_list(evc, *event_list);
       }
    } else {
       WARNING(SFNMAX, MSG_MIRROR_QMASTERALIVETIMEOUTEXPIRED);
@@ -1163,8 +1167,20 @@ static void sge_mirror_free_list(sge_object_type type) {
    ocs::DataStore::free_master_list(type);
 }
 
+/**
+ * @brief Apply a list of events to the mirrored lists, one event after the other
+ *
+ * Calls sge_mirror_process_event() for every event, in list order. A failing
+ * event makes the result an error but does not stop the processing of the
+ * following ones.
+ *
+ * @param evc the event client the events arrived on
+ * @param event_list the events to apply (ET_Type), may be an empty handle
+ *
+ * @return SGE_EM_OK, or SGE_EM_PROCESS_ERRORS if at least one event failed
+ */
 static sge_mirror_error
-sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list) {
+sge_mirror_process_event_list_(sge_evc_class_t *evc, const ocs::tom::List<ocs::tom::ET> event_list) {
    DENTER(TOP_LAYER);
    sge_mirror_error function_ret;
    bool no_more_events=false;
@@ -1177,8 +1193,7 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list) {
 
    mir_arm_test_callback_failures();
 
-   lListElem *event;
-   for_each_rw(event, event_list) {
+   for (const auto event : event_list) {
       sge_mirror_error ret = SGE_EM_OK;
       if (no_more_events) {
          break;
@@ -1496,20 +1511,20 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list) {
    DRETURN(function_ret);
 }
 
-/*
- * need this wrapping as to workaround dtrace problems with 
- * pid providers when function pointers are used
- */
-sge_mirror_error
 /**
  * @brief Apply a list of events to the mirrored lists
  *
+ * Needs this wrapping as a workaround for dtrace problems with pid providers
+ * when function pointers are used (scripts/dtrace/monitor.d binds to the name),
+ * so the signature stays untyped.
+ *
  * @param evc the event client the events arrived on
- * @param event_list the events to apply
+ * @param event_list the events to apply (ET_Type, as the event client delivers them), may be nullptr
  * @return SGE_EM_OK or an error code
  */
+sge_mirror_error
 sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list) {
-   return sge_mirror_process_event_list_(evc, event_list);
+   return sge_mirror_process_event_list_(evc, ocs::tom::List<ocs::tom::ET>::from_typed(event_list));
 }
 
 /*

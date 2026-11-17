@@ -52,6 +52,8 @@
 #include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/ocs_Matcher.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HM.h"
 
 #include "mir/sge_mirror.h"
@@ -153,6 +155,7 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                           sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
 
+   // the master list stays untyped: the generic merge below replaces it through the pointer
    lList **list = ocs::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    const int key_nm = object_type_get_key_nm(type);
@@ -166,13 +169,17 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    // that configures no matcher, and every group whose hosts have not yet made a
    // request, so the recomputation that follows an execution host movement stays
    // as cheap as it is today.
-   lListElem *before = (action == SGE_EMA_MOD || action == SGE_EMA_DEL)
-                       ? lGetElemHostRW(*list, key_nm, key) : nullptr;
+   //
+   // The master list is the host group list; the event carries host groups (HGRP_Type), so its list is taken
+   // without a check, as the untyped code did.
+   const auto before = (action == SGE_EMA_MOD || action == SGE_EMA_DEL)
+                       ? ocs::tom::find_first_rw<HGRP_name>(*list, key) : ocs::tom::Element<ocs::tom::HGRP>();
+   const auto after = ocs::tom::List<ocs::tom::HGRP>::from_typed(ocs::tom::get<ET_new_version>(event)).front();
    const bool matchers_changed =
-           action == SGE_EMA_MOD && before != nullptr &&
-           !ocs::Matcher::cache_carries_over(before, lFirst(ocs::tom::get<ET_new_version>(event)));
-   const bool carry = action == SGE_EMA_MOD && before != nullptr && !matchers_changed &&
-                      static_cast<const lList *>(ocs::tom::get<HGRP_match_cache>(before)) != nullptr;
+           action == SGE_EMA_MOD && before && !ocs::Matcher::cache_carries_over(before, after);
+   const bool carry = action == SGE_EMA_MOD && before && !matchers_changed &&
+                      static_cast<bool>(ocs::tom::get<HGRP_match_cache>(before));
+   // stays untyped: ocs::MatchCache::detach() and adopt() hand it over raw
    lList *cache = nullptr;
 
    /*
@@ -196,9 +203,9 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
     */
    bool deleted_a_carrier = false;
 
-   if (action == SGE_EMA_DEL && before != nullptr) {
+   if (action == SGE_EMA_DEL && before) {
       // only whether the group carried a matcher counts; the split lists are freed right away
-      deleted_a_carrier = std::get<0>(hgroup_split_members(ocs::tom::ConstElement<ocs::tom::HGRP>(before)));
+      deleted_a_carrier = std::get<0>(hgroup_split_members(before));
    }
    const bool drop_everything = matchers_changed || deleted_a_carrier;
 
@@ -216,7 +223,7 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    if (carry) {
       // the pruning that goes with the move needs the resolved membership of the
       // new element, so it happens here and not above
-      ocs::MatchCache::adopt(lGetElemHostRW(*list, key_nm, key), &cache);
+      ocs::MatchCache::adopt(ocs::tom::find_first_rw<HGRP_name>(*list, key), &cache);
    }
    lFreeList(&cache);
 

@@ -53,6 +53,8 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "mir/msg_mirlib.h"
@@ -77,41 +79,39 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                           sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
    sge_callback_result ret = SGE_EMA_OK;
-   const char *name = nullptr;
-   lList *qinstance_list = nullptr;
-   lListElem *cqueue = nullptr;
-   lList **list = nullptr;
-   const lDescr *list_descr = nullptr;
+   // the queue instances of the cluster queue, kept across the event
+   ocs::tom::ListPtr<ocs::tom::QU> qinstance_list;
 
-   name = ocs::tom::get<ET_strkey>(event);
-   list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
-   cqueue = cqueue_list_locate(*list, name);
+   const char *name = ocs::tom::get<ET_strkey>(event);
+   // the master list stays untyped: the generic merge below replaces elements through the pointer
+   lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
+   // a cluster queue of the master list (CQ_Type), fetched with its fixed type
+   const auto cqueue = ocs::tom::Element<ocs::tom::CQ>(cqueue_list_locate(*list, name));
 
-   if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) 
-       && cqueue != nullptr) {
+   if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && cqueue) {
       /*
        * modify events for CQ_Type objects; we may not update
        * - CQ_qinstances - it is maintained by QINSTANCE events
-       */         
-      ocs::tom::exchange<CQ_qinstances>(cqueue, &qinstance_list);
+       */
+      qinstance_list = cqueue.exchange<CQ_qinstances>(std::move(qinstance_list));
    }
-   
+
    if (sge_mirror_update_master_list(list, list_descr, cqueue, name, action, event) == SGE_EM_OK) {
       ret = (sge_callback_result)(ret & SGE_EMA_OK);
    } else {
       ret = (sge_callback_result)(ret & SGE_EMA_FAILURE);
    }
 
-   cqueue = cqueue_list_locate(*list, name);
+   // the element the event brought in, or the old one if the merge failed
+   const auto new_cqueue = ocs::tom::Element<ocs::tom::CQ>(cqueue_list_locate(*list, name));
 
-   if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD)
-       && cqueue != nullptr) {
+   if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && new_cqueue) {
       /*
        * Replace CQ_qinstances list
-       */         
-      ocs::tom::exchange<CQ_qinstances>(cqueue, &qinstance_list);
-      lFreeList(&qinstance_list);
+       */
+      qinstance_list = new_cqueue.exchange<CQ_qinstances>(std::move(qinstance_list));
+      qinstance_list.reset();
    }
 
    DRETURN(ret);
@@ -139,33 +139,34 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
    DENTER(TOP_LAYER);
 
    sge_callback_result ret = SGE_EMA_OK;
-   const char *name = nullptr;
-   const char *hostname = nullptr;
-   lListElem *cqueue = nullptr;
 
-   name = ocs::tom::get<ET_strkey>(event);
-   hostname = ocs::tom::get<ET_strkey2>(event);
+   const char *name = ocs::tom::get<ET_strkey>(event);
+   const char *hostname = ocs::tom::get<ET_strkey2>(event);
 
-   cqueue = cqueue_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), name);
-                        
-   if (cqueue != nullptr) {
+   // a cluster queue of the master list (CQ_Type), fetched with its fixed type
+   const auto cqueue = ocs::tom::Element<ocs::tom::CQ>(
+           cqueue_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), name));
+
+   if (cqueue) {
       dstring key_buffer = DSTRING_INIT;
-      lList *list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qinstances = ocs::tom::get<CQ_qinstances>(cqueue);
+      // stays untyped: the generic merge below may create the list through the pointer
+      lList *list = qinstances;
       const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
-      
-      lListElem *qinstance = qinstance_list_locate(list, hostname, nullptr);
+
+      const auto qinstance = qinstance_list_locate(qinstances, hostname, nullptr);
       const char *key = nullptr;
-      bool is_list = list != nullptr ? true : false;
-      
+      const bool is_list = list != nullptr;
+
       sge_dstring_sprintf(&key_buffer, SFN "@" SFN, name, hostname);
       key = sge_dstring_get_string(&key_buffer);
 
       if (action == SGE_EMA_MOD) {
          uint32_t type = ocs::tom::get<ET_type>(event);
 
-         if (type == sgeE_QINSTANCE_SOS || 
+         if (type == sgeE_QINSTANCE_SOS ||
              type == sgeE_QINSTANCE_USOS) {
-            if (qinstance != nullptr) {
+            if (qinstance) {
                if (type == sgeE_QINSTANCE_SOS) {
                   qinstance_state_set_susp_on_sub(qinstance, true);
                } else {

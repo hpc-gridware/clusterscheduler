@@ -49,7 +49,11 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/msg_mirlib.h"
@@ -60,46 +64,49 @@
  *
  * Updates the scaled usage of a parallel task.
  *
- * @param job_list the master job list
+ * @param job_list the master job list (JB_Type); not used, the job is looked up in the master list of the
+ *        data store, which is the same list
  * @param event event object containing the new usage list
  *
- * @return true, if the operation succeeds, else false
+ * @return SGE_EMA_OK, if the operation succeeds, else SGE_EMA_FAILURE
  *
  * @see `job_update_master_list_usage()`, `ja_task_update_master_list_usage()`
  */
 sge_callback_result
-pe_task_update_master_list_usage(lList *job_list, lListElem *event) {
+pe_task_update_master_list_usage([[maybe_unused]] const ocs::tom::List<ocs::tom::JB> job_list, lListElem *event) {
    DENTER(TOP_LAYER);
 
+   // the event's list has no type of its own, so it goes through a raw list
    lList *tmp = nullptr;
-   uint32_t job_id, ja_task_id;
-   const char *pe_task_id;
-   lListElem *job, *ja_task, *pe_task;
 
-   job_id = ocs::tom::get<ET_intkey>(event);
-   ja_task_id = ocs::tom::get<ET_intkey2>(event);
-   pe_task_id = ocs::tom::get<ET_strkey>(event);
-   
-   job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
-   if (job == nullptr) {
+   const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
+   const uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
+   const char *pe_task_id = ocs::tom::get<ET_strkey>(event);
+
+   const auto job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
+   if (!job) {
       dstring id_dstring = DSTRING_INIT;
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       sge_dstring_free(&id_dstring);
       DRETURN(SGE_EMA_FAILURE);
    }
    
-   ja_task = job_search_task(job, nullptr, ja_task_id);
-   if (ja_task == nullptr) {
+   // an array task of the job (JAT_Type), fetched with its fixed type
+   const auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(job, nullptr, ja_task_id));
+   if (!ja_task) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR(MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring), __func__);
+      ERROR(MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
+            __func__);
       sge_dstring_free(&id_dstring);
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
-   if (pe_task == nullptr) {
+   // a parallel task of the array task (PET_Type), fetched with its fixed type
+   const auto pe_task = ocs::tom::Element<ocs::tom::PET>(ja_task_search_pe_task(ja_task, pe_task_id));
+   if (!pe_task) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__);
+      ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
+            __func__);
       sge_dstring_free(&id_dstring);
       DRETURN(SGE_EMA_FAILURE);
    }
@@ -138,80 +145,75 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                            sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
 
-   uint32_t job_id;
-   lListElem *job = nullptr;
-
-   const char *pe_task_id = nullptr;
-   lListElem *pe_task = nullptr;
-
-   uint32_t ja_task_id;
-   lListElem *ja_task = nullptr;
-   lList *pe_task_list = nullptr;
-   const lDescr *pe_task_descr = nullptr;
-
-   lList *usage = nullptr;
+   // the scaled usage of the parallel task, kept across a modify event
+   ocs::tom::ListPtr<ocs::tom::UA> usage;
 
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   job_id = ocs::tom::get<ET_intkey>(event);
-   ja_task_id = ocs::tom::get<ET_intkey2>(event);
-   pe_task_id = ocs::tom::get<ET_strkey>(event);
-   
-   job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
-   if (job == nullptr) {
+   const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
+   const uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
+   const char *pe_task_id = ocs::tom::get<ET_strkey>(event);
+
+   const auto job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
+   if (!job) {
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);
    }
-   
-   ja_task = job_search_task(job, nullptr, ja_task_id);
-   if (ja_task == nullptr) {
-      ERROR(MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring), __func__);
+
+   // an array task of the job (JAT_Type), fetched with its fixed type
+   const auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(job, nullptr, ja_task_id));
+   if (!ja_task) {
+      ERROR(MSG_JOB_CANTFINDJATASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
+            __func__);
       DRETURN(SGE_EMA_FAILURE);
    }
-   
-   pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
 
-   pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
-   pe_task_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event)); 
-  
+   // a parallel task of the array task (PET_Type), fetched with its fixed type
+   auto pe_task = ocs::tom::Element<ocs::tom::PET>(ja_task_search_pe_task(ja_task, pe_task_id));
+
+   // stays untyped: the generic merge below may create the list through the pointer
+   lList *pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
+   const lDescr *pe_task_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
+
    if (action == SGE_EMA_MOD) {
       /* modify event for pe_task.
        * we may not update
        * - PET_scaled_usage - it is maintained by JOB_USAGE events
        */
-      if (pe_task == nullptr) {
-         ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__);
+      if (!pe_task) {
+         ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
+               __func__);
          DRETURN(SGE_EMA_FAILURE);
       }
-      ocs::tom::exchange<PET_scaled_usage>(pe_task, &usage);
+      usage = pe_task.exchange<PET_scaled_usage>(std::move(usage));
    }
- 
-   if (sge_mirror_update_master_list(&pe_task_list, pe_task_descr, pe_task, 
-                                     job_get_id_string(job_id, ja_task_id, 
+
+   if (sge_mirror_update_master_list(&pe_task_list, pe_task_descr, pe_task,
+                                     job_get_id_string(job_id, ja_task_id,
                                                        pe_task_id, &id_dstring),
                                      action, event) != SGE_EM_OK) {
-      lFreeList(&usage);
       DRETURN(SGE_EMA_FAILURE);
    }
 
    /* restore pe_task list after modify event */
    if (action == SGE_EMA_MOD) {
-      pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
-      if (pe_task == nullptr) {
-         ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__);
-         lFreeList(&usage);       
+      pe_task = ocs::tom::Element<ocs::tom::PET>(ja_task_search_pe_task(ja_task, pe_task_id));
+      if (!pe_task) {
+         ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
+               __func__);
          DRETURN(SGE_EMA_FAILURE);
       }
 
-      ocs::tom::exchange<PET_scaled_usage>(pe_task, &usage);
-      lFreeList(&usage);
+      // the list the event brought in comes back and is freed with the handle
+      usage = pe_task.exchange<PET_scaled_usage>(std::move(usage));
+      usage.reset();
    }
 
    /* first petask add event could have created new pe_task list for job */
-   if (static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task)) == nullptr && pe_task_list != nullptr) {
+   if (!ocs::tom::get<JAT_task_list>(ja_task) && pe_task_list != nullptr) {
       ocs::tom::set<JAT_task_list>(ja_task, pe_task_list);
    }
 

@@ -37,4 +37,10 @@
  * @brief Sending a message to a list of recipients through the configured mailer
  */
 
-void cull_mail(uint32_t progid, const lList *user_list, const char *subj, const char *buf, const char *mail_type);
+#include <cstdint>
+
+#include "sgeobj/tom/ocs_tom_MR.h"
+#include "tom/ocs_List.h"
+
+void cull_mail(uint32_t progid, ocs::tom::ConstList<ocs::tom::MR> user_list, const char *subj, const char *buf,
+               const char *mail_type);

@@ -54,6 +54,11 @@
 #define BIT_ADM_HOUR     8   ///< Mail at most once an hour
 /** @} */
 
+#include <cstdint>
+
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "tom/ocs_Element.h"
+
 int adm_mail_reset(int state);
-void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner,
-                           uint32_t qversion);
+void job_related_adminmail(uint32_t progid, ocs::tom::ConstElement<ocs::tom::JR> jr, int is_array,
+                           const char *job_owner, uint32_t qversion);

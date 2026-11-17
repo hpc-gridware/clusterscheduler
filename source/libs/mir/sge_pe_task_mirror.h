@@ -40,10 +40,12 @@
  */
 
 #include "sgeobj/sge_object.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "tom/ocs_List.h"
 
 sge_callback_result
 pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                            sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-pe_task_update_master_list_usage(lList *job_list, lListElem *event);
+pe_task_update_master_list_usage(ocs::tom::List<ocs::tom::JB> job_list, lListElem *event);

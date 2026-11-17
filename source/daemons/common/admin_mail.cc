@@ -54,8 +54,11 @@
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_report.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "admin_mail.h"
 #include "execution_states.h"
@@ -139,7 +142,7 @@ static std::map<admail_key_t, admail_sent_t> admail_sent;
  * the administrator reads it the spool directory may already be gone.
  *
  * @param progid which daemon is reporting
- * @param jr the job report carrying the failure
+ * @param jr the job report carrying the failure (JR_Type)
  * @param is_array whether the job is an array job
  * @param job_owner the submitting user
  * @param qversion the version of the queue instance the job ran in
@@ -147,8 +150,8 @@ static std::map<admail_key_t, admail_sent_t> admail_sent;
  * @note This reports on errors that have nothing to do with a particular job
  *       as well; it might not be apt for those.
  */
-void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner,
-                           uint32_t qversion) {
+void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<ocs::tom::JR> jr, const int is_array,
+                           const char *job_owner, const uint32_t qversion) {
    DENTER(TOP_LAYER);
 
    char sge_mail_subj[1024];
@@ -159,7 +162,6 @@ void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const c
    uint32_t jobid, jataskid, failed, general;
    const char *q;
    ocs::tom::ConstElement<ocs::tom::UA> ep;
-   lList *lp_mail = nullptr;
    uint64_t now;
    int ret;
    const char *shepherd_filenames[] = { "trace", "error", "pe_hostfile" };
@@ -243,7 +245,11 @@ void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const c
          err_str = MSG_MAIL_UNKNOWN_REASON;
       }
 
-      ret = mailrec_parse(&lp_mail, administrator_mail);
+      // out-parameter of mailrec_parse(), which hands the recipients over raw
+      lList *lp_mail_raw = nullptr;
+      ret = mailrec_parse(&lp_mail_raw, administrator_mail);
+      // the recipients (MR_Type); freed on every way out of this block, also on a failed parse
+      const auto lp_mail = ocs::tom::ListPtr<ocs::tom::MR>::from_typed(lp_mail_raw);
       if (ret) {
          ERROR(MSG_MAIL_PARSE_S, (administrator_mail ? administrator_mail : MSG_NULL));
          sge_free(&administrator_mail);
@@ -307,10 +313,13 @@ void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const c
       }
       for (i=0; i<num_files; i++) {
          /* JG: TODO (254): use function creating path */
-         snprintf(shepherd_files[i].filepath, SGE_PATH_MAX, "%s/" sge_u32 "." sge_u32 "/%s", ACTIVE_DIR, jobid, jataskid, shepherd_filenames[i]);
-         if (!SGE_STAT(shepherd_files[i].filepath, &shepherd_files[i].statbuf) && (shepherd_files[i].statbuf.st_size > 0)) {
+         snprintf(shepherd_files[i].filepath, SGE_PATH_MAX, "%s/" sge_u32 "." sge_u32 "/%s", ACTIVE_DIR, jobid,
+                  jataskid, shepherd_filenames[i]);
+         if (!SGE_STAT(shepherd_files[i].filepath, &shepherd_files[i].statbuf) &&
+             (shepherd_files[i].statbuf.st_size > 0)) {
             shepherd_files[i].exists = 1;
-            max_shepherd_files_size = std::max(max_shepherd_files_size, static_cast<size_t>(shepherd_files[i].statbuf.st_size));
+            max_shepherd_files_size = std::max(max_shepherd_files_size,
+                                               static_cast<size_t>(shepherd_files[i].statbuf.st_size));
          }
       }
 
@@ -335,12 +344,11 @@ void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const c
          sge_free(&shepherd_file_buf);
       }
 
-      cull_mail(progid, lp_mail, sge_mail_subj, sge_dstring_get_string(&dstr_sge_mail_body_total),
+      cull_mail(progid, *lp_mail, sge_mail_subj, sge_dstring_get_string(&dstr_sge_mail_body_total),
                 MSG_MAIL_TYPE_ADMIN);
 
       sge_dstring_free(&dstr_sge_mail_body_total);
    }
-   lFreeList(&lp_mail);
    sge_free(&administrator_mail);
    DRETURN_VOID;
 FCLOSE_ERROR:

@@ -47,8 +47,11 @@
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "mir/msg_mirlib.h"
 #include "mir/sge_mirror.h"
@@ -56,7 +59,7 @@
 #include "mir/sge_ja_task_mirror.h"
 #include "mir/sge_pe_task_mirror.h"
 
-static bool job_update_master_list_usage(lList *job_list, lListElem *event);
+static bool job_update_master_list_usage(ocs::tom::List<ocs::tom::JB> job_list, lListElem *event);
 
 /**
  * @brief Update usage for a jobs tasks
@@ -68,14 +71,14 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event);
  * the updated usage report and passes the event
  * information to the corresponding update functions.
  *
+ * @param job_list master job list (JB_Type)
  * @param event event object containing the new usage list
- * @param job_list master job list
  *
  * @return true, if the operation succeeds, else false
  *
  * @see `pe_task_update_master_list_usage()`
  */
-static bool job_update_master_list_usage(lList *job_list, lListElem *event) {
+static bool job_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list, lListElem *event) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -93,10 +96,12 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event) {
       ret = false;
    }
 
-   if(pe_task_id != nullptr) {
-      ret = (pe_task_update_master_list_usage(job_list, event) != SGE_EMA_FAILURE)?true:false;   /* usage for a pe task */
+   if (pe_task_id != nullptr) {
+      /* usage for a pe task */
+      ret = pe_task_update_master_list_usage(job_list, event) != SGE_EMA_FAILURE;
    } else {
-      ret = (ja_task_update_master_list_usage(job_list, event) != SGE_EMA_FAILURE)?true:false;   /* usage for a ja task */
+      /* usage for a ja task */
+      ret = ja_task_update_master_list_usage(job_list, event) != SGE_EMA_FAILURE;
    }
 
    DRETURN(ret);
@@ -129,22 +134,25 @@ sge_callback_result
 job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                        sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
-   lList *ja_tasks = nullptr;
+   // the array tasks of the job, kept across a modify event
+   ocs::tom::ListPtr<ocs::tom::JAT> ja_tasks;
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
+   // the master list stays untyped: the generic merge below replaces elements through the pointer
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
-   uint32_t job_id = ocs::tom::get<ET_intkey>(event);
-   ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+   const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
+   const auto job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
 
    if (action == SGE_EMA_MOD) {
       uint32_t event_type = ocs::tom::get<ET_type>(event);
 
-      if (job == nullptr) {
-         ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list");
+      if (!job) {
+         ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring),
+               "job_update_master_list");
          DRETURN(SGE_EMA_FAILURE);
       }
 
@@ -155,7 +163,8 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
          * Preferable would probably be to send MOD events for the different
          * object types.
          */
-         bool ret = job_update_master_list_usage(*list, event);
+         // the master job list (JB_Type), fetched with its fixed type
+         const bool ret = job_update_master_list_usage(ocs::tom::List<ocs::tom::JB>(*list), event);
          DRETURN(ret?SGE_EMA_OK:SGE_EMA_FAILURE);
       } else if (event_type == sgeE_JOB_FINISH) {
          // @todo instead of data of a job a job report is received. why?
@@ -170,10 +179,12 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
           *   object.
           */
 
-          lListElem *event_job = lFirstRW(ocs::tom::get<ET_new_version>(event));
-          if (event_job != nullptr) {
+          // a job event carries jobs (JB_Type); taken without a check, as the untyped code did
+          const auto event_job =
+                  ocs::tom::List<ocs::tom::JB>::from_typed(ocs::tom::get<ET_new_version>(event)).front();
+          if (event_job) {
              // Preserve old ja_tasks list. Job update events will not contain them
-             ocs::tom::exchange<JB_ja_tasks>(job, &ja_tasks);
+             ja_tasks = job.exchange<JB_ja_tasks>(std::move(ja_tasks));
 
              // @todo Why is that needed?
              const bool has_host = ocs::tom::has<JB_host>(event_job);
@@ -188,10 +199,14 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                 category_id = ocs::tom::get<JB_category_id>(event_job);
              }
 
-             // convert category id to category ref for the modified job within the current client (scheduler, reader, ...)
+             // convert category id to category ref for the modified job within the current client
+             // (scheduler, reader, ...)
              const bool has_category = ocs::tom::has<JB_category>(event_job);
              if (has_category && has_category_id) {
-                const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
+                // the master category list (CT_Type), fetched with its fixed type
+                const auto master_category_list =
+                        ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+                // JB_category is a reference field, which takes the raw element
                 lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
 
                 ocs::tom::set<JB_category>(event_job, category);
@@ -200,23 +215,24 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       }
    }
 
-   if (sge_mirror_update_master_list(list, list_descr, job, job_get_id_string(job_id, 0, nullptr, &id_dstring), action, event) != SGE_EM_OK) {
-      lFreeList(&ja_tasks);
+   if (sge_mirror_update_master_list(list, list_descr, job, job_get_id_string(job_id, 0, nullptr, &id_dstring),
+                                     action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
    /* restore ja_task list after modify event */
-   if (action == SGE_EMA_MOD && ja_tasks != nullptr) {
+   if (action == SGE_EMA_MOD && ja_tasks) {
       /* we have to search the replaced job */
-      ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
-      if (job == nullptr) {
-         ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list");
-         lFreeList(&ja_tasks);
+      const auto new_job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+      if (!new_job) {
+         ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring),
+               "job_update_master_list");
          DRETURN(SGE_EMA_FAILURE);
       }
 
-      ocs::tom::exchange<JB_ja_tasks>(job, &ja_tasks);
-      lFreeList(&ja_tasks);
+      // the list the event brought in comes back and is freed with the handle
+      ja_tasks = new_job.exchange<JB_ja_tasks>(std::move(ja_tasks));
+      ja_tasks.reset();
    }
 
    DRETURN(SGE_EMA_OK);

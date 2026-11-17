@@ -44,7 +44,9 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "ocs_gdi_ClientExecd.h"
 #include "msg_common.h"
@@ -57,8 +59,10 @@
  *
  * Used at execd start-up, when qmaster may not be up yet.
  *
- * @param[out] conf_list receives the configuration
- * @return 0 once a configuration was received
+ * The out-parameter stays untyped: the caller stores the list in a process-lifetime global of the execd.
+ *
+ * @param[out] conf_list receives the configuration (CONF_Type); a list it points to is freed first
+ * @return 0 once a configuration was received, -1 if the endpoint is not unique or the permission is missing
  */
 int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
    DENTER(GDI_LAYER);
@@ -72,10 +76,11 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
    DPRINTF("qualified hostname: %s\n", qualified_hostname);
 
    uint32_t progid = component_get_component_id();
-   lListElem *local = nullptr;
-   lListElem *global = nullptr;
+   // out-parameters of gdi_get_configuration(), which frees and refills them on every try
+   lListElem *local_raw = nullptr;
+   lListElem *global_raw = nullptr;
    int ret;
-   while ((ret = gdi_get_configuration(qualified_hostname, &global, &local))) {
+   while ((ret = gdi_get_configuration(qualified_hostname, &global_raw, &local_raw))) {
       if (ret == -6 || ret == -7) {
          /* confict: endpoint not unique or no permission to get config */
          DRETURN(-1);
@@ -109,8 +114,12 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
       }
    }
 
+   // the configurations received (CONF_Type), owned here from now on
+   auto global = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(global_raw);
+   auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_raw);
+
    const char *cell_root = bootstrap_get_cell_root();
-   ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
+   ret = merge_configuration(nullptr, progid, cell_root, *global, *local, nullptr);
    if (ret) {
       DPRINTF("Error %d merging configuration \"%s\"\n", ret, qualified_hostname);
    }
@@ -123,55 +132,52 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
     */
    ocs::tom::set<CONF_entries>(global, nullptr);
    lFreeList(conf_list);
-   *conf_list = lCreateList("config list", CONF_Type);
-   lAppendElem(*conf_list, global);
+   auto confs = ocs::tom::ListPtr<ocs::tom::CONF>::create("config list");
+   confs->push_back(std::move(global));
    // a host without a local configuration gets none
-   if (local != nullptr) {
+   if (local) {
       ocs::tom::set<CONF_entries>(local, nullptr);
-      lAppendElem(*conf_list, local);
+      confs->push_back(std::move(local));
    }
+   *conf_list = confs.release();
    DRETURN(0);
 }
 
-/*-------------------------------------------------------------------------*
- * NAME
- *   get_merged_conf - requests new configuration set from master
- * RETURN
- *   -1      - could not get configuration from qmaster
- *   -2      - could not merge global and local configuration
- * EXTERNAL
- *
- *-------------------------------------------------------------------------*/
 /**
  * @brief Fetch the configuration with the host local values merged in
  *
- * @param[out] conf_list receives the merged configuration
- * @return 0 on success, otherwise an error code
+ * Requests a new configuration set from the qmaster.
+ *
+ * The out-parameter stays untyped: the caller stores the list in a process-lifetime global of the execd.
+ *
+ * @param[out] conf_list receives the merged configuration (CONF_Type); a list it points to is freed first
+ * @return 0 on success, -1 if the configuration could not be fetched from qmaster, -2 if the global and the
+ *         local configuration could not be merged
  */
 int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
    DENTER(GDI_LAYER);
 
-   lListElem *global = nullptr;
-   lListElem *local = nullptr;
+   // out-parameters of gdi_get_configuration()
+   lListElem *global_raw = nullptr;
+   lListElem *local_raw = nullptr;
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
    uint32_t progid = component_get_component_id();
    int ret;
 
    DPRINTF("qualified hostname: %s\n", qualified_hostname);
-   ret = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local);
+   ret = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global_raw, &local_raw);
+   // the configurations received (CONF_Type), owned here from now on
+   auto global = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(global_raw);
+   auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_raw);
    if (ret) {
       ERROR(MSG_CONF_NOREADCONF_IS, ret, qualified_hostname);
-      lFreeElem(&global);
-      lFreeElem(&local);
       DRETURN(-1);
    }
 
-   ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
+   ret = merge_configuration(nullptr, progid, cell_root, *global, *local, nullptr);
    if (ret) {
       ERROR(MSG_CONF_NOMERGECONF_IS, ret, qualified_hostname);
-      lFreeElem(&global);
-      lFreeElem(&local);
       DRETURN(-2);
    }
 
@@ -182,12 +188,16 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
     * the entries are freed
     */
    ocs::tom::set<CONF_entries>(global, nullptr);
-   ocs::tom::set<CONF_entries>(local, nullptr);
 
    lFreeList(conf_list);
-   *conf_list = lCreateList("config list", CONF_Type);
-   lAppendElem(*conf_list, global);
-   lAppendElem(*conf_list, local);
+   auto confs = ocs::tom::ListPtr<ocs::tom::CONF>::create("config list");
+   confs->push_back(std::move(global));
+   // a host without a local configuration gets none, as lAppendElem() refused the null element
+   if (local) {
+      ocs::tom::set<CONF_entries>(local, nullptr);
+      confs->push_back(std::move(local));
+   }
+   *conf_list = confs.release();
 
    DRETURN(0);
 }
