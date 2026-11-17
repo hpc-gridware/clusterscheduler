@@ -33,9 +33,11 @@
 /*___INFO__MARK_END__*/
 
 #include <cstdio>
+#include <cstring>
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/sge_cull_xml.h"
 
 #include "basis_types.h"
 
@@ -77,6 +79,46 @@ static int test_verify_host_name() {
    }
 
    lFreeList(&al);
+   return ret;
+}
+
+/**
+ * @brief Regression test for CS-1980: escape_string() replaces the XML special characters.
+ *
+ * qrstat -xml escapes user-chosen strings with escape_string(); '<' used to be
+ * written as "%lt;" instead of "&lt;".
+ *
+ * @return number of failed checks
+ */
+static int test_escape_string() {
+   int ret = 0;
+
+   struct {
+      const char *input;
+      const char *expected;
+   } cases[] = {
+      {"plain", "plain"},
+      {"<a&\"'>", "&lt;a&amp;&quot;&apos;&gt;"},
+      {"</account><x>", "&lt;/account&gt;&lt;x&gt;"},
+   };
+   for (const auto &c : cases) {
+      dstring buf = DSTRING_INIT;
+      const bool ok = escape_string(c.input, &buf);
+      const char *result = sge_dstring_get_string(&buf);
+      if (!ok || result == nullptr || strcmp(result, c.expected) != 0) {
+         printf("escape_string(%s) = %s, expected %s\n", c.input, result != nullptr ? result : "(null)", c.expected);
+         ret++;
+      }
+      sge_dstring_free(&buf);
+   }
+
+   dstring buf = DSTRING_INIT;
+   if (escape_string(nullptr, &buf)) {
+      printf("escape_string(nullptr) should return false\n");
+      ret++;
+   }
+   sge_dstring_free(&buf);
+
    return ret;
 }
 
@@ -122,6 +164,7 @@ int main(int argc, char *argv[])
    }
 
    ret += test_verify_host_name();
+   ret += test_escape_string();
 
    if (ret == 0) {
       printf("PASS: test solved!\n");

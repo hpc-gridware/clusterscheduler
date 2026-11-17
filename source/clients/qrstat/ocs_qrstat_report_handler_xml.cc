@@ -41,12 +41,50 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_cull_xml.h"
 
 #include "ocs_qrstat_report_handler.h"
 #include "ocs_qrstat_report_handler_xml.h"
 
 #include "basis_types.h"
 #include "msg_common.h"
+
+
+namespace {
+   /**
+    * @brief XML-escaped copy of a string for the qrstat XML output (CS-1980).
+    *
+    * Values like the AR name, owner, account or resource strings are chosen by
+    * users; written unescaped they could inject elements into the XML output.
+    * The copy lives until the end of the full expression it is created in, so
+    * it can be passed directly as an argument of sge_dstring_sprintf_append().
+    */
+   class XmlEscaped {
+      dstring buf_ = DSTRING_INIT; ///< the escaped text
+   public:
+      /**
+       * @brief Escape @p str
+       * @param str the text to escape; nullptr becomes the empty string
+       */
+      explicit XmlEscaped(const char *str) {
+         escape_string(str != nullptr ? str : "", &buf_);
+      }
+      ~XmlEscaped() {
+         sge_dstring_free(&buf_);
+      }
+      XmlEscaped(const XmlEscaped &) = delete;
+      XmlEscaped &operator=(const XmlEscaped &) = delete;
+
+      /**
+       * @brief The escaped text
+       * @return the escaped string, never nullptr
+       */
+      const char *c_str() const {
+         const char *str = sge_dstring_get_string(&buf_);
+         return str != nullptr ? str : "";
+      }
+   };
+}
 
 static bool
 qrstat_report_start(qrstat_report_handler_t* handler, lList **alpp);
@@ -380,6 +418,15 @@ qrstat_report_ar_node_duration(qrstat_report_handler_t* handler, lList **alpp,
    DRETURN(ret); 
 }
 
+/**
+ * @brief Write an AR attribute with a string value as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name element name
+ * @param value the value, XML-escaped (CS-1980); nullptr gives an empty element
+ * @return true
+ */
 static bool
 qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
                                  const char *name, const char *value)
@@ -390,7 +437,7 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
    DENTER(TOP_LAYER);
  
    if (value != nullptr) {
-      sge_dstring_sprintf_append(buffer, "      <" SFN ">" SFN "</" SFN ">\n", name, value, name);
+      sge_dstring_sprintf_append(buffer, "      <" SFN ">" SFN "</" SFN ">\n", name, XmlEscaped(value).c_str(), name);
    } else {
       sge_dstring_sprintf_append(buffer, "      <" SFN "/>\n", name);
    }
@@ -459,6 +506,15 @@ qrstat_report_finish_resource_list(qrstat_report_handler_t* handler, lList **alp
    DRETURN(ret); 
 }
 
+/**
+ * @brief Write one requested resource of an AR as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name resource name, XML-escaped (CS-1980)
+ * @param value requested value, XML-escaped (CS-1980)
+ * @return true
+ */
 static bool
 qrstat_report_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
                                      const char *name, const char *value)
@@ -469,7 +525,7 @@ qrstat_report_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
    DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <resource name=" SFQ " type=" SFQ "/>\n",
-                              name, value);
+                              XmlEscaped(name).c_str(), XmlEscaped(value).c_str());
 
    DRETURN(ret); 
 }
@@ -515,6 +571,15 @@ qrstat_report_finish_exec_queue_list(qrstat_report_handler_t* handler, lList **a
    DRETURN(ret); 
 }
 
+/**
+ * @brief Write one queue instance of an AR with its slots as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name queue instance name, XML-escaped (CS-1980)
+ * @param value number of slots
+ * @return true
+ */
 static bool
 qrstat_report_exec_queue_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, u_long32 value)
 {
@@ -524,7 +589,7 @@ qrstat_report_exec_queue_list_node(qrstat_report_handler_t* handler, lList **alp
    DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <exec_queue><queue_instance>" SFN
-                              "</queue_instance><slots>" sge_u32 "</slots></exec_queue>\n", name, value);
+                              "</queue_instance><slots>" sge_u32 "</slots></exec_queue>\n", XmlEscaped(name).c_str(), value);
 
    DRETURN(ret); 
 }
@@ -551,6 +616,15 @@ qrstat_report_finish_granted_resource_list(qrstat_report_handler_t* handler, lLi
    DRETURN(ret);
 }
 
+/**
+ * @brief Write one granted resource of an AR as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param host execution host, XML-escaped (CS-1980)
+ * @param value granted resource, XML-escaped (CS-1980)
+ * @return true
+ */
 static bool
 qrstat_report_granted_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
                                          const char *host, const char *value)
@@ -561,7 +635,7 @@ qrstat_report_granted_resource_list_node(qrstat_report_handler_t* handler, lList
    DENTER(TOP_LAYER);
    sge_dstring_sprintf_append(buffer, "         <granted_resource><exec_host>" SFN
                               "</exec_host><resource>" SFN "</resource></granted_resource>\n",
-                              host, value);
+                              XmlEscaped(host).c_str(), XmlEscaped(value).c_str());
    DRETURN(ret);
 }
 
@@ -591,6 +665,15 @@ qrstat_report_finish_exec_binding_list(qrstat_report_handler_t* handler, lList *
    DRETURN(ret);
 }
 
+/**
+ * @brief Write the binding of an AR on one host as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name execution host, XML-escaped (CS-1980)
+ * @param value binding, XML-escaped (CS-1980)
+ * @return true
+ */
 static bool
 qrstat_report_exec_binding_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, const char *value)
 {
@@ -600,7 +683,7 @@ qrstat_report_exec_binding_list_node(qrstat_report_handler_t* handler, lList **a
    DENTER(TOP_LAYER);
 
    sge_dstring_sprintf_append(buffer, "         <exec_binding><exec_host>" SFN
-                              "</exec_host><binding>" SFN "</binding></exec_binding>\n", name, value);
+                              "</exec_host><binding>" SFN "</binding></exec_binding>\n", XmlEscaped(name).c_str(), XmlEscaped(value).c_str());
 
    DRETURN(ret);
 }
@@ -631,6 +714,15 @@ qrstat_report_finish_granted_parallel_environment(qrstat_report_handler_t* handl
    DRETURN(ret); 
 }
 
+/**
+ * @brief Write the granted parallel environment of an AR as XML elements.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name PE name, XML-escaped (CS-1980)
+ * @param slots_range slot range, XML-escaped (CS-1980)
+ * @return true
+ */
 static bool
 qrstat_report_granted_parallel_environment_node(qrstat_report_handler_t* handler, 
                                                     lList **alpp,
@@ -641,8 +733,8 @@ qrstat_report_granted_parallel_environment_node(qrstat_report_handler_t* handler
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <parallel_environment>" SFN "</parallel_environment>\n", (name != nullptr) ? name : "");
-   sge_dstring_sprintf_append(buffer, "         <slots>" SFN "</slots>\n", (slots_range != nullptr) ? slots_range : "");
+   sge_dstring_sprintf_append(buffer, "         <parallel_environment>" SFN "</parallel_environment>\n", XmlEscaped(name).c_str());
+   sge_dstring_sprintf_append(buffer, "         <slots>" SFN "</slots>\n", XmlEscaped(slots_range).c_str());
 
    DRETURN(ret); 
 }
@@ -673,6 +765,15 @@ qrstat_report_finish_mail_list(qrstat_report_handler_t* handler, lList **alpp)
    DRETURN(ret); 
 }
 
+/**
+ * @brief Write one mail recipient of an AR as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name user name, XML-escaped (CS-1980)
+ * @param host host name, XML-escaped (CS-1980); nullptr is written as "nullptr"
+ * @return true
+ */
 static bool
 qrstat_report_mail_list_node(qrstat_report_handler_t* handler, 
                                  lList **alpp,
@@ -684,7 +785,7 @@ qrstat_report_mail_list_node(qrstat_report_handler_t* handler,
    DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <mail  user=" SFQ
-                              " host=" SFQ "/>\n", name, host?host:"nullptr");
+                              " host=" SFQ "/>\n", XmlEscaped(name).c_str(), XmlEscaped(host ? host : "nullptr").c_str());
 
    DRETURN(ret); 
 }
@@ -715,6 +816,14 @@ qrstat_report_finish_acl_list(qrstat_report_handler_t* handler, lList **alpp)
    DRETURN(ret); 
 }
 
+/**
+ * @brief Write one entry of the AR access list as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name user or userset name, XML-escaped (CS-1980)
+ * @return true
+ */
 static bool
 qrstat_report_acl_list_node(qrstat_report_handler_t* handler, 
                             lList **alpp,
@@ -725,7 +834,7 @@ qrstat_report_acl_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <acl  user=" SFQ "/>\n", name);
+   sge_dstring_sprintf_append(buffer, "         <acl  user=" SFQ "/>\n", XmlEscaped(name).c_str());
 
    DRETURN(ret); 
 }
@@ -756,6 +865,14 @@ qrstat_report_finish_xacl_list(qrstat_report_handler_t* handler, lList **alpp)
    DRETURN(ret); 
 }
 
+/**
+ * @brief Write one entry of the AR exclusion list as XML element.
+ *
+ * @param handler qrstat report handler, its context is the output buffer
+ * @param alpp    answer list, unused
+ * @param name user or userset name, XML-escaped (CS-1980)
+ * @return true
+ */
 static bool
 qrstat_report_xacl_list_node(qrstat_report_handler_t* handler, 
                              lList **alpp,
@@ -766,7 +883,7 @@ qrstat_report_xacl_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <acl  user=" SFQ "/>\n", name);
+   sge_dstring_sprintf_append(buffer, "         <acl  user=" SFQ "/>\n", XmlEscaped(name).c_str());
 
    DRETURN(ret); 
 }

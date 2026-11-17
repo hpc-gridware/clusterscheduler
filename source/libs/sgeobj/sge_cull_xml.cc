@@ -663,6 +663,16 @@ static lListElem *append_Attr_S(lList *attributeList, const char *name, const ch
    return parent;
 }
 
+/**
+ * @brief Append @p string to @p target with the XML special characters replaced by entities.
+ *
+ * '<', '>', '&', '\'' and '"' become &lt;, &gt;, &amp;, &apos; and &quot;.
+ * '<' used to be written as "%lt;" (fixed with CS-1980).
+ *
+ * @param string the text to escape
+ * @param target the dstring to append to, must not be nullptr
+ * @return true if @p string was escaped, false if it is nullptr
+ */
 bool escape_string(const char *string, dstring *target){
    int size;
    int i;
@@ -682,7 +692,7 @@ bool escape_string(const char *string, dstring *target){
 
    for(i = 0; i<size; i++){
       switch(string[i]){
-         case '<' : sge_dstring_append(target, "%lt;");
+         case '<' : sge_dstring_append(target, "&lt;");
             break;
          case '>' : sge_dstring_append(target, "&gt;");
             break;
