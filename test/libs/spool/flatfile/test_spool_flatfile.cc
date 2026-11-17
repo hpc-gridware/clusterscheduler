@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include "uti/sge.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 
@@ -81,6 +82,8 @@ static int RQS_test();
 static int AR_test();
 static int SPOOL_perm_test();
 static int SPOOL_key_safe_test();
+static int SPOOL_dir_perm_test();
+static int SPOOL_restrict_existing_test();
 
 typedef int (*func)();
 
@@ -109,6 +112,8 @@ int main(int argc, char** argv)
                                RQS_test,
                                SPOOL_perm_test,
                                SPOOL_key_safe_test,
+                               SPOOL_dir_perm_test,
+                               SPOOL_restrict_existing_test,
                                nullptr };
 
    DENTER_MAIN(TOP_LAYER, "test_ff_cl");   
@@ -2738,6 +2743,145 @@ static int SPOOL_key_safe_test() {
          ret = 1;
       }
    }
+   return ret;
+}
+
+/**
+ * @brief Security regression test for CS-2384 (CWE-732/CWE-276): spool directory mode.
+ *
+ * The classic spool files are created 0600 (CS-2352), but their directories
+ * were created 0755, so the entry names (job ids, queue instance and object
+ * names, per-host configuration) stayed visible to every local user. The
+ * startup functions now create the directories 0700. The test runs
+ * spool_classic_common_startup_func(), which creates "local_conf", under
+ * umask(0) and expects mode 0700.
+ *
+ * @return 0 if the directory was created 0700, 1 otherwise
+ */
+static int SPOOL_dir_perm_test() {
+   lList *alp = nullptr;
+
+   printf("SPOOL dir perm: classic spool directory created 0700 (CS-2384)\n");
+
+   char base[1024];
+   snprintf(base, sizeof(base), "/tmp/test_spool_dirperm.%ld", (long)getpid());
+
+   // "local_conf" mirrors LOCAL_CONF_DIR (uti/sge_bootstrap_files.h)
+   char sub[1152];
+   snprintf(sub, sizeof(sub), "%s/%s", base, "local_conf");
+   rmdir(sub);
+   rmdir(base);
+
+   if (mkdir(base, 0755) != 0) {
+      printf("   could not create test common dir %s\n", base);
+      return 1;
+   }
+
+   lListElem *rule = lCreateElem(SPR_Type);
+   lSetString(rule, SPR_url, base);
+
+   // neutralise the ambient umask so the resulting mode is exactly what the
+   // code requested (otherwise it would be mode & ~umask)
+   const mode_t old_umask = umask(0);
+   const bool ok = spool_classic_common_startup_func(&alp, rule, false);
+   umask(old_umask);
+   lFreeElem(&rule);
+
+   int ret = 1;
+   struct stat sb{};
+   if (ok && stat(sub, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+      const mode_t perm = sb.st_mode & 07777;
+      if (perm == (S_IRUSR | S_IWUSR | S_IXUSR)) {
+         ret = 0;
+      } else {
+         printf("   spool dir mode = 0%03o (expected 0700)\n", (unsigned)perm);
+      }
+   } else {
+      printf("   could not create/stat local_conf dir via common_startup_func\n");
+   }
+
+   rmdir(sub);
+   rmdir(base);
+   answer_list_output(&alp);
+   return ret;
+}
+
+/**
+ * @brief Security regression test for CS-2384: qmaster restricts an existing spool tree.
+ *
+ * A 9.1 patch update replaces only the binaries, so the spool tree of the
+ * older version keeps its 0755 directories and 0644 files. The classic
+ * startup function now restricts them: the test prepares such a tree, runs
+ * spool_classic_default_startup_func() under umask(0) and expects every
+ * object directory 0700 and the managers/operators files 0600.
+ *
+ * @return 0 if all modes are owner-only afterwards, 1 otherwise
+ */
+static int SPOOL_restrict_existing_test() {
+   lList *alp = nullptr;
+
+   printf("SPOOL restrict: existing spool directories/files become owner-only (CS-2384)\n");
+
+   char base[1024];
+   snprintf(base, sizeof(base), "/tmp/test_spool_restrict.%ld", (long)getpid());
+   if (mkdir(base, 0755) != 0) {
+      printf("   could not create test spool dir %s\n", base);
+      return 1;
+   }
+
+   // what an older version left behind
+   const mode_t old_umask = umask(0);
+   char path[1152];
+   snprintf(path, sizeof(path), "%s/%s", base, JOB_DIR);
+   mkdir(path, 0755);
+   snprintf(path, sizeof(path), "%s/%s", base, ZOMBIE_DIR);
+   mkdir(path, 0755);
+   for (const char *f : {MAN_FILE, OP_FILE}) {
+      snprintf(path, sizeof(path), "%s/%s", base, f);
+      FILE *fp = fopen(path, "w");
+      if (fp != nullptr) {
+         fprintf(fp, "root\n");
+         fclose(fp);
+      }
+      chmod(path, 0644);
+   }
+
+   // the startup function changes the working directory
+   char cwd[SGE_PATH_MAX];
+   const bool have_cwd = getcwd(cwd, sizeof(cwd)) != nullptr;
+
+   lListElem *rule = lCreateElem(SPR_Type);
+   lSetString(rule, SPR_url, base);
+   const bool ok = spool_classic_default_startup_func(&alp, rule, false);
+   lFreeElem(&rule);
+   umask(old_umask);
+   if (have_cwd && chdir(cwd) != 0) {
+      printf("   could not change back to %s\n", cwd);
+   }
+
+   int ret = ok ? 0 : 1;
+   const char *dirs[] = {JOB_DIR, ZOMBIE_DIR, CQUEUE_DIR, QINSTANCES_DIR, EXECHOST_DIR, SUBMITHOST_DIR,
+                         ADMINHOST_DIR, CENTRY_DIR, EXEC_DIR, PE_DIR, CKPTOBJ_DIR, USERSET_DIR, CAL_DIR,
+                         HGROUP_DIR, USER_DIR, PROJECT_DIR, RESOURCEQUOTAS_DIR, AR_DIR};
+   struct stat sb{};
+   for (const char *d : dirs) {
+      snprintf(path, sizeof(path), "%s/%s", base, d);
+      if (stat(path, &sb) != 0 || (sb.st_mode & 07777) != S_IRWXU) {
+         printf("   %s: mode 0%03o, expected 0700\n", d, (unsigned)(sb.st_mode & 07777));
+         ret = 1;
+      }
+      rmdir(path);
+   }
+   for (const char *f : {MAN_FILE, OP_FILE}) {
+      snprintf(path, sizeof(path), "%s/%s", base, f);
+      if (stat(path, &sb) != 0 || (sb.st_mode & 07777) != (S_IRUSR | S_IWUSR)) {
+         printf("   %s: mode 0%03o, expected 0600\n", f, (unsigned)(sb.st_mode & 07777));
+         ret = 1;
+      }
+      unlink(path);
+   }
+   rmdir(base);
+   answer_list_output(&alp);
    return ret;
 }
 

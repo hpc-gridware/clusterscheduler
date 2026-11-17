@@ -3075,6 +3075,84 @@ BackupConfig()
 
 
 
+#-------------------------------------------------------------------------------
+# HardenClassicSpoolPermissions: tighten the permissions of a classic spool tree
+# (CS-2352).
+#
+# CS-2352 makes qmaster create classic-spool files owner-only (0600) and their
+# directories owner-only (0700). Two flows can still leave older, permissive
+# modes on disk:
+#   - an upgrade reuses the spool tree of the previous version (directories keep
+#     0755, because sge_mkdir() does not re-chmod an existing dir, and spool
+#     files not rewritten by the config reload keep their old 0666); and
+#   - a configuration restore copies the spool objects back from a backup with
+#     "cp -R", which reintroduces the backed-up modes (dirs 0755, files up to
+#     0666 & ~umask).
+# In both cases the disclosure/tamper vectors closed by CS-2352 would stay open,
+# so we explicitly fix the modes.
+#
+# Scope: the qmaster classic object directories under the given spool dir plus
+# common/local_conf. The execd spool is intentionally left untouched (not part
+# of CS-2352). The pass is idempotent and safe to re-run. The CALLER must ensure
+# classic spooling - the function does not check the spooling method itself.
+#   $1 - qmaster spool directory (e.g. $QMDIR or the restored master_spool)
+HardenClassicSpoolPermissions()
+{
+   qm_spool_dir=$1
+
+   $INFOTEXT -n "\nHardening classic spool file/directory permissions (CS-2352)\n"
+
+   # During an update qmaster is still running and may rename a dot temp file
+   # between find's listing and the chmod; a failing find must not abort the
+   # whole update, so do not exit on a failed admin command here.
+   harden_saved_no_exit=$ADMINRUN_NO_EXIT
+   ADMINRUN_NO_EXIT=true
+
+   # qmaster object directories, mirroring spool_classic_default_startup_func()
+   obj_dirs="jobs cqueues qinstances exec_hosts admin_hosts submit_hosts centry \
+job_scripts pe ckpt usersets calendars hostgroups users projects \
+resource_quotas advance_reservations zombies"
+
+   # RestoreConfig moves an existing object aside to <name>.bak, harden that too
+   for d in $obj_dirs; do
+      for target in "$qm_spool_dir/$d" "$qm_spool_dir/$d.bak"; do
+         if [ -d "$target" ]; then
+            ExecuteAsAdmin find "$target" -type d -exec $CHMOD 700 {} +
+            ExecuteAsAdmin find "$target" -type f -exec $CHMOD 600 {} +
+         fi
+      done
+   done
+
+   # managers/operators are plain files at the spool root (not in an object dir).
+   # They list the cluster's administrative accounts, so group/other must have
+   # neither read nor write access (disclosure + privilege-escalation vector).
+   for f in managers operators managers.bak operators.bak; do
+      if [ -f "$qm_spool_dir/$f" ]; then
+         ExecuteAsAdmin $CHMOD 600 "$qm_spool_dir/$f"
+      fi
+   done
+
+   # common/local_conf: global + per-host configuration spool (qmaster-private),
+   # mirroring spool_classic_common_startup_func(). The parent common/ dir is
+   # deliberately left world-readable so clients can still read act_qmaster etc.
+   for lc_dir in "$SGE_ROOT/$SGE_CELL/common/local_conf" "$SGE_ROOT/$SGE_CELL/common/local_conf.bak"; do
+      if [ -d "$lc_dir" ]; then
+         ExecuteAsAdmin find "$lc_dir" -type d -exec $CHMOD 700 {} +
+         ExecuteAsAdmin find "$lc_dir" -type f -exec $CHMOD 600 {} +
+      fi
+   done
+
+   # In 9.1 classic spooling keeps the global and the scheduler configuration
+   # as files in common/ (written owner-only by qmaster since CS-2352)
+   for f in configuration sched_configuration configuration.bak sched_configuration.bak; do
+      if [ -f "$SGE_ROOT/$SGE_CELL/common/$f" ]; then
+         ExecuteAsAdmin $CHMOD 600 "$SGE_ROOT/$SGE_CELL/common/$f"
+      fi
+   done
+
+   ADMINRUN_NO_EXIT=$harden_saved_no_exit
+}
+
 #----------------------------------------------------------------------------
 # Restore configuration
 # RestoreConfig
@@ -3167,15 +3245,11 @@ RestoreConfig()
             fi
          done
 
-         if [ -d $master_spool ]; then
-            if [ -d $master_spool/job_scripts ]; then
-               :
-            else
-               ExecuteAsAdmin $MKDIR $master_spool/job_scripts
-            fi
-         else
+         # Only the spool dir itself must pre-exist (qmaster chdirs into it at
+         # startup). job_scripts is created by qmaster at startup (0700, classic
+         # only); do not pre-create it here (CS-2352).
+         if [ ! -d $master_spool ]; then
             ExecuteAsAdmin $MKDIR $master_spool
-            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
          fi
 
          for f in $BUP_SPOOL_FILE_LIST; do
@@ -3202,9 +3276,6 @@ RestoreConfig()
          # $QMDIR regardless of method (inst_qmaster.sh:767).
          if [ ! -d $master_spool ]; then
             ExecuteAsAdmin $MKDIR $master_spool
-            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
-         elif [ ! -d $master_spool/job_scripts ]; then
-            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
          fi
 
          for f in $BUP_PG_COMMON_FILE_LIST; do
@@ -3313,15 +3384,11 @@ RestoreConfig()
          done
 
          master_spool_tmp=`echo $master_spool | cut -d";" -f2`
-         if [ -d $master_spool_tmp ]; then
-            if [ -d $master_spool_tmp/job_scripts ]; then
-               :
-            else
-               ExecuteAsAdmin $MKDIR $master_spool_tmp/job_scripts
-            fi
-         else
+         # Only the spool dir itself must pre-exist (qmaster chdirs into it at
+         # startup). job_scripts is created by qmaster at startup (0700, classic
+         # only); do not pre-create it here (CS-2352).
+         if [ ! -d $master_spool_tmp ]; then
             ExecuteAsAdmin $MKDIR $master_spool_tmp
-            ExecuteAsAdmin $MKDIR $master_spool_tmp/job_scripts
          fi
 
          for f in $BUP_CLASSIC_SPOOL_FILE_LIST; do
@@ -3354,6 +3421,10 @@ RestoreConfig()
             fi
          done
 
+         # CS-2352: "cp -R" above restored the spool objects with the modes from
+         # the backup (dirs 0755, files up to 0666 & ~umask). Re-harden to
+         # owner-only so the disclosure/tamper vectors stay closed after a restore.
+         HardenClassicSpoolPermissions "$master_spool_tmp"
       fi
 
       $INFOTEXT -n "\nYour configuration has been restored\n"
@@ -3411,15 +3482,11 @@ RestoreConfig()
             fi
          done
 
-         if [ -d $master_spool ]; then
-            if [ -d $master_spool/job_scripts ]; then
-               :
-            else
-               ExecuteAsAdmin $MKDIR $master_spool/job_scripts
-            fi
-         else
+         # Only the spool dir itself must pre-exist (qmaster chdirs into it at
+         # startup). job_scripts is created by qmaster at startup (0700, classic
+         # only); do not pre-create it here (CS-2352).
+         if [ ! -d $master_spool ]; then
             ExecuteAsAdmin $MKDIR $master_spool
-            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
          fi
 
          for f in $BUP_SPOOL_FILE_LIST; do
@@ -3443,9 +3510,6 @@ RestoreConfig()
          # exist).
          if [ ! -d $master_spool ]; then
             ExecuteAsAdmin $MKDIR $master_spool
-            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
-         elif [ ! -d $master_spool/job_scripts ]; then
-            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
          fi
 
          for f in $BUP_PG_COMMON_FILE_LIST; do
@@ -3548,15 +3612,11 @@ RestoreConfig()
          done
 
          master_spool_tmp=`echo $master_spool | cut -d";" -f2`
-         if [ -d $master_spool_tmp ]; then
-            if [ -d $master_spool_tmp/job_scripts ]; then
-               :
-            else
-               ExecuteAsAdmin $MKDIR $master_spool_tmp/job_scripts
-            fi
-         else
+         # Only the spool dir itself must pre-exist (qmaster chdirs into it at
+         # startup). job_scripts is created by qmaster at startup (0700, classic
+         # only); do not pre-create it here (CS-2352).
+         if [ ! -d $master_spool_tmp ]; then
             ExecuteAsAdmin $MKDIR $master_spool_tmp
-            ExecuteAsAdmin $MKDIR $master_spool_tmp/job_scripts
          fi
 
          for f in $BUP_CLASSIC_SPOOL_FILE_LIST; do
@@ -3589,6 +3649,10 @@ RestoreConfig()
             fi
          done
 
+         # CS-2352: "cp -R" above restored the spool objects with the modes from
+         # the backup (dirs 0755, files up to 0666 & ~umask). Re-harden to
+         # owner-only so the disclosure/tamper vectors stay closed after a restore.
+         HardenClassicSpoolPermissions "$master_spool_tmp"
       fi
       $INFOTEXT -n "\nYour configuration has been restored\n"
    fi

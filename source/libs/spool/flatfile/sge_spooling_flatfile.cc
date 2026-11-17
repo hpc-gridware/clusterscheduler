@@ -35,6 +35,8 @@
 /* system */
 #include <cerrno>
 #include <cstring>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include "cull/cull.h"
 
@@ -304,39 +306,57 @@ spool_classic_create_context(lList **answer_list, const char *args)
    DRETURN(context);
 }
 
-/****** spool/flatfile/spool_flatfile_default_startup_func() **************
-*  NAME
-*     spool_flatfile_default_startup_func() -- setup the spool directory
-*
-*  SYNOPSIS
-*     bool
-*     spool_flatfile_default_startup_func(lList **answer_list,
-*                                         const lListElem *rule, bool check)
-*
-*  FUNCTION
-*     Checks the existence of the spool directory.
-*     If the current working directory is not yet the spool direcotry,
-*     changes the current working directory.
-*     If the subdirectories for the different object types do not yet
-*     exist, they are created.
-*
-*  INPUTS
-*     lList **answer_list   - to return error messages
-*     const lListElem *rule - the rule containing data necessary for
-*                             the startup (e.g. path to the spool directory)
-*     bool check            - check the spooling database
-*
-*  RESULT
-*     bool - true, if the startup succeeded, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_startup_context()
-*******************************************************************************/
+/**
+ * @brief Remove the group and other permissions of an existing spool entry.
+ *
+ * A directory becomes 0700 and a file 0600. Nothing happens when the entry
+ * does not exist, is a symbolic link or already is owner-only. A failure is
+ * logged and otherwise ignored, it must not stop qmaster (CS-2384).
+ *
+ * @param base directory the entry lives in
+ * @param name name of the directory or file below @p base
+ */
+static void
+spool_classic_restrict_mode(const char *base, const char *name) {
+   DENTER(TOP_LAYER);
+
+   dstring path = DSTRING_INIT;
+   sge_dstring_sprintf(&path, "%s/%s", base, name);
+
+   struct stat st;
+   if (lstat(sge_dstring_get_string(&path), &st) == 0 && (st.st_mode & (S_IRWXG | S_IRWXO)) != 0 &&
+       (S_ISDIR(st.st_mode) || S_ISREG(st.st_mode))) {
+      const mode_t mode = S_ISDIR(st.st_mode) ? S_IRWXU : (S_IRUSR | S_IWUSR);
+      if (chmod(sge_dstring_get_string(&path), mode) != 0) {
+         WARNING(MSG_SPOOL_CANNOT_RESTRICT_MODE_SS, sge_dstring_get_string(&path), strerror(errno));
+      }
+   }
+
+   sge_dstring_free(&path);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Set up the classic (flatfile) qmaster spool directory.
+ *
+ * Checks that the spool directory exists, changes into it, and creates the
+ * per-object-type subdirectories if they do not yet exist.
+ *
+ * The subdirectories are created owner-only (0700): they hold authoritative
+ * job and configuration spool, and their entry names alone (job IDs, queue
+ * instance and other object names) are information that must not be readable
+ * by other local users. This complements CS-2352, which hardened the spool
+ * *file* mode to 0600 but left the containing directories world-traversable.
+ *
+ * This function should not be called directly; it is called by the spooling
+ * framework.
+ *
+ * @param[out] answer_list  to return error messages
+ * @param[in]  rule         rule containing data necessary for the startup
+ *                          (e.g. the path to the spool directory)
+ * @param[in]  check        check the spooling database
+ * @return true if the startup succeeded, else false
+ */
 bool
 spool_classic_default_startup_func(lList **answer_list,
                                     const lListElem *rule, bool check)
@@ -361,25 +381,39 @@ spool_classic_default_startup_func(lList **answer_list,
                                  strerror(errno));
         ret = false;
       } else {
-         /* create spool sub directories */
-         sge_mkdir2(url, JOB_DIR,  0755, true);
-         sge_mkdir2(url, ZOMBIE_DIR, 0755, true);
-         sge_mkdir2(url, CQUEUE_DIR,  0755, true);
-         sge_mkdir2(url, QINSTANCES_DIR,  0755, true);
-         sge_mkdir2(url, EXECHOST_DIR, 0755, true);
-         sge_mkdir2(url, SUBMITHOST_DIR, 0755, true);
-         sge_mkdir2(url, ADMINHOST_DIR, 0755, true);
-         sge_mkdir2(url, CENTRY_DIR, 0755, true);
-         sge_mkdir2(url, EXEC_DIR, 0755, true);
-         sge_mkdir2(url, PE_DIR, 0755, true);
-         sge_mkdir2(url, CKPTOBJ_DIR, 0755, true);
-         sge_mkdir2(url, USERSET_DIR, 0755, true);
-         sge_mkdir2(url, CAL_DIR, 0755, true);
-         sge_mkdir2(url, HGROUP_DIR, 0755, true);
-         sge_mkdir2(url, USER_DIR, 0755, true);
-         sge_mkdir2(url, PROJECT_DIR, 0755, true);
-         sge_mkdir2(url, RESOURCEQUOTAS_DIR, 0755, true);
-         sge_mkdir2(url, AR_DIR, 0755, true);
+         /* Create spool sub directories owner-only (0700). Their entry names
+          * alone leak job IDs and object names, so they must not be readable
+          * or traversable by group/other (CS-2352 directory hardening). */
+         sge_mkdir2(url, JOB_DIR,  0700, true);
+         sge_mkdir2(url, ZOMBIE_DIR, 0700, true);
+         sge_mkdir2(url, CQUEUE_DIR,  0700, true);
+         sge_mkdir2(url, QINSTANCES_DIR,  0700, true);
+         sge_mkdir2(url, EXECHOST_DIR, 0700, true);
+         sge_mkdir2(url, SUBMITHOST_DIR, 0700, true);
+         sge_mkdir2(url, ADMINHOST_DIR, 0700, true);
+         sge_mkdir2(url, CENTRY_DIR, 0700, true);
+         sge_mkdir2(url, EXEC_DIR, 0700, true);
+         sge_mkdir2(url, PE_DIR, 0700, true);
+         sge_mkdir2(url, CKPTOBJ_DIR, 0700, true);
+         sge_mkdir2(url, USERSET_DIR, 0700, true);
+         sge_mkdir2(url, CAL_DIR, 0700, true);
+         sge_mkdir2(url, HGROUP_DIR, 0700, true);
+         sge_mkdir2(url, USER_DIR, 0700, true);
+         sge_mkdir2(url, PROJECT_DIR, 0700, true);
+         sge_mkdir2(url, RESOURCEQUOTAS_DIR, 0700, true);
+         sge_mkdir2(url, AR_DIR, 0700, true);
+
+         /* sge_mkdir2() keeps the mode of a directory that already exists. A
+          * 9.1 patch update only replaces the binaries and does not run
+          * inst_sge -upd, so restrict what an older version left behind here
+          * (CS-2384). An owner-only directory also protects the older files
+          * inside it. */
+         static const char *const spool_dirs[] = {
+            JOB_DIR, ZOMBIE_DIR, CQUEUE_DIR, QINSTANCES_DIR, EXECHOST_DIR, SUBMITHOST_DIR, ADMINHOST_DIR, CENTRY_DIR, EXEC_DIR, PE_DIR, CKPTOBJ_DIR, USERSET_DIR, CAL_DIR, HGROUP_DIR, USER_DIR, PROJECT_DIR, RESOURCEQUOTAS_DIR, AR_DIR, MAN_FILE, OP_FILE
+         };
+         for (const char *name : spool_dirs) {
+            spool_classic_restrict_mode(url, name);
+         }
       }
    }
 
@@ -429,37 +463,27 @@ spool_classic_default_shutdown_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/flatfile/spool_flatfile_common_startup_func() ***************
-*  NAME
-*     spool_flatfile_common_startup_func() -- setup the common directory
-*
-*  SYNOPSIS
-*     bool
-*     spool_flatfile_common_startup_func(lList **answer_list,
-*                                        const lListElem *rule, bool check)
-*
-*  FUNCTION
-*     Checks the existence of the common directory.
-*     If the subdirectory for the local configurtations does not yet exist,
-*     it is created.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *rule - rule containing data like the path to the common
-*                             directory
-*     bool check            - check the spooling database
-*
-*  RESULT
-*     bool - true, on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_startup_context()
-*******************************************************************************/
+/**
+ * @brief Set up the classic (flatfile) common directory.
+ *
+ * Checks that the common directory exists and creates the subdirectory for the
+ * local (per-host) and global configuration spool if it does not yet exist.
+ *
+ * The local_conf subdirectory is created owner-only (0700). It is written and
+ * read exclusively by qmaster (clients obtain their configuration via GDI, not
+ * from disk), and its entry names reveal which hosts carry a local config, so
+ * it must not be readable by group/other. The parent common directory itself
+ * stays world-readable so clients can still read act_qmaster/bootstrap/settings.
+ *
+ * This function should not be called directly; it is called by the spooling
+ * framework.
+ *
+ * @param[out] answer_list  to return error messages
+ * @param[in]  rule         rule containing data like the path to the common
+ *                          directory
+ * @param[in]  check        check the spooling database
+ * @return true on success, else false
+ */
 bool
 spool_classic_common_startup_func(lList **answer_list,
                                    const lListElem *rule, bool check)
@@ -477,8 +501,16 @@ spool_classic_common_startup_func(lList **answer_list,
                               MSG_SPOOL_COMMONDIRDOESNOTEXIST_S, url);
       ret = false;
    } else {
-      /* create directory for local configurations */
-      sge_mkdir2(url, LOCAL_CONF_DIR, 0755, true);
+      /* Create directory for local/global configuration owner-only (0700);
+       * qmaster-private, entry names leak per-host config (CS-2352). */
+      sge_mkdir2(url, LOCAL_CONF_DIR, 0700, true);
+
+      /* restrict what an older version left behind (see the default startup
+       * function above, CS-2384) */
+      static const char *const common_entries[] = {LOCAL_CONF_DIR, CONF_FILE, SCHED_CONF_FILE};
+      for (const char *name : common_entries) {
+         spool_classic_restrict_mode(url, name);
+      }
    }
 
    DRETURN(ret);
@@ -1078,7 +1110,8 @@ spool_classic_default_write_func(lList **answer_list,
          {
             dstring qi_dir = DSTRING_INIT;
             sge_dstring_sprintf(&qi_dir, "%s/%s", QINSTANCES_DIR, key);
-            sge_mkdir(sge_dstring_get_string(&qi_dir), 0755, false, false);
+            // owner-only: the qinstance dir name leaks the queue/host (CS-2352)
+            sge_mkdir(sge_dstring_get_string(&qi_dir), 0700, false, false);
             sge_dstring_free(&qi_dir);
 
          }
@@ -1415,6 +1448,20 @@ spool_classic_default_delete_func(lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Spool the managers or operators name list to its flat file.
+ *
+ * Writes the manager (MAN_FILE) or operator (OP_FILE) list to a dot-prefixed
+ * temporary file in the current (qmaster spool) directory and renames it into
+ * place. The file is created owner-only (0600): it enumerates the cluster's
+ * administrative accounts, so group/other must have neither read access
+ * (disclosure of who the admins are) nor write access (tampering with the
+ * manager/operator list is a privilege-escalation vector). See CS-2352.
+ *
+ * @param[in] spool   if non-zero, prepend the standard version comment header
+ * @param[in] target  SGE_UM_LIST for the manager list, SGE_UO_LIST for the operator list
+ * @return true on success, false on error
+ */
 static bool write_manop(int spool, int target) {
    FILE *fp;
    const lListElem *ep;
@@ -1446,10 +1493,29 @@ static bool write_manop(int spool, int target) {
       DRETURN(false);
    }
 
-   fp = fopen(filename, "w");
-   if (!fp) {
-      ERROR(MSG_ERRORWRITINGFILE_SS, filename, strerror(errno));
-      DRETURN(false);
+   /* Create the spool file owner-only (0600): it lists administrative accounts,
+    * so group/other must have neither read (disclosure) nor write (tampering ->
+    * privilege escalation) access. O_NOFOLLOW defeats a symlink pre-placement on
+    * the dot-temp. See CS-2352. */
+   {
+      int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW,
+                    S_IRUSR | S_IWUSR);
+      // O_CREAT does not change the mode of a temp file left behind, e.g. by
+      // a crash of an older version - set it explicitly
+      if (fd != -1 && fchmod(fd, S_IRUSR | S_IWUSR) != 0) {
+         close(fd);
+         fd = -1;
+      }
+      if (fd == -1) {
+         ERROR(MSG_ERRORWRITINGFILE_SS, filename, strerror(errno));
+         DRETURN(false);
+      }
+      fp = fdopen(fd, "w");
+      if (!fp) {
+         ERROR(MSG_ERRORWRITINGFILE_SS, filename, strerror(errno));
+         close(fd);
+         DRETURN(false);
+      }
    }
 
    if (spool && sge_spoolmsg_write(fp, COMMENT_CHAR,
