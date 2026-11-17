@@ -286,7 +286,7 @@ static int spool_users(int argc, char *argv[]) {
    const spooling_field *fields = sge_build_UU_field_list(true);
    int ret; 
 
-   ret = spool_object_list(argv[2], fields, &qconf_sfi, UU_Type, SGE_TYPE_PROJECT);
+   ret = spool_object_list(argv[2], fields, &qconf_sfi, UU_Type, SGE_TYPE_USER);   // not PROJECT (CS-3126)
    sge_free(&fields);
    return ret;
 }
