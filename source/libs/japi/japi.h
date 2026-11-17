@@ -60,6 +60,9 @@
 #include "sgeobj/cull/sge_japi_JJAT_L.h"
 #include "sgeobj/cull/sge_japi_NSV_L.h"
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 /**
  * @brief Job events a JAPI session can be interested in
@@ -140,7 +143,8 @@ int japi_was_init_called(dstring* diag);
  * The job identifier 'job_id' is a printable, nullptr terminated string,
  * identical to that returned by the underlying DRM system.
  */
-int japi_run_job(dstring *jobid, lListElem **sge_job_template, dstring *diag);
+int japi_run_job(dstring *jobid, ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, dstring *diag);
+OCS_TRANSITIONAL int japi_run_job(dstring *jobid, lListElem **sge_job_template, dstring *diag);
 
 /* 
  * Submit a set of parametric jobs, dependent on the implied loop index, each
@@ -156,7 +160,10 @@ int japi_run_job(dstring *jobid, lListElem **sge_job_template, dstring *diag);
  * drmaa_set_attribute(pjt, "stderr", drmaa_incr_ph + ".err" ); (C++/java string syntax used)
  */
 
-int japi_run_bulk_jobs(drmaa_attr_values_t **values, lListElem **sge_job_template, int start, int end, int incr, dstring *diag);
+int japi_run_bulk_jobs(drmaa_attr_values_t **values, ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, int start,
+                       int end, int incr, dstring *diag);
+OCS_TRANSITIONAL int japi_run_bulk_jobs(drmaa_attr_values_t **values, lListElem **sge_job_template, int start, int end,
+                                        int incr, dstring *diag);
 
 /* ------------------- job control routines ------------------- */
 

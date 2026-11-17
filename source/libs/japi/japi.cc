@@ -76,6 +76,7 @@
 #include <csignal>
 #include <pthread.h>
 #include <pwd.h>
+#include <tuple>
 
 #include "uti/ocs_cond.h"
 #include "uti/sge_bootstrap_env.h"
@@ -102,6 +103,7 @@
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/sge_pack.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_report.h"
@@ -112,6 +114,7 @@
 #include "cull/ocs_cull_descr.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
@@ -310,7 +313,7 @@ static int japi_close_session(const char*username, const dstring *key, dstring *
 static void *japi_implementation_thread(void *);
 static int japi_parse_jobid(const char *jobid_str, uint32_t *jobid, uint32_t *taskid,
    bool *is_array, dstring *diag);
-static int japi_send_job(lListElem **job, uint32_t *jobid, dstring *diag);
+static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &job, uint32_t *jobid, dstring *diag);
 static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t incr,
       bool is_array, dstring *diag);
 static int japi_synchronize_jobids_retry(const char *jobids[], bool dispose);
@@ -323,8 +326,7 @@ static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int 
 static int japi_sync_job_tasks(ocs::tom::Element<ocs::tom::JJ> japi_job, ocs::tom::ConstElement<ocs::tom::JB> sge_job);
 static int japi_clean_up_jobs (int flag, dstring *diag);
 static int japi_read_dynamic_attributes(dstring *diag);
-static int do_gdi_delete (lList **id_list, int action, bool delete_all,
-                          dstring *diag);
+static int do_gdi_delete(ocs::tom::ListPtr<ocs::tom::ID> &&id_list, int action, bool delete_all, dstring *diag);
 static int japi_stop_event_client(const char *default_cell);
 
 
@@ -1102,8 +1104,8 @@ void japi_delete_string_vector(drmaa_attr_values_t *iter) {
  *
  * The job passed is sent to qmaster using GDI. The jobid is returned.
  *
- * @param sge_job_template the job (JB_Type); replaced by the new version of the job qmaster returns, nullptr
- *        if there is none
+ * @param sge_job_template the job (JB_Type); replaced by the new version of the job qmaster returns, an empty
+ *        handle if there is none
  * @param jobid destination for resulting jobid
  * @param diag diagnosis information
  *
@@ -1111,14 +1113,14 @@ void japi_delete_string_vector(drmaa_attr_values_t *iter) {
  *
  * @note MT-NOTE: japi_send_job() is MT safe
  */
-static int japi_send_job(lListElem **sge_job_template, uint32_t *jobid, dstring *diag) {
+static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, uint32_t *jobid, dstring *diag) {
    DENTER(TOP_LAYER);
    lList *alp;
    int result = DRMAA_ERRNO_SUCCESS;
 
 
    auto request = ocs::tom::ListPtr<ocs::tom::JB>::create(nullptr);
-   const auto job = request->push_back(ocs::tom::ConstElement<ocs::tom::JB>(*sge_job_template).clone());
+   const auto job = request->push_back(sge_job_template->clone());
 
    /*
     * Set owner and group so that information will be available in
@@ -1140,10 +1142,10 @@ static int japi_send_job(lListElem **sge_job_template, uint32_t *jobid, dstring 
    auto response = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(job_lp);
 
    /* reinitialize 'job' with pointer to new version from qmaster */
-   lFreeElem(sge_job_template);
+   sge_job_template.reset();
    if (const auto new_job = response->front()) {
       *jobid = ocs::tom::get<JB_job_number>(new_job);
-      *sge_job_template = response->extract(new_job).release();
+      sge_job_template = response->extract(new_job);
    }
    response.reset();
 
@@ -1251,7 +1253,7 @@ static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t i
  *       MT-NOTE: japi_run_job() is MT safe
  *       Would be better to return job_id as uint32_t.
  */
-int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag) {
+int japi_run_job(dstring *job_id, ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, dstring *diag) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid = 0;
@@ -1279,7 +1281,7 @@ int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag) {
    }
 
    /* tag job with JAPI session key */
-   ocs::tom::set<JB_session>(*sge_job_template, japi_session_key);
+   ocs::tom::set<JB_session>(sge_job_template, japi_session_key);
 
    JAPI_LOCK_JOB_LIST();
 
@@ -1319,6 +1321,24 @@ int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag) {
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
+/**
+ * @brief japi_run_job() for an untyped caller
+ *
+ * qsub still holds the job raw.
+ *
+ * @param job_id SGE jobid as string - on success
+ * @param sge_job_template the job (JB_Type), checked; replaced as japi_run_job() replaces it
+ * @param diag diagnosis information - on error
+ *
+ * @return DRMAA error codes
+ */
+int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag) {
+   ocs::tom::ElementPtr<ocs::tom::JB> job(*sge_job_template);
+   const int ret = japi_run_job(job_id, job, diag);
+   *sge_job_template = job.release();
+   return ret;
+}
+
 
 /**
  * @brief Submit a bulk of jobs
@@ -1337,8 +1357,8 @@ int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag) {
  * @note MT-NOTE: japi_run_bulk_jobs() is MT safe
  *       Would be better to return job_id instead of drmaa_attr_values_t.
  */
-int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_template,
-                       int start, int end, int incr, dstring *diag) {
+int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template,
+                       const int start, const int end, const int incr, dstring *diag) {
    DENTER(TOP_LAYER);
 
    drmaa_attr_values_t *jobids;
@@ -1372,7 +1392,7 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
 
    /* tag job with JAPI session key */
    if (japi_session_key != nullptr) {
-      ocs::tom::set<JB_session>(*sge_job_template, japi_session_key);
+      ocs::tom::set<JB_session>(sge_job_template, japi_session_key);
    }
 
    JAPI_LOCK_JOB_LIST();
@@ -1416,13 +1436,35 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
 }
 
 /**
+ * @brief japi_run_bulk_jobs() for an untyped caller
+ *
+ * qsub still holds the job raw.
+ *
+ * @param jobidsp a string array of jobids - on success
+ * @param sge_job_template the job (JB_Type), checked; replaced as japi_run_bulk_jobs() replaces it
+ * @param start array job start index
+ * @param end array job end index
+ * @param incr array job increment
+ * @param diag diagnosis information - on error
+ *
+ * @return DRMAA error codes
+ */
+int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_template, const int start, const int end,
+                       const int incr, dstring *diag) {
+   ocs::tom::ElementPtr<ocs::tom::JB> job(*sge_job_template);
+   const int ret = japi_run_bulk_jobs(jobidsp, job, start, end, incr, diag);
+   *sge_job_template = job.release();
+   return ret;
+}
+
+/**
  * @brief Helper function for composing GDI request
  *
  * Adds a reduced job structure to the request list that causes the job/task
  * be hold/released when it is used with ocs::gdi::Client::sge_gdi(SGE_JB_LIST, SGE_GDI_MOD).
  *
  * @param gdi_action the GDI action to be performed
- * @param request_list the request list we operate on
+ * @param request_list the request list we operate on (reduced JB_Type), created when it is an empty handle
  * @param jobid the jobid
  * @param taskid the taskid
  * @param array true in case of an arry job
@@ -1432,8 +1474,8 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
  *
  * @note MT-NOTE: japi_user_hold_add_jobid() is MT safe
  */
-static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
-                                    uint32_t jobid, uint32_t taskid, bool array,
+static int japi_user_hold_add_jobid(const uint32_t gdi_action, ocs::tom::ListPtr<ocs::tom::JB> &request_list,
+                                    const uint32_t jobid, uint32_t taskid, const bool array,
                                     dstring *diag) {
    DENTER(TOP_LAYER);
 
@@ -1441,22 +1483,25 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
    static const lDescr *const job_descr =
       ocs_cull_descr_reduce(JB_Type, {JB_job_number, JB_verify_suitable_queues, JB_ja_tasks, JB_ja_structure});
    static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
-   lListElem *jep = nullptr;
-   lListElem *tep = nullptr;
 
    if (!array) {
       taskid = 0;
    }
 
-   /* ensure JB_Type structure exists */
-   jep = ocs::tom::find_first_rw<JB_job_number>(*request_list, jobid);
+   /* ensure JB_Type structure exists; the request carries reduced jobs, created as lAddElemUlong() created them */
+   auto jep = request_list->find_first<JB_job_number>(jobid);
 
    if (jep == nullptr) {
-      jep = lAddElemUlong(request_list, JB_job_number, jobid, job_descr);
+      if (!request_list) {
+         request_list = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist", job_descr);
+      }
+      auto new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create(job_descr);
+      ocs::tom::set<JB_job_number>(new_job, jobid);
+      jep = request_list->push_back(std::move(new_job));
    }
 
    /* ensure JAT_Type structure exists */
-   if (static_cast<const lListElem *>(ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(jep, taskid)) != nullptr) {
+   if (ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(jep, taskid)) {
       /* taskid is referenced twice */
       if (diag != nullptr) {
          sge_dstring_sprintf(diag, MSG_JAPI_TASK_REF_TWICE_UU,
@@ -1466,16 +1511,23 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
    }
 
-   tep = lAddSubUlong(jep, JAT_task_number, taskid, JB_ja_tasks, task_descr);
+   // the task list carries reduced tasks, created as lAddSubUlong() created them
+   auto tasks = ocs::tom::get<JB_ja_tasks>(jep);
+   if (!tasks) {
+      ocs::tom::set<JB_ja_tasks>(jep, ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_descr));
+      tasks = ocs::tom::get<JB_ja_tasks>(jep);
+   }
+   auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
+   ocs::tom::set<JAT_task_number>(new_task, taskid);
+   const auto tep = tasks.push_back(std::move(new_task));
 
    /* set action */
    ocs::tom::set<JAT_hold>(tep, gdi_action);
 
    if (taskid != 0) {
-      lList *tlp = nullptr;
-      ocs::tom::exchange<JB_ja_structure>(jep, &tlp);
-      range_list_insert_id(&tlp, nullptr, taskid);
-      ocs::tom::exchange<JB_ja_structure>(jep, &tlp);
+      auto tlp = jep.exchange<JB_ja_structure>(nullptr);
+      range_list_insert_id(tlp, nullptr, taskid);
+      static_cast<void>(jep.exchange<JB_ja_structure>(std::move(tlp)));
    }
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
@@ -1537,7 +1589,8 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
    case DRMAA_CONTROL_SUSPEND:
    case DRMAA_CONTROL_RESUME:
       {
-         lList *ref_list = nullptr;
+         // created with the first reference, as the free emplace_back() created it
+         ocs::tom::ListPtr<ocs::tom::ST> ref_list;
 
          if (!strcmp(jobid_str, DRMAA_JOB_IDS_SESSION_ALL)) {
             JAPI_LOCK_JOB_LIST();
@@ -1549,7 +1602,10 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
                   sge_dstring_init(&job_task_specifier, buffer, sizeof(buffer));
                   sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
-                  ocs::tom::emplace_back<ST_name>(&ref_list, sge_dstring_get_string (&job_task_specifier));
+                  if (!ref_list) {
+                     ref_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+                  }
+                  ref_list->emplace_back<ST_name>(sge_dstring_get_string(&job_task_specifier));
                } else {
                   for (ocs::tom::ConstElement<ocs::tom::RN> range : ocs::tom::get<JJ_not_yet_finished_ids>(japi_job)) {
                      char buffer[1024];
@@ -1560,7 +1616,10 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                      sge_dstring_sprintf(&job_task_specifier, sge_u32 ".", jobid);
                      range_get_all_ids(range, &start, &end, &step);
                      range_to_dstring(start, end, step, &job_task_specifier, false, false, false);
-                     ocs::tom::emplace_back<ST_name>(&ref_list, sge_dstring_get_string(&job_task_specifier));
+                     if (!ref_list) {
+                        ref_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+                     }
+                     ref_list->emplace_back<ST_name>(sge_dstring_get_string(&job_task_specifier));
                   }
                }
             }
@@ -1570,26 +1629,25 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
             if (japi_parse_jobid(jobid_str, &jobid, &taskid, &array, diag)) {
                japi_dec_threads(__func__);
                /* diag written by japi_parse_jobid() */
-               lFreeList(&ref_list);
                DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
             }
-            ocs::tom::emplace_back<ST_name>(&ref_list, jobid_str);
+            ref_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+            ref_list->emplace_back<ST_name>(jobid_str);
          }
 
          if (ref_list) {
             lList *id_list = nullptr;
 
+            // id_list_build_from_str_list() and sge_gdi() have no typed form yet; the id list stays raw
             if (drmaa_action == DRMAA_CONTROL_SUSPEND) {
-               id_list_build_from_str_list(&id_list, &alp, ocs::tom::ConstList<ocs::tom::ST>(ref_list),
-                                           QI_DO_SUSPEND, 0);
+               id_list_build_from_str_list(&id_list, &alp, *ref_list, QI_DO_SUSPEND, 0);
             } else {
-               id_list_build_from_str_list(&id_list, &alp, ocs::tom::ConstList<ocs::tom::ST>(ref_list),
-                                           QI_DO_UNSUSPEND, 0);
+               id_list_build_from_str_list(&id_list, &alp, *ref_list, QI_DO_UNSUSPEND, 0);
             }
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
                           ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
             lFreeList(&id_list);
-            lFreeList(&ref_list);
+            ref_list.reset();
 
             for_each_rw_lv(aep, alp) {
                if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
@@ -1611,7 +1669,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
    case DRMAA_CONTROL_RELEASE:
       {
          lList *alp = nullptr;
-         lList *request_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::JB> request_list;
          uint32_t gdi_action;
 
          /* set action */
@@ -1629,14 +1687,13 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
                if (!JOB_TYPE_IS_ARRAY(ocs::tom::get<JJ_type>(japi_job))) {
                   drmaa_errno = japi_user_hold_add_jobid(gdi_action,
-                                                         &request_list,
+                                                         request_list,
                                                          jobid, 0, false, diag);
 
                   if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
                      /* diag written by japi_user_hold_add_jobid() */
                      JAPI_UNLOCK_JOB_LIST();
                      japi_dec_threads(__func__);
-                     lFreeList(&request_list);
                      DRETURN(drmaa_errno);
                   }
                } else {
@@ -1647,7 +1704,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
                      for (taskid = min; taskid <= max; taskid += step) {
                         drmaa_errno = japi_user_hold_add_jobid(gdi_action,
-                                                               &request_list,
+                                                               request_list,
                                                                jobid,
                                                                taskid,
                                                                true,
@@ -1657,7 +1714,6 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                            /* diag written by japi_user_hold_add_jobid() */
                            JAPI_UNLOCK_JOB_LIST();
                            japi_dec_threads(__func__);
-                           lFreeList(&request_list);
                            DRETURN(drmaa_errno);
                         }
                      }
@@ -1669,25 +1725,25 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
             if (japi_parse_jobid(jobid_str, &jobid, &taskid, &array, diag)) {
                japi_dec_threads(__func__);
                /* diag written by japi_parse_jobid() */
-               lFreeList(&request_list);
                DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
             }
 
-            drmaa_errno = japi_user_hold_add_jobid(gdi_action, &request_list,
+            drmaa_errno = japi_user_hold_add_jobid(gdi_action, request_list,
                                                    jobid, taskid, array, diag);
 
             if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
                japi_dec_threads(__func__);
                /* diag written by japi_user_hold_add_jobid() */
-               lFreeList(&request_list);
                DRETURN(drmaa_errno);
             }
          }
 
          if (request_list) {
+            // sge_gdi() has no typed form yet; it replaces the request with the response, freed here
+            lList *request_lp = request_list.release();
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::MOD,
-                          ocs::gdi::SubCommand::NONE, &request_list, nullptr, nullptr);
-            lFreeList(&request_list);
+                          ocs::gdi::SubCommand::NONE, &request_lp, nullptr, nullptr);
+            lFreeList(&request_lp);
 
             for_each_rw_lv(aep, alp) {
                if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
@@ -1708,7 +1764,8 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
    case DRMAA_CONTROL_TERMINATE:
       {
-         lList *id_list = nullptr;
+         // created with the first job, as the free emplace_back() created it
+         ocs::tom::ListPtr<ocs::tom::ID> id_list;
 
          if (strcmp(jobid_str, DRMAA_JOB_IDS_SESSION_ALL) == 0) {
             bool done = false;
@@ -1730,7 +1787,10 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                   /* This overwrites the previous contents of the dstring. */
                   sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
 
-                  ocs::tom::Element<ocs::tom::ID> id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
+                  if (!id_list) {
+                     id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+                  }
+                  const auto id_entry = id_list->emplace_back<ID_str>(sge_dstring_get_string(&job_task_specifier));
                   if (JOB_TYPE_IS_ARRAY(ocs::tom::get<JJ_type>(japi_job))) {
                      ocs::tom::set<ID_ja_structure>(id_entry, ocs::tom::get<JJ_not_yet_finished_ids>(japi_job).clone());
                   }
@@ -1762,18 +1822,17 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                if (id_list) {
                   int ret = DRMAA_ERRNO_SUCCESS;
 
-                  /* Look for jobs from any user; id_list was built with ID_Type above */
-                  for (const auto idp : ocs::tom::List<ocs::tom::ID>::from_typed(id_list)) {
+                  /* Look for jobs from any user */
+                  for (const auto idp : *id_list) {
                      ocs::tom::get_or_create<ID_user_list>(idp, "User List").emplace_back<ST_name>("*");
                   }
 
                   /* This function frees id_list */
-                  ret = do_gdi_delete(&id_list, drmaa_action, true, diag);
+                  ret = do_gdi_delete(std::move(id_list), drmaa_action, true, diag);
 
                   if (ret != DRMAA_ERRNO_SUCCESS) {
                      JAPI_UNLOCK_JOB_LIST();
                      japi_dec_threads(__func__);
-                     lFreeList(&id_list);
                      DRETURN(ret);
                   }
                } /* if */
@@ -1788,34 +1847,32 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
             if (japi_parse_jobid(jobid_str, &jobid, &taskid, &array, diag)) {
                japi_dec_threads(__func__);
                /* diag written by japi_parse_jobid() */
-               lFreeList(&id_list);
                DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
             }
 
             sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
-            ocs::tom::Element<ocs::tom::ID> id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
+            id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+            const auto id_entry = id_list->emplace_back<ID_str>(sge_dstring_get_string(&job_task_specifier));
             if (array) {
-               lList *tlp = nullptr;
-               ocs::tom::exchange<ID_ja_structure>(id_entry, &tlp);
-               range_list_insert_id(&tlp, nullptr, taskid);
-               ocs::tom::exchange<ID_ja_structure>(id_entry, &tlp);
+               auto tlp = id_entry.exchange<ID_ja_structure>(nullptr);
+               range_list_insert_id(tlp, nullptr, taskid);
+               static_cast<void>(id_entry.exchange<ID_ja_structure>(std::move(tlp)));
             }
          } /* else */
 
          if (id_list) {
             int ret = DRMAA_ERRNO_SUCCESS;
 
-            /* Look for jobs from any user; id_list was built with ID_Type above */
-            for (const auto idp : ocs::tom::List<ocs::tom::ID>::from_typed(id_list)) {
+            /* Look for jobs from any user */
+            for (const auto idp : *id_list) {
                ocs::tom::get_or_create<ID_user_list>(idp, "User List").emplace_back<ST_name>("*");
             }
 
             /* This function frees id_list */
-            ret = do_gdi_delete(&id_list, drmaa_action, false, diag);
+            ret = do_gdi_delete(std::move(id_list), drmaa_action, false, diag);
 
             if (ret != DRMAA_ERRNO_SUCCESS) {
                japi_dec_threads(__func__);
-               lFreeList(&id_list);
                DRETURN(ret);
             }
          } /* if */
@@ -2956,56 +3013,51 @@ japi_finished_task_state(uint32_t jobid, uint32_t taskid, bool is_array_task, in
  * the queue where the job runs.
  *
  * @param jobid the jobs id
- * @param retrieved_job_list resulting job list
  * @param diag diagnosis info
  *
- * @return DRMAA error codes
+ * @return the DRMAA error code and the job list qmaster answered with (reduced JB_Type); the list is
+ *         returned on every path on which qmaster answered, also on an error
  *
  * @note MT-NOTES: japi_get_job() is MT safe
  */
-static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *diag) {
+static std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>> japi_get_job(const uint32_t jobid, dstring *diag) {
    DENTER(TOP_LAYER);
+
+   using Result = std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>>;
 
    lList *alp = nullptr;
    const lListElem *aep = nullptr;
    int jb_id = 0;
    ocs::gdi::Request gdi_multi{};
-   lCondition *job_selection = nullptr;
-   lEnumeration *job_fields = nullptr;
    uint32_t quality = 0;
 
    /* prepare GDI GET JOB selection */
-   job_selection = lWhere("%T(%I==%u)", JB_Type, JB_job_number, jobid);
-   job_fields = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I)", JB_Type,
-         JB_job_number,
-         JB_type,
-         JB_ja_structure,
-         JB_ja_n_h_ids,
-         JB_ja_u_h_ids,
-         JB_ja_s_h_ids,
-         JB_ja_o_h_ids,
-         JB_ja_a_h_ids,
-         JB_ja_tasks,
-         JB_jid_predecessor_list,
-         JB_execution_time);
+   const auto job_selection = ocs::tom::field<JB_job_number>() == jobid;
+   const auto job_fields = ocs::tom::what<JB_job_number, JB_type, JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids,
+                                          JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids, JB_ja_tasks,
+                                          JB_jid_predecessor_list, JB_execution_time>();
 
    if (!job_selection || !job_fields) {
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
-      DRETURN(DRMAA_ERRNO_NO_MEMORY);
+      DRETURN(Result(DRMAA_ERRNO_NO_MEMORY, nullptr));
    }
 
+   // Request has no typed form yet; it does not change the condition and the selection
    jb_id = gdi_multi.request(&alp, ocs::gdi::Mode::SEND, ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
-                             ocs::gdi::SubCommand::NONE, nullptr, job_selection, job_fields, true);
+                             ocs::gdi::SubCommand::NONE, nullptr, const_cast<lCondition *>(job_selection.get()),
+                             const_cast<lEnumeration *>(job_fields.get()), true);
    gdi_multi.wait();
-   lFreeWhere(&job_selection);
-   lFreeWhat(&job_fields);
 
+   lList *jobs_out = nullptr;
    gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE,
-                          ocs::gdi::Target::JB_LIST, jb_id, retrieved_job_list);
+                          ocs::gdi::Target::JB_LIST, jb_id, &jobs_out);
+   /* the GDI GET answers with a job list (JB_Type, reduced to job_fields) */
+   auto retrieved_job_list = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(jobs_out);
    aep = lFirst(alp);
    if (aep == nullptr) {
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
-      DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
+      lFreeList(&alp);
+      DRETURN(Result(DRMAA_ERRNO_INTERNAL_ERROR, std::move(retrieved_job_list)));
    }
 
    quality = ocs::tom::get<AN_quality>(aep);
@@ -3013,12 +3065,12 @@ static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *dia
    if (quality == ANSWER_QUALITY_ERROR) {
       answer_to_dstring(aep, diag);
       lFreeList(&alp);
-      DRETURN(DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE);
+      DRETURN(Result(DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, std::move(retrieved_job_list)));
    }
 
    lFreeList(&alp);
 
-   DRETURN(DRMAA_ERRNO_SUCCESS);
+   DRETURN(Result(DRMAA_ERRNO_SUCCESS, std::move(retrieved_job_list)));
 }
 
 /**
@@ -3121,7 +3173,6 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid, taskid;
-   lList *retrieved_cqueue_list = nullptr;
    int drmaa_errno;
    bool is_array_task;
 
@@ -3168,10 +3219,8 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag) {
       DRETURN(DRMAA_ERRNO_SUCCESS);
    }
 
-   lList *retrieved_jobs_out = nullptr;
-   drmaa_errno = japi_get_job(jobid, &retrieved_jobs_out, diag);
-   /* the GDI GET of japi_get_job() answers with a job list (JB_Type, reduced) */
-   const auto retrieved_job_list = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(retrieved_jobs_out);
+   auto [get_errno, retrieved_job_list] = japi_get_job(jobid, diag);
+   drmaa_errno = get_errno;
    if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
       japi_dec_threads(__func__);
       /* diag written by japi_get_job() */
@@ -3206,8 +3255,6 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag) {
 #endif
 
    japi_dec_threads(__func__);
-
-   lFreeList(&retrieved_cqueue_list);
 
    DRETURN(drmaa_errno);
 }
@@ -3527,46 +3574,20 @@ int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me) {
  * @note MT-NOTE: japi_subscribe_job_list() is MT safe
  */
 static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_t *evc) {
-   const int job_nm[] = {
-      JB_job_number,
-      JB_project,
-      JB_type,
-      JB_ja_tasks,
-      JB_ja_structure,
-      JB_ja_n_h_ids,
-      JB_ja_u_h_ids,
-      JB_ja_s_h_ids,
-      JB_ja_o_h_ids,
-      JB_ja_template,
-      NoName
-   };
-
-   lCondition *where = nullptr;
-   lEnumeration *what = nullptr;
-   lListElem *where_el = nullptr;
-   lListElem *what_el = nullptr;
+   DENTER(TOP_LAYER);
 
    evc->ec_subscribe(evc, sgeE_JOB_LIST);
 
-   where = lWhere("%T(%I==%s)", JB_Type, JB_session, japi_session_key);
-   what = lIntVector2What(JB_Type, job_nm);
+   const auto where = ocs::tom::field<JB_session>() == japi_session_key;
+   const auto what = ocs::tom::what<JB_job_number, JB_project, JB_type, JB_ja_tasks, JB_ja_structure,
+                                    JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_template>();
 
-   where_el = lWhereToElem(where);
-   what_el = lWhatToElem(what);
+   const auto where_el = ocs_where_to_elem(where.get());
+   const auto what_el = ocs_what_to_elem(what.get());
 
-   evc->ec_mod_subscription_where(evc, sgeE_JOB_LIST, what_el, where_el);
+   evc->ec_mod_subscription_where(evc, sgeE_JOB_LIST, what_el.get(), where_el.get());
 
-   lFreeWhere(&where);
-   lFreeWhat(&what);
-   if (where_el) {
-      lFreeElem(&where_el);
-   }
-
-   if (what_el) {
-      lFreeElem(&what_el);
-   }
-
-   return;
+   DRETURN_VOID;
 }
 
 /**
@@ -3883,21 +3904,19 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                   japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, intkey);
                   if (japi_job != nullptr) {
                      if (!range_list_is_id_within(ocs::tom::get<JJ_started_task_ids> (japi_job), intkey2)) {
-                        lList *range = nullptr;
+                        auto range = japi_job.exchange<JJ_started_task_ids>(nullptr);
 
-                        ocs::tom::exchange<JJ_started_task_ids>(japi_job, &range);
-
-                        if (range == nullptr) {
-                           range = lCreateList ("started tasks", RN_Type);
+                        if (!range) {
+                           range = ocs::tom::ListPtr<ocs::tom::RN>::create("started tasks");
                         }
 
                         /* add an entry to the started tasks */
                         DPRINTF("adding started task %ld for job %ld\n", intkey2, intkey);
-                        range_list_insert_id (&range, &alp, intkey2);
+                        range_list_insert_id(range, &alp, intkey2);
                         JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-                        range_list_sort_uniq_compress(range, &(japi_ec_alp_struct.japi_ec_alp), true);
+                        range_list_sort_uniq_compress(*range, &(japi_ec_alp_struct.japi_ec_alp), true);
                         JAPI_UNLOCK_EC_ALP(japi_ec_alp_struct);
-                        ocs::tom::exchange<JJ_started_task_ids>(japi_job, &range);
+                        static_cast<void>(japi_job.exchange<JJ_started_task_ids>(std::move(range)));
 
                         /* signal all application threads waiting for a job event */
                         pthread_cond_broadcast (&Master_japi_job_list_finished_cv);
@@ -4137,7 +4156,9 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ConstElement<ocs::tom::JJ> japi_job;
-   lList *id_list = nullptr, *alp = nullptr;
+   // created with the first job, as the free emplace_back() created it
+   ocs::tom::ListPtr<ocs::tom::ID> id_list;
+   lList *alp = nullptr;
    uint32_t jobid;
    int ret = DRMAA_ERRNO_SUCCESS;
    bool done = false;
@@ -4168,21 +4189,22 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
             DPRINTF("Stopping job %ld\n", jobid);
 
             sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
-            ocs::tom::Element<ocs::tom::ID> id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
+            if (!id_list) {
+               id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+            }
+            const auto id_entry = id_list->emplace_back<ID_str>(sge_dstring_get_string(&job_task_specifier));
 
             if (JOB_TYPE_IS_ARRAY(ocs::tom::get<JJ_type>(japi_job))) {
                /* Kill every task in the not yet finished list.  Some of the tasks
                 * may have finished since we killed the event client, but that's
                 * ok. If we can't stop a job, we just move on to the next one. */
                if (flag == JAPI_EXIT_KILL_PENDING) {
-                  lList *del_out = nullptr;
+                  ocs::tom::ListPtr<ocs::tom::RN> del_out;
 
-                  range_list_calculate_difference_set (&del_out, &alp,
+                  range_list_calculate_difference_set(del_out, &alp,
                                     ocs::tom::get<JJ_not_yet_finished_ids>(japi_job),
                                     ocs::tom::get<JJ_started_task_ids>(japi_job));
-                  /* range_list_calculate_difference_set() creates the list with RN_Type, so it is taken over
-                     unchecked */
-                  ocs::tom::set<ID_ja_structure>(id_entry, ocs::tom::ListPtr<ocs::tom::RN>::from_typed(del_out));
+                  ocs::tom::set<ID_ja_structure>(id_entry, std::move(del_out));
                }
                /* Kill every task that is in the not yet finished list but not in
                 * the started list.  Same as above for tasks we can't kill. */
@@ -4214,7 +4236,7 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
 
          if (id_list) {
             /* This function frees id_list. */
-            ret = do_gdi_delete (&id_list, DRMAA_CONTROL_TERMINATE, true, diag);
+            ret = do_gdi_delete(std::move(id_list), DRMAA_CONTROL_TERMINATE, true, diag);
 
             if (ret != DRMAA_ERRNO_SUCCESS) {
                break; /* while */
@@ -4223,6 +4245,9 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
       } /* while */
       JAPI_UNLOCK_JOB_LIST();
    } /* if */
+
+   // the answers of range_list_calculate_difference_set() were never looked at, and leaked before
+   lFreeList(&alp);
 
    DRETURN(ret);
 }
@@ -4373,7 +4398,7 @@ static int japi_read_dynamic_attributes(dstring *diag) {
  * Deletes all the jobs in the job id list, converts and GDI errors into
  * DRMAA errors, and frees the job id list.
  *
- * @param id_list List of job ids to delete.  Gets freed.
+ * @param id_list_in List of job ids to delete, consumed
  * @param action The action that caused this delete
  * @param delete_all Whether this call is deleting all jobs in the session
  * @param diag returns diagnosis information - on error
@@ -4382,12 +4407,15 @@ static int japi_read_dynamic_attributes(dstring *diag) {
  *
  * @note MT-NOTES: do_gdi_delete() is MT safe
  */
-static int do_gdi_delete(lList **id_list, int action, bool delete_all, dstring *diag) {
+static int do_gdi_delete(ocs::tom::ListPtr<ocs::tom::ID> &&id_list_in, const int action, const bool delete_all,
+                         dstring *diag) {
    DENTER(TOP_LAYER);
 
+   // sge_gdi() has no typed form yet; it replaces the request with the response, freed here
+   lList *id_list = id_list_in.release();
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
-                                          id_list, nullptr, nullptr);
-   lFreeList(id_list);
+                                          &id_list, nullptr, nullptr);
+   lFreeList(&id_list);
 
    for_each_rw_lv(aep, alp) {
       int status = ocs::tom::get<AN_status>(aep);

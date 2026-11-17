@@ -58,6 +58,7 @@
 #include <unistd.h>
 #include <cctype>
 #include <cerrno>
+#include <tuple>
 #include <pthread.h>
 
 #include <pthread.h>
@@ -111,6 +112,7 @@
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_NSV.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
@@ -129,30 +131,34 @@ extern char **environ;
 static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *diag);
 static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[]);
 
-static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt,
-                             int is_bulk, int start, int end, int step, dstring *diag);
-static int drmaa_path2path_opt(ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args,
+static std::tuple<int, ocs::tom::ElementPtr<ocs::tom::JB>>
+drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, int is_bulk, int start, int end, int step, dstring *diag);
+static int drmaa_path2path_opt(ocs::tom::ConstList<ocs::tom::VA> attrs, ocs::tom::ListPtr<ocs::tom::SPA> &args,
                                int is_bulk, const char *attribute_key,
                                const char *sw, int opt, dstring *diag,
                                bool bFileStaging);
-static int drmaa_path2wd_opt(ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args, int is_bulk, dstring *diag);
+static int drmaa_path2wd_opt(ocs::tom::ConstList<ocs::tom::VA> attrs, ocs::tom::ListPtr<ocs::tom::SPA> &args,
+                             int is_bulk, dstring *diag);
 static int drmaa_path2sge_path(ocs::tom::ConstList<ocs::tom::VA> attrs, int is_bulk,
                                const char *attribute_key, int do_wd,
                                const char **new_path, dstring *diag);
-static void prune_arg_list(lList *args);
-static void opt_list_append_default_drmaa_opts(lList **opts);
-static void merge_drmaa_options(lList **opts_all, lList **opts_default,
-                                 lList **opts_defaults, lList **opts_scriptfile,
-                                 lList **opts_job_cat, lList **opts_native,
-                                 lList **opts_drmaa);
-static int opt_list_append_opts_from_drmaa_attr(lList **args, ocs::tom::ConstList<ocs::tom::VA> attrs,
+static void prune_arg_list(ocs::tom::List<ocs::tom::SPA> args);
+static void opt_list_append_default_drmaa_opts(ocs::tom::ListPtr<ocs::tom::SPA> &opts);
+static ocs::tom::ListPtr<ocs::tom::SPA> merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default,
+                                                            ocs::tom::ListPtr<ocs::tom::SPA> &&opts_defaults,
+                                                            ocs::tom::ListPtr<ocs::tom::SPA> &&opts_scriptfile,
+                                                            ocs::tom::ListPtr<ocs::tom::SPA> &&opts_job_cat,
+                                                            ocs::tom::ListPtr<ocs::tom::SPA> &&opts_native,
+                                                            ocs::tom::ListPtr<ocs::tom::SPA> &&opts_drmaa);
+static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA> &args,
+                                                ocs::tom::ConstList<ocs::tom::VA> attrs,
                                                 ocs::tom::ConstList<ocs::tom::NSV> vattrs, int is_bulk,
                                                 dstring *diag);
 static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag);
 static char *drmaa_get_home_directory(const char *username, lList **answer_list);
 static char *drmaa_expand_wd_path(const char *username, const char *path, lList **answer_list);
-static int drmaa_set_bulk_range(lList **opts, int start, int end, int step,
-                                 lList **alp);
+static int drmaa_set_bulk_range(ocs::tom::ListPtr<ocs::tom::SPA> &opts, int start, int end, int step,
+                                lList **alp);
 static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *diag);
 static drmaa_attr_names_t *drmaa_fill_supported_vector_attributes(dstring *diag);
 static int drmaa_parse_contact_string(const char *contact, char **session);
@@ -747,7 +753,7 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
       p_attr = drmaa_fill_supported_nonvector_attributes(diag);
    }
 
-   if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>( p_attr->it.si.strings, name )) != nullptr) {
+   if (ocs::tom::find_first<ST_name>(p_attr->it.si.strings, name)) {
       DPRINTF("Attribute %s is supported\n", name);
       ret = DRMAA_ERRNO_SUCCESS;
    } else {
@@ -1156,7 +1162,6 @@ int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *j
    dstring diag, *diagp = nullptr;
    dstring jobid;
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
-   lListElem *sge_job_template;
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -1178,14 +1183,14 @@ int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *j
    sge_dstring_init(&jobid, job_id, job_id_len+1);
 
    /* convert DRMAA job template into Cluster Scheduler job template */
-   if ((drmaa_errno=drmaa_job2sge_job(&sge_job_template, jt,
-            0, 1, 1, 1, diagp))!=DRMAA_ERRNO_SUCCESS) {
+   auto [convert_errno, sge_job_template] = drmaa_job2sge_job(jt, 0, 1, 1, 1, diagp);
+   if ((drmaa_errno = convert_errno) != DRMAA_ERRNO_SUCCESS) {
       /* diag written by drmaa_job2sge_job() */
       DRETURN(drmaa_errno);
    }
 
-   drmaa_errno = japi_run_job(&jobid, &sge_job_template, diagp);
-   lFreeElem(&sge_job_template);
+   drmaa_errno = japi_run_job(&jobid, sge_job_template, diagp);
+   sge_job_template.reset();
 
    DRETURN(drmaa_errno);
 }
@@ -1223,7 +1228,6 @@ int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt
 
    dstring diag, *diagp = nullptr;
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
-   lListElem *sge_job_template = nullptr;
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -1244,16 +1248,16 @@ int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt
    }
 
    /* convert DRMAA job template into Cluster Scheduler job template */
-   drmaa_errno = drmaa_job2sge_job(&sge_job_template, jt, 1, start, end, incr,
-                                   diagp);
+   auto [convert_errno, sge_job_template] = drmaa_job2sge_job(jt, 1, start, end, incr, diagp);
+   drmaa_errno = convert_errno;
    if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
       /* diag written by drmaa_job2sge_job() */
       DRETURN(drmaa_errno);
    }
 
-   drmaa_errno = japi_run_bulk_jobs((drmaa_attr_values_t **)jobids, &sge_job_template,
+   drmaa_errno = japi_run_bulk_jobs((drmaa_attr_values_t **)jobids, sge_job_template,
                                     start, end, incr, diagp);
-   lFreeElem(&sge_job_template);
+   sge_job_template.reset();
 
    DRETURN(drmaa_errno);
 }
@@ -2000,8 +2004,8 @@ int drmaa_version(unsigned int *major, unsigned int *minor,
  *
  * @note MT-NOTE: drmaa_path2wd_opt() is MT safe
  */
-static int drmaa_path2wd_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args, const int is_bulk,
-                             dstring *diag) {
+static int drmaa_path2wd_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, ocs::tom::ListPtr<ocs::tom::SPA> &args,
+                             const int is_bulk, dstring *diag) {
    DENTER(TOP_LAYER);
 
    const char *new_path = nullptr;
@@ -2016,7 +2020,7 @@ static int drmaa_path2wd_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, lLis
 
          DPRINTF("-wd = \"%s\"\n", new_path);
 
-         lListElem *ep_opt = sge_add_arg(args, wd_OPT, lStringT, "-wd", value);
+         const auto ep_opt = sge_add_arg(args, wd_OPT, lStringT, "-wd", value);
          ocs::tom::set<SPA_argval_lStringT>(ep_opt, new_path);
          sge_free(&new_path);
       }
@@ -2052,8 +2056,8 @@ static int drmaa_path2wd_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, lLis
  *
  * @note MT-NOTE: drmaa_path2path_opt() is MT safe
  */
-static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args, const int is_bulk,
-                               const char *attribute_key, const char *sw,
+static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, ocs::tom::ListPtr<ocs::tom::SPA> &args,
+                               const int is_bulk, const char *attribute_key, const char *sw,
                                const int opt, dstring *diag, const bool bFileStaging) {
    DENTER(TOP_LAYER);
 
@@ -2115,7 +2119,7 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, lL
          ocs::tom::set<PN_file_staging>(ep, bFileStaging);
 
          DPRINTF("Adding args\n");
-         lListElem *ep_opt = sge_add_arg(args, opt, lListT, sw, value);
+         const auto ep_opt = sge_add_arg(args, opt, lListT, sw, value);
          DPRINTF("Setting List\n");
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(path_list));
          DPRINTF("Freeing Path\n");
@@ -2238,29 +2242,29 @@ static int drmaa_path2sge_path(const ocs::tom::ConstList<ocs::tom::VA> attrs, co
  * @param end end index for bulk jobs
  * @param step increment for bulk jobs
  * @param diag diagnosis information
- * @param jtp returns Cluster Scheduler JB_Type job
  *
- * @return DRMAA error codes
+ * @return the DRMAA error code and, on success, the Cluster Scheduler job (JB_Type); the job is an empty
+ *         handle on an error
  *
  * @note MT-NOTE: drmaa_job2sge_job() is MT safe except on FreeBSD, with
  *       restrictions imposed by sge_get_qtask_args().
  */
-static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt,
-                             int is_bulk, int start, int end, int step,
-                             dstring *diag) {
+static std::tuple<int, ocs::tom::ElementPtr<ocs::tom::JB>>
+drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const int start, const int end,
+                  const int step, dstring *diag) {
    DENTER(TOP_LAYER);
 
-   lListElem *jt;
+   using Result = std::tuple<int, ocs::tom::ElementPtr<ocs::tom::JB>>;
+
    ocs::tom::ConstElement<ocs::tom::VA> ep;
    int drmaa_errno;
    lList *alp = nullptr;
-   lList *opts_drmaa = nullptr;
-   lList *opts_native = nullptr;
-   lList *opts_default = nullptr;
-   lList *opts_job_cat = nullptr;
-   lList *opts_defaults = nullptr;
-   lList *opts_scriptfile = nullptr;
-   lList *opts_all = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_drmaa;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_native;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_default;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_job_cat;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_defaults;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_scriptfile;
    int read_scriptfile = 0;
    uint32_t jb_now = 0;
 
@@ -2272,17 +2276,13 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    const char *qualified_hostname = component_get_qualified_hostname();
 
    /* make JB_Type job description out of DRMAA job template */
-   if (!(jt = lCreateElem(JB_Type))) {
-      japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
-      DRETURN(DRMAA_ERRNO_NO_MEMORY);
-   }
+   auto jt = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    /* init range of jobids and put all tasks in 'active' state */
-   if (job_set_submit_task_ids(jt, start, end, step) ||
-       job_initialize_id_lists(jt, nullptr)) {
-      lFreeElem(&jt);
+   if (job_set_submit_task_ids(*jt, start, end, step) ||
+       job_initialize_id_lists(*jt, nullptr)) {
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
-      DRETURN(DRMAA_ERRNO_NO_MEMORY);
+      DRETURN(Result(DRMAA_ERRNO_NO_MEMORY, nullptr));
    }
 
    jb_now = ocs::tom::get<JB_type>(jt);
@@ -2306,14 +2306,17 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    /*
     * read switches from the various defaults files
     */
-   opt_list_append_opts_from_default_files(prog_number, cell_root, username, &opts_defaults, &alp, environ);
+   {
+      // the option parsers of clients/common have no typed form yet; they build SPA_Type lists
+      lList *defaults_out = nullptr;
+      opt_list_append_opts_from_default_files(prog_number, cell_root, username, &defaults_out, &alp, environ);
+      opts_defaults = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(defaults_out);
+   }
 
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);
-      lFreeList(&opts_defaults);
       lFreeList(&alp);
-      lFreeElem(&jt);
-      DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+      DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
    }
    lFreeList(&alp);
 
@@ -2338,16 +2341,15 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
 
       if (num_args != 0) {
          sge_parse_args(value, args);
-         opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_native, &alp,
+         lList *native_out = nullptr;
+         opt_list_append_opts_from_qsub_cmdline(prog_number, &native_out, &alp,
                                                 (const char **)args, environ);
+         opts_native = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(native_out);
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
-            lFreeList(&opts_defaults);
-            lFreeList(&opts_native);
             lFreeList(&alp);
-            lFreeElem(&jt);
-            DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+            DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
          }
       }
 
@@ -2363,21 +2365,17 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
 
    lFreeList(&alp);
 
-   if ((drmaa_errno = opt_list_append_opts_from_drmaa_attr(&opts_drmaa,
+   if ((drmaa_errno = opt_list_append_opts_from_drmaa_attr(opts_drmaa,
                            ocs::tom::ConstList<ocs::tom::VA>(drmaa_jt->strings),
                            ocs::tom::ConstList<ocs::tom::NSV>(drmaa_jt->string_vectors),
                            is_bulk, diag)) != DRMAA_ERRNO_SUCCESS) {
-      lFreeList(&opts_defaults);
-      lFreeList(&opts_native);
-      lFreeList(&opts_drmaa);
-      lFreeElem(&jt);
-      DRETURN(drmaa_errno);
+      DRETURN(Result(drmaa_errno, nullptr));
    }
 
    /*
     * Set up default options
     */
-   opt_list_append_default_drmaa_opts(&opts_default);
+   opt_list_append_default_drmaa_opts(opts_default);
 
    /*
     * We will only read commandline options from scripfile if the script
@@ -2390,61 +2388,52 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
     * script doesn't exist.  If it just points to the wrong script, we have no
     * way of knowing it.
     */
-   if (opt_list_is_X_true(opts_native, "-b") ||
-       (!opt_list_has_X(opts_native, "-b") &&
-        (opt_list_is_X_true(opts_defaults, "-b") ||
-        (!opt_list_has_X(opts_defaults, "-b") &&
-         opt_list_is_X_true(opts_default, "-b"))))) {
+   if (opt_list_is_X_true(*opts_native, "-b") ||
+       (!opt_list_has_X(*opts_native, "-b") &&
+        (opt_list_is_X_true(*opts_defaults, "-b") ||
+        (!opt_list_has_X(*opts_defaults, "-b") &&
+         opt_list_is_X_true(*opts_default, "-b"))))) {
       DPRINTF("Skipping options from script due to -b option\n");
    } else {
       const char *path = nullptr;
 
-      if (opt_list_has_X(opts_drmaa, "-wd")) {
-         ocs::tom::ConstElement<ocs::tom::SPA> ep = ocs::tom::find_first<SPA_switch_val>(opts_drmaa, "-wd");
-         path = ocs::tom::get<SPA_argval_lStringT>(ep);
+      if (opt_list_has_X(*opts_drmaa, "-wd")) {
+         const auto wd_opt = opts_drmaa->find_first<SPA_switch_val>("-wd");
+         path = ocs::tom::get<SPA_argval_lStringT>(wd_opt);
          path = drmaa_expand_wd_path(username, path, &alp);
 
          if (path == nullptr) {
             answer_list_to_dstring(alp, diag);
-            lFreeList(&opts_defaults);
-            lFreeList(&opts_native);
-            lFreeList(&opts_drmaa);
-            lFreeList(&opts_default);
-            lFreeElem(&jt);
             lFreeList(&alp);
-            DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+            DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
          }
          lFreeList(&alp);
       }
       /* -cwd could also theoretically appear in opts_default, but since I
        * control what goes into opts_default, I know it isn't. */
-      else if ((!(opt_list_has_X(opts_native, "-cwd"))) &&
-               (!(opt_list_has_X(opts_defaults, "-cwd")))){
+      else if ((!(opt_list_has_X(*opts_native, "-cwd"))) &&
+               (!(opt_list_has_X(*opts_defaults, "-cwd")))){
          path = drmaa_get_home_directory(username, &alp);
          lFreeList(&alp);
       }
 
+      lList *scriptfile_out = nullptr;
       if (path != nullptr) {
          DPRINTF("Using \"%s\" for the working directory.\n", path);
-         opt_list_append_opts_from_script_path(prog_number, &opts_scriptfile, path, &alp,
-                                                opts_drmaa, environ);
+         opt_list_append_opts_from_script_path(prog_number, &scriptfile_out, path, &alp,
+                                                *opts_drmaa, environ);
          sge_free(&path);
       } else {
          DPRINTF("Using current directory for the working directory.\n");
-         opt_list_append_opts_from_script(prog_number, &opts_scriptfile, &alp, opts_drmaa,
+         opt_list_append_opts_from_script(prog_number, &scriptfile_out, &alp, *opts_drmaa,
                                            environ);
       }
+      opts_scriptfile = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(scriptfile_out);
 
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
-         lFreeList(&opts_defaults);
-         lFreeList(&opts_native);
-         lFreeList(&opts_drmaa);
-         lFreeList(&opts_default);
-         lFreeList(&opts_scriptfile);
          lFreeList(&alp);
-         lFreeElem(&jt);
-         DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+         DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
       lFreeList(&alp);
 
@@ -2456,16 +2445,16 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    /*
     * append the job category switches to the list if they exist
     */
-   if (opt_list_has_X(opts_drmaa, "-cat") ||
-       opt_list_has_X(opts_scriptfile, "-cat") ||
-       opt_list_has_X(opts_native, "-cat") ||
-       opt_list_has_X(opts_defaults, "-cat") ||
-       opt_list_has_X(opts_default, "-cat")) {
+   if (opt_list_has_X(*opts_drmaa, "-cat") ||
+       opt_list_has_X(*opts_scriptfile, "-cat") ||
+       opt_list_has_X(*opts_native, "-cat") ||
+       opt_list_has_X(*opts_defaults, "-cat") ||
+       opt_list_has_X(*opts_default, "-cat")) {
       /* No need to free job_cat since it points to a string in an element
        * in jt->strings. */
       char *job_cat = nullptr;
       const char **args = nullptr;
-      lListElem *ep = nullptr;
+      ocs::tom::Element<ocs::tom::SPA> cat_opt;
 
       DPRINTF("Processing job category\n");
 
@@ -2473,31 +2462,25 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
        * only one that can contain -cat.  However, I expect that at some point
        * -cat will be added as a normal switch to qsub et al, at which point
        * this long series of ifs becomes necessary. */
-      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_drmaa, "-cat")) != nullptr) {
-         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(opts_drmaa, &ep);
-      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_scriptfile, "-cat")) != nullptr) {
-         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(opts_scriptfile, &ep);
-      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_native, "-cat")) != nullptr) {
-         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(opts_native, &ep);
-      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_defaults, "-cat")) != nullptr) {
-         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(opts_defaults, &ep);
-      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_default, "-cat")) != nullptr) {
-         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(opts_default, &ep);
+      if ((cat_opt = opts_drmaa->find_first<SPA_switch_val>("-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(cat_opt));
+         opts_drmaa->erase(cat_opt);
+      } else if ((cat_opt = opts_scriptfile->find_first<SPA_switch_val>("-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(cat_opt));
+         opts_scriptfile->erase(cat_opt);
+      } else if ((cat_opt = opts_native->find_first<SPA_switch_val>("-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(cat_opt));
+         opts_native->erase(cat_opt);
+      } else if ((cat_opt = opts_defaults->find_first<SPA_switch_val>("-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(cat_opt));
+         opts_defaults->erase(cat_opt);
+      } else if ((cat_opt = opts_default->find_first<SPA_switch_val>("-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(cat_opt));
+         opts_default->erase(cat_opt);
       } else {
          /* This theoretically can't happen. */
          sge_dstring_copy_string(diag, MSG_DRMAA_SWITCH_WITH_NO_CAT);
-         lFreeList(&opts_defaults);
-         lFreeList(&opts_native);
-         lFreeList(&opts_drmaa);
-         lFreeList(&opts_default);
-         lFreeList(&opts_scriptfile);
-         lFreeElem(&jt);
-         DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+         DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
 
       /* We need to document a standard practice for naming job categories, so
@@ -2507,37 +2490,26 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
 
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
-         lFreeList(&opts_defaults);
-         lFreeList(&opts_native);
-         lFreeList(&opts_drmaa);
-         lFreeList(&opts_default);
-         lFreeList(&opts_scriptfile);
          lFreeList(&alp);
-         lFreeElem(&jt);
-         DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+         DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
       lFreeList(&alp);
 
       sge_free(&job_cat);
 
       if (args != nullptr) {
-         opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_job_cat, &alp,
+         lList *job_cat_out = nullptr;
+         opt_list_append_opts_from_qsub_cmdline(prog_number, &job_cat_out, &alp,
                                                 args, environ);
+         opts_job_cat = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(job_cat_out);
          /* free the args string array */
          char **argsf = (char **)args;
          sge_strafree(&argsf);
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
-            lFreeList(&opts_defaults);
-            lFreeList(&opts_native);
-            lFreeList(&opts_drmaa);
-            lFreeList(&opts_default);
-            lFreeList(&opts_scriptfile);
-            lFreeList(&opts_job_cat);
             lFreeList(&alp);
-            lFreeElem(&jt);
-            DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+            DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
          }
          lFreeList(&alp);
 
@@ -2545,19 +2517,19 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
           * get parsed for options, we have to step back a bit and make sure
           * that if the job category contained a -b option, that it's effect
           * gets counted appropriately. */
-         if (opt_list_has_X(opts_job_cat, "-b") &&
-             !opt_list_has_X(opts_native, "-b")) {
+         if (opt_list_has_X(*opts_job_cat, "-b") &&
+             !opt_list_has_X(*opts_native, "-b")) {
             /* We are only concerned with the native specification options
              * because those are the only ones that can override the job
              * category settings. */
-            if (read_scriptfile && opt_list_is_X_true(opts_job_cat, "-b")) {
+            if (read_scriptfile && opt_list_is_X_true(*opts_job_cat, "-b")) {
                /* If we parsed the script file due to a -b n in the defaults files
                 * or the DRMAA defaults or because of no -b option, and a -b y
                 * is given in the job category, clear the script file options. */
-               lFreeList(&opts_scriptfile);
+               opts_scriptfile.reset();
             }
             else if (!read_scriptfile &&
-                     !opt_list_is_X_true(opts_job_cat, "-b")) {
+                     !opt_list_is_X_true(*opts_job_cat, "-b")) {
                /* If we didn't parse the script file due to a -b y in the defaults
                 * files or the DRMAA defaults, and a -b n is given in the job
                 * category, parse the script file now. */
@@ -2569,20 +2541,15 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
                 * point will probably be to parse the job category before the
                 * script file and simply not allow the script file to set the
                 * job category.) */
-               opt_list_append_opts_from_script(prog_number, &opts_scriptfile, &alp,
-                                                 opts_drmaa, environ);
+               lList *scriptfile_out = opts_scriptfile.release();
+               opt_list_append_opts_from_script(prog_number, &scriptfile_out, &alp,
+                                                 *opts_drmaa, environ);
+               opts_scriptfile = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(scriptfile_out);
 
                if (answer_list_has_error(&alp)) {
                   answer_list_to_dstring(alp, diag);
-                  lFreeList(&opts_defaults);
-                  lFreeList(&opts_native);
-                  lFreeList(&opts_drmaa);
-                  lFreeList(&opts_default);
-                  lFreeList(&opts_scriptfile);
-                  lFreeList(&opts_job_cat);
                   lFreeList(&alp);
-                  lFreeElem(&jt);
-                  DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+                  DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
                }
                lFreeList(&alp);
             }
@@ -2590,52 +2557,45 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       } else {
          /* Bad job category */
          sge_dstring_copy_string(diag, MSG_DRMAA_UNKNOWN_JOB_CAT);
-         lFreeList(&opts_defaults);
-         lFreeList(&opts_native);
-         lFreeList(&opts_drmaa);
-         lFreeList(&opts_default);
-         lFreeList(&opts_scriptfile);
-         lFreeList(&opts_job_cat);
-         lFreeElem(&jt);
-         DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+         DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
    }
 
    /*
     * Merge all commandline options and interpret them.
     */
-   merge_drmaa_options(&opts_all, &opts_default, &opts_defaults, &opts_scriptfile,
-                       &opts_job_cat, &opts_native, &opts_drmaa);
+   auto opts_all = merge_drmaa_options(std::move(opts_default), std::move(opts_defaults),
+                                       std::move(opts_scriptfile), std::move(opts_job_cat),
+                                       std::move(opts_native), std::move(opts_drmaa));
 
    /* If the job is a bulk job, add the -t switch last so it takes top priority. */
    if (is_bulk) {
-      if (drmaa_set_bulk_range(&opts_all, start, end, step, &alp) != 0) {
+      if (drmaa_set_bulk_range(opts_all, start, end, step, &alp) != 0) {
          answer_list_to_dstring(alp, diag);
          lFreeList(&alp);
-         lFreeElem(&jt);
-         lFreeList(&opts_all);
-         DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+         DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
       lFreeList(&alp);
    }
 
    uint32_t sync_option = SYNC_NO;
-   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &jt, &sync_option);
+   {
+      // cull_parse_job_parameter() of common/ has no typed form yet; it fills the job in place
+      lListElem *job_out = jt.release();
+      alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname,
+                                     *opts_all, &job_out, &sync_option);
+      jt = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(job_out);
+   }
 
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);
-      lFreeElem(&jt);
-      lFreeList(&opts_all);
       lFreeList(&alp);
-      DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
+      DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
    }
    lFreeList(&alp);
-   job_set_command_line(jt, "drmaa");
+   job_set_command_line(*jt, "drmaa");
 
-   *jtp = jt;
-   lFreeList(&opts_all);
-
-   DRETURN(DRMAA_ERRNO_SUCCESS);
+   DRETURN(Result(DRMAA_ERRNO_SUCCESS, std::move(jt)));
 }
 
 /**
@@ -2654,7 +2614,8 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
  *
  * @note MT-NOTE: opt_list_append_opts_from_drmaa_attr() is MT safe
  */
-static int opt_list_append_opts_from_drmaa_attr(lList **args, const ocs::tom::ConstList<ocs::tom::VA> attrs,
+static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA> &args,
+                                                const ocs::tom::ConstList<ocs::tom::VA> attrs,
                                                 const ocs::tom::ConstList<ocs::tom::NSV> vattrs, const int is_bulk,
                                                 dstring *diag) {
    DENTER(TOP_LAYER);
@@ -2662,7 +2623,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const ocs::tom::Co
    int drmaa_errno;
    ocs::tom::ConstElement<ocs::tom::VA> ep;
    ocs::tom::ConstElement<ocs::tom::NSV> nsv;
-   lListElem *ep_opt = nullptr;
+   ocs::tom::Element<ocs::tom::SPA> ep_opt;
    const char *scriptname = nullptr;
    /* Turn each DRMAA attribute into a list entry. */
 
@@ -2683,10 +2644,10 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const ocs::tom::Co
 
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_CATEGORY, value);
 
-      DPRINTF("%d args before adding job cat\n", lGetNumberOfElem(*args));
+      DPRINTF("%d args before adding job cat\n", static_cast<int>(args->size()));
       ep_opt = sge_add_arg(args, cat_OPT, lStringT, "-cat", value);
       ocs::tom::set<SPA_argval_lStringT>(ep_opt, value);
-      DPRINTF("%d args after adding job cat\n", lGetNumberOfElem(*args));
+      DPRINTF("%d args after adding job cat\n", static_cast<int>(args->size()));
    }
 
    /* join files -- -j "y|n" */
@@ -2837,7 +2798,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const ocs::tom::Co
          ocs::tom::set<MR_user>(nep, user);
          if (host)
             ocs::tom::set<MR_host>(nep, host);
-         lAppendElem(*nlp, std::move(nep));
+         nlp->push_back(std::move(nep));
 
          sge_free_saved_vars(context);
       }
@@ -2923,7 +2884,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const ocs::tom::Co
       }
    }
 
-   DPRINTF("%d args at end of method\n", lGetNumberOfElem(*args));
+   DPRINTF("%d args at end of method\n", static_cast<int>(args->size()));
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -2934,16 +2895,14 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const ocs::tom::Co
  * All DRMAA default settings are translated into qsub style option
  * lListElem for parsing by cull_parse_job_parameter()
  *
- * @param opts list to which options will be appended
- *
- * @note static int - DRMAA error codes
+ * @param opts list to which options will be appended, created when it is an empty handle
  *
  * @note MT-NOTE: opt_list_append_default_drmaa_opts() is MT safe
  */
-static void opt_list_append_default_drmaa_opts(lList **opts) {
+static void opt_list_append_default_drmaa_opts(ocs::tom::ListPtr<ocs::tom::SPA> &opts) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep_opt;
+   ocs::tom::Element<ocs::tom::SPA> ep_opt;
    /* average priority of 0 -- -p 0 */
    DPRINTF("setting default priority to 0\n");
    ep_opt = sge_add_arg(opts, p_OPT, lIntT, "-p", "0");
@@ -2986,25 +2945,38 @@ static void opt_list_append_default_drmaa_opts(lList **opts) {
 /**
  * @brief Merge the various option lists into a single list
  *
- * All options from the last six lists are combined into the first list.
- * Each list has prune_arg_list() called on it to remove inappropriate
- * options.
+ * All options from the six lists are combined into one list, lowest
+ * precedence first. Each list but the DRMAA one has prune_arg_list() called
+ * on it to remove inappropriate options.
  *
- * @param opts_all list to which options will be appended
- * @param opts_default list with default options
- * @param opts_defaults list with options from default files
- * @param opts_scriptfile list with options from the script file
- * @param opts_job_cat list with options from the job category
- * @param opts_native list with options from the native spec
- * @param opts_drmaa list with options from the DRMAA attributes
+ * @param opts_default_in list with default options, consumed
+ * @param opts_defaults_in list with options from default files, consumed
+ * @param opts_scriptfile_in list with options from the script file, consumed
+ * @param opts_job_cat_in list with options from the job category, consumed
+ * @param opts_native_in list with options from the native spec, consumed
+ * @param opts_drmaa_in list with options from the DRMAA attributes, consumed
+ *
+ * @return the merged list, an empty handle if all six lists were empty handles
  *
  * @note MT-NOTE: merge_drmaa_options() is MT safe
  */
-static void merge_drmaa_options(lList **opts_all, lList **opts_default,
-                                lList **opts_defaults, lList **opts_scriptfile,
-                                lList **opts_job_cat, lList **opts_native,
-                                lList **opts_drmaa) {
+static ocs::tom::ListPtr<ocs::tom::SPA>
+merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default_in,
+                    ocs::tom::ListPtr<ocs::tom::SPA> &&opts_defaults_in,
+                    ocs::tom::ListPtr<ocs::tom::SPA> &&opts_scriptfile_in,
+                    ocs::tom::ListPtr<ocs::tom::SPA> &&opts_job_cat_in,
+                    ocs::tom::ListPtr<ocs::tom::SPA> &&opts_native_in,
+                    ocs::tom::ListPtr<ocs::tom::SPA> &&opts_drmaa_in) {
    DENTER(TOP_LAYER);
+
+   // the lists handed over are consumed on every path
+   auto opts_default = std::move(opts_default_in);
+   auto opts_defaults = std::move(opts_defaults_in);
+   auto opts_scriptfile = std::move(opts_scriptfile_in);
+   auto opts_job_cat = std::move(opts_job_cat_in);
+   auto opts_native = std::move(opts_native_in);
+   auto opts_drmaa = std::move(opts_drmaa_in);
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_all;
 
    /*
     * Order is very important here — lowest precedence source first,
@@ -3017,78 +2989,73 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
     * per variable wins" behaviour for -l et al. is handled later in
     * cull_parse_job_parameter.
     */
-   if (*opts_default != nullptr) {
+   if (opts_default) {
       DPRINTF("Adding default options\n");
       prune_arg_list(*opts_default);
 
-      if (*opts_all == nullptr) {
-         *opts_all = *opts_default;
-         *opts_default = nullptr;
+      if (!opts_all) {
+         opts_all = std::move(opts_default);
       } else {
-         lAddList(*opts_all, opts_default);
+         opts_all->splice(std::move(opts_default));
       }
    }
 
-   if (*opts_defaults != nullptr) {
+   if (opts_defaults) {
       DPRINTF("Adding defaults options\n");
       prune_arg_list(*opts_defaults);
 
-      if (*opts_all == nullptr) {
-         *opts_all = *opts_defaults;
+      if (!opts_all) {
+         opts_all = std::move(opts_defaults);
       } else {
-         lAddList(*opts_all, opts_defaults);
+         opts_all->splice(std::move(opts_defaults));
       }
-      *opts_defaults = nullptr;
    }
 
-   if (*opts_scriptfile != nullptr) {
+   // lOverrideStrList() has no typed form yet; it takes the second list over and frees it
+   if (opts_scriptfile) {
       DPRINTF("Adding scriptfile options\n");
       prune_arg_list(*opts_scriptfile);
 
-      if (*opts_all == nullptr) {
-         *opts_all = *opts_scriptfile;
+      if (!opts_all) {
+         opts_all = std::move(opts_scriptfile);
       } else {
-         lOverrideStrList(*opts_all, *opts_scriptfile, SPA_switch_val, "-q");
+         lOverrideStrList(*opts_all, opts_scriptfile.release(), SPA_switch_val, "-q");
       }
-      *opts_scriptfile = nullptr;
    }
 
-   if (*opts_job_cat != nullptr) {
+   if (opts_job_cat) {
       DPRINTF("Adding job cat options\n");
       prune_arg_list(*opts_job_cat);
 
-      if (*opts_all == nullptr) {
-         *opts_all = *opts_job_cat;
+      if (!opts_all) {
+         opts_all = std::move(opts_job_cat);
       } else {
-         lOverrideStrList(*opts_all, *opts_job_cat, SPA_switch_val, "-q");
+         lOverrideStrList(*opts_all, opts_job_cat.release(), SPA_switch_val, "-q");
       }
-      *opts_job_cat = nullptr;
    }
 
-   if (*opts_native != nullptr) {
+   if (opts_native) {
       DPRINTF("Adding native options\n");
       prune_arg_list(*opts_native);
 
-      if (*opts_all == nullptr) {
-         *opts_all = *opts_native;
+      if (!opts_all) {
+         opts_all = std::move(opts_native);
       } else {
-         lOverrideStrList(*opts_all, *opts_native, SPA_switch_val, "-q");
+         lOverrideStrList(*opts_all, opts_native.release(), SPA_switch_val, "-q");
       }
-      *opts_native = nullptr;
    }
 
-   if (*opts_drmaa != nullptr) {
+   if (opts_drmaa) {
       DPRINTF("Adding drmaa options\n");
       /* No need to prune since options are already bounded by DRMAA */
-      if (*opts_all == nullptr) {
-         *opts_all = *opts_drmaa;
+      if (!opts_all) {
+         opts_all = std::move(opts_drmaa);
       } else {
-         lOverrideStrList(*opts_all, *opts_drmaa, SPA_switch_val, "-q");
+         lOverrideStrList(*opts_all, opts_drmaa.release(), SPA_switch_val, "-q");
       }
-      *opts_drmaa = nullptr;
    }
 
-   DRETURN_VOID;
+   DRETURN(opts_all);
 }
 
 /**
@@ -3100,7 +3067,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
  *
  * @note MT-NOTE: prune_arg_list() is MT safe
  */
-static void prune_arg_list(lList *args) {
+static void prune_arg_list(const ocs::tom::List<ocs::tom::SPA> args) {
    DENTER(TOP_LAYER);
 
    /*  o=override, +=keep, -=remove
@@ -3148,40 +3115,40 @@ o   -V                                     export all environment variables
 -   -w w|v                                 verify mode (warning|just verify) for jobs
 +   -@ file                                read commandline input from file
    */
-   lListElem *element = nullptr;
+   ocs::tom::Element<ocs::tom::SPA> element;
    const void *i = nullptr;
 
    /* skip arguments that aren't supported */
-   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-help"))) {
-      lRemoveElem(args, &element);
+   while ((element = args.find_first<SPA_switch_val>("-help"))) {
+      args.erase(element);
    }
 
    /* This one isn't supported because bulk jobs are handled through the
     * drmaa_run_bulk_jobs() method. */
-   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-t"))) {
-      lRemoveElem(args, &element);
+   while ((element = args.find_first<SPA_switch_val>("-t"))) {
+      args.erase(element);
    }
 
-   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-verify"))) {
-      lRemoveElem(args, &element);
+   while ((element = args.find_first<SPA_switch_val>("-verify"))) {
+      args.erase(element);
    }
 
    while ((element = ocs::tom::find_next_rw<SPA_switch_val>(args, "-w", &i))) {
       int argval = ocs::tom::get<SPA_argval_lIntT>(element);
 
       if ((argval == JUST_VERIFY) || (argval == POKE_VERIFY) || (argval == WARNING_VERIFY)) {
-         lRemoveElem(args, &element);
+         args.erase(element);
       }
    }
 
    if (sge_getenv(ENABLE_CWD_ENV) == nullptr) {
-      while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-cwd"))) {
-         lRemoveElem(args, &element);
+      while ((element = args.find_first<SPA_switch_val>("-cwd"))) {
+         args.erase(element);
       }
    }
 
-   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-sync"))) {
-      lRemoveElem(args, &element);
+   while ((element = args.find_first<SPA_switch_val>("-sync"))) {
+      args.erase(element);
    }
 
    DRETURN_VOID;
@@ -3607,22 +3574,19 @@ static char *drmaa_get_home_directory(const char *username, lList **answer_list)
  *
  * @note MT-NOTE: drmaa_set_bulk_range() is MT safe
  */
-static int drmaa_set_bulk_range(lList **opts, int start, int end, int step,
-                                lList **alp) {
+static int drmaa_set_bulk_range(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const int start, const int end,
+                                const int step, lList **alp) {
    DENTER(TOP_LAYER);
 
    char str[128];
-   lListElem *ep_opt = nullptr;
 
    snprintf(str, sizeof(str), "%d-%d:%d", start, end, step);
 
-   lList *task_id_ranges_out = nullptr;
-   range_list_parse_from_string(&task_id_ranges_out, alp, str, false, true, INF_NOT_ALLOWED);
-   /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-   auto task_id_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(task_id_ranges_out);
+   ocs::tom::ListPtr<ocs::tom::RN> task_id_range_list;
+   range_list_parse_from_string(task_id_range_list, alp, str, false, true, INF_NOT_ALLOWED);
 
    if (task_id_range_list) {
-      ep_opt = sge_add_arg(opts, t_OPT, lStringT, "-t", str);
+      const auto ep_opt = sge_add_arg(opts, t_OPT, lStringT, "-t", str);
       ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_range_list));
 
       DRETURN(0);
