@@ -31,6 +31,7 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+#include <limits>
 #include <string>
 #include <type_traits>
 #include <cstdio>
@@ -87,6 +88,27 @@
 
 #include "msg_qstat.h"
 #include "ocs_TopologyString.h"
+
+/**
+ * @brief Add two ints, clamping to INT_MAX/INT_MIN instead of overflowing.
+ *
+ * Signed-integer overflow is undefined behaviour; this returns a saturated
+ * result instead, e.g. for a loop bound derived from a slot count that is
+ * already clamped to INT_MAX (CS-2367, CWE-190).
+ *
+ * @param a first addend
+ * @param b second addend
+ * @return a + b, clamped to [INT_MIN, INT_MAX]
+ */
+static int add_saturating_int(const int a, const int b) {
+   if (b > 0 && a > std::numeric_limits<int>::max() - b) {
+      return std::numeric_limits<int>::max();
+   }
+   if (b < 0 && a < std::numeric_limits<int>::min() - b) {
+      return std::numeric_limits<int>::min();
+   }
+   return a + b;
+}
 
 static int qstat_env_get_all_lists(qstat_env_t *qstat_env, bool need_job_list, lList** alpp);
 
@@ -576,6 +598,20 @@ static int qstat_handle_running_jobs(qstat_env_t *qstat_env, qstat_handler_t *ha
    DRETURN(ret);
 }
 
+/**
+ * @brief Report the running jobs of one queue instance, or of all queues.
+ *
+ * Every task found is tagged TAG_FOUND_IT, so that it is not reported again
+ * as pending. Line counts derived from the granted slots are computed without
+ * signed overflow (CS-2367).
+ *
+ * @param qep                 the queue instance, or nullptr for all queues
+ * @param qstat_env           qstat environment
+ * @param print_jobs_of_queue whether the jobs are printed or only tagged
+ * @param handler             output handler
+ * @param alpp                answer list for errors
+ * @return 0 on success, the handler's error code otherwise
+ */
 static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_jobs_of_queue, 
                              qstat_handler_t *handler, lList **alpp) {
    lListElem *jlep;
@@ -618,7 +654,11 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
                int slot_adjust = 0;
                int lines_to_print;
                int slots_per_line = 0;
-               int slots_in_queue = lGetUlong(gdilep, JG_slots); 
+               // JG_slots is a u_long32; clamp it to INT_MAX instead of letting a
+               // large value turn negative (CS-2367, as CS-2000 in 9.2)
+               const u_long32 raw_slots = lGetUlong(gdilep, JG_slots);
+               const int slots_in_queue = raw_slots > static_cast<u_long32>(std::numeric_limits<int>::max())
+                                          ? std::numeric_limits<int>::max() : static_cast<int>(raw_slots);
 
                if (!qep)
                   qnm = lGetString(gdilep, JG_qname);
@@ -660,7 +700,9 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
 
                } else {
                   /* yes */
-                  lines_to_print = (int)slots_in_queue+slot_adjust;
+                  // saturating add: slots_in_queue may be INT_MAX, so a plain
+                  // + slot_adjust could overflow (UB) (CS-2367, CWE-190)
+                  lines_to_print = add_saturating_int(slots_in_queue, slot_adjust);
                   slots_per_line = 1;
                }
 
@@ -717,7 +759,7 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
                         if (print_it) {
                            sge_dstring_sprintf(&dyn_task_str, sge_u32, jataskid);
                            ret = sge_handle_job(jlep, jatep, qep, gdilep, print_jobid, (master && different && (i==0))?"MASTER":"SLAVE",
-                                                &dyn_task_str, slots_in_queue+slot_adjust, i, slots_per_line, qstat_env, &(handler->job_handler), alpp );
+                                                &dyn_task_str, add_saturating_int(slots_in_queue, slot_adjust), i, slots_per_line, qstat_env, &(handler->job_handler), alpp );
                            if (ret) {
                               goto error;
                            }
