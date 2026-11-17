@@ -129,6 +129,8 @@ See also the chapter about Munge in the installation guide.
 
 TLS security can be enabled at installation time or later by editing the bootstrap file. This requires a re-start of all xxQS_NAMExx components. Certificates and keys will be created and also renewed on demand by xxQS_NAMExx components themselves. See also the chapter about TLS encryption in the installation guide.
 
+The modes differ in what they protect, and they can be combined. `munge` **authenticates the requesting user** (it cross-checks the uid, gid, user and group of every request against the Munge-authenticated identity). `tls` provides **transport encryption** and authenticates the **daemon (server) towards the connecting client** using automatically generated certificates; it does **not** authenticate the connecting client, host or the requesting user, because no client or per-user certificates are involved. A cluster that needs both encrypted communication and verified user identity should therefore enable `tls` **and** `munge` together (`security_mode tls,munge`).
+
 Further security modes can be enabled by doing custom-builds of xxQS_NAMExx: afs, dce, kerberos, csp (AFS, DCE, KERBEROS, CSP security model).
 
 ## *security_params*

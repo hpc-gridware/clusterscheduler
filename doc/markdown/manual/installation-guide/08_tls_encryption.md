@@ -6,6 +6,13 @@ tampering.
 Enabling TLS encryption requires that the cluster is set up with `security_mode` set to `tls` in the bootstrap file.
 This requires a re-start of all xxQS_NAMExx components.
 
+> **Authentication scope.** TLS protects the *transport* and authenticates the *daemon (server)* towards the
+> connecting client using automatically generated certificates. It does **not** authenticate the connecting
+> client or host, nor the requesting *user* — there are no client or per-user certificates, so the user identity
+> carried in a request is not cryptographically verified by TLS alone. To additionally verify user identity
+> (uid, gid, user, group), enable Munge as well by combining the security modes (`security_mode tls,munge`).
+> See the chapter about Munge and the `security_mode` setting in `sge_bootstrap(5)`.
+
 TLS encryption is supported on all platforms where OpenSSL version 3 or 4 is available.
 It is not supported on
 * `ulx-*` platforms (unsupported Linux, e.g. CentOS 7)
