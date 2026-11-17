@@ -35,6 +35,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <sys/wait.h>
+#include <unistd.h>
 #include <string>
 #include <vector>
 
@@ -124,9 +126,11 @@ static parse_result_t parse(const std::vector<std::string> &fields) {
  * munge branch, which needs a munge daemon and a real credential -- neither has
  * anything to do with the parser under test.
  *
+ * @param security_mode value of the bootstrap's security_mode entry
+ *
  * @return the created directory, to be removed by the caller
  */
-static std::string setup_private_bootstrap() {
+static std::string setup_private_bootstrap(const char *security_mode = "none") {
    char tmpl[] = "/tmp/test_uti_authinfo_XXXXXX";
    const char *root = mkdtemp(tmpl);
    if (root == nullptr) {
@@ -149,7 +153,7 @@ static std::string setup_private_bootstrap() {
    fprintf(fp, "spooling_params   %s/default/spool\n", root);
    fprintf(fp, "binary_path       %s/bin\n", root);
    fprintf(fp, "qmaster_spool_dir %s/default/spool/qmaster\n", root);
-   fprintf(fp, "security_mode     none\n");
+   fprintf(fp, "security_mode     %s\n", security_mode);
    fclose(fp);
 
    sge_setenv("SGE_ROOT", root);
@@ -157,9 +161,67 @@ static std::string setup_private_bootstrap() {
    return root;
 }
 
+/**
+ * @brief CS-2484: munge configured, but libmunge not loaded
+ *
+ * Runs in a child process because Bootstrap caches its settings on first use
+ * and this case needs a bootstrap with security_mode munge. The child never
+ * calls Munge::initialize(), so the munge function pointers stay null.
+ * component_parse_auth_info() and component_get_auth_info() must report an
+ * error instead of calling through them. The encode side runs under the
+ * component mutex, and logging there deadlocked the thread (and the early
+ * return never released the mutex), so an alarm turns a hang into a failure.
+ *
+ * @return true if the child exited normally and both calls reported the error
+ */
+static bool check_munge_not_loaded() {
+#if defined(OCS_WITH_MUNGE)
+   const pid_t pid = fork();
+   if (pid < 0) {
+      return false;
+   }
+   if (pid == 0) {
+      const std::string root = setup_private_bootstrap("munge");
+      if (root.empty()) {
+         _exit(2);
+      }
+      component_set_daemonized(true);
+      alarm(30);
+      const parse_result_t r = parse({"1001", "2002", "testuser", "testgroup", "0"});
+      char *encoded = component_get_auth_info();
+      // a second call proves the first one released the component mutex
+      char *encoded_again = component_get_auth_info();
+      alarm(0);
+      {
+         DSTRING_STATIC(err, MAX_STRING_SIZE);
+         sge_rmdir(root.c_str(), &err);
+      }
+      const bool ok = !r.ret && encoded == nullptr && encoded_again == nullptr;
+      sge_free(&encoded);
+      sge_free(&encoded_again);
+      _exit(ok ? 0 : 1);
+   }
+   int status = 0;
+   if (waitpid(pid, &status, 0) != pid) {
+      return false;
+   }
+   if (WIFSIGNALED(status)) {
+      printf("      child terminated by signal %d\n", WTERMSIG(status));
+   }
+   return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+#else
+   printf("      skipped: built without OCS_WITH_MUNGE\n");
+   return true;
+#endif
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_uti_authinfo");
    int id = 1;
+
+   printf("\n--- AUTHINFO: munge configured but not loaded (CS-2484) ---\n");
+   CHECK(id++, "parse and encode report an error instead of calling a null munge pointer",
+         check_munge_not_loaded());
 
    // Must happen before anything asks Bootstrap anything -- it caches on first use.
    const std::string private_root = setup_private_bootstrap();

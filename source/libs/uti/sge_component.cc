@@ -942,6 +942,10 @@ char *
 component_get_auth_info() {
    DENTER(TOP_LAYER);
    char *ret = nullptr;
+   // Errors are collected here and logged only after the mutex is released:
+   // sge_log() calls component_get_unqualified_hostname(), which locks the same
+   // non-recursive mutex, so logging while holding it deadlocks the thread.
+   dstring error_dstr = DSTRING_INIT;
 
    sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
    sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
@@ -999,22 +1003,22 @@ component_get_auth_info() {
       // not an error -- the configuration alone does not guarantee the library
       // was loaded in this process.
       if (!ocs::uti::Munge::is_initialized()) {
-         ERROR(SFNMAX, MSG_UTI_MUNGE_NOT_INITIALIZED);
-         DRETURN(ret);
-      }
-      // we need to encode the auth info in every call to this function
-      // even if the user information and the payload will never change
-      // munge certificates are valid for a limited time only and for a single use
-      char *munge_auth_info = nullptr;
-      const munge_err_t err = ocs::uti::Munge::munge_encode_func(&munge_auth_info, nullptr,
-         user->unencoded_auth_info->c_str(), static_cast<int>(user->unencoded_auth_info->length() + 1));
-      if (err != EMUNGE_SUCCESS) {
-         ERROR(MSG_UTI_MUNGE_ENCODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
+         sge_dstring_sprintf(&error_dstr, SFNMAX, MSG_UTI_MUNGE_NOT_INITIALIZED);
       } else {
-         ret = munge_auth_info;
+         // we need to encode the auth info in every call to this function
+         // even if the user information and the payload will never change
+         // munge certificates are valid for a limited time only and for a single use
+         char *munge_auth_info = nullptr;
+         const munge_err_t err = ocs::uti::Munge::munge_encode_func(&munge_auth_info, nullptr,
+            user->unencoded_auth_info->c_str(), static_cast<int>(user->unencoded_auth_info->length() + 1));
+         if (err != EMUNGE_SUCCESS) {
+            sge_dstring_sprintf(&error_dstr, MSG_UTI_MUNGE_ENCODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
+         } else {
+            ret = munge_auth_info;
+         }
       }
 #else
-      ERROR(SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
+      sge_dstring_sprintf(&error_dstr, SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
 #endif
    } else {
       // encrypt and store the information once - it will never change
@@ -1030,6 +1034,11 @@ component_get_auth_info() {
    }
 
    sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   if (sge_dstring_strlen(&error_dstr) > 0) {
+      ERROR(SFNMAX, sge_dstring_get_string(&error_dstr));
+   }
+   sge_dstring_free(&error_dstr);
 
    DRETURN(ret);
 }
