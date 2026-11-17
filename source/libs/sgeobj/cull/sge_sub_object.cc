@@ -229,6 +229,12 @@ object_get_subtype(int nm)
       case EV_events:
          ret = ET_Type;
          break;
+      case EVS_what:
+         ret = PACK_Type;
+         break;
+      case EVS_where:
+         ret = PACK_Type;
+         break;
       case CE_resource_map_list:
          ret = RESL_Type;
          break;

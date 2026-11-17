@@ -366,6 +366,8 @@ namespace ocs::tom {
       {EH_joker, VA::descriptor.e},
       {EV_subscribed, EVS::descriptor.e},
       {EV_events, ET::descriptor.e},
+      {EVS_what, PACK::descriptor.e},
+      {EVS_where, PACK::descriptor.e},
       {CE_resource_map_list, RESL::descriptor.e},
       {OR_queuelist, OQ::descriptor.e},
       {OR_granted_resources_list, GRU::descriptor.e},

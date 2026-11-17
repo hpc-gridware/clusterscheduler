@@ -211,6 +211,20 @@ test_client_shapes() {
       lFreeList(&lp);
    }
 
+   // T16/T17: the where/what filters of an event client subscription are packed into PACK elements
+   {
+      lList *lp = nullptr;
+      lListElem *ev = lAddElemUlong(&lp, EV_id, 0, EV_Type);
+      lList *subscriptions = nullptr;
+      lListElem *evs = lAddElemUlong(&subscriptions, EVS_id, 1, EVS_Type);
+      lSetList(ev, EV_subscribed, subscriptions);
+      lSetObject(evs, EVS_where, lCreateElem(PACK_Type));
+      CHECK(16, "a subscription filter packed as PACK passes", ocs_object_list_verify_type(lp, EV_Type));
+      lSetObject(evs, EVS_where, lCreateElem(ST_Type));
+      CHECK(17, "a subscription filter of another type is refused", !ocs_object_list_verify_type(lp, EV_Type));
+      lFreeList(&lp);
+   }
+
    // T15: two different reductions of one type are of the same type
    {
       lEnumeration *what_a = lWhat("%T(%I)", EH_Type, EH_name);

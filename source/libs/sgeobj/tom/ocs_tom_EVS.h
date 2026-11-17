@@ -84,6 +84,8 @@ enum EVS_Field {
 
 namespace ocs::tom {
 
+   struct PACK;
+
    /**
     * @brief Event Subscription
     *
@@ -112,6 +114,18 @@ namespace ocs::tom {
    template <>
    struct TypeOf<EVS_Field> {
       using type = EVS;   ///< the object type
+   };
+
+   /** @brief EVS_what holds elements of PACK */
+   template <>
+   struct SubType<EVS_what> {
+      using type = PACK;   ///< the sub-type
+   };
+
+   /** @brief EVS_where holds elements of PACK */
+   template <>
+   struct SubType<EVS_where> {
+      using type = PACK;   ///< the sub-type
    };
 
 } // namespace ocs::tom
