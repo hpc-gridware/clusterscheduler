@@ -47,6 +47,9 @@
 #include <cstring>
 #include <cctype>
 #include <ctime>
+#include <optional>
+#include <tuple>
+#include <utility>
 
 #include "cull/cull_list.h"
 
@@ -63,10 +66,13 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ASTR.h"
 #include "sgeobj/tom/ocs_tom_CA.h"
 #include "sgeobj/tom/ocs_tom_TM.h"
 #include "sgeobj/tom/ocs_tom_TMR.h"
 #include "sgeobj/tom/ocs_tom_CAL.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_CQU.h"
 
 #include "msg_qmaster.h"
@@ -107,7 +113,7 @@ static token_set_t statev[] = {
  * @param t2 the second entry
  * @return negative, zero or positive as `t1` sorts before, with or after `t2`
  */
-typedef int (*cmp_func_t)(const lListElem *t1, const lListElem *t2);
+using cmp_func_t = int (*)(ocs::tom::ConstElement<ocs::tom::TM> t1, ocs::tom::ConstElement<ocs::tom::TM> t2);
 
 static char old_error[1000];
 static char store[1000];
@@ -116,19 +122,19 @@ static int token_is_valid = 0;
 static char parse_error[MAX_STRING_SIZE];
 
 /* parsing */
-static int
-disabled_year_list(lList **alpp, const char *s,
-                   lList **cal, const char *cal_name);
+static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
+disabled_year_list(lList **alpp, const char *s, const char *cal_name);
 
-static int disabled_week_list(lList **alpp, const char *s, lList **cal, const char *cal_name);
+static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
+disabled_week_list(lList **alpp, const char *s, const char *cal_name);
 
-static int
-state_at(time_t now, const lList *ycal, const lList *wcal, time_t *then);
+static std::pair<int, time_t>
+state_at(time_t now, ocs::tom::ConstList<ocs::tom::CA> ycal, ocs::tom::ConstList<ocs::tom::CA> wcal);
 
 static int scan(const char *s, token_set_t token_set[]);
 
-static void join_wday_range(lList *week_day);
-static void extend_wday_range(lList *week_day);
+static void join_wday_range(ocs::tom::List<ocs::tom::TMR> week_day);
+static void extend_wday_range(ocs::tom::List<ocs::tom::TMR> week_day);
 
 static char *get_string();
 
@@ -140,13 +146,13 @@ static char *save_error();
 
 static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name);
 
-static int disabled_year_entry(lListElem **calep);
+static ocs::tom::ElementPtr<ocs::tom::CA> disabled_year_entry();
 
-static int year_day_range_list(lList **ydrl);
+static ocs::tom::ListPtr<ocs::tom::TMR> year_day_range_list();
 
-static int year_day_range(lListElem **tmr);
+static ocs::tom::ElementPtr<ocs::tom::TMR> year_day_range();
 
-static int year_day(lListElem **tm);
+static ocs::tom::ElementPtr<ocs::tom::TM> year_day();
 
 static int month(int *);
 
@@ -154,27 +160,29 @@ static int day(int *);
 
 static int year(int *);
 
-static int tm_yday_cmp(const lListElem *t1, const lListElem *t2);
+static int tm_yday_cmp(ocs::tom::ConstElement<ocs::tom::TM> t1, ocs::tom::ConstElement<ocs::tom::TM> t2);
 
-static int tm_wday_cmp(const lListElem *t1, const lListElem *t2);
+static int tm_wday_cmp(ocs::tom::ConstElement<ocs::tom::TM> t1, ocs::tom::ConstElement<ocs::tom::TM> t2);
 
-static int normalize_range_list(lList *rl, cmp_func_t cmp_func);
+static int normalize_range_list(ocs::tom::List<ocs::tom::TMR> rl, cmp_func_t cmp_func);
 
-static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func);
+static bool in_range_list(ocs::tom::ConstElement<ocs::tom::TM> tm, ocs::tom::ConstList<ocs::tom::TMR> rl,
+                          cmp_func_t cmp_func);
 
-static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func);
+static int in_range(ocs::tom::ConstElement<ocs::tom::TM> tm, ocs::tom::ConstElement<ocs::tom::TMR> r,
+                    cmp_func_t cmp_func);
 
-static int daytime_range_list(lList **dtrl);
+static ocs::tom::ListPtr<ocs::tom::TMR> daytime_range_list();
 
-static int daytime_range(lListElem **tmr);
+static ocs::tom::ElementPtr<ocs::tom::TMR> daytime_range();
 
-static void full_daytime_range(lList **dtrl);
+static ocs::tom::ListPtr<ocs::tom::TMR> full_daytime_range();
 
-static void full_weekday_range(lList **dtrl);
+static ocs::tom::ListPtr<ocs::tom::TMR> full_weekday_range();
 
-static void split_daytime_range(lList *dtrl, lListElem *tmr);
+static void split_daytime_range(ocs::tom::List<ocs::tom::TMR> dtrl, ocs::tom::Element<ocs::tom::TMR> tmr);
 
-static int daytime(lListElem **tm);
+static ocs::tom::ElementPtr<ocs::tom::TM> daytime();
 
 static int hour(int *);
 
@@ -186,114 +194,76 @@ static int action(int *sp);
 
 static int range_number(int min, int max, int *ip, const char *name);
 
-static int tm_daytime_cmp(const lListElem *t1, const lListElem *t2);
+static int tm_daytime_cmp(ocs::tom::ConstElement<ocs::tom::TM> t1, ocs::tom::ConstElement<ocs::tom::TM> t2);
 
-static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_t *limit, uint32_t *next_state, int rec_count);
+static std::tuple<uint32_t, time_t, uint32_t>
+is_week_entry_active(ocs::tom::ConstElement<ocs::tom::TM> tm, ocs::tom::ConstElement<ocs::tom::CA> week_entry,
+                     int rec_count);
 
-static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_t *limit);
+static std::pair<uint32_t, time_t>
+is_year_entry_active(ocs::tom::ConstElement<ocs::tom::TM> tm, ocs::tom::ConstElement<ocs::tom::CA> year_entry);
 
-static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time,
-              const lList *day_time, const lListElem *now, bool *is_end_of_day_reached);
+static std::pair<time_t, bool>
+compute_limit(bool today, bool active, ocs::tom::ConstList<ocs::tom::TMR> year_time,
+              ocs::tom::ConstList<ocs::tom::TMR> week_time, ocs::tom::ConstList<ocs::tom::TMR> day_time,
+              ocs::tom::ConstElement<ocs::tom::TM> now);
 
-static int disabled_week_entry(lListElem **calep);
+static ocs::tom::ElementPtr<ocs::tom::CA> disabled_week_entry();
 
-static int week_day_range_list(lList **wdrl);
+static ocs::tom::ListPtr<ocs::tom::TMR> week_day_range_list();
 
-static int week_day_range(lListElem **tmr);
+static ocs::tom::ElementPtr<ocs::tom::TMR> week_day_range();
 
-static void split_wday_range(lList *wdrl, lListElem *tmr);
+static void split_wday_range(ocs::tom::List<ocs::tom::TMR> wdrl, ocs::tom::Element<ocs::tom::TMR> tmr);
 
-static int week_day(lListElem **tm);
+static ocs::tom::ElementPtr<ocs::tom::TM> week_day();
 
-static uint32_t calendar_get_current_state_and_end(const lListElem *this_elem, time_t *then, time_t *now);
+static std::pair<uint32_t, time_t>
+calendar_get_current_state_and_end(ocs::tom::ConstElement<ocs::tom::CAL> cep, time_t now);
 
-/*
-
-   NAME
-      state_at() - computes state using year and week calendar
-                   and optionally when this state will end
-
-   RETURNS
-      The actual state according this calendar
-
-   PARAMETERS
-      now        - actual time
-      ycal       - year calendar
-      wcal       - week calendar
-      next_event - if this pointer is not nullptr then
-                   state_at() will compute the next
-                   time when this calendar has to be checked again
-
-   DESCRIPTION
-      Here we have to answer two questions:
-         1. Which one is the actual state?
-            If both this day and the actual daytime are in an entry
-            then this entry is active and the entries state is returned.
-            In case there are more than one active entries the 'hardest'
-            is dominant ( disabled < suspended < enabled )
-
-         2. When will this state end?
-            For all active entries we compute the end of the range.
-            For all inactive entries we compute the start of the range.
-            We iterate through all these ranges beginning with that range
-            which is closest to 'now' in the future.
-
-            In some cases the state does not change but the range which is
-            responsible for that state changes:
-
-               mon-fri=9-18 fri=18-19
-
-   CALENDAR
-      year
-         CA_yday_range_list
-            TMR_begin
-               TM_mday
-               TM_mon
-               TM_year
-            TMR_end
-               TM_mday
-               TM_mon
-               TM_year
-         CA_daytime_range_list
-            TMR_begin
-               TM_hour
-               TM_min
-               TM_sec
-            TMR_end
-               TM_hour
-               TM_min
-               TM_sec
-         CA_state
-
-      week
-         CA_wday_range_list
-            TMR_begin
-               TM_wday
-            TMR_end
-               TM_wday
-         CA_daytime_range_list
-            TMR_begin
-               TM_hour
-               TM_min
-               TM_sec
-            TMR_end
-               TM_hour
-               TM_min
-               TM_sec
-         CA_state
-
-   FUTURE ENHANCEMENTS
-      The compution of 'next_event' could be improved. Actually
-      state_at() returns 24 o'clock of this day as the end of
-      this state also when this state is valid beyond this day.
-
-*/
-
-/*
-ycal,  CA_Type
-wcal,  CA_Type
-*/
-static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *next_event) {
+/**
+ * @brief Computes the state a year and a week calendar give at a time, and when this state ends
+ *
+ * Here we have to answer two questions:
+ * 1. Which one is the actual state?
+ *    If both this day and the actual daytime are in an entry then this entry
+ *    is active and the entry's state is returned. In case there is more than
+ *    one active entry the 'hardest' is dominant (disabled < suspended < enabled).
+ * 2. When will this state end?
+ *    For all active entries we compute the end of the range. For all inactive
+ *    entries we compute the start of the range. We iterate through all these
+ *    ranges beginning with that range which is closest to 'now' in the future.
+ *    In some cases the state does not change but the range which is
+ *    responsible for that state changes: `mon-fri=9-18 fri=18-19`
+ *
+ * The parsed calendars look like this:
+ * ```
+ * year                          week
+ *    CA_yday_range_list            CA_wday_range_list
+ *       TMR_begin                     TMR_begin
+ *          TM_mday, TM_mon, TM_year      TM_wday
+ *       TMR_end                       TMR_end
+ *          TM_mday, TM_mon, TM_year      TM_wday
+ *    CA_daytime_range_list         CA_daytime_range_list
+ *       TMR_begin                     TMR_begin
+ *          TM_hour, TM_min, TM_sec       TM_hour, TM_min, TM_sec
+ *       TMR_end                       TMR_end
+ *          TM_hour, TM_min, TM_sec       TM_hour, TM_min, TM_sec
+ *    CA_state                      CA_state
+ * ```
+ *
+ * Future enhancement: the computation of the next event could be improved.
+ * Actually state_at() returns 24 o'clock of this day as the end of this state
+ * also when this state is valid beyond this day.
+ *
+ * @param now the time to look at
+ * @param ycal the parsed year calendar (CA_Type), may be empty
+ * @param wcal the parsed week calendar (CA_Type), may be empty
+ * @return the state (QI_DO_ENABLE, QI_DO_SUSPEND or QI_DO_DISABLE) and the next time this calendar has to be
+ *         checked again, 0 if there is none
+ */
+static std::pair<int, time_t>
+state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const ocs::tom::ConstList<ocs::tom::CA> wcal) {
    DENTER(TOP_LAYER);
    struct tm *tm_now;
    uint32_t w_is_active, y_is_active;
@@ -322,8 +292,8 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
          tm_now->tm_isdst);
 
    /* ycal */
-   for_each_rw_lv (yc, ycal) {
-      y_is_active = is_year_entry_active(*tm, yc, &limit);
+   for (const auto yc : ycal) {
+      std::tie(y_is_active, limit) = is_year_entry_active(*tm, yc);
       if (state != y_is_active || state == QI_DO_NOTHING) {
          state |= y_is_active;
 
@@ -340,7 +310,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
 
    if (!state) {
       int counter = 0;
-      int max = lGetNumberOfElem(wcal);
+      const std::size_t max = wcal.size();
       bool *visited = (bool*) sge_malloc(max * sizeof(bool));
       bool isOverlapping;
 
@@ -353,9 +323,9 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
          counter = 0;
          isOverlapping = false;
 
-         for_each_rw_lv (wc, wcal) {
+         for (const auto wc : wcal) {
             have_week_cal = true;
-            w_is_active = is_week_entry_active(*tm, wc, &limit, &next_state, 0);
+            std::tie(w_is_active, limit, next_state) = is_week_entry_active(*tm, wc, 0);
             if (w_is_active > 0) {
                state |= w_is_active;
             }
@@ -369,7 +339,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
                   cullify_tm(*tm, tm_now);
 
                   temp_next_event = 0;
-                  w_is_active = is_week_entry_active(*tm, wc, &limit, &next_state, 0);
+                  std::tie(w_is_active, limit, next_state) = is_week_entry_active(*tm, wc, 0);
                   if (w_is_active > 0) {
                      state |= w_is_active;
                   }
@@ -390,26 +360,22 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
       sge_free(&visited);
    }
 
-   if (next_event != nullptr) {
-      *next_event = temp_next_event;
-   }
-
-   DPRINTF("got state %d from %s calendar. Now: " sge_u32 " Next event: " sge_u32"\n",
-           state, have_week_cal ? "week" : "year", now, next_event?*next_event:0);
+   DPRINTF("got state %d from %s calendar. Now: %lld Next event: %lld\n",
+           state, have_week_cal ? "week" : "year", static_cast<long long>(now),
+           static_cast<long long>(temp_next_event));
 
    tm.reset();
 
+   int result = QI_DO_ENABLE;
    if ((state & QI_DO_ENABLE)) {
-      DRETURN(QI_DO_ENABLE);
-   }
-   if ((state & QI_DO_SUSPEND)) {
-      DRETURN(QI_DO_SUSPEND);
-   }
-   if ((state & QI_DO_DISABLE)) {
-      DRETURN(QI_DO_DISABLE);
+      result = QI_DO_ENABLE;
+   } else if ((state & QI_DO_SUSPEND)) {
+      result = QI_DO_SUSPEND;
+   } else if ((state & QI_DO_DISABLE)) {
+      result = QI_DO_DISABLE;
    }
 
-   DRETURN(QI_DO_ENABLE);
+   DRETURN(std::make_pair(result, temp_next_event));
 }
 
 /**
@@ -426,17 +392,20 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
  *
  * @param tm TM_Type - represeting now (time)
  * @param week_entry CA_Type - calendar entries for the week setup
- * @param limit next state changea (0, if there is no further state change)
  * @param rec_count current recoursion level
  *
- * @return the current state
+ * @return the current state, the next state change (0, if there is no further state change) and the
+ *         state after that change (0, if there is no further state change)
  *
  * @note MT-NOTE: is_week_entry_active() is MT safe
  */
-static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_t *limit, uint32_t *next_state, int rec_count) {
+static std::tuple<uint32_t, time_t, uint32_t>
+is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
+                     const ocs::tom::ConstElement<ocs::tom::CA> week_entry, int rec_count) {
    DENTER(TOP_LAYER);
 
    uint32_t state;
+   uint32_t next_state;
    bool in_wday_range, in_daytime_range = false;
 
 
@@ -446,58 +415,49 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
        /* DPRINTF(("in_range_list(wday) = %d in_range_list(daytime) = %d state = %d\n",
                     in_wday_range, in_daytime_range, lGetUlong(week_entry, CA_state))); */
       state = ocs::tom::get<CA_state>(week_entry);
-      *next_state = 0;
+      next_state = 0;
    } else {
       /* DPRINTF("in_range_list(wday) = %d in_range_list(daytime) = %d\n", in_wday_range, in_daytime_range); */
       state = 0;
-      *next_state = ocs::tom::get<CA_state>(week_entry);
+      next_state = ocs::tom::get<CA_state>(week_entry);
 
    }
 
-   if (limit != nullptr) {
-      bool is_end_of_the_day_reached = false;
+   auto [limit, is_end_of_the_day_reached] =
+      compute_limit(in_wday_range, in_daytime_range, nullptr, ocs::tom::get<CA_wday_range_list>(week_entry),
+                    ocs::tom::get<CA_daytime_range_list>(week_entry), tm);
 
-      *limit = compute_limit(in_wday_range, in_daytime_range,nullptr, ocs::tom::get<CA_wday_range_list>(week_entry),
-            ocs::tom::get<CA_daytime_range_list>(week_entry), tm, &is_end_of_the_day_reached);
+   if (is_end_of_the_day_reached) {
+      struct tm *tm_now;
+      struct tm res;
 
-      if (is_end_of_the_day_reached) {
-         struct tm *tm_now;
-         struct tm res;
+      /* we have to add a second to get into the next time slot */
+      limit++;
 
-         /* we have to add a second to get into the next time slot */
-         (*limit)++;
+      /* convert time_t format into struct tm format */
+      tm_now = localtime_r(&limit, &res);
 
-         /* convert time_t format into struct tm format */
-         tm_now = localtime_r(limit, &res);
+      /* cullify struct tm */
+      auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
+      cullify_tm(*new_tm, tm_now);
 
-         /* cullify struct tm */
-         auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
-         cullify_tm(*new_tm, tm_now);
-
-         /* more than 2 recursion should never be needed, we allow 4 to be save.*/
-         if (rec_count < 4) {
-            state = is_week_entry_active(*new_tm, week_entry, limit, next_state, rec_count++);
-         }
-         else {
-            ERROR(SFNMAX, MSG_CALENDAR_CALCTERMINATED);
-         }
-
+      /* more than 2 recursion should never be needed, we allow 4 to be save.*/
+      if (rec_count < 4) {
+         std::tie(state, limit, next_state) = is_week_entry_active(*new_tm, week_entry, rec_count++);
+      }
+      else {
+         ERROR(SFNMAX, MSG_CALENDAR_CALCTERMINATED);
       }
 
-      /* there is no other state change */
-      if (*limit == 0) {
-         *next_state = 0;
-      }
    }
 
-   DRETURN(state);
+   /* there is no other state change */
+   if (limit == 0) {
+      next_state = 0;
+   }
+
+   DRETURN(std::make_tuple(state, limit, next_state));
 }
-
-/* returns state and time when state changes acording this entry */
-/*
-lListElem *tm,         TM_Type
-lListElem *year_entry, CA_Type
-*/
 
 /**
  * @brief Computes the current queue state and the next change
@@ -516,14 +476,15 @@ lListElem *year_entry, CA_Type
  * one.
  *
  * @param tm TM_Type - represeting now (time)
- * @param week_entry CA_Type - calendar entries for the week setup
- * @param limit next state changea (0, if there is no further state change)
+ * @param year_entry CA_Type - calendar entry of the year setup
  *
- * @return the current state
+ * @return the current state and the next state change (0, if there is no further state change)
  *
- * @note MT-NOTE: is_week_entry_active() is MT safe
+ * @note MT-NOTE: is_year_entry_active() is MT safe
  */
-static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_t *limit) {
+static std::pair<uint32_t, time_t>
+is_year_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
+                     const ocs::tom::ConstElement<ocs::tom::CA> year_entry) {
    DENTER(TOP_LAYER);
 
    uint32_t state;
@@ -540,45 +501,42 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
       state = in_daytime_range?QI_DO_ENABLE:0;
    }
 
-   if (limit) {
-      bool is_end_of_the_day_reached = false;
+   auto [limit, is_end_of_the_day_reached] =
+      compute_limit(in_yday_range, in_daytime_range, ocs::tom::get<CA_yday_range_list>(year_entry), nullptr,
+                    ocs::tom::get<CA_daytime_range_list>(year_entry), tm);
 
-      *limit = compute_limit(in_yday_range, in_daytime_range, ocs::tom::get<CA_yday_range_list>(year_entry), nullptr,
-            ocs::tom::get<CA_daytime_range_list>(year_entry), tm, &is_end_of_the_day_reached);
+   if (is_end_of_the_day_reached) {
+      struct tm *tm_now;
+      struct tm res;
+      DPRINTF("trying the next time slot\n");
+      /* we have to add a second to get into the next time slot */
+      limit++;
+      time_t next_day = limit;
 
-      if (is_end_of_the_day_reached) {
-         struct tm *tm_now;
-         struct tm res;
-         DPRINTF("trying the next time slot\n");
-         /* we have to add a second to get into the next time slot */
-         (*limit)++;
-         time_t next_day = *limit;
+      /* convert time_t format into struct tm format */
+      tm_now = localtime_r(&limit, &res);
 
-         /* convert time_t format into struct tm format */
-         tm_now = localtime_r(limit, &res);
+      /* cullify struct tm */
+      auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
+      cullify_tm(*new_tm, tm_now);
 
-         /* cullify struct tm */
-         auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
-         cullify_tm(*new_tm, tm_now);
+      auto [next_day_state, next_day_limit] = is_year_entry_active(*new_tm, year_entry);
 
-         uint32_t next_day_state = is_year_entry_active(*new_tm, year_entry, limit);
-
-         /* The state does not change for the rest of the day, that is why we look at the next day.
-            If the next day starts in a different state then the change happens right at midnight
-            and that is the limit we are looking for - the limit the recursion reported belongs to
-            the state of the next day and would be too late. Otherwise the state indeed continues
-            and both the state and its limit are the ones of the next day. */
-         if (next_day_state != state) {
-            *limit = next_day;
-         } else {
-            state = next_day_state;
-         }
-
+      /* The state does not change for the rest of the day, that is why we look at the next day.
+         If the next day starts in a different state then the change happens right at midnight
+         and that is the limit we are looking for - the limit the recursion reported belongs to
+         the state of the next day and would be too late. Otherwise the state indeed continues
+         and both the state and its limit are the ones of the next day. */
+      if (next_day_state != state) {
+         limit = next_day;
+      } else {
+         state = next_day_state;
+         limit = next_day_limit;
       }
 
    }
 
-   DRETURN(state);
+   DRETURN(std::make_pair(state, limit));
 }
 
 
@@ -592,22 +550,25 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
  * reported a state change and if not, call the methods again with a new time stamp. It
  * is starting with now and goes into the future, based on the reported state changes.
  *
- * @param cep (in) calendar (CAL_Type)
- * @param state_changes_list (out) a pointer to a list pointer (CQU_Type)
- * @param when64 (out) when will the next change be, or 0
- * @param now64 (in) should be nullptr, or the current time (only for the test program)
+ * @param cep calendar (CAL_Type); an empty handle gives state 0, no next change and no list
+ * @param now64 nullptr for the current time, or the time to start from (only for the test program)
  *
- * @return new state (QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND)
+ * @return the new state (QI_DO_NOTHING, QI_DO_CAL_DISABLE, QI_DO_CAL_SUSPEND), when the next change will
+ *         be (0 if never) and the state change list (CQU_Type)
  *
  * @note MT-NOTE: calender_state_changes() is MT safe
  */
-uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list, uint64_t *when64, uint64_t *now64) {
+std::tuple<uint32_t, uint64_t, ocs::tom::ListPtr<ocs::tom::CQU>>
+calender_state_changes(const ocs::tom::ConstElement<ocs::tom::CAL> cep, const uint64_t *now64) {
+   DENTER(TOP_LAYER);
+
    time_t temp_when = 0;
    time_t temp_now= 0;
    time_t when1 = 0;
    uint32_t state0 = 0;
    uint32_t state1 = 0;
    uint32_t state2 = 0;
+   uint64_t when64 = 0;
    time_t now = 0;
    if (now64 != nullptr) {
       now = sge_gmt64_to_time_t(*now64);
@@ -615,16 +576,13 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
       now = sge_gmt64_to_time_t(sge_get_gmt64());
    }
 
-   if (cep == nullptr || state_changes_list == nullptr) {
-      return 0;
+   if (cep == nullptr) {
+      DRETURN(std::make_tuple(state0, when64, ocs::tom::ListPtr<ocs::tom::CQU>()));
    }
 
    /* build queue state change list */
-   state0 = calendar_get_current_state_and_end(cep, &temp_when, &now);
-   *when64 = sge_time_t_to_gmt64(temp_when);
-   if (now64 != nullptr) {
-      *now64 = sge_time_t_to_gmt64(now);
-   }
+   std::tie(state0, temp_when) = calendar_get_current_state_and_end(cep, now);
+   when64 = sge_time_t_to_gmt64(temp_when);
 
    /* calculate the next state shift. */
    if (temp_when != 0) {
@@ -640,14 +598,14 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
         calendar_get_current_state_and_end function does not return the correct state switch
         (overlapping calendar configurations), therefor we have to run it multiple times. */
       do {
-         *when64 = sge_time_t_to_gmt64(temp_when);
+         when64 = sge_time_t_to_gmt64(temp_when);
          temp_now = temp_when + 1;
-         state1 = calendar_get_current_state_and_end(cep, &temp_when, &temp_now);
+         std::tie(state1, temp_when) = calendar_get_current_state_and_end(cep, temp_now);
          state_changes++;
       } while ((temp_when != 0) && (state0 == state1) && (state_changes < max_state_changes));
 
       if (state0 == state1) {
-         *when64 = sge_time_t_to_gmt64(temp_when);
+         when64 = sge_time_t_to_gmt64(temp_when);
       }
 
       when1 = temp_when;
@@ -656,7 +614,7 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
          do {
             when1 = temp_when;
             temp_now = temp_when + 1;
-            state2 = calendar_get_current_state_and_end(cep, &temp_when, &temp_now);
+            std::tie(state2, temp_when) = calendar_get_current_state_and_end(cep, temp_now);
             state_changes++;
          } while ((temp_when != 0) && (state2 == state1) && (state_changes < max_state_changes));
       }
@@ -666,22 +624,46 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
       }
    }
 
-   *state_changes_list = lCreateList("state_changes", CQU_Type);
+   auto state_changes_list = ocs::tom::ListPtr<ocs::tom::CQU>::create("state_changes");
    auto state_change = ocs::tom::ElementPtr<ocs::tom::CQU>::create();
 
    ocs::tom::set<CQU_state>(state_change, state0);
-   ocs::tom::set<CQU_till>(state_change, *when64);
-   lAppendElem(*state_changes_list, std::move(state_change));
+   ocs::tom::set<CQU_till>(state_change, when64);
+   state_changes_list->push_back(std::move(state_change));
 
    /* extend queue state change list */
-   if (*when64 != 0) {
+   if (when64 != 0) {
       auto state_change = ocs::tom::ElementPtr<ocs::tom::CQU>::create();
       ocs::tom::set<CQU_state>(state_change,state1);
       ocs::tom::set<CQU_till>(state_change, sge_time_t_to_gmt64(when1));
-      lAppendElem(*state_changes_list, std::move(state_change));
+      state_changes_list->push_back(std::move(state_change));
    }
 
-   return state0;
+   DRETURN(std::make_tuple(state0, when64, std::move(state_changes_list)));
+}
+
+/**
+ * @brief calender_state_changes() for an untyped caller
+ *
+ * @param cep calendar (CAL_Type), checked; nullptr gives 0 and leaves the out-parameters alone
+ * @param state_changes_list out: the state change list (CQU_Type); nullptr gives 0
+ * @param when64 out: when the next change will be, or 0
+ * @param now64 in/out: nullptr, or the current time (only for the test program); rounded to whole seconds
+ *
+ * @return as calender_state_changes()
+ */
+uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list, uint64_t *when64, uint64_t *now64) {
+   if (cep == nullptr || state_changes_list == nullptr) {
+      return 0;
+   }
+
+   auto [state, when, changes] = calender_state_changes(ocs::tom::ConstElement<ocs::tom::CAL>(cep), now64);
+   *when64 = when;
+   if (now64 != nullptr) {
+      *now64 = sge_time_t_to_gmt64(sge_gmt64_to_time_t(*now64));
+   }
+   *state_changes_list = changes.release();
+   return state;
 }
 
 
@@ -711,48 +693,48 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
  * @param week_time week_time strucutre or nullptr, if year_time is set
  * @param day_time day_time changes, if the exist
  * @param now a now cull representation
- * @param is_end_of_day_reached (out) is the end of day reached?
  *
- * @return time of the next change or end of the day
+ * @return time of the next change or end of the day, and whether the end of the day is reached
  *
  * @note MT-NOTE: compute_limit() is MT safe
  */
-static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time,
-                            const lList *day_time, const lListElem *now, bool *is_end_of_day_reached) {
+static std::pair<time_t, bool>
+compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom::TMR> year_time,
+              const ocs::tom::ConstList<ocs::tom::TMR> week_time, const ocs::tom::ConstList<ocs::tom::TMR> day_time,
+              const ocs::tom::ConstElement<ocs::tom::TM> now) {
    DENTER(TOP_LAYER);
 
-   lListElem *lep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::TM> lep;
    bool end_of_day = false;
+   bool is_end_of_day_reached = false;
    struct tm tm_limit;
    time_t limit;
    bool is_full_day = false;
    bool is_new_cal_entry = true;
-   const lListElem *time;
-   lListElem *new_now = (lListElem *) now; /* this is a dirty hack to get rid of the const. new_now will not be modified,
-                                              but might be overriden with a temp object, which needs to be freed within
-                                              the function. But a const lListElem cannot be freed. */
-   bool is_new_now_copy = false;
+   /* the time the daytime ranges are compared with: now, or the next calendar state change, which is then
+      held by new_now_copy */
+   ocs::tom::ConstElement<ocs::tom::TM> new_now = now;
+   ocs::tom::ElementPtr<ocs::tom::TM> new_now_copy;
 
    if (day_time == nullptr) {
       DPRINTF("no day time calendar is set ");
-      DRETURN(0);
+      DRETURN(std::make_pair(static_cast<time_t>(0), false));
    }
 
    if (year_time != nullptr && week_time != nullptr) {
       DPRINTF("year and week calendar are set. It should only be one of them");
-      DRETURN(0);
+      DRETURN(std::make_pair(static_cast<time_t>(0), false));
    }
 
    if (year_time == nullptr && week_time == nullptr) {
       DPRINTF("we have no a calendar time definition. It is most likely set to \"off\" or \"suspended\"");
-      DRETURN(0);
+      DRETURN(std::make_pair(static_cast<time_t>(0), false));
    }
 
-   time = lFirst(day_time);
-
    { /* should only be one entry in case that the calendar is valid for whole days*/
-      ocs::tom::ConstElement<ocs::tom::TM> end = lFirst(ocs::tom::get<TMR_end>(time));
-      ocs::tom::ConstElement<ocs::tom::TM> begin = lFirst(ocs::tom::get<TMR_begin>(time));
+      const auto first_range = day_time.front();
+      const auto end = ocs::tom::get<TMR_end>(first_range).front();
+      const auto begin = ocs::tom::get<TMR_begin>(first_range).front();
 
       if ( (ocs::tom::get<TM_sec>(end) == 0)   &&
            (ocs::tom::get<TM_min>(end) == 0)   &&
@@ -769,11 +751,11 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    if (is_full_day || !today) {
       if (active) { /* a calendar is active */
          if (year_time != nullptr) {
-            for_each_ep(time, year_time) {
-               if (in_range(now, time, tm_yday_cmp)) {
-                  lep = lCopyElem(lFirst(ocs::tom::get<TMR_end>(time)));
+            for (const auto range : year_time) {
+               if (in_range(now, range, tm_yday_cmp)) {
+                  lep = ocs::tom::get<TMR_end>(range).front().clone();
                   if (lep == nullptr) {
-                      lep = lCopyElem(lFirst(ocs::tom::get<TMR_begin>(time)));
+                      lep = ocs::tom::get<TMR_begin>(range).front().clone();
                   }
                   break;
                }
@@ -782,37 +764,37 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          else if (week_time != nullptr) {
             bool is_allways_inactive = true;
 
-            for_each_ep(time, week_time) {
-               ocs::tom::ConstList<ocs::tom::TM> endList = ocs::tom::get<TMR_end>(time);
-               ocs::tom::ConstList<ocs::tom::TM> beginList = ocs::tom::get<TMR_begin>(time);
+            for (const auto range : week_time) {
+               const auto endList = ocs::tom::get<TMR_end>(range);
+               const auto beginList = ocs::tom::get<TMR_begin>(range);
                if (is_full_day && (endList != nullptr) && (beginList != nullptr)
-                   && (ocs::tom::get<TM_wday>(lFirst(endList)) - ocs::tom::get<TM_wday>(lFirst(beginList)) == 6)) {
+                   && (ocs::tom::get<TM_wday>(endList.front()) - ocs::tom::get<TM_wday>(beginList.front()) == 6)) {
                    is_allways_inactive &= true; /* the calendar is disabled for the whole week. */
                }
                else {
                   is_allways_inactive &= false;
                }
 
-               if (in_range(now, time, tm_wday_cmp)) {
-                  ocs::tom::ConstElement<ocs::tom::TM> end = lFirst(endList);
+               if (in_range(now, range, tm_wday_cmp)) {
+                  auto end = endList.front();
                   uint32_t day;
 
-                  if (end == nullptr) { /* we might only have one day specified. If so, the beginList contains the end */
-                     end = lFirst(beginList);
+                  /* we might only have one day specified. If so, the beginList contains the end */
+                  if (end == nullptr) {
+                     end = beginList.front();
                   }
 
                   day = ocs::tom::get<TM_mday>(now);
 
                   day += (ocs::tom::get<TM_wday>(end) - ocs::tom::get<TM_wday>(now));
-                  lep = lCopyElem(now);
+                  lep = now.clone();
                   ocs::tom::set<TM_mday>(lep, day);
                   break;
                }
             }
-            if (is_allways_inactive) { /* the calendar is disabled for the whole week. No need to compute anything further */
-               *is_end_of_day_reached = false;
-               lFreeElem(&lep);
-               DRETURN(0);
+            /* the calendar is disabled for the whole week. No need to compute anything further */
+            if (is_allways_inactive) {
+               DRETURN(std::make_pair(static_cast<time_t>(0), false));
             }
          }
          else {
@@ -824,15 +806,12 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          end_of_day=true;
       }
       else { /* a calendar is inactive */
-         const lListElem *begin = nullptr;
-
          if (year_time != nullptr) {   /* year calenar */
-            for_each_ep(time, year_time) {
-               begin = lFirst(ocs::tom::get<TMR_begin>(time));
+            for (const auto range : year_time) {
+               const auto begin = ocs::tom::get<TMR_begin>(range).front();
                if (tm_yday_cmp(now, begin) < 0 &&
-                  (!lep || tm_yday_cmp(lep, begin) > 0)) {
-                  lFreeElem(&lep);
-                  lep = lCopyElem(begin);
+                  (!lep || tm_yday_cmp(*lep, begin) > 0)) {
+                  lep = begin.clone();
                }
             }
             if (lep == nullptr) {
@@ -841,21 +820,19 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          }
          else if (week_time != nullptr) { /* week calendar */
             bool is_next_week = false;
-            for_each_ep(time, week_time) {
-               begin = lFirst(ocs::tom::get<TMR_begin>(time));
+            for (const auto range : week_time) {
+               const auto begin = ocs::tom::get<TMR_begin>(range).front();
                if (tm_wday_cmp(now, begin) < 0 &&
-                  (!lep || tm_wday_cmp(lep, begin) > 0)) {
-                  lFreeElem(&lep);
-                  lep = lCopyElem(begin);
+                  (!lep || tm_wday_cmp(*lep, begin) > 0)) {
+                  lep = begin.clone();
                }
             }
             if (lep == nullptr) {
                is_next_week = true;
-               for_each_ep(time, week_time) {
-                  begin = lFirst(ocs::tom::get<TMR_begin>(time));
-                  if (!lep || tm_wday_cmp(lep, begin) > 0) {
-                     lFreeElem(&lep);
-                     lep = lCopyElem(begin);
+               for (const auto range : week_time) {
+                  const auto begin = ocs::tom::get<TMR_begin>(range).front();
+                  if (!lep || tm_wday_cmp(*lep, begin) > 0) {
+                     lep = begin.clone();
                   }
                }
             }
@@ -865,7 +842,8 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                ocs::tom::set<TM_mday>(lep, days);
             }
             else {
-               ocs::tom::set<TM_mday>(lep, ocs::tom::get<TM_mday>(now) + (ocs::tom::get<TM_wday>(lep) - ocs::tom::get<TM_wday>(now)));
+               ocs::tom::set<TM_mday>(lep, ocs::tom::get<TM_mday>(now) +
+                                           (ocs::tom::get<TM_wday>(lep) - ocs::tom::get<TM_wday>(now)));
             }
             ocs::tom::set<TM_mon>(lep, ocs::tom::get<TM_mon>(now));
             ocs::tom::set<TM_year>(lep, ocs::tom::get<TM_year>(now));
@@ -880,15 +858,14 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
       }
 
       if (is_new_cal_entry) {
-         uncullify_tm(lep, &tm_limit);
+         uncullify_tm(*lep, &tm_limit);
          if (is_full_day) {/* a full day calendar, nothing else is needed. */
-            lFreeElem(&lep);
+            lep.reset();
          }
          else {
             today = true; /* we have to enable the calendar for today */
-            new_now = lep; /* set the next calendar state change as today */
-            lep = nullptr;
-            is_new_now_copy = true; /* new_now needs to be freed later */
+            new_now_copy = std::move(lep); /* set the next calendar state change as today */
+            new_now = *new_now_copy;
          }
 
       }
@@ -901,14 +878,13 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
       if (active) {
          /* inside of range - seek nearest end of range */
          /* seek end of active daytime range */
-         for_each_ep(time, day_time) {
-            if (in_range(new_now, time, tm_daytime_cmp)) {
-               lep = lCopyElem(lFirst(ocs::tom::get<TMR_end>(time)));
+         for (const auto range : day_time) {
+            if (in_range(new_now, range, tm_daytime_cmp)) {
+               lep = ocs::tom::get<TMR_end>(range).front().clone();
                break;
             }
          }
       } else {
-         const lListElem *begin;
          /* outside of range - seek nearest begin of range.
             A day starts at 0:0:0 o'clock, therefore we have to check if we hit the start of the
             range right away or if we are smaller. This matters whenever new_now was synthesized
@@ -918,12 +894,11 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             A range that begins at the very daytime of the real now cannot show up here, because
             in_range() includes both ends of a range - we would be inside of it and "active" would
             be set. */
-         for_each_ep(time, day_time) {
-            begin = lFirst(ocs::tom::get<TMR_begin>(time));
+         for (const auto range : day_time) {
+            const auto begin = ocs::tom::get<TMR_begin>(range).front();
             if (tm_daytime_cmp(new_now, begin) <= 0 &&
-               (!lep || tm_daytime_cmp(lep, begin) > 0)) {
-               lFreeElem(&lep);
-               lep = lCopyElem(begin);
+               (!lep || tm_daytime_cmp(*lep, begin) > 0)) {
+               lep = begin.clone();
             }
          }
       }
@@ -934,8 +909,8 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          to compute the state shift for the "next" day */
       if (!lep) {
          DPRINTF("reached end of the day\n");
-         *is_end_of_day_reached=true;
-         lep = lCopyElem(new_now);
+         is_end_of_day_reached = true;
+         lep = new_now.clone();
          ocs::tom::set<TM_hour>(lep, 24);
          ocs::tom::set<TM_min>(lep, 0);
          ocs::tom::set<TM_sec>(lep, 0);
@@ -952,12 +927,8 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
       tm_limit.tm_hour = ocs::tom::get<TM_hour>(lep);
       tm_limit.tm_min = ocs::tom::get<TM_min>(lep);
       tm_limit.tm_sec = ocs::tom::get<TM_sec>(lep);
-      lFreeElem(&lep);
+      lep.reset();
       is_new_cal_entry = true;
-   }
-
-   if (is_new_now_copy) {
-       lFreeElem(&new_now);
    }
 
    if (is_new_cal_entry) {
@@ -985,30 +956,34 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
       limit = 0;
    }
 
-   DRETURN(limit);
+   DRETURN(std::make_pair(limit, is_end_of_day_reached));
 
 }
 
-static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
+/**
+ * @brief Joins overlapping ranges of a range list
+ *
+ * @param rl the range list (TMR_Type)
+ * @param cmp_func the order of the range bounds
+ * @return 0
+ */
+static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cmp_func_t cmp_func) {
    DENTER(TOP_LAYER);
 
-   const lListElem *r1, *r2;
-   const lListElem *q1, *q2;
-   lListElem *q;
 /*    lListElem *t1, *t2, *t3, *t4; */
 /*    int i1, i2, i3, i4; */
 
 /*    i1 = i2 = i3 = i4 = -1; */
 
-   for_each_rw_lv(r, rl) {
+   for (const auto r : rl) {
 
-      r1 = lFirst(ocs::tom::get<TMR_begin>(r));
-      r2 = lFirst(ocs::tom::get<TMR_end>(r));
+      auto r1 = ocs::tom::get<TMR_begin>(r).front();
+      auto r2 = ocs::tom::get<TMR_end>(r).front();
 
-      for (q = lNextRW(r); q; q = lNextRW(q)) {
+      for (auto q = r.next(); q; q = q.next()) {
 
-         q1 = lFirst(ocs::tom::get<TMR_begin>(q));
-         q2 = lFirst(ocs::tom::get<TMR_end>(q));
+         const auto q1 = ocs::tom::get<TMR_begin>(q).front();
+         const auto q2 = ocs::tom::get<TMR_end>(q).front();
 
          /* overlapping ranges ? */
          if (in_range(r1, q, cmp_func)         || /* r1 in q */
@@ -1063,14 +1038,14 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
                lGetUlong(t2, TM_sec))); */
 
             /* remove q */
-            lRemoveElem(rl, &q);
+            rl.erase(q);
 
             /* prepare next loop iteration */
             q = r;
 
             /* r1, r2 are no longer valid after swapping */
-            r1 = lFirst(ocs::tom::get<TMR_begin>(r));
-            r2 = lFirst(ocs::tom::get<TMR_end>(r));
+            r1 = ocs::tom::get<TMR_begin>(r).front();
+            r2 = ocs::tom::get<TMR_end>(r).front();
          }
       }
    }
@@ -1078,19 +1053,23 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
    DRETURN(0);
 }
 
-/*
-lListElem *tm, TM_Type
-*/
-static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func) {
+/**
+ * @brief Is a time in one of the ranges of a range list?
+ *
+ * @param tm the time (TM_Type)
+ * @param rl the range list (TMR_Type); an empty handle contains every time
+ * @param cmp_func the order of the times
+ * @return true if the time is in a range or the list handle is empty
+ */
+static bool in_range_list(const ocs::tom::ConstElement<ocs::tom::TM> tm, const ocs::tom::ConstList<ocs::tom::TMR> rl,
+                          const cmp_func_t cmp_func) {
    DENTER(TOP_LAYER);
-
-   const lListElem *r;
 
    if (!rl) {
       DRETURN(true);
    }
 
-   for_each_ep(r, rl) {
+   for (const auto r : rl) {
       if (in_range(tm, r, cmp_func)) {
          DRETURN(true);
       }
@@ -1099,16 +1078,22 @@ static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_f
    DRETURN(false);
 }
 
-/*
-lListElem *tm, TM_Type
-*/
-static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func) {
+/**
+ * @brief Is a time in a range?
+ *
+ * A range without an end holds only its begin.
+ *
+ * @param tm the time (TM_Type)
+ * @param r the range (TMR_Type)
+ * @param cmp_func the order of the times
+ * @return 1 if the time is in the range, 0 otherwise
+ */
+static int in_range(const ocs::tom::ConstElement<ocs::tom::TM> tm, const ocs::tom::ConstElement<ocs::tom::TMR> r,
+                    const cmp_func_t cmp_func) {
    DENTER(TOP_LAYER);
 
-   const lListElem *t1, *t2;
-
-   t1 = lFirst(ocs::tom::get<TMR_begin>(r));
-   t2 = lFirst(ocs::tom::get<TMR_end>(r));
+   const auto t1 = ocs::tom::get<TMR_begin>(r).front();
+   const auto t2 = ocs::tom::get<TMR_end>(r).front();
 
    if (t2) {
       if (cmp_func(t1, tm)<=0 && cmp_func(tm, t2) <= 0) { /* mon-fri */
@@ -1138,11 +1123,19 @@ static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func
    DRETURN(0);
 }
 
-/* disabled_year_list := disabled_year_entry[<space>disabled_year_entry] */
-static int disabled_year_list(lList **alpp, const char *s, lList **cal, const char *cal_name) {
+/**
+ * @brief Parses a year calendar
+ *
+ * disabled_year_list := disabled_year_entry[<space>disabled_year_entry]
+ *
+ * @param alpp receives the syntax error
+ * @param s the year calendar specification; nullptr or "none" for no calendar
+ * @param cal_name the name of the calendar, for the error message
+ * @return the parsed calendar (CA_Type), an empty handle for no calendar, std::nullopt on a syntax error
+ */
+static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
+disabled_year_list(lList **alpp, const char *s, const char *cal_name) {
    DENTER(TOP_LAYER);
-
-   lListElem *calep;
 
    static token_set_t token_set[] = {
       { DOT,             "." },
@@ -1156,22 +1149,22 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
       { 0,               nullptr }
    };
 
-   if (cal != nullptr) {
-      *cal = nullptr;
-   }
+   ocs::tom::ListPtr<ocs::tom::CA> cal;
 
    if (!s || !strcasecmp(s, "none")) {
-      DRETURN(0);
+      DRETURN(std::move(cal));
    }
 
    scan(s, token_set);
 
-   if (disabled_year_entry(cal?&calep:nullptr))
-      goto ERROR;
+   {
+      auto calep = disabled_year_entry();
+      if (!calep) {
+         goto ERROR;
+      }
 
-   if (cal != nullptr) {
-      *cal = lCreateList("year list", CA_Type);
-      lAppendElem(*cal, calep);
+      cal = ocs::tom::ListPtr<ocs::tom::CA>::create("year list");
+      cal->push_back(std::move(calep));
    }
    while (scan(nullptr, nullptr) == SPACE) {
       eat_token();
@@ -1180,12 +1173,11 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
          eat_token();
       }
 
-      if (disabled_year_entry(cal?&calep:nullptr)) {
+      auto calep = disabled_year_entry();
+      if (!calep) {
          goto ERROR;
       }
-      if (cal != nullptr) {
-         lAppendElem(*cal, calep);
-      }
+      cal->push_back(std::move(calep));
    }
 
    /* complain about still unused tokens */
@@ -1194,25 +1186,32 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
       goto ERROR;
    }
 
-   DRETURN(0);
+   DRETURN(std::move(cal));
 
 ERROR:
-   lFreeList(cal);
+   cal.reset();
    snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ANSWER_ERRORINDISABLYEAROFCALENDARXY_SS, save_error(), cal_name);
    answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-   DRETURN(-1);
+   DRETURN(std::nullopt);
 }
 
-/* disabled_year_entry := year_day_range_list[=daytime_range_list][=state] */
-static int disabled_year_entry(lListElem **cal) {
+/**
+ * @brief Parses one entry of a year calendar
+ *
+ * disabled_year_entry := year_day_range_list[=daytime_range_list][=state]
+ *
+ * @return the entry (CA_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::CA> disabled_year_entry() {
    DENTER(TOP_LAYER);
 
-   lList *ydrl = nullptr,
-         *dtrl = nullptr;
+   ocs::tom::ListPtr<ocs::tom::TMR> ydrl;
+   ocs::tom::ListPtr<ocs::tom::TMR> dtrl;
    int state = QI_DO_DISABLE;
 
    if (scan(nullptr, nullptr)==NUMBER) {
-      if (year_day_range_list(&ydrl))
+      ydrl = year_day_range_list();
+      if (!ydrl)
          goto ERROR;
 
       if (scan(nullptr, nullptr)!=EQUAL_SIGN)
@@ -1221,9 +1220,10 @@ static int disabled_year_entry(lListElem **cal) {
    }
 
    if (scan(nullptr, nullptr)==NUMBER) {
-      if (daytime_range_list(&dtrl))
+      dtrl = daytime_range_list();
+      if (!dtrl)
          goto ERROR;
-      normalize_range_list(dtrl, tm_daytime_cmp);
+      normalize_range_list(*dtrl, tm_daytime_cmp);
       if (scan(nullptr, nullptr)!=EQUAL_SIGN)
          goto SUCCESS;
       eat_token();
@@ -1231,7 +1231,7 @@ static int disabled_year_entry(lListElem **cal) {
 
    if (scan(nullptr, nullptr)==STRING) {
       if (action(&state)) {
-         DRETURN(-1);
+         goto ERROR;
       }
    } else {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_ANSWER_GOTEQUALWITHOUTDAYTIMERANGEORSTATE );
@@ -1239,30 +1239,30 @@ static int disabled_year_entry(lListElem **cal) {
    }
 
 SUCCESS:
-   if (cal) {
-      *cal = lCreateElem(CA_Type);
-      ocs::tom::set<CA_yday_range_list>(*cal, ydrl);
+   {
+      auto cal = ocs::tom::ElementPtr<ocs::tom::CA>::create();
+      ocs::tom::set<CA_yday_range_list>(cal, std::move(ydrl));
       if (!dtrl)
-         full_daytime_range(&dtrl);
-      ocs::tom::set<CA_daytime_range_list>(*cal, dtrl);
+         dtrl = full_daytime_range();
+      ocs::tom::set<CA_daytime_range_list>(cal, std::move(dtrl));
       DPRINTF("state = %d\n", state);
-      ocs::tom::set<CA_state>(*cal, state);
+      ocs::tom::set<CA_state>(cal, state);
+      DRETURN(cal);
    }
 
-   DRETURN(0);
-
 ERROR:
-   lFreeList(&ydrl);
-   lFreeList(&dtrl);
-   DRETURN(-1);
+   DRETURN(nullptr);
 }
 
-static void full_daytime_range(lList **dtrl) {
+/**
+ * @brief A daytime range list of the whole day, 0-24
+ *
+ * @return the range list (TMR_Type)
+ */
+static ocs::tom::ListPtr<ocs::tom::TMR> full_daytime_range() {
    DENTER(TOP_LAYER);
 
-
-   if (!*dtrl)
-      *dtrl = lCreateList("full day", TMR_Type);
+   auto dtrl = ocs::tom::ListPtr<ocs::tom::TMR>::create("full day");
 
 /*    DPRINTF("FULL_DAYTIME_RANGE\n"); */
 
@@ -1270,17 +1270,20 @@ static void full_daytime_range(lList **dtrl) {
    ocs::tom::emplace_back_in<TMR_begin, TM_hour>(tmr, 0);
    ocs::tom::emplace_back_in<TMR_end, TM_hour>(tmr, 24);
 
-   lAppendElem(*dtrl, std::move(tmr));
+   dtrl->push_back(std::move(tmr));
 
-   DRETURN_VOID;
+   DRETURN(dtrl);
 }
 
-static void full_weekday_range(lList **dtrl) {
+/**
+ * @brief A week day range list of the whole week, sunday-saturday
+ *
+ * @return the range list (TMR_Type)
+ */
+static ocs::tom::ListPtr<ocs::tom::TMR> full_weekday_range() {
    DENTER(TOP_LAYER);
 
-
-   if (!*dtrl)
-      *dtrl = lCreateList("full week", TMR_Type);
+   auto dtrl = ocs::tom::ListPtr<ocs::tom::TMR>::create("full week");
 
 /*    DPRINTF("FULL_WEEKDAY_RANGE\n"); */
 
@@ -1288,125 +1291,129 @@ static void full_weekday_range(lList **dtrl) {
    ocs::tom::emplace_back_in<TMR_begin, TM_wday>(tmr, 0);
    ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr, 6);
 
-   lAppendElem(*dtrl, std::move(tmr));
+   dtrl->push_back(std::move(tmr));
 
-   DRETURN_VOID;
+   DRETURN(dtrl);
 }
 
 
-/* year_day_range := year_day_range[,year_day_range] */
-static int year_day_range_list(lList **ydrl) {
+/**
+ * @brief Parses a list of year day ranges
+ *
+ * year_day_range_list := year_day_range[,year_day_range]
+ *
+ * @return the range list (TMR_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ListPtr<ocs::tom::TMR> year_day_range_list() {
    DENTER(TOP_LAYER);
 
-   lListElem *tmr;
-
-   if (year_day_range(&tmr)) {
-      DRETURN(-1);
+   auto tmr = year_day_range();
+   if (!tmr) {
+      DRETURN(nullptr);
    }
-   if (ydrl != nullptr) {
-      *ydrl = lCreateList("year_day_range_list", TMR_Type);
-      lAppendElem(*ydrl, tmr);
-   }
+   auto ydrl = ocs::tom::ListPtr<ocs::tom::TMR>::create("year_day_range_list");
+   ydrl->push_back(std::move(tmr));
 
    while (scan(nullptr, nullptr)==COMMA) {
       eat_token();
-      if (year_day_range(&tmr)) {
-         if (ydrl != nullptr) {
-            lFreeList(ydrl);
-         }
-         DRETURN(-1);
+      tmr = year_day_range();
+      if (!tmr) {
+         DRETURN(nullptr);
       }
-      if (ydrl != nullptr) {
-         lAppendElem(*ydrl, tmr);
-      }
+      ydrl->push_back(std::move(tmr));
    }
 
-   DRETURN(0);
+   DRETURN(ydrl);
 }
 
-static int year_day_range(lListElem **tmr) {
+/**
+ * @brief Parses a year day range
+ *
+ * year_day_range := year_day[-year_day]
+ *
+ * @return the range (TMR_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::TMR> year_day_range() {
    DENTER(TOP_LAYER);
 
-   lListElem *t1, *t2 = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::TM> t2;
 
-   if (year_day(&t1)) {
-      DRETURN(-1);
+   auto t1 = year_day();
+   if (!t1) {
+      DRETURN(nullptr);
    }
 
    if (scan(nullptr, nullptr)==MINUS) {
       eat_token();
 
-      if (year_day(&t2)) {
-         lFreeElem(&t1);
-         DRETURN(-1);
+      t2 = year_day();
+      if (!t2) {
+         DRETURN(nullptr);
       }
-      if (tm_yday_cmp(t1, t2)>0) {
-         snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_ANSWER_FIRSTYESTERDAYINRANGEMUSTBEBEFORESECONDYESTERDAY);
-         lFreeElem(&t1);
-         DRETURN(-1);
+      if (tm_yday_cmp(*t1, *t2)>0) {
+         snprintf(parse_error, sizeof(parse_error), SFNMAX,
+                  MSG_ANSWER_FIRSTYESTERDAYINRANGEMUSTBEBEFORESECONDYESTERDAY);
+         DRETURN(nullptr);
       }
    }
 
-   if (tmr) {
-      *tmr = lCreateElem(TMR_Type);
+   auto tmr = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
 
+   auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
+   tmlp->push_back(std::move(t1));
+   ocs::tom::set<TMR_begin>(tmr, std::move(tmlp));
+
+   if (t2) {
       auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
-      lAppendElem(*tmlp, t1);
-      t1 = nullptr;
-      ocs::tom::set<TMR_begin>(*tmr, std::move(tmlp));
-
-      if (t2) {
-         auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
-         lAppendElem(*tmlp, t2);
-         t2 = nullptr;
-         ocs::tom::set<TMR_end>(*tmr, std::move(tmlp));
-      }
+      tmlp->push_back(std::move(t2));
+      ocs::tom::set<TMR_end>(tmr, std::move(tmlp));
    }
 
-   lFreeElem(&t1);
-   lFreeElem(&t2);
-
-
-   DRETURN(0);
+   DRETURN(tmr);
 }
 
-static int year_day(lListElem **tm) {
+/**
+ * @brief Parses a year day
+ *
+ * year_day := day.month.year
+ *
+ * @return the day (TM_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::TM> year_day() {
    DENTER(TOP_LAYER);
 
    int y, m, d;
 
    if (day(&d)) {
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
 
    if (scan(nullptr, nullptr)!=DOT) {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_MISSINGPOINTAFTERDAY);
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
    eat_token();
 
    if (month(&m)) {
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
 
    if (scan(nullptr, nullptr)!=DOT) {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_MISSINGPOINTAFTERMONTH );
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
    eat_token();
 
    if (year(&y)) {
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
 
-   if (tm) {
-      *tm = lCreateElem(TM_Type);
-      ocs::tom::set<TM_year>(*tm, y - 1900);
-      ocs::tom::set<TM_mon>(*tm, m);
-      ocs::tom::set<TM_mday>(*tm, d);
-   }
+   auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
+   ocs::tom::set<TM_year>(tm, y - 1900);
+   ocs::tom::set<TM_mon>(tm, m);
+   ocs::tom::set<TM_mday>(tm, d);
 
-   DRETURN(0);
+   DRETURN(tm);
 }
 
 static int range_number(int min, int max, int *ip, const char *name) {
@@ -1476,148 +1483,153 @@ static int year(int *yp) {
    return range_number(1970, 2037, yp, "year");
 }
 
-/* daytime_range_list   := daytime_range[,daytime_range] ... */
-static int daytime_range_list(lList **dtrl) {
+/**
+ * @brief Parses a list of daytime ranges
+ *
+ * daytime_range_list := daytime_range[,daytime_range] ...
+ *
+ * A range that wraps around midnight is split into two.
+ *
+ * @return the range list (TMR_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ListPtr<ocs::tom::TMR> daytime_range_list() {
    DENTER(TOP_LAYER);
 
-   lListElem *tmr;
-
-   if (daytime_range(&tmr)) {
-      DRETURN(-1);
+   auto tmr = daytime_range();
+   if (!tmr) {
+      DRETURN(nullptr);
    }
-   if (dtrl) {
-      *dtrl = lCreateList("daytime_range_list", TMR_Type);
-      lAppendElem(*dtrl, tmr);
-      split_daytime_range(*dtrl, tmr);
-   }
+   auto dtrl = ocs::tom::ListPtr<ocs::tom::TMR>::create("daytime_range_list");
+   auto added = dtrl->push_back(std::move(tmr));
+   split_daytime_range(*dtrl, added);
 
    while (scan(nullptr, nullptr)==COMMA) {
       eat_token();
-      if (daytime_range(&tmr)) {
-         if (dtrl != nullptr) {
-            lFreeList(dtrl);
-         }
-         DRETURN(-1);
+      tmr = daytime_range();
+      if (!tmr) {
+         DRETURN(nullptr);
       }
-      if (dtrl != nullptr) {
-         lAppendElem(*dtrl, tmr);
-         split_daytime_range(*dtrl, tmr);
-      }
+      added = dtrl->push_back(std::move(tmr));
+      split_daytime_range(*dtrl, added);
    }
 
-   DRETURN(0);
+   DRETURN(dtrl);
 }
 
-static void split_daytime_range(lList *dtrl, lListElem *tmr) {
+/**
+ * @brief Splits a daytime range that wraps around midnight into two
+ *
+ * The range keeps its begin and ends at 24:00; a new range from 0:00 to the
+ * old end is appended to the list.
+ *
+ * @param dtrl the range list (TMR_Type) holding the range
+ * @param tmr the range (TMR_Type)
+ */
+static void split_daytime_range(const ocs::tom::List<ocs::tom::TMR> dtrl, const ocs::tom::Element<ocs::tom::TMR> tmr) {
    DENTER(TOP_LAYER);
 
-   const lListElem *t2, *t1, *t4;
-   lListElem *tmr2;
-
-   if ((t2=lFirst(ocs::tom::get<TMR_end>(tmr)))) {
-      t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
+   if (const auto t2 = ocs::tom::get<TMR_end>(tmr).front()) {
+      const auto t1 = ocs::tom::get<TMR_begin>(tmr).front();
 
       if (tm_daytime_cmp(t1, t2)>0) {
          /* split it into two ranges */
-         tmr2 = lCreateElem(TMR_Type);
-         ocs::tom::emplace_back_in<TMR_begin, TM_hour>(tmr2, 0);
-         ocs::tom::emplace_back_in<TMR_end, TM_hour>(tmr2, 24);
-         ocs::tom::swap<TMR_end, TMR_end>(tmr, tmr2);
-         lAppendElem(dtrl, tmr2);
+         auto new_range = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
+         ocs::tom::emplace_back_in<TMR_begin, TM_hour>(new_range, 0);
+         ocs::tom::emplace_back_in<TMR_end, TM_hour>(new_range, 24);
+         ocs::tom::swap<TMR_end, TMR_end>(tmr, *new_range);
+         const auto tmr2 = dtrl.push_back(std::move(new_range));
 
-         ocs::tom::ConstElement<ocs::tom::TM> t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
-         ocs::tom::ConstElement<ocs::tom::TM> t2=lFirst(ocs::tom::get<TMR_end>(tmr));
-         ocs::tom::ConstElement<ocs::tom::TM> t3=lFirst(ocs::tom::get<TMR_begin>(tmr2));
-         t4=lFirst(ocs::tom::get<TMR_end>(tmr2));
+         const auto begin1 = ocs::tom::get<TMR_begin>(tmr).front();
+         const auto end1 = ocs::tom::get<TMR_end>(tmr).front();
+         const auto begin2 = ocs::tom::get<TMR_begin>(tmr2).front();
+         const auto end2 = ocs::tom::get<TMR_end>(tmr2).front();
 
          DPRINTF("splitted %d:%d:%d-%d:%d:%d into %d:%d:%d-%d:%d:%d and %d:%d:%d-%d:%d:%d\n",
-            ocs::tom::get<TM_hour>(t1),
-            ocs::tom::get<TM_min>(t1),
-            ocs::tom::get<TM_sec>(t1),
+            ocs::tom::get<TM_hour>(begin1),
+            ocs::tom::get<TM_min>(begin1),
+            ocs::tom::get<TM_sec>(begin1),
 
-            ocs::tom::get<TM_hour>(t4),
-            ocs::tom::get<TM_min>(t4),
-            ocs::tom::get<TM_sec>(t4),
+            ocs::tom::get<TM_hour>(end2),
+            ocs::tom::get<TM_min>(end2),
+            ocs::tom::get<TM_sec>(end2),
 
-            ocs::tom::get<TM_hour>(t1),
-            ocs::tom::get<TM_min>(t1),
-            ocs::tom::get<TM_sec>(t1),
+            ocs::tom::get<TM_hour>(begin1),
+            ocs::tom::get<TM_min>(begin1),
+            ocs::tom::get<TM_sec>(begin1),
 
-            ocs::tom::get<TM_hour>(t2),
-            ocs::tom::get<TM_min>(t2),
-            ocs::tom::get<TM_sec>(t2),
+            ocs::tom::get<TM_hour>(end1),
+            ocs::tom::get<TM_min>(end1),
+            ocs::tom::get<TM_sec>(end1),
 
-            ocs::tom::get<TM_hour>(t3),
-            ocs::tom::get<TM_min>(t3),
-            ocs::tom::get<TM_sec>(t3),
+            ocs::tom::get<TM_hour>(begin2),
+            ocs::tom::get<TM_min>(begin2),
+            ocs::tom::get<TM_sec>(begin2),
 
-            ocs::tom::get<TM_hour>(t4),
-            ocs::tom::get<TM_min>(t4),
-            ocs::tom::get<TM_sec>(t4));
+            ocs::tom::get<TM_hour>(end2),
+            ocs::tom::get<TM_min>(end2),
+            ocs::tom::get<TM_sec>(end2));
       }
    }
 
    DRETURN_VOID;
 }
 
-/* daytime_range  := daytime-daytime */
-static int daytime_range(lListElem **tmr) {
+/**
+ * @brief Parses a daytime range
+ *
+ * daytime_range := daytime-daytime
+ *
+ * @return the range (TMR_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::TMR> daytime_range() {
    DENTER(TOP_LAYER);
 
-   lListElem *t1 = nullptr, *t2 = nullptr;
-
-   if (daytime(&t1)) {
-      goto ERROR;
+   auto t1 = daytime();
+   if (!t1) {
+      DRETURN(nullptr);
    }
    if (scan(nullptr, nullptr)!=MINUS) {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_MISSINGDASHINDAYTIMERANGE);
-      goto ERROR;
+      DRETURN(nullptr);
    }
    eat_token();
-   if (daytime(&t2)) {
-      goto ERROR;
+   auto t2 = daytime();
+   if (!t2) {
+      DRETURN(nullptr);
    }
-   if (!tm_daytime_cmp(t1, t2)) {
+   if (!tm_daytime_cmp(*t1, *t2)) {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_RANGEBEGISEQUALTOEND);
-      goto ERROR;
+      DRETURN(nullptr);
    }
 
-   if (tmr) {
-      lList *tmlp;
+   auto tmr = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
 
-      *tmr = lCreateElem(TMR_Type);
+   auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
+   tmlp->push_back(std::move(t1));
+   ocs::tom::set<TMR_begin>(tmr, std::move(tmlp));
 
-      tmlp = lCreateList("tm_list", TM_Type);
-      lAppendElem(tmlp, t1);
-      t1 = nullptr;
-      ocs::tom::set<TMR_begin>(*tmr, tmlp);
+   tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
+   tmlp->push_back(std::move(t2));
+   ocs::tom::set<TMR_end>(tmr, std::move(tmlp));
 
-      tmlp = lCreateList("tm_list", TM_Type);
-      lAppendElem(tmlp, t2);
-      t2 = nullptr;
-      ocs::tom::set<TMR_end>(*tmr, tmlp);
-   }
-
-   lFreeElem(&t1);
-   lFreeElem(&t2);
-
-   DRETURN(0);
-
-ERROR:
-   lFreeElem(&t1);
-   lFreeElem(&t2);
-   DRETURN(-1);
+   DRETURN(tmr);
 }
 
 
-/* daytime := hour[:minute][:second] */
-static int daytime(lListElem **tm) {
+/**
+ * @brief Parses a daytime
+ *
+ * daytime := hour[:minute][:second]
+ *
+ * @return the daytime (TM_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::TM> daytime() {
    DENTER(TOP_LAYER);
 
    int h, m = 0, s = 0;
 
    if (hour(&h)) {
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
 
    if (scan(nullptr, nullptr)!=COLON) {
@@ -1625,7 +1637,7 @@ static int daytime(lListElem **tm) {
    }
    eat_token();
    if (minute(&m)) {
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
 
    if (scan(nullptr, nullptr)!=COLON) {
@@ -1633,25 +1645,23 @@ static int daytime(lListElem **tm) {
    }
    eat_token();
    if (seconds(&s)) {
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
 
 SUCCESS:
    if (h==24) {
       if (m || s) {
          snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_DAYTIMESBEYOND24HNOTALLOWED);
-         DRETURN(-1);
+         DRETURN(nullptr);
       }
    }
 
-   if (tm) {
-      *tm = lCreateElem(TM_Type);
-      ocs::tom::set<TM_hour>(*tm, h);
-      ocs::tom::set<TM_min>(*tm, m);
-      ocs::tom::set<TM_sec>(*tm, s);
-   }
+   auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
+   ocs::tom::set<TM_hour>(tm, h);
+   ocs::tom::set<TM_min>(tm, m);
+   ocs::tom::set<TM_sec>(tm, s);
 
-   DRETURN(0);
+   DRETURN(tm);
 }
 
 static int hour(int *hp) {
@@ -1687,10 +1697,20 @@ static int action(int *sp) {
    DRETURN(0);
 }
 
-static int disabled_week_list(lList **alpp, const char *s, lList **cal, const char *cal_name) {
+/**
+ * @brief Parses a week calendar
+ *
+ * disabled_week_list := disabled_week_entry[<space>disabled_week_entry]
+ *
+ * @param alpp receives the syntax error
+ * @param s the week calendar specification; nullptr or "none" for no calendar
+ * @param cal_name the name of the calendar, for the error message
+ * @return the parsed calendar (CA_Type), an empty handle for no calendar, std::nullopt on a syntax error
+ */
+static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
+disabled_week_list(lList **alpp, const char *s, const char *cal_name) {
    DENTER(TOP_LAYER);
 
-   lListElem *calep;
    static token_set_t token_set[] = {
       { COLON,        ":" },
       { EQUAL_SIGN,   "=" },
@@ -1702,23 +1722,22 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
       { 0,            nullptr }
    };
 
-   if (cal) {
-      *cal = nullptr;
-   }
+   ocs::tom::ListPtr<ocs::tom::CA> cal;
 
    if (!s || !strcasecmp(s, "none")) {
-      DRETURN(0);
+      DRETURN(std::move(cal));
    }
 
    scan(s, token_set);
 
-   if (disabled_week_entry(cal?&calep:nullptr)) {
-      goto ERROR;
-   }
+   {
+      auto calep = disabled_week_entry();
+      if (!calep) {
+         goto ERROR;
+      }
 
-   if (cal) {
-      *cal = lCreateList("week list", CA_Type);
-      lAppendElem(*cal, calep);
+      cal = ocs::tom::ListPtr<ocs::tom::CA>::create("week list");
+      cal->push_back(std::move(calep));
    }
 
    /* if we have a space, there is at least one more calender spec. */
@@ -1730,12 +1749,11 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
          eat_token();
       }
 
-      if (disabled_week_entry(cal?&calep:nullptr)) {
+      auto calep = disabled_week_entry();
+      if (!calep) {
          goto ERROR;
       }
-      if (cal) {
-         lAppendElem(*cal, calep);
-      }
+      cal->push_back(std::move(calep));
    }
 
    /* complain about still unused tokens */
@@ -1744,28 +1762,35 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
       goto ERROR;
    }
 
-   DRETURN(0);
+   DRETURN(std::move(cal));
 
 ERROR:
-   lFreeList(cal);
+   cal.reset();
    snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_PARSE_ERRORINDISABLEDWEEKOFCALENDAR_SS, cal_name, save_error());
    answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-   DRETURN(-1);
+   DRETURN(std::nullopt);
 }
 
-/* disabled_week_entry := week_day_range_list[=daytime_range_list][=state] */
-static int disabled_week_entry(lListElem **cal) {
+/**
+ * @brief Parses one entry of a week calendar
+ *
+ * disabled_week_entry := week_day_range_list[=daytime_range_list][=state]
+ *
+ * @return the entry (CA_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::CA> disabled_week_entry() {
    DENTER(TOP_LAYER);
 
    /* default values */
-   lList *wdrl = nullptr,
-         *dtrl = nullptr;
-       int state = QI_DO_DISABLE;
+   ocs::tom::ListPtr<ocs::tom::TMR> wdrl;
+   ocs::tom::ListPtr<ocs::tom::TMR> dtrl;
+   int state = QI_DO_DISABLE;
 
    if (scan(nullptr, nullptr)==STRING &&
        cheap_scan(get_string(), statev, 3, "state specifier")<0) {
 
-      if (week_day_range_list(&wdrl)) {
+      wdrl = week_day_range_list();
+      if (!wdrl) {
          goto ERROR;
       }
 
@@ -1776,10 +1801,11 @@ static int disabled_week_entry(lListElem **cal) {
    }
 
    if (scan(nullptr, nullptr)==NUMBER) {
-      if (daytime_range_list(&dtrl)) {
+      dtrl = daytime_range_list();
+      if (!dtrl) {
          goto ERROR;
       }
-      normalize_range_list(dtrl, tm_daytime_cmp);
+      normalize_range_list(*dtrl, tm_daytime_cmp);
       if (scan(nullptr, nullptr)!=EQUAL_SIGN) {
          goto SUCCESS;
       }
@@ -1797,65 +1823,67 @@ static int disabled_week_entry(lListElem **cal) {
    }
 
 SUCCESS:
-   if (cal) {
-      *cal = lCreateElem(CA_Type);
+   {
+      auto cal = ocs::tom::ElementPtr<ocs::tom::CA>::create();
 
       if (!wdrl) {
-         full_weekday_range(&wdrl);
+         wdrl = full_weekday_range();
       }
 
-      ocs::tom::set<CA_wday_range_list>(*cal, wdrl);
+      ocs::tom::set<CA_wday_range_list>(cal, std::move(wdrl));
 
       if (!dtrl) {
-         full_daytime_range(&dtrl);
+         dtrl = full_daytime_range();
       }
-      ocs::tom::set<CA_daytime_range_list>(*cal, dtrl);
-      ocs::tom::set<CA_state>(*cal, state);
+      ocs::tom::set<CA_daytime_range_list>(cal, std::move(dtrl));
+      ocs::tom::set<CA_state>(cal, state);
+      DRETURN(cal);
    }
-
-   DRETURN(0);
 
 ERROR:
-   lFreeList(&wdrl);
-   lFreeList(&dtrl);
-   DRETURN(-1);
+   DRETURN(nullptr);
 }
 
-/* week_day_range := week_day_range[,week_day_range] */
-static int week_day_range_list(lList **wdrl) {
+/**
+ * @brief Parses a list of week day ranges
+ *
+ * week_day_range_list := week_day_range[,week_day_range]
+ *
+ * A range that wraps around the end of the week is split into two, touching
+ * and overlapping ranges are joined, and ranges are extended over the end of
+ * the week.
+ *
+ * @return the range list (TMR_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ListPtr<ocs::tom::TMR> week_day_range_list() {
    DENTER(TOP_LAYER);
 
-   lListElem *tmr;
-
-   if (week_day_range(&tmr)) {
-      DRETURN(-1);
+   auto tmr = week_day_range();
+   if (!tmr) {
+      DRETURN(nullptr);
    }
 
-   if (wdrl) {
-      *wdrl = lCreateList("week_day_range_list", TMR_Type);
-      lAppendElem(*wdrl, tmr);
-      split_wday_range(*wdrl, tmr);
-   }
+   auto wdrl = ocs::tom::ListPtr<ocs::tom::TMR>::create("week_day_range_list");
+   auto added = wdrl->push_back(std::move(tmr));
+   split_wday_range(*wdrl, added);
 
 
 
    while (scan(nullptr, nullptr)==COMMA) {
       eat_token();
-      if (week_day_range(&tmr)) {
-         lFreeList(wdrl);
-         DRETURN(-1);
+      tmr = week_day_range();
+      if (!tmr) {
+         DRETURN(nullptr);
       }
-      if (wdrl) {
-         lAppendElem(*wdrl, tmr);
-         split_wday_range(*wdrl, tmr);
-      }
+      added = wdrl->push_back(std::move(tmr));
+      split_wday_range(*wdrl, added);
    }
 
    /* prepare the structures for later use */
    join_wday_range(*wdrl);
    extend_wday_range(*wdrl);
 
-   DRETURN(0);
+   DRETURN(wdrl);
 }
 
 /**
@@ -1864,50 +1892,51 @@ static int week_day_range_list(lList **wdrl) {
  * A user can define overlapping ranges in the week calendar. This function
  * will join them into one definition.
  *
- * @param week_day week calendar def. list
+ * @param week_day week calendar def. list (TMR_Type)
  *
  * @note MT-NOTE: join_wday_range() is MT safe
  */
-static void join_wday_range(lList *week_day) {
-   lListElem *day_range1;
-   lListElem *day_range2;
-   lListElem *next2;
-   lListElem *next1 = lFirstRW(week_day);
+static void join_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
+   DENTER(TOP_LAYER);
+
+   auto next1 = week_day.front();
 
    /* join ranges, which overlap or touch */
-   while ((day_range1 = next1) != nullptr) {
+   while (next1) {
+      const auto day_range1 = next1;
       uint32_t begin1;
       uint32_t end1;
 
-      next1 = lNextRW(next1);
+      next1 = next1.next();
 
-      ocs::tom::ConstList<ocs::tom::TM> beginList1 = ocs::tom::get<TMR_begin>(day_range1);
-      ocs::tom::ConstList<ocs::tom::TM> endList1 = ocs::tom::get<TMR_end>(day_range1);
+      const auto beginList1 = ocs::tom::get<TMR_begin>(day_range1);
+      const auto endList1 = ocs::tom::get<TMR_end>(day_range1);
 
-      begin1 = ocs::tom::get<TM_wday>(lFirst(beginList1));
+      begin1 = ocs::tom::get<TM_wday>(beginList1.front());
       if (endList1 != nullptr) {
-         end1 = ocs::tom::get<TM_wday>(lFirst(endList1));
+         end1 = ocs::tom::get<TM_wday>(endList1.front());
       }
       else {
          end1 = begin1;
       }
-      next2 = lFirstRW(week_day);
-      while((day_range2 = next2) != nullptr) {
+      auto next2 = week_day.front();
+      while (next2) {
+         const auto day_range2 = next2;
          uint32_t begin2;
          uint32_t end2;
 
-         next2 = lNextRW(next2);
+         next2 = next2.next();
 
          if (day_range2 == day_range1) {
             continue;
          }
 
-         ocs::tom::ConstList<ocs::tom::TM> beginList2 = ocs::tom::get<TMR_begin>(day_range2);
-         ocs::tom::ConstList<ocs::tom::TM> endList2 = ocs::tom::get<TMR_end>(day_range2);
+         const auto beginList2 = ocs::tom::get<TMR_begin>(day_range2);
+         const auto endList2 = ocs::tom::get<TMR_end>(day_range2);
 
-         begin2 = ocs::tom::get<TM_wday>(lFirst(beginList2));
+         begin2 = ocs::tom::get<TM_wday>(beginList2.front());
          if (endList2 != nullptr) {
-            end2 = ocs::tom::get<TM_wday>(lFirst(endList2));
+            end2 = ocs::tom::get<TM_wday>(endList2.front());
          }
          else {
             end2 = begin2;
@@ -1916,22 +1945,23 @@ static void join_wday_range(lList *week_day) {
          if (begin2 <= (end1 +1) && (begin1 <= begin2)) {
             if (end1 < end2) {
                if (endList1) {
-                  ocs::tom::set<TM_wday>(lFirstRW(endList1), end2);
+                  ocs::tom::set<TM_wday>(endList1.front(), end2);
                }
                else {
-                  ocs::tom::set<TMR_end>(day_range1, lCopyList("", endList2));
+                  ocs::tom::set<TMR_end>(day_range1, endList2.clone(""));
                }
             }
 
             if (next1 == day_range2) {
                next1 = next2;
             }
-            lRemoveElem(week_day, &day_range2);
-            day_range2 = nullptr;
+            week_day.erase(day_range2);
          }
 
       }
    }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -1941,52 +1971,50 @@ static void join_wday_range(lList *week_day) {
  *  range can go till Monday or longer. But the beginning till the end will never
  *  contain more than 7 days (a week).  This is needed!!
  *
- * @param week_day calendar list for a week
+ * @param week_day calendar list for a week (TMR_Type)
  *
  * @note MT-NOTE: extend_wday_range() is MT safe
  */
-static void extend_wday_range(lList *week_day) {
-   lListElem *day_range1;
-   lListElem *day_range2;
-   lListElem *next1;
-   lListElem *next2;
+static void extend_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
+   DENTER(TOP_LAYER);
 
-   next1 = lFirstRW(week_day);
-   while ((day_range1 = next1) != nullptr) {
+   auto next1 = week_day.front();
+   while (next1) {
+      const auto day_range1 = next1;
       uint32_t begin1;
       uint32_t end1;
-      lList *endList1;
 
-      next1 = lNextRW(next1);
+      next1 = next1.next();
 
-      ocs::tom::ConstList<ocs::tom::TM> beginList1 = ocs::tom::get<TMR_begin>(day_range1);
-      endList1 = ocs::tom::get<TMR_end>(day_range1);
+      const auto beginList1 = ocs::tom::get<TMR_begin>(day_range1);
+      auto endList1 = ocs::tom::get<TMR_end>(day_range1);
 
-      begin1 = ocs::tom::get<TM_wday>(lFirst(beginList1));
+      begin1 = ocs::tom::get<TM_wday>(beginList1.front());
       if (endList1 != nullptr) {
-         end1 = ocs::tom::get<TM_wday>(lFirst(endList1));
+         end1 = ocs::tom::get<TM_wday>(endList1.front());
       }
       else {
          end1 = begin1;
       }
 
-      next2 = lFirstRW(week_day);
-      while((day_range2 = next2) != nullptr) {
+      auto next2 = week_day.front();
+      while (next2) {
+         const auto day_range2 = next2;
          uint32_t begin2;
          uint32_t end2;
 
-         next2 = lNextRW(next2);
+         next2 = next2.next();
 
          if (day_range2 == day_range1) {
             continue;
          }
 
-         ocs::tom::ConstList<ocs::tom::TM> beginList2 = ocs::tom::get<TMR_begin>(day_range2);
-         ocs::tom::ConstList<ocs::tom::TM> endList2 = ocs::tom::get<TMR_end>(day_range2);
+         const auto beginList2 = ocs::tom::get<TMR_begin>(day_range2);
+         const auto endList2 = ocs::tom::get<TMR_end>(day_range2);
 
-         begin2 = ocs::tom::get<TM_wday>(lFirst(beginList2));
+         begin2 = ocs::tom::get<TM_wday>(beginList2.front());
          if (endList2 != nullptr) {
-            end2 = ocs::tom::get<TM_wday>(lFirst(endList2));
+            end2 = ocs::tom::get<TM_wday>(endList2.front());
          }
          else {
             end2 = begin2;
@@ -1994,36 +2022,47 @@ static void extend_wday_range(lList *week_day) {
 
          if ((end1 == 6) && (begin2 == 0)) {
             int tempEnd = end1 + 1 + end2;
-            if (endList1 == 0) {
-               endList1 = lCopyList("",beginList1);
-               ocs::tom::set<TMR_end>(day_range1, endList1);
+            if (endList1 == nullptr) {
+               auto copy = beginList1.clone("");
+               endList1 = *copy;
+               ocs::tom::set<TMR_end>(day_range1, std::move(copy));
             }
-            ocs::tom::set<TM_wday>(lFirstRW(endList1), tempEnd);
+            ocs::tom::set<TM_wday>(endList1.front(), tempEnd);
          }
       }
    }
+
+   DRETURN_VOID;
 }
 
 
-static void split_wday_range(lList *wdrl, lListElem *tmr) {
+/**
+ * @brief Splits a week day range that wraps around the end of the week into two
+ *
+ * The range keeps its begin and ends on saturday; a new range from sunday to
+ * the old end is appended to the list.
+ *
+ * @param wdrl the range list (TMR_Type) holding the range
+ * @param tmr the range (TMR_Type)
+ */
+static void split_wday_range(const ocs::tom::List<ocs::tom::TMR> wdrl, const ocs::tom::Element<ocs::tom::TMR> tmr) {
    DENTER(TOP_LAYER);
 
-   const lListElem *t2, *t1; /* *t3, *t4, */
-   lListElem *tmr2;
+   ocs::tom::ConstElement<ocs::tom::TM> t2, t1; /* *t3, *t4, */
 
-   if ((t2=lFirst(ocs::tom::get<TMR_end>(tmr)))) {
-      t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
+   if ((t2=ocs::tom::get<TMR_end>(tmr).front())) {
+      t1=ocs::tom::get<TMR_begin>(tmr).front();
 
       if (tm_wday_cmp(t1, t2) > 0) {
          /* split it into two ranges */
-         tmr2 = lCreateElem(TMR_Type);
+         auto tmr2 = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
          ocs::tom::emplace_back_in<TMR_begin, TM_wday>(tmr2, 0);
          ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr2, 6);
-         ocs::tom::swap<TMR_end, TMR_end>(tmr, tmr2);
-         lAppendElem(wdrl, tmr2);
+         ocs::tom::swap<TMR_end, TMR_end>(tmr, *tmr2);
+         wdrl.push_back(std::move(tmr2));
 
-         t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
-         t2=lFirst(ocs::tom::get<TMR_end>(tmr));
+         t1=ocs::tom::get<TMR_begin>(tmr).front();
+         t2=ocs::tom::get<TMR_end>(tmr).front();
 /*          t3=lFirst(lGetList(tmr2, TMR_begin)); */
 /*          t4=lFirst(lGetList(tmr2, TMR_end)); */
 
@@ -2044,57 +2083,59 @@ static void split_wday_range(lList *wdrl, lListElem *tmr) {
    DRETURN_VOID;
 }
 
-/* week_day_range  := week_day[-week_day] */
-static int week_day_range(lListElem **tmr) {
+/**
+ * @brief Parses a week day range
+ *
+ * week_day_range := week_day[-week_day]
+ *
+ * @return the range (TMR_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::TMR> week_day_range() {
    DENTER(TOP_LAYER);
 
-   lListElem *t1 = nullptr;
-   lListElem *t2 = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::TM> t2;
 
-   if (week_day(&t1))
-      goto ERROR;
+   auto t1 = week_day();
+   if (!t1) {
+      DRETURN(nullptr);
+   }
 
    if (scan(nullptr, nullptr)==MINUS) {
       eat_token();
 
-      if (week_day(&t2))
-         goto ERROR;
+      t2 = week_day();
+      if (!t2) {
+         DRETURN(nullptr);
+      }
 
-      if (tm_wday_cmp(t1, t2)==0) {
+      if (tm_wday_cmp(*t1, *t2)==0) {
          snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_FOUNDUSELESSWEEKDAYRANGE);
-         goto ERROR;
+         DRETURN(nullptr);
       }
    }
 
 
-   if (tmr) {
-      lList *tmlp;
-      *tmr = lCreateElem(TMR_Type);
+   auto tmr = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
 
-      tmlp = lCreateList("tm_list", TM_Type);
-      lAppendElem(tmlp, t1);
-      t1 = nullptr;
-      ocs::tom::set<TMR_begin>(*tmr, tmlp);
+   auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
+   tmlp->push_back(std::move(t1));
+   ocs::tom::set<TMR_begin>(tmr, std::move(tmlp));
 
-      if (t2) {
-         tmlp = lCreateList("tm_list", TM_Type);
-         lAppendElem(tmlp, t2);
-         t2 = nullptr;
-         ocs::tom::set<TMR_end>(*tmr, tmlp);
-      }
+   if (t2) {
+      tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
+      tmlp->push_back(std::move(t2));
+      ocs::tom::set<TMR_end>(tmr, std::move(tmlp));
    }
-   lFreeElem(&t1);
-   lFreeElem(&t2);
 
-   DRETURN(0);
-
-ERROR:
-   lFreeElem(&t1);
-   lFreeElem(&t2);
-   DRETURN(-1);
+   DRETURN(tmr);
 }
 
-static int week_day(lListElem **tm) {
+/**
+ * @brief Parses a week day
+ *
+ * @return the week day (TM_Type), an empty handle on a syntax error
+ */
+static ocs::tom::ElementPtr<ocs::tom::TM> week_day() {
    DENTER(TOP_LAYER);
 
    int wday;
@@ -2113,21 +2154,19 @@ static int week_day(lListElem **tm) {
 
    if (scan(nullptr, nullptr)!=STRING) {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_EXPECTEDSTRINGFORWEEKDAY);
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
    s = get_string();
    if ((wday = cheap_scan(s, weekdayv, 3, "weekday"))<0) {
       snprintf(parse_error, sizeof(parse_error), MSG_PARSE_XISNOTAWEEKDAY_S, s);
-      DRETURN(-1);
+      DRETURN(nullptr);
    }
    eat_token();
 
-   if (tm) {
-      *tm = lCreateElem(TM_Type);
-      ocs::tom::set<TM_wday>(*tm, wday);
-   }
+   auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
+   ocs::tom::set<TM_wday>(tm, wday);
 
-   DRETURN(0);
+   DRETURN(tm);
 }
 
 static char *get_string() {
@@ -2274,7 +2313,16 @@ static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name) {
    DRETURN(tokenv[i].token);
 }
 
-static int tm_yday_cmp(const lListElem *t1, const lListElem *t2) {
+/**
+ * @brief Orders two times by their year day
+ *
+ * @param t1 the first time (TM_Type)
+ * @param t2 the second time (TM_Type)
+ * @return negative, zero or positive as `t1` is before, on or after the day of `t2`
+ */
+static int tm_yday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs::tom::ConstElement<ocs::tom::TM> t2) {
+   DENTER(TOP_LAYER);
+
    int t;
 
 /*   DPRINTF(("tm_yday_cmp(y%d:m%d:d%d, y%d:m%d:d%d)\n",
@@ -2285,27 +2333,47 @@ static int tm_yday_cmp(const lListElem *t1, const lListElem *t2) {
       lGetUlong(t2, TM_mon),
       lGetUlong(t2, TM_mday))); */
 
-   if ((t=(ocs::tom::get<TM_year>(t1) - ocs::tom::get<TM_year>(t2))))
-      return t;
-   if ((t=(ocs::tom::get<TM_mon>(t1) - ocs::tom::get<TM_mon>(t2))))
-      return t;
-   return ocs::tom::get<TM_mday>(t1) - ocs::tom::get<TM_mday>(t2);
+   if ((t=(ocs::tom::get<TM_year>(t1) - ocs::tom::get<TM_year>(t2)))) {
+      DRETURN(t);
+   }
+   if ((t=(ocs::tom::get<TM_mon>(t1) - ocs::tom::get<TM_mon>(t2)))) {
+      DRETURN(t);
+   }
+   DRETURN(ocs::tom::get<TM_mday>(t1) - ocs::tom::get<TM_mday>(t2));
 }
 
-static int tm_wday_cmp(const lListElem *t1, const lListElem *t2) {
-   return ocs::tom::get<TM_wday>(t1) - ocs::tom::get<TM_wday>(t2);
+/**
+ * @brief Orders two times by their week day
+ *
+ * @param t1 the first time (TM_Type)
+ * @param t2 the second time (TM_Type)
+ * @return negative, zero or positive as `t1` is before, on or after the week day of `t2`
+ */
+static int tm_wday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs::tom::ConstElement<ocs::tom::TM> t2) {
+   DENTER(TOP_LAYER);
+   DRETURN(ocs::tom::get<TM_wday>(t1) - ocs::tom::get<TM_wday>(t2));
 }
 
-static int tm_daytime_cmp(const lListElem *t1, const lListElem *t2) {
+/**
+ * @brief Orders two times by their daytime
+ *
+ * @param t1 the first time (TM_Type)
+ * @param t2 the second time (TM_Type)
+ * @return negative, zero or positive as `t1` is before, at or after the daytime of `t2`
+ */
+static int tm_daytime_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1,
+                          const ocs::tom::ConstElement<ocs::tom::TM> t2) {
+   DENTER(TOP_LAYER);
+
    int t;
 
    if ((t=(ocs::tom::get<TM_hour>(t1) - ocs::tom::get<TM_hour>(t2)))) {
-      return t;
+      DRETURN(t);
    }
    if ((t=(ocs::tom::get<TM_min>(t1) - ocs::tom::get<TM_min>(t2)))) {
-      return t;
+      DRETURN(t);
    }
-   return ocs::tom::get<TM_sec>(t1) - ocs::tom::get<TM_sec>(t2);
+   DRETURN(ocs::tom::get<TM_sec>(t1) - ocs::tom::get<TM_sec>(t2));
 }
 
 /**
@@ -2314,10 +2382,12 @@ static int tm_daytime_cmp(const lListElem *t1, const lListElem *t2) {
  * The calendar computation works on CULL elements so intermediate results can
  * be put into a list; this is the conversion in.
  *
- * @param[out] tm_ep the element to fill
+ * @param[out] tm_ep the element to fill (TM_Type)
  * @param tm_now the time to copy
  */
-void cullify_tm(lListElem *tm_ep, struct tm *tm_now) {
+void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now) {
+   DENTER(TOP_LAYER);
+
    ocs::tom::set<TM_mday>(tm_ep,  tm_now->tm_mday);
    ocs::tom::set<TM_mon>(tm_ep,   tm_now->tm_mon);
    ocs::tom::set<TM_year>(tm_ep,  tm_now->tm_year);
@@ -2327,15 +2397,19 @@ void cullify_tm(lListElem *tm_ep, struct tm *tm_now) {
    ocs::tom::set<TM_wday>(tm_ep,  tm_now->tm_wday);
    ocs::tom::set<TM_yday>(tm_ep,  tm_now->tm_yday);
    ocs::tom::set<TM_isdst>(tm_ep, tm_now->tm_isdst);
+
+   DRETURN_VOID;
 }
 
 /**
  * @brief Copy a CULL element back into a `struct tm`
  *
- * @param tm_ep the element to read
+ * @param tm_ep the element to read (TM_Type)
  * @param[out] tm_now the structure to fill
  */
-void uncullify_tm(const lListElem *tm_ep, struct tm *tm_now) {
+void uncullify_tm(const ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now) {
+   DENTER(TOP_LAYER);
+
    tm_now->tm_mday =  ocs::tom::get<TM_mday>(tm_ep);
    tm_now->tm_mon  =  ocs::tom::get<TM_mon>(tm_ep);
    tm_now->tm_year =  ocs::tom::get<TM_year>(tm_ep);
@@ -2345,6 +2419,8 @@ void uncullify_tm(const lListElem *tm_ep, struct tm *tm_now) {
    tm_now->tm_wday =  ocs::tom::get<TM_wday>(tm_ep);
    tm_now->tm_yday =  ocs::tom::get<TM_yday>(tm_ep);
    tm_now->tm_isdst = ocs::tom::get<TM_isdst>(tm_ep);
+
+   DRETURN_VOID;
 }
 
 /**
@@ -2354,21 +2430,30 @@ void uncullify_tm(const lListElem *tm_ep, struct tm *tm_now) {
  * @param[out] answer_list receives the syntax error
  * @return true when the specification was understood
  */
-bool calendar_parse_year(lListElem *cal, lList **answer_list) {
+bool calendar_parse_year(const ocs::tom::Element<ocs::tom::CAL> cal, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lList *yc = nullptr;
 
-   if (disabled_year_list(answer_list, ocs::tom::get<CAL_year_calendar>(cal),
-                          &yc, ocs::tom::get<CAL_name>(cal))) {
+   auto yc = disabled_year_list(answer_list, ocs::tom::get<CAL_year_calendar>(cal), ocs::tom::get<CAL_name>(cal));
+   if (!yc) {
       ret = false;
    } else {
-      ocs::tom::exchange<CAL_parsed_year_calendar>(cal, &yc);
-      lFreeList(&yc);
+      ocs::tom::set<CAL_parsed_year_calendar>(cal, std::move(*yc));
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief calendar_parse_year() for an untyped caller
+ *
+ * @param[in,out] cal the calendar (CAL_Type), checked
+ * @param[out] answer_list receives the syntax error
+ * @return as calendar_parse_year()
+ */
+bool calendar_parse_year(lListElem *cal, lList **answer_list) {
+   return calendar_parse_year(ocs::tom::Element<ocs::tom::CAL>(cal), answer_list);
 }
 
 /**
@@ -2378,20 +2463,29 @@ bool calendar_parse_year(lListElem *cal, lList **answer_list) {
  * @param[out] answer_list receives the syntax error
  * @return true when the specification was understood
  */
-bool calendar_parse_week(lListElem *cal, lList **answer_list) {
+bool calendar_parse_week(const ocs::tom::Element<ocs::tom::CAL> cal, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lList *wc = nullptr;
 
-   if (disabled_week_list(answer_list, ocs::tom::get<CAL_week_calendar>(cal),
-            &wc, ocs::tom::get<CAL_name>(cal))) {
+   auto wc = disabled_week_list(answer_list, ocs::tom::get<CAL_week_calendar>(cal), ocs::tom::get<CAL_name>(cal));
+   if (!wc) {
       ret = false;
    } else {
-      ocs::tom::exchange<CAL_parsed_week_calendar>(cal, &wc);
-      lFreeList(&wc);
+      ocs::tom::set<CAL_parsed_week_calendar>(cal, std::move(*wc));
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief calendar_parse_week() for an untyped caller
+ *
+ * @param[in,out] cal the calendar (CAL_Type), checked
+ * @param[out] answer_list receives the syntax error
+ * @return as calendar_parse_week()
+ */
+bool calendar_parse_week(lListElem *cal, lList **answer_list) {
+   return calendar_parse_week(ocs::tom::Element<ocs::tom::CAL>(cal), answer_list);
 }
 
 /**
@@ -2400,18 +2494,17 @@ bool calendar_parse_week(lListElem *cal, lList **answer_list) {
  * It calles the routins to compute the current state and next change. The current
  * state is than changed into todo orders.
  *
- * @param cep (in) calendar (CAL_Type)
- * @param then (out) next state change
- * @param now (in) now
+ * @param cep calendar (CAL_Type)
+ * @param now the time to look at
  *
- * @return what to do? what is the current state
+ * @return what to do (the current state) and the next state change
  *
  * @note MT-NOTE: calendar_get_current_state_and_end() is MT safe
  */
-static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t *then, time_t *now) {
+static std::pair<uint32_t, time_t>
+calendar_get_current_state_and_end(const ocs::tom::ConstElement<ocs::tom::CAL> cep, const time_t now) {
    DENTER(TOP_LAYER);
 
-   uint32_t new_state;
    ocs::tom::ConstList<ocs::tom::CA> year_list = nullptr;
    ocs::tom::ConstList<ocs::tom::CA> week_list = nullptr;
 
@@ -2422,13 +2515,10 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t 
       week_list = ocs::tom::get<CAL_parsed_week_calendar>(cep);
    }
 
-   if (now == nullptr) {
-      new_state = state_at(time(nullptr), year_list, week_list, then);
-   } else {
-      new_state = state_at(*now, year_list, week_list, then);
-   }
+   const auto [state, then] = state_at(now, year_list, week_list);
 
-   switch (new_state) {
+   uint32_t new_state;
+   switch (state) {
    case QI_DO_DISABLE:
       new_state = QI_DO_CAL_DISABLE;
       break;
@@ -2440,7 +2530,7 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t 
       break;
    }
 
-   DRETURN(new_state);
+   DRETURN(std::make_pair(new_state, then));
 }
 
 /**
@@ -2449,14 +2539,15 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t 
  * Callers use it to refuse deleting a calendar a queue still refers to.
  *
  * @param calendar the calendar to look for
- * @param[out] answer_list receives the name of the first queue using it
+ * @param[out] answer_list receives the name of every queue using it
  * @param master_cqueue_list the cluster queues to search
  * @return true when at least one queue refers to it
  */
-bool calendar_is_referenced(const lListElem *calendar, lList **answer_list,
-                            const lList *master_cqueue_list) {
+bool calendar_is_referenced(const ocs::tom::ConstElement<ocs::tom::CAL> calendar, lList **answer_list,
+                            const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
-   const lListElem *cqueue = nullptr, *cal = nullptr;
 
    /*
     * fix for bug 6422335
@@ -2464,8 +2555,8 @@ bool calendar_is_referenced(const lListElem *calendar, lList **answer_list,
     */
    const char *calendar_name = ocs::tom::get<CAL_name>(calendar);
    if (calendar_name != nullptr) {
-      for_each_ep(cqueue, master_cqueue_list) {
-         for_each_ep(cal, ocs::tom::get<CQ_calendar>(cqueue)) {
+      for (const auto cqueue : master_cqueue_list) {
+         for (const auto cal : ocs::tom::get<CQ_calendar>(cqueue)) {
             const char *qcal_name = ocs::tom::get<ASTR_value>(cal);
             if (qcal_name && !strcmp(qcal_name, calendar_name)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -2479,24 +2570,29 @@ bool calendar_is_referenced(const lListElem *calendar, lList **answer_list,
          }
       }
    }
-   return ret;
+   DRETURN(ret);
 }
 
-/* -----------------------------
+/**
+ * @brief calendar_is_referenced() for an untyped caller
+ *
+ * @param calendar the calendar (CAL_Type), checked
+ * @param[out] answer_list receives the name of every queue using it
+ * @param master_cqueue_list the cluster queues (CQ_Type), checked
+ * @return as calendar_is_referenced()
+ */
+bool calendar_is_referenced(const lListElem *calendar, lList **answer_list, const lList *master_cqueue_list) {
+   return calendar_is_referenced(ocs::tom::ConstElement<ocs::tom::CAL>(calendar), answer_list,
+                                 ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
+}
 
-   build up a generic cal object
-
-   returns
-      nullptr on error
-
-*/
 /**
  * @brief A calendar object template, as `qconf -scal template` prints it
  *
- * @param cal_name the name to give the template
- * @return the new element; the caller owns it
+ * @param cal_name the name to give the template, nullptr for "template"
+ * @return the new element
  */
-lListElem* sge_generic_cal(char *cal_name) {
+ocs::tom::ElementPtr<ocs::tom::CAL> sge_generic_cal(const char *cal_name) {
    DENTER(TOP_LAYER);
 
 
@@ -2504,7 +2600,7 @@ lListElem* sge_generic_cal(char *cal_name) {
 
    ocs::tom::set<CAL_name>(calp, cal_name?cal_name:"template");
 
-   DRETURN(calp.release());
+   DRETURN(calp);
 }
 
 /**
@@ -2521,11 +2617,12 @@ lListElem* sge_generic_cal(char *cal_name) {
  *
  * @note MT-NOTE: calendar_open_in_time_frame() is MT safe
  */
-bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint64_t duration) {
+bool calendar_open_in_time_frame(const ocs::tom::ConstElement<ocs::tom::CAL> cep, const uint64_t start_time,
+                                 const uint64_t duration) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   uint32_t state;
+   int state;
    ocs::tom::ConstList<ocs::tom::CA> year_list = nullptr;
    ocs::tom::ConstList<ocs::tom::CA> week_list = nullptr;
    time_t next_change;
@@ -2537,10 +2634,10 @@ bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint
       week_list = ocs::tom::get<CAL_parsed_week_calendar>(cep);
    }
 
-   state = state_at(start, year_list, week_list, &next_change);
+   std::tie(state, next_change) = state_at(start, year_list, week_list);
    while (state == QI_DO_ENABLE && next_change != 0 && next_change <= end) {
       start = next_change;
-      state = state_at(start, year_list, week_list, &next_change);
+      std::tie(state, next_change) = state_at(start, year_list, week_list);
    }
 
    if (state != QI_DO_ENABLE) {
@@ -2548,4 +2645,17 @@ bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief calendar_open_in_time_frame() for an untyped caller
+ *
+ * @param cep calendar object (CAL_Type), checked; may be nullptr
+ * @param start_time time frame start
+ * @param duration time frame duration
+ *
+ * @return as calendar_open_in_time_frame()
+ */
+bool calendar_open_in_time_frame(const lListElem *cep, const uint64_t start_time, const uint64_t duration) {
+   return calendar_open_in_time_frame(ocs::tom::ConstElement<ocs::tom::CAL>(cep), start_time, duration);
 }

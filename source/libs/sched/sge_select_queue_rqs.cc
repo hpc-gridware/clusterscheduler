@@ -392,9 +392,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
             continue;
          }
          sge_dstring_clear(&dstr_rule_name);
-         const auto rule = ocs::tom::Element<ocs::tom::RQR>::from_typed(
-            rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
-                                  &dstr_rule_name));
+         const auto rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list,
+                                                 a->hgrp_list, &dstr_rule_name);
          if (rule != nullptr) {
             const char *limit_s;
             rqs_get_rue_string(&dstr_rue_string, rule, user, project, host, queue, pe);
@@ -559,9 +558,15 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
  * @note MT-NOTE: rqs_match_assignment() is MT safe
  */
 static bool rqs_match_assignment(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
-   return (rqs_filter_match(ocs::tom::get<RQR_filter_projects>(rule), FILTER_PROJECTS, a->project, nullptr, nullptr, nullptr, nullptr) &&
-           rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, a->user, a->acl_list, nullptr, a->group, a->grp_list) &&
-           rqs_filter_match(ocs::tom::get<RQR_filter_pes>(rule), FILTER_PES, nullptr, nullptr, nullptr, nullptr, nullptr))?true:false;
+   // typed empty handles: a bare nullptr would be ambiguous with the untyped rqs_filter_match()
+   const ocs::tom::ConstList<ocs::tom::US> no_usersets;
+   const ocs::tom::ConstList<ocs::tom::HGRP> no_hgroups;
+   return (rqs_filter_match(ocs::tom::get<RQR_filter_projects>(rule), FILTER_PROJECTS, a->project, no_usersets,
+                            no_hgroups, nullptr, nullptr) &&
+           rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, a->user, a->acl_list, no_hgroups,
+                            a->group, a->grp_list) &&
+           rqs_filter_match(ocs::tom::get<RQR_filter_pes>(rule), FILTER_PES, nullptr, no_usersets, no_hgroups,
+                            nullptr, nullptr))?true:false;
 }
 
 /**
@@ -634,9 +639,9 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
          continue;
       }
       sge_dstring_clear(rule_name);
-      const auto rule = ocs::tom::ConstElement<ocs::tom::RQR>::from_typed(
+      const ocs::tom::ConstElement<ocs::tom::RQR> rule =
          rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
-                               rule_name));
+                               rule_name);
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
@@ -665,9 +670,9 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
          }
 
          sge_dstring_clear(rule_name);
-         const auto rule = ocs::tom::ConstElement<ocs::tom::RQR>::from_typed(
+         const ocs::tom::ConstElement<ocs::tom::RQR> rule =
             rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
-                                  rule_name));
+                                  rule_name);
          if (rule != nullptr) {
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
@@ -717,9 +722,9 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
       const auto grp_list = a->grp_list;
       const char* project = a->project;
       const char* pe = a->pe_name;
-      const auto rule = ocs::tom::ConstElement<ocs::tom::RQR>::from_typed(
+      const ocs::tom::ConstElement<ocs::tom::RQR> rule =
          rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
-                               rule_name));
+                               rule_name);
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
@@ -781,9 +786,8 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       }
 
       sge_dstring_clear(rule_name);
-      const auto rule = ocs::tom::Element<ocs::tom::RQR>::from_typed(
-         rqs_get_matching_rule(rqs, user, group, grp_list, project, nullptr, host, queue, a->acl_list, a->hgrp_list,
-                               rule_name));
+      const auto rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, nullptr, host, queue, a->acl_list,
+                                              a->hgrp_list, rule_name);
       if (rule != nullptr) {
          const char *limit;
          ocs::tom::Element<ocs::tom::RQL> rql;
@@ -873,7 +877,8 @@ static void rqs_expand_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
       const char *cqname = ocs::tom::get<CQ_name>(cq);
       if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname))
          continue;
-      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr) &&
+      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, ocs::tom::ConstList<ocs::tom::US>(),
+                           ocs::tom::ConstList<ocs::tom::HGRP>(), nullptr, nullptr) &&
           !cqueue_shadowed_by(cqname, rule, a)) {
          if (!a->skip_cqueue_list) {
             a->skip_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
@@ -904,7 +909,8 @@ static void rqs_expand_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule, s
       const char *hname = ocs::tom::get<EH_name>(eh);
       if (ocs::tom::find_first<CTI_name>(*a->skip_host_list, hname))
          continue;
-      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr, nullptr) &&
+      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr,
+                           nullptr) &&
           !host_shadowed_by(hname, rule, a)) {
          if (!a->skip_host_list) {
             a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
@@ -1006,7 +1012,9 @@ static void rqs_excluded_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rul
          if (!rqs_match_assignment(rule, a))
             continue;
 
-         if (rqs_filter_match(ocs::tom::get<RQR_filter_queues>(prev), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr)) {
+         if (rqs_filter_match(ocs::tom::get<RQR_filter_queues>(prev), FILTER_QUEUES, cqname,
+                              ocs::tom::ConstList<ocs::tom::US>(), ocs::tom::ConstList<ocs::tom::HGRP>(), nullptr,
+                              nullptr)) {
             exclude = false;
             break;
          }
@@ -1061,7 +1069,8 @@ static void rqs_excluded_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
          if (!rqs_match_assignment(rule, a))
             continue;
 
-         if (rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(prev), FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr, nullptr)) {
+         if (rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(prev), FILTER_HOSTS, hname,
+                              ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr, nullptr)) {
             exclude = false;
             break;
          }
@@ -1103,7 +1112,9 @@ static void rqs_excluded_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
 static bool cqueue_shadowed_by(const char *cqname, const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
    for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
       if (rqs_match_assignment(prev, a) &&
-          rqs_filter_match(ocs::tom::get<RQR_filter_queues>(prev), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr)) {
+          rqs_filter_match(ocs::tom::get<RQR_filter_queues>(prev), FILTER_QUEUES, cqname,
+                           ocs::tom::ConstList<ocs::tom::US>(), ocs::tom::ConstList<ocs::tom::HGRP>(), nullptr,
+                           nullptr)) {
          return true;
       }
    }
@@ -1132,7 +1143,8 @@ static bool cqueue_shadowed_by(const char *cqname, const ocs::tom::ConstElement<
 static bool host_shadowed_by(const char *host, const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
    for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
       if (rqs_match_assignment(prev, a) &&
-          rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(prev), FILTER_HOSTS, host, nullptr, a->hgrp_list, nullptr, nullptr)) {
+          rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(prev), FILTER_HOSTS, host,
+                           ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr, nullptr)) {
          return true;
       }
    }

@@ -156,7 +156,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
 
          for_each_ep(rule, rule_list) {
             ocs::tom::List<ocs::tom::RQR> new_rule_list = ocs::tom::get<RQS_rule>(new_rqs);
-            lListElem *new_rule = rqs_rule_locate(new_rule_list, ocs::tom::get<RQR_name>(rule));
+            const auto new_rule = rqs_rule_locate(new_rule_list, ocs::tom::get<RQR_name>(rule));
             if (new_rule != nullptr) {
                /* ---- RQR_limit */
                attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule, cmd,

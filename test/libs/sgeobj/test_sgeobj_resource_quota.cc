@@ -557,7 +557,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
          lAppendElem(*rules, std::move(rule));
          ocs::tom::set<RQS_rule>(rqs, std::move(rules));
 
-         const bool ret = rqs_verify_attributes(*rqs, &alp, true, nullptr);
+         const bool ret = rqs_verify_attributes(*rqs, &alp, true, ocs::tom::ConstList<ocs::tom::CE>());
 
          CHECK(id++, t.label, ret == t.acceptable &&
                (t.acceptable || lGetNumberOfElem(alp) > 0));

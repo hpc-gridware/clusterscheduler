@@ -39,6 +39,19 @@
  * @see sge_resource_quota.cc
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRF.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+
 #include "sgeobj/cull/sge_resource_quota_RQS_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQR_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQRF_L.h"
@@ -68,44 +81,70 @@ enum {
    RQR_QUEUEI    ///< one limit per queue instance
 };
 
-bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList **alp);
-bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lList **alp);
+ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *buffer, lList **alp);
+OCS_TRANSITIONAL bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer, lList **alp);
 
-lListElem* rqs_set_defaults(lListElem* rqs);
+bool rqs_append_filter_to_dstring(ocs::tom::ConstElement<ocs::tom::RQRF> filter, dstring *buffer, lList **alp);
+OCS_TRANSITIONAL bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lList **alp);
 
-bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list);
-bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master, const lList *master_centry_list);
+ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(ocs::tom::Element<ocs::tom::RQS> rqs);
 
-lListElem *rqs_list_locate(lList *lp, const char *name);
-lListElem *rqs_rule_locate(lList *lp, const char *name);
+bool rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS> rqs, lList **answer_list, bool in_master,
+                           ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
+OCS_TRANSITIONAL bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master,
+                                            const lList *master_centry_list);
+
+bool rqs_list_verify_attributes(ocs::tom::List<ocs::tom::RQS> rqs_list, lList **answer_list, bool in_master,
+                                ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
+
+ocs::tom::Element<ocs::tom::RQS> rqs_list_locate(ocs::tom::ConstList<ocs::tom::RQS> lp, const char *name);
+OCS_TRANSITIONAL lListElem *rqs_list_locate(lList *lp, const char *name);
+
+ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(ocs::tom::List<ocs::tom::RQR> lp, const char *name);
 
 bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list);
 
-bool
-rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user, const char *project, const char *host, const char *queue, const char* pe);
+bool rqs_get_rue_string(dstring *name, ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *user,
+                        const char *project, const char *host, const char *queue, const char *pe);
 
-int
-rqs_debit_rule_usage(const lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
-                     const lList *centry_list, const char *obj_name, bool is_master_task, bool do_per_host_booking);
+int rqs_debit_rule_usage(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::PE> pe,
+                         ocs::tom::Element<ocs::tom::RQR> rule, dstring *rue_name, int slots,
+                         ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *obj_name, bool is_master_task,
+                         bool do_per_host_booking);
 
-int
-rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted, const lListElem *pe,
-                     const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
-                     bool is_master_task, bool do_per_host_booking);
+int rqs_debit_consumable(ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom::ConstElement<ocs::tom::JB> job,
+                         ocs::tom::ConstElement<ocs::tom::JG> granted, ocs::tom::ConstElement<ocs::tom::PE> pe,
+                         ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
+                         ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list, int slots, bool is_master_task,
+                         bool do_per_host_booking);
+OCS_TRANSITIONAL int rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted,
+                                          const lListElem *pe, const lList *centry_list, const lList *acl_list,
+                                          const lList *hgrp_list, int slots, bool is_master_task,
+                                          bool do_per_host_booking);
 
-lListElem *
-rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const lList *grp_list,
-                      const char *project, const char *pe, const char *host, const char *queue,
-                      const lList *userset_list, const lList* hgroup_list, dstring *rule_name);
+ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(ocs::tom::ConstElement<ocs::tom::RQS> rqs, const char *user,
+                                                       const char *group, const lList *grp_list,
+                                                       const char *project, const char *pe, const char *host,
+                                                       const char *queue,
+                                                       ocs::tom::ConstList<ocs::tom::US> userset_list,
+                                                       ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
+                                                       dstring *rule_name);
 
-bool
-rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
-                     const char *project, const char *pe, const char *host, const char *queue,
-                     const lList *master_userset_list, const lList *master_hgroup_list);
+bool rqs_is_matching_rule(ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *user, const char *group,
+                          const lList *grp_list, const char *project, const char *pe, const char *host,
+                          const char *queue, ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                          ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
+OCS_TRANSITIONAL bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
+                                           const char *project, const char *pe, const char *host, const char *queue,
+                                           const lList *master_userset_list, const lList *master_hgroup_list);
 
-bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry);
+bool sge_centry_referenced_in_rqs(ocs::tom::ConstElement<ocs::tom::RQS> rqs,
+                                  ocs::tom::ConstElement<ocs::tom::CE> centry);
 
-bool
-rqs_filter_match(const lListElem *filter, int filter_type, const char *value, const lList *master_userset_list,
-                 const lList *master_hgroup_list, const char *group, const lList *grp_list);
-
+bool rqs_filter_match(ocs::tom::ConstElement<ocs::tom::RQRF> filter, int filter_type, const char *value,
+                      ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                      ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, const char *group,
+                      const lList *grp_list);
+OCS_TRANSITIONAL bool rqs_filter_match(const lListElem *filter, int filter_type, const char *value,
+                                       const lList *master_userset_list, const lList *master_hgroup_list,
+                                       const char *group, const lList *grp_list);

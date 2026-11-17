@@ -216,7 +216,7 @@ qconf_us_validate(const lListElem *ep, lList **alpp) {
  */
 static lListElem *
 qconf_template_CAL([[maybe_unused]] lList **answer_list, const char *name) {
-   return sge_generic_cal(const_cast<char *>(name));
+   return sge_generic_cal(name).release();
 }
 
 /** @brief The template of a checkpointing environment
@@ -306,7 +306,9 @@ qconf_template_RQS([[maybe_unused]] lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
    auto ep = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
    ocs::tom::set<RQS_name>(ep, name);
-   DRETURN(rqs_set_defaults(ep.release()));
+   rqs_set_defaults(*ep);
+   // the constructor of the attribute table returns an untyped element
+   DRETURN(ep.release());
 }
 
 /** @brief The shallow check a rule set had to pass in the client (CS-2823)
