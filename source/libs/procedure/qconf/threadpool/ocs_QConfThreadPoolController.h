@@ -41,10 +41,11 @@ namespace ocs {
        * @param parameter the invocation; unused, the switch takes no argument
        * @param model     the snapshot, holding the pool list
        * @param view      the rendering
+       * @return none
        */
       void process_request([[maybe_unused]] QConfParameter &parameter, QConfModelBase &model,
                            QConfThreadPoolView &view) {
-         view.show_pools(out_, model.get_object_list());
+         view.show_pools(out_, ocs::tom::ConstList<ocs::tom::ST>(model.get_object_list()));
       }
    };
 }

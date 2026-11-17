@@ -25,7 +25,10 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QConfWriteParameter.h"
@@ -33,12 +36,16 @@
 /** @brief Add one object to write
  * @param label how the caller wants this item named in the answer
  * @param text the object in the form a read renders it
+ * @return none
  */
 void
 ocs::QConfWriteParameter::add_item(const char *label, const std::string &text) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::Element<ocs::tom::VA> item = ocs::tom::emplace_back<VA_variable>(&items_, label != nullptr ? label : "");
+   if (items_ == nullptr) {
+      items_ = ocs::tom::ListPtr<ocs::tom::VA>::create("");
+   }
+   const auto item = items_->emplace_back<VA_variable>(label != nullptr ? label : "");
    ocs::tom::set<VA_value>(item, text.c_str());
 
    DRETURN_VOID;
@@ -58,26 +65,26 @@ ocs::QConfWriteParameter::get_bundle() {
 
    lList *bundle = ProcedureParameter::get_bundle();
 
-   add_parameter_bundle(bundle, OBJECT_SET, lCopyList("", items_));
+   add_parameter_bundle(bundle, OBJECT_SET, items_->clone("").release());
 
-   lList *mode_list = nullptr;
-   ocs::tom::emplace_back<ULNG_value>(&mode_list, mode_);
-   add_parameter_bundle(bundle, WRITE_MODE, mode_list);
+   auto mode_list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
+   mode_list->emplace_back<ULNG_value>(mode_);
+   add_parameter_bundle(bundle, WRITE_MODE, mode_list.release());
 
    /* sent only when there is a selection, so a request that writes everything
     * looks exactly as it did before this existed */
    if (!select_.empty()) {
-      lList *select_list = nullptr;
-      ocs::tom::emplace_back<ST_name>(&select_list, select_.c_str());
-      add_parameter_bundle(bundle, OBJECT_SELECT, select_list);
+      auto select_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      select_list->emplace_back<ST_name>(select_.c_str());
+      add_parameter_bundle(bundle, OBJECT_SELECT, select_list.release());
    }
 
    /* likewise only when the request names what it writes, which is the one
     * type whose text does not - see set_name() */
    if (!name_.empty()) {
-      lList *name_list = nullptr;
-      ocs::tom::emplace_back<ST_name>(&name_list, name_.c_str());
-      add_parameter_bundle(bundle, OBJECT_NAME, name_list);
+      auto name_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      name_list->emplace_back<ST_name>(name_.c_str());
+      add_parameter_bundle(bundle, OBJECT_NAME, name_list.release());
    }
 
    DRETURN(bundle);
@@ -93,7 +100,12 @@ ocs::QConfWriteParameter::get_bundle() {
  * provider refuses it per item - what must not happen is a crash on the null
  * pointer.
  *
+ * The value lists of the bundle entries are untyped, so the item list is taken
+ * over with the checked constructor and the single values are read through
+ * checked handles.
+ *
  * @param bundle the request bundle received over GDI
+ * @return none
  */
 void
 ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
@@ -101,27 +113,32 @@ ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
 
    ProcedureParameter::set_bundle(bundle);
 
-   ocs::tom::Element<ocs::tom::SPP> set_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), OBJECT_SET);
+   const auto set_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), OBJECT_SET);
    if (set_param != nullptr) {
-      lFreeList(&items_);
-      ocs::tom::exchange<SPP_value_list>(set_param, &items_);
+      lList *value_list = nullptr;
+      ocs::tom::exchange<SPP_value_list>(set_param, &value_list);
+      items_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(value_list);
    }
 
-   ocs::tom::ConstElement<ocs::tom::SPP> mode_param = ocs::tom::find_first<SPP_name>(bundle, WRITE_MODE);
+   const auto mode_param = ocs::tom::find_first<SPP_name>(bundle, WRITE_MODE);
    if (mode_param != nullptr) {
-      mode_ = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(lFirst(ocs::tom::get<SPP_value_list>(mode_param))));
+      const auto value_list = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
+            ocs::tom::get<SPP_value_list>(mode_param));
+      mode_ = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(value_list.front()));
    }
 
-   ocs::tom::ConstElement<ocs::tom::SPP> select_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_SELECT);
+   const auto select_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_SELECT);
    if (select_param != nullptr) {
-      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(select_param));
+      const auto value = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
+            ocs::tom::get<SPP_value_list>(select_param)).front();
       const char *names = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;
       select_ = (names != nullptr) ? names : "";
    }
 
-   ocs::tom::ConstElement<ocs::tom::SPP> name_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_NAME);
+   const auto name_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_NAME);
    if (name_param != nullptr) {
-      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(name_param));
+      const auto value = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
+            ocs::tom::get<SPP_value_list>(name_param)).front();
       const char *name = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;
       name_ = (name != nullptr) ? name : "";
    }

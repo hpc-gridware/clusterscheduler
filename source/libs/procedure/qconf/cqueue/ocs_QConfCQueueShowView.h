@@ -26,6 +26,11 @@
 #include "../ocs_QConfModelBase.h"
 #include "../ocs_QConfViewBase.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+
 namespace ocs {
    /** @brief `qconf -sq`: cluster queues, queue instances, or a template
     *
@@ -59,7 +64,7 @@ namespace ocs {
       bool show_queues(std::ostream &os, lList **answer_list, const QConfModelBase &model);
 
    protected:
-      bool write_qinstance_list(std::ostream &os, lList **answer_list, const lList *qi_list);
-      bool write_cqueue(std::ostream &os, lList **answer_list, const lListElem *cqueue);
+      bool write_qinstance_list(std::ostream &os, lList **answer_list, ocs::tom::ConstList<ocs::tom::QU> qi_list);
+      bool write_cqueue(std::ostream &os, lList **answer_list, ocs::tom::ConstElement<ocs::tom::CQ> cqueue);
    };
 }

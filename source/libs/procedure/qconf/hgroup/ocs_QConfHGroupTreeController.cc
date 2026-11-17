@@ -31,13 +31,14 @@
  * @param parameter the invocation; unused, the name travels in the model
  * @param model     the snapshot, holding every host group
  * @param view      the tree rendering
+ * @return none
  */
 void
 ocs::QConfHGroupTreeController::process_request([[maybe_unused]] QConfParameter &parameter, QConfModelBase &model,
                                                QConfHGroupStructureView &view) {
    DENTER(TOP_LAYER);
 
-   view.show_tree(out_, model.get_object_list(), model.get_requested_name());
+   view.show_tree(out_, ocs::tom::ConstList<ocs::tom::HGRP>(model.get_object_list()), model.get_requested_name());
 
    DRETURN_VOID;
 }

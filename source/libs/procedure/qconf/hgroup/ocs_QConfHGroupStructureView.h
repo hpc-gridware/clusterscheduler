@@ -30,6 +30,10 @@
 #include "../ocs_QConfModelBase.h"
 #include "../ocs_QConfViewBase.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+
 namespace ocs {
    /** @brief `qconf -shgrp_tree` and `-shgrp_resolved`
     *
@@ -55,7 +59,8 @@ namespace ocs {
                           [[maybe_unused]] const qconf_object_desc &desc) override {
       }
 
-      void show_tree(std::ostream &os, const lList *hgroup_list, const char *name);
-      void show_resolved(std::ostream &os, const lListElem *hgroup, const lList *hgroup_list);
+      void show_tree(std::ostream &os, ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char *name);
+      void show_resolved(std::ostream &os, ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
+                         ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list);
    };
 }

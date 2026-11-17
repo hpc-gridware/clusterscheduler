@@ -41,6 +41,8 @@
 #include "cull/cull.h"
 #include "gdi/ocs_gdi_Packet.h"
 #include "uti/ocs_ProgName.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "../../ocs_ProcedureParameter.h"
 
@@ -95,7 +97,7 @@ namespace ocs {
 
    private:
       static constexpr auto ACTION_ARGS = "action_args";   ///< the bundle entry holding the arguments
-      lList *args_ = nullptr;                               ///< VA_Type: VA_variable the name, VA_value the value
+      ocs::tom::ListPtr<ocs::tom::VA> args_;                ///< VA_variable the name, VA_value the value
 
    public:
       /** @brief Build the parameters of one action on the client side
@@ -118,9 +120,7 @@ namespace ocs {
          QConfActionParameter::set_bundle(bundle);
       }
 
-      ~QConfActionParameter() override {
-         lFreeList(&args_);
-      }
+      ~QConfActionParameter() override = default;
 
       QConfActionParameter(const QConfActionParameter &) = delete;
       QConfActionParameter &operator=(const QConfActionParameter &) = delete;

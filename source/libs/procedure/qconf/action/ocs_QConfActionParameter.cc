@@ -26,6 +26,7 @@
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QConfActionParameter.h"
@@ -33,14 +34,18 @@
 /** @brief Set one argument, see the header
  * @param name the argument
  * @param value its value
+ * @return none
  */
 void
 ocs::QConfActionParameter::set_arg(const char *name, const std::string &value) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::Element<ocs::tom::VA> arg = ocs::tom::find_first_rw<VA_variable>(args_, name);
+   if (args_ == nullptr) {
+      args_ = ocs::tom::ListPtr<ocs::tom::VA>::create("");
+   }
+   auto arg = args_->find_first<VA_variable>(name);
    if (arg == nullptr) {
-      arg = ocs::tom::emplace_back<VA_variable>(&args_, name);
+      arg = args_->emplace_back<VA_variable>(name);
    }
    ocs::tom::set<VA_value>(arg, value.c_str());
 
@@ -57,7 +62,7 @@ ocs::QConfActionParameter::set_arg(const char *name, const std::string &value) {
  */
 std::string
 ocs::QConfActionParameter::get_arg(const char *name) const {
-   ocs::tom::ConstElement<ocs::tom::VA> arg = ocs::tom::find_first<VA_variable>(args_, name);
+   const ocs::tom::ConstElement<ocs::tom::VA> arg = args_->find_first<VA_variable>(name);
    const char *value = (arg != nullptr) ? ocs::tom::get<VA_value>(arg) : nullptr;
    return (value != nullptr) ? value : "";
 }
@@ -74,7 +79,7 @@ ocs::QConfActionParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
    lList *bundle = ProcedureParameter::get_bundle();
-   add_parameter_bundle(bundle, ACTION_ARGS, lCopyList("", args_));
+   add_parameter_bundle(bundle, ACTION_ARGS, args_->clone("").release());
 
    DRETURN(bundle);
 }
@@ -84,7 +89,12 @@ ocs::QConfActionParameter::get_bundle() {
  * The argument list is taken over rather than copied: it is the request's
  * payload and the bundle is freed right after the parameters are built.
  *
+ * The list arrives through the untyped value list of the bundle entry. It is taken
+ * over without the descriptor check (from_typed), as the raw member was before; the
+ * typed field reads still check every element.
+ *
  * @param bundle the request bundle received over GDI
+ * @return none
  */
 void
 ocs::QConfActionParameter::set_bundle(const lList *bundle) {
@@ -92,10 +102,11 @@ ocs::QConfActionParameter::set_bundle(const lList *bundle) {
 
    ProcedureParameter::set_bundle(bundle);
 
-   ocs::tom::Element<ocs::tom::SPP> args_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), ACTION_ARGS);
+   const auto args_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), ACTION_ARGS);
    if (args_param != nullptr) {
-      lFreeList(&args_);
-      ocs::tom::exchange<SPP_value_list>(args_param, &args_);
+      lList *value_list = nullptr;
+      ocs::tom::exchange<SPP_value_list>(args_param, &value_list);
+      args_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(value_list);
    }
 
    DRETURN_VOID;

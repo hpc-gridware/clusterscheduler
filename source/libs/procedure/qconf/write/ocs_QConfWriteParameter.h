@@ -57,6 +57,8 @@
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "uti/ocs_ProgName.h"
 #include "uti/sge_rmon_macros.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "../../ocs_ProcedureParameter.h"
 
@@ -123,7 +125,7 @@ namespace ocs {
       static constexpr uint32_t MODE_REPLACE = 16;
 
    private:
-      lList *items_ = nullptr;        ///< VA_Type: VA_variable the label, VA_value the text
+      ocs::tom::ListPtr<ocs::tom::VA> items_;   ///< VA_variable the label, VA_value the text
       uint32_t mode_ = MODE_NONE;     ///< mask of MODE_*
       std::string select_;            ///< the names of get_select(), empty for all of them
       std::string name_;              ///< the name of set_name(), empty when the text carries it
@@ -147,9 +149,7 @@ namespace ocs {
          QConfWriteParameter::set_bundle(bundle);
       }
 
-      ~QConfWriteParameter() override {
-         lFreeList(&items_);
-      }
+      ~QConfWriteParameter() override = default;
 
       /** @brief Add one object to write
        * @param label how the caller wants this item named in the answer, e.g. a file path
@@ -157,11 +157,11 @@ namespace ocs {
        */
       void add_item(const char *label, const std::string &text);
 
-      /// @return the items, as a VA_Type list; owned by this object
-      [[nodiscard]] const lList *get_items() const { return items_; }
+      /// @return the items; owned by this object, an empty handle when none were added
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::VA> get_items() const { return *items_; }
 
       /// @return how many objects are to be written
-      [[nodiscard]] int get_item_count() const { return lGetNumberOfElem(items_); }
+      [[nodiscard]] int get_item_count() const { return static_cast<int>(items_->size()); }
 
       /** @brief Set the batch policy
        * @param mode a mask of MODE_*

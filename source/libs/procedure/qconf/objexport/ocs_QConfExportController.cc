@@ -24,6 +24,7 @@
 #include "sgeobj/sge_var.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QConfExportController.h"
@@ -59,7 +60,7 @@ ocs::QConfExportController::process_request([[maybe_unused]] QConfParameter &par
     * holding an empty list rather than no entry at all - the difference between
     * "nothing to export" and "this was not an export", which the caller has to
     * be able to tell apart (see ProcedureModel::get_export_objects()). */
-   objects_ = lCreateList("export objects", VA_Type);
+   objects_ = ocs::tom::ListPtr<ocs::tom::VA>::create("export objects");
 
    for_each_ep_lv(ep, model.get_object_list()) {
       std::ostringstream text;
@@ -74,11 +75,11 @@ ocs::QConfExportController::process_request([[maybe_unused]] QConfParameter &par
       }
 
       const char *name = (name_nm != NoName) ? qconf_get_name(ep, name_nm) : nullptr;
-      ocs::tom::Element<ocs::tom::VA> pair = ocs::tom::emplace_back<VA_variable>(&objects_, (name != nullptr) ? name : "");
+      const auto pair = objects_->emplace_back<VA_variable>((name != nullptr) ? name : "");
       ocs::tom::set<VA_value>(pair, text.str().c_str());
    }
 
-   DPRINTF("rendered %d object(s) for export\n", lGetNumberOfElem(objects_));
+   DPRINTF("rendered %d object(s) for export\n", static_cast<int>(objects_->size()));
 
    DRETURN_VOID;
 }

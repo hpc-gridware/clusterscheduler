@@ -41,10 +41,11 @@ namespace ocs {
        * @param parameter the invocation; unused, the switch takes no argument
        * @param model     the snapshot, holding the sorted client list
        * @param view      the rendering
+       * @return none
        */
       void process_request([[maybe_unused]] QConfParameter &parameter, QConfModelBase &model,
                            QConfEventClientView &view) {
-         view.show_clients(out_, model.get_object_list());
+         view.show_clients(out_, ocs::tom::ConstList<ocs::tom::EV>(model.get_object_list()));
       }
    };
 }

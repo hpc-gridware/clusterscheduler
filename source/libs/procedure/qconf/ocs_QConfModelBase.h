@@ -33,6 +33,15 @@
 
 #include "sgeobj/ocs_Matcher.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+
 #include <vector>
 
 #include "ocs_QConfObject.h"
@@ -85,10 +94,10 @@ namespace ocs {
 #pragma region Data
 
    protected:
-      lList *object_list_ = nullptr;             ///< what the operation asked for
-      lList *centry_list_ = nullptr;             ///< the complex entries, fetched for JSON only
-      lList *hgroup_list_ = nullptr;             ///< the host groups, for the cluster queue read (CS-2818)
-      lList *qref_pattern_list_ = nullptr;       ///< the queue references asked for (`QR_Type`, CS-2818)
+      lList *object_list_ = nullptr;             ///< what the operation asked for; its type is the read's
+      ocs::tom::ListPtr<ocs::tom::CE> centry_list_;         ///< the complex entries, fetched for JSON only
+      ocs::tom::ListPtr<ocs::tom::HGRP> hgroup_list_;       ///< the host groups, for the cluster queue read (CS-2818)
+      ocs::tom::ListPtr<ocs::tom::QR> qref_pattern_list_;   ///< the queue references asked for (CS-2818)
       const qconf_object_desc *desc_ = nullptr;  ///< the row of the object type
       QConfObj object_ = QConfObj::CAL;          ///< which object type, valid once resolved
       QConfReadKind kind_ = QConfReadKind::NAME_LIST;   ///< what the switch produces
@@ -129,18 +138,18 @@ namespace ocs {
        * a queue domain has to be resolved against the graph, so the cluster queue
        * read needs the groups next to the queues. Empty for every other read.
        *
-       * @return them, or nullptr
+       * @return them, or an empty handle
        */
-      [[nodiscard]] const lList *get_hgroup_list() const { return hgroup_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::HGRP> get_hgroup_list() const { return *hgroup_list_; }
 
       /** @brief The complex entries, when the output format needed them
        *
        * Fetched for JSON only, because that is the only format whose writer
        * resolves a value's type. Empty otherwise.
        *
-       * @return them, or nullptr
+       * @return them, or an empty handle
        */
-      [[nodiscard]] const lList *get_centry_list() const { return centry_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::CE> get_centry_list() const { return *centry_list_; }
 
       /** @brief One group of objects `qconf -sq` is to print (CS-2818)
        *
@@ -155,8 +164,8 @@ namespace ocs {
        * process_request() is handed no answer list to report it in.
        */
       struct CQueueOutput {
-         lList *cqueues = nullptr;      ///< the queues to print (`CQ_Type`), or nullptr
-         lList *qinstances = nullptr;   ///< the instances to print (`QU_Type`), or nullptr
+         ocs::tom::ListPtr<ocs::tom::CQ> cqueues;      ///< the queues to print, or an empty handle
+         ocs::tom::ListPtr<ocs::tom::QU> qinstances;   ///< the instances to print, or an empty handle
       };
 
       /** @brief What `qconf -sq` is to print, grouped by queue reference
@@ -204,9 +213,11 @@ namespace ocs {
        * uses is not const correct. Exposing just the root rather than the whole
        * list keeps that need where it belongs instead of widening the model.
        *
-       * @return the root node, or nullptr when no tree was fetched
+       * @return the root node, or an empty handle when no tree was fetched
        */
-      [[nodiscard]] lListElem *get_sharetree_root() const { return lFirstRW(object_list_); }
+      [[nodiscard]] ocs::tom::Element<ocs::tom::STN> get_sharetree_root() const {
+         return ocs::tom::Element<ocs::tom::STN>(lFirstRW(object_list_));
+      }
 
       /** @brief The queue references the operation was asked about (CS-2818)
        *
@@ -214,9 +225,9 @@ namespace ocs {
        * view iterates the same list instead of parsing the arguments again. Each
        * entry may be a wildcard pattern and may name a host or a queue domain.
        *
-       * @return them (`QR_Type`), or nullptr for every other read
+       * @return them, or an empty handle for every other read
        */
-      [[nodiscard]] const lList *get_qref_pattern_list() const { return qref_pattern_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::QR> get_qref_pattern_list() const { return *qref_pattern_list_; }
 
       /** @brief The descriptor of the object type
        * @return its row, or nullptr before make_snapshot()

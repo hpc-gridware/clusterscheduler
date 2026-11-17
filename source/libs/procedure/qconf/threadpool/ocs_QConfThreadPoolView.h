@@ -30,6 +30,8 @@
 
 #include "sgeobj/cull/sge_str_ST_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -62,9 +64,10 @@ namespace ocs {
 
       /** @brief Write the thread pools, as a table or as a JSON array
        * @param os   the stream to write to
-       * @param list the pools, sorted by name by the provider
+       * @param list the pools (`ST_Type`), sorted by name by the provider
+       * @return none
        */
-      void show_pools(std::ostream &os, const lList *list) {
+      void show_pools(std::ostream &os, const ocs::tom::ConstList<ocs::tom::ST> list) {
          if (output_format_ == ProcedureParameter::OutputFormat::JSON) {
             /* CS-2313a: an array of { pool, size } objects */
             static spooling_field st_fields[] = {
@@ -82,12 +85,12 @@ namespace ocs {
             return;
          }
 
-         if (lGetNumberOfElem(list) == 0) {
+         if (list.empty()) {
             return;
          }
          os << std::format("{:<15} {}\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
          os << "--------------------\n";
-         for_each_ep_lv(pool, list) {
+         for (const auto pool : list) {
             const char *name = ocs::tom::get<ST_name>(pool);
             os << std::format("{:<15} {}\n", (name != nullptr) ? name : "", ocs::tom::get<ST_id>(pool));
          }

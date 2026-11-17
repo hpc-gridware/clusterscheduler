@@ -31,8 +31,10 @@
 
 #include "sgeobj/cull/sge_host_EH_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "../msg_qconf.h"
 
@@ -72,10 +74,12 @@ namespace ocs {
        * missing value.
        *
        * @param os      the stream to write to
-       * @param list    the execution hosts, already sorted by name
+       * @param list    the execution hosts (`EH_Type`, reduced to name, processors and load values), already
+       *                sorted by name
        * @param binding true for `-cb`: also show the socket and core columns
+       * @return none
        */
-      void show_processors(std::ostream &os, const lList *list, bool binding) {
+      void show_processors(std::ostream &os, const ocs::tom::ConstList<ocs::tom::EH> list, const bool binding) {
          uint32_t sum = 0;
          uint32_t socket_sum = 0;
          uint32_t core_sum = 0;
@@ -89,8 +93,8 @@ namespace ocs {
          }
          write_rule(os, binding);
 
-         for_each_ep_lv(host, list) {
-            ocs::tom::ConstElement<ocs::tom::HL> arch_elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, "arch");
+         for (const auto host : list) {
+            const auto arch_elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, "arch");
             const char *hostname = ocs::tom::get<EH_name>(host);
 
             os << std::format("{:<25.24}", (hostname != nullptr) ? hostname : "");
@@ -141,8 +145,9 @@ namespace ocs {
        * @param name the load value to look up
        * @return the value as a number, or 0 when it is missing
        */
-      static uint32_t write_load_value(std::ostream &os, const lListElem *host, const char *name) {
-         ocs::tom::ConstElement<ocs::tom::HL> elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
+      static uint32_t write_load_value(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                       const char *name) {
+         const auto elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
          if (elem == nullptr) {
             os << std::format("{:>6.5}", "-");
             return 0;

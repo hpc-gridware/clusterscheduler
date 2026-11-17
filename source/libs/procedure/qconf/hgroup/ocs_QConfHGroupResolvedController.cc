@@ -25,6 +25,9 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "ocs_QConfHGroupResolvedController.h"
 
@@ -33,16 +36,17 @@
  * @param parameter the invocation; unused, the name travels in the model
  * @param model     the snapshot, holding every host group
  * @param view      the resolved rendering
+ * @return none
  */
 void
 ocs::QConfHGroupResolvedController::process_request([[maybe_unused]] QConfParameter &parameter, QConfModelBase &model,
                                                    QConfHGroupStructureView &view) {
    DENTER(TOP_LAYER);
 
-   const lListElem *hgroup =
-      lGetElemHost(model.get_object_list(), model.get_key_nm(), model.get_requested_name());
+   const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list(model.get_object_list());
+   const auto hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, model.get_requested_name());
    if (hgroup != nullptr) {
-      view.show_resolved(out_, hgroup, model.get_object_list());
+      view.show_resolved(out_, hgroup, hgroup_list);
    }
 
    DRETURN_VOID;

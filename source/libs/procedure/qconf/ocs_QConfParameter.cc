@@ -31,7 +31,10 @@
 
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /**
  * @brief The operation as its own argument vector
@@ -92,16 +95,19 @@ ocs::QConfParameter::get_bundle() {
 
    // the switch that was typed, which for the prefix matched ones carries its
    // suffix (-ke, -kej) and is therefore not the same as the table's name
-   lList *operation_list = nullptr;
-   ocs::tom::emplace_back<ST_name>(&operation_list, operation_.token.c_str());
-   add_parameter_bundle(bundle, OPERATION, operation_list);
+   auto operation_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+   operation_list->emplace_back<ST_name>(operation_.token.c_str());
+   add_parameter_bundle(bundle, OPERATION, operation_list.release());
 
-   // its arguments, in order
-   lList *args_list = nullptr;
+   // its arguments, in order; no list at all when there are none
+   ocs::tom::ListPtr<ocs::tom::ST> args_list;
    for (const std::string &arg : operation_.args) {
-      ocs::tom::emplace_back<ST_name>(&args_list, arg.c_str());
+      if (args_list == nullptr) {
+         args_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      }
+      args_list->emplace_back<ST_name>(arg.c_str());
    }
-   add_parameter_bundle(bundle, OPERATION_ARGS, args_list);
+   add_parameter_bundle(bundle, OPERATION_ARGS, args_list.release());
 
    // -cb, -dry, -f, -strict and the client's SGE_SINGLE_LINE and MORE_INFO
    uint32_t flags = 0;
@@ -113,20 +119,25 @@ ocs::QConfParameter::get_bundle() {
    flags |= more_info_ ? FLAG_MORE_INFO : 0;
    flags |= for_edit_ ? FLAG_FOR_EDIT : 0;
    flags |= for_export_ ? FLAG_FOR_EXPORT : 0;
-   lList *flags_list = nullptr;
-   ocs::tom::emplace_back<ULNG_value>(&flags_list, flags);
-   add_parameter_bundle(bundle, INVOCATION_FLAGS, flags_list);
+   auto flags_list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
+   flags_list->emplace_back<ULNG_value>(flags);
+   add_parameter_bundle(bundle, INVOCATION_FLAGS, flags_list.release());
 
    // -fmtval
-   lList *value_format_list = nullptr;
-   ocs::tom::emplace_back<ULNG_value>(&value_format_list, static_cast<uint32_t>(value_format_));
-   add_parameter_bundle(bundle, VALUE_FORMAT, value_format_list);
+   auto value_format_list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
+   value_format_list->emplace_back<ULNG_value>(static_cast<uint32_t>(value_format_));
+   add_parameter_bundle(bundle, VALUE_FORMAT, value_format_list.release());
 
    DRETURN(bundle);
 }
 
 /**
  * @brief Rebuild the parameters from a received bundle
+ *
+ * The value lists of the bundle entries are untyped. They are wrapped without the
+ * descriptor check (from_typed): a list of another type that arrives empty is ignored
+ * as before, instead of throwing inside qmaster; the typed field reads still check
+ * every element.
  *
  * @param bundle the marshalled parameters
  * @return none
@@ -140,27 +151,28 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
 
    operation_ = qconf_op{};
 
-   ocs::tom::ConstElement<ocs::tom::SPP> operation_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION);
+   const auto operation_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION);
    if (operation_param != nullptr) {
-      const lListElem *token = lFirst(ocs::tom::get<SPP_value_list>(operation_param));
+      const auto token = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
+            ocs::tom::get<SPP_value_list>(operation_param)).front();
       if (token != nullptr) {
          operation_.token = bundle_string(ocs::tom::get<ST_name>(token));
       }
    }
 
-   ocs::tom::ConstElement<ocs::tom::SPP> args_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION_ARGS);
+   const auto args_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION_ARGS);
    if (args_param != nullptr) {
-      const lListElem *arg;
-      for_each_ep(arg, ocs::tom::get<SPP_value_list>(args_param)) {
+      for (const auto arg : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPP_value_list>(args_param))) {
          /* an argument that was empty in the client arrives as a null pointer,
           * see bundle_string() - this is the spot that took qmaster down (CS-2840) */
          operation_.args.emplace_back(bundle_string(ocs::tom::get<ST_name>(arg)));
       }
    }
 
-   ocs::tom::ConstElement<ocs::tom::SPP> flags_param = ocs::tom::find_first<SPP_name>(bundle, INVOCATION_FLAGS);
+   const auto flags_param = ocs::tom::find_first<SPP_name>(bundle, INVOCATION_FLAGS);
    if (flags_param != nullptr) {
-      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(flags_param));
+      const auto value = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
+            ocs::tom::get<SPP_value_list>(flags_param)).front();
       if (value != nullptr) {
          const uint32_t flags = ocs::tom::get<ULNG_value>(value);
          binding_ = (flags & FLAG_BINDING) != 0;
@@ -174,9 +186,10 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   ocs::tom::ConstElement<ocs::tom::SPP> value_format_param = ocs::tom::find_first<SPP_name>(bundle, VALUE_FORMAT);
+   const auto value_format_param = ocs::tom::find_first<SPP_name>(bundle, VALUE_FORMAT);
    if (value_format_param != nullptr) {
-      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(value_format_param));
+      const auto value = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
+            ocs::tom::get<SPP_value_list>(value_format_param)).front();
       if (value != nullptr) {
          value_format_ = static_cast<ValueFormat>(ocs::tom::get<ULNG_value>(value));
       }

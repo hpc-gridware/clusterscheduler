@@ -29,6 +29,9 @@
 #include "../ocs_QConfModelBase.h"
 #include "../ocs_QConfViewBase.h"
 
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
+
 namespace ocs {
    /** @brief `qconf -S<obj>`: render each object into a text of its own
     *
@@ -47,7 +50,7 @@ namespace ocs {
     */
    class QConfExportController : public QConfController {
    protected:
-      lList *objects_ = nullptr;   ///< `VA_Type` pairs: object name -> file text
+      ocs::tom::ListPtr<ocs::tom::VA> objects_;   ///< pairs: object name -> file text
 
    public:
       /** @brief Bind a controller to an output stream
@@ -61,7 +64,7 @@ namespace ocs {
        * built. A call that failed before that never asks, so the controller owns
        * it to the end of the request either way.
        */
-      ~QConfExportController() override { lFreeList(&objects_); }
+      ~QConfExportController() override = default;
 
       void process_request(QConfParameter &parameter, QConfModelBase &model,
                            QConfViewBase &view) override;
@@ -69,14 +72,13 @@ namespace ocs {
       /** @brief Hand the rendered pairs to the caller
        *
        * Ownership moves with them, because the response bundle takes the list as
-       * it is rather than copying it.
+       * it is rather than copying it. Raw, because the response bundle in
+       * qmaster is untyped.
        *
-       * @return the pairs, nullptr when nothing was rendered
+       * @return the pairs (`VA_Type`), nullptr when nothing was rendered
        */
       lList *take_export_objects() {
-         lList *taken = objects_;
-         objects_ = nullptr;
-         return taken;
+         return objects_.release();
       }
    };
 }

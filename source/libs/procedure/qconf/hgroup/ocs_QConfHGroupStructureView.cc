@@ -32,6 +32,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 
@@ -59,9 +60,11 @@ hgroup_text(const char *s) noexcept {
  * @param hgroup_list every host group, for looking references up
  * @param name        the entry to write
  * @param indent      how deep it sits
+ * @return none
  */
 static void
-hgroup_tree_elem(std::ostream &os, const lList *hgroup_list, const char *name, int indent) {
+hgroup_tree_elem(std::ostream &os, const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char *name,
+                 const int indent) {
    DENTER(TOP_LAYER);
 
    const char *const indent_string = "   ";
@@ -81,11 +84,11 @@ hgroup_tree_elem(std::ostream &os, const lList *hgroup_list, const char *name, i
    }
    os << hgroup_text(name) << "\n";
 
-   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
+   const auto hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
    if (hgroup != nullptr) {
-      ocs::tom::ConstList<ocs::tom::HR> sub_list = ocs::tom::get<HGRP_host_list>(hgroup);
+      const auto sub_list = ocs::tom::get<HGRP_host_list>(hgroup);
 
-      for (ocs::tom::ConstElement<ocs::tom::HR> href : sub_list) {
+      for (const auto href : sub_list) {
          hgroup_tree_elem(os, hgroup_list, ocs::tom::get<HR_name>(href), indent + 1);
       }
    }
@@ -98,9 +101,10 @@ hgroup_tree_elem(std::ostream &os, const lList *hgroup_list, const char *name, i
  * @param os          the stream to write to
  * @param hgroup_list every host group
  * @param name        the group to start from
+ * @return none
  */
 void
-ocs::QConfHGroupStructureView::show_tree(std::ostream &os, const lList *hgroup_list,
+ocs::QConfHGroupStructureView::show_tree(std::ostream &os, const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
                                          const char *name) {
    DENTER(TOP_LAYER);
    hgroup_tree_elem(os, hgroup_list, name, 0);
@@ -120,22 +124,25 @@ ocs::QConfHGroupStructureView::show_tree(std::ostream &os, const lList *hgroup_l
  * @param os          the stream to write to
  * @param hgroup      the group
  * @param hgroup_list every host group, for following references
+ * @return none
  */
 void
-ocs::QConfHGroupStructureView::show_resolved(std::ostream &os, const lListElem *hgroup,
-                                             const lList *hgroup_list) {
+ocs::QConfHGroupStructureView::show_resolved(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
+                                             const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(TOP_LAYER);
 
    lList *answer_list = nullptr;   // as in show_object(): a view has none to report into
-   lList *sub_host_list = nullptr;
-   lList *sub_hgroup_list = nullptr;
-   lList *sub_matcher_list = nullptr;
+   lList *host_out = nullptr;
+   lList *hgroup_out = nullptr;
+   lList *matcher_out = nullptr;
    dstring string = DSTRING_INIT;
 
-   hgroup_find_all_references(hgroup, &answer_list, hgroup_list, &sub_host_list,
-                              &sub_hgroup_list, &sub_matcher_list);
-   href_list_make_uniq(sub_host_list, &answer_list);
-   href_list_append_to_dstring(sub_host_list, &string);
+   hgroup_find_all_references(hgroup, &answer_list, hgroup_list, &host_out, &hgroup_out, &matcher_out);
+   const auto sub_host_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(host_out);
+   const auto sub_hgroup_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(hgroup_out);
+   const auto sub_matcher_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(matcher_out);
+   href_list_make_uniq(*sub_host_list, &answer_list);
+   href_list_append_to_dstring(*sub_host_list, &string);
    if (sge_dstring_get_string(&string) != nullptr) {
       os << sge_dstring_get_string(&string) << "\n";
    }
@@ -143,16 +150,13 @@ ocs::QConfHGroupStructureView::show_resolved(std::ostream &os, const lListElem *
    if (sub_matcher_list != nullptr) {
       dstring matchers = DSTRING_INIT;
 
-      href_list_make_uniq(sub_matcher_list, &answer_list);
-      href_list_append_to_dstring(sub_matcher_list, &matchers);
+      href_list_make_uniq(*sub_matcher_list, &answer_list);
+      href_list_append_to_dstring(*sub_matcher_list, &matchers);
       os << "matchers: " << hgroup_text(sge_dstring_get_string(&matchers)) << "\n";
       sge_dstring_free(&matchers);
    }
 
    sge_dstring_free(&string);
-   lFreeList(&sub_host_list);
-   lFreeList(&sub_hgroup_list);
-   lFreeList(&sub_matcher_list);
    lFreeList(&answer_list);
 
    DRETURN_VOID;

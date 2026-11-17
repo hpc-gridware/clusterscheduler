@@ -45,10 +45,12 @@ namespace ocs {
        * @param parameter the invocation, consulted for `-cb`
        * @param model     the snapshot, holding the sorted host list
        * @param view      the rendering
+       * @return none
        */
       void process_request(QConfParameter &parameter, QConfModelBase &model,
                            QConfProcessorView &view) {
-         view.show_processors(out_, model.get_object_list(), parameter.get_binding());
+         view.show_processors(out_, ocs::tom::ConstList<ocs::tom::EH>(model.get_object_list()),
+                              parameter.get_binding());
       }
    };
 }

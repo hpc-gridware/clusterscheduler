@@ -27,6 +27,8 @@
 #include "../ocs_QConfViewBase.h"
 
 #include "sgeobj/sge_sharetree.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "tom/ocs_Element.h"
 
 namespace ocs {
    /** @brief `qconf -sst`, `-bonsai`, `-sstnode`, `-rsstnode`: the share tree
@@ -56,8 +58,9 @@ namespace ocs {
       /** @brief Write the indented tree view of `-sst` and `-bonsai`
        * @param os   the stream to write to
        * @param root the root node
+       * @return none
        */
-      void show_tree(std::ostream &os, const lListElem *root) {
+      void show_tree(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::STN> root) {
          show_sharetree(os, root, nullptr);
       }
 
@@ -71,8 +74,10 @@ namespace ocs {
        * @param os    the stream to write to
        * @param root  the root node
        * @param paths the paths that were asked for, in the order given
+       * @return none
        */
-      void show_paths(std::ostream &os, lListElem *root, const std::vector<std::string> &paths) {
+      void show_paths(std::ostream &os, const ocs::tom::Element<ocs::tom::STN> root,
+                      const std::vector<std::string> &paths) {
          for (const auto &path : paths) {
             show_sharetree_path(os, root, path.c_str());
          }

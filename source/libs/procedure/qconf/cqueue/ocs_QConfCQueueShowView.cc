@@ -31,6 +31,8 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "spool/flatfile/ocs_spool_json.h"
 #include "spool/flatfile/sge_flatfile.h"
@@ -66,6 +68,9 @@ cqueue_text(const char *s) noexcept {
  * the value was appended through a `strdup()` that nothing freed, although
  * sge_dstring_append() copies.
  *
+ * The signature is the flatfile writer callback's, so the element and the field
+ * stay untyped; the list the field holds is a `CE_Type` list and is read typed.
+ *
  * @param ep     the QU element holding the complex values
  * @param nm     the field, `QU_consumable_config_list`
  * @param buffer the dstring the field is printed into
@@ -73,14 +78,14 @@ cqueue_text(const char *s) noexcept {
  * @return 1, the flatfile writer's "written" answer
  */
 static int
-write_QU_consumable_config_list(const lListElem *ep, int nm, dstring *buffer,
+write_QU_consumable_config_list(const lListElem *ep, const int nm, dstring *buffer,
                                 [[maybe_unused]] lList **alp) {
    DENTER(TOP_LAYER);
-   const lList *lp = lGetList(ep, nm);
+   const ocs::tom::ConstList<ocs::tom::CE> lp(lGetList(ep, nm));
    bool first = true;
    bool has_elems = false;
 
-   for_each_ep_lv(vep, lp) {
+   for (const auto vep : lp) {
       const char *name = ocs::tom::get<CE_name>(vep);
 
       if (strcmp(name, "slots") != 0) {
@@ -149,7 +154,7 @@ insert_custom_complex_values_writer(spooling_field *fields) {
  */
 bool
 ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, lList **answer_list,
-                                              const lList *qi_list) {
+                                              const ocs::tom::ConstList<ocs::tom::QU> qi_list) {
    DENTER(TOP_LAYER);
 
    /* sge_build_QU_field_list() allocates, so this array is ours to modify -
@@ -168,7 +173,7 @@ ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, lList **answer_
       sge_dstring_free(&out);
    } else {
       bool is_first = true;
-      for_each_ep_lv(qi, qi_list) {
+      for (const auto qi : qi_list) {
          if (!is_first) {
             os << "\n";
          }
@@ -194,7 +199,7 @@ ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, lList **answer_
  */
 bool
 ocs::QConfCQueueShowView::write_cqueue(std::ostream &os, lList **answer_list,
-                                       const lListElem *cqueue) {
+                                       const ocs::tom::ConstElement<ocs::tom::CQ> cqueue) {
    DENTER(TOP_LAYER);
 
    const spool_flatfile_format format =
@@ -228,12 +233,12 @@ ocs::QConfCQueueShowView::show_queues(std::ostream &os, lList **answer_list,
    bool is_first = true;
    for (const QConfModelBase::CQueueOutput &group : model.get_cqueue_output()) {
       if (group.qinstances != nullptr) {
-         if (!write_qinstance_list(os, answer_list, group.qinstances)) {
+         if (!write_qinstance_list(os, answer_list, *group.qinstances)) {
             DRETURN(false);
          }
          continue;
       }
-      for_each_ep_lv(cqueue, group.cqueues) {
+      for (const auto cqueue : *group.cqueues) {
          /* a blank line between queues, and between the groups of two
           * references, which is what the client printed */
          if (is_first) {

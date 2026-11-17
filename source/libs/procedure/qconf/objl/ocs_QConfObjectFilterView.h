@@ -29,6 +29,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_str_ST_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -64,6 +66,7 @@ namespace ocs {
        *
        * @param os    the stream to write to
        * @param names the names the model matched, empty when nothing matched
+       * @return none
        */
       void show_names(std::ostream &os, const std::vector<std::string> &names) {
          if (output_format_ != ProcedureParameter::OutputFormat::JSON) {
@@ -76,19 +79,18 @@ namespace ocs {
          /* the shared writer wants name bearing elements; it brings the envelope,
           * the "<name>-list" schema id and the empty array of a result that
           * matched nothing, which is what keeps an empty answer valid JSON */
-         lList *name_list = lCreateList("objectfilter", ST_Type);
+         const auto name_list = ocs::tom::ListPtr<ocs::tom::ST>::create("objectfilter");
          for (const auto &name : names) {
-            ocs::tom::emplace_back<ST_name>(&name_list, name.c_str());
+            name_list->emplace_back<ST_name>(name.c_str());
          }
 
          lList *alp = nullptr;
          dstring out = DSTRING_INIT;
-         spool_json_write_name_list_ex(&alp, name_list, ST_name, OBJECT_FILTER_TYPE_NAME, &out);
+         spool_json_write_name_list_ex(&alp, *name_list, ST_name, OBJECT_FILTER_TYPE_NAME, &out);
          const char *text = sge_dstring_get_string(&out);
          os << ((text != nullptr) ? text : "");
          sge_dstring_free(&out);
          lFreeList(&alp);
-         lFreeList(&name_list);
       }
 
    private:

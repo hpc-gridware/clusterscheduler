@@ -42,6 +42,10 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/ocs_Role.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CONF.h"
@@ -299,12 +303,10 @@ qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_RQS([[maybe_unused]] lList **answer_list, const char *name) {
-   lListElem *ep = lCreateElem(RQS_Type);
-   if (ep != nullptr) {
-      ocs::tom::set<RQS_name>(ep, name);
-      ep = rqs_set_defaults(ep);
-   }
-   return ep;
+   DENTER(TOP_LAYER);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
+   ocs::tom::set<RQS_name>(ep, name);
+   DRETURN(rqs_set_defaults(ep.release()));
 }
 
 /** @brief The shallow check a rule set had to pass in the client (CS-2823)
@@ -366,11 +368,12 @@ qconf_template_HGRP(lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_CQ(lList **answer_list, const char *name) {
-   lListElem *ep = cqueue_create(answer_list, name);
-   if (ep != nullptr && !cqueue_set_template_attributes(ep, answer_list)) {
-      lFreeElem(&ep);
+   DENTER(TOP_LAYER);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(cqueue_create(answer_list, name));
+   if (ep != nullptr && !cqueue_set_template_attributes(*ep, answer_list)) {
+      ep.reset();
    }
-   return ep;
+   DRETURN(ep.release());
 }
 
 /** @brief The template of a userset
@@ -438,21 +441,23 @@ qconf_template_CONF([[maybe_unused]] lList **answer_list, const char *name) {
  */
 static int
 qconf_rqs_verify_list(const lList *lp, lList **alpp) {
-   for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
+   DENTER(TOP_LAYER);
+   const ocs::tom::ConstList<ocs::tom::RQS> rule_sets(lp);
+   for (auto a = rule_sets.front(); a != nullptr; a = a.next()) {
       const char *name_a = ocs::tom::get<RQS_name>(a);
       if (name_a == nullptr) {
          continue;         // a nameless rule set is qconf_rqs_validate()'s to refuse
       }
-      for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
+      for (auto b = a.next(); b != nullptr; b = b.next()) {
          const char *name_b = ocs::tom::get<RQS_name>(b);
          if (name_b != nullptr && strcmp(name_a, name_b) == 0) {
             answer_list_add_sprintf(alpp, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
                                     MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
-            return STATUS_ERROR1;
+            DRETURN(STATUS_ERROR1);
          }
       }
    }
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /** @brief The checks a complex list text needs the whole list for (CS-2823)
@@ -482,27 +487,29 @@ qconf_rqs_verify_list(const lList *lp, lList **alpp) {
  */
 static int
 qconf_ce_verify_list(const lList *lp, lList **alpp) {
-   for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
+   DENTER(TOP_LAYER);
+   const ocs::tom::ConstList<ocs::tom::CE> entries(lp);
+   for (auto a = entries.front(); a != nullptr; a = a.next()) {
       const char *name_a = ocs::tom::get<CE_name>(a);
       const char *shortcut_a = ocs::tom::get<CE_shortcut>(a);
 
       if (name_a == nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                  MSG_CENTRY_NULL_NAME);
-         return STATUS_EUNKNOWN;
+         DRETURN(STATUS_EUNKNOWN);
       }
       if (shortcut_a == nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_CENTRY_NULL_SHORTCUT_S, name_a);
-         return STATUS_EUNKNOWN;
+         DRETURN(STATUS_EUNKNOWN);
       }
       if (ocs::tom::get<CE_urgency_weight>(a) == nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                  MSG_CENTRY_NULL_URGENCY);
-         return STATUS_EUNKNOWN;
+         DRETURN(STATUS_EUNKNOWN);
       }
 
-      for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
+      for (auto b = a.next(); b != nullptr; b = b.next()) {
          const char *name_b = ocs::tom::get<CE_name>(b);
          const char *shortcut_b = ocs::tom::get<CE_shortcut>(b);
          if (name_b == nullptr || shortcut_b == nullptr) {
@@ -512,11 +519,11 @@ qconf_ce_verify_list(const lList *lp, lList **alpp) {
              strcmp(shortcut_a, name_b) == 0 || strcmp(shortcut_a, shortcut_b) == 0) {
             answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_COMPLEXXALREADYEXISTS_SS, name_a, shortcut_a);
-            return STATUS_EUNKNOWN;
+            DRETURN(STATUS_EUNKNOWN);
          }
       }
    }
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /** @brief A built-in complex survives a replacing write (CS-2523)
@@ -557,9 +564,8 @@ qconf_ce_retain_builtin(const lListElem *ep) {
  * @return true when any node below the root carries a non-zero id
  */
 static bool
-qconf_stn_has_ids(const lListElem *ep) {
-   ocs::tom::ConstElement<ocs::tom::STN> child;
-   for_each_ep(child, ocs::tom::get<STN_children>(ep)) {
+qconf_stn_has_ids(const ocs::tom::ConstElement<ocs::tom::STN> ep) {
+   for (const auto child : ocs::tom::get<STN_children>(ep)) {
       if (ocs::tom::get<STN_id>(child) != 0 || qconf_stn_has_ids(child)) {
          return true;
       }
@@ -584,10 +590,11 @@ qconf_stn_has_ids(const lListElem *ep) {
  */
 static int
 qconf_stn_prepare(lListElem *ep, lList **answer_list) {
-   if (qconf_stn_has_ids(ep)) {
-      return STATUS_OK;
+   DENTER(TOP_LAYER);
+   if (qconf_stn_has_ids(ocs::tom::ConstElement<ocs::tom::STN>(ep))) {
+      DRETURN(STATUS_OK);
    }
-   return id_sharetree(answer_list, ep, 0, nullptr) ? STATUS_OK : STATUS_EUNKNOWN;
+   DRETURN(id_sharetree(answer_list, ep, 0, nullptr) ? STATUS_OK : STATUS_EUNKNOWN);
 }
 
 /** @brief Does the bulk export of the exec hosts leave this one out? (CS-2826)
@@ -1104,33 +1111,39 @@ void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields,
  * complex-value path; unmatched or string-typed loads keep their string value. Runs
  * only for -fmt json and mutates only the throwaway object about to be shown.
  *
- * @param host          the (throwaway) exec host element to be shown
- * @param load_list_nm  CULL field id of the load-value list (e.g. EH_load_list)
+ * The host stays untyped: the typed list swapped in is a `CE_Type` list in a
+ * field declared to hold `HL_Type`, which no typed setter would accept.
+ *
+ * @param host               the (throwaway) exec host element to be shown
+ * @param load_list_nm       CULL field id of the load-value list (e.g. EH_load_list)
+ * @param master_centry_list the complex entries the types are resolved from
+ * @return none
  */
 static void
-qconf_json_type_load_values(lListElem *host, int load_list_nm, const lList *master_centry_list) {
+qconf_json_type_load_values(lListElem *host, const int load_list_nm, const lList *master_centry_list) {
+   DENTER(TOP_LAYER);
+
    if (host == nullptr || master_centry_list == nullptr) {
-      return;
+      DRETURN_VOID;
    }
-   const lList *hl = lGetList(host, load_list_nm);
-   if (hl == nullptr || lGetNumberOfElem(hl) == 0) {
-      return;
+   const ocs::tom::ConstList<ocs::tom::HL> hl(lGetList(host, load_list_nm));
+   if (hl.empty()) {
+      DRETURN_VOID;
    }
 
    auto ce_list = ocs::tom::ListPtr<ocs::tom::CE>::create("load_values");
-   const lListElem *hlep;
-   for_each_ep(hlep, hl) {
+   for (const auto hlep : hl) {
       auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
       ocs::tom::set<CE_name>(ce, ocs::tom::get<HL_name>(hlep));
       ocs::tom::set<CE_stringval>(ce, ocs::tom::get<HL_value>(hlep));
-      lAppendElem(*ce_list, std::move(ce));
+      ce_list->push_back(std::move(ce));
    }
 
    /* fill CE_valtype from the complex definitions (skips unknown load names) */
    centry_list_fill_config(*ce_list, master_centry_list);
 
    /* parse numeric values into CE_doubleval so the writer emits native numbers */
-   for (lListElem *ce = lFirstRW(*ce_list); ce != nullptr; ce = lNextRW(ce)) {
+   for (const auto ce : *ce_list) {
       const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
       const char *s = ocs::tom::get<CE_stringval>(ce);
       double dval = 0.0;
@@ -1150,6 +1163,8 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm, const lList *mast
    }
 
    lSetList(host, load_list_nm, std::move(ce_list));
+
+   DRETURN_VOID;
 }
 
 /** @brief Type the numeric fields of an exec host before it is rendered.

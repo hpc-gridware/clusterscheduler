@@ -26,6 +26,8 @@
 #include "uti/sge_stdlib.h"
 
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "tom/ocs_List.h"
 
 #include "spool/flatfile/ocs_spool_json.h"
 
@@ -44,9 +46,13 @@
  * has no way left to report. Anything that can fail meaningfully is checked in
  * the model.
  *
+ * The element stays untyped: this overrides the generic show_object(), whose
+ * element type is only known at run time. The derived lists are `HR_Type`.
+ *
  * @param os   the stream to write to
  * @param ep   the host group
  * @param desc its row in the descriptor table, for the field list
+ * @return none
  */
 void
 ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,

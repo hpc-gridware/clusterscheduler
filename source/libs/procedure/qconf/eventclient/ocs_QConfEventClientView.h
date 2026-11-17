@@ -30,6 +30,8 @@
 
 #include "sgeobj/cull/sge_event_EV_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_EV.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -65,9 +67,10 @@ namespace ocs {
        * pointer.
        *
        * @param os   the stream to write to
-       * @param list the clients, already sorted by id
+       * @param list the clients (`EV_Type`, reduced to id, name and host), already sorted by id
+       * @return none
        */
-      void show_clients(std::ostream &os, const lList *list) {
+      void show_clients(std::ostream &os, const ocs::tom::ConstList<ocs::tom::EV> list) {
          if (output_format_ == ProcedureParameter::OutputFormat::JSON) {
             /* CS-2313a: an array of { id, name, host } objects; an empty list
              * still yields the enveloped empty array */
@@ -90,8 +93,7 @@ namespace ocs {
          os << std::format("{:>8} {:<15} {:<25}\n", MSG_TABLE_EV_ID, MSG_TABLE_EV_NAME, MSG_TABLE_HOST);
          os << "--------------------------------------------------\n";
 
-         const lListElem *ep;
-         for_each_ep(ep, list) {
+         for (const auto ep : list) {
             const char *name = ocs::tom::get<EV_name>(ep);
             const char *host = ocs::tom::get<EV_host>(ep);
 
