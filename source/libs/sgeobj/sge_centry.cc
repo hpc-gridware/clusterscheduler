@@ -665,13 +665,13 @@ ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstList<ocs
 /**
  * @brief centry_list_locate() for an untyped caller
  *
- * @param this_list CE_Type list, checked; may be nullptr
+ * @param this_list CE_Type list, unchecked: request data; may be nullptr
  * @param name name or shortcut of a CE_Type entry, may be nullptr
  *
  * @return CE_Type element or nullptr
  */
 lListElem *centry_list_locate(const lList *this_list, const char *name) {
-   return centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>(this_list), name).raw();
+   return centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>::from_typed(this_list), name).raw();
 }
 
 /**
@@ -881,7 +881,7 @@ int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, lList
 /**
  * @brief centry_list_fill_request() for an untyped caller
  *
- * @param this_list CE_Type list, checked; may be nullptr
+ * @param this_list CE_Type list, unchecked: request data; may be nullptr
  * @param answer_list answer list
  * @param master_centry_list the global complex list, CE_Type, checked; may be nullptr
  * @param allow_non_requestable needed for qstat -l or qmon customize dialog
@@ -893,7 +893,7 @@ int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, lList
 int centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
                              const bool allow_non_requestable, const bool allow_empty_boolean,
                              const bool allow_neg_consumable) {
-   return centry_list_fill_request(ocs::tom::List<ocs::tom::CE>(this_list), answer_list,
+   return centry_list_fill_request(ocs::tom::List<ocs::tom::CE>::from_typed(this_list), answer_list,
                                    ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), allow_non_requestable,
                                    allow_empty_boolean, allow_neg_consumable);
 }

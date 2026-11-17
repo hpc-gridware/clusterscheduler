@@ -145,14 +145,14 @@ int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_l
 /**
  * @brief userset_list_validate_acl_list() for an untyped caller
  *
- * @param acl_list the acl list to check (US_Type), checked; may be nullptr
+ * @param acl_list the acl list to check (US_Type), unchecked: request data; may be nullptr
  * @param alpp answer list pointer
  * @param master_userset_list the defined usersets to check against (US_Type), checked
  *
  * @return as userset_list_validate_acl_list()
  */
 int userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list) {
-   return userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US>(acl_list), alpp,
+   return userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US>::from_typed(acl_list), alpp,
                                          ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
 }
 

@@ -906,7 +906,7 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list, l
 /**
  * @brief href_list_resolve_hostnames() for an untyped caller
  *
- * @param this_list HR_Type list, checked; may be nullptr
+ * @param this_list HR_Type list, unchecked: request data; may be nullptr
  * @param answer_list AN_Type list
  * @param ignore_errors ignore if a host is not resolvable
  * @param introducing true when the members are being put into a list, false when
@@ -917,7 +917,7 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list, l
  */
 bool href_list_resolve_hostnames(lList *this_list, lList **answer_list, bool ignore_errors, bool introducing,
                                  const lListElem *hgroup) {
-   return href_list_resolve_hostnames(ocs::tom::List<ocs::tom::HR>(this_list), answer_list, ignore_errors,
+   return href_list_resolve_hostnames(ocs::tom::List<ocs::tom::HR>::from_typed(this_list), answer_list, ignore_errors,
                                       introducing, ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup));
 }
 

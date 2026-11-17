@@ -660,12 +660,12 @@ void range_list_sort_uniq_compress(const ocs::tom::List<ocs::tom::RN> range_list
 /**
  * @brief range_list_sort_uniq_compress() for an untyped caller
  *
- * @param range_list RN_Type list, checked; may be nullptr
+ * @param range_list RN_Type list, unchecked: request data; may be nullptr
  * @param answer_list Pointer to an AN_Type list
  * @param correct_end if true, range_list is treated as id enumeration
  */
 void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool correct_end) {
-   range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN>(range_list), answer_list, correct_end);
+   range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN>::from_typed(range_list), answer_list, correct_end);
 }
 
 /**
