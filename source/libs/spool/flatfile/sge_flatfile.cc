@@ -58,6 +58,7 @@
 #include <cstdio>
 #include <ostream>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 /* #define USE_FOPEN */
 
@@ -1092,7 +1093,8 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
  *   files hold authoritative cluster state and are created owner-only (0600,
  *   never group-/world-accessible) with O_TRUNC and O_NOFOLLOW; confidentiality
  *   must not depend on the daemon umask, and the create must not follow a
- *   pre-planted symlink (CS-2352, CWE-732/CWE-276).
+ *   pre-planted symlink (CS-2352, CWE-732/CWE-276). The mode of a file that
+ *   already exists is set to 0600 as well, O_CREAT alone would keep it.
  * - SP_DEST_STDOUT / SP_DEST_STDERR: the corresponding standard stream.
  *
  * The name of the file/stream opened is returned in @p filepath_out; the caller
@@ -1146,6 +1148,14 @@ spool_flatfile_open_file(lList **answer_list,
          // O_NOFOLLOW refuses to follow a pre-planted symlink at the target
          // (CS-2352, CWE-732/CWE-276).
          fd = open(filepath_in, O_WRONLY|O_CREAT|O_TRUNC|O_NOFOLLOW, S_IRUSR|S_IWUSR);
+         // O_CREAT does not change the mode of a file that already exists (e.g. a
+         // temp file left behind by an older version) - set it explicitly
+         if (fd != -1 && fchmod(fd, S_IRUSR|S_IWUSR) != 0) {
+            const int saved_errno = errno;
+            close(fd);
+            fd = -1;
+            errno = saved_errno;
+         }
          if (fd == -1) {
 #endif
             answer_list_add_sprintf(answer_list, STATUS_EDISK,
@@ -1184,6 +1194,14 @@ spool_flatfile_open_file(lList **answer_list,
 #else
             // owner-only, hardened create (see SP_DEST_SPOOL above, CS-2352)
             fd = open(filepath_in, O_WRONLY|O_CREAT|O_TRUNC|O_NOFOLLOW, S_IRUSR|S_IWUSR);
+            // O_CREAT does not change the mode of a file that already exists (e.g. a
+            // temp file left behind by an older version) - set it explicitly
+            if (fd != -1 && fchmod(fd, S_IRUSR|S_IWUSR) != 0) {
+               const int saved_errno = errno;
+               close(fd);
+               fd = -1;
+               errno = saved_errno;
+            }
             if (fd == -1) {
 #endif
                answer_list_add_sprintf(answer_list, STATUS_EDISK, 
