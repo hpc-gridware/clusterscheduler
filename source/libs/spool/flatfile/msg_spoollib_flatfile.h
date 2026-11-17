@@ -75,5 +75,6 @@
 #define MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS _MESSAGE(62027, _("RSMAP " SFQ " id " SFQ ": characteristics differ across occurrences of the same id; all occurrences must carry identical characteristics (or all be bare)"))
 #define MSG_RSMAP_CHARACTERISTIC_NOT_AVAILABLE_SS _MESSAGE(62028, _("RSMAP " SFQ " id " SFQ ": per-instance characteristics are not available in OCS"))
 #define MSG_FLATFILE_ERROR_READINGTEXT       _MESSAGE(62029, _("error reading the object text"))
+#define MSG_SPOOL_CANNOT_RESTRICT_MODE_SS    _MESSAGE(62030, _("cannot restrict the permissions of " SFQ " to the owner: " SFN))
 
 // clang-format on

@@ -3010,7 +3010,8 @@ BackupConfig()
 #
 # Scope: the qmaster classic object directories, the scheduler configuration file
 # and the configs directory (global + per-host configuration), all under the given
-# spool dir. The execd spool is intentionally left untouched (not part of CS-2352). The
+# spool dir, together with the <name>.bak copies RestoreConfig moves aside. The execd
+# spool is intentionally left untouched (not part of CS-2352). The
 # pass is idempotent and safe to re-run. The CALLER must ensure classic spooling -
 # the function does not check the spooling method itself.
 #
@@ -3021,17 +3022,25 @@ HardenClassicSpoolPermissions()
 
    $INFOTEXT -n "\nHardening classic spool file/directory permissions (CS-2352)\n"
 
+   # During an update qmaster is still running and may rename a dot temp file
+   # between find's listing and the chmod; a failing find must not abort the
+   # whole update, so do not exit on a failed admin command here (CS-2384).
+   harden_saved_no_exit=$ADMINRUN_NO_EXIT
+   ADMINRUN_NO_EXIT=true
+
    # qmaster object directories, mirroring spool_classic_default_startup_func()
    obj_dirs="jobs cqueues qinstances exec_hosts admin_hosts submit_hosts centry \
 job_scripts pe ckpt usersets calendars hostgroups users projects \
 resource_quotas advance_reservations roles"
 
+   # RestoreConfig moves an existing object aside to <name>.bak, harden that too
    for d in $obj_dirs; do
-      target="$qm_spool_dir/$d"
-      if [ -d "$target" ]; then
-         ExecuteAsAdmin find "$target" -type d -exec $CHMOD 700 {} +
-         ExecuteAsAdmin find "$target" -type f -exec $CHMOD 600 {} +
-      fi
+      for target in "$qm_spool_dir/$d" "$qm_spool_dir/$d.bak"; do
+         if [ -d "$target" ]; then
+            ExecuteAsAdmin find "$target" -type d -exec $CHMOD 700 {} +
+            ExecuteAsAdmin find "$target" -type f -exec $CHMOD 600 {} +
+         fi
+      done
    done
 
    # The scheduler configuration (sched_configuration) is a plain file at the spool
@@ -3043,7 +3052,9 @@ resource_quotas advance_reservations roles"
    # CS-2394: the administrative accounts are no longer plain managers/operators files
    # at the spool root - they are members of the reserved "manager"/"operator" usersets
    # and are hardened above with the rest of the usersets object dir.
-   for f in sched_configuration; do
+   # The share tree is spooled as a plain file at the spool root as well. The .bak
+   # copies are what RestoreConfig moves aside before restoring a backup.
+   for f in sched_configuration sched_configuration.bak sharetree sharetree.bak; do
       if [ -f "$qm_spool_dir/$f" ]; then
          ExecuteAsAdmin $CHMOD 600 "$qm_spool_dir/$f"
       fi
@@ -3053,11 +3064,14 @@ resource_quotas advance_reservations roles"
    # the spool directory with the other objects, mirroring
    # spool_classic_default_startup_func(). Its entry names reveal which hosts carry
    # a local config, so it must not be readable by group/other.
-   lc_dir="$qm_spool_dir/configs"
-   if [ -d "$lc_dir" ]; then
-      ExecuteAsAdmin find "$lc_dir" -type d -exec $CHMOD 700 {} +
-      ExecuteAsAdmin find "$lc_dir" -type f -exec $CHMOD 600 {} +
-   fi
+   for lc_dir in "$qm_spool_dir/configs" "$qm_spool_dir/configs.bak"; do
+      if [ -d "$lc_dir" ]; then
+         ExecuteAsAdmin find "$lc_dir" -type d -exec $CHMOD 700 {} +
+         ExecuteAsAdmin find "$lc_dir" -type f -exec $CHMOD 600 {} +
+      fi
+   done
+
+   ADMINRUN_NO_EXIT=$harden_saved_no_exit
 }
 
 #----------------------------------------------------------------------------

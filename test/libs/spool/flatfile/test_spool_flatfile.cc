@@ -44,6 +44,7 @@
 #include <sys/wait.h>
 
 #include "uti/ocs_Bootstrap.h"
+#include "uti/sge.h"
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
@@ -171,6 +172,7 @@ static int PE_empty_lists_test();
 static int PE_large_list_test();
 static int SPOOL_perm_test();
 static int SPOOL_dir_perm_test();
+static int SPOOL_restrict_existing_test();
 static int SPOOL_key_safe_test();
 static int SPOOL_classic_params_test();
 
@@ -230,6 +232,7 @@ int main(int argc, char **argv) {
    CHECK(id, "PE large list: 10-element user_list round-trips correctly",        PE_large_list_test()   == 0); id++;
    CHECK(id, "SPOOL perm: SP_DEST_SPOOL file created 0600 (not world/group accessible)", SPOOL_perm_test() == 0); id++;
    CHECK(id, "SPOOL dir perm: classic spool directory created 0700 (not world/group traversable)", SPOOL_dir_perm_test() == 0); id++;
+   CHECK(id, "SPOOL restrict: startup restricts an existing spool tree to the owner", SPOOL_restrict_existing_test() == 0); id++;
    CHECK(id, "SPOOL key: spool_flatfile_key_is_safe accepts relative multi-component keys, rejects traversal", SPOOL_key_safe_test() == 0); id++;
    CHECK(id, "SPOOL params: classic create_context rejects legacy 2-arg and non-absolute spooling_params", SPOOL_classic_params_test() == 0); id++;
 
@@ -2912,6 +2915,90 @@ static int SPOOL_dir_perm_test() {
       }
    } else {
       printf("   could not create/stat configs dir via default_startup_func\n");
+   }
+
+   snprintf(cmd, sizeof(cmd), "rm -rf %s", base);
+   if (system(cmd) != 0) { /* best effort cleanup */ }
+   answer_list_output(&alp);
+   return ret;
+}
+
+/**
+ * @brief Security regression test for CS-2384: qmaster restricts an existing spool tree.
+ *
+ * A patch update replaces only the binaries, so the spool tree of an older
+ * version keeps its 0755 directories and 0644 files. The classic startup
+ * function restricts them: the test prepares such a tree, runs
+ * spool_classic_default_startup_func() under umask(0) and expects every
+ * object directory 0700 and the root level spool files (scheduler
+ * configuration, share tree) 0600.
+ *
+ * @return 0 if all modes are owner-only afterwards, 1 otherwise
+ */
+static int SPOOL_restrict_existing_test() {
+   lList *alp = nullptr;
+
+   char base[1024];
+   snprintf(base, sizeof(base), "/tmp/test_spool_restrict.%ld", (long)getpid());
+
+   // the startup function changes the working directory
+   char cwd[4096];
+   if (getcwd(cwd, sizeof(cwd)) == nullptr) {
+      printf("   getcwd failed\n");
+      return 1;
+   }
+
+   char cmd[1200];
+   snprintf(cmd, sizeof(cmd), "rm -rf %s", base);
+   if (system(cmd) != 0) { /* best effort cleanup */ }
+   if (mkdir(base, 0755) != 0) {
+      printf("   could not create test spool dir %s\n", base);
+      return 1;
+   }
+
+   // what an older version left behind
+   const mode_t old_umask = umask(0);
+   char path[1152];
+   for (const char *d : {JOB_DIR, CONFIG_DIR, ROLE_DIR}) {
+      snprintf(path, sizeof(path), "%s/%s", base, d);
+      mkdir(path, 0755);
+   }
+   const char *files[] = {SCHED_CONF_FILE, SHARETREE_FILE};
+   for (const char *f : files) {
+      snprintf(path, sizeof(path), "%s/%s", base, f);
+      FILE *fp = fopen(path, "w");
+      if (fp != nullptr) {
+         fprintf(fp, "# old\n");
+         fclose(fp);
+      }
+      chmod(path, 0644);
+   }
+
+   auto rule = ocs::tom::ElementPtr<ocs::tom::SPR>::create();
+   ocs::tom::set<SPR_url>(rule, base);
+   const bool ok = spool_classic_default_startup_func(&alp, *rule, false);
+   rule.reset();
+   umask(old_umask);
+   if (chdir(cwd) != 0) { /* best effort */ }
+
+   int ret = ok ? 0 : 1;
+   const char *dirs[] = {JOB_DIR, CQUEUE_DIR, QINSTANCES_DIR, EXECHOST_DIR, CENTRY_DIR, EXEC_DIR, PE_DIR,
+                         CKPTOBJ_DIR, USERSET_DIR, CAL_DIR, HGROUP_DIR, USER_DIR, PROJECT_DIR,
+                         RESOURCEQUOTAS_DIR, AR_DIR, ROLE_DIR, CONFIG_DIR};
+   struct stat sb{};
+   for (const char *d : dirs) {
+      snprintf(path, sizeof(path), "%s/%s", base, d);
+      if (stat(path, &sb) != 0 || (sb.st_mode & 07777) != S_IRWXU) {
+         printf("   %s: mode 0%03o, expected 0700\n", d, (unsigned)(sb.st_mode & 07777));
+         ret = 1;
+      }
+   }
+   for (const char *f : files) {
+      snprintf(path, sizeof(path), "%s/%s", base, f);
+      if (stat(path, &sb) != 0 || (sb.st_mode & 07777) != (S_IRUSR | S_IWUSR)) {
+         printf("   %s: mode 0%03o, expected 0600\n", f, (unsigned)(sb.st_mode & 07777));
+         ret = 1;
+      }
    }
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", base);

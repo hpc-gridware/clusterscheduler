@@ -292,6 +292,36 @@ spool_classic_create_context(lList **answer_list, const char *args) {
 }
 
 /**
+ * @brief Remove the group and other permissions of an existing spool entry.
+ *
+ * A directory becomes 0700 and a file 0600. Nothing happens when the entry
+ * does not exist, is a symbolic link or already is owner-only. A failure is
+ * logged and otherwise ignored, it must not stop qmaster (CS-2384).
+ *
+ * @param[in] base directory the entry lives in
+ * @param[in] name name of the directory or file below @p base
+ */
+static void
+spool_classic_restrict_mode(const char *base, const char *name) {
+   DENTER(TOP_LAYER);
+
+   dstring path = DSTRING_INIT;
+   sge_dstring_sprintf(&path, "%s/%s", base, name);
+
+   struct stat st;
+   if (lstat(sge_dstring_get_string(&path), &st) == 0 && (st.st_mode & (S_IRWXG | S_IRWXO)) != 0 &&
+       (S_ISDIR(st.st_mode) || S_ISREG(st.st_mode))) {
+      const mode_t mode = S_ISDIR(st.st_mode) ? S_IRWXU : (S_IRUSR | S_IWUSR);
+      if (chmod(sge_dstring_get_string(&path), mode) != 0) {
+         WARNING(MSG_SPOOL_CANNOT_RESTRICT_MODE_SS, sge_dstring_get_string(&path), strerror(errno));
+      }
+   }
+
+   sge_dstring_free(&path);
+   DRETURN_VOID;
+}
+
+/**
  * @brief Set up the classic (flatfile) qmaster spool directory.
  *
  * Checks that the spool directory exists, changes into it, and creates the
@@ -305,6 +335,8 @@ spool_classic_create_context(lList **answer_list, const char *args) {
  * instance and other object names) are information that must not be readable
  * by other local users. This complements CS-2352, which hardened the spool
  * *file* mode to 0600 but left the containing directories world-traversable.
+ * Directories and root level spool files that an older version left with group
+ * or other permissions are restricted to the owner as well (CS-2384).
  *
  * This function should not be called directly; it is called by the spooling
  * framework.
@@ -362,6 +394,21 @@ bool spool_classic_default_startup_func(lList **answer_list,
           * the spool dir root. Owner-only (0700): the entry names reveal which
           * hosts carry a local config (CS-2352). */
          sge_mkdir2(url, CONFIG_DIR, 0700, true);
+
+         /* sge_mkdir2() keeps the mode of a directory that already exists. A
+          * patch update only replaces the binaries and does not run
+          * inst_sge -upd, so restrict what an older version left behind here
+          * (CS-2384). An owner-only directory also protects the older files
+          * inside it. The scheduler configuration and the share tree are plain
+          * files at the spool directory root. */
+         static const char *const spool_entries[] = {
+            JOB_DIR, CQUEUE_DIR, QINSTANCES_DIR, EXECHOST_DIR, CENTRY_DIR, EXEC_DIR, PE_DIR, CKPTOBJ_DIR,
+            USERSET_DIR, CAL_DIR, HGROUP_DIR, USER_DIR, PROJECT_DIR, RESOURCEQUOTAS_DIR, AR_DIR, ROLE_DIR,
+            CONFIG_DIR, SCHED_CONF_FILE, SHARETREE_FILE
+         };
+         for (const char *name : spool_entries) {
+            spool_classic_restrict_mode(url, name);
+         }
       }
    }
 
