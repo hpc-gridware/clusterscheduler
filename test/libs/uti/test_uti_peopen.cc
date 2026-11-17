@@ -35,11 +35,16 @@
  * build). Run as root (e.g. from the installed testsuite) it spawns "id" as
  * the target user and verifies both the uid and the *primary* gid: before the
  * fix the gid check fails with gid 0, after the fix it passes.
+ *
+ * Regression tests for CS-2356 and CS-2360 need no privileges and always run:
+ * a shell path longer than the fixed argv[0] buffer, and the exec failure
+ * message that used to be cut to sizeof(pointer) bytes.
  */
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <pwd.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -47,6 +52,7 @@
 #include "uti/sge_component.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/msg_utilib.h"
 
 #include <sge_log.h>
 
@@ -232,11 +238,99 @@ test_variant(bool use_r, int first_id) {
    check_variant(&id, use_r, t.user, t.uid, t.gid);
 }
 
-/** @brief Module test entry point for CS-2333 (sge_peopen* GID drop).
+/** @brief Spawn @p command under @p shell and read the first line of stdout and stderr.
  *
- * Requires root to exercise the user-switch path; the first test argument
- * optionally names the target user. Without root or a suitable user both
- * scenarios are unsupported and the test passes.
+ * @param use_r    true for sge_peopen_r(), false for sge_peopen()
+ * @param shell    shell to exec
+ * @param command  command passed as `-c command`
+ * @param out      out: first line of the child's stdout, without the newline
+ * @param err      out: first line of the child's stderr, without the newline
+ * @return true if the child could be spawned, false otherwise
+ */
+static bool
+spawn_and_read(bool use_r, const char *shell, const char *command, std::string &out, std::string &err) {
+   FILE *fp_in = nullptr;
+   FILE *fp_out = nullptr;
+   FILE *fp_err = nullptr;
+
+   pid_t pid;
+   if (use_r) {
+      pid = sge_peopen_r(shell, 0, command, nullptr, nullptr, &fp_in, &fp_out, &fp_err, false);
+   } else {
+      pid = sge_peopen(shell, 0, command, nullptr, nullptr, &fp_in, &fp_out, &fp_err, false);
+   }
+   if (pid <= 0) {
+      return false;
+   }
+
+   auto read_line = [](FILE *fp, std::string &line) {
+      char buf[1024];
+      line.clear();
+      if (fp != nullptr && fgets(buf, sizeof(buf), fp) != nullptr) {
+         line = buf;
+         while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+            line.pop_back();
+         }
+      }
+   };
+   read_line(fp_out, out);
+   read_line(fp_err, err);
+   sge_peclose(pid, fp_in, fp_out, fp_err, nullptr);
+   return true;
+}
+
+/** @brief CS-2356: a shell path longer than arg0[256] must not overflow the stack.
+ *
+ * The shell is /bin/sh spelled with 300 leading slashes, a valid path that is
+ * longer than the fixed argv[0] buffer. Before the fix it was strcat'ed into
+ * that buffer in the child; now argv[0] is truncated and the command runs.
+ *
+ * @param id     the id of the first check
+ * @param use_r  true for sge_peopen_r(), false for sge_peopen()
+ * @return nothing; CHECK records the results
+ */
+static void
+test_long_shell_path(int id, bool use_r) {
+   const char *tag = use_r ? "PEOPEN_R" : "PEOPEN";
+   char label[128];
+   const std::string shell = std::string(300, '/') + "bin/sh";
+   std::string out;
+   std::string err;
+
+   const bool spawned = spawn_and_read(use_r, shell.c_str(), "echo cs2356", out, err);
+   snprintf(label, sizeof(label), "%s: spawn with a %zu byte shell path -> ok", tag, shell.size());
+   CHECK(id, label, spawned);
+   snprintf(label, sizeof(label), "%s: child ran the command -> got \"%s\"", tag, out.c_str());
+   CHECK(id + 1, label, spawned && out == "cs2356");
+}
+
+/** @brief CS-2360: the exec failure message reaches stderr in full.
+ *
+ * sge_peopen() wrote sizeof(const char *) bytes of the message, so only its
+ * first 8 characters arrived. A shell that does not exist makes the exec fail.
+ *
+ * @param id  the id of the first check
+ * @return nothing; CHECK records the results
+ */
+static void
+test_exec_failure_message(int id) {
+   char label[256];
+   std::string out;
+   std::string err;
+   const std::string expected = MSG_SYSTEM_EXECBINSHFAILED;
+
+   const bool spawned = spawn_and_read(false, "/nonexistent/cs2360/sh", "true", out, err);
+   CHECK(id, "PEOPEN: spawn with a shell that does not exist -> ok", spawned);
+   snprintf(label, sizeof(label), "PEOPEN: stderr -> got \"%s\", expected \"%s\"",
+            err.c_str(), expected.c_str());
+   CHECK(id + 1, label, spawned && err == expected);
+}
+
+/** @brief Module test entry point for CS-2333, CS-2356 and CS-2360 (sge_peopen*).
+ *
+ * PEOPEN-01/02 require root to exercise the user-switch path; the first test
+ * argument optionally names the target user. Without root or a suitable user
+ * these two scenarios are unsupported. PEOPEN-03/04 need no privileges.
  *
  * @param argc  argument count, see ocs_module_test.h for the frame's options
  * @param argv  argument vector
@@ -262,6 +356,18 @@ int main(int argc, char *argv[]) {
        {"resolve the target user", "spawn 'id -u' and 'id -g' as that user through sge_peopen()"},
        "both commands run, and print the target's uid and primary gid",
        {}, {5, 6, 7, 8}, [] { test_variant(false, 5); }},
+      {"PEOPEN-03", "a shell path longer than argv[0]'s buffer is truncated (CS-2356)",
+       "sge_peopen() and sge_peopen_r() build argv[0] bounded, so a shell path longer than the "
+       "fixed 256 byte buffer neither overflows the child's stack nor stops the command",
+       {"spawn 'echo' under /bin/sh spelled with 300 leading slashes, through both variants"},
+       "both spawns succeed and the command's output arrives",
+       {}, {9, 10, 11, 12}, [] { test_long_shell_path(9, false); test_long_shell_path(11, true); }},
+      {"PEOPEN-04", "the exec failure message is written in full (CS-2360)",
+       "when the shell cannot be executed, sge_peopen() writes the whole error message to the "
+       "child's stderr, not just the first sizeof(pointer) bytes",
+       {"spawn through sge_peopen() with a shell that does not exist", "read the child's stderr"},
+       "stderr carries the complete message",
+       {}, {13, 14}, [] { test_exec_failure_message(13); }},
    });
    DRETURN(ret);
 }
