@@ -119,16 +119,6 @@
    ((status) & ~SGE_SIGNAL_BITS)       |(((signal)<<12) & SGE_SIGNAL_BITS)
 
 
-/**
- * @brief Print usage information contained in a job report
- *
- * @param jr JR_Type element
- * @param fp file stream, or nullptr to print as debug messages
- *
- * @warning The definition in `sge_report.cc` sits inside an `#if 0`, so this
- *          does not link. There are no callers.
- */
-void job_report_print_usage(const lListElem *jr, FILE *fp);
 void job_report_init_from_job(ocs::tom::Element<ocs::tom::JR> job_report, ocs::tom::ConstElement<ocs::tom::JB> job,
                               ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                               ocs::tom::ConstElement<ocs::tom::PET> pe_task);

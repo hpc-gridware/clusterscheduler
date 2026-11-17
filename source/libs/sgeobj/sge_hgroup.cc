@@ -913,14 +913,16 @@ bool hgroup_find_all_referencees(const lListElem *this_elem, lList **answer_list
  * @param master_hgroup_list HGRP_Type master list
  * @param master_cqueue_list CQ_Type master list
  * @param occupants_groups in-out: HR_Type list, or nullptr
- * @param occupants_queues in-out: ST_Type list, or nullptr
+ * @param occupants_queues in-out: ST_Type list the names of the referencing cqueues are appended to, created
+ *                         with the first one; or nullptr
  *
  * @return Error state true  - Success false - Error
  */
 bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
                              const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                              const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
-                             ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups, lList **occupants_queues) {
+                             ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups,
+                             ocs::tom::ListPtr<ocs::tom::ST> *occupants_queues) {
    DENTER(HGROUP_LAYER);
 
    bool ret = true;
@@ -939,10 +941,14 @@ bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_e
          }
       }
       if (ret && occupants_queues != nullptr) {
-         ret &= cqueue_list_find_hgroup_references(master_cqueue_list, 
-                                                   answer_list,
-                                                   this_elem, 
-                                                   occupants_queues);
+         auto found = cqueue_list_find_hgroup_references(master_cqueue_list, answer_list, this_elem);
+         if (found) {
+            if (!*occupants_queues) {
+               *occupants_queues = std::move(found);
+            } else {
+               (*occupants_queues)->splice(std::move(found));
+            }
+         }
       }
    }
    DRETURN(ret);
@@ -965,10 +971,29 @@ bool hgroup_find_referencees(const lListElem *this_elem, lList **answer_list, co
                              lList **occupants_queues) {
    ocs::UntypedHrefList typed_occupants_groups(occupants_groups);
 
-   return hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list,
-                                  ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list),
-                                  ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
-                                  typed_occupants_groups.get(), occupants_queues);
+   // the queue list is handed over for the call and back afterwards, also when the call throws
+   ocs::tom::ListPtr<ocs::tom::ST> typed_occupants_queues;
+   if (occupants_queues != nullptr) {
+      typed_occupants_queues = ocs::tom::ListPtr<ocs::tom::ST>(*occupants_queues);
+      *occupants_queues = nullptr;
+   }
+   bool ret;
+   try {
+      ret = hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list,
+                                    ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list),
+                                    ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
+                                    typed_occupants_groups.get(),
+                                    occupants_queues != nullptr ? &typed_occupants_queues : nullptr);
+   } catch (...) {
+      if (occupants_queues != nullptr) {
+         *occupants_queues = typed_occupants_queues.release();
+      }
+      throw;
+   }
+   if (occupants_queues != nullptr) {
+      *occupants_queues = typed_occupants_queues.release();
+   }
+   return ret;
 }
 
 /**
@@ -1121,22 +1146,4 @@ bool hgroup_list_find_matching(const ocs::tom::ConstList<ocs::tom::HGRP> this_li
       }
    }
    DRETURN(ret);
-}
-
-/**
- * @brief hgroup_list_find_matching() for an untyped caller
- *
- * @param this_list HGRP_Type list, checked; may be nullptr
- * @param answer_list AN_Type list
- * @param hgroup_pattern hostgroup pattern
- * @param[in,out] href_list HR_Type list receiving the matching names, checked; created if needed; or nullptr
- *
- * @return as hgroup_list_find_matching()
- */
-bool hgroup_list_find_matching(const lList *this_list, lList **answer_list, const char *hgroup_pattern,
-                               lList **href_list) {
-   ocs::UntypedHrefList typed_href_list(href_list);
-
-   return hgroup_list_find_matching(ocs::tom::ConstList<ocs::tom::HGRP>(this_list), answer_list, hgroup_pattern,
-                                    typed_href_list.get());
 }

@@ -879,7 +879,7 @@ conf_sort_entries(const ocs::tom::Element<ocs::tom::CONF> conf) {
  *
  * @details
  * This function searches for a configuration attribute by its name, frees the old value if it is a string,
- * and writes the new value into the provided pointer. Logging is done to a file.
+ * and writes the new value into the provided pointer.
  *
  * @param lp_cfg The configuration list.
  * @param name The name of the configuration attribute.
@@ -894,18 +894,6 @@ chg_conf_val(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, c
 
    if (const auto ep = lp_cfg.find_first<CF_name>(name)) {
       const char *s = ocs::tom::get<CF_value>(ep);
-#if 0
-      if (s) {
-         int old_verbose = log_state_get_log_verbose();
-
-         /* prevent logging function from writing to stderr
-          * but log into log file
-          */
-         log_state_set_log_verbose(0);
-         INFO(MSG_CONF_USING_SS, s, name);
-         log_state_set_log_verbose(old_verbose);
-      }
-#endif
       if (cpp)
          *cpp = sge_strdup(*cpp, s);
       else
@@ -941,12 +929,7 @@ chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, 
          lFreeList(&target);
          target = names.release();
       } catch (const ocs::tom::ListCoreError &) {
-         // keep the old list, as on an error of lString2ListNone()
-      } catch (const ocs::tom::FieldException &e) {
-         if (e.reason() == ocs::tom::FieldException::Reason::DuplicateKey) {
-            throw;
-         }
-         // keep the old list, as on an error of lString2ListNone()
+         // keep the old list, as on an error of lString2ListNone(); from_string() skips duplicate names
       }
    }
 
@@ -1861,11 +1844,11 @@ void sge_show_conf() {
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xuser_lists");
    sge_dstring_clear(&dstr);
 
-   prj_list_append_to_dstring(Master_Config.projects, &dstr);
+   prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR>(Master_Config.projects), &dstr);
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "projects");
    sge_dstring_clear(&dstr);
 
-   prj_list_append_to_dstring(Master_Config.xprojects, &dstr);
+   prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR>(Master_Config.xprojects), &dstr);
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xprojects");
    sge_dstring_clear(&dstr);
 

@@ -50,12 +50,4 @@ ocs::tom::Element<ocs::tom::PRO> get_pr(int pid);
 ocs::tom::Element<ocs::tom::PRO> append_pr(ocs::tom::ElementPtr<ocs::tom::PRO> &&pr);
 void gen_procList ();
 void free_procList ();
-/**
- * @brief Read the operating system's process table into the process list
- *
- * The execution daemon uses it to attribute processes to jobs.
- */
-void fill_procList ();
-/// Drop the process list built by #fill_procList
-void clear_procList ();
 void clean_procList ();

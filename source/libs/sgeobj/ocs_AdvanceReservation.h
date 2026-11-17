@@ -64,8 +64,6 @@ namespace ocs {
       static ocs::tom::Element<ocs::tom::BN> binding_get_or_create_elem(ocs::tom::Element<ocs::tom::AR> ar,
                                                                         lList **answer_list);
       OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *ar, lList **answer_list);
-      static bool binding_was_requested(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static bool binding_was_requested(const lListElem *ar);
       static BindingType::Type binding_get_type(ocs::tom::ConstElement<ocs::tom::AR> ar);
       OCS_TRANSITIONAL static BindingType::Type binding_get_type(const lListElem *ar);
       static BindingUnit::Unit binding_get_unit(ocs::tom::ConstElement<ocs::tom::AR> ar);

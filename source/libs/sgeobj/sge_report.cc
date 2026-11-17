@@ -56,38 +56,6 @@
 
 #include "execution_states.h"
 
-#if 0
-/**
- * @brief Print usage contained in job report
- *
- * Print usage information conatines in "job_report". Print the
- * information to the given file stream "fp" or as debug messages.
- *
- * @param job_report JR_Type element
- * @param fp file stream or nullptr
- */
-void job_report_print_usage(const lListElem *job_report, FILE *fp) 
-{
-   DENTER(TOP_LAYER);
-
-   if (!job_report) {
-      DRETURN_VOID;
-   }
-
-   for_each_ep_lv(uep, lGetList(job_report, JR_usage)) {
-      if (fp) {
-         fprintf(fp, "   \"%s\" =   %.99g\n", lGetString(uep, UA_name),
-                 lGetDouble(uep, UA_value));
-      } else {
-         DPRINTF(("   \"%s\" =   %.99g\n", lGetString(uep, UA_name),
-                  lGetDouble(uep, UA_value)));
-      }
-   }
-
-   DRETURN_VOID;
-}
-#endif
-
 /**
  * @brief Initialize job report
  *

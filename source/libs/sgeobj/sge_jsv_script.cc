@@ -519,9 +519,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **ans
             ocs::tom::ListPtr<ocs::tom::VA> context_list;
 
             if (value != nullptr) {
-               lList *parsed = nullptr; // var_list_parse_from_string() has no typed form
-               const int local_ret = var_list_parse_from_string(&parsed, value, 0);
-               context_list = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(parsed);
+               const int local_ret = var_list_parse_from_string(context_list, value, 0);
                if (local_ret != 0) {
                   answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                           MSG_JSV_PARSE_VAL_SS, param, value);
@@ -779,9 +777,8 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **ans
          ocs::tom::ListPtr<ocs::tom::MR> mail_list;
 
          if (value != nullptr) {
-            lList *parsed = nullptr; // mailrec_parse() has no typed form
-            const int local_ret = mailrec_parse(&parsed, value);
-            mail_list = ocs::tom::ListPtr<ocs::tom::MR>::from_typed(parsed);
+            auto [local_ret, parsed] = mailrec_parse(value);
+            mail_list = std::move(parsed);
             if (local_ret != 0) {
                answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                        MSG_JSV_PARSE_VAL_SS, param, value);
@@ -901,7 +898,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **ans
 
          // If no binding parameters are set, remove the binding element again
          if (ocs::tom::get<BN_amount>(binding_elem) == 0) {
-            ocs::Binding::clear(new_job, JB_binding);
+            ocs::Binding::clear<JB_binding>(new_job);
          } else {
             ocs::Job::binding_set_missing_defaults(new_job, answer_list);
          }

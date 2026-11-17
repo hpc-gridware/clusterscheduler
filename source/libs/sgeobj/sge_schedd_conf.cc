@@ -98,16 +98,13 @@
  * The configuratin is stored in a CULL list due to the
  * current configuration handling in the system. There
  * are methods outside this module, which need complete
- * access to the list. Therefore exist two methods to
+ * access to the list. Therefore a method exists to
  * access the whole configuration:
  *
  * - sconf_get_config_list
  *     (returns a pointer to the cull list
  *
- * - sconf_get_config
- *      returns a const pointer the config object.
- *
- * Both methods should only be used, when there is no
+ * It should only be used, when there is no
  * other way. Usualy the values in the configuration
  * should be accessed via access-function. The module
  * validates the configuration, when it is changed, and
@@ -1067,27 +1064,6 @@ uint32_t sconf_get_schedd_job_info() {
 }
 
 /**
- * @brief The `schedd_job_info` attribute of the scheduler configuration
- *
- * That is jobs the scheduler keeps a reason message for.
- *
- * @return returns a copy, needs to be freed
- *
- * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
- */
-ocs::tom::ListPtr<ocs::tom::RN> sconf_get_schedd_job_info_range() {
-   DENTER(BASIS_LAYER);
-
-   sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-
-   // the cache is a process-lifetime static holding RN_Type elements
-   auto range_copy = ocs::tom::ConstList<ocs::tom::RN>::from_typed(pos.c_schedd_job_info_range).clone("copy_range");
-
-   sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   DRETURN(range_copy);
-}
-
-/**
  * @brief Does `schedd_job_info` ask for reason messages for this job?
  *
  * @param job_number the job to ask about
@@ -1794,27 +1770,6 @@ bool sconf_is() {
    return is;
 }
 
-
-/**
- * @brief Returns a config object
- *
- * @return a copy of the current config object (SC_Type), owned by the caller; empty if none is set
- *
- * @note DO NOT USE this method, ONLY when there is NO OTHER way. All config
- *       settings can be accessed via access function.
- *
- * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
- */
-ocs::tom::ElementPtr<ocs::tom::SC> sconf_get_config() {
-   DENTER(BASIS_LAYER);
-
-   sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-
-   auto config = ocs_sconf_elem().clone();
-
-   sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   DRETURN(config);
-}
 
 /**
  * @brief A copy of the scheduler configuration list

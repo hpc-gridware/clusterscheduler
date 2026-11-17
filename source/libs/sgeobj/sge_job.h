@@ -397,9 +397,6 @@ OCS_TRANSITIONAL void job_set_hold_state(lListElem *job, lList **answer_list, ui
 uint32_t job_get_hold_state(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t ja_task_id);
 OCS_TRANSITIONAL uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id);
 
-/* int job_add_job(lList **job_list, char *name, lListElem *job, int check,
-                 int hash, htable* Job_Hash_Table); */
-
 ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_hold(ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                uint32_t ja_task_id, uint32_t hold_state);
 
@@ -486,10 +483,8 @@ bool job_parse_key(char *key, uint32_t *job_id, uint32_t *ja_task_id,
                    char **pe_task_id, bool *only_job);
 
 bool job_is_pe_referenced(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::PE> pe);
-OCS_TRANSITIONAL bool job_is_pe_referenced(const lListElem *job, const lListElem *pe);
 
 bool job_is_ckpt_referenced(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::CK> ckpt);
-OCS_TRANSITIONAL bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt);
 
 void job_get_state_string(char *str, uint32_t op);
 
@@ -528,18 +523,13 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
 
 bool sge_unparse_resource_list_dstring(dstring *category_str, ocs::tom::List<ocs::tom::CE> resource_list,
                                        const char *option);
-OCS_TRANSITIONAL bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list,
-                                                        const char *option);
 
 bool sge_unparse_queue_list_dstring(dstring *category_str, ocs::tom::List<ocs::tom::QR> queue_list,
                                     const char *option);
-OCS_TRANSITIONAL bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, const char *option);
 
 bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group,
                              ocs::tom::ConstList<ocs::tom::ST> grp_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
                              const char *option);
-OCS_TRANSITIONAL bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group,
-                                              const lList *grp_list, const lList *acl_list, const char *option);
 
 bool job_verify(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, bool do_cull_verify);
 
@@ -550,16 +540,12 @@ bool job_get_wallclock_limit(uint64_t *limit, ocs::tom::ConstElement<ocs::tom::J
 OCS_TRANSITIONAL bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep);
 
 bool job_is_binary(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL bool job_is_binary(const lListElem *job);
 
 bool job_set_binary(ocs::tom::Element<ocs::tom::JB> job, bool is_binary);
-OCS_TRANSITIONAL bool job_set_binary(lListElem *job, bool is_binary);
 
 bool job_is_no_shell(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL bool job_is_no_shell(const lListElem *job);
 
 bool job_set_no_shell(ocs::tom::Element<ocs::tom::JB> job, bool is_no_shell);
-OCS_TRANSITIONAL bool job_set_no_shell(lListElem *job, bool is_no_shell);
 
 bool job_set_owner_and_group(ocs::tom::Element<ocs::tom::JB> job, uint32_t uid, uint32_t gid, const char *user,
                              const char *group, int amount, ocs_grp_elem_t *grp_array);
@@ -642,10 +628,8 @@ ocs::tom::ConstElement<ocs::tom::CE> job_get_highest_hard_request(ocs::tom::Cons
 
 ocs::tom::ConstList<ocs::tom::CE> job_get_resource_list(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t scope,
                                                         bool hard);
-OCS_TRANSITIONAL const lList *job_get_resource_list(const lListElem *job, uint32_t scope, bool hard);
 ocs::tom::ConstList<ocs::tom::QR> job_get_queue_list(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t scope,
                                                      bool hard);
-OCS_TRANSITIONAL const lList *job_get_queue_list(const lListElem *job, uint32_t scope, bool hard);
 
 ocs::tom::ConstList<ocs::tom::CE> job_get_hard_resource_list(ocs::tom::ConstElement<ocs::tom::JB> job);
 OCS_TRANSITIONAL const lList *job_get_hard_resource_list(const lListElem *job);
@@ -663,12 +647,10 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_soft_queue_list(ocs::tom::ConstElement
 ocs::tom::ConstList<ocs::tom::QR> job_get_master_hard_queue_list(ocs::tom::ConstElement<ocs::tom::JB> job);
 
 ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(ocs::tom::Element<ocs::tom::JB> job, uint32_t scope, bool hard);
-OCS_TRANSITIONAL lList *job_get_resource_listRW(lListElem *job, uint32_t scope, bool hard);
 ocs::tom::List<ocs::tom::CE> job_get_hard_resource_listRW(ocs::tom::Element<ocs::tom::JB> job);
 OCS_TRANSITIONAL lList *job_get_hard_resource_listRW(lListElem *job);
 ocs::tom::List<ocs::tom::CE> job_get_soft_resource_listRW(ocs::tom::Element<ocs::tom::JB> job);
 ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(ocs::tom::Element<ocs::tom::JB> job, uint32_t scope, bool hard);
-OCS_TRANSITIONAL lList *job_get_queue_listRW(lListElem *job, uint32_t scope, bool hard);
 
 void job_set_resource_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list,
                            uint32_t scope, bool hard);

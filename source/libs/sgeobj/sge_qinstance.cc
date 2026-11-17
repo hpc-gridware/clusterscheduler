@@ -415,10 +415,14 @@ ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(const ocs::tom::Con
          /* use qinstance expression */
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, hostname_pattern, hostname, answer_list, true,
                                   hostname_pattern_is_expression)) {
-            if (!qref_list) {
-               qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("");
+            // a qinstance without a full name is skipped, as the free emplace_back() took the soft path for it
+            const char *full_name = ocs::tom::get<QU_full_name>(qinstance);
+            if (full_name != nullptr) {
+               if (!qref_list) {
+                  qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("");
+               }
+               qref_list->emplace_back<QR_name>(full_name);
             }
-            qref_list->emplace_back<QR_name>(ocs::tom::get<QU_full_name>(qinstance));
          }
       }
    }
@@ -589,7 +593,7 @@ bool qinstance_message_add(const ocs::tom::Element<ocs::tom::QU> this_elem, cons
 
    bool ret = true;
 
-   object_message_add(this_elem, QU_message_list, type, message);
+   object_message_add<QU_message_list>(this_elem, type, message);
    DRETURN(ret);
 }
 
@@ -623,7 +627,7 @@ bool qinstance_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::QU>
 
    bool ret = true;
 
-   object_message_trash_all_of_type_X(this_elem, QU_message_list, type);
+   object_message_trash_all_of_type_X<QU_message_list>(this_elem, type);
    DRETURN(ret);
 }
 

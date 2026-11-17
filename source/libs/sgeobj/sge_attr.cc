@@ -71,37 +71,13 @@
 /**
  * @brief Define the whole function family for one per host attribute type
  *
- * Every attribute type needs the same set of functions - create, add, find,
- * remove, render - differing only in the value's C type and the CULL
- * descriptor. This emits them; #TEMPLATE_ATTR_PROTO declares the same set in
+ * Every attribute type needs the same set of functions - find, render,
+ * parse - differing only in the value's C type and the CULL descriptor.
+ * This emits them; #TEMPLATE_ATTR_PROTO declares the same set in
  * the header.
  */
 #define TEMPLATE_ATTR_IMPL(PREFIX, TYPE, INTERNAL_TYPE,                       \
                            DESCRIPTOR, HREF_NM, VALUE_NM)                     \
-                                                                              \
-lListElem *                                                                   \
-PREFIX##_create(lList **answer_list, const char *href, TYPE value)            \
-{                                                                             \
-   return attr_create(answer_list, href, &value,                              \
-                      DESCRIPTOR, HREF_NM, VALUE_NM);                         \
-}                                                                             \
-                                                                              \
-bool                                                                          \
-PREFIX##_list_add(lList **this_list, lList **answer_list, lListElem **attr,   \
-                  int flags, lList **ambiguous_href_list, const lList *master_hgroup_list) \
-{                                                                             \
-   return attr_list_add(this_list, answer_list, attr, flags,                  \
-                        ambiguous_href_list,                                  \
-                        DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list);   \
-}                                                                             \
-                                                                              \
-bool                                                                          \
-PREFIX##_list_add_set_del(lList **this_list, lList **answer_list,             \
-                         const char *hostname, void *value, bool remove, const lList *master_hgroup_list) \
-{                                                                             \
-   return attr_list_add_set_del(this_list, answer_list, hostname,             \
-                        value, remove, DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list); \
-}                                                                             \
                                                                               \
 bool                                                                          \
 PREFIX##_list_find_value(const lList *this_list, lList **answer_list,         \
@@ -139,13 +115,7 @@ PREFIX##_list_parse_from_string(lList **this_list, lList **answer_list,       \
 {                                                                             \
    return attr_list_parse_from_string(this_list, answer_list, string,         \
                                       flags, DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list);  \
-}                                                                             \
-                                                                              \
-lListElem *                                                                   \
-PREFIX##_list_locate(const lList *this_list, const char *host_or_group)       \
-{                                                                             \
-   return attr_list_locate(this_list, host_or_group, HREF_NM);                \
-}                                                                             
+}
  
 static lListElem *
 attr_create(lList **answer_list, const char *href, void *value,
@@ -154,11 +124,6 @@ attr_create(lList **answer_list, const char *href, void *value,
 static bool 
 attr_list_add(lList **this_list, lList **answer_list, lListElem **attr, 
               int flags, lList **ambiguous_href_list,
-              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list);
-
-static bool 
-attr_list_add_set_del(lList **this_list, lList **answer_list, 
-              const char *hostname, void *value_buffer, bool remove,
               const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list);
 
 static bool
@@ -205,17 +170,7 @@ attr_list_locate(const lList *this_list, const char *host_or_group,
  *
  * @return new CULL element or nullptr in case on an error
  *
- * @note There are typesafe versions of this function. Have a look into
- *       the headerfile and look for TEMPLATE_ATTR_PROTO. These macro
- *       creates the typesafe versions. E.g.
- *
- *       str_attr_create()
- *       ulng_attr_create()
- *       bool_attr_create()
- *       ...
- *       strlist_attr_create()
- *
- *       MT-NOTE: attr_create() is MT safe
+ * @note MT-NOTE: attr_create() is MT safe
  */
 static lListElem *
 attr_create(lList **answer_list, const char *href, void *value,
@@ -409,51 +364,6 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
       }
    } 
    DRETURN(ret);
-}
-
-/**
- * @brief Add/replace/delete an attribute entry
- *
- * This function can be used to remove an entry from "this_list"
- * or it can add a new entry or replace an existing one. Find a
- * more detailed description in sgeobj/attr/attr_create()
- *
- * @param this_list cull list of type "descriptor"
- * @param answer_list AN_Type list
- * @param hostname hostname or hgroup name
- * @param value pointer to value
- * @param remove true -> remove the element
- * @param descriptor CULL descriptor
- * @param href_nm CULL field name
- * @param value_nm CULL value name
- *
- * @return error status true  - success false - error
- *
- * @note MT-NOTE: attr_list_add_set_del() is MT safe
- *
- * @see #attr_create
- */
-static bool
-attr_list_add_set_del(lList **this_list, lList **answer_list,
-                      const char *hostname, void *value, bool remove,
-                      const lDescr *descriptor,
-                      int href_nm, int value_nm, const lList *master_hgroup_list) {
-   bool ret = true;
-   lListElem *attr = nullptr;
-
-   if (this_list && *this_list) {
-      if (remove) {
-         attr = attr_list_locate(*this_list, hostname, href_nm);
-         lRemoveElem(*this_list, &attr);
-      } else {
-         attr = attr_create(answer_list, hostname, value, descriptor, 
-                            href_nm, value_nm);
-         ret = attr_list_add(this_list, answer_list,
-                             &attr, HOSTATTR_OVERWRITE, nullptr,
-                             descriptor, href_nm, value_nm, master_hgroup_list);
-      }
-   }
-   return ret;
 }
 
 /**

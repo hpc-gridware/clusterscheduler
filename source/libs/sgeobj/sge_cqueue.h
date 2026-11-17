@@ -157,10 +157,6 @@ OCS_TRANSITIONAL bool cqueue_list_find_all_matching_references(const lList *this
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::ST>
 cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
                                    ocs::tom::ConstElement<ocs::tom::HGRP> hgroup);
-OCS_TRANSITIONAL bool cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list,
-                                                         lList **answer_list,
-                                                         ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
-                                                         lList **string_list);
 
 bool
 cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list);

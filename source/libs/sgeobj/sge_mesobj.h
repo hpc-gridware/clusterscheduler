@@ -55,9 +55,7 @@
 template <auto F>
 bool object_message_add(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> this_elem, uint32_t type,
                         const char *message);
-OCS_TRANSITIONAL bool object_message_add(lListElem *this_elem, int name, uint32_t type, const char *message);
 
 template <auto F>
 bool object_message_trash_all_of_type_X(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> this_elem,
                                         uint32_t type);
-OCS_TRANSITIONAL bool object_message_trash_all_of_type_X(lListElem *this_elem, int name, uint32_t type);

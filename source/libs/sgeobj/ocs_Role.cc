@@ -46,18 +46,6 @@
 #include "msg_common.h"
 
 /**
- * Locate a Role by name in a role list.
- * @param role_list  The list to search.
- * @param name       The role name to look up.
- * @return           Pointer to the matching element, or nullptr if not found.
- */
-lListElem *
-ocs::Role::locate(const lList *role_list, const char *name) {
-   DENTER(TOP_LAYER);
-   DRETURN(ocs::tom::find_first_rw<RL_name>(role_list, name));
-}
-
-/**
  * @brief Validate a Role element
  *
  * Checks that the role name is a valid GCS object name.

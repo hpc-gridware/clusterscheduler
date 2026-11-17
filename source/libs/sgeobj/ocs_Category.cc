@@ -174,7 +174,8 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
                                      "-ckpt");
 
    // interactive job type
-   if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
+   const uint32_t job_type = ocs::tom::get<JB_type>(job);
+   if (JOB_TYPE_IS_IMMEDIATE(job_type)) {
       sge_dstring_append(category_str, "-I y ");
    }
 

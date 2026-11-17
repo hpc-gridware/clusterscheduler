@@ -135,24 +135,6 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::MR>> mailrec_parse(const char *mail_s
 }
 
 /**
- * @brief mailrec_parse() for an untyped caller
- *
- * @param lpp MR_Type list the recipients are appended to, created if nullptr; checked
- * @param mail_str stringlist of mail recipients
- *
- * @return error state 0 - success >0 - error; 1 if @p lpp is nullptr
- */
-int mailrec_parse(lList **lpp, const char *mail_str) {
-   if (!lpp) {
-      return 1;
-   }
-   auto list = ocs::tom::ListPtr<ocs::tom::MR>::from_typed(ocs::tom::List<ocs::tom::MR>(*lpp).raw());
-   const int ret = mailrec_parse_into(list, mail_str);
-   *lpp = list.release();
-   return ret;
-}
-
-/**
  * @brief Build a string of mail reipients
  *
  * Build a string of mail reipients ("`user@host`,user,...")

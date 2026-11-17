@@ -96,25 +96,3 @@ template bool ocs::ObjectContainer::has_duplicates<CE_name>(ocs::tom::ConstList<
                                                             lList **answer_list, const std::string &object_name);
 template bool ocs::ObjectContainer::has_duplicates<RQRL_name>(ocs::tom::ConstList<ocs::tom::RQRL> obj_list,
                                                               lList **answer_list, const std::string &object_name);
-
-/**
- * @brief has_duplicates() for an untyped caller
- *
- * @param obj_list list to check for duplicates (CE_Type or RQRL_Type, checked)
- * @param nm the string field that holds the names: CE_name or RQRL_name
- * @param answer_list If not nullptr, error messages are added to this list
- * @param object_name Optional name of the object owning the list
- * @return as has_duplicates(); false for another field
- */
-bool
-ocs::ObjectContainer::has_duplicates(const lList *obj_list, const int nm, lList **answer_list,
-                                     const std::string& object_name) {
-   switch (nm) {
-      case CE_name:
-         return has_duplicates<CE_name>(ocs::tom::ConstList<ocs::tom::CE>(obj_list), answer_list, object_name);
-      case RQRL_name:
-         return has_duplicates<RQRL_name>(ocs::tom::ConstList<ocs::tom::RQRL>(obj_list), answer_list, object_name);
-      default:
-         return false;
-   }
-}

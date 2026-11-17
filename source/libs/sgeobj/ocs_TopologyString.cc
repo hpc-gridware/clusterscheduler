@@ -939,29 +939,6 @@ template void ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RUE_utilize
       ocs::tom::Element<ocs::tom::RUE> elem, TopologyString &binding_now, const TopologyString &binding_to_use,
       bool mark_used);
 
-/**
- * @brief elem_mark_nodes_as_used_or_unused() for an untyped caller
- *
- * @param elem The list element containing the topology string to update (RUE_Type for
- *             RUE_utilized_now_binding_inuse, else RDE_Type), checked
- * @param nm The name of the attribute in the list element that holds the topology string; a field other than
- *           RUE_utilized_now_binding_inuse is taken for RDE_binding_inuse
- * @param binding_now A temporary `TopologyString` to track current bindings
- * @param binding_to_use The `TopologyString` to use as a mask for marking nodes
- * @param mark_used If true, mark nodes as used; if false, mark nodes as unused
- */
-void
-ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const int nm, TopologyString &binding_now,
-                                                       const TopologyString &binding_to_use, const bool mark_used) {
-   if (nm == RUE_utilized_now_binding_inuse) {
-      elem_mark_nodes_as_used_or_unused<RUE_utilized_now_binding_inuse>(ocs::tom::Element<ocs::tom::RUE>(elem),
-                                                                        binding_now, binding_to_use, mark_used);
-   } else {
-      elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(ocs::tom::Element<ocs::tom::RDE>(elem), binding_now,
-                                                           binding_to_use, mark_used);
-   }
-}
-
 /** @brief Checks if the topology tree is empty
  *
  * This function returns true if the topology tree has no nodes, indicating that it is empty.

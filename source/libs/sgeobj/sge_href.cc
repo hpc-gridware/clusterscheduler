@@ -142,11 +142,15 @@ bool href_list_add(lList **this_list, lList **answer_list, const char *host_or_g
  * not reported. Use href_list_add() where a name may be present already.
  *
  * @param this_list in-out: the HR_Type list, created if it is empty
- * @param name the host, group or matcher name, not nullptr
+ * @param name the host, group or matcher name; nullptr appends nothing and creates no list, as the free
+ *             emplace_back() took the soft path then
  */
 void ocs_href_list_emplace(ocs::tom::ListPtr<ocs::tom::HR> &this_list, const char *name) {
    DENTER(HOSTREF_LAYER);
 
+   if (name == nullptr) {
+      DRETURN_VOID;
+   }
    try {
       if (!this_list) {
          this_list = ocs::tom::ListPtr<ocs::tom::HR>::create("");

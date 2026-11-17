@@ -73,16 +73,15 @@
  */
 template <auto F>
 static bool is_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
-   DENTER(BASIS_LAYER);
-
+   // no DENTER: called per job/queue in the scheduler
    const auto filter = ocs::tom::get<F>(rule);
    if (!filter) {
-      DRETURN(true);
+      return true;
    }
    if (ocs::tom::find_first_in<RQRF_scope, ST_name>(filter, "*") && ocs::tom::get<RQRF_xscope>(filter).empty()) {
-      DRETURN(true);
+      return true;
    }
-   DRETURN(false);
+   return false;
 }
 
 /**
@@ -95,8 +94,8 @@ static bool is_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  * @note MT-NOTE: is_cqueue_global() is MT safe
  */
 bool is_cqueue_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
-   DENTER(BASIS_LAYER);
-   DRETURN(is_global<RQR_filter_queues>(rule));
+   // no DENTER: called per job/queue in the scheduler
+   return is_global<RQR_filter_queues>(rule);
 }
 
 
@@ -112,8 +111,8 @@ bool is_cqueue_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  * @note MT-NOTE: is_host_global() is MT safe
  */
 bool is_host_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
-   DENTER(BASIS_LAYER);
-   DRETURN(is_global<RQR_filter_hosts>(rule));
+   // no DENTER: called per job/queue in the scheduler
+   return is_global<RQR_filter_hosts>(rule);
 }
 
 /**
@@ -125,10 +124,9 @@ bool is_host_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  */
 template <auto F>
 static bool is_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
-   DENTER(BASIS_LAYER);
-
+   // no DENTER: called per job/queue in the scheduler
    const auto filter = ocs::tom::get<F>(rule);
-   DRETURN(filter && ocs::tom::get<RQRF_expand>(filter));
+   return filter && ocs::tom::get<RQRF_expand>(filter);
 }
 
 
@@ -149,8 +147,8 @@ static bool is_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  * @note MT-NOTE: is_host_expand() is MT safe
  */
 bool is_host_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
-   DENTER(BASIS_LAYER);
-   DRETURN(is_expand<RQR_filter_hosts>(rule));
+   // no DENTER: called per job/queue in the scheduler
+   return is_expand<RQR_filter_hosts>(rule);
 }
 
 /**
@@ -170,8 +168,8 @@ bool is_host_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  * @note MT-NOTE: is_cqueue_expand() is MT safe
  */
 bool is_cqueue_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
-   DENTER(BASIS_LAYER);
-   DRETURN(is_expand<RQR_filter_queues>(rule));
+   // no DENTER: called per job/queue in the scheduler
+   return is_expand<RQR_filter_queues>(rule);
 }
 
 

@@ -1296,44 +1296,17 @@ cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_
 
    if (this_list && hgroup) {
       for (const auto cqueue : this_list) {
-         if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
+         // a cqueue without a name is skipped, as the free emplace_back() took the soft path for it
+         const char *name = ocs::tom::get<CQ_name>(cqueue);
+         if (name != nullptr && cqueue_is_hgroup_referenced(cqueue, hgroup)) {
             if (!string_list) {
                string_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
             }
-            string_list->emplace_back<ST_name>(ocs::tom::get<CQ_name>(cqueue));
+            string_list->emplace_back<ST_name>(name);
          }
       }
    }
    DRETURN(string_list);
-}
-
-/**
- * @brief cqueue_list_find_hgroup_references() for an untyped caller
- *
- * Appends the names to "string_list", creating it with the first one, as the
- * function did before it returned its result.
- *
- * @param this_list CQ_Type, may be an empty handle
- * @param answer_list AN_Type
- * @param hgroup HGRP_Type, may be an empty handle
- * @param string_list in-out: ST_Type list; nullptr makes the call a no-op
- *
- * @return always true
- */
-bool cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
-                                        const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, lList **string_list) {
-   if (string_list != nullptr) {
-      auto found = cqueue_list_find_hgroup_references(this_list, answer_list, hgroup);
-      if (found) {
-         if (*string_list == nullptr) {
-            *string_list = found.release();
-         } else {
-            lList *found_raw = found.release();
-            lAddList(*string_list, &found_raw);
-         }
-      }
-   }
-   return true;
 }
 
 /**

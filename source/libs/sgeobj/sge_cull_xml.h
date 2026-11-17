@@ -79,8 +79,6 @@ void xml_addAttributeD(ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *n
 void xml_addAttribute(ocs::tom::Element<ocs::tom::XMLH> xml_elem, const char *name, const char *value);
 void xml_addAttribute(ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *name, const char *value);
 
-void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, const char *version);
-
 ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,
                                                     double value);
 ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D8(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,

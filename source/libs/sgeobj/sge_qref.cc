@@ -191,8 +191,8 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
    DENTER(QREF_LAYER);
 
    bool ret = true;
-   // out-parameter of the host group search, which takes a raw in-out list
-   lList *href_list_raw = nullptr;
+   // receives the host group search result, created with the first match
+   ocs::tom::ListPtr<ocs::tom::HR> href_list;
    dstring buffer = DSTRING_INIT;
 
    const char *hgroup_pattern = sge_dstring_get_string(host_or_hgroup);
@@ -201,11 +201,10 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
     * Possibly resolve them.
     */
    if (resolve_qdomain) {
-      hgroup_list_find_matching_and_resolve(hgroup_list, answer_list, hgroup_pattern, &href_list_raw);
+      hgroup_list_find_matching_and_resolve(hgroup_list, answer_list, hgroup_pattern, &href_list);
    } else {
-      hgroup_list_find_matching(hgroup_list, answer_list, hgroup_pattern, &href_list_raw);
+      hgroup_list_find_matching(hgroup_list, answer_list, hgroup_pattern, &href_list);
    }
-   const auto href_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(href_list_raw);
    for (const auto cq_qref : cq_qref_list) {
       const char *cqueue_name = ocs::tom::get<QR_name>(cq_qref);
 

@@ -662,30 +662,6 @@ int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *op
 }
 
 /**
- * @brief Take a switch and its numeric argument out of the parsed option list
- *
- * @param cmdline the parsed option list to consume from
- * @param opt the switch to look for
- * @param[out] ppal not used
- * @param[out] value receives the number
- * @return 1 when the switch was present
- */
-int parse_uint32_t(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
-                   uint32_t *value) {
-   DENTER(TOP_LAYER);
-
-   bool ret = false;
-
-   if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
-      *value = ocs::tom::get<SPA_argval_lUlongT>(ep);
-
-      cmdline.erase(ep);
-      ret = true;
-   }
-   DRETURN(ret);
-}
-
-/**
  * @brief Take a switch and its list of numbers out of the parsed option list
  *
  * The arguments of the switch are an `ULNG_Type` list, as the command line

@@ -146,32 +146,6 @@ ocs::tom::ListPtr<ocs::tom::ST> str_list_parse_from_string(const char *string, c
 }
 
 /**
- * @brief str_list_parse_from_string() for an untyped caller
- *
- * The parsed strings are appended to the list "this_list" refers to; it is
- * created if it is nullptr.
- *
- * @param[in,out] this_list ST_Type list, checked; may refer to nullptr
- * @param string string to be parsed
- * @param delimitor delimitor string
- *
- * @return always true
- */
-bool str_list_parse_from_string(lList **this_list, const char *string, const char *delimitor) {
-   if (this_list != nullptr) {
-      auto parsed = str_list_parse_from_string(string, delimitor);
-      if (parsed) {
-         if (*this_list == nullptr) {
-            *this_list = parsed.release();
-         } else {
-            ocs::tom::List<ocs::tom::ST>(*this_list).splice(std::move(parsed));
-         }
-      }
-   }
-   return true;
-}
-
-/**
  * @brief Are all strings valid
  *
  * Does each element in "this_list" contain a valid string (!= nullptr).
@@ -192,18 +166,6 @@ bool str_list_is_valid(const ocs::tom::ConstList<ocs::tom::ST> this_list, lList 
       }
    }
    DRETURN(ret);
-}
-
-/**
- * @brief str_list_is_valid() for an untyped caller
- *
- * @param this_list ST_Type list, checked; may be nullptr
- * @param answer_list AN_Type list
- *
- * @return as str_list_is_valid()
- */
-bool str_list_is_valid(const lList *this_list, lList **answer_list) {
-   return str_list_is_valid(ocs::tom::ConstList<ocs::tom::ST>(this_list), answer_list);
 }
 
 /**

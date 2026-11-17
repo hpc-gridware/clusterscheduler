@@ -88,8 +88,6 @@ ulong_parse_from_string(uint32_t *this_ulong,
 
 std::pair<bool, ocs::tom::ListPtr<ocs::tom::ULNG>>
 ulong_list_parse_from_string(lList **answer_list, const char *string, const char *delimitor);
-OCS_TRANSITIONAL bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
-                                                   const char *string, const char *delimitor);
 
 bool
 ulong_parse_priority(lList **alpp, int *valp, const char *priority_str);

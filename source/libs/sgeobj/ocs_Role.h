@@ -74,8 +74,6 @@ namespace ocs {
          std::vector<std::string> required_value_constraints; ///< elevated permissions required by the request
       };
 
-      static lListElem *locate(const lList *role_list, const char *name);
-
       static bool validate(ocs::tom::ConstElement<ocs::tom::RL> role, lList **answer_list, bool startup);
       OCS_TRANSITIONAL static bool validate(const lListElem *role, lList **answer_list, bool startup);
 

@@ -932,18 +932,6 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
    }
 
    if (is_new_cal_entry) {
-#if 0
-      DPRINTF(("sec:%d min:%d hour:%d mday:%d mon:%d year:%d wday:%d yday:%d isdst:%d\n",
-         tm_limit.tm_sec,
-         tm_limit.tm_min,
-         tm_limit.tm_hour,
-         tm_limit.tm_mday,
-         tm_limit.tm_mon,
-         tm_limit.tm_year,
-         tm_limit.tm_wday,
-         tm_limit.tm_yday,
-         tm_limit.tm_isdst));
-#endif
       limit = mktime(&tm_limit);
 
       DPRINTF("limit: " sge_u64 "\n", static_cast<uint64_t>(limit));
@@ -1097,20 +1085,6 @@ static int in_range(const ocs::tom::ConstElement<ocs::tom::TM> tm, const ocs::to
 
    if (t2) {
       if (cmp_func(t1, tm)<=0 && cmp_func(tm, t2) <= 0) { /* mon-fri */
-#if 0
-      DPRINTF(("%d:%d:%d is in range %d:%d:%d-%d:%d:%d\n",
-         lGetUlong(tm, TM_hour),
-         lGetUlong(tm, TM_min),
-         lGetUlong(t1, TM_sec),
-
-         lGetUlong(t1, TM_hour),
-         lGetUlong(t1, TM_min),
-         lGetUlong(t1, TM_sec),
-
-         lGetUlong(t2, TM_hour),
-         lGetUlong(t2, TM_min),
-         lGetUlong(t2, TM_sec)));
-#endif
          DRETURN(1);
       }
 
@@ -2048,10 +2022,8 @@ static void extend_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
 static void split_wday_range(const ocs::tom::List<ocs::tom::TMR> wdrl, const ocs::tom::Element<ocs::tom::TMR> tmr) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstElement<ocs::tom::TM> t2, t1; /* *t3, *t4, */
-
-   if ((t2=ocs::tom::get<TMR_end>(tmr).front())) {
-      t1=ocs::tom::get<TMR_begin>(tmr).front();
+   if (const auto t2 = ocs::tom::get<TMR_end>(tmr).front()) {
+      const auto t1 = ocs::tom::get<TMR_begin>(tmr).front();
 
       if (tm_wday_cmp(t1, t2) > 0) {
          /* split it into two ranges */
@@ -2060,23 +2032,6 @@ static void split_wday_range(const ocs::tom::List<ocs::tom::TMR> wdrl, const ocs
          ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr2, 6);
          ocs::tom::swap<TMR_end, TMR_end>(tmr, *tmr2);
          wdrl.push_back(std::move(tmr2));
-
-         t1=ocs::tom::get<TMR_begin>(tmr).front();
-         t2=ocs::tom::get<TMR_end>(tmr).front();
-/*          t3=lFirst(lGetList(tmr2, TMR_begin)); */
-/*          t4=lFirst(lGetList(tmr2, TMR_end)); */
-
-#if 0
-      DPRINTF(("splitted wday %d-%d into %d-%d and %d-%d\n",
-         lGetUlong(t1, TM_wday),
-         lGetUlong(t4, TM_wday),
-
-         lGetUlong(t1, TM_wday),
-         lGetUlong(t2, TM_wday),
-
-         lGetUlong(t3, TM_wday),
-         lGetUlong(t4, TM_wday)));
-#endif
       }
    }
 

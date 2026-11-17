@@ -905,12 +905,12 @@ int host_debit_binding(const ocs::tom::Element<ocs::tom::EH> host, const char *c
    if (now_str) {
       topo_now = ocs::TopologyString(now_str);
       ocs::TopologyString topo_to_use(binding_to_use);
-      ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
-                                                            topo_now, topo_to_use, slots > 0);
+      ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RUE_utilized_now_binding_inuse>(resource, topo_now,
+                                                                                           topo_to_use, slots > 0);
    } else {
       topo_now = ocs::TopologyString(binding_to_use);
-      ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
-                                                            topo_now, topo_now, slots > 0);
+      ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RUE_utilized_now_binding_inuse>(resource, topo_now,
+                                                                                           topo_now, slots > 0);
    }
    DPRINTF("host_debit_binding: after  %s\n", topo_now.to_product_topology_string().c_str());
 

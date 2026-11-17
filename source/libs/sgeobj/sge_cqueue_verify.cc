@@ -347,7 +347,9 @@ bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
       ocs::tom::ConstList<ocs::tom::PR> project_list = ocs::tom::get<APRJLIST_value>(attr_elem);
 
       if (project_list != nullptr) {
-         if (!prj_list_do_all_exist(master_project_list, answer_list, project_list)) {
+         // the master list is a raw parameter, fixed by the verify_function table
+         if (!prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR>(master_project_list), answer_list,
+                                    project_list)) {
             ret = false;
          }
       }
@@ -577,19 +579,11 @@ bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
    if (cqueue && attr_elem != nullptr) {
       const char *memory_string = ocs::tom::get<AMEM_value>(attr_elem);
 
-#if 1
       const auto copy = ocs::tom::ConstElement<ocs::tom::AMEM>(attr_elem).clone();
       // the field is passed by number to the generic parser, which takes the untyped element
       if (!object_parse_field_from_string(*copy, answer_list, AMEM_value, memory_string)) {
          ret = false;
       }
-#else
-      if (memory_string == nullptr || !strcasecmp(memory_string, "none")) {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                         MSG_NONE_NOT_ALLOWED_S, "memory values");
-         ret = false;
-      }
-#endif      
    }
    DRETURN(ret);
 }

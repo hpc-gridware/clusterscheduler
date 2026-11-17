@@ -125,22 +125,6 @@ ocs::ShareTree::zero_node_fields(lListElem *node_raw, [[maybe_unused]] void *ptr
    DRETURN(0);
 }
 
-/** @brief Initialize the share tree node fields
- *
- * This function initializes specific fields in the given root node and
- * its descendants to zero. It is used to prepare the share tree for
- * display in qmon.
- *
- * @param node The root node of the share tree, may be an empty handle.
- * @return Always returns 0.
- */
-int
-ocs::ShareTree::zero_fields(const ocs::tom::Element<ocs::tom::STN> node) {
-   DENTER(BASIS_LAYER);
-   const int ret = foreach_call_func(node, zero_node_fields, nullptr);
-   DRETURN(ret);
-}
-
 /** @brief Add the usage of a list to the usage list of a share tree node
  *
  * The attributes the node does not have yet are added.

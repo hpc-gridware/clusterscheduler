@@ -70,8 +70,6 @@ namespace ocs {
       template <auto F>
       static void clear(ocs::tom::Element<Parent<F>> parent);
       template <auto F>
-      static bool binding_was_requested(ocs::tom::ConstElement<Parent<F>> parent);
-      template <auto F>
       static BindingType::Type binding_get_type(ocs::tom::ConstElement<Parent<F>> parent);
       template <auto F>
       static BindingUnit::Unit binding_get_unit(ocs::tom::ConstElement<Parent<F>> parent);
@@ -91,19 +89,5 @@ namespace ocs {
       static BindingInstance::Instance binding_get_instance(ocs::tom::ConstElement<Parent<F>> parent);
       template <auto F>
       static void binding_set_missing_defaults(ocs::tom::Element<Parent<F>> parent, lList **answer_list);
-
-      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *parent, lList **answer_list, int nm);
-      OCS_TRANSITIONAL static void clear(lListElem *parent, int nm);
-      OCS_TRANSITIONAL static bool binding_was_requested(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static BindingType::Type binding_get_type(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static BindingUnit::Unit binding_get_unit(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static std::string binding_get_sort(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static BindingStart::Start binding_get_start(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static BindingStop::Stop binding_get_end(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static BindingStrategy::Strategy binding_get_strategy(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static std::string binding_get_filter(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static uint32_t binding_get_amount(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static BindingInstance::Instance binding_get_instance(const lListElem *parent, int nm);
-      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *parent, lList **answer_list, int nm);
    };
 }

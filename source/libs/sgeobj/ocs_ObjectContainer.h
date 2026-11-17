@@ -29,7 +29,6 @@
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 
 namespace ocs {
 /// Checks shared by every list valued configuration object
@@ -38,7 +37,5 @@ class ObjectContainer {
       template <auto F>
       static bool has_duplicates(ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> obj_list,
                                  lList **answer_list, const std::string& object_name);
-      OCS_TRANSITIONAL static bool has_duplicates(const lList *obj_list, int nm, lList **answer_list,
-                                                  const std::string& object_name);
    };
 }

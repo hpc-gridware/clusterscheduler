@@ -232,11 +232,8 @@ int show_sharetree_path(std::ostream &os, const ocs::tom::Element<ocs::tom::STN>
    DRETURN(0);
 }                                                                               
 
-/***************************************************
- Generate a Template for a sharetreenode
- ***************************************************/
 /**
- * @brief A share tree node template, valid as a share tree on its own
+ * @brief Generate a template for a share tree node, valid as a share tree on its own
  *
  * The node is named `default` rather than `template` on purpose: `default` is
  * the catch-all that matches every user, so the offered template is a share
@@ -259,37 +256,6 @@ ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate() {
    ocs::tom::set<STN_children>(ep, nullptr);
 
    DRETURN(ep);
-}
-
-/**
- * @brief Find the first share tree node with a given name
- *
- * Searches depth first from `ep`. A name may occur more than once in a share
- * tree, so the first match wins - use #search_named_node_path when the exact
- * node matters.
- *
- * @param ep root of the tree (STN_Type), may be an empty handle
- * @param name the node name to look for
- * @return the node, or an empty handle when no node has that name
- */
-ocs::tom::Element<ocs::tom::STN> search_named_node(const ocs::tom::Element<ocs::tom::STN> ep, const char *name) {
-   DENTER(TOP_LAYER);
-
-   if (!ep || !name) {
-      DRETURN(nullptr);
-   }
-
-   if (strcmp(ocs::tom::get<STN_name>(ep), name) == 0) {
-      DRETURN(ep);
-   }
-
-   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
-      if (const auto fep = search_named_node(cep, name); fep) {
-         DRETURN(fep);
-      }
-   }
-
-   DRETURN(nullptr);
 }
 
 
@@ -391,8 +357,8 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
  * @brief Find a share tree node by its path
  *
  * The path components are separated by `.` or `/`; `*` matches any node name.
- * Unlike #search_named_node this identifies exactly one node even when the
- * same name occurs several times in the tree.
+ * This identifies exactly one node even when the same name occurs several
+ * times in the tree.
  *
  * @param ep root of the tree (STN_Type), not empty
  * @param path the path to resolve
@@ -421,34 +387,11 @@ search_named_node_path(lListElem *ep, const char *path, ancestors_t *ancestors) 
 }
 
 
-/********************************************************
- Search for a share tree node with a given name in a
- share tree returning an array of ancestor nodes. The
- array is contained in the ancestors_t structure which
- consist of the depth and a dynamically allocated array
- of lListElem pointers for each node.  The nodes are
- ordered from the root node to the found node. The 
- caller is reponsible for freeing the nodes array.
- ********************************************************/
-
-#ifdef notdef
-
-lListElem *search_ancestor_list(lListElem *ep, /* root of the tree */
-                                char *name,
-                                ancestors_t *ancestors) {
-   if (ancestors)
-      return search_ancestors(ep, name, ancestors, 1);
-   else
-      return search_named_node(ep, name);
-}
-
-#endif
-
 /**
  * @brief Find a node by name and record the path that led to it
  *
- * Like #search_named_node, but additionally fills `ancestors` with the nodes
- * from the root down to the match, in that order.
+ * Searches depth first from `ep`; the first match wins. Fills `ancestors`
+ * with the nodes from the root down to the match, in that order.
  *
  * @param ep root of the [sub]tree (STN_Type), may be an empty handle
  * @param name the node name to look for
@@ -479,36 +422,5 @@ search_ancestors(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, an
       }
    }
 
-   DRETURN(nullptr);
-}
-
-/**
- * @brief Search for a node which is not specified
- *
- * The function walks through the sharetree looking for the first node which
- * has no name.  A node with no name means that it was created as a result of
- * a dangling or circular child reference.
- *
- * @param ep root of the tree (STN_Type), may be an empty handle
- *
- * @return the first node which has no name or an empty handle if all nodes have names
- */
-ocs::tom::Element<ocs::tom::STN> sge_search_unspecified_node(const ocs::tom::Element<ocs::tom::STN> ep) {
-   DENTER(TOP_LAYER);
-
-   if (!ep) {
-      DRETURN(nullptr);
-   }
-
-   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
-      if (const auto ret = sge_search_unspecified_node(cep); ret) {
-         DRETURN(ret);
-      }
-   }
-
-   if (ocs::tom::get<STN_name>(ep) == nullptr) {
-      DRETURN(ep);         /* no name filled in -> unspecified */
-   }
-   
    DRETURN(nullptr);
 }

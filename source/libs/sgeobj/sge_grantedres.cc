@@ -81,16 +81,15 @@ granted_res_get_id_string(std::string &buffer, const ocs::tom::ConstList<ocs::to
 ocs::tom::ConstElement<ocs::tom::GRU>
 gru_list_search(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list, const char *name,
                 const char *host_name) {
-   DENTER(TOP_LAYER);
-
+   // no DENTER: called per job/queue in the scheduler
    for (const auto gru : granted_resources_list) {
       if (sge_strnullcmp(ocs::tom::get<GRU_name>(gru), name) == 0 &&
           sge_hostcmp(ocs::tom::get<GRU_host>(gru), host_name) == 0) {
-         DRETURN(gru);
+         return gru;
       }
    }
 
-   DRETURN(nullptr);
+   return nullptr;
 }
 
 /**
@@ -107,12 +106,11 @@ gru_list_search(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
 ocs::tom::Element<ocs::tom::GRU>
 gru_list_search(const ocs::tom::List<ocs::tom::GRU> granted_resources_list, const char *name,
                 const char *host_name) {
-   DENTER(TOP_LAYER);
-
+   // no DENTER: called per job/queue in the scheduler
    const ocs::tom::ConstElement<ocs::tom::GRU> gru =
          gru_list_search(static_cast<ocs::tom::ConstList<ocs::tom::GRU>>(granted_resources_list), name, host_name);
 
-   DRETURN(ocs::tom::Element<ocs::tom::GRU>::from_typed(const_cast<lListElem *>(gru.raw())));
+   return ocs::tom::Element<ocs::tom::GRU>::from_typed(const_cast<lListElem *>(gru.raw()));
 }
 
 /**

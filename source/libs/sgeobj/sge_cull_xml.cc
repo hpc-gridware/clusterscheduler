@@ -102,35 +102,7 @@ ocs::tom::ElementPtr<ocs::tom::XMLH> ocs_xml_create_head(const char *name,
                     "https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/"
                     "schemas/qstat/qstat.xsd");
 
-   /* we do not support stylesheets yet */
-   /* xml_addStylesheet(xml_head, "xmlns:xsl", "http://www.w3.org/1999/XSL/Transform", "1.0"); */
-
    DRETURN(xml_head);
-}
-
-/**
- * @brief Add a stylesheet processing instruction to an XML document
- *
- * @param[in,out] xml_head the document root to add to
- * @param name the stylesheet's type, e.g. `text/xsl`
- * @param url where the stylesheet is found
- * @param version the stylesheet version
- */
-void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, const char *version) {
-   auto stylesheet_elem = ocs::tom::ElementPtr<ocs::tom::XMLS>::create();
-   lList *stylesheet_list = nullptr;
-   
-   if (stylesheet_elem) {
-      ocs::tom::set<XMLS_Name>(stylesheet_elem, name);
-      ocs::tom::set<XMLS_Value>(stylesheet_elem, url);
-      ocs::tom::set<XMLS_Version>(stylesheet_elem, version);
-      stylesheet_list = ocs::tom::get<XMLH_Stylesheet>(xml_head);
-      if (!stylesheet_list) {
-         ocs::tom::set<XMLH_Stylesheet>(xml_head, (stylesheet_list = lCreateList("Stylesheet", XMLS_Type)));
-      }
-      
-      lAppendElem(stylesheet_list, std::move(stylesheet_elem));
-   }   
 }
 
 /**

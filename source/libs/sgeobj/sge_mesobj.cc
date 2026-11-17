@@ -81,26 +81,6 @@ template bool object_message_add<JAT_message_list>(ocs::tom::Element<ocs::tom::J
                                                    const char *message);
 
 /**
- * @brief object_message_add() for an untyped caller
- *
- * @param this_elem the object to add to (QU_Type or JAT_Type, checked)
- * @param name the attribute holding the message list: QU_message_list or JAT_message_list
- * @param type the message type, so it can be trashed selectively
- * @param message the text
- * @return as object_message_add(); false for another attribute
- */
-bool object_message_add(lListElem *this_elem, const int name, const uint32_t type, const char *message) {
-   switch (name) {
-      case QU_message_list:
-         return object_message_add<QU_message_list>(ocs::tom::Element<ocs::tom::QU>(this_elem), type, message);
-      case JAT_message_list:
-         return object_message_add<JAT_message_list>(ocs::tom::Element<ocs::tom::JAT>(this_elem), type, message);
-      default:
-         return false;
-   }
-}
-
-/**
  * @brief Remove every message of the given types from an object
  *
  * A message list emptied this way is freed and the field set to nullptr.
@@ -139,23 +119,3 @@ template bool object_message_trash_all_of_type_X<QU_message_list>(ocs::tom::Elem
                                                                   uint32_t type);
 template bool object_message_trash_all_of_type_X<JAT_message_list>(ocs::tom::Element<ocs::tom::JAT> this_elem,
                                                                    uint32_t type);
-
-/**
- * @brief object_message_trash_all_of_type_X() for an untyped caller
- *
- * @param this_elem the object to clean up (QU_Type or JAT_Type, checked)
- * @param name the attribute holding the message list: QU_message_list or JAT_message_list
- * @param type a mask of the message types to remove
- * @return as object_message_trash_all_of_type_X(); false for another attribute
- */
-bool object_message_trash_all_of_type_X(lListElem *this_elem, const int name, const uint32_t type) {
-   switch (name) {
-      case QU_message_list:
-         return object_message_trash_all_of_type_X<QU_message_list>(ocs::tom::Element<ocs::tom::QU>(this_elem), type);
-      case JAT_message_list:
-         return object_message_trash_all_of_type_X<JAT_message_list>(ocs::tom::Element<ocs::tom::JAT>(this_elem),
-                                                                     type);
-      default:
-         return false;
-   }
-}

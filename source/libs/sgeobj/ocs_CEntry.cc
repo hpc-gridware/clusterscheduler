@@ -43,5 +43,6 @@
 bool
 ocs::CEntry::has_duplicates(const lList *centry_list, lList **answer_list, const std::string& object_name) {
    DENTER(TOP_LAYER);
-   DRETURN(ocs::ObjectContainer::has_duplicates(centry_list, CE_name, answer_list, object_name));
+   DRETURN(ocs::ObjectContainer::has_duplicates<CE_name>(ocs::tom::ConstList<ocs::tom::CE>(centry_list), answer_list,
+                                                         object_name));
 }

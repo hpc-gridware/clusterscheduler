@@ -659,41 +659,6 @@ ulong_list_parse_from_string(lList **answer_list, const char *string, const char
 }
 
 /**
- * @brief ulong_list_parse_from_string() for an untyped caller
- *
- * The parsed values are appended to the list "this_list" refers to, which is
- * created if it is nullptr; a value the list holds already is skipped.
- *
- * @param[in,out] this_list ULNG_Type list, checked; may refer to nullptr
- * @param[out] answer_list receives the message naming the bad text
- * @param string the text to parse
- * @param delimitor the characters separating two values
- * @return as ulong_list_parse_from_string()
- */
-bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
-                                  const char *string, const char *delimitor) {
-   if (this_list == nullptr) {
-      return true;
-   }
-   auto [ret, parsed] = ulong_list_parse_from_string(answer_list, string, delimitor);
-   if (parsed) {
-      if (*this_list == nullptr) {
-         *this_list = parsed.release();
-      } else {
-         const auto list = ocs::tom::List<ocs::tom::ULNG>(*this_list);
-         for (auto elem = parsed->front(); elem != nullptr;) {
-            const auto next = elem.next();
-            if (list.find_first<ULNG_value>(ocs::tom::get<ULNG_value>(elem)) == nullptr) {
-               list.emplace_back<ULNG_value>(ocs::tom::get<ULNG_value>(elem));
-            }
-            elem = next;
-         }
-      }
-   }
-   return ret;
-}
-
-/**
  * @brief Parse a POSIX job priority
  *
  * The accepted range is -1023 to 1024.

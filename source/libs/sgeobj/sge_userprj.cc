@@ -180,19 +180,6 @@ bool prj_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PR> this_list, lL
 }
 
 /**
- * @brief prj_list_do_all_exist() for an untyped caller
- *
- * @param this_list the defined projects to check against (PR_Type), checked; may be nullptr
- * @param[out] answer_list receives the name of the first project that is missing
- * @param prj_list the projects to look for (PR_Type), checked; may be nullptr
- * @return as prj_list_do_all_exist()
- */
-bool prj_list_do_all_exist(const lList *this_list, lList **answer_list, const lList *prj_list) {
-   return prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR>(this_list), answer_list,
-                                ocs::tom::ConstList<ocs::tom::PR>(prj_list));
-}
-
-/**
  * @brief A user object template, as `qconf -suser template` prints it
  *
  * @return the new element; the caller owns it

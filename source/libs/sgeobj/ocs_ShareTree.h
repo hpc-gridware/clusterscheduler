@@ -71,9 +71,6 @@ namespace ocs {
       static int
       zero_node_fields(lListElem *node, void *ptr);
 
-      static int
-      zero_fields(ocs::tom::Element<ocs::tom::STN> node);
-
       static double
       calc_node_usage(ocs::tom::Element<ocs::tom::STN> node, ocs::tom::ConstList<ocs::tom::UU> user_list,
                       ocs::tom::ConstList<ocs::tom::PR> project_list, ocs::tom::ConstList<ocs::tom::UA> decay_list,

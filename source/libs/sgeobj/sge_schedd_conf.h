@@ -141,7 +141,6 @@ bool sconf_validate_config(lList **answer_list, ocs::tom::List<ocs::tom::SC> con
 
 bool sconf_validate_config_(lList **answer_list);
 
-ocs::tom::ElementPtr<ocs::tom::SC> sconf_get_config();
 
 ocs::tom::ListPtr<ocs::tom::SC> sconf_get_config_list();
 
@@ -166,7 +165,6 @@ uint32_t sconf_get_reprioritize_interval();
 
 uint32_t sconf_get_weight_tickets_share();
 
-ocs::tom::ListPtr<ocs::tom::RN> sconf_get_schedd_job_info_range();
 
 bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number);
 

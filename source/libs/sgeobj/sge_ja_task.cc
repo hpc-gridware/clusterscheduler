@@ -374,7 +374,7 @@ sge_parse_jobtasks(lList **ipp, const char *str_jobtask, lList **alpp, const boo
 bool ja_task_message_add(const ocs::tom::Element<ocs::tom::JAT> this_elem, const uint32_t type, const char *message) {
    DENTER(TOP_LAYER);
 
-   const bool ret = object_message_add(this_elem, JAT_message_list, type, message);
+   const bool ret = object_message_add<JAT_message_list>(this_elem, type, message);
    DRETURN(ret);
 }
 
@@ -407,7 +407,7 @@ bool ja_task_message_add(lListElem *this_elem, const uint32_t type, const char *
 bool ja_task_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::JAT> this_elem, const uint32_t type) {
    DENTER(TOP_LAYER);
 
-   const bool ret = object_message_trash_all_of_type_X(this_elem, JAT_message_list, type);
+   const bool ret = object_message_trash_all_of_type_X<JAT_message_list>(this_elem, type);
    DRETURN(ret);
 }
 

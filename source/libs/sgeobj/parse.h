@@ -111,8 +111,6 @@ OCS_TRANSITIONAL int parse_string(lList **ppcmdline, const char *opt, lList **pp
 
 int parse_string_arg(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, char **value);
 
-int parse_uint32_t(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, uint32_t *value);
-
 std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>>
 parse_u_longlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal);
 
@@ -120,16 +118,6 @@ bool parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA> cmdline, const char 
                               bool include_names, uint32_t action);
 OCS_TRANSITIONAL bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **alpp, lList **ppdestlist,
                                                bool include_names, uint32_t action);
-
-/**
- * @brief Render a mail recipient list back into the form a user writes
- *
- * @param head the `MR_Type` list to render
- * @param[out] mail_str receives the text
- * @param mail_str_len the size of `mail_str`
- * @return 0 on success, -1 when the text did not fit
- */
-int sge_unparse_ma_list(lList *head, char *mail_str, unsigned int mail_str_len); 
 
 uint32_t parse_group_options(ocs::tom::ConstList<ocs::tom::ST> string_list, lList **answer_list);
 

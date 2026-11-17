@@ -34,6 +34,7 @@
 
 #include "msg_sgeobjlib.h"
 #include "cull/sge_resource_quota_RQRL_L.h"
+#include "sgeobj/tom/ocs_tom_RQRL.h"
 
 /** @brief Check resource quota limits list for duplicate names
  *  @param centry_list RQRL_Type list to check for duplicates
@@ -44,5 +45,6 @@
 bool
 ocs::ResourceQuota::has_duplicates(const lList *centry_list, lList **answer_list, const std::string& object_name) {
    DENTER(TOP_LAYER);
-   DRETURN(ocs::ObjectContainer::has_duplicates(centry_list, RQRL_name, answer_list, object_name));
+   DRETURN(ocs::ObjectContainer::has_duplicates<RQRL_name>(ocs::tom::ConstList<ocs::tom::RQRL>(centry_list),
+                                                           answer_list, object_name));
 }

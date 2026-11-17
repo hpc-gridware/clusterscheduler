@@ -96,8 +96,8 @@ bool pe_name_is_matching(const char *pe_name, const char *wildcard) {
  * @return true or false
  */
 bool pe_is_matching(const ocs::tom::ConstElement<ocs::tom::PE> pe, const char *wildcard) {
-   DENTER(TOP_LAYER);
-   DRETURN(pe_name_is_matching(ocs::tom::get<PE_name>(pe), wildcard));
+   // no DENTER: called per job/queue in the scheduler
+   return pe_name_is_matching(ocs::tom::get<PE_name>(pe), wildcard);
 }
 
 /**
@@ -145,8 +145,8 @@ const lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcar
  * @note MT-NOTE: pe_list_locate() is MT safe
  */
 ocs::tom::Element<ocs::tom::PE> pe_list_locate(const ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *pe_name) {
-   DENTER(TOP_LAYER);
-   DRETURN(ocs::tom::find_first_rw<PE_name>(pe_list, pe_name));
+   // no DENTER: called per job/queue in the scheduler
+   return ocs::tom::find_first_rw<PE_name>(pe_list, pe_name);
 }
 
 /**
@@ -609,14 +609,14 @@ ocs::tom::ElementPtr<ocs::tom::PE> pe_create_template(const char *pe_name) {
  * @note MT-NOTE: pe_get_slots_used() is MT safe
  */
 int pe_get_slots_used(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
-   DENTER(TOP_LAYER);
+   // no DENTER: called per job/queue in the scheduler
    int ret = -1;
    const auto actual = ocs::tom::find_first_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
 
    if (actual) {
       ret = ocs::tom::get<RUE_utilized_now>(actual);
    }
-   DRETURN(ret);
+   return ret;
 }
 
 /**
@@ -705,7 +705,7 @@ void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
  * @note MT-NOTE: pe_do_accounting_summary() is MT safe
  */
 bool pe_do_accounting_summary(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
-   DENTER(TOP_LAYER);
+   // no DENTER: called per job/queue in the scheduler
    bool ret = false;
 
    /*
@@ -716,7 +716,7 @@ bool pe_do_accounting_summary(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
       ret = ocs::tom::get<PE_accounting_summary>(pe) ? true : false;
    }
 
-   DRETURN(ret);
+   return ret;
 }
 
 /**

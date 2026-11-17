@@ -1053,7 +1053,8 @@ const char *job_get_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::QU> 
  *
  * @param job_list JB_Type, created if *job_list is nullptr
  * @param name name of the list
- * @param job JB_Type element, may be an empty handle
+ * @param job JB_Type element, may be an empty handle; on success the list owns it, and it is freed when
+ *        adding it throws, so the caller hands it over in every case
  * @param check Does the element already exist?
  *
  * @return error code 1 => invalid parameter -1 => check failed: element already exists 0 => OK
@@ -1085,7 +1086,8 @@ int job_list_add_job(lList **job_list, const char *name, const ocs::tom::Element
       DRETURN(-1);
    }
 
-   // the list takes the job over
+   // the list takes the job over; every caller hands its job to this function, so when push_back throws the
+   // temporary owning handle frees the job instead of leaking it
    list.push_back(ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(job.raw()));
 
    DRETURN(0);
@@ -1815,18 +1817,6 @@ bool job_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
 }
 
 /**
- * @brief job_is_pe_referenced() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param pe PE_Type object, checked
- *
- * @return as job_is_pe_referenced()
- */
-bool job_is_pe_referenced(const lListElem *job, const lListElem *pe) {
-   return job_is_pe_referenced(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::PE>(pe));
-}
-
-/**
  * @brief Does job reference the given CKPT?
  *
  * The function returns true if "job" references the
@@ -1849,18 +1839,6 @@ bool job_is_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
       }
    }
    return ret;
-}
-
-/**
- * @brief job_is_ckpt_referenced() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param ckpt CK_Type object, checked
- *
- * @return as job_is_ckpt_referenced()
- */
-bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt) {
-   return job_is_ckpt_referenced(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::CK>(ckpt));
 }
 
 /**
@@ -2559,24 +2537,6 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
    DRETURN(true);
 }
 
-/**
- * @brief sge_unparse_acl_dstring() for an untyped caller
- *
- * @param category_str target string
- * @param owner job owner
- * @param group group owner
- * @param grp_list the owner's supplementary groups (ST_Type), checked
- * @param acl_list a list of all access lists (US_Type), checked
- * @param option string option to put in infront of the generated string
- *
- * @return as sge_unparse_acl_dstring()
- */
-bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, const lList *grp_list,
-                             const lList *acl_list, const char *option) {
-   return sge_unparse_acl_dstring(category_str, owner, group, ocs::tom::ConstList<ocs::tom::ST>(grp_list),
-                                  ocs::tom::ConstList<ocs::tom::US>(acl_list), option);
-}
-
 
 /**
  * @brief Creates a string from a queue name list
@@ -2614,19 +2574,6 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, const ocs::tom::List<
    }
 
    DRETURN(true);
-}
-
-/**
- * @brief sge_unparse_queue_list_dstring() for an untyped caller
- *
- * @param category_str target string
- * @param queue_list the queue requests to render (QR_Type), checked; sorted in place
- * @param option string option to put in infront of the generated string
- *
- * @return as sge_unparse_queue_list_dstring()
- */
-bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, const char *option) {
-   return sge_unparse_queue_list_dstring(category_str, ocs::tom::List<ocs::tom::QR>(queue_list), option);
 }
 
 /**
@@ -2684,19 +2631,6 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, const ocs::tom::Li
    }
 
    DRETURN(true);
-}
-
-/**
- * @brief sge_unparse_resource_list_dstring() for an untyped caller
- *
- * @param category_str target string
- * @param resource_list the resource requests to render (CE_Type), checked; sorted in place
- * @param option string option to put in infront of the generated string
- *
- * @return as sge_unparse_resource_list_dstring()
- */
-bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list, const char *option) {
-   return sge_unparse_resource_list_dstring(category_str, ocs::tom::List<ocs::tom::CE>(resource_list), option);
 }
 
 /**
@@ -3344,17 +3278,6 @@ job_is_binary(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 }
 
 /**
- * @brief job_is_binary() for an untyped caller
- *
- * @param job JB_Type element, checked
- *
- * @return as job_is_binary()
- */
-bool job_is_binary(const lListElem *job) {
-   return job_is_binary(ocs::tom::ConstElement<ocs::tom::JB>(job));
-}
-
-/**
  * @brief Mark the job as submitted with a binary rather than a script
  *
  * @param[in,out] job the job to change
@@ -3376,17 +3299,6 @@ job_set_binary(const ocs::tom::Element<ocs::tom::JB> job, const bool is_binary) 
 }
 
 /**
- * @brief job_set_binary() for an untyped caller
- *
- * @param[in,out] job the job to change (JB_Type), checked
- * @param is_binary true to set #JOB_TYPE_BINARY, false to clear it
- * @return as job_set_binary()
- */
-bool job_set_binary(lListElem *job, const bool is_binary) {
-   return job_set_binary(ocs::tom::Element<ocs::tom::JB>(job), is_binary);
-}
-
-/**
  * @brief Was the job submitted with `qsub -noshell`?
  *
  * @param job the job to check
@@ -3395,16 +3307,6 @@ bool job_set_binary(lListElem *job, const bool is_binary) {
 bool
 job_is_no_shell(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return (JOB_TYPE_IS_NO_SHELL(ocs::tom::get<JB_type>(job)) ? true : false);
-}
-
-/**
- * @brief job_is_no_shell() for an untyped caller
- *
- * @param job the job to check (JB_Type), checked
- * @return as job_is_no_shell()
- */
-bool job_is_no_shell(const lListElem *job) {
-   return job_is_no_shell(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -3429,17 +3331,6 @@ job_set_no_shell(const ocs::tom::Element<ocs::tom::JB> job, const bool is_binary
    }
    ocs::tom::set<JB_type>(job, type);
    return ret;
-}
-
-/**
- * @brief job_set_no_shell() for an untyped caller
- *
- * @param[in,out] job the job to change (JB_Type), checked
- * @param is_no_shell true to set #JOB_TYPE_NO_SHELL, false to clear it
- * @return as job_set_no_shell()
- */
-bool job_set_no_shell(lListElem *job, const bool is_no_shell) {
-   return job_set_no_shell(ocs::tom::Element<ocs::tom::JB>(job), is_no_shell);
 }
 
 
@@ -3986,18 +3877,6 @@ ocs::tom::ConstList<ocs::tom::CE> job_get_resource_list(const ocs::tom::ConstEle
 }
 
 /**
- * @brief job_get_resource_list() for an untyped caller
- *
- * @param job the job to read (JB_Type), checked
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @param hard true for the hard list, false for the soft one
- * @return the list (CE_Type), or nullptr
- */
-const lList *job_get_resource_list(const lListElem *job, const uint32_t scope, const bool hard) {
-   return job_get_resource_list(ocs::tom::ConstElement<ocs::tom::JB>(job), scope, hard);
-}
-
-/**
  * @brief The global hard resource requests of a job
  *
  * @param job the job to read (JB_Type)
@@ -4111,18 +3990,6 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_queue_list(const ocs::tom::ConstElemen
 }
 
 /**
- * @brief job_get_queue_list() for an untyped caller
- *
- * @param job the job to read (JB_Type), checked
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @param hard true for the hard list, false for the soft one
- * @return the list (QR_Type), or nullptr
- */
-const lList *job_get_queue_list(const lListElem *job, const uint32_t scope, const bool hard) {
-   return job_get_queue_list(ocs::tom::ConstElement<ocs::tom::JB>(job), scope, hard);
-}
-
-/**
  * @brief The hard queue requests of one scope
  *
  * @param job the job to read (JB_Type)
@@ -4205,18 +4072,6 @@ ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(const ocs::tom::Element<ocs
 }
 
 /**
- * @brief job_get_resource_listRW() for an untyped caller
- *
- * @param job the job to read (JB_Type), checked
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @param hard true for the hard list, false for the soft one
- * @return the list (CE_Type), or nullptr
- */
-lList *job_get_resource_listRW(lListElem *job, const uint32_t scope, const bool hard) {
-   return job_get_resource_listRW(ocs::tom::Element<ocs::tom::JB>(job), scope, hard);
-}
-
-/**
  * @brief The global hard resource requests of a job
  *
  * @param job the job to read (JB_Type)
@@ -4269,18 +4124,6 @@ ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(const ocs::tom::Element<ocs::t
       ret = hard ? ocs::tom::get<JRS_hard_queue_list>(jrs) : ocs::tom::get<JRS_soft_queue_list>(jrs);
    }
    return ret;
-}
-
-/**
- * @brief job_get_queue_listRW() for an untyped caller
- *
- * @param job the job to read (JB_Type), checked
- * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @param hard true for the hard list, false for the soft one
- * @return the list (QR_Type), or nullptr
- */
-lList *job_get_queue_listRW(lListElem *job, const uint32_t scope, const bool hard) {
-   return job_get_queue_listRW(ocs::tom::Element<ocs::tom::JB>(job), scope, hard);
 }
 
 /**

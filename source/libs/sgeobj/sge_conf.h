@@ -192,15 +192,6 @@ bool mconf_get_sharetree_reserved_usage();
 keep_active_t mconf_get_keep_active();
 usage_collection_t mconf_get_usage_collection();
 bool mconf_get_enable_mem_details();
-/**
- * @brief Is core binding enabled?
- *
- * @return the configured value
- *
- * @warning Declared but never defined anywhere in the tree, and never called.
- *          Use #mconf_is_binding_enabled instead, which reads the `enabled`
- *          key of `binding_params`.
- */
 bool mconf_get_simulate_execds();
 bool mconf_get_simulate_jobs();
 long mconf_get_ptf_max_priority();

@@ -78,23 +78,13 @@
 /**
  * @brief Declare the whole function family for one per host attribute type
  *
- * Every attribute type needs the same set of functions - create, add, find,
- * remove, render - differing only in the value's C type and the CULL
- * descriptor.
+ * Every attribute type needs the same set of functions - find, render,
+ * parse - differing only in the value's C type and the CULL descriptor.
  *
  * @see the matching `TEMPLATE_ATTR_IMPL` in sge_attr.cc
  */
 #define TEMPLATE_ATTR_PROTO(PREFIX, TYPE, INTERNAL_TYPE)                      \
                                                                               \
-lListElem *                                                                   \
-PREFIX##_create(lList **answer_list, const char *href, TYPE value);           \
-                                                                              \
-bool                                                                          \
-PREFIX##_list_add(lList **this_list, lList **answer_list,                     \
-                  lListElem **attr, int flags, lList **href_list, const lList *master_hgroup_list);            \
-bool                                                                          \
-PREFIX##_list_add_set_del(lList **this_list, lList **answer_list,             \
-                  const char *hostname, void *value, bool remove, const lList *master_hgroup_list);            \
 bool                                                                          \
 PREFIX##_list_find_value(const lList *this_list, lList **answer_list,         \
                          const char *hostname, INTERNAL_TYPE *value,          \
@@ -111,13 +101,7 @@ PREFIX##_list_append_to_dstring(const lList *this_list, dstring *string);     \
                                                                               \
 bool                                                                          \
 PREFIX##_list_parse_from_string(lList **this_list, lList **answer_list,       \
-                                const char *string, int flags, const lList *master_hgroup_list);               \
-bool                                                                          \
-PREFIX##_has_hgroup_reference(const lList *this_list,                         \
-                              const char *host_or_group);                     \
-                                                                              \
-lListElem *                                                                   \
-PREFIX##_list_locate(const lList *this_list, const char *host_or_group);
+                                const char *string, int flags, const lList *master_hgroup_list);
                                                                               
 TEMPLATE_ATTR_PROTO(str_attr, const char *, const char *)
 

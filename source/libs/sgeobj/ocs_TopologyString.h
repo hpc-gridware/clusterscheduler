@@ -155,10 +155,6 @@ namespace ocs {
       static void elem_mark_nodes_as_used_or_unused(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> elem,
                                                     TopologyString &binding_now, const TopologyString &binding_to_use,
                                                     bool mark_used);
-      OCS_TRANSITIONAL static void elem_mark_nodes_as_used_or_unused(lListElem *elem, int nm,
-                                                                     TopologyString &binding_now,
-                                                                     const TopologyString &binding_to_use,
-                                                                     bool mark_used);
 
       // Constructors
       TopologyString() = default;

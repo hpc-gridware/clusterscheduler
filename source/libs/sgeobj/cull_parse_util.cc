@@ -74,8 +74,6 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 
-static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int print_slots,
-     int nm_name, int nm_strval, int nm_doubleval);
 /*
 ** NAME
 **   cull_parse_string_list
@@ -617,77 +615,6 @@ int double_keys
 
 
 
-/*
-** NAME
-**   cull_parse_simple_list
-** PARAMETER
-**   str                 - string to be parsed
-**   lpp                 - list pointer-pointer to be set the list,
-**                         or nullptr if first token is NONE
-**   name                - name for the cull list
-**   descr               - type of the cull list
-**   interpretation_rule - fields to be filled, normally 1 entry
-** RETURN
-**
-** EXTERNAL
-**
-** DESCRIPTION
-**   parses a simple list like a,b,c...
-**   string value NONE as first token is interpreted as no list
-*/
-/**
- * @brief Parse a comma separated list of plain values into a CULL list
- *
- * Unlike #cull_parse_definition_list the entries carry no name, only a value.
- *
- * @param str the text to parse; it is modified in place by the tokenizer
- * @param[out] lpp receives the list
- * @param name the name the resulting list is created under
- * @param descr the descriptor of the elements to create
- * @param interpretation_rule the attribute the value is stored in
- * @return 0 on success
- */
-int cull_parse_simple_list(
-char *str,
-lList **lpp,
-char *name,
-const lDescr *descr,
-int *interpretation_rule 
-) {
-   DENTER(BASIS_LAYER);
-
-   char **pstr;
-   int ret;
-
-   if (!str || !lpp) {
-      DPRINTF("cull_parse_simple_list: nullptr pointer received\n");
-      DRETURN(-1);
-    }
-
-   /*
-   ** = is not a delimiter here
-   */
-   pstr = string_list(str, " ,\t\n\f\r\v",  nullptr);
-   if (!pstr) {
-      DPRINTF("cull_parse_simple_list: could not parse string\n");
-      DRETURN(-2);
-   }
-   if (!strcasecmp("NONE", pstr[0])) {
-      *lpp = nullptr;
-      sge_free(&pstr);
-      DPRINTF("cull_parse_simple_list: String is NONE, no list, not an error\n");
-      DRETURN(0);
-   }
-   
-   ret = cull_parse_string_list(pstr, name, descr, interpretation_rule, lpp);
-   sge_free(&pstr);
-   if (ret) {
-      DPRINTF("cull_parse_simple_list: cull_parse_string_list returns %d\n", ret);
-      DRETURN(-3);
-   }
-   DRETURN(0);
-}
-
 /**
  * @brief Print selected fields of a list into a text stream.
  *
@@ -918,164 +845,6 @@ int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, co
    DRETURN(0);
 }
 
-/**
- * @brief Prints str and field
- *
- * Prints str and field 'fi' (must be string) of
- * every element of lList lp to file fp separated
- * by blanks. If fp is nullptr, "NONE" will be printed.
- *
- * @param fp a file
- * @param str a string name of list
- * @param lp a list
- * @param fi an element from the list to be printed
- *
- * @return 0 on success, -1 otherwise
- *
- * @note MT-NOTE: fprint_cull_list() is MT safe
- */
-int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi) {
-   DENTER(TOP_LAYER);
-
-   const lListElem *ep;
-
-   FPRINTF((fp, "%s", str));
-
-   if(!lp) {
-      FPRINTF((fp, "NONE\n"));
-   }
-   else {
-      for_each_ep(ep, lp) {
-         FPRINTF((fp, "%s", lGetString(ep, fi)));
-         if (lNext(ep))
-            FPRINTF((fp, " "));
-      }
-      FPRINTF((fp, "\n"));
-   }
-
-   DRETURN(0);
-
-FPRINTF_ERROR:
-   DRETURN(-1);
-}
-
-
-/**
- * @brief Print a name=value list of type CE_Type
- *
- * A CE_Type list is printed to 'fp' in a name=value,name=value,...
- * fashion. If print_slots is 0 an entry with name "slots" is skipped.
- * The 'name' is printed prior the actual list to 'fp'.
- *
- * @param fp The file pointer
- * @param name The name printed before the list
- * @param thresholds The CE_Type list.
- * @param print_slots Flag indicating whether "slots" is skipped or not.
- *
- * @return 0 on success -1 on fprintf() errors
- *
- * @note MT-NOTE: fprint_thresholds() is MT safe
- */
-int fprint_thresholds(
-FILE *fp,
-char *name,
-lList *thresholds,
-int print_slots 
-) {
-   return fprint_name_value_list(fp, name, thresholds, print_slots, CE_name, CE_stringval, CE_doubleval);
-}
-
-/**
- * @brief Print a name=value list of type RUE_Type
- *
- * A RUE_Type list is printed to 'fp' in a name=value,name=value,...
- * fashion. If print_slots is 0 an entry with name "slots" is skipped.
- * The 'name' is printed prior the actual list to 'fp'.
- *
- * @param fp The file pointer
- * @param name The name printed before the list
- * @param thresholds The RUE_Type list.
- * @param print_slots Flag indicating whether "slots" is skipped or not.
- *
- * @return 0 on success -1 on fprintf() errors
- *
- * @note MT-NOTE: fprint_resource_utilizations() is MT safe
- */
-int fprint_resource_utilizations(
-FILE *fp,
-char *name,
-lList *thresholds,
-int print_slots 
-) {
-   return fprint_name_value_list(fp, name, thresholds, print_slots, RUE_name, -1, RUE_utilized_now);
-}
-
-/**
- * @brief Print name=value list of any type
- *
- * A list with name (String) and value (Double) CULL fields is printed
- * to 'fp' in a name=value,name=value,... fashion. If print_slots is 0
- * an entry with name "slots" is skipped. The 'name' is printed prior
- * the actual list to 'fp'. In 'nm_name'/'nm_strval' the CULL names must
- * be passed. Optionally a string representation of the value is printed
- * if non-nullptr and if 'nm_strval' is not -1.
- *
- * @param fp The file pointer
- * @param name The name printed before the list
- * @param thresholds The list
- * @param print_slots Flag indicating whether "slots" is skipped or not.
- * @param nm_name The CULL nm for the name (String).
- * @param nm_strval The CULL nm for the value (Double).
- * @param nm_doubleval If existing in the list the CULL nm for a string representation of the value (String) or -1 otherwise.
- *
- * @return 0 on success -1 on fprintf() errors
- *
- * @note MT-NOTE: fprint_name_value_list() is MT safe
- */
-static int fprint_name_value_list(
-FILE *fp,
-char *name,
-lList *thresholds,
-int print_slots,
-int nm_name,
-int nm_strval,
-int nm_doubleval
-) {
-   DENTER(TOP_LAYER);
-
-   const lListElem *lep;
-   int printed = 0;
-   const char *s;
-   char buffer[1024];
-
-   FPRINTF((fp, "%s", name));
-
-   for_each_ep(lep, thresholds) {
-      if (print_slots || strcmp("slots", lGetString(lep, nm_name))) {
-         if (printed) {
-            FPRINTF((fp, ","));
-         }
-
-         if (nm_strval == -1 || !(s=lGetString(lep, nm_strval))) {
-            snprintf(buffer, sizeof(buffer), "%f", lGetDouble(lep, nm_doubleval));
-            s = buffer;
-         }
-
-         FPRINTF((fp, "%s=%s", lGetString(lep, nm_name), s));
-         printed++;
-      }
-   }
-   if (printed == 0) {
-      FPRINTF((fp, "NONE\n"));
-   } else {
-      FPRINTF((fp, "\n"));
-   }
-
-   DRETURN(0);
-
-FPRINTF_ERROR:
-   DRETURN(-1);
-}            
 
 /**
  * @brief Parse a switch that appears in both a hard and a soft form
@@ -1337,32 +1106,6 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char 
 }
 
 /**
- * @brief cull_parse_path_list() for an untyped caller
- *
- * The parsed paths are appended to the list "lpp" refers to; it is created if
- * it is nullptr.
- *
- * @param[in,out] lpp parsed list PN_Type, checked
- * @param path_str input string
- *
- * @return error code 0 = okay 1 = error
- */
-int cull_parse_path_list(lList **lpp, const char *path_str) {
-   if (lpp == nullptr) {
-      return 1;
-   }
-   auto [ret, list] = cull_parse_path_list(path_str);
-   if (list) {
-      if (*lpp == nullptr) {
-         *lpp = list.release();
-      } else {
-         ocs::tom::List<ocs::tom::PN>(*lpp).splice(std::move(list));
-      }
-   }
-   return ret;
-}
-
-/**
  * @brief Parse a jid list
  *
  * parse a jid list of the format jid[,jid,...]
@@ -1397,23 +1140,6 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> cull_parse_jid_hold_list(const c
    sge_free(&s);
    sge_free(&str_str);
    DRETURN(std::make_pair(i_ret != 0 ? 3 : 0, std::move(list)));
-}
-
-/**
- * @brief cull_parse_jid_hold_list() for an untyped caller
- *
- * @param[out] lpp ST_Type result list; set to the parsed list, nullptr on an error
- * @param str input string to be parsed
- *
- * @return 1 if "lpp" is nullptr, otherwise as cull_parse_jid_hold_list()
- */
-int cull_parse_jid_hold_list(lList **lpp, const char *str) {
-   if (lpp == nullptr) {
-      return 1;
-   }
-   auto [ret, list] = cull_parse_jid_hold_list(str);
-   *lpp = list.release();
-   return ret;
 }
 
 /**

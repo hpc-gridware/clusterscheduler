@@ -135,8 +135,6 @@ OCS_TRANSITIONAL const char *prj_list_append_to_dstring(const lList *this_list, 
 
 bool prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR> this_list, lList **answer_list,
                            ocs::tom::ConstList<ocs::tom::PR> userprj_list);
-OCS_TRANSITIONAL bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
-                                            const lList *userprj_list);
 
 ocs::tom::ElementPtr<ocs::tom::UU> getUserTemplate();
 ocs::tom::ElementPtr<ocs::tom::PR> getPrjTemplate();

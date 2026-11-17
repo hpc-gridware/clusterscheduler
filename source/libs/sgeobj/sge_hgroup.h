@@ -49,6 +49,7 @@
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "sgeobj/cull/sge_hgroup_HGRP_L.h"
 #include "sgeobj/ocs_Matcher.h"
@@ -230,7 +231,8 @@ OCS_TRANSITIONAL bool hgroup_find_all_referencees(const lListElem *this_elem, lL
 bool hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
                              ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                              ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
-                             ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups, lList **occupants_queues);
+                             ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups,
+                             ocs::tom::ListPtr<ocs::tom::ST> *occupants_queues);
 OCS_TRANSITIONAL bool hgroup_find_referencees(const lListElem *this_elem, lList **answer_list,
                                               const lList *master_hgroup_list, const lList *master_cqueue_list,
                                               lList **occupants_groups, lList **occupants_queues);
@@ -252,5 +254,3 @@ OCS_TRANSITIONAL bool hgroup_list_find_matching_and_resolve(const lList *this_li
 
 bool hgroup_list_find_matching(ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **answer_list,
                                const char *hgroup_pattern, ocs::tom::ListPtr<ocs::tom::HR> *href_list);
-OCS_TRANSITIONAL bool hgroup_list_find_matching(const lList *this_list, lList **answer_list,
-                                                const char *hgroup_pattern, lList **href_list);

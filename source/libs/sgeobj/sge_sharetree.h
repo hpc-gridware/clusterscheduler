@@ -112,14 +112,9 @@ OCS_TRANSITIONAL bool id_sharetree(lList **alpp, lListElem *ep, int id);
 int show_sharetree_path(std::ostream &os, ocs::tom::Element<ocs::tom::STN> root, const char *path);
 int show_sharetree(std::ostream &os, ocs::tom::ConstElement<ocs::tom::STN> ep, const char *indent, int level = 0);
 ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate();
-ocs::tom::Element<ocs::tom::STN> search_named_node(ocs::tom::Element<ocs::tom::STN> ep, const char *name);
 ocs::tom::Element<ocs::tom::STN> search_named_node_path(ocs::tom::Element<ocs::tom::STN> ep, const char *path,
                                                         ancestors_t *ancestors);
 OCS_TRANSITIONAL lListElem *search_named_node_path(lListElem *ep, const char *path, ancestors_t *ancestors);
 void free_ancestors( ancestors_t *ancestors);
-ocs::tom::Element<ocs::tom::STN> sge_search_unspecified_node(ocs::tom::Element<ocs::tom::STN> ep);
-#ifdef notdef
-lListElem *search_ancestor_list ( lListElem *ep, char *name, ancestors_t *ancestors );
-#endif
 ocs::tom::Element<ocs::tom::STN> search_ancestors(ocs::tom::Element<ocs::tom::STN> ep, const char *name,
                                                   ancestors_t *ancestors, int depth);
