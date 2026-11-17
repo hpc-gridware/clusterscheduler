@@ -42,6 +42,10 @@
 #include "cull/cull.h"
 #include "uti/sge_dstring.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+
 /**
  * @name Queue instance states
  *
@@ -105,12 +109,6 @@
  *
  * Passed alongside a transition to say how far it reaches.
  *
- * @warning Everything from here down to the second
- *          `transition_option_is_valid_for_qinstance` declaration exists
- *          **twice** in this header, verbatim. The values are identical and
- *          the declarations agree, so it compiles; it is an accidental paste,
- *          not a deliberate conditional. Delete one copy when this file is
- *          next touched for a code change.
  * @{
  */
 #define QI_TRANSITION_NOTHING          0x00000000 ///< the transition applies to nothing further
@@ -129,106 +127,84 @@ transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list);
 #  define QI_DO_SETERROR               0x00100000
 #endif
 
-/**
- * @name Queue instance transition options (duplicate)
- *
- * @warning An accidental verbatim copy of the block above. See the warning
- *          there.
- * @{
- */
-#define QI_TRANSITION_NOTHING          0x00000000 ///< duplicate of the definition above
-#define QI_TRANSITION_OPTION           0x00000001 ///< duplicate of the definition above
-/** @} */
+bool qinstance_has_state(ocs::tom::ConstElement<ocs::tom::QU> this_elem, uint32_t bit);
+OCS_TRANSITIONAL bool qinstance_has_state(const lListElem *this_elem, uint32_t bit);
 
-/// Duplicate declaration; see the block above
-bool
-transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list);
+const char *qinstance_state_as_string(uint32_t bit);
 
-/// Duplicate declaration; see the block above
-bool
-transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list);
+uint32_t qinstance_state_from_string(const char *state, lList **answer_list, uint32_t filter);
 
-bool qinstance_has_state(const lListElem *this_elem, uint32_t bit);
+bool qinstance_state_set_alarm(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_alarm(lListElem *this_elem, bool set_state);
 
-const char * qinstance_state_as_string(uint32_t bit);
+bool qinstance_state_set_suspend_alarm(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state);
 
-uint32_t qinstance_state_from_string(const char* state, lList **answer_list, uint32_t filter);
-/* */
+bool qinstance_state_set_manual_disabled(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_alarm(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_manual_suspended(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_unknown(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_unknown(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_error(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_error(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_susp_on_sub(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_unknown(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_cal_disabled(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_error(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_cal_suspended(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_full(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
 
-bool
-qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_orphaned(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_orphaned(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state);
+bool qinstance_state_set_ambiguous(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
+OCS_TRANSITIONAL bool qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state);
 
-bool
-qinstance_state_set_full(lListElem *this_elem, bool set_state);
+bool qinstance_state_is_alarm(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_alarm(const lListElem *this_elem);
 
-bool
-qinstance_state_set_orphaned(lListElem *this_elem, bool set_state);
+bool qinstance_state_is_suspend_alarm(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_suspend_alarm(const lListElem *this_elem);
 
-bool
-qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state);
+bool qinstance_state_is_manual_disabled(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_manual_disabled(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_alarm(const lListElem *this_elem);
+bool qinstance_state_is_manual_suspended(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_manual_suspended(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_suspend_alarm(const lListElem *this_elem);
+bool qinstance_state_is_unknown(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_unknown(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_manual_disabled(const lListElem *this_elem);
+bool qinstance_state_is_error(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_error(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_manual_suspended(const lListElem *this_elem);
+bool qinstance_state_is_susp_on_sub(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_susp_on_sub(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_unknown(const lListElem *this_elem);
+bool qinstance_state_is_cal_disabled(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_cal_disabled(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_error(const lListElem *this_elem);
+bool qinstance_state_is_cal_suspended(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_cal_suspended(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_susp_on_sub(const lListElem *this_elem);
+bool qinstance_state_is_orphaned(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_orphaned(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_cal_disabled(const lListElem *this_elem);
+bool qinstance_state_is_ambiguous(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL bool qinstance_state_is_ambiguous(const lListElem *this_elem);
 
-bool 
-qinstance_state_is_cal_suspended(const lListElem *this_elem);
+bool qinstance_state_is_full(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
 
-bool
-qinstance_state_is_orphaned(const lListElem *this_elem);
+bool qinstance_state_append_to_dstring(ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string);
+OCS_TRANSITIONAL bool qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string);
 
-bool
-qinstance_state_is_ambiguous(const lListElem *this_elem);
-
-bool 
-qinstance_state_is_full(const lListElem *this_elem);
-
-bool 
-qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string);
-
-bool
-qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit);
+bool qinstance_set_state(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state, uint32_t bit);

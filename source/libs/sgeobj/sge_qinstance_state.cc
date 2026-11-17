@@ -98,6 +98,7 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "uti/sge.h"
 
@@ -147,9 +148,9 @@ static const char letters[] = {
  * @param bit one of the `QI_*` state bits
  * @return true when the bit actually changed
  */
-bool qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit) {
+bool qinstance_set_state(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state, const uint32_t bit) {
    bool ret = false;
-   uint32_t old_state = ocs::tom::get<QU_state>(this_elem);
+   const uint32_t old_state = ocs::tom::get<QU_state>(this_elem);
    uint32_t new_state = old_state;
 
    if (set_state) {   
@@ -180,13 +181,25 @@ bool qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit) {
  *
  * @note MT-NOTE: qinstance_has_state() is MT safe
  */
-bool qinstance_has_state(const lListElem *this_elem, uint32_t bit) {
+bool qinstance_has_state(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, const uint32_t bit) {
    bool ret = true;
 
    if (bit != std::numeric_limits<uint32_t>::max()) {
       ret = (ocs::tom::get<QU_state>(this_elem) & bit) ? true : false;
    }
    return ret;
+}
+
+/**
+ * @brief qinstance_has_state() for an untyped caller
+ *
+ * @param this_elem queue instance (QU_Type), checked
+ * @param bit state mask
+ *
+ * @return as qinstance_has_state()
+ */
+bool qinstance_has_state(const lListElem *this_elem, const uint32_t bit) {
+   return qinstance_has_state(ocs::tom::ConstElement<ocs::tom::QU>(this_elem), bit);
 }
 
 /**
@@ -399,7 +412,7 @@ qinstance_state_from_string(const char* sstate,
  *
  * @see #qinstance_state_as_string
  */
-bool qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string) {
+bool qinstance_state_append_to_dstring(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool ret = true;
@@ -417,6 +430,17 @@ bool qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *stri
 }
 
 /**
+ * @brief qinstance_state_append_to_dstring() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @param[out] string receives the letters, appended
+ * @return as qinstance_state_append_to_dstring()
+ */
+bool qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string) {
+   return qinstance_state_append_to_dstring(ocs::tom::ConstElement<ocs::tom::QU>(this_elem), string);
+}
+
+/**
  * @brief Set or clear #QI_ORPHANED
  *
  * That bit means the queue was deleted but still holds jobs.
@@ -425,13 +449,24 @@ bool qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *stri
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_orphaned(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_orphaned(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_ORPHANED);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_orphaned() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_orphaned()
+ */
+bool qinstance_state_set_orphaned(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_orphaned(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -442,8 +477,18 @@ bool qinstance_state_set_orphaned(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_orphaned(const lListElem *this_elem) {
+bool qinstance_state_is_orphaned(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_ORPHANED);
+}
+
+/**
+ * @brief qinstance_state_is_orphaned() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_orphaned()
+ */
+bool qinstance_state_is_orphaned(const lListElem *this_elem) {
+   return qinstance_state_is_orphaned(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -455,13 +500,24 @@ bool qinstance_state_is_orphaned(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_ambiguous(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_AMBIGUOUS);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_ambiguous() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_ambiguous()
+ */
+bool qinstance_state_set_ambiguous(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_ambiguous(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -472,8 +528,18 @@ bool qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_ambiguous(const lListElem *this_elem) {
+bool qinstance_state_is_ambiguous(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_AMBIGUOUS);
+}
+
+/**
+ * @brief qinstance_state_is_ambiguous() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_ambiguous()
+ */
+bool qinstance_state_is_ambiguous(const lListElem *this_elem) {
+   return qinstance_state_is_ambiguous(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -485,13 +551,24 @@ bool qinstance_state_is_ambiguous(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_alarm(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_alarm(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_ALARM);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_alarm() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_alarm()
+ */
+bool qinstance_state_set_alarm(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_alarm(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -502,8 +579,18 @@ bool qinstance_state_set_alarm(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_alarm(const lListElem *this_elem) {
+bool qinstance_state_is_alarm(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_ALARM);
+}
+
+/**
+ * @brief qinstance_state_is_alarm() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_alarm()
+ */
+bool qinstance_state_is_alarm(const lListElem *this_elem) {
+   return qinstance_state_is_alarm(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -515,13 +602,24 @@ bool qinstance_state_is_alarm(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_suspend_alarm(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPEND_ALARM);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_suspend_alarm() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_suspend_alarm()
+ */
+bool qinstance_state_set_suspend_alarm(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_suspend_alarm(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -532,8 +630,18 @@ bool qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_suspend_alarm(const lListElem *this_elem) {
+bool qinstance_state_is_suspend_alarm(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_SUSPEND_ALARM);
+}
+
+/**
+ * @brief qinstance_state_is_suspend_alarm() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_suspend_alarm()
+ */
+bool qinstance_state_is_suspend_alarm(const lListElem *this_elem) {
+   return qinstance_state_is_suspend_alarm(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -545,13 +653,24 @@ bool qinstance_state_is_suspend_alarm(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_manual_disabled(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_DISABLED);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_manual_disabled() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_manual_disabled()
+ */
+bool qinstance_state_set_manual_disabled(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_manual_disabled(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -562,8 +681,18 @@ bool qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_manual_disabled(const lListElem *this_elem) {
+bool qinstance_state_is_manual_disabled(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_DISABLED);
+}
+
+/**
+ * @brief qinstance_state_is_manual_disabled() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_manual_disabled()
+ */
+bool qinstance_state_is_manual_disabled(const lListElem *this_elem) {
+   return qinstance_state_is_manual_disabled(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -575,13 +704,24 @@ bool qinstance_state_is_manual_disabled(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_manual_suspended(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPENDED);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_manual_suspended() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_manual_suspended()
+ */
+bool qinstance_state_set_manual_suspended(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_manual_suspended(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -592,8 +732,18 @@ bool qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state) 
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_manual_suspended(const lListElem *this_elem) {
+bool qinstance_state_is_manual_suspended(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_SUSPENDED);
+}
+
+/**
+ * @brief qinstance_state_is_manual_suspended() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_manual_suspended()
+ */
+bool qinstance_state_is_manual_suspended(const lListElem *this_elem) {
+   return qinstance_state_is_manual_suspended(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -605,7 +755,7 @@ bool qinstance_state_is_manual_suspended(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_unknown(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
@@ -614,6 +764,17 @@ bool qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
    else
       changed = qinstance_set_state(this_elem, set_state, QI_UNKNOWN);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_unknown() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_unknown()
+ */
+bool qinstance_state_set_unknown(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_unknown(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 
@@ -625,8 +786,18 @@ bool qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_unknown(const lListElem *this_elem) {
+bool qinstance_state_is_unknown(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_UNKNOWN);
+}
+
+/**
+ * @brief qinstance_state_is_unknown() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_unknown()
+ */
+bool qinstance_state_is_unknown(const lListElem *this_elem) {
+   return qinstance_state_is_unknown(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -638,13 +809,24 @@ bool qinstance_state_is_unknown(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_error(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_error(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_ERROR);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_error() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_error()
+ */
+bool qinstance_state_set_error(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_error(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -655,8 +837,18 @@ bool qinstance_state_set_error(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_error(const lListElem *this_elem) {
+bool qinstance_state_is_error(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_ERROR);
+}
+
+/**
+ * @brief qinstance_state_is_error() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_error()
+ */
+bool qinstance_state_is_error(const lListElem *this_elem) {
+   return qinstance_state_is_error(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -668,13 +860,24 @@ bool qinstance_state_is_error(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_susp_on_sub(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPENDED_ON_SUBORDINATE);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_susp_on_sub() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_susp_on_sub()
+ */
+bool qinstance_state_set_susp_on_sub(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_susp_on_sub(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -685,8 +888,18 @@ bool qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_susp_on_sub(const lListElem *this_elem) {
+bool qinstance_state_is_susp_on_sub(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_SUSPENDED_ON_SUBORDINATE);
+}
+
+/**
+ * @brief qinstance_state_is_susp_on_sub() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_susp_on_sub()
+ */
+bool qinstance_state_is_susp_on_sub(const lListElem *this_elem) {
+   return qinstance_state_is_susp_on_sub(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -698,13 +911,24 @@ bool qinstance_state_is_susp_on_sub(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_cal_disabled(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_CAL_DISABLED);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_cal_disabled() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_cal_disabled()
+ */
+bool qinstance_state_set_cal_disabled(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_cal_disabled(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -715,8 +939,18 @@ bool qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_cal_disabled(const lListElem *this_elem) {
+bool qinstance_state_is_cal_disabled(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_CAL_DISABLED);
+}
+
+/**
+ * @brief qinstance_state_is_cal_disabled() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_cal_disabled()
+ */
+bool qinstance_state_is_cal_disabled(const lListElem *this_elem) {
+   return qinstance_state_is_cal_disabled(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -728,13 +962,24 @@ bool qinstance_state_is_cal_disabled(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_cal_suspended(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool changed;
 
    changed = qinstance_set_state(this_elem, set_state, QI_CAL_SUSPENDED);
    DRETURN(changed);
+}
+
+/**
+ * @brief qinstance_state_set_cal_suspended() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked
+ * @param set_state true to set the bit, false to clear it
+ * @return as qinstance_state_set_cal_suspended()
+ */
+bool qinstance_state_set_cal_suspended(lListElem *this_elem, const bool set_state) {
+   return qinstance_state_set_cal_suspended(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**
@@ -745,8 +990,18 @@ bool qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_cal_suspended(const lListElem *this_elem) {
+bool qinstance_state_is_cal_suspended(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_CAL_SUSPENDED);
+}
+
+/**
+ * @brief qinstance_state_is_cal_suspended() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked
+ * @return as qinstance_state_is_cal_suspended()
+ */
+bool qinstance_state_is_cal_suspended(const lListElem *this_elem) {
+   return qinstance_state_is_cal_suspended(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -758,7 +1013,7 @@ bool qinstance_state_is_cal_suspended(const lListElem *this_elem) {
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool qinstance_state_set_full(lListElem *this_elem, bool set_state) {
+bool qinstance_state_set_full(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state) {
    return qinstance_set_state(this_elem, set_state, QI_FULL);
 }
 
@@ -770,6 +1025,6 @@ bool qinstance_state_set_full(lListElem *this_elem, bool set_state) {
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool qinstance_state_is_full(const lListElem *this_elem) {
+bool qinstance_state_is_full(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_state(this_elem, QI_FULL);
 }

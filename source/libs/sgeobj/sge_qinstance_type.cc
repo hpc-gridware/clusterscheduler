@@ -241,7 +241,7 @@ bool qinstance_is_interactive_queue(const lListElem *this_elem) {
  * @return true when it references a checkpointing environment
  */
 bool qinstance_is_checkpointing_queue(const lListElem *this_elem) {
-   return qinstance_is_a_ckpt_referenced(this_elem);
+   return qinstance_is_a_ckpt_referenced(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -251,5 +251,5 @@ bool qinstance_is_checkpointing_queue(const lListElem *this_elem) {
  * @return true when it references a parallel environment
  */
 bool qinstance_is_parallel_queue(const lListElem *this_elem) {
-   return qinstance_is_a_pe_referenced(this_elem);
+   return qinstance_is_a_pe_referenced(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }

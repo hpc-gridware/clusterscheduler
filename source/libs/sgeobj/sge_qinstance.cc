@@ -79,7 +79,15 @@
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RDE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
@@ -102,29 +110,30 @@
  * with the name "cqueue_name" and resides on the host with the name
  * "hostname".
  *
- * @param this_list QU_Type list
+ * @param this_list QU_Type list, may be an empty handle
  * @param hostname hostname
- * @param cqueue_name cluster queue name
+ * @param cqueue_name cluster queue name; nullptr looks up the host alone
  *
- * @return QU_Type element
+ * @return QU_Type element, or an empty handle
  *
  * @note MT-NOTE: qinstance_list_locate() is MT safe
  */
-lListElem *
-qinstance_list_locate(const lList *this_list, const char *hostname,
-                      const char *cqueue_name) {
-   lListElem *ret = nullptr;
+ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::ConstList<ocs::tom::QU> this_list,
+                                                      const char *hostname, const char *cqueue_name) {
+   ocs::tom::Element<ocs::tom::QU> ret = nullptr;
 
    if (cqueue_name == nullptr) {
       ret = ocs::tom::find_first_rw<QU_qhostname>(this_list, hostname);
    } else {
-      for_each_rw(ret, this_list) {
-         const char *qname = ocs::tom::get<QU_qname>(ret);
-         const char *hname = ocs::tom::get<QU_qhostname>(ret);
+      for (const auto qinstance : this_list) {
+         const char *qname = ocs::tom::get<QU_qname>(qinstance);
+         const char *hname = ocs::tom::get<QU_qhostname>(qinstance);
 
          /* use qinstance expression */
          if (!sge_eval_expression(ocs::CEntry::Type::CSTR, cqueue_name, qname, nullptr)) {
             if (!sge_eval_expression(ocs::CEntry::Type::HOST, hostname, hname, nullptr)) {
+               // the list is read-only for the search only; the caller gets the element writable, as before
+               ret = ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<lListElem *>(qinstance.raw()));
                break;
             }
          }
@@ -134,37 +143,49 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
 }
 
 /**
+ * @brief qinstance_list_locate() for an untyped caller
+ *
+ * @param this_list QU_Type list, checked; may be nullptr
+ * @param hostname hostname
+ * @param cqueue_name cluster queue name; nullptr looks up the host alone
+ *
+ * @return QU_Type element or nullptr
+ */
+lListElem *qinstance_list_locate(const lList *this_list, const char *hostname, const char *cqueue_name) {
+   return qinstance_list_locate(ocs::tom::ConstList<ocs::tom::QU>(this_list), hostname, cqueue_name).raw();
+}
+
+/**
  * @brief Find a qinstance using the fullname
  *
  * find a qinstance using the fullname
  *
- * @param queue_list QU_Type list
+ * @param queue_list QU_Type list, may be an empty handle
  * @param full_name fullname of the qinstance (`cqueue@hostname`)
  *
- * @return QU_type element
+ * @return QU_type element, or an empty handle
  *
  * @note MT-NOTE: qinstance_list_locate2() is MT safe
  */
-lListElem *
-qinstance_list_locate2(const lList *queue_list, const char *full_name) {
+ocs::tom::Element<ocs::tom::QU> qinstance_list_locate2(const ocs::tom::ConstList<ocs::tom::QU> queue_list,
+                                                       const char *full_name) {
    return ocs::tom::find_first_rw<QU_full_name>(queue_list, full_name);
 }
 
 /**
  * @brief Returns the fullname of a qinstance object
  *
- * @param this_elem QU_Type
+ * @param this_elem QU_Type element, may be an empty handle
  * @param string_buffer dynamic string buffer
  *
- * @return pointer to the internal string buffer of "string_buffer"
+ * @return pointer to the internal string buffer of "string_buffer", or nullptr if an argument is missing
  *
  * @note MT-NOTE: qinstance_get_name() is MT safe
  */
-const char *
-qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
+const char *qinstance_get_name(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string_buffer) {
    const char *ret = nullptr;
 
-   if (this_elem != nullptr && string_buffer != nullptr) {
+   if (this_elem && string_buffer != nullptr) {
       ret = sge_dstring_sprintf(string_buffer, SFN "@" SFN,
                                 ocs::tom::get<QU_qname>(this_elem),
                                 static_cast<const char *>(ocs::tom::get<QU_qhostname>(this_elem)));
@@ -173,22 +194,34 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
 }
 
 /**
+ * @brief qinstance_get_name() for an untyped caller
+ *
+ * @param this_elem QU_Type element, checked; may be nullptr
+ * @param string_buffer dynamic string buffer
+ *
+ * @return as qinstance_get_name()
+ */
+const char *qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
+   return qinstance_get_name(ocs::tom::ConstElement<ocs::tom::QU>(this_elem), string_buffer);
+}
+
+/**
  * @brief Tag a list of qinstances
  *
  * Tag a list of qinstances ("queue_list") with "tag_value".
  * Examples for tags are QU_tag (default) and QU_tagged4schedule.
  *
- * @param queue_list QU_Type list
+ * @param queue_list QU_Type list, may be an empty handle
  * @param tag_value unsigned long value (not a bitmask)
- * @param tag_nm which tag attribute to use (default: QU_tag)
+ * @param tag_nm which tag attribute to use (default: QU_tag); a field number chosen at run time
  *
  * @note MT-NOTE: qinstance_list_set_tag() is MT safe
  */
-void qinstance_list_set_tag(lList *queue_list, uint32_t tag_value, int tag_nm) {
-   if (queue_list != nullptr) {
-      for_each_rw_lv (qinstance, queue_list) {
-         lSetUlong(qinstance, tag_nm, tag_value);
-      }
+void qinstance_list_set_tag(const ocs::tom::List<ocs::tom::QU> queue_list, const uint32_t tag_value,
+                            const int tag_nm) {
+   for (const auto qinstance : queue_list) {
+      // the field is chosen at run time, so the untyped setter stays
+      lSetUlong(qinstance, tag_nm, tag_value);
    }
 }
 
@@ -201,25 +234,32 @@ void qinstance_list_set_tag(lList *queue_list, uint32_t tag_value, int tag_nm) {
  *
  * @note MT-NOTE: qinstance_increase_qversion() is MT safe
  */
-void
-qinstance_increase_qversion(lListElem *this_elem) {
+void qinstance_increase_qversion(const ocs::tom::Element<ocs::tom::QU> this_elem) {
    DENTER(TOP_LAYER);
    ocs::tom::add<QU_version>(this_elem, 1);
    DRETURN_VOID;
 }
 
-/*!
+/**
+ * @brief qinstance_increase_qversion() for an untyped caller
+ *
+ * @param this_elem QU_Type element, checked
+ */
+void qinstance_increase_qversion(lListElem *this_elem) {
+   qinstance_increase_qversion(ocs::tom::Element<ocs::tom::QU>(this_elem));
+}
+
+/**
  * @brief check if the packet user is the owner of the qinstance
  *
  * This function checks if the user of the given packet is the owner of the
- * qinstance element "this_elem". If the user is an operator, it returns true.
+ * qinstance element "this_elem".
  *
  * @param packet GDI packet containing the ownership information of the request creator
- * @param this_elem qinstance element to check
- * @return true if the user is the owner, false otherwise
+ * @param this_elem qinstance element to check (QU_Type), may be an empty handle
+ * @return true if the user is in the owner list, false otherwise or if an argument is missing
  */
-bool
-qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
+bool qinstance_is_owner(const ocs::gdi::Packet *packet, const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -227,16 +267,25 @@ qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
    if (packet == nullptr) {
       DRETURN(false);
    }
-   if (this_elem == nullptr) {
-      ret = false;
-   } else {
-      ocs::tom::ConstList<ocs::tom::US> owner_list = ocs::tom::get<QU_owner_list>(this_elem);
-      if (static_cast<const lListElem *>(ocs::tom::find_first<US_name>(owner_list, packet->user)) != nullptr) {
+   if (this_elem) {
+      const auto owner_list = ocs::tom::get<QU_owner_list>(this_elem);
+      if (ocs::tom::find_first<US_name>(owner_list, packet->user)) {
          ret = true;
       }
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_is_owner() for an untyped caller
+ *
+ * @param packet GDI packet containing the ownership information of the request creator
+ * @param this_elem qinstance element to check (QU_Type), checked; may be nullptr
+ * @return as qinstance_is_owner()
+ */
+bool qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
+   return qinstance_is_owner(packet, ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -251,10 +300,10 @@ qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
  *
  * @note MT-NOTE: qinstance_is_pe_referenced() is MT safe
  */
-bool
-qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
+bool qinstance_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_elem,
+                                const ocs::tom::ConstElement<ocs::tom::PE> pe) {
    DENTER(TOP_LAYER);
-   for (ocs::tom::ConstElement<ocs::tom::ST> pe_name_elem : ocs::tom::get<QU_pe_list>(this_elem)) {
+   for (const auto pe_name_elem : ocs::tom::get<QU_pe_list>(this_elem)) {
       if (strcmp(ocs::tom::get<PE_name>(pe), ocs::tom::get<ST_name>(pe_name_elem)) == 0) {
          DRETURN(true);
       }
@@ -274,15 +323,13 @@ qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
  *
  * @note MT-NOTE: qinstance_is_calendar_referenced() is MT safe
  */
-bool
-qinstance_is_calendar_referenced(const lListElem *this_elem,
-                                 const lListElem *calendar) {
+bool qinstance_is_calendar_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_elem,
+                                      const ocs::tom::ConstElement<ocs::tom::CAL> calendar) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const char *queue_calendar = nullptr;
+   const char *queue_calendar = ocs::tom::get<QU_calendar>(this_elem);
 
-   queue_calendar = ocs::tom::get<QU_calendar>(this_elem);
    if (queue_calendar != nullptr) {
       const char *calendar_name = ocs::tom::get<CAL_name>(calendar);
 
@@ -304,13 +351,12 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
  *
  * @note MT-NOTE: qinstance_is_a_pe_referenced() is MT safe
  */
-bool
-qinstance_is_a_pe_referenced(const lListElem *this_elem) {
+bool qinstance_is_a_pe_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
-   if (lGetNumberOfElem(ocs::tom::get<QU_pe_list>(this_elem))) {
+   if (!ocs::tom::get<QU_pe_list>(this_elem).empty()) {
       ret = true;
    }
    DRETURN(ret);
@@ -323,20 +369,20 @@ qinstance_is_a_pe_referenced(const lListElem *this_elem) {
  * the qinstance "this_elem".
  *
  * @param this_elem QU_Type element
- * @param ckpt CKPT_Type element
+ * @param ckpt CK_Type element
  *
  * @return test result true  - CKPT is referenced false - CKPT is not referenced
  *
  * @note MT-NOTE: qinstance_is_ckpt_referenced() is MT safe
  */
-bool
-qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt) {
+bool qinstance_is_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_elem,
+                                  const ocs::tom::ConstElement<ocs::tom::CK> ckpt) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   ocs::tom::ConstList<ocs::tom::ST> ckpt_list = ocs::tom::get<QU_ckpt_list>(this_elem);
+   const auto ckpt_list = ocs::tom::get<QU_ckpt_list>(this_elem);
 
-   if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(ckpt_list, ocs::tom::get<CK_name>(ckpt))) != nullptr) {
+   if (ocs::tom::find_first<ST_name>(ckpt_list, ocs::tom::get<CK_name>(ckpt))) {
       ret = true;
    }
    DRETURN(ret);
@@ -347,19 +393,18 @@ qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt) 
  *
  * Is an CKPT object referenced in "this_elem".
  *
- * @param this_elem CKPT_Type element
+ * @param this_elem QU_Type element
  *
  * @return test result true  - a CKPT is referenced false - no CKPT is referenced
  *
  * @note MT-NOTE: qinstance_is_a_ckpt_referenced() is MT safe
  */
-bool
-qinstance_is_a_ckpt_referenced(const lListElem *this_elem) {
+bool qinstance_is_a_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
-   if (lGetNumberOfElem(ocs::tom::get<QU_ckpt_list>(this_elem))) {
+   if (!ocs::tom::get<QU_ckpt_list>(this_elem).empty()) {
       ret = true;
    }
    DRETURN(ret);
@@ -370,26 +415,25 @@ qinstance_is_a_ckpt_referenced(const lListElem *this_elem) {
  *
  * Is the given "centry" in the list of complex_values of "this_elem".
  *
- * @param this_elem QU_Type element
+ * @param this_elem QU_Type element, may be an empty handle
  * @param centry CE_Type element
  *
  * @return test result true  - it is a complex value false - no complex value
  *
  * @note MT-NOTE: qinstance_is_centry_a_complex_value() is MT safe
  */
-bool
-qinstance_is_centry_a_complex_value(const lListElem *this_elem,
-                                    const lListElem *centry) {
+bool qinstance_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::QU> this_elem,
+                                         const ocs::tom::ConstElement<ocs::tom::CE> centry) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
-   if (this_elem != nullptr) {
+   if (this_elem) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      ocs::tom::ConstList<ocs::tom::CE> centry_list = ocs::tom::get<QU_consumable_config_list>(this_elem);
-      const lListElem *centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
+      const auto centry_list = ocs::tom::get<QU_consumable_config_list>(this_elem);
+      const auto centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
 
-      if (centry_ref != nullptr || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0) {
+      if (centry_ref || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0) {
          ret = true;
       }
    }
@@ -400,31 +444,26 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
  * @brief Find certain qinstances
  *
  * Finds all qinstances in "this_list" whose hostname part matches
- * the "hostname_pattern" (fnmatch pattern) and stores the
- * qinstance name in "qref_list". In case of any error "answer_list"
+ * the "hostname_pattern" (fnmatch pattern) and returns their
+ * qinstance names as queue references. In case of any error "answer_list"
  * will be filled.
  *
- * @param this_list QU_Type list
+ * @param this_list QU_Type list, may be an empty handle
  * @param answer_list AN_Type list
  * @param hostname_pattern fnmatch hostname pattern
- * @param qref_list QR_Type list
  *
- * @return error result true  - success
+ * @return QR_Type list of the matching qinstance names; an empty handle if nothing matched or an argument is missing
  *
  * @note MT-NOTE: qinstance_list_find_matching() is MT safe
  */
-bool
-qinstance_list_find_matching(const lList *this_list, lList **answer_list,
-                             const char *hostname_pattern, lList **qref_list) {
+ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(const ocs::tom::ConstList<ocs::tom::QU> this_list,
+                                                             lList **answer_list, const char *hostname_pattern) {
    DENTER(QINSTANCE_LAYER);
 
-   bool ret = true;
+   // created by the first match, as the old out-parameter was
+   lList *qref_list = nullptr;
 
-   if (qref_list == nullptr) {
-      DRETURN(true);
-   }
-
-   if (this_list != nullptr && hostname_pattern != nullptr) {
+   if (this_list && hostname_pattern != nullptr) {
       char host[CL_MAXHOSTNAMELEN];
 
       if ((getuniquehostname(hostname_pattern, host, 0)) == CL_RETVAL_OK) {
@@ -432,15 +471,16 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
       }
 
       const bool hostname_pattern_is_expression = ocs::is_expression(hostname_pattern);
-      for_each_ep_lv(qinstance, this_list) {
+      for (const auto qinstance : this_list) {
          const char *hostname = ocs::tom::get<QU_qhostname>(qinstance);
          /* use qinstance expression */
-         if (!sge_eval_expression(ocs::CEntry::Type::HOST, hostname_pattern, hostname, answer_list, true, hostname_pattern_is_expression)) {
-            ocs::tom::emplace_back<QR_name>(qref_list, ocs::tom::get<QU_full_name>(qinstance));
+         if (!sge_eval_expression(ocs::CEntry::Type::HOST, hostname_pattern, hostname, answer_list, true,
+                                  hostname_pattern_is_expression)) {
+            ocs::tom::emplace_back<QR_name>(&qref_list, ocs::tom::get<QU_full_name>(qinstance));
          }
       }
    }
-   DRETURN(ret);
+   DRETURN(ocs::tom::ListPtr<ocs::tom::QR>::from_typed(qref_list));
 }
 
 /**
@@ -454,20 +494,31 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
  *
  * @note MT-NOTE: qinstance_slots_used() is MT safe
  */
-int qinstance_slots_used(const lListElem *this_elem) {
+int qinstance_slots_used(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(QINSTANCE_LAYER);
-   ocs::tom::ConstElement<ocs::tom::RUE> slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
+   const auto slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
    int ret = 1000000; /* when slots is unknown */
 
-   if (slots != nullptr) {
+   if (slots) {
       ret = ocs::tom::get<RUE_utilized_now>(slots);
    } else {
-      /* this happens on qinstance_create when a queue instance is created 
-         before others queue instances in the subordinate lists  
+      /* this happens on qinstance_create when a queue instance is created
+         before others queue instances in the subordinate lists
          are created */
       CRITICAL(MSG_QINSTANCE_MISSLOTS_S, ocs::tom::get<QU_full_name>(this_elem));
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_slots_used() for an untyped caller
+ *
+ * @param this_elem QU_Type element, checked
+ *
+ * @return as qinstance_slots_used()
+ */
+int qinstance_slots_used(const lListElem *this_elem) {
+   return qinstance_slots_used(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -481,18 +532,28 @@ int qinstance_slots_used(const lListElem *this_elem) {
  *
  * @note MT-NOTE: qinstance_slots_reserved() is MT safe
  */
-uint32_t
-qinstance_slots_reserved(const lListElem *this_elem) {
+uint32_t qinstance_slots_reserved(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(QINSTANCE_LAYER);
    uint32_t ret = 0;
-   ocs::tom::ConstElement<ocs::tom::RUE> slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
-   if (slots != nullptr) {
-      for (ocs::tom::ConstElement<ocs::tom::RDE> utilized : ocs::tom::get<RUE_utilized>(slots)) {
+   const auto slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
+   if (slots) {
+      for (const auto utilized : ocs::tom::get<RUE_utilized>(slots)) {
          ret = std::max(static_cast<double>(ret), ocs::tom::get<RDE_amount>(utilized));
       }
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_slots_reserved() for an untyped caller
+ *
+ * @param this_elem QU_Type element, checked
+ *
+ * @return as qinstance_slots_reserved()
+ */
+uint32_t qinstance_slots_reserved(const lListElem *this_elem) {
+   return qinstance_slots_reserved(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -503,17 +564,26 @@ qinstance_slots_reserved(const lListElem *this_elem) {
  *
  * @note MT-NOTE: qinstance_set_slots_used() is MT safe
  */
-void
-qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
+void qinstance_set_slots_used(const ocs::tom::Element<ocs::tom::QU> this_elem, const int new_slots) {
    DENTER(QINSTANCE_LAYER);
-   ocs::tom::Element<ocs::tom::RUE> slots = ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(this_elem, "slots");
-   if (slots != nullptr) {
+   const auto slots = ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(this_elem, "slots");
+   if (slots) {
       ocs::tom::set<RUE_utilized_now>(slots, new_slots);
    } else {
       /* because this should never happen and an critical error */
       CRITICAL(MSG_QINSTANCE_MISSLOTS_S, ocs::tom::get<QU_full_name>(this_elem));
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief qinstance_set_slots_used() for an untyped caller
+ *
+ * @param this_elem QU_Type, checked
+ * @param new_slots new slot value
+ */
+void qinstance_set_slots_used(lListElem *this_elem, const int new_slots) {
+   qinstance_set_slots_used(ocs::tom::Element<ocs::tom::QU>(this_elem), new_slots);
 }
 
 /**
@@ -524,25 +594,52 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
  * of that machine will be released.
  *
  * @param qep Qinstance resource container
- * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited
- * @param pe The job's parallel environment, needed to split master and slave requests; may be nullptr
+ * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited;
+ *            an empty handle only initializes the booking
+ * @param pe The job's parallel environment, needed to split master and slave requests; may be an empty handle
  * @param centry_list The global complex list that is needed to interpret the jobs' resource requests.
  * @param slots The number of slots for which we are debiting. Positive slots numbers cause debiting, negative ones cause undebiting.
  * @param is_master_task true when this booking includes the job's master task
  * @param do_per_host_booking true when a per host consumable still has to be booked on this host
  * @param just_check If != nullptr do not debit, only check whether debiting would exceed the resources
  *
- * @return 1 in case of an error. Otherwise the number of (un)debitations that actually took place is returned. If 0 is returned that means the consumable resources of the 'ep' object has not changed.
+ * @return -1 in case of an error. Otherwise the number of (un)debitations that actually took place;
+ *         0 means the consumable resources of the 'ep' object have not changed.
  *
  * @note MT-NOTE: qinstance_debit_consumable() is MT safe
  */
-int
-qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem *pe, const lList *centry_list,
-                           int slots, bool is_master_task, bool do_per_host_booking, bool *just_check) {
+int qinstance_debit_consumable(const ocs::tom::Element<ocs::tom::QU> qep,
+                               const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                               const ocs::tom::ConstElement<ocs::tom::PE> pe,
+                               const ocs::tom::ConstList<ocs::tom::CE> centry_list, const int slots,
+                               const bool is_master_task, const bool do_per_host_booking, bool *just_check) {
    return rc_debit_consumable(jep, pe, qep, centry_list, slots,
                               QU_consumable_config_list,
                               QU_resource_utilization,
                               ocs::tom::get<QU_qname>(qep), is_master_task, do_per_host_booking, just_check);
+}
+
+/**
+ * @brief qinstance_debit_consumable() for an untyped caller
+ *
+ * @param qep Qinstance resource container (QU_Type), checked
+ * @param jep The job (JB_Type), checked; nullptr only initializes the booking
+ * @param pe The job's parallel environment (PE_Type), checked; may be nullptr
+ * @param centry_list The global complex list (CE_Type), checked
+ * @param slots The number of slots for which we are debiting; negative ones undebit
+ * @param is_master_task true when this booking includes the job's master task
+ * @param do_per_host_booking true when a per host consumable still has to be booked on this host
+ * @param just_check If != nullptr do not debit, only check whether debiting would exceed the resources
+ *
+ * @return as qinstance_debit_consumable()
+ */
+int qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem *pe, const lList *centry_list,
+                               const int slots, const bool is_master_task, const bool do_per_host_booking,
+                               bool *just_check) {
+   return qinstance_debit_consumable(ocs::tom::Element<ocs::tom::QU>(qep), ocs::tom::ConstElement<ocs::tom::JB>(jep),
+                                     ocs::tom::ConstElement<ocs::tom::PE>(pe),
+                                     ocs::tom::ConstList<ocs::tom::CE>(centry_list), slots, is_master_task,
+                                     do_per_host_booking, just_check);
 }
 
 /**
@@ -556,14 +653,27 @@ qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem
  *
  * @note MT-NOTE: qinstance_message_add() is MT safe
  */
-bool
-qinstance_message_add(lListElem *this_elem, uint32_t type, const char *message) {
+bool qinstance_message_add(const ocs::tom::Element<ocs::tom::QU> this_elem, const uint32_t type,
+                           const char *message) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
    object_message_add(this_elem, QU_message_list, type, message);
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_message_add() for an untyped caller
+ *
+ * @param this_elem QU_Type, checked
+ * @param type message type
+ * @param message message
+ *
+ * @return as qinstance_message_add()
+ */
+bool qinstance_message_add(lListElem *this_elem, const uint32_t type, const char *message) {
+   return qinstance_message_add(ocs::tom::Element<ocs::tom::QU>(this_elem), type, message);
 }
 
 /**
@@ -578,14 +688,25 @@ qinstance_message_add(lListElem *this_elem, uint32_t type, const char *message) 
  *
  * @note MT-NOTE: qinstance_message_trash_all_of_type_X() is MT safe
  */
-bool
-qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
+bool qinstance_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::QU> this_elem, const uint32_t type) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
    object_message_trash_all_of_type_X(this_elem, QU_message_list, type);
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_message_trash_all_of_type_X() for an untyped caller
+ *
+ * @param this_elem QU_Type, checked
+ * @param type message type
+ *
+ * @return as qinstance_message_trash_all_of_type_X()
+ */
+bool qinstance_message_trash_all_of_type_X(lListElem *this_elem, const uint32_t type) {
+   return qinstance_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::QU>(this_elem), type);
 }
 
 /**
@@ -599,16 +720,23 @@ qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
  *
  * @note MT-NOTE: qinstance_set_full_name() is MT safe
  */
-void
-qinstance_set_full_name(lListElem *this_elem) {
+void qinstance_set_full_name(const ocs::tom::Element<ocs::tom::QU> this_elem) {
    dstring buffer = DSTRING_INIT;
    const char *cqueue_name = ocs::tom::get<QU_qname>(this_elem);
    const char *hostname = ocs::tom::get<QU_qhostname>(this_elem);
 
    sge_dstring_sprintf(&buffer, "%s@%s", cqueue_name, hostname);
-   ocs::tom::set<QU_full_name>(this_elem,
-              sge_dstring_get_string(&buffer));
+   ocs::tom::set<QU_full_name>(this_elem, sge_dstring_get_string(&buffer));
    sge_dstring_free(&buffer);
+}
+
+/**
+ * @brief qinstance_set_full_name() for an untyped caller
+ *
+ * @param this_elem QU_Type, checked
+ */
+void qinstance_set_full_name(lListElem *this_elem) {
+   qinstance_set_full_name(ocs::tom::Element<ocs::tom::QU>(this_elem));
 }
 
 /**
@@ -625,9 +753,9 @@ qinstance_set_full_name(lListElem *this_elem) {
  *
  * @note MT-NOTE: qinstance_validate() is MT safe
  */
-bool
-qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
-                   const lList *master_centry_list) {
+bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+                        const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
+                        const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -644,12 +772,13 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
       the queue */
    qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);
 
-   /* setup actual list of queue */
-   qinstance_debit_consumable(this_elem, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
+   /* setup actual list of queue; typed empty handles, as the raw overload takes nullptr as well */
+   qinstance_debit_consumable(this_elem, ocs::tom::ConstElement<ocs::tom::JB>(), ocs::tom::ConstElement<ocs::tom::PE>(),
+                              master_centry_list, 0, true, true, nullptr);
 
    /* init double values of consumable configuration */
-   if (centry_list_fill_request(ocs::tom::get<QU_consumable_config_list>(this_elem), answer_list, master_centry_list, true,
-                                false, true) != 0) {
+   if (centry_list_fill_request(ocs::tom::get<QU_consumable_config_list>(this_elem), answer_list, master_centry_list,
+                                true, false, true) != 0) {
       ret = false;
    }
 
@@ -683,11 +812,28 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
 }
 
 /**
+ * @brief qinstance_validate() for an untyped caller
+ *
+ * @param this_elem QU_Type, checked
+ * @param answer_list AN_Type
+ * @param master_exechost_list the execution hosts (EH_Type), checked
+ * @param master_centry_list the complex entries (CE_Type), checked
+ *
+ * @return as qinstance_validate()
+ */
+bool qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
+                        const lList *master_centry_list) {
+   return qinstance_validate(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list,
+                             ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
+                             ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
+}
+
+/**
  * @brief Validates and initializes qinstances
  *
  * Validates qinstances attributes and initializes them if necessary.
  *
- * @param this_list QU_Type list
+ * @param this_list QU_Type list, may be an empty handle
  * @param answer_list AN_Type
  * @param master_exechost_list the execution hosts, so each queue's host can be checked
  * @param master_centry_list the complex entries, so each queue's resources can be checked
@@ -696,13 +842,13 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
  *
  * @note MT-NOTE: qinstance_list_validate() is MT safe
  */
-bool
-qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list,
-                        const lList *master_centry_list) {
+bool qinstance_list_validate(const ocs::tom::List<ocs::tom::QU> this_list, lList **answer_list,
+                             const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
+                             const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for_each_rw_lv(qinstance, this_list) {
+   for (const auto qinstance : this_list) {
       if (!qinstance_validate(qinstance, answer_list, master_exechost_list, master_centry_list)) {
          ret = false;
          break;
@@ -712,30 +858,57 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
    DRETURN(ret);
 }
 
-// returns true, false in case of just_check and the check fails
+/**
+ * @brief qinstance_list_validate() for an untyped caller
+ *
+ * @param this_list QU_Type list, checked; may be nullptr
+ * @param answer_list AN_Type
+ * @param master_exechost_list the execution hosts (EH_Type), checked
+ * @param master_centry_list the complex entries (CE_Type), checked
+ *
+ * @return as qinstance_list_validate()
+ */
+bool qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list,
+                             const lList *master_centry_list) {
+   return qinstance_list_validate(ocs::tom::List<ocs::tom::QU>(this_list), answer_list,
+                                  ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
+                                  ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
+}
+
+/**
+ * @brief Book an exclusive consumable that the job does not request
+ *
+ * The job doesn't request the exclusive complex, but it still has effect:
+ * A job actually requesting to run exclusive will not be dispatched
+ * to this host - scheduler checks if there is a job running either
+ * requesting the exclusive resource or a job not requesting it is
+ * blocking the host.
+ *
+ * For the consumable check (just_check != nullptr) this means that
+ * we check if the resource is actually in use (RU_utilized_now).
+ *
+ * @param name the consumable's name
+ * @param obj_type "queue" or "host", for the messages
+ * @param obj_name the name of the resource container, for the messages
+ * @param slots the number of slots to book
+ * @param booking_ep the booking of the consumable (RUE_Type); may be an empty handle when only checking
+ * @param just_check If != nullptr do not book, only check; set to false when the check fails
+ *
+ * @return true, false in case of just_check and the check fails
+ */
 static bool
-rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, const char *obj_name, int slots,
-                                       lListElem *booking_ep, bool *just_check) {
+rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, const char *obj_name, const int slots,
+                                       const ocs::tom::Element<ocs::tom::RUE> booking_ep, bool *just_check) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   /*
-    * The job doesn't request the exclusive complex, but it still has effect:
-    * A job actually requesting to run exclusive will not be dispatched
-    * to this host - scheduler checks if there is a job running either
-    * requesting the exclusive resource or a job not requesting it is
-    * blocking the host.
-    *
-    * For the consumable check (just_check != nullptr) this means that
-    * we check if the resource is actually in use (RU_utilized_now).
-    */
    double request = 1.0;
    if (just_check == nullptr) {
       DPRINTF("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", request, name,
               obj_type, obj_name, slots);
       ocs::tom::add<RUE_utilized_now_nonexclusive>(booking_ep, slots * request);
    } else {
-      double actual_value = booking_ep == nullptr ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
+      double actual_value = !booking_ep ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
       if (actual_value > 0) {
          ERROR(MSG_EXCLCAPACITYEXCEEDED_FSSSI, request, name, obj_type, obj_name, slots);
          *just_check = false;
@@ -746,10 +919,28 @@ rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, c
    DRETURN(ret);
 }
 
+/**
+ * @brief Book or check an explicit request of a consumable
+ *
+ * @param name the consumable's name
+ * @param obj_type "queue" or "host", for the messages
+ * @param obj_name the name of the resource container, for the messages
+ * @param slots the number of slots to book; ignored for an exclusive consumable when checking
+ * @param request the amount requested per slot
+ * @param additional_request an amount already booked on this container in the same check (master task)
+ * @param capacity_ep the configured capacity (CE_Type)
+ * @param booking_ep the booking of the consumable (RUE_Type); may be an empty handle when only checking
+ * @param is_exclusive whether the consumable is exclusive
+ * @param just_check If != nullptr do not book, only check; set to false when the check fails
+ *
+ * @return true, false in case of just_check and the check fails
+ */
 static bool
 rc_debit_consumable_explicit_request(const char *name, const char *obj_type, const char *obj_name, int slots,
-                                     double request, double additional_request, const lListElem *capacity_ep,
-                                     lListElem *booking_ep, bool is_exclusive, bool *just_check) {
+                                     const double request, const double additional_request,
+                                     const ocs::tom::ConstElement<ocs::tom::CE> capacity_ep,
+                                     const ocs::tom::Element<ocs::tom::RUE> booking_ep, const bool is_exclusive,
+                                     bool *just_check) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -757,15 +948,17 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
       DPRINTF("debiting %f of %s on %s %s for %d slots\n", request, name, obj_type, obj_name, slots);
       ocs::tom::add<RUE_utilized_now>(booking_ep, slots * request);
    } else {
-      DPRINTF("verifying %f of %s on %s %s for %d slots + %f\n", request, name, obj_type, obj_name, slots, additional_request);
-      double actual_value = booking_ep == nullptr ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
+      DPRINTF("verifying %f of %s on %s %s for %d slots + %f\n", request, name, obj_type, obj_name, slots,
+              additional_request);
+      double actual_value = !booking_ep ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
       double config_value = ocs::tom::get<CE_doubleval>(capacity_ep);
       /* for exclusive consumables ignore the number of slots */
       if (is_exclusive) {
          slots = 1;
       }
       if ((config_value - actual_value - slots * request - additional_request) < 0) {
-         ERROR(MSG_CAPACITYEXCEEDED_FSSSIFF, request, name, obj_type, obj_name, slots, additional_request, config_value - actual_value);
+         ERROR(MSG_CAPACITYEXCEEDED_FSSSIFF, request, name, obj_type, obj_name, slots, additional_request,
+               config_value - actual_value);
          *just_check = false;
          ret = false;
       }
@@ -781,24 +974,27 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
  * for 'slots' slots of the given job. Positive slots numbers
  * cause debiting, negative ones cause undebiting.
  *
- * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited
- * @param pe The job's parallel environment, needed to split master and slave requests; may be nullptr
- * @param ep The resource container (global/host/queue) that owns the resources (EH_Type).
+ * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited;
+ *            an empty handle only initializes the booking
+ * @param pe The job's parallel environment, needed to split master and slave requests; may be an empty handle
+ * @param ep The resource container (global/host/queue) that owns the resources (EH_Type or QU_Type); its type is
+ *           known only at run time, through config_nm and actual_nm, so it stays an untyped pointer
  * @param centry_list The global complex list that is needed to interpret the jobs' resource requests.
  * @param slots The number of slots for which we are debiting. Positive slots numbers cause debiting, negative ones cause undebiting.
  * @param config_nm The CULL field of the 'ep' object that contains a CE_Type list of configured complex values.
- * @param actual_nm The CULL field of the 'ep' object that contains a CE_Type list of actual complex values.
+ * @param actual_nm The CULL field of the 'ep' object that contains a RUE_Type list of actual complex values.
  * @param obj_name The name of the object we are debiting from. This is only used for monitoring/diagnosis purposes.
  * @param is_master_task true when this booking includes the job's master task
  * @param do_per_host_booking true when a per host consumable still has to be booked on this host
  * @param just_check If != nullptr do not do the actual debiting, but just check if debiting would exceed resources. Only makes sense for debiting (slots > 0).
  *
- * @return 1 in case of an error. Otherwise the number of (un)debitations that actually took place is returned. If 0 is returned that means the consumable resources of the 'ep' object has not changed.
+ * @return -1 in case of an error. Otherwise the number of (un)debitations that actually took place;
+ *         0 means the consumable resources of the 'ep' object have not changed.
  */
-int
-rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, const lList *centry_list, int slots,
-                    int config_nm, int actual_nm, const char *obj_name, bool is_master_task,
-                    bool do_per_host_booking, bool *just_check) {
+int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::ConstElement<ocs::tom::PE> pe,
+                        lListElem *ep, const ocs::tom::ConstList<ocs::tom::CE> centry_list, const int slots,
+                        const int config_nm, const int actual_nm, const char *obj_name, const bool is_master_task,
+                        const bool do_per_host_booking, bool *just_check) {
    DENTER(TOP_LAYER);
    int mods = 0;
 
@@ -812,13 +1008,14 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
    }
 
    // loop over all queue/exechost complex_values (QU_consumable_config_list, EH_consumable_config_list)
-   const lListElem *cr_config;
-   for_each_ep(cr_config, lGetList(ep, config_nm)) {
-      lListElem *cr = nullptr, *dcep;
+   // the field is chosen at run time; its list is a CE_Type list for both container types
+   for (const auto cr_config : ocs::tom::ConstList<ocs::tom::CE>(lGetList(ep, config_nm))) {
+      ocs::tom::Element<ocs::tom::RUE> cr;
       const char *name = ocs::tom::get<CE_name>(cr_config);
 
-      // search complex definition (with default request)
-      if (!(dcep = centry_list_locate(centry_list, name))) {
+      // search complex definition (with default request); found in a CE_Type list, so no check is needed
+      const auto dcep = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
+      if (!dcep) {
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
       }
@@ -828,14 +1025,15 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
       // ensure attribute is in actual list
       // @todo we could do this only if jep == nullptr - this is the call to initialize booking
       if (consumable != CONSUMABLE_NO) {
-         cr = lGetSubStrRW(ep, RUE_name, name, actual_nm);
-         if (just_check == nullptr && cr == nullptr) {
-            cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
+         // the field is chosen at run time; its list is a RUE_Type list for both container types
+         cr = ocs::tom::Element<ocs::tom::RUE>::from_typed(lGetSubStrRW(ep, RUE_name, name, actual_nm));
+         if (just_check == nullptr && !cr) {
+            cr = ocs::tom::Element<ocs::tom::RUE>::from_typed(lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type));
             /* RUE_utilized_now is implicitly set to zero */
          }
       }
 
-      if (jep != nullptr) {
+      if (jep) {
          if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
             continue;
          }
@@ -852,15 +1050,17 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
          bool tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL);
          if (tmp_ret) {
             // the resource was requested
-            DPRINTF("===> rc_debit_consumable(): %s: we have GLOBAL %s request: %f for %d slots\n", obj_name, name, dval, debit_slots);
+            DPRINTF("===> rc_debit_consumable(): %s: we have GLOBAL %s request: %f for %d slots\n", obj_name, name,
+                    dval, debit_slots);
             if (dval != 0.0) {
-               if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, 0.0, cr_config, cr, is_exclusive, just_check)) {
+               if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, 0.0, cr_config,
+                                                         cr, is_exclusive, just_check)) {
                   break;
                }
                mods++;
                did_booking = true;
             }
-         } else if (pe != nullptr) {
+         } else if (pe) {
             // no global contribution, need to check master and slave
             // we use the original slots value for slave_debit_slots
             // reason: for host consumables, debit_slots is 1, which will be adjusted below to 0
@@ -872,12 +1072,13 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
                tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &master_dval, dcep, JRS_SCOPE_MASTER);
                if (tmp_ret) {
                   // we have a master request
-                  DPRINTF("===> rc_debit_consumable(): %s: we have MASTER %s request: %f for %d slots\n", obj_name, name, master_dval,
-                          slot_signum(debit_slots));
+                  DPRINTF("===> rc_debit_consumable(): %s: we have MASTER %s request: %f for %d slots\n", obj_name,
+                          name, master_dval, slot_signum(debit_slots));
                   if (master_dval != 0.0) {
                      // book it for one slot
                      if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, slot_signum(debit_slots),
-                                                               master_dval, 0.0, cr_config, cr, is_exclusive, just_check)) {
+                                                               master_dval, 0.0, cr_config, cr, is_exclusive,
+                                                               just_check)) {
                         break;
                      }
                      mods++;
@@ -906,7 +1107,8 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
                if (tmp_ret && slave_dval != 0.0) {
                   // we have a slave request
                   slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
-                  DPRINTF("===> rc_debit_consumable(): %s: we have SLAVE %s request: %f for %d slots\n", obj_name, name, slave_dval, slave_debit_slots);
+                  DPRINTF("===> rc_debit_consumable(): %s: we have SLAVE %s request: %f for %d slots\n", obj_name,
+                          name, slave_dval, slave_debit_slots);
                   if (slave_dval != 0.0) {
                      // in case of just_check: need to pass the master_dval as additional usage on this host/queue
                      if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, slave_debit_slots,
@@ -950,14 +1152,13 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
  *
  * @param[in,out] this_elem the queue instance to update
  */
-void 
-qinstance_set_conf_slots_used(lListElem *this_elem) {
+void qinstance_set_conf_slots_used(const ocs::tom::Element<ocs::tom::QU> this_elem) {
    DENTER(QINSTANCE_LAYER);
-   ocs::tom::Element<ocs::tom::CE> slots = ocs::tom::find_first_in_rw<QU_consumable_config_list, CE_name>(this_elem, "slots");
-   if (slots == nullptr) {
+   auto slots = ocs::tom::find_first_in_rw<QU_consumable_config_list, CE_name>(this_elem, "slots");
+   if (!slots) {
       slots = ocs::tom::emplace_back_in<QU_consumable_config_list, CE_name>(this_elem, "slots");
    }
-   if (slots != nullptr) {
+   if (slots) {
       DSTRING_STATIC(buffer, 32);
       uint32_t slots_value = ocs::tom::get<QU_job_slots>(this_elem);
 
@@ -968,12 +1169,21 @@ qinstance_set_conf_slots_used(lListElem *this_elem) {
 }
 
 /**
+ * @brief qinstance_set_conf_slots_used() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to update (QU_Type), checked
+ */
+void qinstance_set_conf_slots_used(lListElem *this_elem) {
+   qinstance_set_conf_slots_used(ocs::tom::Element<ocs::tom::QU>(this_elem));
+}
+
+/**
  * @brief Verify a queue instance list
  *
  * Verify correctness of a queue instance list, that has been sent by qmaster
  * to execd as part of a job start order.
  *
- * @param queue_list the queue instance list
+ * @param queue_list the queue instance list, may be an empty handle
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -982,18 +1192,15 @@ qinstance_set_conf_slots_used(lListElem *this_elem) {
  *
  * @see #qinstance_verify
  */
-bool
-qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list) {
+bool qinstance_list_verify_execd_job(const ocs::tom::ConstList<ocs::tom::QU> queue_list, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   if (queue_list == nullptr) {
+   if (!queue_list) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       DRETURN(false);
    } else {
-      const lListElem *qep;
-
-      for_each_ep(qep, queue_list) {
+      for (const auto qep : queue_list) {
          if (!qinstance_verify(qep, answer_list)) {
             DRETURN(false);
          }
@@ -1009,20 +1216,19 @@ qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list) {
  * Verify a single queue instance, that has been sent by qmaster to execd
  * as part of a job start order.
  *
- * @param qep the queue instance to verify
+ * @param qep the queue instance to verify, may be an empty handle
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
  *
  * @note MT-NOTE: qinstance_verify() is MT safe
  */
-bool
-qinstance_verify(const lListElem *qep, lList **answer_list) {
+bool qinstance_verify(const ocs::tom::ConstElement<ocs::tom::QU> qep, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (qep == nullptr) {
+   if (!qep) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
@@ -1048,6 +1254,18 @@ qinstance_verify(const lListElem *qep, lList **answer_list) {
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_verify() for an untyped caller
+ *
+ * @param qep the queue instance to verify (QU_Type), checked; may be nullptr
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return as qinstance_verify()
+ */
+bool qinstance_verify(const lListElem *qep, lList **answer_list) {
+   return qinstance_verify(ocs::tom::ConstElement<ocs::tom::QU>(qep), answer_list);
 }
 
 /**
@@ -1130,8 +1348,8 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name) {
  *
  * @note MT-NOTE: qinstance_set_error() is MT safe
  */
-void
-qinstance_set_error(lListElem *qinstance, uint32_t type, const char *message, bool set_error) {
+void qinstance_set_error(const ocs::tom::Element<ocs::tom::QU> qinstance, const uint32_t type, const char *message,
+                         const bool set_error) {
    qinstance_set_state(qinstance, set_error, type);
    if (set_error) {
       qinstance_message_add(qinstance, type, message);
@@ -1140,3 +1358,14 @@ qinstance_set_error(lListElem *qinstance, uint32_t type, const char *message, bo
    }
 }
 
+/**
+ * @brief qinstance_set_error() for an untyped caller
+ *
+ * @param qinstance qinstance object (QU_Type), checked
+ * @param type new state
+ * @param message error message to set
+ * @param set_error set or unset
+ */
+void qinstance_set_error(lListElem *qinstance, const uint32_t type, const char *message, const bool set_error) {
+   qinstance_set_error(ocs::tom::Element<ocs::tom::QU>(qinstance), type, message, set_error);
+}

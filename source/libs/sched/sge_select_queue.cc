@@ -3444,15 +3444,16 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
 
    bool rejected = false;
    if (global_hard_queue_list != nullptr) {
-      if (qref_list_cq_rejected(global_hard_queue_list, cqname, nullptr, nullptr)) {
+      // a typed empty host group list: the untyped overload would take nullptr as well
+      if (qref_list_cq_rejected(global_hard_queue_list, cqname, nullptr, ocs::tom::ConstList<ocs::tom::HGRP>())) {
          DPRINTF("Cluster Queue " SFQ " is not contained in global hard queue requests of job " sge_u32 "\n", cqname, a->job_id);
          rejected = true;
       }
    } else {
       if (a->pe_name != nullptr &&
           master_hard_queue_list != nullptr && slave_hard_queue_list != nullptr &&
-          qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, nullptr) &&
-          qref_list_cq_rejected(slave_hard_queue_list, cqname, nullptr, nullptr)) {
+          qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, ocs::tom::ConstList<ocs::tom::HGRP>()) &&
+          qref_list_cq_rejected(slave_hard_queue_list, cqname, nullptr, ocs::tom::ConstList<ocs::tom::HGRP>())) {
          DPRINTF("Cluster Queue " SFQ " is not contained in hard master and slave queue requests of job " sge_u32 "\n", cqname, a->job_id);
          rejected = true;
       }
@@ -3676,7 +3677,8 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       }
       if (!ocs::tom::find_first<CTI_name>(*unclear_host_list, eh_name)) {
          SCHED_PROF_INC(a->pi, seq_hstat);
-         if (qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list)) {
+         if (qref_list_eh_rejected(ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(a->job)), eh_name,
+                                   a->hgrp_list)) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run,
                            a->job_id, SCHEDD_INFO_NOTINHARDQUEUELST_S, eh_name);
             DPRINTF("Host \"%s\" is not contained in the hard queue list (-q) that "

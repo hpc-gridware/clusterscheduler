@@ -70,6 +70,9 @@
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "tom/ocs_List.h"
 
 #include <cinttypes>
 #include "msg_common.h"
@@ -79,50 +82,35 @@
 #define QREF_LAYER TOP_LAYER
 
 
+/**
+ * @brief Resolve cluster queue references into cluster queue or queue instance references
+ *
+ * @param cq_qref_list QR_Type list of cluster queue names, may be an empty handle
+ * @param answer_list AN_Type list
+ * @param qref_list in-out: QR_Type list receiving the references
+ * @param found_something set to true when a queue instance reference was added
+ * @param cqueue_list CQ_Type master list
+ * @param resolve_cqueue true to resolve each cluster queue into its queue instances
+ *
+ * @return always true
+ */
 static bool
-qref_list_resolve_cqueue_names(const lList *cq_qref_list, 
-                               lList **answer_list,
-                               lList **qref_list, 
-                               bool *found_something,
-                               const lList *cqueue_list,
-                               bool resolve_cqueue);
-
-static bool
-qref_list_resolve_qinstance_names(const lList *cq_qref_list, 
-                                  lList **answer_list,
-                                  dstring *host_or_hgroup,
-                                  lList **qref_list, 
-                                  bool *found_something,
-                                  const lList *cqueue_list);
-
-static bool
-qref_list_resolve_qdomain_names(const lList *cq_qref_list,
-                                lList **answer_list,
-                                dstring *host_or_hgroup,
-                                lList **qref_list,
-                                bool *found_something,
-                                const lList *cqueue_list,
-                                const lList *hgroup_list,
-                                bool resolve_qdomain);
-
-static bool
-qref_list_resolve_cqueue_names(const lList *cq_qref_list,
+qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
                                lList **answer_list,
                                lList **qref_list,
                                bool *found_something,
-                               const lList *cqueue_list,
-                               bool resolve_cqueue) {
+                               const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                               const bool resolve_cqueue) {
    DENTER(QREF_LAYER);
    bool ret = true;
 
-   for_each_ep_lv(cq_qref, cq_qref_list) {
+   for (const auto cq_qref : cq_qref_list) {
       const char *cq_name = ocs::tom::get<QR_name>(cq_qref);
 
       if (resolve_cqueue) {
-
-         ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cq_name); 
-         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-         for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : qinstance_list) {
+         const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cq_name);
+         const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         for (const auto qinstance : qinstance_list) {
             ocs::tom::emplace_back<QR_name>(qref_list, ocs::tom::get<QU_full_name>(qinstance));
             *found_something = true;
          }
@@ -133,35 +121,41 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Resolve a host pattern of a queue reference into queue instance references
+ *
+ * @param cq_qref_list QR_Type list of cluster queue names, may be an empty handle
+ * @param answer_list AN_Type list
+ * @param host_or_hgroup the host pattern
+ * @param qref_list in-out: QR_Type list receiving the references
+ * @param found_something set to true when a reference was added
+ * @param cqueue_list CQ_Type master list
+ *
+ * @return always true
+ */
 static bool
-qref_list_resolve_qinstance_names(const lList *cq_qref_list,
+qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
                                   lList **answer_list,
                                   dstring *host_or_hgroup,
                                   lList **qref_list,
                                   bool *found_something,
-                                  const lList *cqueue_list) {
+                                  const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list) {
    DENTER(QREF_LAYER);
    bool ret = true;
 
-   for_each_ep_lv(cq_qref, cq_qref_list) {
-      const char *cqueue_name = nullptr;
-      const char *hostname_pattern = nullptr;
-      lList *qi_ref_list = nullptr;
+   for (const auto cq_qref : cq_qref_list) {
+      const char *cqueue_name = ocs::tom::get<QR_name>(cq_qref);
+      const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      const char *hostname_pattern = sge_dstring_get_string(host_or_hgroup);
+      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qi_ref_list = qinstance_list_find_matching(qinstance_list, answer_list, hostname_pattern);
 
-      cqueue_name = ocs::tom::get<QR_name>(cq_qref);
-      ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
-      hostname_pattern = sge_dstring_get_string(host_or_hgroup);
-      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-      qinstance_list_find_matching(qinstance_list, answer_list,
-                                   hostname_pattern, &qi_ref_list);
-
-      for_each_ep_lv(qi_qref, qi_ref_list) {
+      for (const auto qi_qref : *qi_ref_list) {
          const char *qi_name = ocs::tom::get<QR_name>(qi_qref);
 
          ocs::tom::emplace_back<QR_name>(qref_list, qi_name);
          *found_something = true;
       }
-      lFreeList(&qi_ref_list);
    }
    DRETURN(ret);
 }
@@ -174,7 +168,7 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
  * either the queue instance on each host the groups resolve to
  * (@p resolve_qdomain) or one `<cqueue>@<hgroup>` reference per group.
  *
- * @param cq_qref_list QR_Type list of cluster queue names
+ * @param cq_qref_list QR_Type list of cluster queue names, may be an empty handle
  * @param answer_list AN_Type list
  * @param host_or_hgroup the host group pattern
  * @param qref_list in-out: QR_Type list receiving the references
@@ -186,67 +180,58 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
  * @return always true
  */
 static bool
-qref_list_resolve_qdomain_names(const lList *cq_qref_list,
+qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
                                 lList **answer_list,
                                 dstring *host_or_hgroup,
                                 lList **qref_list,
                                 bool *found_something,
-                                const lList *cqueue_list,
-                                const lList *hgroup_list,
-                                bool resolve_qdomain) {
+                                const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
+                                const bool resolve_qdomain) {
    DENTER(QREF_LAYER);
 
    bool ret = true;
-   const char *hgroup_pattern = nullptr;
-   lList *href_list = nullptr;
+   // out-parameter of the host group search, which takes a raw in-out list
+   lList *href_list_raw = nullptr;
    dstring buffer = DSTRING_INIT;
 
-   hgroup_pattern = sge_dstring_get_string(host_or_hgroup);
+   const char *hgroup_pattern = sge_dstring_get_string(host_or_hgroup);
    /*
     * Find all hostgroups which match 'hgroup_pattern'
     * Possibly resolve them.
     */
    if (resolve_qdomain) {
-      hgroup_list_find_matching_and_resolve(ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list), answer_list,
-                                            hgroup_pattern, &href_list);
+      hgroup_list_find_matching_and_resolve(hgroup_list, answer_list, hgroup_pattern, &href_list_raw);
    } else {
-      hgroup_list_find_matching(ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list), answer_list,
-                                hgroup_pattern, &href_list);
+      hgroup_list_find_matching(hgroup_list, answer_list, hgroup_pattern, &href_list_raw);
    }
-   for_each_ep_lv(cq_qref, cq_qref_list) {
+   const auto href_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(href_list_raw);
+   for (const auto cq_qref : cq_qref_list) {
       const char *cqueue_name = ocs::tom::get<QR_name>(cq_qref);
 
-      ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
-      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-      for_each_ep_lv(href, href_list) {
+      const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      for (const auto href : *href_list) {
          if (resolve_qdomain) {
             const char *hostname = ocs::tom::get<HR_name>(href);
-            const lListElem *qinstance = nullptr;
+            const auto qinstance = ocs::tom::find_first<QU_qhostname>(qinstance_list, hostname);
 
-            qinstance = ocs::tom::find_first<QU_qhostname>(qinstance_list, hostname);
-            if (qinstance != nullptr) {
-               const char *qinstance_name = nullptr;
+            if (qinstance) {
+               const char *qinstance_name = qinstance_get_name(qinstance, &buffer);
 
-               qinstance_name = qinstance_get_name(qinstance, 
-                                                   &buffer);
-               ocs::tom::emplace_back<QR_name>(qref_list, 
-                           qinstance_name);
+               ocs::tom::emplace_back<QR_name>(qref_list, qinstance_name);
                *found_something = true;
             }
          } else {
             const char *hgroup_name = ocs::tom::get<HR_name>(href);
-            const char *qinstance_name = nullptr;
+            const char *qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN, cqueue_name, hgroup_name);
 
-            qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN,
-                                                 cqueue_name, hgroup_name);
-            ocs::tom::emplace_back<QR_name>(qref_list,
-                        qinstance_name);
+            ocs::tom::emplace_back<QR_name>(qref_list, qinstance_name);
             *found_something = true;
          }
       }
    }
    sge_dstring_free(&buffer);
-   lFreeList(&href_list);
    DRETURN(ret);
 }
 
@@ -257,9 +242,9 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
  * first occurrence of each reference stays, later ones are removed, so that
  * the unique attribute QR_name holds each reference once (CS-3053).
  *
- * @param this_list QR_Type list, nullptr is accepted
+ * @param this_list QR_Type list, an empty handle is accepted
  */
-void ocs_qref_list_remove_duplicates(lList *this_list) {
+void ocs_qref_list_remove_duplicates(const ocs::tom::List<ocs::tom::QR> this_list) {
    ocs_object_list_remove_repeated_keys(this_list, QR_name);
 }
 
@@ -270,7 +255,7 @@ void ocs_qref_list_remove_duplicates(lList *this_list) {
  * unless the list already holds it (CS-3053).
  * Errors will be reported via return value and "answer_list".
  *
- * @param this_list QR_Type
+ * @param this_list in-out: the QR_Type list, created if *this_list is nullptr
  * @param answer_list AN_Type
  * @param qref_string queue reference
  *
@@ -282,12 +267,12 @@ bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_stri
    bool ret = true;
 
    if (this_list != nullptr && qref_string != nullptr) {
-      if (static_cast<const lListElem *>(ocs::tom::find_first<QR_name>(*this_list, qref_string)) != nullptr) {
+      if (ocs::tom::find_first<QR_name>(*this_list, qref_string)) {
          DRETURN(ret);
       }
 
-      lListElem *new_elem = ocs::tom::emplace_back<QR_name>(this_list, qref_string);
-      if (new_elem == nullptr) {
+      const auto new_elem = ocs::tom::emplace_back<QR_name>(this_list, qref_string);
+      if (!new_elem) {
          answer_list_add(answer_list, MSG_GDI_OUTOFMEMORY,
                          STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -328,10 +313,10 @@ bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_stri
  *          => `cq1@hostA1` `cq1@hostB1`
  *             `cq2@hostA1` `cq2@hostB1`
  *
- * @param src_qref_list QR_Type list (input: pattern)
+ * @param src_qref_list QR_Type list (input: pattern), may be an empty handle
  * @param answer_list AN_Type list
- * @param qref_list QR_Type list (output: resolved qrefs)
- * @param found_something a pattern matched? (output)
+ * @param qref_list in-out: QR_Type list (output: resolved qrefs)
+ * @param found_something a pattern matched? (output; untouched for an empty @p src_qref_list)
  * @param cqueue_list master CQ_Type list
  * @param hgroup_list master HGRP_Type list
  * @param resolve_cqueue resolve cqueue pattern?
@@ -339,74 +324,95 @@ bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_stri
  *
  * @return error state true  - success false - error
  */
-bool qref_list_resolve(const lList *src_qref_list, lList **answer_list,
+bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list, lList **answer_list,
                        lList **qref_list, bool *found_something,
-                       const lList *cqueue_list, const lList *hgroup_list,
-                       bool resolve_cqueue, bool resolve_qdomain) {
+                       const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                       const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
+                       const bool resolve_cqueue, const bool resolve_qdomain) {
    DENTER(QREF_LAYER);
 
    bool ret = true;
    dstring cqueue_name = DSTRING_INIT;
    dstring host_or_hgroup = DSTRING_INIT;
 
-   if (src_qref_list != nullptr) {
+   if (src_qref_list) {
       *found_something = false;
-      for_each_ep_lv(qref_pattern, src_qref_list) {
-         const char *name = nullptr;
+      for (const auto qref_pattern : src_qref_list) {
          bool has_hostname;
          bool has_domain;
-         const char *cq_pattern = nullptr;
-         lList *cq_ref_list = nullptr;
          bool tmp_found_something = false;
- 
+
          /*
           * Find all existing parts of the qref-pattern
-          */ 
-         name = ocs::tom::get<QR_name>(qref_pattern); 
+          */
+         const char *name = ocs::tom::get<QR_name>(qref_pattern);
          if (!cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain)) {
-            /* we've got an syntax error */ 
+            /* we've got an syntax error */
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
                ANSWER_QUALITY_ERROR, MSG_CQUEUE_NOQMATCHING_S, name);
-            lFreeList(&cq_ref_list);
             continue;
-         }                 
-         cq_pattern = sge_dstring_get_string(&cqueue_name);
+         }
+         const char *cq_pattern = sge_dstring_get_string(&cqueue_name);
 
+         // out-parameter of the cluster queue search, which takes a raw in-out list
+         lList *cq_ref_list_raw = nullptr;
          cqueue_list_find_all_matching_references(cqueue_list, answer_list,
-                                                  cq_pattern, &cq_ref_list);
+                                                  cq_pattern, &cq_ref_list_raw);
+         const auto cq_ref_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(cq_ref_list_raw);
 
          /*
           * Depending on the type of pattern -> resolve QC or QI names
           */
          if (has_domain) {
-            ret &= qref_list_resolve_qdomain_names(cq_ref_list, answer_list,
+            ret &= qref_list_resolve_qdomain_names(*cq_ref_list, answer_list,
                                                    &host_or_hgroup, qref_list,
                                                    &tmp_found_something,
                                                    cqueue_list, hgroup_list,
                                                    resolve_qdomain);
          } else if (has_hostname) {
-            ret &= qref_list_resolve_qinstance_names(cq_ref_list, answer_list,
+            ret &= qref_list_resolve_qinstance_names(*cq_ref_list, answer_list,
                                                      &host_or_hgroup, qref_list,
-                                                     &tmp_found_something, 
-                                                     cqueue_list); 
+                                                     &tmp_found_something,
+                                                     cqueue_list);
          } else {
-            ret &= qref_list_resolve_cqueue_names(cq_ref_list, answer_list,
-                                                  qref_list, 
+            ret &= qref_list_resolve_cqueue_names(*cq_ref_list, answer_list,
+                                                  qref_list,
                                                   &tmp_found_something,
-                                                  cqueue_list, 
+                                                  cqueue_list,
                                                   resolve_qdomain);
          }
          if (tmp_found_something) {
             *found_something = true;
-         } 
-         lFreeList(&cq_ref_list);
-      } 
+         }
+      }
    }
 
    sge_dstring_free(&host_or_hgroup);
    sge_dstring_free(&cqueue_name);
    DRETURN(ret);
+}
+
+/**
+ * @brief qref_list_resolve() for an untyped caller
+ *
+ * @param src_qref_list QR_Type list (input: pattern), checked; may be nullptr
+ * @param answer_list AN_Type list
+ * @param qref_list in-out: QR_Type list (output: resolved qrefs)
+ * @param found_something a pattern matched? (output)
+ * @param cqueue_list master CQ_Type list, checked
+ * @param hgroup_list master HGRP_Type list, checked
+ * @param resolve_cqueue resolve cqueue pattern?
+ * @param resolve_qdomain resolve qdomain pattern?
+ *
+ * @return as qref_list_resolve()
+ */
+bool qref_list_resolve(const lList *src_qref_list, lList **answer_list, lList **qref_list, bool *found_something,
+                       const lList *cqueue_list, const lList *hgroup_list, const bool resolve_cqueue,
+                       const bool resolve_qdomain) {
+   return qref_list_resolve(ocs::tom::ConstList<ocs::tom::QR>(src_qref_list), answer_list, qref_list,
+                            found_something, ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list),
+                            ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list), resolve_cqueue, resolve_qdomain);
 }
 
 /**
@@ -419,14 +425,14 @@ bool qref_list_resolve(const lList *src_qref_list, lList **answer_list,
  * @param qref_pattern a wildcard pattern as defined for -q qref_list
  * @param cqname cluster queue name
  * @param hostname execution hostname (may be nullptr)
- * @param hgroup_list host group list
+ * @param hgroup_list host group list (HGRP_Type), may be an empty handle when hostname is nullptr
  *
  * @return true if rejected
  *
  * @note MT-NOTE: qref_cq_rejected() is MT safe
  */
 bool qref_cq_rejected(const char *qref_pattern, const char *cqname,
-                      const char *hostname, const lList *hgroup_list) {
+                      const char *hostname, const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(TOP_LAYER);
 
    const char *s;
@@ -457,23 +463,21 @@ bool qref_cq_rejected(const char *qref_pattern, const char *cqname,
 
 
 /**
- * @brief Check, if -q qref_list rejects (cluster) queue
+ * @brief Check, if a -q pattern rejects an execution host
  *
- * Check if -q qref_list rejects cluster queue and hostname, if passed.
- * If nullptr is passed as hostname, cluster queue verfication is performed
- * only.
+ * A pattern without a host part names no host and so rejects none.
  *
- * @param qref_list QR_Type list as usef for -q qref_list
- * @param cqname cluster queue name
+ * @param qref_pattern a wildcard pattern as defined for -q qref_list
  * @param hostname exeuction hostname
- * @param hgroup_list host group list
+ * @param hgroup_list host group list (HGRP_Type)
  *
  * @return true if rejected
  *
- * @note MT-NOTE: qref_list_cq_rejected() is MT safe
+ * @note MT-NOTE: qref_eh_rejected() is MT safe
  */
 static bool
-qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hgroup_list) {
+qref_eh_rejected(const char *qref_pattern, const char *hostname,
+                 const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(TOP_LAYER);
 
    const char *s;
@@ -481,7 +485,7 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hg
    if (!(s=strchr(qref_pattern, '@'))) {
       DRETURN(false);
    }
-  
+
    if (!qref_list_host_rejected(&s[1], hostname, hgroup_list)) {
        DRETURN(false);
    }
@@ -495,23 +499,24 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hg
  * Used to skip a host early: when no entry of the list can match any queue on
  * it, the scheduler need not look at its queues at all.
  *
- * @param qref_list the queue references to check
+ * @param qref_list the queue references to check (QR_Type), may be an empty handle
  * @param hostname the host in question
- * @param hgroup_list the host groups, needed to resolve a group reference
+ * @param hgroup_list the host groups, needed to resolve a group reference (HGRP_Type)
  * @return true when the host is rejected by all of them
  */
-bool qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList *hgroup_list) {
+bool qref_list_eh_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, const char *hostname,
+                           const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(TOP_LAYER);
 
    if (hostname == nullptr) {
       DRETURN(true);
    }
 
-   if (qref_list == nullptr) {
+   if (!qref_list) {
       DRETURN(false);
    }
 
-   for_each_ep_lv(qref_pattern, qref_list) {
+   for (const auto qref_pattern : qref_list) {
       const char *name = ocs::tom::get<QR_name>(qref_pattern);
       if (!qref_eh_rejected(name, hostname, hgroup_list)) {
          DRETURN(false);
@@ -525,25 +530,25 @@ bool qref_list_eh_rejected(const lList *qref_list, const char *hostname, const l
 /**
  * @brief Does a queue reference list exclude one cluster queue on one host?
  *
- * @param qref_list the queue references to check
+ * @param qref_list the queue references to check (QR_Type), may be an empty handle
  * @param cqname the cluster queue in question
  * @param hostname the host in question; nullptr checks the cluster queue alone
- * @param hgroup_list the host groups, needed to resolve a group reference
+ * @param hgroup_list the host groups, needed to resolve a group reference (HGRP_Type)
  * @return true when the queue is rejected by all of them
  */
-bool qref_list_cq_rejected(const lList *qref_list, const char *cqname,
-                           const char *hostname, const lList *hgroup_list) {
+bool qref_list_cq_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, const char *cqname,
+                           const char *hostname, const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(TOP_LAYER);
 
    if (cqname == nullptr) {
       DRETURN(true);
    }
 
-   if (qref_list == nullptr) {
+   if (!qref_list) {
       DRETURN(false);
    }
 
-   for_each_ep_lv(qref_pattern, qref_list) {
+   for (const auto qref_pattern : qref_list) {
       const char *name = ocs::tom::get<QR_name>(qref_pattern);
       if (!qref_cq_rejected(name, cqname, hostname, hgroup_list)) {
          DRETURN(false);
@@ -553,6 +558,20 @@ bool qref_list_cq_rejected(const lList *qref_list, const char *cqname,
    DRETURN(true);
 }
 
+/**
+ * @brief qref_list_cq_rejected() for an untyped caller
+ *
+ * @param qref_list the queue references to check (QR_Type), checked; may be nullptr
+ * @param cqname the cluster queue in question
+ * @param hostname the host in question; nullptr checks the cluster queue alone
+ * @param hgroup_list the host groups (HGRP_Type), checked; may be nullptr
+ * @return as qref_list_cq_rejected()
+ */
+bool qref_list_cq_rejected(const lList *qref_list, const char *cqname, const char *hostname,
+                           const lList *hgroup_list) {
+   return qref_list_cq_rejected(ocs::tom::ConstList<ocs::tom::QR>(qref_list), cqname, hostname,
+                                ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list));
+}
 
 /**
  * @brief Check if a hostgroup contains a host
@@ -584,7 +603,8 @@ bool qref_list_cq_rejected(const lList *qref_list, const char *cqname,
  * @see #href_list_find_references
  */
 static bool
-qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList *hgroup_list) {
+qref_hgroup_rejected(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname,
+                     const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(BASIS_LAYER);
 
    /*
@@ -601,18 +621,18 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
     *
     * No cache -> fall through to the walk. Correctness never depends on this.
     */
-   if (const auto typed_hgroup = ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup); hgroup_has_host_cache(typed_hgroup)) {
-      DRETURN(!hgroup_cache_contains_host(typed_hgroup, hostname));
+   if (hgroup_has_host_cache(hgroup)) {
+      DRETURN(!hgroup_cache_contains_host(hgroup, hostname));
    }
 
-   for (ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::get<HGRP_host_list>(hgroup)) {
+   for (const auto href : ocs::tom::get<HGRP_host_list>(hgroup)) {
       const char *member = ocs::tom::get<HR_name>(href);
 
       if (ocs::is_hgroup_name(member)) {
          /* nested hostgroup - look it up by name, do not match it as a pattern */
-         const lListElem *sub_hgroup = hgroup_list_locate(hgroup_list, member);
+         const auto sub_hgroup = hgroup_list_locate(hgroup_list, member);
 
-         if (sub_hgroup != nullptr && !qref_hgroup_rejected(sub_hgroup, hostname, hgroup_list)) {
+         if (sub_hgroup && !qref_hgroup_rejected(sub_hgroup, hostname, hgroup_list)) {
             DRETURN(false);
          }
       } else {
@@ -643,13 +663,14 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
  *
  * @param href Host reference from -q ??`@href`
  * @param hostname the host in question
- * @param hgroup_list hostgroup list (HGRP_Type)
+ * @param hgroup_list hostgroup list (HGRP_Type), may be an empty handle
  *
  * @return True if rejected.
  *
  * @note MT-NOTE: qref_list_host_rejected() is MT safe
  */
-bool qref_list_host_rejected(const char *href, const char *hostname, const lList *hgroup_list) {
+bool qref_list_host_rejected(const char *href, const char *hostname,
+                             const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(BASIS_LAYER);
 
    if (ocs::is_hgroup_name(href)) { /* wc_hostgroup */
@@ -657,7 +678,7 @@ bool qref_list_host_rejected(const char *href, const char *hostname, const lList
 
       if (ocs::is_expression(wc_hostgroup)) {
          /* the reference is an expression - evaluate it against every hostgroup name */
-         for_each_ep_lv(hgroup, hgroup_list) {
+         for (const auto hgroup : hgroup_list) {
             const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
 
             DPRINTF("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n", hgroup_name, wc_hostgroup);
@@ -670,9 +691,9 @@ bool qref_list_host_rejected(const char *href, const char *hostname, const lList
          }
       } else {
          /* plain hostgroup name - hash lookup instead of scanning the list */
-         const lListElem *hgroup = hgroup_list_locate(hgroup_list, href);
+         const auto hgroup = hgroup_list_locate(hgroup_list, href);
 
-         if (hgroup != nullptr && !qref_hgroup_rejected(hgroup, hostname, hgroup_list)) {
+         if (hgroup && !qref_hgroup_rejected(hgroup, hostname, hgroup_list)) {
             DRETURN(false);
          }
       }
@@ -689,14 +710,27 @@ bool qref_list_host_rejected(const char *href, const char *hostname, const lList
 }
 
 /**
+ * @brief qref_list_host_rejected() for an untyped caller
+ *
+ * @param href Host reference from -q ??`@href`
+ * @param hostname the host in question
+ * @param hgroup_list hostgroup list (HGRP_Type), checked; may be nullptr
+ *
+ * @return as qref_list_host_rejected()
+ */
+bool qref_list_host_rejected(const char *href, const char *hostname, const lList *hgroup_list) {
+   return qref_list_host_rejected(href, hostname, ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list));
+}
+
+/**
  * @brief Remove some elements from list
  *
  * Remove all elements from "this_list" where either the cluster
  * queue name is equivalent with the cluster queue part of "fullname"
  * or if the hostname is different from the hostname part of
- * "fullname"
+ * "fullname". An emptied list is freed.
  *
- * @param this_list QR_Type
+ * @param this_list in-out: QR_Type list; freed and set to nullptr when it is left empty
  * @param full_name queue instance name
  *
  * @return error state true  - success false - error
@@ -707,32 +741,25 @@ bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
    bool ret = true;
 
    if (this_list != nullptr) {
-      lListElem *qref = nullptr;
-      lListElem *next_qref = nullptr;
       dstring cqueue_buffer = DSTRING_INIT;
       dstring host_or_hgroup_buffer = DSTRING_INIT;
       dstring cqueue_buffer1 = DSTRING_INIT;
       dstring host_or_hgroup_buffer1 = DSTRING_INIT;
-      const char *cqueue1 = nullptr;
-      const char *host1 = nullptr;
 
       if (!cqueue_name_split(full_name, &cqueue_buffer1, &host_or_hgroup_buffer1, nullptr,
                         nullptr)) {
-         /* we got an syntax error while splitting */               
+         /* we got an syntax error while splitting */
          ret = false;
-      } else {                
-         cqueue1 = sge_dstring_get_string(&cqueue_buffer1); 
-         host1 = sge_dstring_get_string(&host_or_hgroup_buffer1);
+      } else {
+         const char *cqueue1 = sge_dstring_get_string(&cqueue_buffer1);
+         const char *host1 = sge_dstring_get_string(&host_or_hgroup_buffer1);
+         const auto qref_list = ocs::tom::List<ocs::tom::QR>(*this_list);
 
-         next_qref = lFirstRW(*this_list);
-         while ((qref = next_qref) != nullptr) {
-            const char *name = nullptr;
-            const char *cqueue = nullptr;
-            const char *host = nullptr;
+         auto next_qref = qref_list.front();
+         while (const auto qref = next_qref) {
+            next_qref = qref.next();
 
-            next_qref = lNextRW(qref);
-
-            name = ocs::tom::get<QR_name>(qref);
+            const char *name = ocs::tom::get<QR_name>(qref);
             if (!cqueue_name_split(name, &cqueue_buffer, &host_or_hgroup_buffer, nullptr,
                               nullptr)) {
                sge_dstring_clear(&cqueue_buffer);
@@ -740,20 +767,20 @@ bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
                ret = false;
                break;
             }
-            cqueue = sge_dstring_get_string(&cqueue_buffer);
-            host = sge_dstring_get_string(&host_or_hgroup_buffer);
+            const char *cqueue = sge_dstring_get_string(&cqueue_buffer);
+            const char *host = sge_dstring_get_string(&host_or_hgroup_buffer);
 
             /*
              * Same cluster queue or different host?
              */
             if (!sge_strnullcmp(cqueue1, cqueue) || sge_strnullcmp(host1, host)) {
-               lRemoveElem(*this_list, &qref);
+               qref_list.erase(qref);
             }
 
             sge_dstring_clear(&cqueue_buffer);
             sge_dstring_clear(&host_or_hgroup_buffer);
          }
-         if (lGetNumberOfElem(*this_list) == 0) {
+         if (qref_list.empty()) {
             lFreeList(this_list);
          }
 
@@ -762,7 +789,7 @@ bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
          sge_dstring_free(&cqueue_buffer1);
          sge_dstring_free(&host_or_hgroup_buffer1);
       }
-   }   
+   }
    DRETURN(ret);
 }
 
@@ -780,7 +807,7 @@ bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
  * The host names of the references are resolved in place, and a reference
  * that then repeats an earlier one is removed.
  *
- * @param this_list QR_Type
+ * @param this_list QR_Type list, may be an empty handle; changed in place although it is passed read-only
  * @param answer_list AN_Type
  * @param master_cqueue_list the cluster queues a reference may name
  * @param master_hgroup_list the host groups a reference may name
@@ -788,16 +815,18 @@ bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
  *
  * @return error state true  - success false - error
  */
-bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list,
-                        const lList *master_hgroup_list, const lList *master_centry_list) {
+bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, lList **answer_list,
+                        const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                        const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                        const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (this_list != nullptr) {
+   if (this_list) {
       // the host names are brought into their unique form first; "q@h" and "q@h.domain" may then be the same
       // reference, which is kept once - like the resolution, this changes the list in place (CS-3053)
-      qref_list_resolve_hostname(const_cast<lList *>(this_list));
+      qref_list_resolve_hostname(ocs::tom::List<ocs::tom::QR>::from_typed(const_cast<lList *>(this_list.raw())));
 
       /*
        * qname has to be requestable
@@ -807,28 +836,26 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
          /*
           * At least one qinstance has to exist for each pattern
           */
-         for_each_rw_lv(qref_elem, this_list) {
+         for (const auto qref_elem : this_list) {
             bool found_something = false;
             bool found_matching_qinstance = false;
-            const char *qref_pattern = nullptr;
-            lList *resolved_qref_list = nullptr;
-            lList *qref_list = nullptr;
-            const lListElem *resolved_qref = nullptr;
-            qref_pattern = ocs::tom::get<QR_name>(qref_elem);
+            const char *qref_pattern = ocs::tom::get<QR_name>(qref_elem);
 
-            ocs::tom::emplace_back<QR_name>(&qref_list, qref_pattern);
+            auto qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("qref list");
+            qref_list->emplace_back<QR_name>(qref_pattern);
+            // out-parameter of qref_list_resolve(), which takes a raw in-out list
+            lList *resolved_qref_list_raw = nullptr;
             /* queue name expression support */
-            qref_list_resolve(qref_list, answer_list, &resolved_qref_list,
+            qref_list_resolve(*qref_list, answer_list, &resolved_qref_list_raw,
                               &found_something, master_cqueue_list, master_hgroup_list, true, true);
-            for_each_ep(resolved_qref, resolved_qref_list) {
+            const auto resolved_qref_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(resolved_qref_list_raw);
+            for (const auto resolved_qref : *resolved_qref_list) {
                const char *resolved_qref_name = ocs::tom::get<QR_name>(resolved_qref);
 
                if (cqueue_list_locate_qinstance(master_cqueue_list, resolved_qref_name) != nullptr) {
                   found_matching_qinstance = true;
                }
             }
-            lFreeList(&qref_list);
-            lFreeList(&resolved_qref_list);
             if (!found_matching_qinstance) {
                ERROR(MSG_QREF_QUNKNOWN_S, qref_pattern == nullptr ? "" : qref_pattern);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -845,25 +872,45 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
 }
 
 /**
+ * @brief qref_list_is_valid() for an untyped caller
+ *
+ * @param this_list QR_Type list, checked; may be nullptr; changed in place
+ * @param answer_list AN_Type
+ * @param master_cqueue_list the cluster queues a reference may name (CQ_Type), checked
+ * @param master_hgroup_list the host groups a reference may name (HGRP_Type), checked
+ * @param master_centry_list the complex entries a reference may name (CE_Type), checked
+ *
+ * @return as qref_list_is_valid()
+ */
+bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list,
+                        const lList *master_hgroup_list, const lList *master_centry_list) {
+   return qref_list_is_valid(ocs::tom::ConstList<ocs::tom::QR>(this_list), answer_list,
+                             ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
+                             ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list),
+                             ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
+}
+
+/**
  * @brief Resolve the host part of every queue reference in a list
  *
  * A reference that resolves to one the list already holds, e.g. `q@h` next to
  * `q@h.domain`, is removed instead of renamed, so the first one stays and the
  * list never holds a reference twice, not even for a moment (CS-3053, N-H-18).
  *
- * @param[in,out] this_list the references to rewrite, nullptr is accepted
+ * @param[in,out] this_list the references to rewrite (QR_Type), an empty handle is accepted
  */
-void qref_list_resolve_hostname(lList *this_list) {
+void qref_list_resolve_hostname(const ocs::tom::List<ocs::tom::QR> this_list) {
    DENTER(TOP_LAYER);
-   lListElem *next = lFirstRW(this_list);
-   while (lListElem *qref = next) {
-      next = lNextRW(qref);
+   auto next = this_list.front();
+   while (const auto qref = next) {
+      next = qref.next();
       const std::string resolved = ocs_qref_resolved_name(ocs::tom::get<QR_name>(qref));
       if (resolved == ocs::tom::get<QR_name>(qref)) {
          continue;
       }
-      if (const lListElem *held = ocs::tom::find_first<QR_name>(this_list, resolved.c_str()); held != nullptr && held != qref) {
-         lRemoveElem(this_list, &qref);
+      const auto held = ocs::tom::find_first<QR_name>(this_list, resolved.c_str());
+      if (held && held.raw() != qref.raw()) {
+         this_list.erase(qref);
       } else {
          ocs::tom::set<QR_name>(qref, resolved.c_str());
       }
@@ -871,17 +918,24 @@ void qref_list_resolve_hostname(lList *this_list) {
    DRETURN_VOID;
 }
 
-/* QR_name might be a pattern */
+/**
+ * @brief qref_list_resolve_hostname() for an untyped caller
+ *
+ * @param[in,out] this_list the references to rewrite (QR_Type), checked; nullptr is accepted
+ */
+void qref_list_resolve_hostname(lList *this_list) {
+   qref_list_resolve_hostname(ocs::tom::List<ocs::tom::QR>(this_list));
+}
+
 /**
  * @brief Resolve the host part of one queue reference
  *
  * A reference is written `cqueue@host`, and the host has to be brought into its
- * unique form before it is compared or stored.
+ * unique form before it is compared or stored. QR_name might be a pattern.
  *
- * @param[in,out] this_elem the reference to rewrite
+ * @param[in,out] this_elem the reference to rewrite (QR_Type)
  */
-void
-qref_resolve_hostname(lListElem *this_elem) {
+void qref_resolve_hostname(const ocs::tom::Element<ocs::tom::QR> this_elem) {
    DENTER(TOP_LAYER);
    const char *name = ocs::tom::get<QR_name>(this_elem);
    if (name != nullptr) {
