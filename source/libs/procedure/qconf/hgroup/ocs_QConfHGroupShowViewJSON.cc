@@ -53,24 +53,20 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
                                           const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
-   lList *derived_hosts = nullptr;
-   lList *derived_groups = nullptr;
-   lList *derived_matchers = nullptr;
+   const auto [has_matcher, derived_hosts, derived_groups, derived_matchers] =
+      hgroup_split_members(ocs::tom::ConstElement<ocs::tom::HGRP>(ep));
 
-   if (!hgroup_split_members(ep, &derived_hosts, &derived_groups, &derived_matchers)) {
+   if (!has_matcher) {
       /* no matchers: the generic rendering is the whole answer */
-      lFreeList(&derived_hosts);
-      lFreeList(&derived_groups);
-      lFreeList(&derived_matchers);
       QConfViewBase::show_object(os, ep, desc);
       DRETURN_VOID;
    }
 
    const ocs_json_derived_list derived[] = {
-      {"hosts",      derived_hosts,    HR_name},
-      {"hostgroups", derived_groups,   HR_name},
-      {"matchers",   derived_matchers, HR_name},
-      {nullptr,      nullptr,          0}
+      {"hosts",      *derived_hosts,    HR_name},
+      {"hostgroups", *derived_groups,   HR_name},
+      {"matchers",   *derived_matchers, HR_name},
+      {nullptr,      nullptr,           0}
    };
 
    const qconf_build_fields_fn provider =
@@ -91,10 +87,6 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
       sge_free(&fields);
    }
    lFreeList(&alp);
-
-   lFreeList(&derived_hosts);
-   lFreeList(&derived_groups);
-   lFreeList(&derived_matchers);
 
    DRETURN_VOID;
 }

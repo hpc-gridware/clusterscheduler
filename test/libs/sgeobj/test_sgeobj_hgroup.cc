@@ -1432,7 +1432,9 @@ test_why() {
    }
 }
 
-/*
+/**
+ * @brief Split a member list into its three classes [T126-T128]
+ *
  * CS-2686, N-I-14. The three classes taken apart for a consumer that should not
  * have to tell them apart by their text.
  */
@@ -1447,33 +1449,29 @@ test_split_members() {
    lListElem *with = add_group(&list, "@with", mixed);
    lListElem *without = add_group(&list, "@without", plain);
 
-   lList *hosts = nullptr;
-   lList *groups = nullptr;
-   lList *matchers = nullptr;
+   {
+      const auto [has_matcher, hosts, groups, matchers] =
+         hgroup_split_members(ocs::tom::ConstElement<ocs::tom::HGRP>(with));
 
-   // T126-T127: every entry lands in exactly one class, in the stored order
-   CHECK(126, "a group carrying a matcher reports that it does",
-         hgroup_split_members(with, &hosts, &groups, &matchers));
-   CHECK(127, "and every member lands in its class, in the order stored",
-         lGetNumberOfElem(hosts) == 2 && lGetNumberOfElem(groups) == 1 &&
-         lGetNumberOfElem(matchers) == 1 &&
-         sge_hostcmp(ocs::tom::get<HR_name>(lFirst(hosts)), "node001") == 0 &&
-         strcmp(ocs::tom::get<HR_name>(lFirst(matchers)), "host:gpu*") == 0);
+      // T126-T127: every entry lands in exactly one class, in the stored order
+      CHECK(126, "a group carrying a matcher reports that it does", has_matcher);
+      CHECK(127, "and every member lands in its class, in the order stored",
+            hosts->size() == 2 && groups->size() == 1 && matchers->size() == 1 &&
+            sge_hostcmp(ocs::tom::get<HR_name>(hosts->front()), "node001") == 0 &&
+            strcmp(ocs::tom::get<HR_name>(matchers->front()), "host:gpu*") == 0);
+   }
 
-   lFreeList(&hosts);
-   lFreeList(&groups);
-   lFreeList(&matchers);
+   {
+      const auto [has_matcher, hosts, groups, matchers] =
+         hgroup_split_members(ocs::tom::ConstElement<ocs::tom::HGRP>(without));
 
-   // T128: without a matcher the split says nothing the leading '@' does not,
-   // and the caller is told so - that is what keeps the output of every existing
-   // configuration unchanged
-   CHECK(128, "a group with no matcher reports that the split adds nothing",
-         !hgroup_split_members(without, &hosts, &groups, &matchers) &&
-         lGetNumberOfElem(hosts) == 1 && lGetNumberOfElem(groups) == 1);
+      // T128: without a matcher the split says nothing the leading '@' does not,
+      // and the caller is told so - that is what keeps the output of every existing
+      // configuration unchanged
+      CHECK(128, "a group with no matcher reports that the split adds nothing",
+            !has_matcher && hosts->size() == 1 && groups->size() == 1);
+   }
 
-   lFreeList(&hosts);
-   lFreeList(&groups);
-   lFreeList(&matchers);
    lFreeList(&list);
 }
 

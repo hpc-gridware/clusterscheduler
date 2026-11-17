@@ -197,14 +197,8 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    bool deleted_a_carrier = false;
 
    if (action == SGE_EMA_DEL && before != nullptr) {
-      lList *literal_hosts = nullptr;
-      lList *group_refs = nullptr;
-      lList *matchers = nullptr;
-
-      deleted_a_carrier = hgroup_split_members(before, &literal_hosts, &group_refs, &matchers);
-      lFreeList(&literal_hosts);
-      lFreeList(&group_refs);
-      lFreeList(&matchers);
+      // only whether the group carried a matcher counts; the split lists are freed right away
+      deleted_a_carrier = std::get<0>(hgroup_split_members(ocs::tom::ConstElement<ocs::tom::HGRP>(before)));
    }
    const bool drop_everything = matchers_changed || deleted_a_carrier;
 

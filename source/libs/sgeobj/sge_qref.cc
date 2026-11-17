@@ -166,6 +166,25 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Resolve a host group pattern of a queue reference into queue references
+ *
+ * Finds the host groups of @p hgroup_list matching the pattern in
+ * @p host_or_hgroup and adds, for every cluster queue of @p cq_qref_list,
+ * either the queue instance on each host the groups resolve to
+ * (@p resolve_qdomain) or one `<cqueue>@<hgroup>` reference per group.
+ *
+ * @param cq_qref_list QR_Type list of cluster queue names
+ * @param answer_list AN_Type list
+ * @param host_or_hgroup the host group pattern
+ * @param qref_list in-out: QR_Type list receiving the references
+ * @param found_something set to true when a reference was added
+ * @param cqueue_list CQ_Type master list
+ * @param hgroup_list HGRP_Type master list
+ * @param resolve_qdomain true to resolve the groups into queue instances
+ *
+ * @return always true
+ */
 static bool
 qref_list_resolve_qdomain_names(const lList *cq_qref_list,
                                 lList **answer_list,
@@ -188,10 +207,10 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
     * Possibly resolve them.
     */
    if (resolve_qdomain) {
-      hgroup_list_find_matching_and_resolve(hgroup_list, answer_list,
+      hgroup_list_find_matching_and_resolve(ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list), answer_list,
                                             hgroup_pattern, &href_list);
    } else {
-      hgroup_list_find_matching(hgroup_list, answer_list,
+      hgroup_list_find_matching(ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list), answer_list,
                                 hgroup_pattern, &href_list);
    }
    for_each_ep_lv(cq_qref, cq_qref_list) {
@@ -582,8 +601,8 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
     *
     * No cache -> fall through to the walk. Correctness never depends on this.
     */
-   if (hgroup_has_host_cache(hgroup)) {
-      DRETURN(!hgroup_cache_contains_host(hgroup, hostname));
+   if (const auto typed_hgroup = ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup); hgroup_has_host_cache(typed_hgroup)) {
+      DRETURN(!hgroup_cache_contains_host(typed_hgroup, hostname));
    }
 
    for (ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::get<HGRP_host_list>(hgroup)) {
