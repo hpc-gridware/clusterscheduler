@@ -85,6 +85,11 @@ elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "h018"))
    # older than what gcc 15.2 emits - the static C++ runtime the macro selects is
    # not optional on this host.
    gcs_use_tools_toolchain()
+elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "build-lx-arm64"))
+   # Rocky/CentOs 8; gcc 8.5 and there is no gcc-toolset-15 for EL8, so the tool chain under
+   # /tools is the only way to c++23 here.  Its libstdc++ is far older than what
+   # gcc 15.2 emits, so the static C++ runtime the macro selects is not optional.
+   gcs_use_tools_toolchain()
 elseif (("${SGE_ARCH}" STREQUAL "lx-riscv64") AND (${HOSTNAME} STREQUAL "su0-0-lx-riscv64"))
    # Default is gcc 15.2.1 => c++23 fully supported and stable
 elseif (("${SGE_ARCH}" STREQUAL "lx-riscv64") AND (${HOSTNAME} STREQUAL "build-lx-riscv64"))
