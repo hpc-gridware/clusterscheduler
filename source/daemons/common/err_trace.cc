@@ -805,7 +805,20 @@ static bool shepherd_seteuid(uid_t uid, const char *op) {
    return true;
 }
 
-/* In an admin user system, this function must be called as admin user! */
+/**
+ * @brief Hand a shepherd file over to the job user.
+ *
+ * As root the file is chowned to the job user; when that fails (root is a
+ * normal user on an NFS mount) or the job user is unknown, it is made
+ * writable for everyone instead. When the switch to root fails, nothing is
+ * changed (CS-2434).
+ *
+ * @note In an admin user system, this function must be called as admin user!
+ *
+ * @param job_owner     name of the job user
+ * @param fp            the open shepherd file
+ * @param shepherd_file which shepherd file this is
+ */
 static void shepherd_trace_chown_intern(const char *job_owner, FILE *fp,
                                         st_shepherd_file_t shepherd_file) {
    int   fd;
@@ -835,7 +848,13 @@ static void shepherd_trace_chown_intern(const char *job_owner, FILE *fp,
              * to change the ownership of a file. 
  	 	 	 	 */
 				old_euid = geteuid();
-            shepherd_seteuid(SGE_SUPERUSER_UID, "shepherd_trace_chown_intern");
+            if (!shepherd_seteuid(SGE_SUPERUSER_UID, "shepherd_trace_chown_intern")) {
+               /* Without root neither the chown nor the 0666 fallback below
+                * must run: the fallback would make the file world-writable
+                * because of a failed privilege switch (CS-2434). The failure
+                * was written to the panic file. */
+               return;
+            }
 
             /* Have to use chown() here, because fchown() has some bugs
              * on True64 and Irix.

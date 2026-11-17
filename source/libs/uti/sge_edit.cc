@@ -56,7 +56,8 @@
 /**
  * @brief Run the user's editor on a file and report whether it changed
  *
- * Forks, drops back to the real user id, and execs `$EDITOR` — or #DEFAULT_EDITOR
+ * Forks, drops back to the real group and user id (group first, CS-2434), and
+ * execs `$EDITOR` — or #DEFAULT_EDITOR
  * when that is unset — on @p fname. Change is detected by comparing the file's
  * modification time and size before and after, so an edit that rewrites the
  * file identically counts as unchanged.
@@ -125,12 +126,14 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
 
       sge_set_def_sig_mask(nullptr, nullptr);
       sge_unblock_all_signals();
-      if (setuid(getuid())) {
-         ERROR(MSG_SYSTEM_SETUIDFAILED_u, getuid());
-         sge_exit(1);
-      }
+      // the group first: after setuid() a non-root process may no longer
+      // change its group
       if (setgid(getgid())) {
          ERROR(MSG_SYSTEM_SETGIDFAILED_g, getgid());
+         sge_exit(1);
+      }
+      if (setuid(getuid())) {
+         ERROR(MSG_SYSTEM_SETUIDFAILED_u, getuid());
          sge_exit(1);
       }
 
