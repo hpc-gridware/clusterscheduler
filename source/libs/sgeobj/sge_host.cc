@@ -63,6 +63,13 @@
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "tom/ocs_List.h"
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
@@ -287,35 +294,41 @@ bool host_is_configured_submit_host(const char *hostname) {
  * @param hostname host being deleted
  * @param hgrp_list HGRP_Type master list
  *
- * @return true if the queue reaches the host by some route other than the reserved group, i.e. the reference is real and must block deletion
+ * @return true if the queue reaches the host by some route other than the reserved group, i.e. the reference is
+ *         real and must block deletion
  */
 static bool
-cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *hostname,
-                                       const lList *hgrp_list) {
-   const lList *cq_hostlist = cqueue_get_hostlist(cqueue, hgrp_list);
-   const lListElem *href;
-   lList *filtered = nullptr;
-   lList *resolved = nullptr;
+cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, const char *hostname,
+                                       const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list) {
+   DENTER(TOP_LAYER);
+
+   const auto cq_hostlist = cqueue_get_hostlist(cqueue, hgrp_list);
+   // created by the first entry that passes the filter, so that no entry leaves it nullptr as before
+   lList *filtered_raw = nullptr;
    bool reaches = false;
 
-   for_each_ep(href, cq_hostlist) {
+   for (const auto href : cq_hostlist) {
       const char *entry = ocs::tom::get<HR_name>(href);
 
       if (entry == nullptr || strcmp(entry, EXEC_HOSTGROUP) == 0) {
          continue;
       }
-      ocs::tom::emplace_back<HR_name>(&filtered, entry);
+      ocs::tom::emplace_back<HR_name>(&filtered_raw, entry);
+   }
+   const auto filtered = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(filtered_raw);
+
+   if (filtered) {
+      // out-parameter of the host reference search, which takes a raw in-out list
+      lList *resolved_raw = nullptr;
+      const bool found = href_list_find_all_references(*filtered, nullptr, hgrp_list, &resolved_raw, nullptr);
+      const auto resolved = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(resolved_raw);
+
+      if (found) {
+         reaches = static_cast<bool>(ocs::tom::find_first<HR_name>(*resolved, hostname));
+      }
    }
 
-   if (filtered != nullptr &&
-       href_list_find_all_references(filtered, nullptr, hgrp_list, &resolved, nullptr)) {
-      reaches = (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(resolved, hostname)) != nullptr);
-   }
-
-   lFreeList(&resolved);
-   lFreeList(&filtered);
-
-   return reaches;
+   DRETURN(reaches);
 }
 
 /**
@@ -326,35 +339,37 @@ cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *host
  * If this is the case than a corresponding message will be added
  * to the "answer_list".
  *
+ * The host stays an untyped element: like host_list_locate() the function
+ * finds out at run time whether it is an execution host (object_has_type()).
+ *
  * @param host EH_Type object
  * @param answer_list AN_Type list
- * @param queue_list CQ_Type list
- * @param hgrp_list HGRP_Type list (Master list)
+ * @param queue_list CQ_Type list, may be an empty handle
+ * @param hgrp_list HGRP_Type list (Master list), may be an empty handle
  *
- * @return true (1) or false (0)
+ * @return true if the host is referenced, else false
  */
-bool host_is_referenced(const lListElem *host,
-                        lList **answer_list,
-                        const lList *queue_list,
-                        const lList *hgrp_list) {
+bool host_is_referenced(const lListElem *host, lList **answer_list,
+                        const ocs::tom::ConstList<ocs::tom::CQ> queue_list,
+                        const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
    if (host != nullptr) {
-      const lListElem *queue = nullptr;
-      const char *hostname = nullptr;
       int nm = NoName;
 
       if (object_has_type(host, EH_Type)) {
          nm = object_get_primary_key(EH_Type);
       }
-      hostname = lGetHost(host, nm);
+      const char *hostname = lGetHost(host, nm);
 
       /* look at all the queue instances and figure out, if one still references
          the host we are looking for */
-      for_each_ep_lv(cqueue, queue_list) {
-         queue = ocs::tom::find_first_in<CQ_qinstances, QU_qhostname>(cqueue, hostname);
+      for (const auto cqueue : queue_list) {
+         const auto queue = ocs::tom::find_first_in<CQ_qinstances, QU_qhostname>(cqueue, hostname);
 
-         if (queue != nullptr) {
+         if (queue) {
             const char *queuename = ocs::tom::get<CQ_name>(cqueue);
 
             /*
@@ -378,9 +393,7 @@ bool host_is_referenced(const lListElem *host,
       /* if we have not found a reference yet, we keep looking in the host groups, if
          we have an exec host */
       if (!ret && object_has_type(host, EH_Type)) {
-         lList *host_list = nullptr;
-
-         for_each_ep_lv(hgrp_elem, hgrp_list) {
+         for (const auto hgrp_elem : hgrp_list) {
             const char *hgrp_name = ocs::tom::get<HGRP_name>(hgrp_elem);
 
             /*
@@ -435,22 +448,36 @@ bool host_is_referenced(const lListElem *host,
              * requirement this feature exists for: an elastically provisioned
              * node has to be able to disappear again.
              */
-            hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr, nullptr, false);
-            if (host_list != nullptr) {
-               if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(host_list, hostname)) != nullptr) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            // out-parameter of the host group search, which takes a raw in-out list
+            lList *host_list_raw = nullptr;
+            hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list_raw, nullptr, nullptr, false);
+            const auto host_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(host_list_raw);
+            if (ocs::tom::find_first<HR_name>(*host_list, hostname)) {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
-                  ret = true;
-                  lFreeList(&host_list);
-                  break;
-               }
-               lFreeList(&host_list);
+               ret = true;
+               break;
             }
          }
       }
    }
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief host_is_referenced() for an untyped caller
+ *
+ * @param host EH_Type object
+ * @param answer_list AN_Type list
+ * @param queue_list CQ_Type list, checked; may be nullptr
+ * @param hgrp_list HGRP_Type list (Master list), checked; may be nullptr
+ *
+ * @return as host_is_referenced()
+ */
+bool host_is_referenced(const lListElem *host, lList **answer_list, const lList *queue_list, const lList *hgrp_list) {
+   return host_is_referenced(host, answer_list, ocs::tom::ConstList<ocs::tom::CQ>(queue_list),
+                             ocs::tom::ConstList<ocs::tom::HGRP>(hgrp_list));
 }
 
 /**
@@ -610,21 +637,21 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
  * Checks the complex values, the load values and the report variables, so a
  * complex entry that any of the three names cannot be deleted.
  *
- * @param this_elem the host to check; nullptr yields false
- * @param centry the complex entry to look for
+ * @param this_elem the host to check (EH_Type); an empty handle yields false
+ * @param centry the complex entry to look for (CE_Type)
  * @return true when the host refers to it
  */
-bool
-host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
+bool host_is_centry_referenced(const ocs::tom::ConstElement<ocs::tom::EH> this_elem,
+                               const ocs::tom::ConstElement<ocs::tom::CE> centry) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
-   if (this_elem != nullptr) {
+   if (this_elem) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      ocs::tom::ConstList<ocs::tom::CE> ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
-      ocs::tom::ConstList<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(this_elem);
-      ocs::tom::ConstList<ocs::tom::STU> rep_vars = ocs::tom::get<EH_report_variables>(this_elem);
+      const auto ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
+      const auto load_list = ocs::tom::get<EH_load_list>(this_elem);
+      const auto rep_vars = ocs::tom::get<EH_report_variables>(this_elem);
 
       /* 
        * centry may be referenced in 
@@ -632,9 +659,8 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
        *    - load_list
        *    - report_variables
        */
-      if (static_cast<const lListElem *>(ocs::tom::find_first<CE_name>(ce_values, name)) != nullptr ||
-          static_cast<const lListElem *>(ocs::tom::find_first<HL_name>(load_list, name)) != nullptr ||
-          static_cast<const lListElem *>(ocs::tom::find_first<STU_name>(rep_vars, name)) != nullptr) {
+      if (ocs::tom::find_first<CE_name>(ce_values, name) || ocs::tom::find_first<HL_name>(load_list, name) ||
+          ocs::tom::find_first<STU_name>(rep_vars, name)) {
          ret = true;
       }
    }
@@ -648,29 +674,27 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
  * Narrower than #host_is_centry_referenced: only the complex values and the
  * load values count, not the report variables.
  *
- * @param this_elem the host to check; nullptr yields false
- * @param centry the complex entry to look for
+ * @param this_elem the host to check (EH_Type); an empty handle yields false
+ * @param centry the complex entry to look for (CE_Type)
  * @return true when the host has a value for it
  */
-bool
-host_is_centry_a_complex_value(const lListElem *this_elem,
-                               const lListElem *centry) {
+bool host_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::EH> this_elem,
+                                    const ocs::tom::ConstElement<ocs::tom::CE> centry) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
-   if (this_elem != nullptr) {
+   if (this_elem) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      ocs::tom::ConstList<ocs::tom::CE> ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
-      ocs::tom::ConstList<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(this_elem);
+      const auto ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
+      const auto load_list = ocs::tom::get<EH_load_list>(this_elem);
 
       /* 
        * centry may be referenced in 
        *    - complex_values
        *    - load_list
        */
-      if (static_cast<const lListElem *>(ocs::tom::find_first<CE_name>(ce_values, name)) != nullptr ||
-          static_cast<const lListElem *>(ocs::tom::find_first<HL_name>(load_list, name)) != nullptr) {
+      if (ocs::tom::find_first<CE_name>(ce_values, name) || ocs::tom::find_first<HL_name>(load_list, name)) {
          ret = true;
       }
    }
@@ -683,7 +707,7 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
  * Merges settings from the global host to the exec hosts objects.
  * Currently this applies only to the report_variables attribute.
  *
- * @param this_list the exec host list to work on
+ * @param this_list the exec host list to work on (EH_Type), may be an empty handle
  *
  * @return true on success, else false
  *
@@ -691,22 +715,22 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
  *
  * @see #host_merge
  */
-bool
-host_list_merge(lList *this_list) {
+bool host_list_merge(const ocs::tom::List<ocs::tom::EH> this_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (this_list != nullptr) {
-      lListElem *global_host = ocs::tom::find_first_rw<EH_name>(this_list, SGE_GLOBAL_NAME);
+   if (this_list) {
+      const auto global_host = ocs::tom::find_first_rw<EH_name>(this_list, SGE_GLOBAL_NAME);
 
       /* we merge global settings into host settings */
-      if (global_host != nullptr) {
+      if (global_host) {
          /* for the global host, merged_report_variables == report_variables */
-         ocs::tom::set<EH_merged_report_variables>(global_host, lCopyList("", ocs::tom::get<EH_report_variables>(global_host)));
+         ocs::tom::set<EH_merged_report_variables>(global_host,
+                                                   ocs::tom::get<EH_report_variables>(global_host).clone(""));
 
          /* do merge for all hosts except global */
-         for_each_rw_lv(host, this_list) {
+         for (const auto host : this_list) {
             if (host != global_host) {
                /* on error continue, but return error status */
                if (!host_merge(host, global_host)) {
@@ -721,14 +745,25 @@ host_list_merge(lList *this_list) {
 }
 
 /**
+ * @brief host_list_merge() for an untyped caller
+ *
+ * @param this_list the exec host list to work on (EH_Type), checked; may be nullptr
+ *
+ * @return as host_list_merge()
+ */
+bool host_list_merge(lList *this_list) {
+   return host_list_merge(ocs::tom::List<ocs::tom::EH>(this_list));
+}
+
+/**
  * @brief Merge global host settings into an exec host
  *
  * Merges settings from the global host object into a specific exec host.
  * Use the global settings, if no host specific settings are done.
  * Currently this applies only to the report_variables attribute.
  *
- * @param host the host object to hold the merged config
- * @param global_host the global host object
+ * @param host the host object to hold the merged config (EH_Type), may be an empty handle
+ * @param global_host the global host object (EH_Type), may be an empty handle
  *
  * @return true on success, else false
  *
@@ -736,24 +771,23 @@ host_list_merge(lList *this_list) {
  *
  * @see #host_list_merge
  */
-bool
-host_merge(lListElem *host, const lListElem *global_host) {
+bool host_merge(const ocs::tom::Element<ocs::tom::EH> host, const ocs::tom::ConstElement<ocs::tom::EH> global_host) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (host != nullptr && global_host != nullptr) {
-      ocs::tom::ConstList<ocs::tom::STU> local_list = ocs::tom::get<EH_report_variables>(host);
+   if (host && global_host) {
+      const auto local_list = ocs::tom::get<EH_report_variables>(host);
 
       /* if we have a local list: use this one */
-      if (local_list != nullptr && lGetNumberOfElem(local_list) != 0) {
-         ocs::tom::set<EH_merged_report_variables>(host, lCopyList("", local_list));
+      if (!local_list.empty()) {
+         ocs::tom::set<EH_merged_report_variables>(host, local_list.clone(""));
       } else {
 
-         ocs::tom::ConstList<ocs::tom::STU> global_list = ocs::tom::get<EH_report_variables>(global_host);
+         const auto global_list = ocs::tom::get<EH_report_variables>(global_host);
          /* if we have no local list, but a global one, use this one */
-         if (global_list != nullptr && lGetNumberOfElem(global_list) != 0) {
-            ocs::tom::set<EH_merged_report_variables>(host, lCopyList("", global_list));
+         if (!global_list.empty()) {
+            ocs::tom::set<EH_merged_report_variables>(host, global_list.clone(""));
          } else {
             /* if no report variables are configured in local and global object,
              * delete the merged list.
@@ -767,37 +801,49 @@ host_merge(lListElem *host, const lListElem *global_host) {
 }
 
 /**
+ * @brief host_merge() for an untyped caller
+ *
+ * @param host the host object to hold the merged config (EH_Type), checked; may be nullptr
+ * @param global_host the global host object (EH_Type), checked; may be nullptr
+ *
+ * @return as host_merge()
+ */
+bool host_merge(lListElem *host, const lListElem *global_host) {
+   return host_merge(ocs::tom::Element<ocs::tom::EH>(host), ocs::tom::ConstElement<ocs::tom::EH>(global_host));
+}
+
+/**
  * @brief debit a certain RSMAP id from a host
  *
- * @param host          the host to do debiting on
+ * @param host          the host to do debiting on (EH_Type)
  * @param ce_name       name of the RSMAP complex variable
- * @param resl          the resource map object to be debited
+ * @param resl          the resource map object to be debited (RESL_Type)
  * @param slots         the number of slots for which we do debiting (can be negativ in undebiting)
  * @param just_check    when != nullptr we just check if debiting would be successful and return the result here
  * @return the number of modifications done (0 or 1)
  */
-int
-host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
+int host_debit_rsmap(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_name,
+                     const ocs::tom::ConstElement<ocs::tom::RESL> resl, const int slots, bool *just_check) {
    int mods = 0;
 
-   ocs::tom::List<ocs::tom::RUE> resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
-   ocs::tom::Element<ocs::tom::RUE> resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
+   const auto resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   const auto resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
 
    const char *id = ocs::tom::get<RESL_value>(resl);
-   uint32_t amount = ocs::tom::get<RESL_amount>(resl);
+   const uint32_t amount = ocs::tom::get<RESL_amount>(resl);
 
-   ocs::tom::Element<ocs::tom::RESL> utilized_id = ocs::tom::find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
-   if (utilized_id == nullptr) {
+   auto utilized_id = ocs::tom::find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
+   if (!utilized_id) {
       utilized_id = ocs::tom::emplace_back_in<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
    }
-   if (utilized_id != nullptr) {
+   if (utilized_id) {
       if (just_check != nullptr) {
          // only check if there is enough resources free, no booking
          // only when slots > 0? It is never called with slots < 0 and just_check
-         ocs::tom::ConstElement<ocs::tom::CE> complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
-         ocs::tom::ConstElement<ocs::tom::RESL> configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
-         uint32_t configured_amount = ocs::tom::get<RESL_amount>(configured_id);
-         uint32_t utilized_amount = ocs::tom::get<RESL_amount>(utilized_id);
+         const auto complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
+         const auto configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
+         const uint32_t configured_amount = ocs::tom::get<RESL_amount>(configured_id);
+         const uint32_t utilized_amount = ocs::tom::get<RESL_amount>(utilized_id);
          if (configured_amount - utilized_amount - amount < 0) {
             // not enough available of this id
             *just_check = false;
@@ -824,23 +870,23 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
  * which cores are in use matters, not how many. The booking is kept in the
  * slots resource utilization entry.
  *
- * @param[in,out] host the execution host to book on
+ * @param[in,out] host the execution host to book on (EH_Type)
  * @param ce_name the resource the binding belongs to
- * @param resl the topology to book, as a string list element
+ * @param resl the topology to book, as a string list element (ST_Type)
  * @param slots positive to book, negative to release
  * @param[out] just_check if != nullptr do not book, only report whether it would fit
  * @return the number of bookings that took place, or a negative value on error
  */
-int
-host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
+int host_debit_binding(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_name,
+                       const ocs::tom::ConstElement<ocs::tom::ST> resl, const int slots, bool *just_check) {
    DENTER(TOP_LAYER);
 
    // we book cores/threads in the resource utilization of slots
-   ocs::tom::List<ocs::tom::RUE> resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
-   ocs::tom::Element<ocs::tom::RUE> resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
+   const auto resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   auto resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
 
    // add resource utilization entry if it does not exist yet
-   if (resource == nullptr) {
+   if (!resource) {
       resource = ocs::tom::emplace_back_in<EH_resource_utilization, RUE_name>(host, ce_name);
       ocs::tom::set<RUE_utilized_now_binding_inuse>(resource, nullptr);
    }
@@ -956,27 +1002,26 @@ host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lLi
  * This is used to get the topology string that is currently in use on a host. It is used for example
 to check if a certain binding can be used on a host or if it would exceed the available resources.
  *
- * @param host the host to check
+ * @param host the host to check (EH_Type), may be an empty handle
  * @return the topology string that is currently in use on the host, empty string if no topology is in use
  */
-std::string
-host_get_topology_in_use(const lListElem *host) {
+std::string host_get_topology_in_use(const ocs::tom::ConstElement<ocs::tom::EH> host) {
    DENTER(TOP_LAYER);
 
    // invalid host pointer, return empty string
-   if (host == nullptr) {
+   if (!host) {
       DRETURN({});
    }
 
    // get the resource utilization of the host, if there is none, return empty string
-   ocs::tom::ConstList<ocs::tom::RUE> resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
-   if (resource_utilization == nullptr) {
+   const auto resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   if (!resource_utilization) {
       DRETURN({});
    }
 
    // get the slots resource utilization of the host, if there is none, return empty string
-   ocs::tom::ConstElement<ocs::tom::RUE> slots_utilization = ocs::tom::find_first<RUE_name>(resource_utilization, SGE_ATTR_SLOTS);
-   if (slots_utilization == nullptr) {
+   const auto slots_utilization = ocs::tom::find_first<RUE_name>(resource_utilization, SGE_ATTR_SLOTS);
+   if (!slots_utilization) {
       DRETURN({});
    }
 

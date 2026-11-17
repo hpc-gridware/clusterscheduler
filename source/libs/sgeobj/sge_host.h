@@ -43,6 +43,16 @@
 
 #include <string>
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+
 #include "sgeobj/cull/sge_host_EH_L.h"
 #include "sgeobj/cull/sge_host_RU_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
@@ -113,8 +123,10 @@
 #define LOAD_ATTR_DEVICES        "devices"
 /** @} */
 
-bool host_is_referenced(const lListElem *host, lList **answer_list,
-                        const lList *queue_list, const lList *hgrp_list);
+bool host_is_referenced(const lListElem *host, lList **answer_list, ocs::tom::ConstList<ocs::tom::CQ> queue_list,
+                        ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list);
+OCS_TRANSITIONAL bool host_is_referenced(const lListElem *host, lList **answer_list, const lList *queue_list,
+                                         const lList *hgrp_list);
 
 const char *host_get_load_value(lListElem *host, const char *name);
 
@@ -122,12 +134,11 @@ int sge_resolve_host(lListElem *ep, int nm);
 
 int sge_resolve_hostname(const char *hostname, char *unique, int nm);
 
-bool
-host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry);
+bool host_is_centry_referenced(ocs::tom::ConstElement<ocs::tom::EH> this_elem,
+                               ocs::tom::ConstElement<ocs::tom::CE> centry);
 
-bool
-host_is_centry_a_complex_value(const lListElem *this_elem,
-                               const lListElem *centry);
+bool host_is_centry_a_complex_value(ocs::tom::ConstElement<ocs::tom::EH> this_elem,
+                                    ocs::tom::ConstElement<ocs::tom::CE> centry);
 
 lListElem *
 host_list_locate(const lList *this_list, const char *hostname);
@@ -152,22 +163,21 @@ host_is_submit_host(const char *hostname);
 bool
 host_is_configured_submit_host(const char *hostname);
 
-bool
-host_list_merge(lList *this_list);
+bool host_list_merge(ocs::tom::List<ocs::tom::EH> this_list);
+OCS_TRANSITIONAL bool host_list_merge(lList *this_list);
 
-bool
-host_merge(lListElem *host, const lListElem *global_host);
+bool host_merge(ocs::tom::Element<ocs::tom::EH> host, ocs::tom::ConstElement<ocs::tom::EH> global_host);
+OCS_TRANSITIONAL bool host_merge(lListElem *host, const lListElem *global_host);
 
-int
-host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check);
+int host_debit_rsmap(ocs::tom::Element<ocs::tom::EH> host, const char *ce_name,
+                     ocs::tom::ConstElement<ocs::tom::RESL> resl, int slots, bool *just_check);
 
-int
-host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check);
+int host_debit_binding(ocs::tom::Element<ocs::tom::EH> host, const char *ce_name,
+                       ocs::tom::ConstElement<ocs::tom::ST> resl, int slots, bool *just_check);
 
 bool host_do_per_host_booking(const char **last_hostname, const char *hostname);
 
 bool
 host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lList *acl_list);
 
-std::string
-host_get_topology_in_use(const lListElem *host);
+std::string host_get_topology_in_use(ocs::tom::ConstElement<ocs::tom::EH> host);

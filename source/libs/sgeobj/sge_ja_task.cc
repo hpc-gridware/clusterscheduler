@@ -73,6 +73,14 @@
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
 
 #include "sge_ja_task.h"
 
@@ -83,17 +91,17 @@
  *
  * Find a certain PE Task with "pe_task_id" in "ja_task"
  *
- * @param ja_task JAT_Type element
+ * @param ja_task JAT_Type element, may be an empty handle
  * @param pe_task_id PE task id string (e.g. "1.speedy")
  *
- * @return PET_Type
+ * @return the PET_Type element, an empty handle if there is none
  */
-lListElem *ja_task_search_pe_task(const lListElem *ja_task,
-                                  const char *pe_task_id) {
-   if (ja_task != nullptr) {
-      ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                                        const char *pe_task_id) {
+   if (ja_task) {
+      const auto pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
 
-      if (pe_tasks != nullptr) {
+      if (pe_tasks) {
          return ocs::tom::find_first_rw<PET_id>(pe_tasks, pe_task_id);
       }
    }
@@ -102,63 +110,83 @@ lListElem *ja_task_search_pe_task(const lListElem *ja_task,
 }
 
 /**
+ * @brief ja_task_search_pe_task() for an untyped caller
+ *
+ * @param ja_task JAT_Type element, checked; may be nullptr
+ * @param pe_task_id PE task id string (e.g. "1.speedy")
+ *
+ * @return the PET_Type element, or nullptr
+ */
+lListElem *ja_task_search_pe_task(const lListElem *ja_task, const char *pe_task_id) {
+   return ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), pe_task_id);
+}
+
+/**
  * @brief Print task id ranges into string
  *
  * The ids of all tasks contained in 'ja_task_list' will be printed
  * into 'range_string'.
  *
- * @param ja_task_list JAT_Type list
+ * @param ja_task_list JAT_Type list, may be an empty handle
  * @param range_string dynamic string
  */
-void ja_task_list_print_to_string(const lList *ja_task_list,
-                                  dstring *range_string) {
+void ja_task_list_print_to_string(const ocs::tom::ConstList<ocs::tom::JAT> ja_task_list, dstring *range_string) {
    DENTER(TOP_LAYER);
 
-   lList *range_list = nullptr;     /* RN_Type */
+   // filled by range_list_insert_id(), which takes a raw in-out list
+   lList *range_list_raw = nullptr;
 
-   for_each_ep_lv(ja_task, ja_task_list) {
-      uint32_t tid = ocs::tom::get<JAT_task_number>(ja_task);
+   for (const auto ja_task : ja_task_list) {
+      const uint32_t tid = ocs::tom::get<JAT_task_number>(ja_task);
 
-      range_list_insert_id(&range_list, nullptr, tid);
+      range_list_insert_id(&range_list_raw, nullptr, tid);
    }
-   range_list_sort_uniq_compress(range_list, nullptr, true);
-   range_list_print_to_string(range_list, range_string, false, false, false);
-   lFreeList(&range_list);
+   const auto range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(range_list_raw);
+   range_list_sort_uniq_compress(*range_list, nullptr, true);
+   range_list_print_to_string(*range_list, range_string, false, false, false);
    DRETURN_VOID;
 }
 
 /**
- * @brief Split off the leading group of equally stated tasks
+ * @brief Split off the group of equally stated tasks the first task belongs to
  *
- * All tasks at the front of the list that share the first task's `JAT_status`,
- * `JAT_state` and `JAT_hold` are moved into a new list. Callers use this to
+ * All tasks of the list - not only those at its front - that share the first
+ * task's `JAT_status`, `JAT_state` and `JAT_hold` are moved into a new list. Callers use this to
  * render one qstat line per group rather than per task.
  *
- * @param[in,out] ja_task_list the list to split; the moved tasks are removed
+ * The list stays an untyped in-out reference: it is freed and set to nullptr
+ * when the last group is split off, as lSplit() did, and the caller relies on
+ * that.
+ *
+ * @param[in,out] ja_task_list the list to split (JAT_Type); the moved tasks are removed
  *                             from it
  * @return the tasks that were split off, or nullptr when the list was empty
  */
 lList *ja_task_list_split_group(lList **ja_task_list) {
-   lList *ret_list = nullptr;
+   DENTER(TOP_LAYER);
+
+   ocs::tom::ListPtr<ocs::tom::JAT> ret_list;
 
    if (ja_task_list && *ja_task_list) {
-      lListElem *first_task = lFirstRW(*ja_task_list);
+      const ocs::tom::List<ocs::tom::JAT> list(*ja_task_list);
+      const auto first_task = list.front();
 
       if (first_task) {
-         uint32_t status = ocs::tom::get<JAT_status>(first_task);
-         uint32_t state = ocs::tom::get<JAT_state>(first_task);
-         uint32_t hold = ocs::tom::get<JAT_hold>(first_task);
-         const lDescr *descr = lGetElemDescr(first_task);
-         lCondition *where = nullptr;
+         const uint32_t status = ocs::tom::get<JAT_status>(first_task);
+         const uint32_t state = ocs::tom::get<JAT_state>(first_task);
+         const uint32_t hold = ocs::tom::get<JAT_hold>(first_task);
 
-         where = lWhere("%T(%I != %u || %I != %u || %I != %u)", descr,
-                        JAT_status, status, JAT_state, state,
-                        JAT_hold, hold);
-         lSplit(ja_task_list, &ret_list, nullptr, where);
-         lFreeWhere(&where);
+         // the tasks that differ stay, the group of equal ones is taken out
+         ret_list = list.split_off(ocs::tom::field<JAT_status>() != status ||
+                                   ocs::tom::field<JAT_state>() != state ||
+                                   ocs::tom::field<JAT_hold>() != hold);
+         if (list.empty()) {
+            // lSplit() freed a source list it emptied
+            lFreeList(ja_task_list);
+         }
       }
    }
-   return ret_list;
+   DRETURN(ret_list.release());
 }
 
 /**
@@ -173,25 +201,38 @@ lList *ja_task_list_split_group(lList **ja_task_list) {
  * If an entry with the given pe_task_id already exists, the function
  * returns false, else true.
  *
- * @param ja_task the ja_task to check/modify
+ * @param ja_task the ja_task to check/modify (JAT_Type)
  * @param pe_task_id the pe_task_id to check/insert
  *
- * @return error state true  - if the pe_task_id did not yet exist and could be inserted, false - if the pe_task_id already existed.
+ * @return error state true  - if the pe_task_id did not yet exist and could be inserted, false - if the
+ *         pe_task_id already existed.
  *
  * @see #ja_task_clear_finished_pe_tasks
  */
-bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id) {
+bool ja_task_add_finished_pe_task(const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
-   const lListElem *pe_task = ocs::tom::find_first_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id);
-   if (pe_task != nullptr) {
-      INFO("already handled exit of pe task " SFQ " in ja_task " sge_u32"\n", pe_task_id, ocs::tom::get<JAT_task_number>(ja_task));
+   if (ocs::tom::find_first_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id)) {
+      INFO("already handled exit of pe task " SFQ " in ja_task " sge_u32"\n", pe_task_id,
+           ocs::tom::get<JAT_task_number>(ja_task));
       DRETURN(false);
    }
 
-   pe_task = ocs::tom::emplace_back_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id);
+   ocs::tom::emplace_back_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id);
 
    DRETURN(true);
+}
+
+/**
+ * @brief ja_task_add_finished_pe_task() for an untyped caller
+ *
+ * @param ja_task the ja_task to check/modify (JAT_Type), checked
+ * @param pe_task_id the pe_task_id to check/insert
+ *
+ * @return as ja_task_add_finished_pe_task()
+ */
+bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id) {
+   return ja_task_add_finished_pe_task(ocs::tom::Element<ocs::tom::JAT>(ja_task), pe_task_id);
 }
 
 /**
@@ -204,19 +245,18 @@ bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id) {
  * ja_task_clear_finished_pe_tasks removes the complete sublist including
  * the contained task ids.
  *
- * @param ja_task the ja_task to modify
+ * @param ja_task the ja_task to modify (JAT_Type)
  *
  * @return true, if the list could be cleared, false, if no list of finished pe_tasks existed.
  *
  * @see #ja_task_add_finished_pe_task
  */
-bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
+bool ja_task_clear_finished_pe_tasks(const ocs::tom::Element<ocs::tom::JAT> ja_task) {
    DENTER(TOP_LAYER);
 
-
    /* get list of finished pe tasks */
-   ocs::tom::ConstList<ocs::tom::FPET> pe_task_list = ocs::tom::get<JAT_finished_task_list>(ja_task);
-   if (pe_task_list == nullptr) {
+   const auto pe_task_list = ocs::tom::get<JAT_finished_task_list>(ja_task);
+   if (!pe_task_list) {
       DPRINTF("no finished pe task list to clear in ja_task " sge_u32 "\n", ocs::tom::get<JAT_task_number>(ja_task));
       DRETURN(false);
    }
@@ -230,6 +270,17 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
 }
 
 /**
+ * @brief ja_task_clear_finished_pe_tasks() for an untyped caller
+ *
+ * @param ja_task the ja_task to modify (JAT_Type), checked
+ *
+ * @return as ja_task_clear_finished_pe_tasks()
+ */
+bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
+   return ja_task_clear_finished_pe_tasks(ocs::tom::Element<ocs::tom::JAT>(ja_task));
+}
+
+/**
  * @brief Parse array task ranges
  *
  * parses a job ids with or without task ranges following this pattern:
@@ -240,25 +291,31 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
  * in case of a job name, the task range has to be specified extra. This
  * will be colleced in an extra list and handed in as the arrayDefList
  *
- * @param ipp ID_Type List, target list
- * @param idp New ID_Type-Elem parsed from str_jobtask
+ * The new element used to be an out-parameter; it is returned now, together
+ * with the state.
+ *
+ * @param ipp ID_Type List, target list, created if *ipp is nullptr
  * @param str_jobtask job id with task range or job name
  * @param alpp answer list
  * @param include_names true: job names are allowed
- * @param arrayDefList in case of job names, a list of array taskes
+ * @param arrayDefList in case of job names, a list of array taskes (RN_Type), may be an empty handle
  *
- * @return -1 no valid JobTask-Identifier 0 everything went fine
+ * @return the state, -1 no valid JobTask-Identifier, 1 everything went fine, and the new ID_Type element
+ *         parsed from str_jobtask, which is an empty handle for the state -1 or when it could not be created
  *
  * @note MT-NOTE: sge_parse_jobtasks() is MT safe
  */
-int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
-                       lList **alpp, bool include_names, const lList *arrayDefList) {
+std::pair<int, ocs::tom::Element<ocs::tom::ID>>
+sge_parse_jobtasks(lList **ipp, const char *str_jobtask, lList **alpp, const bool include_names,
+                   const ocs::tom::ConstList<ocs::tom::RN> arrayDefList) {
    DENTER(TOP_LAYER);
 
    char *token;
    char *job_str;
-   lList *task_id_range_list = nullptr;
+   // filled by range_list_parse_from_string(), which takes a raw in-out list
+   lList *task_id_range_list_raw = nullptr;
    int ret = 1;
+   ocs::tom::Element<ocs::tom::ID> idp = nullptr;
 
    job_str = strdup(str_jobtask);
 
@@ -278,9 +335,9 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
       if ((token = strchr(job_str, '.')) != nullptr) {
          token[0] = '\0';
          token++;
-         if (!range_list_parse_from_string(&task_id_range_list, alpp, token,
+         if (!range_list_parse_from_string(&task_id_range_list_raw, alpp, token,
                                            false, true, INF_NOT_ALLOWED) ||
-             !task_id_range_list) {
+             !task_id_range_list_raw) {
             ret = -1;
          }
       }
@@ -294,12 +351,12 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
       }
    }
 
-   if (arrayDefList != nullptr) {
-      if (task_id_range_list == nullptr) {
-         task_id_range_list = lCopyList(lGetListName(arrayDefList), arrayDefList);
+   auto task_id_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(task_id_range_list_raw);
+   if (arrayDefList) {
+      if (!task_id_range_list) {
+         task_id_range_list = arrayDefList.clone(lGetListName(arrayDefList));
       } else {
-         lList *copy = lCopyList("", arrayDefList);
-         lAddList(task_id_range_list, &copy);
+         task_id_range_list->splice(arrayDefList.clone(""));
       }
    }
 
@@ -307,11 +364,11 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
       if (!include_names && !isdigit(job_str[0]) && (strcmp(job_str, "\"*\"") != 0)) {
          ret = -1;
       } else {
-         *idp = ocs::tom::emplace_back<ID_str>(ipp, job_str);
+         idp = ocs::tom::emplace_back<ID_str>(ipp, job_str);
 
-         if (*idp) {
-            range_list_sort_uniq_compress(task_id_range_list, alpp, true);
-            ocs::tom::set<ID_ja_structure>(*idp, task_id_range_list);
+         if (idp) {
+            range_list_sort_uniq_compress(*task_id_range_list, alpp, true);
+            ocs::tom::set<ID_ja_structure>(idp, std::move(task_id_range_list));
          }
       }
    }
@@ -319,7 +376,7 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
    ** free the dupped string
    */
    sge_free(&job_str);
-   DRETURN(ret);
+   DRETURN(std::make_pair(ret, idp));
 }
 
 /**
@@ -339,14 +396,24 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
  *
  * @see #ja_task_message_trash_all_of_type_X
  */
-bool
-ja_task_message_add(lListElem *this_elem, uint32_t type, const char *message) {
+bool ja_task_message_add(const ocs::tom::Element<ocs::tom::JAT> this_elem, const uint32_t type, const char *message) {
    DENTER(TOP_LAYER);
 
-   bool ret = true;
-
-   ret = object_message_add(this_elem, JAT_message_list, type, message);
+   const bool ret = object_message_add(this_elem, JAT_message_list, type, message);
    DRETURN(ret);
+}
+
+/**
+ * @brief ja_task_message_add() for an untyped caller
+ *
+ * @param this_elem JAT_Type element, checked
+ * @param type message type id
+ * @param message message
+ *
+ * @return as ja_task_message_add()
+ */
+bool ja_task_message_add(lListElem *this_elem, const uint32_t type, const char *message) {
+   return ja_task_message_add(ocs::tom::Element<ocs::tom::JAT>(this_elem), type, message);
 }
 
 /**
@@ -362,14 +429,23 @@ ja_task_message_add(lListElem *this_elem, uint32_t type, const char *message) {
  *
  * @note MT-NOTE: ja_task_message_trash_all_of_type_X() is MT safe
  */
-bool
-ja_task_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
+bool ja_task_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::JAT> this_elem, const uint32_t type) {
    DENTER(TOP_LAYER);
 
-   bool ret = true;
-
-   ret = object_message_trash_all_of_type_X(this_elem, JAT_message_list, type);
+   const bool ret = object_message_trash_all_of_type_X(this_elem, JAT_message_list, type);
    DRETURN(ret);
+}
+
+/**
+ * @brief ja_task_message_trash_all_of_type_X() for an untyped caller
+ *
+ * @param this_elem JAT_Type element, checked
+ * @param type type id
+ *
+ * @return as ja_task_message_trash_all_of_type_X()
+ */
+bool ja_task_message_trash_all_of_type_X(lListElem *this_elem, const uint32_t type) {
+   return ja_task_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::JAT>(this_elem), type);
 }
 
 /**
@@ -377,7 +453,7 @@ ja_task_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
  *
  * Verify correctness of a ja_task object.
  *
- * @param ja_task the ja_task to verify
+ * @param ja_task the ja_task to verify (JAT_Type)
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -386,13 +462,10 @@ ja_task_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
  *
  * @see #ja_task_verify_execd_job
  */
-bool
-ja_task_verify(const lListElem *ja_task, lList **answer_list) {
+bool ja_task_verify(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   bool ret = true;
-
-   ret = object_verify_ulong_not_null(ja_task, answer_list, JAT_task_number);
+   const bool ret = object_verify_ulong_not_null(ja_task, answer_list, JAT_task_number);
 
    /*
     * TODO: JAT_status,
@@ -443,7 +516,7 @@ ja_task_verify(const lListElem *ja_task, lList **answer_list) {
  *
  * Verify a ja_task object that has been sent to execd.
  *
- * @param ja_task the ja_task object to verify
+ * @param ja_task the ja_task object to verify (JAT_Type)
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -452,13 +525,10 @@ ja_task_verify(const lListElem *ja_task, lList **answer_list) {
  *
  * @see #ja_task_verify
  */
-bool
-ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list) {
+bool ja_task_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   bool ret = true;
-
-   ret = ja_task_verify(ja_task, answer_list);
+   bool ret = ja_task_verify(ja_task, answer_list);
 
    if (ret) {
       ret = ja_task_verify_granted_destin_identifier_list(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task),
@@ -474,7 +544,7 @@ ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list) {
  * Verify correctness of a granted destination identifier list being part
  * of a scheduled ja_task.
  *
- * @param gdil the list to verify
+ * @param gdil the list to verify (JG_Type); an empty handle is an error
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -483,20 +553,20 @@ ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list) {
  *
  * @see #ja_task_verify_granted_destin_identifier
  */
-bool
-ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_list) {
+bool ja_task_verify_granted_destin_identifier_list(const ocs::tom::ConstList<ocs::tom::JG> gdil,
+                                                   lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (gdil == nullptr) {
+   if (!gdil) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALID_GDIL);
       ret = false;
    }
 
    if (ret) {
-      for_each_ep_lv(ep, gdil) {
+      for (const auto ep : gdil) {
          ret = ja_task_verify_granted_destin_identifier(ep, answer_list);
          if (!ret) {
             break;
@@ -513,7 +583,7 @@ ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_
  * Verify a single element of a granted destination identifier list
  * (a granted queue with a certain number of slots).
  *
- * @param ep the element to verify
+ * @param ep the element to verify (JG_Type); an empty handle is an error
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -522,13 +592,12 @@ ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_
  *
  * @see #ja_task_verify_granted_destin_identifier_list
  */
-bool
-ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_list) {
+bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::tom::JG> ep, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (ep == nullptr) {
+   if (!ep) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
@@ -547,9 +616,9 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
    }
 
    if (ret) {
-      const lListElem *queue = ocs::tom::get<JG_queue>(ep);
+      const auto queue = ocs::tom::get<JG_queue>(ep);
 
-      if (queue != nullptr) {
+      if (queue) {
          ret = qinstance_verify(queue, answer_list);
       }
    }
@@ -563,22 +632,23 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
  * Figures out, if a running ja task belongs to a tightly integrated
  * parallel job.
  *
- * @param ja_task the ja task to test
- * @param master_pe_list the parallel environments, to look up the task's PE
+ * @param ja_task the ja task to test (JAT_Type), may be an empty handle
+ * @param master_pe_list the parallel environments, to look up the task's PE (PE_Type)
  *
  * @return true if it is a tightly integrated parallel job, else false
  *
  * @note MT-NOTE: ja_task_is_tightly_integrated() is MT safe, the caller must
  *       hold a read lock on the SGE_TYPE_PE list.
  */
-bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list) {
+bool ja_task_is_tightly_integrated(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list) {
    bool ret = false;
 
-   if (ja_task != nullptr) {
+   if (ja_task) {
       const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
       if (pe_name != nullptr) {
-         const lListElem *pe = pe_list_locate(master_pe_list, pe_name);
-         if (pe != nullptr) {
+         const auto pe = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_locate(master_pe_list, pe_name));
+         if (pe) {
             if (ocs::tom::get<PE_control_slaves>(pe)) {
                ret = true;
             }
@@ -589,11 +659,34 @@ bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master
    return ret;
 }
 
+/**
+ * @brief ja_task_is_tightly_integrated() for an untyped caller
+ *
+ * @param ja_task the ja task to test (JAT_Type), checked; may be nullptr
+ * @param master_pe_list the parallel environments, to look up the task's PE (PE_Type), checked
+ *
+ * @return as ja_task_is_tightly_integrated()
+ */
+bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list) {
+   return ja_task_is_tightly_integrated(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
+                                        ocs::tom::ConstList<ocs::tom::PE>(master_pe_list));
+}
+
+/**
+ * @brief Debit or undebit the RSMAP ids of one granted resource on a host
+ *
+ * @param granted_resource the granted resource (GRU_Type) whose resource map ids are booked
+ * @param host the host to book on (EH_Type)
+ * @param slots positive to debit, negative to undebit
+ * @param[out] just_check if != nullptr do not book, only report whether it would fit
+ * @return the number of modifications done
+ */
 static int
-ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
+ja_task_debit_host_rsmap(const ocs::tom::ConstElement<ocs::tom::GRU> granted_resource,
+                         const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
    const char *ce_name = ocs::tom::get<GRU_name>(granted_resource);
-   for (ocs::tom::ConstElement<ocs::tom::RESL> resl : ocs::tom::get<GRU_resource_map_list>(granted_resource)) {
+   for (const auto resl : ocs::tom::get<GRU_resource_map_list>(granted_resource)) {
       mods += host_debit_rsmap(host, ce_name, resl, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -606,23 +699,26 @@ ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int
 /**
  * @brief debit / undebit RSMAP ids of a newly scheduled ja_task
  *
- * @param granted_resources_list the resources granted to the task
- * @param host  from this host
+ * @param granted_resources_list the resources granted to the task (GRU_Type), may be an empty handle
+ * @param host  from this host (EH_Type)
  * @param slots this is the amount of slots to debit
- * @param just_check if != nullptr then do not do booking but just check if the job would fit on the resources and return the result here
+ * @param just_check if != nullptr then do not do booking but just check if the job would fit on the resources and
+ *        return the result here
  * @return the number of modifications done
  */
-int ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
+int ja_task_debit_host_rsmaps(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
+                              const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = ocs::tom::get<EH_name>(host);
-   const void *iterator;
+   const void *iterator = nullptr;
 
-   for (ocs::tom::ConstElement<ocs::tom::GRU> granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
-        granted_resource != nullptr;
+   for (auto granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
+        granted_resource;
         granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 
       // only debit RSMAPs here
-      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) != ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) !=
+          ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
          continue;
       }
 
@@ -635,13 +731,22 @@ int ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *ho
    return mods;
 }
 
+/**
+ * @brief Debit or undebit the core bindings of one granted resource on a host
+ *
+ * @param granted_resource the granted resource (GRU_Type) whose bindings are booked
+ * @param host the host to book on (EH_Type)
+ * @param slots positive to debit, negative to undebit
+ * @param[out] just_check if != nullptr do not book, only report whether it would fit
+ * @return the number of modifications done
+ */
 static int
-ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
+ja_task_debit_host_binding(const ocs::tom::ConstElement<ocs::tom::GRU> granted_resource,
+                           const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    DENTER(TOP_LAYER);
    int mods = 0;
    const char *ce_name = ocs::tom::get<GRU_name>(granted_resource);
-   const lListElem *binding_st_elem;
-   for_each_ep (binding_st_elem, static_cast<const lList *>(ocs::tom::get<GRU_binding_inuse>(granted_resource))) {
+   for (const auto binding_st_elem : ocs::tom::get<GRU_binding_inuse>(granted_resource)) {
       mods += host_debit_binding(host, ce_name, binding_st_elem, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -656,22 +761,24 @@ ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, i
  * The counterpart of #ja_task_debit_host_rsmaps for core bindings: what is
  * booked is a topology string rather than a count.
  *
- * @param granted_resources_list the resources granted to the task
- * @param host the host to book on
+ * @param granted_resources_list the resources granted to the task (GRU_Type), may be an empty handle
+ * @param host the host to book on (EH_Type)
  * @param slots positive to debit, negative to undebit
  * @param[out] just_check if != nullptr do not book, only report whether it would fit
  * @return the number of modifications done
  */
-int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
+int ja_task_debit_host_bindings(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
+                                const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = ocs::tom::get<EH_name>(host);
-   const void *iterator;
-   for (ocs::tom::ConstElement<ocs::tom::GRU> granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
-        granted_resource != nullptr;
+   const void *iterator = nullptr;
+   for (auto granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
+        granted_resource;
         granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 
       // only debit binding information here
-      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) != ocs::GrantedResources::Type::GRU_BINDING_TYPE) {
+      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) !=
+          ocs::GrantedResources::Type::GRU_BINDING_TYPE) {
          continue;
       }
 
@@ -701,8 +808,7 @@ int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *
  *
  * @note Thread-safe: This function only reads from the passed parameter
  */
-bool
-ja_task_is_running(const lListElem *ja_task) {
+bool ja_task_is_running(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
    bool is_running = false;
    if (ocs::tom::get<JAT_status>(ja_task) & JTRANSFERING ||
        ocs::tom::get<JAT_status>(ja_task) & JRUNNING) {
@@ -712,27 +818,56 @@ ja_task_is_running(const lListElem *ja_task) {
 }
 
 /**
+ * @brief ja_task_is_running() for an untyped caller
+ *
+ * @param[in] ja_task The job array task element (JAT_Type) to check, checked
+ *
+ * @return as ja_task_is_running()
+ */
+bool ja_task_is_running(const lListElem *ja_task) {
+   return ja_task_is_running(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task));
+}
+
+/**
  * @brief Record who deleted a job array task
  *
  * Stored in `JAT_deleted_by`, so it survives spooling and is available when the
  * accounting record is written. An already existing value is overwritten.
  *
- * @param[in,out] ja_task the task to mark
+ * @param[in,out] ja_task the task to mark (JAT_Type)
  * @param deleted_by the name to record
  */
-void
-ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
+void ja_task_set_deleted_by(const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *deleted_by) {
    ocs::tom::set<JAT_deleted_by>(ja_task, deleted_by);
+}
+
+/**
+ * @brief ja_task_set_deleted_by() for an untyped caller
+ *
+ * @param[in,out] ja_task the task to mark (JAT_Type), checked
+ * @param deleted_by the name to record
+ */
+void ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
+   ja_task_set_deleted_by(ocs::tom::Element<ocs::tom::JAT>(ja_task), deleted_by);
 }
 
 /**
  * @brief Who deleted this job array task?
  *
- * @param ja_task the task to ask about
+ * @param ja_task the task to ask about (JAT_Type)
  * @return the recorded name, or nullptr when the task was not deleted through
  *         this mechanism
  */
-const char *
-ja_task_get_deleted_by(const lListElem *ja_task) {
+const char *ja_task_get_deleted_by(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
    return ocs::tom::get<JAT_deleted_by>(ja_task);
+}
+
+/**
+ * @brief ja_task_get_deleted_by() for an untyped caller
+ *
+ * @param ja_task the task to ask about (JAT_Type), checked
+ * @return as ja_task_get_deleted_by()
+ */
+const char *ja_task_get_deleted_by(const lListElem *ja_task) {
+   return ja_task_get_deleted_by(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task));
 }

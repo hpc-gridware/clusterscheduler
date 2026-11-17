@@ -492,7 +492,7 @@ bool include_names,
 uint32_t action
 ) {
    DENTER(TOP_LAYER);
-   lListElem *ep, *idp;
+   lListElem *ep;
    bool ret = false;
    bool is_run_once = false;
 
@@ -511,8 +511,10 @@ uint32_t action
          if ((arrayDefList != nullptr) && (lNext(sep) == nullptr)) {
             tempArrayList = arrayDefList;
          }   
-         if (sge_parse_jobtasks(ppdestlist, &idp, ocs::tom::get<ST_name>(sep), nullptr,
-             include_names, tempArrayList) == -1) {
+         const auto [parse_ret, idp] = sge_parse_jobtasks(ppdestlist, ocs::tom::get<ST_name>(sep), nullptr,
+                                                          include_names,
+                                                          ocs::tom::ConstList<ocs::tom::RN>(tempArrayList));
+         if (parse_ret == -1) {
             answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                     MSG_JOB_XISINVALIDJOBTASKID_S, ocs::tom::get<ST_name>(sep));
 

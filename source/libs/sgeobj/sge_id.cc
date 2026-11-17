@@ -86,7 +86,8 @@ bool id_list_build_from_str_list(lList **id_list,
           */
 
          if ((transition & QUEUE_DO_ACTION) == 0) { 
-            sge_parse_jobtasks(id_list, &new_id, string, answer_list, false, nullptr);
+            new_id = sge_parse_jobtasks(id_list, string, answer_list, false,
+                                        ocs::tom::ConstList<ocs::tom::RN>()).second;
          }   
 
          if (new_id == nullptr) {

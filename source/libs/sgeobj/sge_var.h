@@ -41,6 +41,10 @@
  * @see sge_var.cc
  */
 
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
+
 #include "sgeobj/cull/sge_var_VA_L.h"
 
 /// Marks a variable that is exported to the job with the prefix replaced, e.g. `__SGE_PREFIX__O_HOME` becomes `SGE_O_HOME`
@@ -48,22 +52,23 @@
 /// Like #VAR_PREFIX, but for variables that are only defined when the job does not define them itself
 #define VAR_PREFIX_NR "__SGE_PREFIX2__"
 
-void var_list_dump_to_file(const lList *varl, FILE *file);
+void var_list_dump_to_file(ocs::tom::ConstList<ocs::tom::VA> varl, FILE *file);
+OCS_TRANSITIONAL void var_list_dump_to_file(const lList *varl, FILE *file);
 
-void var_list_copy_env_vars_and_value(lList **varl,
-                                      const lList* src_varl);
+void var_list_copy_env_vars_and_value(lList **varl, ocs::tom::ConstList<ocs::tom::VA> src_varl);
 
-void var_list_copy_prefix_vars(lList **varl, 
-                               const lList *src_varl,
-                               const char *prefix, 
+void var_list_copy_prefix_vars(lList **varl, ocs::tom::ConstList<ocs::tom::VA> src_varl, const char *prefix,
                                const char *new_prefix);
+OCS_TRANSITIONAL void var_list_copy_prefix_vars(lList **varl, const lList *src_varl, const char *prefix,
+                                                const char *new_prefix);
 
-void var_list_copy_prefix_vars_undef(lList **varl, 
-                                     const lList *src_varl,
-                                     const char *prefix, 
+void var_list_copy_prefix_vars_undef(lList **varl, ocs::tom::ConstList<ocs::tom::VA> src_varl, const char *prefix,
                                      const char *new_prefix);
+OCS_TRANSITIONAL void var_list_copy_prefix_vars_undef(lList **varl, const lList *src_varl, const char *prefix,
+                                                      const char *new_prefix);
 
-const char* var_list_get_string(const lList *varl, const char *name);
+const char *var_list_get_string(ocs::tom::ConstList<ocs::tom::VA> varl, const char *name);
+OCS_TRANSITIONAL const char *var_list_get_string(const lList *varl, const char *name);
 
 void var_list_set_string(lList **varl, const char *name, const char *value);
 void var_list_delete_string(lList **varl, const char *name);
@@ -82,9 +87,10 @@ void var_list_split_prefix_vars(lList **varl,
                                 lList **pefix_vars,
                                 const char *prefix);
 
-int var_list_add_as_set(lList *varl, lList *vars);
+int var_list_add_as_set(ocs::tom::List<ocs::tom::VA> varl, ocs::tom::ListPtr<ocs::tom::VA> &&vars);
+OCS_TRANSITIONAL int var_list_add_as_set(lList *varl, lList *vars);
 
-bool var_list_verify(const lList *lp, lList **answer_list);
+bool var_list_verify(ocs::tom::ConstList<ocs::tom::VA> lp, lList **answer_list);
 
 int var_list_parse_from_string(lList **lpp, const char *variable_str,
                                int check_environment);
