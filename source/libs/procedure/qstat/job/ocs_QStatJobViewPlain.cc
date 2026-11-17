@@ -142,25 +142,43 @@ void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const lList *ilp, c
    cull_show_job(os, ocs::tom::ConstList<ocs::tom::SME>(ilp), ocs::tom::ConstElement<ocs::tom::JB>(job), flags);
 }
 
+/**
+ * @brief Report why the pending jobs are not running, as plain text
+ *
+ * The global messages of the scheduler come first. The job related messages
+ * are then merged by message number - a job id named twice for the same
+ * number is dropped - and printed as the message text followed by its job ids.
+ * The merged list replaces the message list of the model. The message list and
+ * the job ids are meant to be sorted, but both sort orders lack their '%' and
+ * sort by nothing.
+ *
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ * @param model the fetched lists; its message list is replaced by the merged one
+ * @return none
+ */
 void
 ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
+   DENTER(TOP_LAYER);
 
-   if (lListElem *sme = lFirstRW(model.ilp)) {
-      ocs::tom::ConstElement<ocs::tom::ULNG> jid_ulng = nullptr;
+   if (const auto sme = model.ilp->front(); sme != nullptr) {
       int first_row = 1;
 
       /* print global schduling info */
       bool first_run = true;
-      for (ocs::tom::ConstElement<ocs::tom::MES> mes : ocs::tom::get<SME_global_message_list>(sme)) {
+      for (const auto mes : ocs::tom::get<SME_global_message_list>(sme)) {
          if (first_run) {
-            os << std::format("{:<{}} {}\n", ocs::ascii_width(MSG_SCHEDD_SCHEDULINGINFO), left_width, ocs::tom::get<MES_message>(mes));
+            os << std::format("{:<{}} {}\n", ocs::ascii_width(MSG_SCHEDD_SCHEDULINGINFO), left_width,
+                              ocs::tom::get<MES_message>(mes));
             first_run = false;
          } else {
             os << std::format("{:<{}} {}\n", ocs::ascii_width(""), left_width, ocs::tom::get<MES_message>(mes));
          }
       }
 
-      lList *mlp = ocs::tom::get<SME_message_list>(sme);
+      auto mlp = ocs::tom::get<SME_message_list>(sme);
+      // "I+" lacks the '%', so this sorts by no key and leaves the order as it is; kept raw rather than turned
+      // into a real sort, which would change the output
       lPSortList(mlp, "I+", MES_message_number);
 
       /*
@@ -169,46 +187,49 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
        * We do not need this messages for the summary output
        */
       {
-         lListElem *flt_msg;
-         lListElem *ref_msg;
-         ocs::tom::ConstElement<ocs::tom::ULNG> ref_jid;
-         lList *new_list = lCreateList("filtered message list", MES_Type);
-         lListElem *flt_nxt_msg = lFirstRW(mlp);
+         auto new_list = ocs::tom::ListPtr<ocs::tom::MES>::create("filtered message list");
+         auto flt_nxt_msg = mlp.front();
 
-         while ((flt_msg = flt_nxt_msg)) {
-            lListElem *flt_jid;
+         while (flt_nxt_msg != nullptr) {
+            const auto flt_msg = flt_nxt_msg;
 
             bool found_msg = false;
-            flt_nxt_msg = lNextRW(flt_msg);
-            for_each_rw(ref_msg, new_list) {
+            flt_nxt_msg = flt_msg.next();
+            for (const auto ref_msg : *new_list) {
                if (ocs::tom::get<MES_message_number>(ref_msg) == ocs::tom::get<MES_message_number>(flt_msg)) {
-                  lListElem *flt_nxt_jid = lFirstRW(ocs::tom::get<MES_job_number_list>(flt_msg));
-                  while ((flt_jid = flt_nxt_jid) != nullptr) {
-                     flt_nxt_jid = lNextRW(flt_jid);
+                  const auto flt_jids = ocs::tom::get<MES_job_number_list>(flt_msg);
+                  const auto ref_jids = ocs::tom::get<MES_job_number_list>(ref_msg);
+                  auto flt_nxt_jid = flt_jids.front();
+                  while (flt_nxt_jid != nullptr) {
+                     const auto flt_jid = flt_nxt_jid;
+                     flt_nxt_jid = flt_jid.next();
 
                      bool found_jid = false;
-                     for_each_ep(ref_jid, ocs::tom::get<MES_job_number_list>(ref_msg)) {
+                     for (const auto ref_jid : ref_jids) {
                         if (ocs::tom::get<ULNG_value>(ref_jid) == ocs::tom::get<ULNG_value>(flt_jid)) {
-                           lRemoveElem(ocs::tom::get<MES_job_number_list>(flt_msg), &flt_jid);
+                           flt_jids.erase(flt_jid);
                            found_jid = true;
                            break;
                         }
                      }
                      if (!found_jid) {
-                        lDechainElem(ocs::tom::get<MES_job_number_list>(flt_msg), flt_jid);
-                        lAppendElem(ocs::tom::get<MES_job_number_list>(ref_msg), flt_jid);
+                        auto moved_jid = flt_jids.extract(flt_jid);
+                        // a message without a job list cannot take it; the id is dropped, as before
+                        if (ref_jids != nullptr) {
+                           ref_jids.push_back(std::move(moved_jid));
+                        }
                      }
                   }
                   found_msg = true;
                }
             }
             if (!found_msg) {
-               lDechainElem(mlp, flt_msg);
-               lAppendElem(new_list, flt_msg);
+               new_list->push_back(mlp.extract(flt_msg));
             }
          }
-         ocs::tom::set<SME_message_list>(sme, new_list);
-         mlp = new_list;
+         const auto filtered = *new_list;
+         ocs::tom::set<SME_message_list>(sme, std::move(new_list));
+         mlp = filtered;
       }
 
       std::string text;
@@ -217,10 +238,11 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
       int ids_per_line = 0;
       int initialized = 0;
       first_run = true;
-      for_each_rw_lv(mes, mlp) {
+      for (const auto mes : mlp) {
+         // a no-op as well, see above
          lPSortList(ocs::tom::get<MES_job_number_list>(mes), "I+", ULNG_value);
 
-         for_each_ep(jid_ulng, ocs::tom::get<MES_job_number_list>(mes)) {
+         for (const auto jid_ulng : ocs::tom::get<MES_job_number_list>(mes)) {
             bool skip = false;
             bool header = false;
             const uint32_t mid = ocs::tom::get<MES_message_number>(mes);
@@ -271,6 +293,8 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
          os << text << "\n";
       }
    }
+
+   DRETURN_VOID;
 }
 
 void ocs::QStatJobViewPlain::report_started(std::ostream &os, QStatParameter &parameter) {

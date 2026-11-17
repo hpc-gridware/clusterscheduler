@@ -51,6 +51,7 @@
  * @param os stream to write to
  * @param parameter the call's parameters
  * @param model the fetched lists
+ * @return none
  */
 void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
@@ -60,8 +61,8 @@ void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParamet
 #endif
 
    /* print scheduler job information and global scheduler info */
-   const ocs::tom::ConstList<ocs::tom::SME> ilp(model.ilp);
-   for (const ocs::tom::ConstElement<ocs::tom::JB> job : ocs::tom::ConstList<ocs::tom::JB>(model.jlp)) {
+   const ocs::tom::ConstList<ocs::tom::SME> ilp = *model.ilp;
+   for (const ocs::tom::ConstElement<ocs::tom::JB> job : *model.jlp) {
 #if 0
       // Do not show jobs that should not be visible
       if (!job_is_visible(packet, ocs::tom::get<JB_owner>(job), model.is_manager())) {

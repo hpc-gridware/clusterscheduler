@@ -31,6 +31,8 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "qstat/select/ocs_QStatSelectController.h"
@@ -39,14 +41,16 @@
  * @param parameter the parsed parameters
  * @param model the model, client or server side
  * @param view the view for the requested output format
+ * @return none
  */
-void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatSelectViewBase &view) {
+void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModelBase &model,
+                                                 QStatSelectViewBase &view) {
    DENTER(TOP_LAYER);
 
    view.report_started(out_);
 
-   for_each_ep_lv(cqueue, model.get_queue_list()) {
-      for (ocs::tom::ConstElement<ocs::tom::QU> qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
+   for (const auto cqueue : model.get_cqueue_list()) {
+      for (const auto qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
          if ((ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT) == TAG_SHOW_IT) {
             if (const char *qname = ocs::tom::get<QU_full_name>(qep); qname != nullptr) {
                view.report_queue(out_, qname);

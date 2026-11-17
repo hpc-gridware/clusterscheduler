@@ -36,6 +36,9 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_ulong.h"
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+
 #include "qstat/default/ocs_QStatDefaultViewPlain.h"
 #include "qstat/msg_qstat.h"
 
@@ -203,8 +206,19 @@ void ocs::QStatDefaultViewPlain::report_queue_resource_finished(std::ostream &os
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom,
-                                                       const char* name, const char* value, const char *details) {
+/** @brief Report one resource of the queue instance
+ * @param os stream to write to
+ * @param resource the complex entry the value belongs to
+ * @param dom where the value comes from, e.g. `hl` for a host load value
+ * @param name the resource
+ * @param value its value
+ * @param details the value's origin, printed when the user asked for it
+ * @return none
+ */
+void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                       const char *dom, const char *name, const char *value,
+                                                       const char *details) {
    DENTER(TOP_LAYER);
    os << "\n\t";
    if (details != nullptr && strlen(details) > 0) {
@@ -775,7 +789,18 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished(std::ostr
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
+/** @brief Report one hard resource request
+ * @param os stream to write to
+ * @param scope which request scope the request belongs to: global, master or slave
+ * @param resource the complex entry the value belongs to
+ * @param name the resource
+ * @param value the requested value
+ * @param uc the urgency contribution of the request
+ * @return none
+ */
+void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, const int scope,
+                                                      const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                      const char *name, const char *value, const double uc) {
    DENTER(TOP_LAYER);
    if (hard_resource_count > 0 ) {
       os << std::format("\n\t{:<36.36} ", ocs::ascii_width(" "));
@@ -791,7 +816,18 @@ void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os
 }
 
 
-void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
+/** @brief Report one soft resource request
+ * @param os stream to write to
+ * @param scope which request scope the request belongs to: global, master or slave
+ * @param resource the complex entry the value belongs to
+ * @param name the resource
+ * @param value the requested value
+ * @param uc the urgency contribution of the request
+ * @return none
+ */
+void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, const int scope,
+                                                      const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                      const char *name, const char *value, const double uc) {
    DENTER(TOP_LAYER);
    if (soft_resource_count > 0 ) {
       os << std::format("\n\t{:<36.36} ", ocs::ascii_width(" "));

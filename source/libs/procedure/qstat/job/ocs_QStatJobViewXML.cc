@@ -31,6 +31,7 @@
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_ulong.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_MES.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"
 #include "sgeobj/tom/ocs_tom_XMLA.h"
@@ -52,10 +53,21 @@ void ocs::QStatJobViewXML::show_job(std::ostream &os, const ocs::tom::ConstList<
                                     const ocs::tom::ConstElement<ocs::tom::JB> job, int flags) {
 }
 
+/**
+ * @brief Report the selected jobs and the messages of the scheduler as one XML document
+ *
+ * The job list and the message list are handed to the XML document and freed
+ * with it, so the model holds neither afterwards.
+ *
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ * @param model the fetched lists; its job and message lists are consumed
+ * @return none
+ */
 void
 ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
-   lList *XML_out = lCreateList("detailed_job_info", XMLE_Type);
+   auto XML_out = ocs::tom::ListPtr<ocs::tom::XMLE>::create("detailed_job_info");
 
    /* add job infos */
    auto xmlElem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
@@ -63,9 +75,8 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    ocs::tom::set<XMLA_Name>(attrElem, "djob_info");
    ocs::tom::set<XMLE_Element>(xmlElem, std::move(attrElem));
    ocs::tom::set<XMLE_Print>(xmlElem, true);
-   ocs::tom::set<XMLE_List>(xmlElem, model.jlp);
-   model.jlp = nullptr;
-   lAppendElem(XML_out, std::move(xmlElem));
+   ocs::tom::set<XMLE_List>(xmlElem, std::move(model.jlp));
+   XML_out->push_back(std::move(xmlElem));
 
    /* add messages */
    auto xmlElem_xmle = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
@@ -73,11 +84,11 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    ocs::tom::set<XMLA_Name>(attrElem_xmla, "messages");
    ocs::tom::set<XMLE_Element>(xmlElem_xmle, std::move(attrElem_xmla));
    ocs::tom::set<XMLE_Print>(xmlElem_xmle, true);
-   ocs::tom::set<XMLE_List>(xmlElem_xmle, model.ilp);
-   model.ilp = nullptr;
-   lAppendElem(XML_out, std::move(xmlElem_xmle));
+   ocs::tom::set<XMLE_List>(xmlElem_xmle, std::move(model.ilp));
+   XML_out->push_back(std::move(xmlElem_xmle));
 
-   lListElem *xml_elem = xml_getHead("detailed_job_info", XML_out, nullptr);
+   // the head takes the list over
+   lListElem *xml_elem = xml_getHead("detailed_job_info", XML_out.release(), nullptr);
    lWriteElemXMLTo(xml_elem, os);
    lFreeElem(&xml_elem);
 
@@ -87,30 +98,33 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
 /**
  * @brief Report why the pending jobs are not running, as XML
  *
- * Each message of the scheduler gets the text that summarizes its jobs, once per message, and its job ids are
- * sorted. The list of messages is handed to the XML document and freed with it.
+ * Each message of the scheduler gets the text that summarizes its jobs, once per message. Its job ids are meant
+ * to be sorted, but the sort order lacks its '%' and sorts by nothing. The list of messages is handed to the XML
+ * document and freed with it.
  *
  * @param os stream to write to
  * @param parameter the call's parameters
  * @param model the fetched lists; its message list is consumed
+ * @return none
  */
 void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
 
    // each message gets the text that summarizes its jobs, as the plain view prints it above their ids
-   if (const lListElem *sme = lFirst(model.ilp); sme != nullptr) {
-      for_each_rw_lv(mes, ocs::tom::get<SME_message_list>(sme)) {
+   if (const auto sme = model.ilp->front(); sme != nullptr) {
+      for (const auto mes : ocs::tom::get<SME_message_list>(sme)) {
+         // "I+" lacks the '%', so this sorts by no key and leaves the order as it is; kept raw rather than
+         // turned into a real sort, which would change the output
          lPSortList(ocs::tom::get<MES_job_number_list>(mes), "I+", ULNG_value);
          const uint32_t mid = ocs::tom::get<MES_message_number>(mes);
          ocs::tom::set<MES_message>(mes, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
       }
    }
 
-   /* print out xml info from list */
-   lListElem *xml_elem = xml_getHead("message", model.ilp, nullptr);
+   /* print out xml info from list; the head takes the list over */
+   lListElem *xml_elem = xml_getHead("message", model.ilp.release(), nullptr);
    lWriteElemXMLTo(xml_elem, os);
    lFreeElem(&xml_elem);
-   model.ilp = nullptr;
 
    DRETURN_VOID;
 }

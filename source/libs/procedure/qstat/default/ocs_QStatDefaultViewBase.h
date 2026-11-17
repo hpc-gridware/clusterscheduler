@@ -28,6 +28,9 @@
 #include <algorithm>
 #include <string>
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+
 #include "ocs_ProcedureView.h"
 #include "../ocs_QStatParameter.h"
 #include "../ocs_QStatModelClient.h"
@@ -223,7 +226,8 @@ namespace ocs {
        * @param value its value
        * @param details the value's origin, printed when the user asked for it
        */
-      virtual void report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom, const char* name, const char* value, const char *details) = 0;
+      virtual void report_queue_resource(std::ostream &os, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                         const char *dom, const char *name, const char *value, const char *details) = 0;
       /** @brief End the current queue instance
        * @param os stream to write to
        * @param qname the queue instance
@@ -338,7 +342,8 @@ namespace ocs {
        * @param value the requested value
        * @param uc the urgency contribution of the request
        */
-      virtual void report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) = 0;
+      virtual void report_hard_resource(std::ostream &os, int scope, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                        const char *name, const char *value, double uc) = 0;
       /** @brief Begin the soft resource requests of one scope
        * @param os stream to write to
        * @param scope which request scope the request belongs to: global, master or slave
@@ -356,7 +361,8 @@ namespace ocs {
        * @param value the requested value
        * @param uc the urgency contribution of the request
        */
-      virtual void report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) = 0;
+      virtual void report_soft_resource(std::ostream &os, int scope, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                        const char *name, const char *value, double uc) = 0;
       /** @brief End the soft resource requests
        * @param os stream to write to
        */

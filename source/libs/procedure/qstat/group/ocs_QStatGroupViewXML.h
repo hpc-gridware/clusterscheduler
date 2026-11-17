@@ -25,6 +25,9 @@
 
 #include <ostream>
 
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
+
 #include "ocs_QStatGroupViewBase.h"
 
 namespace ocs {
@@ -36,13 +39,13 @@ namespace ocs {
     * @ingroup libprocedure
     */
    class QStatGroupViewXML : public QStatGroupViewBase {
-      lList *xml_elems = nullptr;   ///< The cluster queues collected so far
+      ocs::tom::ListPtr<ocs::tom::XMLE> xml_elems;   ///< The cluster queues collected so far
    public:
       /** @brief Build the XML view
        * @param parameter the call's parameters
        */
       explicit QStatGroupViewXML(const ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
-      ~QStatGroupViewXML() override { lFreeList(&xml_elems); }
+      ~QStatGroupViewXML() override = default;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;
       void report_finished(std::ostream &os, QStatParameter &parameter) override;

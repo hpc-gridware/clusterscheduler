@@ -33,6 +33,10 @@
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_qinstance_state.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "ocs_ProcedureParameter.h"
 
@@ -222,49 +226,55 @@ namespace ocs {
       int longest_queue_length = 30; ///< used to align the output of the queue name column
 
    protected:
-      lList *resource_list_ = nullptr; ///< -l resource_request
-      lList *q_resource_list_ = nullptr; ///< -F resource_request
-      lList *queue_ref_list_ = nullptr; ///< -q queue_list
-      lList *pe_ref_list_ = nullptr; ///< -pe pe_list
-      lList *user_list_ = nullptr; ///< -u user_list - selects jobs
-      lList *queue_user_list_ = nullptr; ///< -U user_list - selects queues
-      lList *jid_list_ = nullptr; ///< -j argument list
+      ocs::tom::ListPtr<ocs::tom::CE> resource_list_;     ///< -l resource_request
+      ocs::tom::ListPtr<ocs::tom::CE> q_resource_list_;   ///< -F resource_request
+      ocs::tom::ListPtr<ocs::tom::QR> queue_ref_list_;    ///< -q queue_list
+      ocs::tom::ListPtr<ocs::tom::ST> pe_ref_list_;       ///< -pe pe_list
+      ocs::tom::ListPtr<ocs::tom::ST> user_list_;         ///< -u user_list - selects jobs
+      ocs::tom::ListPtr<ocs::tom::ST> queue_user_list_;   ///< -U user_list - selects queues
+      ocs::tom::ListPtr<ocs::tom::ST> jid_list_;          ///< -j argument list
 
    public:
       /** @brief The resources whose values the listing shows, from `-F`
-       * @return the requested resources
+       * @return the requested resources, an empty handle when none were given
        */
-      [[nodiscard]] const lList *get_q_resource_list() const { return q_resource_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::CE> get_q_resource_list() const { return *q_resource_list_; }
 
       /** @brief The queues to report on, from `-q`
        * @return the queue references, empty when all queues were requested
        */
-      [[nodiscard]] const lList *get_queue_ref_list() const { return queue_ref_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::QR> get_queue_ref_list() const { return *queue_ref_list_; }
 
       /** @brief The users whose jobs to report, from `-u`
        * @return the user names
        */
-      [[nodiscard]] const lList *get_user_list() const { return user_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_user_list() const { return *user_list_; }
 
       /** @brief The resources a queue must offer to be reported, from `-l`
+       *
+       * Mutable: the model fills in the complex attributes of the requests before it selects with them.
+       *
        * @return the requested resources
        */
-      [[nodiscard]] lList *get_resource_list() const { return resource_list_; }
+      [[nodiscard]] ocs::tom::List<ocs::tom::CE> get_resource_list() const { return *resource_list_; }
 
       /** @brief The parallel environments a queue must offer to be reported, from `-pe`
        * @return the requested parallel environments
        */
-      [[nodiscard]] lList *get_pe_ref_list() const { return pe_ref_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_pe_ref_list() const { return *pe_ref_list_; }
 
       /** @brief The users a queue must be usable by to be reported, from `-U`
        * @return the user names
        */
-      [[nodiscard]] lList *get_queue_user_list() const { return queue_user_list_; }
+      [[nodiscard]] ocs::tom::ConstList<ocs::tom::ST> get_queue_user_list() const { return *queue_user_list_; }
 
       /** @brief The jobs `qstat -j` was asked about
+       *
+       * Mutable: the model drops the patterns from it before it reports the jobs that do not exist.
+       *
        * @return the job ids and patterns as they were given
        */
-      [[nodiscard]] lList *get_jid_list() const { return jid_list_; }
+      [[nodiscard]] ocs::tom::List<ocs::tom::ST> get_jid_list() const { return *jid_list_; }
 
       /** @brief The width of the queue name column
        * @return the width, in characters

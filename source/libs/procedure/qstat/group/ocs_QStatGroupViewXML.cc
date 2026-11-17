@@ -22,31 +22,51 @@
  * @brief XML rendering of `qstat -g c`
  */
 
+#include "uti/sge_rmon_macros.h"
+
 #include "sgeobj/sge_cull_xml.h"
 #include "sgeobj/tom/ocs_tom_XMLE.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "qstat/group/ocs_QStatGroupViewXML.h"
 
 void ocs::QStatGroupViewXML::report_started(std::ostream &os, QStatParameter &parameter) {
 }
 
+/** @brief Write the cluster queues collected, if there are any
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ * @return none
+ */
 void ocs::QStatGroupViewXML::report_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
    if (xml_elems != nullptr) {
-      lListElem *xml_elem = xml_getHead("job_info", xml_elems, nullptr);
-      xml_elems = nullptr;
+      // the head takes the list over
+      lListElem *xml_elem = xml_getHead("job_info", xml_elems.release(), nullptr);
       lWriteElemXMLTo(xml_elem, os);
       lFreeElem(&xml_elem);
    }
+   DRETURN_VOID;
 }
 
-void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name, Summary *summary, QStatParameter &parameter) {
+/** @brief Collect one cluster queue as an element of the document
+ * @param os stream to write to
+ * @param cq_name the cluster queue
+ * @param summary the counts of the cluster queue
+ * @param parameter the call's parameters
+ * @return none
+ */
+void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char *cq_name, Summary *summary,
+                                           QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
    auto elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    if (elem == nullptr) {
-      return;
+      DRETURN_VOID;
    }
-   lList *attributes = lCreateList("attributes", XMLE_Type);
-   ocs::tom::set<XMLE_List>(elem, attributes);
+   auto attribute_list = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
+   const auto attributes = *attribute_list;
+   ocs::tom::set<XMLE_List>(elem, std::move(attribute_list));
 
    xml_append_Attr_S(attributes, "name", cq_name);
    if (summary->is_load_available) {
@@ -73,7 +93,8 @@ void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name
       xml_append_Attr_U(attributes, "error", summary->error);
    }
    if (xml_elems == nullptr){
-      xml_elems = lCreateList("cluster_queue_summary", XMLE_Type);
+      xml_elems = ocs::tom::ListPtr<ocs::tom::XMLE>::create("cluster_queue_summary");
    }
-   lAppendElem(xml_elems, std::move(elem));
+   xml_elems->push_back(std::move(elem));
+   DRETURN_VOID;
 }

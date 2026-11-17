@@ -31,6 +31,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_host.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "sched/load_correction.h"
@@ -48,7 +50,7 @@
  * @param cqueue the cluster queue
  * @param exechost_list the execution hosts, for the load values
  * @param centry_list the complex entries, to interpret the load
- * @param load_adjustments the job load adjustments of the scheduler configuration (`CE_Type`)
+ * @param load_adjustments the job load adjustments of the scheduler configuration
  * @param load receives the average load
  * @param is_load_available receives whether any instance reported a load
  * @param used receives the slots in use
@@ -70,19 +72,24 @@
  * @param manual_intervention receives the slots needing an administrator
  * @return true when the cluster queue could be summed up
  */
-bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
-                                                         const lList *load_adjustments, double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
-                                                         uint32_t *suspend_manual, uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,
+bool ocs::QStatGroupController::cqueue_calculate_summary(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                                         const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                                                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                                                         const ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                                                         double *load, bool *is_load_available, uint32_t *used,
+                                                         uint32_t *resv, uint32_t *total, uint32_t *suspend_manual,
+                                                         uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,
                                                          uint32_t *suspend_calendar, uint32_t *unknown, uint32_t *load_alarm,
-                                                         uint32_t *disabled_manual, uint32_t *disabled_calendar, uint32_t *ambiguous,
-                                                         uint32_t *orphaned, uint32_t *error, uint32_t *available, uint32_t *temp_disabled,
+                                                         uint32_t *disabled_manual, uint32_t *disabled_calendar,
+                                                         uint32_t *ambiguous, uint32_t *orphaned, uint32_t *error,
+                                                         uint32_t *available, uint32_t *temp_disabled,
                                                          uint32_t *manual_intervention) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
    if (cqueue != nullptr) {
-      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       double host_load_avg = 0.0;
       uint32_t load_slots = 0;
       uint32_t used_available = 0;
@@ -181,8 +188,10 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
  * @param parameter the parsed parameters
  * @param model the model, client or server side
  * @param view the view for the requested output format
+ * @return none
  */
-void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatGroupViewBase &view) {
+void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModelBase &model,
+                                                QStatGroupViewBase &view) {
    DENTER(TOP_LAYER);
 
    model.calc_longest_queue_length(parameter);
@@ -190,7 +199,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
 
    view.report_started(out_, parameter);
 
-   for_each_ep_lv(cqueue, model.get_queue_list()) {
+   for (const auto cqueue : model.get_cqueue_list()) {
       if (ocs::tom::get<CQ_tag>(cqueue) != TAG_DEFAULT) {
          QStatGroupViewBase::Summary summary{};
 

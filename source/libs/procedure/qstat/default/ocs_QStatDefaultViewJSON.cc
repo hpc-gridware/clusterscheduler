@@ -32,6 +32,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/parse.h"
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+
 #include "qstat/default/ocs_QStatDefaultViewJSON.h"
 
 void ocs::QStatDefaultViewJSON::report_started(std::ostream &os, QStatParameter &parameter) {
@@ -165,8 +168,19 @@ void ocs::QStatDefaultViewJSON::report_queue_resource_finished(std::ostream &os,
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os, const lListElem *resource, const char *dom,
-                                                      const char *name, const char *value, const char *details) {
+/** @brief Report one resource of the queue instance
+ * @param os stream to write to
+ * @param resource the complex entry the value belongs to
+ * @param dom where the value comes from, e.g. `hl` for a host load value
+ * @param name the resource
+ * @param value its value
+ * @param details the value's origin, printed when the user asked for it
+ * @return none
+ */
+void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os,
+                                                      const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                      const char *dom, const char *name, const char *value,
+                                                      const char *details) {
    DENTER(TOP_LAYER);
    if (first_sub_object) {
       os << "\n";
@@ -499,8 +513,18 @@ void ocs::QStatDefaultViewJSON::report_hard_resources_finished(std::ostream &os)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope, const lListElem *resource,
-                                                     const char *name, const char *value, double uc) {
+/** @brief Report one hard resource request
+ * @param os stream to write to
+ * @param scope which request scope the request belongs to: global, master or slave
+ * @param resource the complex entry the value belongs to
+ * @param name the resource
+ * @param value the requested value
+ * @param uc the urgency contribution of the request
+ * @return none
+ */
+void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, const int scope,
+                                                     const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                     const char *name, const char *value, const double uc) {
    DENTER(TOP_LAYER);
    if (first_sub_object) {
       os << "\n";
@@ -580,8 +604,18 @@ void ocs::QStatDefaultViewJSON::report_soft_resources_finished(std::ostream &os)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope, const lListElem *resource,
-                                                     const char *name, const char *value, double uc) {
+/** @brief Report one soft resource request
+ * @param os stream to write to
+ * @param scope which request scope the request belongs to: global, master or slave
+ * @param resource the complex entry the value belongs to
+ * @param name the resource
+ * @param value the requested value
+ * @param uc the urgency contribution of the request
+ * @return none
+ */
+void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, const int scope,
+                                                     const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                     const char *name, const char *value, const double uc) {
    DENTER(TOP_LAYER);
    if (first_sub_object) {
       os << "\n";

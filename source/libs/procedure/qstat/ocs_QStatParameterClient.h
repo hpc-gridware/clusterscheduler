@@ -39,7 +39,7 @@ namespace ocs {
 #pragma region Parsing
 
    private:
-      lList * sge_parse_qstat(lList **ppcmdline, lList **ppljid);
+      lList *sge_parse_qstat(lList **ppcmdline);
       bool switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, const char *file);
       int qstat_usage(FILE *fp, char *what);
       bool switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list, char **argv);

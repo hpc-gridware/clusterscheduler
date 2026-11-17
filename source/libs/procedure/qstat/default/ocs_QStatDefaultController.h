@@ -23,6 +23,15 @@
  * @brief Controller of plain `qstat`: runs the request and drives the view
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+
 #include "qstat/ocs_QStatParameter.h"
 #include "qstat/ocs_QStatModelClient.h"
 #include "ocs_QStatDefaultViewBase.h"
@@ -38,23 +47,36 @@ namespace ocs {
    class QStatDefaultController {
       std::ostream &out_;   ///< Where the view writes
 
-      void remove_tagged_jobs(lList *job_list);
+      void remove_tagged_jobs(ocs::tom::List<ocs::tom::JB> job_list);
 
-      void process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
-      void process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
-      void process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatModelBase &model,
+                                        QStatDefaultViewBase &view);
+      void process_queue(std::ostream &os, ocs::tom::Element<ocs::tom::QU> queue, QStatParameter &parameter,
+                         QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_jobs_in_queue(std::ostream &os, ocs::tom::Element<ocs::tom::QU> queue, bool print_jobs_of_queue,
+                                 QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
 
-      void process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
-      void process_jobs_finished_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
-      void process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
-      void process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master, int slots, int slot, int *count,
-                                     QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model,
+                                      QStatDefaultViewBase &view);
+      void process_jobs_finished_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model,
+                                       QStatDefaultViewBase &view);
+      void process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model,
+                                    QStatDefaultViewBase &view);
+      void process_jobs_not_enrolled(std::ostream &os, ocs::tom::Element<ocs::tom::JB> job, bool print_jobid,
+                                     char *master, int slots, int slot, int *count, QStatParameter &parameter,
+                                     QStatModelBase &model, QStatDefaultViewBase &view);
 
-      void process_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
-                       const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
-                       QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
-      void process_subtask(std::ostream &os, lListElem *job, lListElem *ja_task, lListElem *pe_task, QStatDefaultViewBase &view);
-      void process_resources(std::ostream &os, const lList* cel, lList* centry_list, int slots, int scope, bool is_hard_resource, QStatDefaultViewBase &view);
+      void process_job(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                       ocs::tom::ConstElement<ocs::tom::JAT> jatep, ocs::tom::ConstElement<ocs::tom::QU> qep,
+                       ocs::tom::ConstElement<ocs::tom::JG> gdil_ep, bool print_jobid, const char *master,
+                       dstring *dyn_task_str, int slots, int slot, int slots_per_line, QStatParameter &parameter,
+                       QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_subtask(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                           ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstElement<ocs::tom::PET> pe_task,
+                           QStatDefaultViewBase &view);
+      void process_resources(std::ostream &os, ocs::tom::ConstList<ocs::tom::CE> cel,
+                             ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, int scope, bool is_hard_resource,
+                             QStatDefaultViewBase &view);
 
 
    public:

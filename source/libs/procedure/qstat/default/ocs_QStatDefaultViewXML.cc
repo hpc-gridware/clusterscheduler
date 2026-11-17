@@ -37,6 +37,8 @@
 #include "sgeobj/sge_cull_xml.h"
 #include "sgeobj/sge_job.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_XMLA.h"
 #include "sgeobj/tom/ocs_tom_XMLE.h"
 
@@ -51,74 +53,86 @@ static const char* ADDITIONAL_TAG_NAMES[] = {
    "granted_pe"
 };
 
-/** @brief Start a new job section */
+/** @brief Start a new job section
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::qstat_xml_create_job_list() {
    DENTER(TOP_LAYER);
 
    SGE_ASSERT(job_list == nullptr);
-   job_list = lCreateList("job_list", XMLE_Type);
+   job_list = ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list");
    DRETURN_VOID;
 }
 
 /** @brief Close the current job section and file it under its state
+ *
+ * Each job gets the state as an attribute, and the jobs move to the end of
+ * the target list; the section's list is freed.
+ *
  * @param state the section's name in the document, e.g. `pending_jobs`
  * @param target_list the list the section is appended to
+ * @return none
  */
-void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lList* target_list) {
+void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char *state,
+                                                         const ocs::tom::List<ocs::tom::XMLE> target_list) {
    DENTER(TOP_LAYER);
-   lList *attributes = nullptr;
-   lList *l_job_list = nullptr;
 
-   for_each_rw_lv(l_job_elem, job_list) {
-      attributes = ocs::tom::get<XMLE_Attribute>(l_job_elem);
-      if (!attributes){
-         attributes = lCreateList("attributes", XMLA_Type);
-         ocs::tom::set<XMLE_Attribute>(l_job_elem, attributes);
-      }
+   for (const auto l_job_elem : *job_list) {
+      const auto attributes = ocs::tom::get_or_create<XMLE_Attribute>(l_job_elem, "attributes");
       auto state_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
       ocs::tom::set<XMLA_Name>(state_elem, "state");
       ocs::tom::set<XMLA_Value>(state_elem, state);
-      lAppendElem(attributes, std::move(state_elem));
-
-      lAppendElem(l_job_list, l_job_elem);
+      attributes.push_back(std::move(state_elem));
    }
 
-   lAddList(target_list, &job_list);
+   target_list.splice(std::move(job_list));
 
    DRETURN_VOID;
 }
 
+/** @brief Start the document: the element of the queue instances and the element of the job sections
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   queue_list_elem = lCreateElem(XMLE_Type);
+   queue_list_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    ocs::tom::set<XMLA_Name>(attr_elem, "queue_info");
    ocs::tom::set<XMLE_Element>(queue_list_elem, std::move(attr_elem));
    ocs::tom::set<XMLE_Print>(queue_list_elem, true);
 
-   job_list_elem = lCreateElem(XMLE_Type);
+   job_list_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attr_elem_xmla = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    ocs::tom::set<XMLA_Name>(attr_elem_xmla, "job_info");
    ocs::tom::set<XMLE_Element>(job_list_elem, std::move(attr_elem_xmla));
    ocs::tom::set<XMLE_Print>(job_list_elem, true);
-   ocs::tom::set<XMLE_List>(job_list_elem, lCreateList("job_list", XMLE_Type));
+   ocs::tom::set<XMLE_List>(job_list_elem, ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list"));
 
    DRETURN_VOID;
 }
 
+/** @brief Write the document that was built from the hook calls
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_finished(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   lList *XML_out = lCreateList("job_info", XMLE_Type);
+   auto XML_out = ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_info");
 
-   lAppendElem(XML_out, queue_list_elem);
-   queue_list_elem = nullptr;
+   if (queue_list_elem) {
+      XML_out->push_back(std::move(queue_list_elem));
+   }
+   if (job_list_elem) {
+      XML_out->push_back(std::move(job_list_elem));
+   }
 
-   lAppendElem(XML_out, job_list_elem);
-   job_list_elem = nullptr;
-
-   lListElem *xml_elem = xml_getHead("job_info", XML_out, nullptr);
+   // the head takes the list over
+   lListElem *xml_elem = xml_getHead("job_info", XML_out.release(), nullptr);
    lWriteElemXMLTo(xml_elem, os);
    lFreeElem(&xml_elem);
 
@@ -135,6 +149,12 @@ void ocs::QStatDefaultViewXML::report_queue_section_finished(std::ostream &os, Q
    DRETURN_VOID;
 }
 
+/** @brief File the queue instance just filled under the queue instances, or drop it without `-f`
+ * @param os stream to write to
+ * @param qname the queue instance
+ * @param parameter the call's parameters
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const char* qname, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
@@ -145,21 +165,27 @@ void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const cha
       }
       DPRINTF("add queue_info for queue %s to queue_list\n", qname );
 
-      lList* queue_list = ocs::tom::get<XMLE_List>(queue_list_elem);
+      auto queue_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(queue_list_elem));
       if (queue_list == nullptr) {
          DPRINTF("Had empty queue list, create new one\n");
-         queue_list = lCreateList("Queue-List", XMLE_Type);
-         ocs::tom::set<XMLE_List>(queue_list_elem, queue_list);
+         auto created = ocs::tom::ListPtr<ocs::tom::XMLE>::create("Queue-List");
+         queue_list = *created;
+         ocs::tom::set<XMLE_List>(queue_list_elem, std::move(created));
       }
-      lAppendElem(queue_list, queue_elem);
-      queue_elem = nullptr;
+      queue_list.push_back(std::move(queue_elem));
    } else {
-      lFreeElem(&queue_elem);
+      queue_elem.reset();
    }
 
    DRETURN_VOID;
 }
 
+/** @brief Start a new queue instance element, with `-f` only
+ * @param os stream to write to
+ * @param qname the queue instance
+ * @param parameter the call's parameters
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
@@ -175,7 +201,7 @@ void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char
 
       auto temp = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
       ocs::tom::set<XMLE_Print>(temp, false);
-      queue_elem = lCreateElem(XMLE_Type);
+      queue_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
       auto attribute_list = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
       ocs::tom::set<XMLE_List>(temp, std::move(attribute_list));
       ocs::tom::set<XMLE_Element>(queue_elem, std::move(temp));
@@ -260,7 +286,19 @@ void ocs::QStatDefaultViewXML::report_queue_resource_finished(std::ostream &os, 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom, const char* name, const char* value, const char *details) {
+/** @brief Report one resource of the queue instance
+ * @param os stream to write to
+ * @param resource the complex entry the value belongs to
+ * @param dom where the value comes from, e.g. `hl` for a host load value
+ * @param name the resource
+ * @param value its value
+ * @param details the value's origin, printed when the user asked for it
+ * @return none
+ */
+void ocs::QStatDefaultViewXML::report_queue_resource(std::ostream &os,
+                                                     const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                     const char *dom, const char *name, const char *value,
+                                                     const char *details) {
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = ocs::tom::get<XMLE_Element>(queue_elem);
@@ -280,27 +318,31 @@ void ocs::QStatDefaultViewXML::report_queue_jobs_started(std::ostream &os, const
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_jobs_finished(std::ostream &os, const char* qname, QStatParameter &parameter) {
+/** @brief File the running jobs of the section under the queue instance, or under the queue instances without `-f`
+ *
+ * An empty section is dropped.
+ *
+ * @param os stream to write to
+ * @param qname the queue instance
+ * @param parameter the call's parameters
+ * @return none
+ */
+void ocs::QStatDefaultViewXML::report_queue_jobs_finished(std::ostream &os, const char *qname,
+                                                          QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   if (lFirst(job_list)) {
-      lList *l_job_list = nullptr;
-      if (parameter.show_ & QSTAT_DISPLAY_FULL ) {
-         l_job_list = ocs::tom::get<XMLE_List>(queue_elem);
-         if(l_job_list == nullptr) {
-            l_job_list = lCreateList("job_list", XMLE_Type);
-            ocs::tom::set<XMLE_List>(queue_elem, l_job_list);
-         }
-      } else {
-        l_job_list = ocs::tom::get<XMLE_List>(queue_list_elem);
-         if(l_job_list == nullptr) {
-            l_job_list = lCreateList("job_list", XMLE_Type);
-            ocs::tom::set<XMLE_List>(queue_list_elem, l_job_list);
-         }
+   if (job_list->front() != nullptr) {
+      // the element whose list takes the jobs
+      const auto &owner = (parameter.show_ & QSTAT_DISPLAY_FULL) ? queue_elem : queue_list_elem;
+      auto l_job_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(owner));
+      if (l_job_list == nullptr) {
+         auto created = ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list");
+         l_job_list = *created;
+         ocs::tom::set<XMLE_List>(owner, std::move(created));
       }
       qstat_xml_finish_job_list("running", l_job_list);
    } else {
-      lFreeList(&job_list);
+      job_list.reset();
    }
 
    DRETURN_VOID;
@@ -313,9 +355,13 @@ void ocs::QStatDefaultViewXML::report_pending_jobs_started(std::ostream &os, QSt
    DRETURN_VOID;
 }
 
+/** @brief File the jobs of the section under the job sections, as `pending`
+ * @param os stream to write to
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_pending_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   lList *target_list = ocs::tom::get<XMLE_List>(job_list_elem);
+   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(job_list_elem));
    qstat_xml_finish_job_list("pending", target_list);
 
    DRETURN_VOID;
@@ -329,9 +375,13 @@ void ocs::QStatDefaultViewXML::report_finished_jobs_started(std::ostream &os, QS
    DRETURN_VOID;
 }
 
+/** @brief File the jobs of the section under the job sections, as `finished_retained`
+ * @param os stream to write to
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_finished_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   lList *target_list = ocs::tom::get<XMLE_List>(job_list_elem);
+   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(job_list_elem));
    /* CS-1908 U7: renamed from "finished" — under retention this tag holds the
     * ja_tasks currently retained in the finished-history window (not the
     * transient JOBS-WAITING-FOR-ACCOUNTING queue it modeled before). */
@@ -348,9 +398,13 @@ void ocs::QStatDefaultViewXML::report_error_jobs_started(std::ostream &os, QStat
    DRETURN_VOID;
 }
 
+/** @brief File the jobs of the section under the job sections, as `error`
+ * @param os stream to write to
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_error_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   lList *target_list = ocs::tom::get<XMLE_List>(job_list_elem);
+   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(job_list_elem));
    qstat_xml_finish_job_list("error", target_list);
 
    DRETURN_VOID;
@@ -369,17 +423,26 @@ void ocs::QStatDefaultViewXML::report_sub_tasks_finished(std::ostream &os) {
 }
 
 
-void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) {
+/** @brief Start a new job element and fill in the summary columns
+ * @param os stream to write to
+ * @param jid the job id
+ * @param summary the values of the columns
+ * @param parameter the call's parameters
+ * @param model the fetched lists
+ * @return none
+ */
+void ocs::QStatDefaultViewXML::report_job(std::ostream &os, const uint32_t jid, job_summary_t *summary,
+                                          QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
    dstring ds = DSTRING_INIT;
-   lList *attribute_list = nullptr;
    // @todo: static init is frozen at first call — re-evaluate if this code is ever reused in a long-running process
    static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
 
-   job_elem = lCreateElem(XMLE_Type);
-   attribute_list = lCreateList("attributes", XMLE_Type);
-   ocs::tom::set<XMLE_List>(job_elem, attribute_list);
+   job_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
+   auto attributes = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
+   const auto attribute_list = *attributes;
+   ocs::tom::set<XMLE_List>(job_elem, std::move(attributes));
 
    sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;
@@ -433,7 +496,8 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_su
 
    /* deadline time */
    if (sge_urg && summary->deadline > 0) {
-      xml_append_Attr_S(attribute_list, "JB_deadline", sge_ctime64(summary->deadline, &ds, true, compat ? false : true));
+      xml_append_Attr_S(attribute_list, "JB_deadline",
+                        sge_ctime64(summary->deadline, &ds, true, compat ? false : true));
    }
 
    if (sge_ext) {
@@ -480,11 +544,20 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_su
    DRETURN_VOID;
 }
 
+/** @brief File the job just filled under the current section
+ * @param os stream to write to
+ * @param jid the job id
+ * @return none
+ */
 void ocs::QStatDefaultViewXML::report_job_finished(std::ostream &os, uint32_t jid) {
    DENTER(TOP_LAYER);
 
-   lAppendElem(job_list, job_elem);
-   job_elem = nullptr;
+   // without a section the job is dropped, as appending to no list did
+   if (job_list && job_elem) {
+      job_list->push_back(std::move(job_elem));
+   } else {
+      job_elem.reset();
+   }
 
    DRETURN_VOID;
 }
@@ -581,7 +654,18 @@ void ocs::QStatDefaultViewXML::report_default_request(std::ostream &os, const ch
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_hard_resource(std::ostream &os, int scope, const lListElem *, const char* name, const char* value, double uc) {
+/** @brief Report one hard resource request
+ * @param os stream to write to
+ * @param scope which request scope the request belongs to: global, master or slave
+ * @param resource the complex entry the value belongs to
+ * @param name the resource
+ * @param value the requested value
+ * @param uc the urgency contribution of the request
+ * @return none
+ */
+void ocs::QStatDefaultViewXML::report_hard_resource(std::ostream &os, const int scope,
+                                                    const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                    const char *name, const char *value, const double uc) {
    DENTER(TOP_LAYER);
 
    const char *attrib_name;
@@ -608,7 +692,18 @@ void ocs::QStatDefaultViewXML::report_hard_resource(std::ostream &os, int scope,
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) {
+/** @brief Report one soft resource request
+ * @param os stream to write to
+ * @param scope which request scope the request belongs to: global, master or slave
+ * @param resource the complex entry the value belongs to
+ * @param name the resource
+ * @param value the requested value
+ * @param uc the urgency contribution of the request
+ * @return none
+ */
+void ocs::QStatDefaultViewXML::report_soft_resource(std::ostream &os, const int scope,
+                                                    const ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                                    const char *name, const char *value, const double uc) {
    DENTER(TOP_LAYER);
 
    const char *attrib_name;

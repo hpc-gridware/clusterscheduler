@@ -80,7 +80,8 @@ namespace ocs {
       void report_queue_message(std::ostream &os, const char* qname, const char *message) override;
       void report_queue_resource_started(std::ostream &os, const char* name) override;
       void report_queue_resource_finished(std::ostream &os, const char* name) override;
-      void report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom, const char* name, const char* value, const char *details) override;
+      void report_queue_resource(std::ostream &os, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                 const char *dom, const char *name, const char *value, const char *details) override;
       void report_queue_finished(std::ostream &os, const char* qname, QStatParameter &parameter) override;
       void report_queue_jobs_started(std::ostream &os, const char* qname, QStatParameter &parameter) override;
       void report_queue_jobs_finished(std::ostream &os, const char* qname, QStatParameter &parameter) override;
@@ -104,10 +105,12 @@ namespace ocs {
       void report_default_request_finished(std::ostream &os) override;
       void report_default_request(std::ostream &os, const char* name, const char* value) override;
       void report_hard_resources_started(std::ostream &os, int scope) override;
-      void report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) override;
+      void report_hard_resource(std::ostream &os, int scope, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                const char *name, const char *value, double uc) override;
       void report_hard_resources_finished(std::ostream &os) override;
       void report_soft_resources_started(std::ostream &os, int scope) override;
-      void report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) override;
+      void report_soft_resource(std::ostream &os, int scope, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                const char *name, const char *value, double uc) override;
       void report_soft_resources_finished(std::ostream &os) override;
       void report_hard_requested_queues_started(std::ostream &os, int scope) override;
       void report_hard_requested_queue(std::ostream &os, int scope, const char* name) override;

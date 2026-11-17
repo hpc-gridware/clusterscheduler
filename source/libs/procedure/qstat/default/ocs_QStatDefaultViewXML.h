@@ -23,6 +23,10 @@
  * @brief XML rendering of plain `qstat`
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
+
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {
@@ -35,17 +39,17 @@ namespace ocs {
     * @ingroup libprocedure
     */
    class QStatDefaultViewXML : public QStatDefaultViewBase {
-      lListElem *queue_list_elem = nullptr;   ///< The element holding all queue instances
-      lListElem *queue_elem = nullptr;        ///< The queue instance being filled
+      ocs::tom::ElementPtr<ocs::tom::XMLE> queue_list_elem;   ///< The element holding all queue instances
+      ocs::tom::ElementPtr<ocs::tom::XMLE> queue_elem;        ///< The queue instance being filled
 
-      lListElem *job_list_elem = nullptr;     ///< The element holding the current job section
-      lList     *job_list = nullptr;          ///< The jobs of that section
-      lListElem *job_elem = nullptr;          ///< The job being filled
+      ocs::tom::ElementPtr<ocs::tom::XMLE> job_list_elem;     ///< The element holding the job sections
+      ocs::tom::ListPtr<ocs::tom::XMLE> job_list;             ///< The jobs of the current section
+      ocs::tom::ElementPtr<ocs::tom::XMLE> job_elem;          ///< The job being filled
 
 
       void qstat_xml_create_job_list();
 
-      void qstat_xml_finish_job_list(const char* state, lList* target_list);
+      void qstat_xml_finish_job_list(const char *state, ocs::tom::List<ocs::tom::XMLE> target_list);
    public:
       /** @brief Build the XML view
        * @param parameter the call's parameters
@@ -64,7 +68,8 @@ namespace ocs {
       void report_queue_message(std::ostream &os, const char* qname, const char *message) override;
       void report_queue_resource_started(std::ostream &os, const char* name) override;
       void report_queue_resource_finished(std::ostream &os, const char* name) override;
-      void report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom, const char* name, const char* value, const char *details) override;
+      void report_queue_resource(std::ostream &os, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                 const char *dom, const char *name, const char *value, const char *details) override;
       void report_queue_finished(std::ostream &os, const char* qname, QStatParameter &parameter) override;
       void report_queue_jobs_started(std::ostream &os, const char* qname, QStatParameter &parameter) override;
       void report_queue_jobs_finished(std::ostream &os, const char* qname, QStatParameter &parameter) override;
@@ -87,10 +92,12 @@ namespace ocs {
       void report_default_request_finished(std::ostream &os) override;
       void report_default_request(std::ostream &os, const char* name, const char* value) override;
       void report_hard_resources_started(std::ostream &os, int scope) override;
-      void report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) override;
+      void report_hard_resource(std::ostream &os, int scope, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                const char *name, const char *value, double uc) override;
       void report_hard_resources_finished(std::ostream &os) override;
       void report_soft_resources_started(std::ostream &os, int scope) override;
-      void report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) override;
+      void report_soft_resource(std::ostream &os, int scope, ocs::tom::ConstElement<ocs::tom::CE> resource,
+                                const char *name, const char *value, double uc) override;
       void report_soft_resources_finished(std::ostream &os) override;
       void report_hard_requested_queues_started(std::ostream &os, int scope) override;
       void report_hard_requested_queue(std::ostream &os, int scope, const char* name) override;

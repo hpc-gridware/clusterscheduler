@@ -36,6 +36,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_qref_QR_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 
 #include "msg_clients_common.h"
 #include "msg_common.h"
@@ -251,15 +253,16 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(lList **ppcmdlin
    DRETURN(ret);
 }
 
-/****
- **** sge_parse_qstat (static)
- ****
- **** 'stage 2' parsing of qstat-options. Gets the options from
- **** ppcmdline, sets the full and empry_qs flags and puts the
- **** queue/res/user-arguments into the lists.
- ****/
+/** @brief Second stage of the option parsing: turn the switches into the parameters
+ *
+ * Takes the options out of the switch list, sets the display flags and puts
+ * the queue, resource, user and job arguments into the member lists.
+ *
+ * @param ppcmdline the switches (`SPA_Type`); the ones handled are removed from it
+ * @return the answer list with the parsing errors, or nullptr when there were none
+ */
 lList *
-ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
+ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
    DENTER(TOP_LAYER);
    stringT str;
    lList *alp = nullptr;
@@ -274,7 +277,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
       ppcmdline list.
    */
 
-   while (lGetNumberOfElem(*ppcmdline)) {
+   while (!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
       if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
          usageshowed = qstat_usage(stdout, nullptr);
          sge_exit(0);
@@ -284,10 +287,11 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
       while (parse_string(ppcmdline, "-j", &alp, &argstr)) {
          output_mode_ = OutputMode::JOB_INFO;
          if (argstr) {
-            if (*ppljid) {
-               lFreeList(ppljid);
-            }
-            str_list_parse_from_string(ppljid, argstr, ",");
+            // a later -j replaces the job list of an earlier one
+            jid_list_.reset();
+            lList *jids = nullptr;
+            str_list_parse_from_string(&jids, argstr, ",");
+            jid_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(jids);
             sge_free(&argstr);
          }
       }
@@ -373,7 +377,9 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
          show_ |= QSTAT_DISPLAY_QRESOURCES|QSTAT_DISPLAY_FULL;
          need_queues_ = true;
          if (argstr) {
-            q_resource_list_ = centry_list_parse_from_string(q_resource_list_, argstr, false);
+            // frees the list it is handed and gives nullptr when the text cannot be parsed
+            q_resource_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
+               centry_list_parse_from_string(q_resource_list_.release(), argstr, false));
             sge_free(&argstr);
          }
       }
@@ -426,26 +432,37 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
       }
 
       while (parse_string(ppcmdline, "-l", &alp, &argstr)) {
-         resource_list_ = centry_list_parse_from_string(resource_list_, argstr, false);
+         // frees the list it is handed and gives nullptr when the text cannot be parsed
+         resource_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
+            centry_list_parse_from_string(resource_list_.release(), argstr, false));
          need_queues_ = true;
          sge_free(&argstr);
       }
 
-      while (parse_multi_stringlist(ppcmdline, "-u", &alp, &user_list_, ST_Type, ST_name)) {
+      // the parser appends to the lists, so they are handed over and taken back
+      lList *users = user_list_.release();
+      while (parse_multi_stringlist(ppcmdline, "-u", &alp, &users, ST_Type, ST_name)) {
          ;
       }
+      user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
 
-      while (parse_multi_stringlist(ppcmdline, "-U", &alp, &queue_user_list_, ST_Type, ST_name)) {
+      lList *queue_users = queue_user_list_.release();
+      while (parse_multi_stringlist(ppcmdline, "-U", &alp, &queue_users, ST_Type, ST_name)) {
          need_queues_ = true;
       }
+      queue_user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(queue_users);
 
-      while (parse_multi_stringlist(ppcmdline, "-pe", &alp, &pe_ref_list_, ST_Type, ST_name)) {
+      lList *pe_refs = pe_ref_list_.release();
+      while (parse_multi_stringlist(ppcmdline, "-pe", &alp, &pe_refs, ST_Type, ST_name)) {
          need_queues_ = true;
       }
+      pe_ref_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(pe_refs);
 
-      while (parse_multi_stringlist(ppcmdline, "-q", &alp, &queue_ref_list_, QR_Type, QR_name)) {
+      lList *queue_refs = queue_ref_list_.release();
+      while (parse_multi_stringlist(ppcmdline, "-q", &alp, &queue_refs, QR_Type, QR_name)) {
          need_queues_ = true;
       }
+      queue_ref_list_ = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_refs);
 
       while (parse_multi_stringlist(ppcmdline, "-g", &alp, &plstringopt, ST_Type, ST_name)) {
          group_opt_ |= parse_group_options(plstringopt, &alp);
@@ -472,7 +489,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
          break;
    }
 
-   if (lGetNumberOfElem(*ppcmdline)) {
+   if (!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
      snprintf(str, sizeof(str), "%s\n", MSG_PARSE_TOOMANYOPTIONS);
      if (!usageshowed) {
         qstat_usage(stderr, nullptr);
@@ -516,7 +533,6 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
    lList *pfile = nullptr;
    lList *pcmdline = nullptr;
    lList *ref_list = nullptr;
-   lListElem *ep_2 = nullptr;
 
    const char *username = component_get_username();
    const char *cell_root = bootstrap_get_cell_root();
@@ -549,18 +565,22 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
    // get options from the command line
    switch_list_qstat_parse_from_cmdline(&pcmdline, &alp, argv);
 
+   // the parser hands over the switches it built
+   auto file_switches = ocs::tom::ListPtr<ocs::tom::SPA>(pfile);
+   auto cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>(pcmdline);
+
    // remove duplicate options
-   for_each_ep_lv(ep_1, pcmdline) {
+   for (const auto ep_1 : *cmdline_switches) {
       do {
          /*
           * Need that logic to handle multiple SPA
           * objects representing the same option.
           */
          more = false;
-         for_each_rw(ep_2, pfile) {
+         for (const auto ep_2 : *file_switches) {
             if (strcmp(ocs::tom::get<SPA_switch_val>(ep_1), ocs::tom::get<SPA_switch_val>(ep_2)) == 0) {
                // remove duplicate options
-               lRemoveElem(pfile, &ep_2);
+               file_switches->erase(ep_2);
                more = true;
                break;
             }
@@ -569,13 +589,11 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
    }
 
    // merge the options from the files and the command line
-   if (lGetNumberOfElem(pcmdline) > 0) {
-      lAppendList(pcmdline, pfile);
-      lFreeList(&pfile);
-   } else if (lGetNumberOfElem(pfile) > 0) {
-      lAppendList(pfile, pcmdline);
-      lFreeList(&pcmdline);
-      pcmdline = pfile;
+   if (!cmdline_switches->empty()) {
+      cmdline_switches->splice(std::move(file_switches));
+   } else if (!file_switches->empty()) {
+      file_switches->splice(std::move(cmdline_switches));
+      cmdline_switches = std::move(file_switches);
    }
 
    // parsing error => show error and exit
@@ -584,12 +602,14 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
-      lFreeList(&pcmdline);
+      cmdline_switches.reset();
       sge_exit(1);
    }
 
-   // handle all switches
-   alp = sge_parse_qstat(&pcmdline, &jid_list_);
+   // handle all switches; the parser takes the handled ones out of the list
+   lList *switches = cmdline_switches.release();
+   alp = sge_parse_qstat(&switches);
+   cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(switches);
    if (alp != nullptr) {
       /*
       ** low level parsing error! show answer list
@@ -598,12 +618,14 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
-      lFreeList(&pcmdline);
+      cmdline_switches.reset();
       lFreeList(&ref_list);
       sge_exit(1);
    }
 
-   str_list_transform_user_list(&user_list_, answer_list, username);
+   lList *users = user_list_.release();
+   str_list_transform_user_list(&users, answer_list, username);
+   user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
 
    // CS-2387: resolve SGE_QSTAT_LOAD_AVG on the client side so that the value
    // reaches server-rendered qstat (ExecContext::SERVER) through the marshalled
