@@ -959,41 +959,61 @@ spool_classic_default_read_func(lList **answer_list,
    DRETURN(ep);
 }
 
-/****** spool/flatfile/spool_flatfile_default_write_func() ****************
-*  NAME
-*     spool_flatfile_default_write_func() -- write object with flatfile spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_flatfile_default_write_func(lList **answer_list,
-*                                       const lListElem *type,
-*                                       const lListElem *rule,
-*                                       const lListElem *object,
-*                                       const char *key,
-*                                       const sge_object_type object_type)
-*
-*  FUNCTION
-*     Writes an object through the appropriate flatfile spooling functions.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const lListElem *object         - object to spool
-*     const char *key                 - unique key
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_delete_object()
-*******************************************************************************/
+/**
+ * @brief Check that a spool object key is a safe relative spool path.
+ *
+ * A key is used verbatim to build a spool-file path (EXECHOST_DIR/<key> etc.).
+ * Most keys are validated upstream by verify_str_key(), but host names are not,
+ * so this is a defence-in-depth guard at the spool sink (CS-2364, CWE-22).
+ *
+ * A key may be a multi-component relative path: a queue instance is spooled
+ * under "<cqueue>/<host>", so '/' is a legitimate separator and must not be
+ * rejected outright. Instead every component is validated independently — the
+ * key must be relative (no leading '/') and no component may be empty, "." or
+ * ".." or start with '.' — so the resulting path can never escape the spool
+ * directory.
+ *
+ * @param[in] key the object key (a relative path of one or more components)
+ * @return true if @p key is safe to use as a relative spool path, false otherwise
+ */
+bool
+spool_flatfile_key_is_safe(const char *key) {
+   // Reject nullptr, empty, or absolute keys outright.
+   if (key == nullptr || key[0] == '\0' || key[0] == '/') {
+      return false;
+   }
+   // Validate each '/'-separated component: none may be empty (handles "//" and
+   // a trailing '/'), nor "." / ".." / a leading-dot name (handles "comp[0] == '.'").
+   for (const char *comp = key; comp != nullptr; ) {
+      if (comp[0] == '\0' || comp[0] == '.' || comp[0] == '/') {
+         return false;
+      }
+      const char *slash = strchr(comp, '/');
+      comp = (slash != nullptr) ? slash + 1 : nullptr;
+   }
+   return true;
+}
+
+/**
+ * @brief Write an object with classic (flatfile) spooling.
+ *
+ * Writes the object through the appropriate flatfile spooling functions:
+ * first into a dot temp file, which is then renamed to the final spool file.
+ * An object key that is not a safe relative spool path is refused (CS-2364).
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param object object to spool
+ * @param key unique key
+ * @param object_type object type
+ * @return true on success, else false
+ *
+ * @see spool_delete_object()
+ */
 bool
 spool_classic_default_write_func(lList **answer_list,
                                   const lListElem *type,
@@ -1177,6 +1197,16 @@ spool_classic_default_write_func(lList **answer_list,
       backup_load_list = spool_exechost_strip_dynamic_load(object);
    }
 
+   /* Defence-in-depth: the key becomes a single filesystem path component below;
+    * reject an unsafe key (e.g. an unvalidated host name like "../../tmp/x")
+    * before it reaches the filesystem (CS-2364, CWE-22). */
+   if (filename != nullptr && !spool_flatfile_key_is_safe(filename)) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_SPOOL_UNSAFE_KEY_S, filename);
+      ret = false;
+      filename = nullptr;   /* skip the default spool path below */
+   }
+
    /* spool, if possible, using default spooling behavior.
     * job are spooled in the corresponding case branch
     */
@@ -1225,41 +1255,25 @@ spool_classic_default_write_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/flatfile/spool_flatfile_default_delete_func() ***************
-*  NAME
-*     spool_flatfile_default_delete_func() -- delete object in flatfile spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_flatfile_default_delete_func(lList **answer_list,
-*                                        const lListElem *type,
-*                                        const lListElem *rule,
-*                                        const char *key,
-*                                        const sge_object_type object_type)
-*
-*  FUNCTION
-*     Deletes an object in the flatfile spooling.
-*     In most cases, the correspondent spool file is deleted, in some cases
-*     (e.g. jobs), a special remove function is called.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const char *key                 - unique key
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_delete_object()
-*******************************************************************************/
+/**
+ * @brief Delete an object in classic (flatfile) spooling.
+ *
+ * In most cases the corresponding spool file is deleted, in some cases
+ * (e.g. jobs) a special remove function is called. An object key that is not
+ * a safe relative spool path is refused (CS-2364).
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param key unique key
+ * @param object_type object type
+ * @return true on success, else false
+ *
+ * @see spool_delete_object()
+ */
 bool
 spool_classic_default_delete_func(lList **answer_list,
                                    const lListElem *type,
@@ -1270,6 +1284,17 @@ spool_classic_default_delete_func(lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
+
+   /* Defence-in-depth: key is used to build the unlink path; reject an unsafe
+    * key (e.g. an unvalidated host name like "../../tmp/x") so a delete cannot
+    * escape the spool directory (CS-2364, CWE-22). Keys may contain '/' as a
+    * separator ("<cqueue>/<host>"), but no component may be empty or start
+    * with '.'. */
+   if (!spool_flatfile_key_is_safe(key)) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_SPOOL_UNSAFE_KEY_S, key != nullptr ? key : "");
+      DRETURN(false);
+   }
 
    switch(object_type) {
       case SGE_TYPE_ADMINHOST:

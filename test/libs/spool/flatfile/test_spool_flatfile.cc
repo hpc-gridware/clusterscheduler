@@ -54,6 +54,7 @@
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
+#include "spool/flatfile/sge_spooling_flatfile.h"
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
 
 #include <sge_log.h>
@@ -79,6 +80,7 @@ static int CONF_test();
 static int RQS_test();
 static int AR_test();
 static int SPOOL_perm_test();
+static int SPOOL_key_safe_test();
 
 typedef int (*func)();
 
@@ -106,6 +108,7 @@ int main(int argc, char** argv)
                                AR_test,
                                RQS_test,
                                SPOOL_perm_test,
+                               SPOOL_key_safe_test,
                                nullptr };
 
    DENTER_MAIN(TOP_LAYER, "test_ff_cl");   
@@ -2685,6 +2688,56 @@ static int SPOOL_perm_test() {
    unlink(path);
    sge_free(&result);
    answer_list_output(&alp);
+   return ret;
+}
+
+/**
+ * @brief Security regression test for CS-2364 (CWE-22): spool_flatfile_key_is_safe().
+ *
+ * The guard at the spool sink must keep an object key inside the spool
+ * directory. A key may be a multi-component relative path - a queue instance
+ * is spooled as "<cqueue>/<host>" and a job script key embeds a path - so '/'
+ * is allowed as a separator. The key must be relative, and no component may
+ * be empty, "." or ".." or start with '.'.
+ *
+ * @return 0 if all cases behave as expected, 1 otherwise
+ */
+static int SPOOL_key_safe_test() {
+   struct {
+      const char *key;
+      bool expect_safe;
+   } cases[] = {
+      {"validkey", true},
+      {"host-01.example.com", true},          // '-' and '.' are fine when not leading
+      {"12345.7", true},                      // job-style key
+      {"cqueue/host", true},                  // queue-instance key: '/' is a valid separator
+      {"q_issue1760/v01701.fritz.box", true}, // realistic queue-instance key
+      {"JOBSCRIPT:123.job_scripts/123", true}, // job script key as jobscript_get_key() builds it
+      {"123.1 1.host", true},                 // PE task key
+      {"../../tmp/x", false},
+      {"/etc/passwd", false},                 // absolute path
+      {"..", false},
+      {".", false},
+      {".hidden", false},
+      {"a/../b", false},                      // traversal in a later component
+      {"a/./b", false},                       // "." component
+      {"a//b", false},                        // empty component
+      {"a/", false},                          // trailing slash -> empty last component
+      {"a/.hidden", false},                   // leading '.' in a later component
+      {nullptr, false},
+   };
+
+   printf("SPOOL key: spool_flatfile_key_is_safe accepts relative multi-component keys, rejects traversal (CS-2364)\n");
+   int ret = 0;
+   for (const auto &c : cases) {
+      if (spool_flatfile_key_is_safe(c.key) != c.expect_safe) {
+         printf("   spool_flatfile_key_is_safe(%s) = %s, expected %s\n",
+                c.key != nullptr ? c.key : "nullptr",
+                c.expect_safe ? "false" : "true",
+                c.expect_safe ? "true" : "false");
+         ret = 1;
+      }
+   }
    return ret;
 }
 

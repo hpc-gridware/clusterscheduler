@@ -65,5 +65,6 @@
 #define MSG_RSMAP_CHARACTERISTIC_ON_RANGE_SS _MESSAGE(62023, _("RSMAP " SFQ " range " SFQ " does not allow characteristics; list ids explicitly"))
 #define MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS _MESSAGE(62024, _("RSMAP " SFQ " id " SFQ ": characteristics differ across occurrences of the same id; all occurrences must carry identical characteristics (or all be bare)"))
 #define MSG_RSMAP_CHARACTERISTIC_NOT_AVAILABLE_SS _MESSAGE(62025, _("RSMAP " SFQ " id " SFQ ": per-instance characteristics are not available in OCS"))
+#define MSG_SPOOL_UNSAFE_KEY_S               _MESSAGE(62026, _("refusing to spool object with unsafe key " SFQ " (must be a relative path whose components are not empty and do not start with '.')"))
 
 // clang-format on

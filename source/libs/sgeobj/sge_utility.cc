@@ -232,34 +232,26 @@ verify_str_key(lList **alpp, const char *str, size_t str_length, const char *nam
    return STATUS_OK;
 }
 
-/****** sge_utility/verify_host_name() *****************************************
-*  NAME
-*     verify_host_name() -- verify a hostname
-*
-*  SYNOPSIS
-*     bool 
-*     verify_host_name(lList **answer_list, const char *host_name) 
-*
-*  FUNCTION
-*     Verifies if a hostname is correct (regarding maximum length etc.).
-*
-*  INPUTS
-*     lList **answer_list   - answer list to pass back error messages
-*     const char *host_name - the hostname to verify
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: verify_host_name() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify that a hostname is acceptable.
+ *
+ * Rejects an empty/nullptr name, a name longer than CL_MAXHOSTNAMELEN, and a
+ * name that is unsafe as a single filesystem path component — i.e. one that
+ * contains '/' or starts with '.' (".", "..", "../x", ".hidden"). The latter
+ * matters because a host name becomes a spool-file key (EXECHOST_DIR/<name>),
+ * so such a name could escape the spool directory (CS-2364, CWE-22).
+ * MT-NOTE: verify_host_name() is MT safe.
+ *
+ * @param[out] answer_list answer list to receive the error message on failure
+ * @param[in]  host_name   the hostname to verify
+ * @return true if the hostname is acceptable, false otherwise (with answer_list set)
+ */
 bool verify_host_name(lList **answer_list, const char *host_name)
 {
    bool ret = true;
 
    if (host_name == nullptr || *host_name == '\0') {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_HOSTNAME_NOT_EMPTY);
       ret = false;
    }
@@ -271,7 +263,15 @@ bool verify_host_name(lList **answer_list, const char *host_name)
       }
    }
 
-   /* TODO: further verification (e.g. character set) */
+   /* Reject names that are unsafe as a single filesystem path component: a host
+    * name is used verbatim as a spool-file key (EXECHOST_DIR/<name>), so a '/'
+    * or a leading '.' (".", "..", "../x", ".hidden") could escape the spool
+    * directory (CS-2364, CWE-22). */
+   if (ret && (host_name[0] == '.' || strchr(host_name, '/') != nullptr)) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                              MSG_HOSTNAME_ILLEGAL_CHAR_S, host_name);
+      ret = false;
+   }
 
    return ret;
 }

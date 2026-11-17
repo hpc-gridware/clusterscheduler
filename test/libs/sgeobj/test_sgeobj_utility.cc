@@ -39,6 +39,47 @@
 
 #include "basis_types.h"
 
+/**
+ * @brief Security regression test for CS-2364 (CWE-22): verify_host_name().
+ *
+ * Host names become spool file keys (EXECHOST_DIR/<name>) and are not run
+ * through verify_str_key(), so verify_host_name() must reject names that are
+ * unsafe as a single path component: a '/' anywhere or a leading '.'.
+ * Before the fix those were accepted.
+ *
+ * @return number of failed checks
+ */
+static int test_verify_host_name() {
+   int ret = 0;
+   lList *al = nullptr;
+
+   struct {
+      const char *name;
+      bool expect_ok;
+   } cases[] = {
+      {"myhost", true},
+      {"host-01.example.com", true},
+      {"../../tmp/x", false},
+      {"/etc/passwd", false},
+      {"..", false},
+      {".", false},
+      {".hidden", false},
+      {"a/b", false},
+      {nullptr, false},
+      {"", false},
+   };
+   for (const auto &c : cases) {
+      if (verify_host_name(&al, c.name) != c.expect_ok) {
+         printf("verify_host_name(%s) should %s\n", c.name != nullptr ? c.name : "nullptr",
+                c.expect_ok ? "be accepted" : "be rejected");
+         ret++;
+      }
+   }
+
+   lFreeList(&al);
+   return ret;
+}
+
 int main(int argc, char *argv[])
 {
    lList *answer_list = nullptr;
@@ -79,6 +120,8 @@ int main(int argc, char *argv[])
          ret++;
       }
    }
+
+   ret += test_verify_host_name();
 
    if (ret == 0) {
       printf("PASS: test solved!\n");

@@ -66,6 +66,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
+#include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "comm/commlib.h"
@@ -408,6 +409,26 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
 
 /* ------------------------------------------------------------ */
 
+/** @brief Apply one attribute change to a host
+ *
+ * The gdi_object_t::modifier for hosts; see sge_c_gdi.h for the sequence it
+ * is called from. On add, a host name that is unsafe as a spool path
+ * component is rejected (CS-2364).
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_host the host as it is to become
+ * @param ep the reduced element the client sent
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for hosts
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
          const char *ruser, const char *rhost, gdi_object_t *object,
@@ -440,6 +461,15 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    } else {
       host = lGetString(new_host, nm);
    }
+
+   /* On add, reject a host name that is unsafe as a spool path component (e.g.
+    * "../../tmp/x"): host names skip verify_str_key() and are used verbatim as a
+    * spool-file key, so validate at the input boundary too (CS-2364, CWE-22).
+    * The flatfile spool layer has a matching defence-in-depth guard. */
+   if (add && !verify_host_name(alpp, host)) {
+      goto ERROR;
+   }
+
    if (nm == EH_name) {
       bool acl_changed = false;
 
