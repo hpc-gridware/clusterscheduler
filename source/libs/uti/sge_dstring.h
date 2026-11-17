@@ -59,15 +59,28 @@
 #include "sge_stdlib.h"
 
 #define DSTRING_INIT {nullptr, 0, 0, false}
+
+/** @brief Declare a #dstring backed by a stack buffer of @p s bytes
+ *
+ * The size handed to the #dstring is one less than the buffer, exactly as
+ * #sge_dstring_init does it: for a static buffer #dstring::size counts the
+ * bytes usable for content, and the byte behind them belongs to the
+ * terminating NUL. The append functions rely on that (CS-2895).
+ *
+ * @code
+ * DSTRING_STATIC(error_msg, MAX_STRING_SIZE);
+ * @endcode
+ */
 #define DSTRING_STATIC(n, s) char _buffer_for_##n[s] = "\0"; \
-                                    dstring n = {_buffer_for_##n, 0, s, true}
+                                    dstring n = {_buffer_for_##n, 0, (s) - 1, true}
 
 typedef struct {
    char *s;        /* refers to allocated buffer with dynamic dstrings
                     *  or static buffer with static dstrings 
                     */
    size_t length;  /* length of the string */
-   size_t size;    /* size of the string buffer */
+   size_t size;    /* static buffer: bytes usable for content, the NUL goes behind them;
+                    * dynamic buffer: allocated size including the NUL */
    bool is_static;  /* is it a static or a dynamic buffer? */
 } dstring;
 

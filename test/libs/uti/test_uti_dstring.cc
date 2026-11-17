@@ -329,6 +329,66 @@ check_tmpnam_format_string_safety() {
    return ret;
 }
 
+/**
+ * @brief CS-2895: a DSTRING_STATIC buffer must behave like sge_dstring_init()
+ *
+ * The macro used to hand the whole buffer size to the dstring while
+ * sge_dstring_init() subtracts the byte for the terminating NUL, so content
+ * that filled the buffer exactly had its NUL written one byte behind it. The
+ * difference is observable through the API: with the old size the string
+ * grows to the full buffer length instead of one less, and
+ * sge_dstring_remaining() is one too large.
+ *
+ * @return true if all checks passed, false otherwise
+ */
+static bool
+check_static_dstring_macro() {
+   bool ret = true;
+   printf("\nchecking DSTRING_STATIC (buffer size %d, CS-2895)\n", STATIC_SIZE);
+
+   DSTRING_STATIC(ds, STATIC_SIZE);
+
+   struct {
+      const char *what;
+      bool ok;
+   } results[6];
+   int n = 0;
+
+   results[n++] = {"remaining of the empty buffer is STATIC_SIZE-1",
+                   sge_dstring_remaining(&ds) == STATIC_SIZE - 1};
+
+   sge_dstring_append(&ds, "this string is definitely too long for the buffer");
+   results[n++] = {"append truncates to STATIC_SIZE-1 chars",
+                   sge_dstring_strlen(&ds) == STATIC_SIZE - 1};
+   results[n++] = {"the NUL sits on the last byte of the buffer",
+                   sge_dstring_get_string(&ds)[STATIC_SIZE - 1] == '\0'};
+
+   sge_dstring_clear(&ds);
+   sge_dstring_nappend(&ds, "0123456789abcdefghij", STATIC_SIZE + 5);
+   results[n++] = {"nappend truncates to STATIC_SIZE-1 chars",
+                   sge_dstring_strlen(&ds) == STATIC_SIZE - 1};
+
+   sge_dstring_clear(&ds);
+   sge_dstring_nappend(&ds, "ab", 10);
+   results[n++] = {"nappend(\"ab\", 10): length follows the source, not n",
+                   sge_dstring_strlen(&ds) == 2};
+
+   sge_dstring_clear(&ds);
+   for (int i = 0; i < STATIC_SIZE + 3; i++) {
+      sge_dstring_append_char(&ds, 'x');
+   }
+   results[n++] = {"append_char stops at STATIC_SIZE-1 chars",
+                   sge_dstring_strlen(&ds) == STATIC_SIZE - 1};
+
+   for (int i = 0; i < n; i++) {
+      printf("   %s: %s\n", results[i].ok ? "ok" : "FAIL", results[i].what);
+      if (!results[i].ok) {
+         ret = false;
+      }
+   }
+   return ret;
+}
+
 int main(int argc, char *argv[]) {
    bool ret = true;
    dstring dynamic_dstring = DSTRING_INIT;
@@ -344,6 +404,7 @@ int main(int argc, char *argv[]) {
    printf("%s\n", sge_dstring_get_string(&dynamic_dstring));
 
    ret = check_tmpnam_format_string_safety() && ret;
+   ret = check_static_dstring_macro() && ret;
 
    if (ret) {
       printf("\n\nrunning all checks with a static dstring of length %d\n",
