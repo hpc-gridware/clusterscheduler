@@ -30,12 +30,14 @@
  */
 
 #include <cstdio>
+#include <cstring>
 
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
@@ -114,6 +116,25 @@ test_unenrolled_extremes() {
 }
 
 /**
+ * @brief The mail list of a job is written for the shepherd without a false "too long"
+ *
+ * mailrec_unparse() returned 1 for every list after an unbraced if got a DRETURN,
+ * whose expansion ends in an unconditional return: the execd then logged "maillist
+ * for job ... too long" for every job and wrote an empty mail list.
+ */
+static void
+test_mailrec_unparse() {
+   printf("\n--- mailrec_unparse ---\n");
+
+   auto [rc, list] = mailrec_parse("user@host.example.com,other");
+   char buf[1024];
+   CHECK(8, "two recipients are parsed", rc == 0 && list->size() == 2);
+   CHECK(9, "they fit into the buffer", mailrec_unparse(*list, buf, sizeof(buf)) == 0);
+   CHECK(10, "and are written comma separated", strcmp(buf, "user@host.example.com,other") == 0);
+   CHECK(11, "a buffer too small is reported", mailrec_unparse(*list, buf, 10) == 1);
+}
+
+/**
  * @brief Entry point
  * @param argc unused
  * @param argv unused
@@ -123,6 +144,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    test_unenrolled_extremes();
+   test_mailrec_unparse();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

@@ -171,8 +171,9 @@ int mailrec_unparse(const ocs::tom::ConstList<ocs::tom::MR> head, char *mail_str
       else
          snprintf(tmpstr, sizeof(tmpstr), "%s@%s", u, h);
 
-      if (strlen(tmpstr)+len+1+comma_needed > mail_str_len)
+      if (strlen(tmpstr)+len+1+comma_needed > mail_str_len) {
          DRETURN(1);              /* forgot the rest */
+      }
 
       if (comma_needed)
          strcat(mail_str, ",");
