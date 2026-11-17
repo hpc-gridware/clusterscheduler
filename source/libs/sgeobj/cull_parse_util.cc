@@ -66,8 +66,13 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_parse_SPA_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int print_slots,
      int nm_name, int nm_strval, int nm_doubleval);
@@ -1085,17 +1090,19 @@ FPRINTF_ERROR:
  * @param option the switch to look for
  * @param[in,out] job the job the requests are stored in
  * @param scope which request set the entries belong to
- * @param hard_field the attribute the hard requests go into
- * @param soft_field the attribute the soft requests go into
+ * @param hard_field the request set attribute the hard requests go into
+ * @param soft_field the request set attribute the soft requests go into, 0 if the switch has no soft form
  */
-void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uint32_t scope,
-                         int hard_field, int soft_field) {
+void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
+                         const ocs::tom::Element<ocs::tom::JB> job, const uint32_t scope, const int hard_field,
+                         const int soft_field) {
    DENTER(TOP_LAYER);
    bool handled_option = false;
+   // the request lists are of the type of the runtime fields "hard_field" and "soft_field", so they stay untyped
    lList *hard_list = nullptr;
    lList *soft_list = nullptr;
 
-   lListElem *jrs = job_get_request_setRW(job, scope);
+   auto jrs = job_get_request_setRW(job, scope);
    if (jrs != nullptr) {
       hard_list = lCopyList(nullptr, lGetList(jrs, hard_field));
       if (soft_field) {
@@ -1103,13 +1110,14 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
       }
    }
 
-   lListElem *ep, *next_ep;
+   ocs::tom::Element<ocs::tom::SPA> ep;
    const void *iterator = nullptr;
-   next_ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, option, &iterator);
+   ocs::tom::Element<ocs::tom::SPA> next_ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, option, &iterator);
    while ((ep = next_ep) != nullptr) {
       next_ep = ocs::tom::find_next_rw<SPA_switch_val>(cmdline, option, &iterator);
 
       if (int(ocs::tom::get<SPA_argval_lLongT>(ep)) == int(scope)) {
+         // the argument list is of the type of the request field, so it stays untyped
          lList *lp = nullptr;
          ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
          if (lp != nullptr) {
@@ -1120,7 +1128,7 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
                ocs_object_list_add_unique(&soft_list, &lp);
             }
          }
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          handled_option = true;
       }
    }
@@ -1139,16 +1147,12 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
 
    // in case of masterq: the global -q requests become the slave -q requests
    if (handled_option && sge_strnullcmp(option, "-masterq") == 0) {
-      ocs::tom::Element<ocs::tom::JRS> global = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, JRS_SCOPE_GLOBAL);
+      const auto global = job.get<JB_request_set_list>().find_first<JRS_scope>(JRS_SCOPE_GLOBAL);
       if (global != nullptr) {
-         lList *global_queue_requests = nullptr;
-         ocs::tom::exchange<JRS_hard_queue_list>(global, &global_queue_requests);
-         job_set_hard_queue_list(job, global_queue_requests, JRS_SCOPE_SLAVE);
+         job_set_hard_queue_list(job, global.exchange<JRS_hard_queue_list>(nullptr), JRS_SCOPE_SLAVE);
          // also swap the soft requests, should there be any
          // this will then trigger an error as we do not support soft slave queue requests
-         global_queue_requests = nullptr;
-         ocs::tom::exchange<JRS_soft_queue_list>(global, &global_queue_requests);
-         job_set_soft_queue_list(job, global_queue_requests, JRS_SCOPE_SLAVE);
+         job_set_soft_queue_list(job, global.exchange<JRS_soft_queue_list>(nullptr), JRS_SCOPE_SLAVE);
       }
    }
 
@@ -1156,11 +1160,27 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
 }
 
 /**
+ * @brief parse_list_hardsoft() for an untyped caller
+ *
+ * @param cmdline the parsed option list (`SPA_Type`), checked
+ * @param option the switch to look for
+ * @param[in,out] job the job (`JB_Type`), checked
+ * @param scope which request set the entries belong to
+ * @param hard_field the request set attribute the hard requests go into
+ * @param soft_field the request set attribute the soft requests go into, 0 if the switch has no soft form
+ */
+void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, const uint32_t scope,
+                         const int hard_field, const int soft_field) {
+   parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA>(cmdline), option, ocs::tom::Element<ocs::tom::JB>(job), scope,
+                       hard_field, soft_field);
+}
+
+/**
  * @brief Parse a switch's list argument into an attribute of an object
  *
  * @param cmdline the parsed option list to consume from
  * @param option the switch to look for
- * @param[in,out] job the object the list is stored in
+ * @param[in,out] job the object the list is stored in, a job or an advance reservation
  * @param field the attribute the list is stored in
  * @param nm_var the attribute holding an entry's name
  * @param nm_value the attribute holding its value
@@ -1168,29 +1188,44 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
  *              existing value
  * @return 0 on success
  */
-int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
-                      int nm_var, int nm_value, uint32_t flags) {
+int parse_list_simple(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, lListElem *job, const int field,
+                      const int nm_var, const int nm_value, const uint32_t flags) {
    DENTER(TOP_LAYER);
 
-   lList *destlist = nullptr;
-   lList *lp = nullptr;
-   lListElem *ep;
+   // the list is of the type of the runtime field "field" of an object of any type, so it stays untyped
+   lList *destlist = lCopyList("job_sublist", lGetList(job, field));
 
-   destlist = lCopyList("job_sublist", lGetList(job, field));
-
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, option))) {
+   ocs::tom::Element<ocs::tom::SPA> ep;
+   while ((ep = cmdline.find_first<SPA_switch_val>(option)) != nullptr) {
       DPRINTF("OPTION: %s\n", option);
-      lp = nullptr;
+      lList *lp = nullptr;
       ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
 
       parse_list_simpler(lp, &destlist, option, job, field, nm_var, nm_value, flags);
 
-      lRemoveElem(cmdline, &ep);
-   } 
+      cmdline.erase(ep);
+   }
 
    lSetList(job, field, destlist);
 
    DRETURN(0);
+}
+
+/**
+ * @brief parse_list_simple() for an untyped caller
+ *
+ * @param cmdline the parsed option list (`SPA_Type`), checked
+ * @param option the switch to look for
+ * @param[in,out] job the object the list is stored in
+ * @param field the attribute the list is stored in
+ * @param nm_var the attribute holding an entry's name
+ * @param nm_value the attribute holding its value
+ * @param flags one of the `FLG_LIST_*` values
+ * @return as parse_list_simple()
+ */
+int parse_list_simple(lList *cmdline, const char *option, lListElem *job, const int field, const int nm_var,
+                      const int nm_value, const uint32_t flags) {
+   return parse_list_simple(ocs::tom::List<ocs::tom::SPA>(cmdline), option, job, field, nm_var, nm_value, flags);
 }
 
 /**
@@ -1245,46 +1280,36 @@ int parse_list_simpler(lList *lp, lList **destlist, const char *option, lListEle
  *
  * Parse a path list of the format: [[host]:]path[,[[host]:]path...]
  *
- * @param lpp parsed list PN_Type
  * @param path_str input string
  *
- * @return error code 0 = okay 1 = error
+ * @return error code 0 = okay 1 = error, and the parsed list (`PN_Type`), an empty handle on an error
  *
  * @note MT-NOTE: cull_parse_path_list() is MT safe
  */
-int cull_parse_path_list(lList **lpp, const char *path_str) {
+std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char *path_str) {
    DENTER(TOP_LAYER);
 
-   char *path = nullptr;
-   char *cell = nullptr;
    char **str_str = nullptr;
-   char **pstr = nullptr;
-   lListElem *ep = nullptr;
-   char *path_string = nullptr;
-   bool ret_error = false;
+   ocs::tom::ListPtr<ocs::tom::PN> list;
 
-   ret_error = (lpp == nullptr) ? true : false;
-
-   if(!ret_error){
-      path_string = sge_strdup(nullptr, path_str);
-      ret_error = (path_string == nullptr) ? true : false;
-   }
-   if(!ret_error){
+   char *path_string = sge_strdup(nullptr, path_str);
+   bool ret_error = path_string == nullptr;
+   if (!ret_error) {
       str_str = string_list(path_string, ",", nullptr);
-      ret_error = (str_str == nullptr || *str_str == nullptr) ? true : false;
-   }
-   if ( (!ret_error) && (!*lpp)) {
-      *lpp = lCreateList("path_list", PN_Type);
-      ret_error = (*lpp == nullptr) ? true : false;
+      ret_error = str_str == nullptr || *str_str == nullptr;
    }
 
-   if(!ret_error){
-      for (pstr = str_str; *pstr; pstr++) {
-      /* cell given ? */
+   if (!ret_error) {
+      list = ocs::tom::ListPtr<ocs::tom::PN>::create("path_list");
+      for (char **pstr = str_str; *pstr; pstr++) {
+         char *path;
+         char *cell;
+
+         /* cell given ? */
          if (*pstr[0] == ':') {  /* :path */
             cell = nullptr;
-            path = *pstr+1;
-         } else if ((path = strstr(*pstr, ":"))){ /* host:path */
+            path = *pstr + 1;
+         } else if ((path = strstr(*pstr, ":"))) { /* host:path */
             path[0] = '\0';
             cell = strdup(*pstr);
             path[0] = ':';
@@ -1294,11 +1319,9 @@ int cull_parse_path_list(lList **lpp, const char *path_str) {
             path = *pstr;
          }
 
-         ep = lCreateElem(PN_Type);
-         lAppendElem(*lpp, ep);
-
+         const auto ep = list->push_back(ocs::tom::ElementPtr<ocs::tom::PN>::create());
          ocs::tom::set<PN_path>(ep, path);
-        if (cell) {
+         if (cell) {
             ocs::tom::set<PN_host>(ep, cell);
             sge_free(&cell);
          }
@@ -1310,55 +1333,87 @@ int cull_parse_path_list(lList **lpp, const char *path_str) {
    if (str_str) {
       sge_free(&str_str);
    }
-   DRETURN(ret_error? 1 : 0);
+   DRETURN(std::make_pair(ret_error ? 1 : 0, std::move(list)));
+}
+
+/**
+ * @brief cull_parse_path_list() for an untyped caller
+ *
+ * The parsed paths are appended to the list "lpp" refers to; it is created if
+ * it is nullptr.
+ *
+ * @param[in,out] lpp parsed list PN_Type, checked
+ * @param path_str input string
+ *
+ * @return error code 0 = okay 1 = error
+ */
+int cull_parse_path_list(lList **lpp, const char *path_str) {
+   if (lpp == nullptr) {
+      return 1;
+   }
+   auto [ret, list] = cull_parse_path_list(path_str);
+   if (list) {
+      if (*lpp == nullptr) {
+         *lpp = list.release();
+      } else {
+         ocs::tom::List<ocs::tom::PN>(*lpp).splice(std::move(list));
+      }
+   }
+   return ret;
 }
 
 /**
  * @brief Parse a jid list
  *
- * parse a jid list of the fomat jid[,jid,...]
+ * parse a jid list of the format jid[,jid,...]
  *
- * @param[out] lpp ST_Type result list
  * @param str input string to be parsed
  *
- * @return 0 on success, 1 when the string could not be parsed
+ * @return 0 on success, 2 when the string holds no job id, 3 when it could not be parsed; and the
+ *         `ST_Type` result list, an empty handle on an error
  *
  * @note MT-NOTE: cull_parse_jid_hold_list() is MT safe
  */
-int cull_parse_jid_hold_list(lList **lpp, const char *str) {
+std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> cull_parse_jid_hold_list(const char *str) {
    DENTER(TOP_LAYER);
 
    int rule[] = {ST_name, 0};
-   char **str_str = nullptr;
-   int i_ret;
-   char *s;
 
-   if (!lpp) {
-      DRETURN(1);
-   }
-
-   s = sge_strdup(nullptr, str);
+   char *s = sge_strdup(nullptr, str);
    if (!s) {
-      *lpp = nullptr;
-      DRETURN(3);
+      DRETURN(std::make_pair(3, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
-   str_str = string_list(s, ",", nullptr);
+   char **str_str = string_list(s, ",", nullptr);
    if (!str_str || !*str_str) {
-      *lpp = nullptr;
       sge_free(&s);
-      DRETURN(2);
+      DRETURN(std::make_pair(2, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
-   i_ret = cull_parse_string_list(str_str, "jid_hold list", ST_Type, rule, lpp);
-   
-   if (i_ret) {
-      sge_free(&s);
-      sge_free(&str_str);
-      DRETURN(3);
-   }
+   // cull_parse_string_list() is generic over the descriptor; it fills the list only on success
+   lList *parsed = nullptr;
+   const int i_ret = cull_parse_string_list(str_str, "jid_hold list", ST_Type, rule, &parsed);
+   // the list was created with ST_Type above, so it is taken over unchecked
+   auto list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(parsed);
 
    sge_free(&s);
    sge_free(&str_str);
-   DRETURN(0);
+   DRETURN(std::make_pair(i_ret != 0 ? 3 : 0, std::move(list)));
+}
+
+/**
+ * @brief cull_parse_jid_hold_list() for an untyped caller
+ *
+ * @param[out] lpp ST_Type result list; set to the parsed list, nullptr on an error
+ * @param str input string to be parsed
+ *
+ * @return 1 if "lpp" is nullptr, otherwise as cull_parse_jid_hold_list()
+ */
+int cull_parse_jid_hold_list(lList **lpp, const char *str) {
+   if (lpp == nullptr) {
+      return 1;
+   }
+   auto [ret, list] = cull_parse_jid_hold_list(str);
+   *lpp = list.release();
+   return ret;
 }
 
 /**

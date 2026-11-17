@@ -41,8 +41,14 @@
 
 #include "gdi/ocs_gdi_Packet.h"
 
-bool user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet, const lList *usr_grp_sgrp_list, int nm);
-bool user_is_ar_user(const ocs::gdi::Packet *packet, const lList *ar_users_list);
-bool user_is_deadline_user(const ocs::gdi::Packet *packet, const lList *ar_users_list);
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+
+bool user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet,
+                                        ocs::tom::ConstList<ocs::tom::UE> usr_grp_sgrp_list);
+bool user_is_ar_user(const ocs::gdi::Packet *packet, ocs::tom::ConstList<ocs::tom::US> master_userset_list);
+bool user_is_deadline_user(const ocs::gdi::Packet *packet, ocs::tom::ConstList<ocs::tom::US> master_userset_list);
 bool manop_is_manager(const ocs::gdi::Packet *packet);
 bool manop_is_operator(const ocs::gdi::Packet *packet);

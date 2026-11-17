@@ -76,13 +76,16 @@
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
 
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 
-static int path_alias_read_from_file(lList **path_alias_list, lList **alpp, 
-                                     char *file_name);
+static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list, lList **alpp,
+                                     const char *file_name);
 
 /**
  * @brief Read file content to list
@@ -101,7 +104,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
  * - Both the submit and the execution host entries may consist
  *   of only a * sign, which matches any host.
  *
- * @param path_alias_list PA_Type list pointer
+ * @param[in,out] path_alias_list PA_Type list, created if the handle is empty and the file holds an entry
  * @param alpp AN_Type list pointer
  * @param file_name name of an alias file
  *
@@ -109,8 +112,8 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
  *
  * @note MT-NOTE: path_alias_read_from_file() is MT safe
  */
-static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
-                                     char *file_name) {
+static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list, lList **alpp,
+                                     const char *file_name) {
    DENTER(GDI_LAYER);
 
    FILE *fd;
@@ -120,11 +123,10 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
    char submit_host[SGE_PATH_MAX];
    char exec_host[SGE_PATH_MAX];
    char translation[SGE_PATH_MAX];
-   ocs::tom::Element<ocs::tom::PA> pal;
    SGE_STRUCT_STAT sb;
    int ret = 0;
 
-   if (!path_alias_list || !file_name) {
+   if (!file_name) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
@@ -179,13 +181,10 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
       sge_compress_slashes(translation);
             
       
-      pal = ocs::tom::emplace_back<PA_origin>(path_alias_list, origin);
-      
-      if (!pal) {
-         answer_list_add(alpp, MSG_SGETEXT_NOMEM, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
-         ret = -1;
-         break;
+      if (!path_alias_list) {
+         path_alias_list = ocs::tom::ListPtr<ocs::tom::PA>::create("");
       }
+      const auto pal = path_alias_list->emplace_back<PA_origin>(origin);
 
       /*
        * set the values of the element
@@ -220,17 +219,18 @@ FCLOSE_ERROR:
  *    $SGE_ROOT/$CELL/common/sge_aliases
  *    $HOME/.sge_aliases
  *
- * @param path_alias_list PA_Type list pointer
+ * @param[in,out] path_alias_list PA_Type list the entries are appended to; an empty handle if no entry
+ *                                 is left for the host
  * @param alpp AN_Type list pointer
+ * @param cell_root the cell directory the common alias file lives under
  * @param user username
  * @param host hostname
- * @param cell_root the cell directory the common alias file lives under
  *
  * @return return state -1 - error 0 - OK
  *
  * @note MT-NOTE: path_alias_list_initialize() is MT safe
  */
-int path_alias_list_initialize(lList **path_alias_list,
+int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
                                lList **alpp,
                                const char *cell_root,
                                const char *user,
@@ -297,18 +297,36 @@ int path_alias_list_initialize(lList **path_alias_list,
    }
 
    /*
-    * remove the unnecessary hosts from the list
+    * remove the unnecessary hosts from the list, an emptied list is freed as lSelectDestroy() did
     */
-   {
-      lCondition *where = nullptr;
-
-      where = lWhere("%T(%I == %s || %I == %s)", PA_Type, 
-                     PA_submit_host, "*", PA_submit_host, host);
-      *path_alias_list = lSelectDestroy(*path_alias_list, where);
-      lFreeWhere(&where);
+   if (path_alias_list) {
+      path_alias_list->remove_if(!(ocs::tom::field<PA_submit_host>() == "*" ||
+                                   ocs::tom::field<PA_submit_host>() == host));
+      if (path_alias_list->empty()) {
+         path_alias_list.reset();
+      }
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief path_alias_list_initialize() for an untyped caller
+ *
+ * @param[in,out] path_alias_list PA_Type list pointer, checked
+ * @param alpp AN_Type list pointer
+ * @param cell_root the cell directory the common alias file lives under
+ * @param user username
+ * @param host hostname
+ *
+ * @return as path_alias_list_initialize()
+ */
+int path_alias_list_initialize(lList **path_alias_list, lList **alpp, const char *cell_root, const char *user,
+                               const char *host) {
+   ocs::tom::ListPtr<ocs::tom::PA> list(*path_alias_list);
+   const int ret = path_alias_list_initialize(list, alpp, cell_root, user, host);
+   *path_alias_list = list.release();
+   return ret;
 }
 
 /**
@@ -318,8 +336,11 @@ int path_alias_list_initialize(lList **path_alias_list,
  * into its alias path which will be written into the buffer
  * "outpath" of size "outmax".
  *
- * @param path_aliases alias table (PA_Type)
- * @param alpp AN_Type list pointer
+ * The exec host of an entry is resolved in place, although the list is
+ * passed as a constant one: sge_resolve_host() takes the raw element.
+ *
+ * @param path_aliases alias table (PA_Type), may be an empty handle
+ * @param alpp AN_Type list pointer, unused
  * @param inpath input path
  * @param myhost hostname
  * @param outpath result path
@@ -328,7 +349,7 @@ int path_alias_list_initialize(lList **path_alias_list,
  *
  * @note MT-NOTE: path_alias_list_get_path() is MT safe
  */
-int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
+int path_alias_list_get_path(const ocs::tom::ConstList<ocs::tom::PA> path_aliases, [[maybe_unused]] lList **alpp,
                              const char *inpath, const char *myhost,
                              dstring *outpath) {
    DENTER(TOP_LAYER);
@@ -340,8 +361,8 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
    sge_dstring_copy_string(outpath, inpath);
    sge_dstring_copy_dstring(&the_path, outpath); 
 
-   if (path_aliases && lGetNumberOfElem(path_aliases) > 0) { 
-      for_each_rw_lv (pap, path_aliases) {
+   if (!path_aliases.empty()) {
+      for (const auto pap : path_aliases) {
          size_t orign_str_len = 0; 
          origin = ocs::tom::get<PA_origin>(pap);
          orign_str_len = strlen(origin);
@@ -359,7 +380,8 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
          if (*exec_host != '*') {
             /* no '*', so we have to look closer   */
             /* resolv the exec host from the alias */
-            if (sge_resolve_host(pap, PA_exec_host) != CL_RETVAL_OK) {
+            // sge_resolve_host() takes the raw element and a run-time field number
+            if (sge_resolve_host(const_cast<lListElem *>(pap.raw()), PA_exec_host) != CL_RETVAL_OK) {
                ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, exec_host);
                continue;
             }
@@ -451,7 +473,7 @@ bool path_verify(const char *path, lList **answer_list, const char *name, bool a
  * Verify a path alias list as it is sent with job or pe task start orders
  * to sge_execd.
  *
- * @param path_aliases path alias list
+ * @param path_aliases path alias list (PA_Type), may be an empty handle
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false on error with error message in answer_list
@@ -460,10 +482,10 @@ bool path_verify(const char *path, lList **answer_list, const char *name, bool a
  *
  * @see #path_verify
  */
-bool path_alias_verify(const lList *path_aliases, lList **answer_list) {
+bool path_alias_verify(const ocs::tom::ConstList<ocs::tom::PA> path_aliases, lList **answer_list) {
    bool ret = true;
 
-   for_each_ep_lv(ep, path_aliases) {
+   for (const auto ep : path_aliases) {
       /* 
        * PA_origin and PA_translation may not be nullptr or empty string
        * they have to be valid paths.
@@ -500,7 +522,7 @@ bool path_alias_verify(const lList *path_aliases, lList **answer_list) {
  * Verify a path list, e.g. the path specification in JB_stdout_path_list,
  * coming from a qsub -o `path_list`.
  *
- * @param path_list the path list to verify
+ * @param path_list the path list to verify (PN_Type), may be an empty handle
  * @param answer_list answer list to pass back error messages
  * @param name name of the checked attribute for error output
  *
@@ -508,10 +530,10 @@ bool path_alias_verify(const lList *path_aliases, lList **answer_list) {
  *
  * @note MT-NOTE: path_list_verify() is MT safe
  */
-bool path_list_verify(const lList *path_list, lList **answer_list, const char *name) {
+bool path_list_verify(const ocs::tom::ConstList<ocs::tom::PN> path_list, lList **answer_list, const char *name) {
    bool ret = true;
 
-   for_each_ep_lv(ep, path_list) {
+   for (const auto ep : path_list) {
       const char *host;
 
       ret = path_verify(ocs::tom::get<PN_path>(ep), answer_list, name, false);

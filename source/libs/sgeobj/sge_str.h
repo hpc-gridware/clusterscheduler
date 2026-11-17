@@ -43,22 +43,24 @@
 
 #include "cull/cull.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+
 #include "sgeobj/cull/sge_str_ST_L.h"
 #include "sgeobj/cull/sge_str_STU_L.h"
 
-const char *
-str_list_append_to_dstring(const lList *this_list, dstring *string,
-                           const char delimiter);
+const char *str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST> this_list, dstring *string, char delimiter);
+OCS_TRANSITIONAL const char *str_list_append_to_dstring(const lList *this_list, dstring *string, char delimiter);
 
-bool 
-str_list_parse_from_string(lList **this_list,
-                           const char *string, const char *delimitor);
+ocs::tom::ListPtr<ocs::tom::ST> str_list_parse_from_string(const char *string, const char *delimitor);
+OCS_TRANSITIONAL bool str_list_parse_from_string(lList **this_list, const char *string, const char *delimitor);
 
-bool
-str_list_is_valid(const lList *this_list, lList **answer_list);
+bool str_list_is_valid(ocs::tom::ConstList<ocs::tom::ST> this_list, lList **answer_list);
+OCS_TRANSITIONAL bool str_list_is_valid(const lList *this_list, lList **answer_list);
 
-bool
-str_list_transform_user_list(lList **this_list, lList **answer_list, const char *username);
+bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list, lList **answer_list,
+                                  const char *username);
 
-lList *
-grp_list_array2list(int amount, ocs_grp_elem_t *grp_array);
+ocs::tom::ListPtr<ocs::tom::ST> grp_list_array2list(int amount, const ocs_grp_elem_t *grp_array);

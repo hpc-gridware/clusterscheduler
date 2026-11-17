@@ -41,25 +41,55 @@
 
 #include <cstdio>
 #include <ostream>
+#include <utility>
 
 #include "sgeobj/cull/sge_cull_xml_XMLE_L.h"
+#include "sgeobj/tom/ocs_tom_XMLA.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
+#include "sgeobj/tom/ocs_tom_XMLH.h"
+#include "tom/ocs_Element.h"
 
 #include <cinttypes>
 
 void lWriteElemXMLTo(const lListElem *ep, FILE *fp);
 void lWriteElemXMLTo(const lListElem *ep, std::ostream &os);
 
-lListElem* xml_getHead(const char *name, lList *liste, lList *attributs); 
+ocs::tom::ElementPtr<ocs::tom::XMLH> ocs_xml_create_head(const char *name,
+                                                         ocs::tom::ListPtr<ocs::tom::XMLA> &&attributes);
 
-void xml_addAttributeD(lListElem *xml_elem, const char *name, double value);
-void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value);
+/**
+ * @brief Create the root element of an XML document
+ *
+ * @tparam T the object type of the elements nested in the document, e.g. `ocs::tom::XMLE`
+ * @param name the root element's tag name
+ * @param list the elements nested inside it; the document takes them over
+ * @param attributes the root element's attributes; the document takes them over
+ * @return the new document root
+ */
+template <ocs::tom::ObjectType T>
+ocs::tom::ElementPtr<ocs::tom::XMLH> xml_getHead(const char *name, ocs::tom::ListPtr<T> &&list,
+                                                 ocs::tom::ListPtr<ocs::tom::XMLA> &&attributes) {
+   auto elements = std::move(list);
+   auto xml_head = ocs_xml_create_head(name, std::move(attributes));
+   ocs::tom::set<XMLH_Element>(xml_head, std::move(elements));
+   return xml_head;
+}
+
+void xml_addAttributeD(ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *name, double value);
+void xml_addAttribute(ocs::tom::Element<ocs::tom::XMLH> xml_elem, const char *name, const char *value);
+void xml_addAttribute(ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *name, const char *value);
 
 void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, const char *version);
 
-lListElem *xml_append_Attr_D(lList *attributeList, const char *name, double value);
-lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double value);
-lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char *value);
-lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value);
-lListElem *xml_append_Attr_U(lList *attributeList, const char *name, uint32_t value);
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,
+                                                    double value);
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D8(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,
+                                                     double value);
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_S(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,
+                                                    const char *value);
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_I(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,
+                                                    int value);
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_U(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,
+                                                    uint32_t value);
 bool escape_string(const char *string, dstring *target);
 

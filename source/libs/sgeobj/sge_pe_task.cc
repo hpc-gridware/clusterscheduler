@@ -55,7 +55,10 @@
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_PETR.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 
@@ -69,46 +72,56 @@
  * stored in the task list.
  * This function adds the usage of pe_task to the usage of container.
  *
- * @param container container object to hold past usage
- * @param pe_task the pe task from which to copy usage
+ * @param container container object to hold past usage (PET_Type), may be an empty handle
+ * @param pe_task the pe task from which to copy usage (PET_Type), may be an empty handle
  *
- * @return the container object
+ * @return the container object, an empty handle if one of the arguments is empty
  *
  * @see #pe_task_sum_past_usage_all, #pe_task_sum_past_usage_list
  */
-lListElem *
-pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
+ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(const ocs::tom::Element<ocs::tom::PET> container,
+                                                        const ocs::tom::ConstElement<ocs::tom::PET> pe_task) {
    DENTER(TOP_LAYER);
 
-   
    /* invalid input - nothing to do */
-   if (container == nullptr || pe_task == nullptr) {
+   if (!container || !pe_task) {
       DRETURN(nullptr);
    }
 
-   if (container == pe_task) {
+   if (container.raw() == pe_task.raw()) {
       /* container and pe_task are the same element - nothing to do */
       DRETURN(container);
    }
 
    /* we sum up the scaled_usage */
-   ocs::tom::List<ocs::tom::UA> container_usage = ocs::tom::get_or_create<PET_scaled_usage>(container, "reported_usage");
-   ocs::tom::ConstList<ocs::tom::UA> pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task);
-   if (pe_task_usage != nullptr) {
+   const auto container_usage = ocs::tom::get_or_create<PET_scaled_usage>(container, "reported_usage");
+   if (const auto pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task); pe_task_usage) {
       usage_list_sum(container_usage, pe_task_usage);
    }
 
-   /* 
+   /*
     * and we sum up the already reported usage
-    * (for long running jobs having intermediate usage records) 
+    * (for long running jobs having intermediate usage records)
     */
-   ocs::tom::List<ocs::tom::UA> container_reported_usage = ocs::tom::get_or_create<PET_reported_usage>(container, "reported_usage");
-   ocs::tom::ConstList<ocs::tom::UA> pe_task_reported_usage = ocs::tom::get<PET_reported_usage>(pe_task);
-   if (pe_task_reported_usage != nullptr) {
+   const auto container_reported_usage = ocs::tom::get_or_create<PET_reported_usage>(container, "reported_usage");
+   if (const auto pe_task_reported_usage = ocs::tom::get<PET_reported_usage>(pe_task); pe_task_reported_usage) {
       usage_list_sum(container_reported_usage, pe_task_reported_usage);
    }
 
    DRETURN(container);
+}
+
+/**
+ * @brief pe_task_sum_past_usage() for an untyped caller
+ *
+ * @param container container object to hold past usage (PET_Type), checked; may be nullptr
+ * @param pe_task the pe task from which to copy usage (PET_Type), checked; may be nullptr
+ *
+ * @return as pe_task_sum_past_usage()
+ */
+lListElem *pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
+   return pe_task_sum_past_usage(ocs::tom::Element<ocs::tom::PET>(container),
+                                 ocs::tom::ConstElement<ocs::tom::PET>(pe_task));
 }
 
 /**
@@ -118,24 +131,24 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
  * all pe tasks in a task list to the container object in this list.
  * If the container object does not yet exist, it will be created.
  *
- * @param pe_task_list the pe task list to process
+ * @param pe_task_list the pe task list to process (PET_Type), may be an empty handle
  *
- * @return the container object
+ * @return the container object, an empty handle if the list is empty
  *
  * @see #pe_task_sum_past_usage, #pe_task_sum_past_usage_list
  */
-lListElem *pe_task_sum_past_usage_all(lList *pe_task_list) {
+ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_all(const ocs::tom::List<ocs::tom::PET> pe_task_list) {
    DENTER(TOP_LAYER);
-   lListElem *container = nullptr;
+   ocs::tom::Element<ocs::tom::PET> container = nullptr;
 
    /* no pe task list - nothing to do */
-   if (pe_task_list == nullptr) {
+   if (!pe_task_list) {
       DRETURN(nullptr);
    }
 
    /* loop over all pe tasks and sum up usage */
-   for_each_ep_lv(pe_task, pe_task_list) {
-      if (container == nullptr) {
+   for (const auto pe_task : pe_task_list) {
+      if (!container) {
          container = pe_task_sum_past_usage_list(pe_task_list, pe_task);
       } else {
          pe_task_sum_past_usage(container, pe_task);
@@ -153,31 +166,29 @@ lListElem *pe_task_sum_past_usage_all(lList *pe_task_list) {
  * yet exist it is created and inserted into pe_task_list as
  * first element.
  *
- * @param pe_task_list list containing the container object
- * @param pe_task the pe task from which to copy usage
+ * @param pe_task_list list containing the container object (PET_Type), may be an empty handle
+ * @param pe_task the pe task from which to copy usage (PET_Type)
  *
- * @return the container object
+ * @return the container object, an empty handle if the list is empty
  *
  * @see #pe_task_sum_past_usage, #pe_task_sum_past_usage_all
  */
-lListElem *
-pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task) {
+ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(const ocs::tom::List<ocs::tom::PET> pe_task_list,
+                                                             const ocs::tom::ConstElement<ocs::tom::PET> pe_task) {
    DENTER(TOP_LAYER);
 
-   lListElem *container;
-
    /* no pe task list - nothing to do */
-   if (pe_task_list == nullptr) {
+   if (!pe_task_list) {
       DRETURN(nullptr);
    }
 
    /* get container - if it does not yet exist, create it as first element in pe task list */
-   container = ocs::tom::find_first_rw<PET_id>(pe_task_list, PE_TASK_PAST_USAGE_CONTAINER);
-   if (container == nullptr) {
-      container = lCreateElem(PET_Type);
-      ocs::tom::set<PET_id>(container, PE_TASK_PAST_USAGE_CONTAINER);
-      ocs::tom::set<PET_do_contact>(container, true);
-      lInsertElem(pe_task_list, nullptr, container);
+   auto container = ocs::tom::find_first_rw<PET_id>(pe_task_list, PE_TASK_PAST_USAGE_CONTAINER);
+   if (!container) {
+      auto created = ocs::tom::ElementPtr<ocs::tom::PET>::create();
+      ocs::tom::set<PET_id>(*created, PE_TASK_PAST_USAGE_CONTAINER);
+      ocs::tom::set<PET_do_contact>(*created, true);
+      container = pe_task_list.push_front(std::move(created));
    }
 
    /* sum up usage */
@@ -187,12 +198,25 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task) {
 }
 
 /**
+ * @brief pe_task_sum_past_usage_list() for an untyped caller
+ *
+ * @param pe_task_list list containing the container object (PET_Type), checked; may be nullptr
+ * @param pe_task the pe task from which to copy usage (PET_Type), checked
+ *
+ * @return as pe_task_sum_past_usage_list()
+ */
+lListElem *pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task) {
+   return pe_task_sum_past_usage_list(ocs::tom::List<ocs::tom::PET>(pe_task_list),
+                                      ocs::tom::ConstElement<ocs::tom::PET>(pe_task));
+}
+
+/**
  * @brief Verify a pe task request object
  *
  * Verifies structure and contents of a pe task request.
  * A pe task request is sent to sge_execd by qrsh -inherit.
  *
- * @param petr the object to verify
+ * @param petr the object to verify (PETR_Type), may be an empty handle
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false on error with error message in answer_list
@@ -204,13 +228,13 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task) {
  *
  * @see `object_verify_cull()`
  */
-bool 
-pe_task_verify_request(const lListElem *petr, lList **answer_list) {
+bool
+pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (petr == nullptr) {
+   if (!petr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;

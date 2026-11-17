@@ -39,6 +39,13 @@
  * @see sge_ulong.cc
  */
 
+#include <utility>
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
+
 #include "sgeobj/cull/sge_ulong_ULNG_L.h"
 
 #include "sgeobj/ocs_CEntry.h"
@@ -79,9 +86,10 @@ bool
 ulong_parse_from_string(uint32_t *this_ulong,
                         lList **answer_list, const char *string);
 
-bool
-ulong_list_parse_from_string(lList **this_list, lList **answer_list,
-                             const char *string, const char *delimitor);
+std::pair<bool, ocs::tom::ListPtr<ocs::tom::ULNG>>
+ulong_list_parse_from_string(lList **answer_list, const char *string, const char *delimitor);
+OCS_TRANSITIONAL bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
+                                                   const char *string, const char *delimitor);
 
 bool
 ulong_parse_priority(lList **alpp, int *valp, const char *priority_str);

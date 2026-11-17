@@ -226,7 +226,7 @@ qconf_template_CAL([[maybe_unused]] lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_CK([[maybe_unused]] lList **answer_list, const char *name) {
-   return sge_generic_ckpt(const_cast<char *>(name));
+   return sge_generic_ckpt(name).release();
 }
 
 /** @brief The template of a parallel environment
@@ -236,7 +236,7 @@ qconf_template_CK([[maybe_unused]] lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_PE([[maybe_unused]] lList **answer_list, const char *name) {
-   return pe_create_template(const_cast<char *>(name));
+   return pe_create_template(name).release();
 }
 
 /** @brief The template of a complex entry
@@ -246,7 +246,7 @@ qconf_template_PE([[maybe_unused]] lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_CE(lList **answer_list, const char *name) {
-   return centry_create(answer_list, name);
+   return centry_create(answer_list, name).release();
 }
 
 /** @brief The template of a role
@@ -256,11 +256,9 @@ qconf_template_CE(lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_RL([[maybe_unused]] lList **answer_list, const char *name) {
-   lListElem *ep = ocs::Role::create_template();
-   if (ep != nullptr) {
-      ocs::tom::set<RL_name>(ep, name);
-   }
-   return ep;
+   auto ep = ocs::Role::create_template();
+   ocs::tom::set<RL_name>(ep, name);
+   return ep.release();
 }
 
 /** @brief The template of a user
@@ -270,11 +268,10 @@ qconf_template_RL([[maybe_unused]] lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_UU([[maybe_unused]] lList **answer_list, const char *name) {
-   lListElem *ep = getUserTemplate();
-   if (ep != nullptr) {
-      ocs::tom::set<UU_name>(ep, name);
-   }
-   return ep;
+   auto ep = getUserTemplate();
+   ocs::tom::set<UU_name>(ep, name);
+   // the template table takes a raw constructor
+   return ep.release();
 }
 
 /** @brief The template of a project
@@ -284,11 +281,10 @@ qconf_template_UU([[maybe_unused]] lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
-   lListElem *ep = getPrjTemplate();
-   if (ep != nullptr) {
-      ocs::tom::set<PR_name>(ep, name);
-   }
-   return ep;
+   auto ep = getPrjTemplate();
+   ocs::tom::set<PR_name>(ep, name);
+   // the template table takes a raw constructor
+   return ep.release();
 }
 
 /** @brief The template of a resource quota set
@@ -371,7 +367,7 @@ qconf_template_HGRP(lList **answer_list, const char *name) {
 static lListElem *
 qconf_template_CQ(lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
-   auto ep = ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(cqueue_create(answer_list, name));
+   auto ep = cqueue_create(answer_list, name);
    if (ep != nullptr && !cqueue_set_template_attributes(*ep, answer_list)) {
       ep.reset();
    }
@@ -385,7 +381,7 @@ qconf_template_CQ(lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_US(lList **answer_list, const char *name) {
-   return userset_create(answer_list, name);
+   return userset_create(answer_list, name).release();
 }
 
 /** @brief The template of a share tree (CS-2823)
@@ -401,7 +397,8 @@ qconf_template_US(lList **answer_list, const char *name) {
  */
 static lListElem *
 qconf_template_STN([[maybe_unused]] lList **answer_list, [[maybe_unused]] const char *name) {
-   return getSNTemplate();
+   // the template table takes a raw constructor
+   return getSNTemplate().release();
 }
 
 /** @brief The template of a host configuration (CS-2823)
@@ -596,7 +593,7 @@ qconf_stn_prepare(lListElem *ep, lList **answer_list) {
    if (qconf_stn_has_ids(ocs::tom::ConstElement<ocs::tom::STN>(ep))) {
       DRETURN(STATUS_OK);
    }
-   DRETURN(id_sharetree(answer_list, ep, 0, nullptr) ? STATUS_OK : STATUS_EUNKNOWN);
+   DRETURN(id_sharetree(answer_list, ep, 0) ? STATUS_OK : STATUS_EUNKNOWN);
 }
 
 /** @brief Does the bulk export of the exec hosts leave this one out? (CS-2826)

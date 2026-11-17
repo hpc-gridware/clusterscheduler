@@ -447,11 +447,9 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pfo
          if ((transitions[i] & QUEUE_DO_ACTION) == 0) {
             parse_multi_jobtaskslist(ppcmdline, options[i], &alp, ppreflist, true, transitions[i]);
          } else {
-            lList *queues_out = nullptr;
-            const bool found = parse_multi_stringlist(ppcmdline, options[i], &alp, &queues_out, ST_Type, ST_name);
-            /* parse_multi_stringlist() creates the list with ST_Type, so it is taken over unchecked */
-            const auto queues = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(queues_out);
-            if (found) {
+            ocs::tom::ListPtr<ocs::tom::ST> queues;
+            if (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), options[i], &alp,
+                                                queues)) {
                id_list_build_from_str_list(ppreflist, &alp, *queues, transitions[i], *pforce);
             }
          }

@@ -100,7 +100,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             view.report_ar_node_string(out_, "project", project);
          }
 
-         if (const lListElem *binding = ocs::tom::get<AR_binding>(ar); binding != nullptr) {
+         if (const auto binding = ocs::tom::get<AR_binding>(ar); binding) {
             std::string binding_string;
             BindingIo::binding_print_to_string(binding, binding_string, false);
             view.report_ar_node_string(out_, "binding", binding_string.c_str());

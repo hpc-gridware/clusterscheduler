@@ -659,8 +659,8 @@ centry_rsmap_resolve_request_properties(const ocs::tom::ConstElement<ocs::tom::C
    std::vector<std::string> params;
    centry_rsmap_split_params(open, close, params);
 
-   // built through the raw list reference, which creates the list with its first element
-   lList *resolved = nullptr;
+   // created with its first element
+   ocs::tom::ListPtr<ocs::tom::CE> resolved;
    for (const std::string &param : params) {
       const size_t eq = param.find('=');
       if (eq == std::string::npos || eq == 0) {
@@ -676,11 +676,10 @@ centry_rsmap_resolve_request_properties(const ocs::tom::ConstElement<ocs::tom::C
          continue;
       }
 
-      const auto req_ep = ocs::tom::emplace_back<CE_name>(&resolved, ocs::tom::get<CE_name>(char_cep));
-      if (!req_ep) {
-         lFreeList(&resolved);
-         return ocs::tom::ListPtr<ocs::tom::CE>();
+      if (!resolved) {
+         resolved = ocs::tom::ListPtr<ocs::tom::CE>::create("resolved request properties");
       }
+      const auto req_ep = resolved->emplace_back<CE_name>(ocs::tom::get<CE_name>(char_cep));
       ocs::tom::set<CE_valtype>(req_ep, ocs::tom::get<CE_valtype>(char_cep));
       ocs::tom::set<CE_relop>(req_ep, ocs::tom::get<CE_relop>(char_cep));
       ocs::tom::set<CE_stringval>(req_ep, param.substr(eq + 1).c_str());
@@ -693,7 +692,7 @@ centry_rsmap_resolve_request_properties(const ocs::tom::ConstElement<ocs::tom::C
       lFreeList(&sub_answers);
    }
 
-   return ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resolved);
+   return resolved;
 }
 
 /**
@@ -919,17 +918,23 @@ centry_rsmap_instance_free(const ocs::tom::ConstElement<ocs::tom::RESL> defined_
  */
 ocs::tom::ListPtr<ocs::tom::ST>
 centry_rsmap_group_keys(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition, const char *key_name) {
-   // built through the raw list reference, which creates the list with its first element
-   lList *keys = nullptr;
+   // created with its first element
+   ocs::tom::ListPtr<ocs::tom::ST> keys;
 
    for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       const char *key = centry_rsmap_instance_key(defined_ep, key_name);
-      if (key != nullptr && !ocs::tom::find_first<ST_name>(keys, key)) {
-         ocs::tom::emplace_back<ST_name>(&keys, key);
+      if (key == nullptr) {
+         continue;
       }
+      if (!keys) {
+         keys = ocs::tom::ListPtr<ocs::tom::ST>::create("resource map group keys");
+      } else if (ocs::tom::find_first<ST_name>(*keys, key)) {
+         continue;
+      }
+      keys->emplace_back<ST_name>(key);
    }
 
-   return ocs::tom::ListPtr<ocs::tom::ST>::from_typed(keys);
+   return keys;
 }
 
 /**
@@ -1310,8 +1315,8 @@ centry_rsmap_take_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_
                             const ocs::tom::ConstList<ocs::tom::RESL> already, const char *key_name, const char *key,
                             const uint32_t amount, const char *id_expr,
                             const ocs::tom::ConstList<ocs::tom::CE> required_props) {
-   // built through the raw list reference, which creates the list with its first element
-   lList *chosen = nullptr;
+   // created with its first element
+   ocs::tom::ListPtr<ocs::tom::RESL> chosen;
    uint32_t remaining = amount;
 
    for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
@@ -1344,20 +1349,22 @@ centry_rsmap_take_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_
       }
 
       const uint32_t take = (free >= remaining) ? remaining : free;
-      const auto ep = ocs::tom::emplace_back<RESL_value>(&chosen, id);
-      if (!ep) {
-         lFreeList(&chosen);
+      if (id == nullptr) {
+         // an instance without an identifier cannot be granted
          return ocs::tom::ListPtr<ocs::tom::RESL>();
       }
+      if (!chosen) {
+         chosen = ocs::tom::ListPtr<ocs::tom::RESL>::create("chosen resource map instances");
+      }
+      const auto ep = chosen->emplace_back<RESL_value>(id);
       ocs::tom::set<RESL_amount>(ep, take);
       remaining -= take;
    }
 
-   auto ret = ocs::tom::ListPtr<ocs::tom::RESL>::from_typed(chosen);
    if (remaining > 0) {
-      ret.reset();
+      chosen.reset();
    }
-   return ret;
+   return chosen;
 }
 
 /**

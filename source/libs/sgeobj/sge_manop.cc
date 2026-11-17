@@ -53,14 +53,21 @@
 #include <sge_conf.h>
 #include <cull/sge_userset_UE_L.h>
 
+/**
+ * @brief Is a group referenced in a user list?
+ *
+ * @param group the group name, looked for as `@group`
+ * @param usr_grp_sgrp_list user list (UE_Type) with possible group entries (prefixed with @-character)
+ * @return true if the list holds the group
+ */
 static bool
-user_list_is_group_in_list(const char *group, const lList *usr_grp_sgrp_list, int nm) {
+user_list_is_group_in_list(const char *group, const ocs::tom::ConstList<ocs::tom::UE> usr_grp_sgrp_list) {
    DENTER(TOP_LAYER);
    bool ret = false;
    dstring group_name = DSTRING_INIT;
 
    sge_dstring_sprintf(&group_name, "@%s", group);
-   if (lGetElemStr(usr_grp_sgrp_list, nm, sge_dstring_get_string(&group_name)) != nullptr) {
+   if (usr_grp_sgrp_list.find_first<UE_name>(sge_dstring_get_string(&group_name))) {
       DTRACE;
       ret = true;
    }
@@ -72,33 +79,32 @@ user_list_is_group_in_list(const char *group, const lList *usr_grp_sgrp_list, in
  * @brief Returns if the user that initiated the request is part of the list.
  *
  * True is returned if the username, the primary group or one of the supplementary groups is
- * mentioned in usr_grp_sgrp_list. The nm field is used to retrieve the string from elements
- * within the list (e.g. UE_name for the entries of an access list).
+ * mentioned in usr_grp_sgrp_list (by UE_name, e.g. the entries of an access list).
  *
  * @param packet              GDI packet containing the ownership information of the request creator
- * @param usr_grp_sgrp_list   user list with possible group entries (prefixed with @-character)
- * @param nm                  CULL name (e.g UE_name)
+ * @param usr_grp_sgrp_list   user list (UE_Type) with possible group entries (prefixed with @-character)
  * @return                    false if neither the username nor one of the groups is referenced.
  */
 bool
-user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet, const lList *usr_grp_sgrp_list, int nm) {
+user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet,
+                                   const ocs::tom::ConstList<ocs::tom::UE> usr_grp_sgrp_list) {
    DENTER(TOP_LAYER);
 
    if (packet == nullptr) {
       DRETURN(false);
    }
    // check the user
-   if (lGetElemStr(usr_grp_sgrp_list, nm, packet->user) != nullptr) {
+   if (usr_grp_sgrp_list.find_first<UE_name>(packet->user)) {
       DRETURN(true);
    }
    // check the primary group (CS-493)
-   if (user_list_is_group_in_list(packet->group, usr_grp_sgrp_list, nm)) {
+   if (user_list_is_group_in_list(packet->group, usr_grp_sgrp_list)) {
       DRETURN(true);
    }
    // check supplementary groups if enabled
    if (packet->amount > 0 && mconf_get_enable_sup_grp_eval()) {
       for(int i = 0; i < packet->amount; i++) {
-         if (user_list_is_group_in_list(packet->grp_array[i].name, usr_grp_sgrp_list, nm)) {
+         if (user_list_is_group_in_list(packet->grp_array[i].name, usr_grp_sgrp_list)) {
             DRETURN(true);
          }
       }
@@ -118,23 +124,24 @@ user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet, const lList *
  * @return                    false if neither the username nor one of the groups is referenced.
  */
 static bool
-user_is_X_user(const ocs::gdi::Packet *packet, const lList *master_userset_list, const char *userset_name) {
+user_is_X_user(const ocs::gdi::Packet *packet, const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+               const char *userset_name) {
    DENTER(TOP_LAYER);
 
    // find the userset
-   ocs::tom::ConstElement<ocs::tom::US> userset = ocs::tom::find_first<US_name>(master_userset_list, userset_name);
-   if (userset == nullptr) {
+   const auto userset = master_userset_list.find_first<US_name>(userset_name);
+   if (!userset) {
       DRETURN(false);
    }
 
    // text if it has enntries
-   ocs::tom::ConstList<ocs::tom::UE> user_entries_list = ocs::tom::get<US_entries>(userset);
-   if (user_entries_list == nullptr) {
+   const auto user_entries_list = ocs::tom::get<US_entries>(userset);
+   if (!user_entries_list) {
       DRETURN(false);
    }
 
    // identify if user, primary grp or a sup-grp is part of that list
-   if (user_list_is_user_grp_sgrp_in_list(packet, user_entries_list, UE_name)) {
+   if (user_list_is_user_grp_sgrp_in_list(packet, user_entries_list)) {
       DRETURN(true);
    }
 
@@ -142,7 +149,7 @@ user_is_X_user(const ocs::gdi::Packet *packet, const lList *master_userset_list,
 }
 
 /**
- * Was packet initiated by a user referenced in the 'arusers'
+ * @brief Was packet initiated by a user referenced in the 'arusers'?
  *
  * @param packet              GDI packet containing the ownership information of the request creator
  * @param master_userset_list Master list containing all user lists
@@ -150,12 +157,13 @@ user_is_X_user(const ocs::gdi::Packet *packet, const lList *master_userset_list,
  *                            referenced in the "arusers"
  */
 bool
-user_is_ar_user(const ocs::gdi::Packet *packet, const lList *master_userset_list) {
-   return user_is_X_user(packet, master_userset_list, AR_USERS);
+user_is_ar_user(const ocs::gdi::Packet *packet, const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
+   DENTER(TOP_LAYER);
+   DRETURN(user_is_X_user(packet, master_userset_list, AR_USERS));
 }
 
 /**
- * Was packet initiated by a user referenced in the 'deadlineusers'?
+ * @brief Was packet initiated by a user referenced in the 'deadlineusers'?
  *
  * @param packet              GDI packet containing the ownership information of the request creator
  * @param master_userset_list Master list containing all user lists
@@ -163,12 +171,13 @@ user_is_ar_user(const ocs::gdi::Packet *packet, const lList *master_userset_list
  *                            referenced in the "deadlineusers"
  */
 bool
-user_is_deadline_user(const ocs::gdi::Packet *packet, const lList *master_userset_list) {
-   return user_is_X_user(packet, master_userset_list, DEADLINE_USERS);
+user_is_deadline_user(const ocs::gdi::Packet *packet, const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
+   DENTER(TOP_LAYER);
+   DRETURN(user_is_X_user(packet, master_userset_list, DEADLINE_USERS));
 }
 
 /**
- * Was the packet initiated by a manager?
+ * @brief Was the packet initiated by a manager?
  *
  * Managers are held in the reserved "manager" userset (CS-2394).
  *
@@ -184,12 +193,14 @@ bool
 manop_is_manager(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   // the master list of the data store holds US_Type elements
+   const auto master_userset_list =
+      ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
    DRETURN(user_is_X_user(packet, master_userset_list, MANAGER_USERSET));
 }
 
 /**
- * Was the packet initiated by an operator?
+ * @brief Was the packet initiated by an operator?
  *
  * Operators are held in the reserved "operator" userset (CS-2394). Managers are
  * automatically operators.
@@ -204,7 +215,9 @@ bool
 manop_is_operator(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   // the master list of the data store holds US_Type elements
+   const auto master_userset_list =
+      ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
    if (user_is_X_user(packet, master_userset_list, OPERATOR_USERSET)) {
       DRETURN(true);
    }

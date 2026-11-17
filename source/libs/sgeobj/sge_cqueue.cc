@@ -288,26 +288,19 @@ char *cqueue_get_name_from_qinstance(const char *queue_instance) {
  *
  * Returns a new cluster queue object with the name "name".
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN_Type list; no longer written: running out of memory throws, as every create() does
  * @param name cluster queue name
  *
- * @return CQ_Type object or nullptr
+ * @return the CQ_Type object, or an empty handle if "name" is nullptr
  */
-lListElem *
-cqueue_create(lList **answer_list, const char *name) {
+ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create([[maybe_unused]] lList **answer_list, const char *name) {
    DENTER(CQUEUE_LAYER);
 
-   lListElem *ret = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CQ> ret;
 
    if (name != nullptr) {
-      ret = lCreateElem(CQ_Type);
-
-      if (ret != nullptr) {
-         ocs::tom::set<CQ_name>(ret, name);
-      } else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-         answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
-      }
+      ret = ocs::tom::ElementPtr<ocs::tom::CQ>::create();
+      ret->set<CQ_name>(name);
    }
    DRETURN(ret);
 }
@@ -584,17 +577,41 @@ bool cqueue_is_a_href_referenced(const lListElem *this_elem, const lList *href_l
 }
 
 /**
+ * @brief Set an attribute list of a cluster queue to its default entry alone
+ *
+ * The list is created named "" and holds one entry for #HOSTREF_DEFAULT with
+ * the given value, as the template of a new cluster queue wants it; a list
+ * held before is freed.
+ *
+ * @tparam LF the attribute list field of the cluster queue (CQ_Type)
+ * @tparam HREF the host reference field of the list's entry type
+ * @tparam VALUE the value field of the list's entry type
+ * @tparam V the value's type: a number, a string, or an owning list handle
+ * @param cqueue the cluster queue
+ * @param value the value of the default entry; an owning list handle is taken over
+ */
+template <auto LF, auto HREF, auto VALUE, typename V>
+static void ocs_cqueue_set_default_attr(const ocs::tom::Element<ocs::tom::CQ> cqueue, V value) {
+   DENTER(CQUEUE_LAYER);
+
+   using Entry = typename ocs::tom::FieldTraits<LF>::Sub;
+   auto attr_list = ocs::tom::ListPtr<Entry>::create("");
+   const auto attr_elem = attr_list->template emplace_back<HREF>(ocs::tom::Host(HOSTREF_DEFAULT));
+
+   attr_elem.template set<VALUE>(std::move(value));
+   ocs::tom::set<LF>(cqueue, std::move(attr_list));
+   DRETURN_VOID;
+}
+
+/**
  * @brief Set default attributes
  *
  * This function initializes all attributes of an empty cluster
  * queue with default values. Please note that "this_elem" has to
  * be "empty" before this function is called.
  *
- * The attribute lists are set through their field numbers, which
- * this function walks in tables; that part stays untyped.
- *
  * @param this_elem CQ_Type, may be an empty handle
- * @param answer_list AN_Type
+ * @param answer_list AN_Type, receives a message should the default queue type not parse
  *
  * @return error state true  - success false - error
  */
@@ -607,273 +624,116 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
       /*
        * initialize uint32_t values
        */
-      if (ret) {
-         const uint32_t value[] = {
-            0, 1, 1, 0 
-         }; 
-         const int attr[] = {
-            CQ_seq_no, CQ_nsuspend, CQ_job_slots, NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<AULNG_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<AULNG_value>(attr_elem, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      ocs_cqueue_set_default_attr<CQ_seq_no, AULNG_href, AULNG_value>(this_elem, uint32_t{0});
+      ocs_cqueue_set_default_attr<CQ_nsuspend, AULNG_href, AULNG_value>(this_elem, uint32_t{1});
+      ocs_cqueue_set_default_attr<CQ_job_slots, AULNG_href, AULNG_value>(this_elem, uint32_t{1});
 
       /*
        * qtype
        */
-      if (ret) {
-         const char *string = "BATCH INTERACTIVE";
-         uint32_t value = 0;
-         lList *attr_list = nullptr;
-         auto attr_elem = ocs::tom::emplace_back<AQTLIST_href>(&attr_list, HOSTREF_DEFAULT);
+      uint32_t qtype = 0;
 
-         sge_parse_bitfield_str(string, queue_types, &value, "",
-                                answer_list, true);
-
-         ocs::tom::set<AQTLIST_value>(attr_elem, value);
-         ocs::tom::set<CQ_qtype>(this_elem, attr_list);
-      }
+      sge_parse_bitfield_str("BATCH INTERACTIVE", queue_types, &qtype, "", answer_list, true);
+      ocs_cqueue_set_default_attr<CQ_qtype, AQTLIST_href, AQTLIST_value>(this_elem, qtype);
 
       /*
        * initialize bool values
        */
-      if (ret) {
-         lList *attr_list = nullptr;
-         auto attr = ocs::tom::emplace_back<ABOOL_href>(&attr_list, HOSTREF_DEFAULT);
-
-         ocs::tom::set<ABOOL_value>(attr, false);
-         ocs::tom::set<CQ_rerun>(this_elem, attr_list);
-      }
+      ocs_cqueue_set_default_attr<CQ_rerun, ABOOL_href, ABOOL_value>(this_elem, false);
 
       /*
        * initialize memory values
        */
-      if (ret) {
-         const char *value[] = {
-            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
-            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
-            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
-            nullptr
-         };
-         const int attr[] = {
-            CQ_s_fsize, CQ_h_fsize, CQ_s_data, CQ_h_data,
-            CQ_s_stack, CQ_h_stack, CQ_s_core, CQ_h_core,
-            CQ_s_rss, CQ_h_rss, CQ_s_vmem, CQ_h_vmem,
-            NoName
-         };
-         int index = 0;
+      ocs_cqueue_set_default_attr<CQ_s_fsize, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_fsize, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_s_data, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_data, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_s_stack, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_stack, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_s_core, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_core, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_s_rss, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_rss, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_s_vmem, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_vmem, AMEM_href, AMEM_value>(this_elem, INFINITY_STR);
 
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<AMEM_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<AMEM_value>(attr_elem, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
-      
       /*
        * initialize time values
        */
-      if (ret) {
-         const char *value[] = {
-            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
-            nullptr
-         };
-         const int attr[] = {
-            CQ_s_rt, CQ_h_rt, CQ_s_cpu, CQ_h_cpu,
-            NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<ATIME_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<ATIME_value>(attr_elem, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      ocs_cqueue_set_default_attr<CQ_s_rt, ATIME_href, ATIME_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_rt, ATIME_href, ATIME_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_s_cpu, ATIME_href, ATIME_value>(this_elem, INFINITY_STR);
+      ocs_cqueue_set_default_attr<CQ_h_cpu, ATIME_href, ATIME_value>(this_elem, INFINITY_STR);
 
       /*
        * initialize interval values
        */
-      if (ret) {
-         const char *value[] = {
-            "00:05:00", "00:05:00", "00:00:60",
-            nullptr
-         }; 
-         const int attr[] = {
-            CQ_suspend_interval, CQ_min_cpu_interval, CQ_notify,
-            NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<AINTER_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<AINTER_value>(attr_elem, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      ocs_cqueue_set_default_attr<CQ_suspend_interval, AINTER_href, AINTER_value>(this_elem, "00:05:00");
+      ocs_cqueue_set_default_attr<CQ_min_cpu_interval, AINTER_href, AINTER_value>(this_elem, "00:05:00");
+      ocs_cqueue_set_default_attr<CQ_notify, AINTER_href, AINTER_value>(this_elem, "00:00:60");
 
       /*
        * initialize string values
        */
-      if (ret) {
-         const char *value[] = {
-            "/tmp", "/bin/sh", "NONE",
-            "0", "UNDEFINED", "NONE",
-            "NONE", "unix_behavior", "NONE",
-            "NONE", "NONE", "NONE",
-            "default", 
-            nullptr
-         }; 
-         const int attr[] = {
-            CQ_tmpdir, CQ_shell, CQ_calendar,
-            CQ_priority, CQ_processors, CQ_prolog,
-            CQ_epilog, CQ_shell_start_mode, CQ_starter_method,
-            CQ_suspend_method, CQ_resume_method, CQ_terminate_method,
-            CQ_initial_state,
-            NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<ASTR_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<ASTR_value>(attr_elem, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      ocs_cqueue_set_default_attr<CQ_tmpdir, ASTR_href, ASTR_value>(this_elem, "/tmp");
+      ocs_cqueue_set_default_attr<CQ_shell, ASTR_href, ASTR_value>(this_elem, "/bin/sh");
+      ocs_cqueue_set_default_attr<CQ_calendar, ASTR_href, ASTR_value>(this_elem, "NONE");
+      ocs_cqueue_set_default_attr<CQ_priority, ASTR_href, ASTR_value>(this_elem, "0");
+      ocs_cqueue_set_default_attr<CQ_processors, ASTR_href, ASTR_value>(this_elem, "UNDEFINED");
+      ocs_cqueue_set_default_attr<CQ_prolog, ASTR_href, ASTR_value>(this_elem, "NONE");
+      ocs_cqueue_set_default_attr<CQ_epilog, ASTR_href, ASTR_value>(this_elem, "NONE");
+      ocs_cqueue_set_default_attr<CQ_shell_start_mode, ASTR_href, ASTR_value>(this_elem, "unix_behavior");
+      ocs_cqueue_set_default_attr<CQ_starter_method, ASTR_href, ASTR_value>(this_elem, "NONE");
+      ocs_cqueue_set_default_attr<CQ_suspend_method, ASTR_href, ASTR_value>(this_elem, "NONE");
+      ocs_cqueue_set_default_attr<CQ_resume_method, ASTR_href, ASTR_value>(this_elem, "NONE");
+      ocs_cqueue_set_default_attr<CQ_terminate_method, ASTR_href, ASTR_value>(this_elem, "NONE");
+      ocs_cqueue_set_default_attr<CQ_initial_state, ASTR_href, ASTR_value>(this_elem, "default");
 
       /*
        * initialize string-list values
        */
-      if (ret) {
-         const int attr[] = {
-            CQ_pe_list, CQ_ckpt_list,
-            NoName
-         };
-         int index = 0;
-         lList *value[] = {
-            nullptr, nullptr, nullptr
-         };
+      auto pe_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
 
-         value[0] = lCreateList("", ST_Type);
-         ocs::tom::emplace_back<ST_name>(&(value[0]), "make");
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<ASTRLIST_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<ASTRLIST_value>(attr_elem, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      pe_list->emplace_back<ST_name>("make");
+      ocs_cqueue_set_default_attr<CQ_pe_list, ASTRLIST_href, ASTRLIST_value>(this_elem, std::move(pe_list));
+      ocs_cqueue_set_default_attr<CQ_ckpt_list, ASTRLIST_href, ASTRLIST_value>(
+         this_elem, ocs::tom::ListPtr<ocs::tom::ST>());
 
       /*
        * initialize AUSRLIST_Type-list values
        */
-      if (ret) {
-         const int attr[] = {
-            CQ_owner_list, CQ_acl, CQ_xacl,
-            NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<AUSRLIST_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<AUSRLIST_value>(attr_elem, nullptr);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      ocs_cqueue_set_default_attr<CQ_owner_list, AUSRLIST_href, AUSRLIST_value>(
+         this_elem, ocs::tom::ListPtr<ocs::tom::US>());
+      ocs_cqueue_set_default_attr<CQ_acl, AUSRLIST_href, AUSRLIST_value>(this_elem, ocs::tom::ListPtr<ocs::tom::US>());
+      ocs_cqueue_set_default_attr<CQ_xacl, AUSRLIST_href, AUSRLIST_value>(this_elem, ocs::tom::ListPtr<ocs::tom::US>());
 
       /*
        * initialize APRJLIST_Type-list values (only sgeee mode)
        */
-      if (ret) {
-         const int attr[] = {
-            CQ_projects, CQ_xprojects,
-            NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<APRJLIST_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<APRJLIST_value>(attr_elem, nullptr);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      ocs_cqueue_set_default_attr<CQ_projects, APRJLIST_href, APRJLIST_value>(
+         this_elem, ocs::tom::ListPtr<ocs::tom::PR>());
+      ocs_cqueue_set_default_attr<CQ_xprojects, APRJLIST_href, APRJLIST_value>(
+         this_elem, ocs::tom::ListPtr<ocs::tom::PR>());
 
       /*
        * initialize ACELIST_Type-list values
        */
-      if (ret) {
-         const int attr[] = {
-            CQ_load_thresholds, CQ_suspend_thresholds, 
-            CQ_consumable_config_list,
-            NoName
-         };
-         lList *value[] = {
-            nullptr, nullptr, nullptr, nullptr
-         };
-         int index = 0;
+      auto load_thresholds = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+      const auto np_load_avg = load_thresholds->emplace_back<CE_name>("np_load_avg");
 
-         value[0] = lCreateList("", CE_Type);
-         auto elem = ocs::tom::emplace_back<CE_name>(&(value[0]), "np_load_avg");
-         ocs::tom::set<CE_stringval>(elem, "1.75");
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<ACELIST_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<ACELIST_value>(attr_elem, value[index]);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      np_load_avg.set<CE_stringval>("1.75");
+      ocs_cqueue_set_default_attr<CQ_load_thresholds, ACELIST_href, ACELIST_value>(this_elem,
+                                                                                   std::move(load_thresholds));
+      ocs_cqueue_set_default_attr<CQ_suspend_thresholds, ACELIST_href, ACELIST_value>(
+         this_elem, ocs::tom::ListPtr<ocs::tom::CE>());
+      ocs_cqueue_set_default_attr<CQ_consumable_config_list, ACELIST_href, ACELIST_value>(
+         this_elem, ocs::tom::ListPtr<ocs::tom::CE>());
 
       /*
        * initialize ASOLIST_Type-list values
        */
-      if (ret) {
-         const int attr[] = {
-            CQ_subordinate_list,
-            NoName
-         };
-         int index = 0;
-
-         while (attr[index] != NoName) {
-            lList *attr_list = nullptr;
-            auto attr_elem = ocs::tom::emplace_back<ASOLIST_href>(&attr_list, HOSTREF_DEFAULT);
-
-            ocs::tom::set<ASOLIST_value>(attr_elem, nullptr);
-            lSetList(this_elem, attr[index], attr_list);
-            index++;
-         }
-      }
+      ocs_cqueue_set_default_attr<CQ_subordinate_list, ASOLIST_href, ASOLIST_value>(
+         this_elem, ocs::tom::ListPtr<ocs::tom::SO>());
    }
    DRETURN(ret);
 }
@@ -957,8 +817,9 @@ lListElem *cqueue_locate_qinstance(const lListElem *this_elem, const char *hostn
  *    - test attribute values
  *
  * The attributes are walked through #cqueue_attribute_array, by field
- * numbers given at run time, and the native verify functions keep their
- * untyped signature; those parts stay untyped.
+ * numbers given at run time, and the native verify functions take the entry
+ * and the master list untyped, as their type differs per attribute; those
+ * parts stay untyped.
  *
  * @param cqueue CQ_Type object to be verified, may be an empty handle
  * @param answer_list AN_Type list
@@ -1231,11 +1092,16 @@ bool cqueue_list_find_all_matching_references(const lList *this_list, lList **an
  * The values of each attribute are keyed by their host or domain reference; a value for a reference the target
  * already holds is a repeat and is dropped.
  *
- * @param target the request that is kept, CQ_Type
+ * The attributes are walked through #cqueue_attribute_array: the field, the entry type of its list and the host
+ * field are given at run time, so the access to the attribute lists stays untyped.
+ *
+ * @param target the request that is kept
  * @param source the request whose values are moved; its attribute lists are left empty
  */
 static void
-ocs_cqueue_xattr_merge(lListElem *target, lListElem *source) {
+ocs_cqueue_xattr_merge(const ocs::tom::Element<ocs::tom::CQ> target, const ocs::tom::Element<ocs::tom::CQ> source) {
+   DENTER(CQUEUE_LAYER);
+
    for (int index = 0; cqueue_attribute_array[index].cqueue_attr != NoName; index++) {
       const int attr = cqueue_attribute_array[index].cqueue_attr;
       const int href = cqueue_attribute_array[index].href_attr;
@@ -1259,6 +1125,7 @@ ocs_cqueue_xattr_merge(lListElem *target, lListElem *source) {
          }
       }
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -1273,7 +1140,11 @@ ocs_cqueue_xattr_merge(lListElem *target, lListElem *source) {
  * Each request is taken out of the list while it is renamed and put back, or merged, afterwards, so that a
  * rename never puts a name into the list a second time.
  *
- * @param this_list the requests, CQ_Type
+ * The signature is the one of the `pre_gdi_function` of qconf's attribute table, so the list arrives untyped.
+ * The attribute lists are reached through #cqueue_attribute_array, by field numbers given at run time; that part
+ * stays untyped.
+ *
+ * @param this_list the requests, CQ_Type; checked, may be nullptr
  * @param answer_list AN_Type
  *
  * @return true on success, false on an error, described in @p answer_list
@@ -1288,10 +1159,13 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
    dstring host_domain = DSTRING_INIT;
 
    if (this_list != nullptr) {
+      // qconf builds the requests as cluster queues, so the check passes
+      const ocs::tom::List<ocs::tom::CQ> requests(this_list);
+
       // the requests that are not yet prepared are at the front, the prepared ones are appended at the end
-      for (int remaining = lGetNumberOfElem(this_list); remaining > 0 && ret; remaining--) {
-         lListElem *cqueue = lDechainElem(this_list, lFirstRW(this_list));
-         const char *name = ocs::tom::get<CQ_name>(cqueue);
+      for (std::size_t remaining = requests.size(); remaining > 0 && ret; remaining--) {
+         auto cqueue = requests.extract(requests.front());
+         const char *name = cqueue->get<CQ_name>();
          bool has_hostname = false;
          bool has_domain = false;
 
@@ -1299,7 +1173,7 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
                            &has_hostname, &has_domain)) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
                ANSWER_QUALITY_ERROR, MSG_CQUEUE_NOQMATCHING_S, name);
-            lAppendElem(this_list, cqueue);
+            requests.push_back(std::move(cqueue));
             ret = false;
             break;
          }
@@ -1308,18 +1182,19 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
             /*
              * Change QI/QD name to CQ name
              */
-            ocs::tom::set<CQ_name>(cqueue, sge_dstring_get_string(&cqueue_name));
+            cqueue->set<CQ_name>(sge_dstring_get_string(&cqueue_name));
 
             /*
              * Make sure that there is only a default entry
              * and change that default entry to be a QD/QI entry
              */
             for (int index = 0; cqueue_attribute_array[index].cqueue_attr != NoName && ret; index++) {
-               int pos = lGetPosViaElem(cqueue,
+               // the attribute and its host field are given at run time, so the untyped access stays
+               int pos = lGetPosViaElem(*cqueue,
                                   cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
 
                if (pos >= 0) {
-                  lList *list = lGetPosList(cqueue, pos);
+                  lList *list = lGetPosList(*cqueue, pos);
 
                   for_each_rw_lv(elem, list) {
                      const char *attr_hostname = lGetHost(elem, 
@@ -1338,11 +1213,11 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
             }
          }
 
-         if (lListElem *target = ocs::tom::find_first_rw<CQ_name>(this_list, ocs::tom::get<CQ_name>(cqueue)); target != nullptr) {
-            ocs_cqueue_xattr_merge(target, cqueue);
-            lFreeElem(&cqueue);
+         if (const auto target = requests.find_first<CQ_name>(cqueue->get<CQ_name>()); target) {
+            ocs_cqueue_xattr_merge(target, *cqueue);
+            cqueue.reset();
          } else {
-            lAppendElem(this_list, cqueue);
+            requests.push_back(std::move(cqueue));
          }
       }
    }
@@ -1400,35 +1275,65 @@ bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqu
 /**
  * @brief Find hgroup references
  *
- * This function add each cqueue name contained in "this_list"
- * to "string_list" where "hgroup" is referenced. Errors will
- * be reported via "answer_list".
+ * Collects the name of each cqueue contained in "this_list"
+ * where "hgroup" is referenced.
+ *
+ * @param this_list CQ_Type, may be an empty handle
+ * @param answer_list AN_Type; not written
+ * @param hgroup HGRP_Type, may be an empty handle
+ *
+ * @return ST_Type list of the names, created by the first one; an empty handle if none references the group
+ *
+ * @note MT-NOTE: cqueue_list_find_hgroup_references() is MT safe
+ */
+ocs::tom::ListPtr<ocs::tom::ST>
+cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list,
+                                   [[maybe_unused]] lList **answer_list,
+                                   const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
+   DENTER(CQUEUE_LAYER);
+
+   ocs::tom::ListPtr<ocs::tom::ST> string_list;
+
+   if (this_list && hgroup) {
+      for (const auto cqueue : this_list) {
+         if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
+            if (!string_list) {
+               string_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+            }
+            string_list->emplace_back<ST_name>(ocs::tom::get<CQ_name>(cqueue));
+         }
+      }
+   }
+   DRETURN(string_list);
+}
+
+/**
+ * @brief cqueue_list_find_hgroup_references() for an untyped caller
+ *
+ * Appends the names to "string_list", creating it with the first one, as the
+ * function did before it returned its result.
  *
  * @param this_list CQ_Type, may be an empty handle
  * @param answer_list AN_Type
  * @param hgroup HGRP_Type, may be an empty handle
- * @param string_list in-out: ST_Type list the names are appended to, created by the first one
+ * @param string_list in-out: ST_Type list; nullptr makes the call a no-op
  *
- * @return error state true  - success false - error
- *
- * @note MT-NOTE: cqueue_list_find_hgroup_references() is MT safe
+ * @return always true
  */
 bool cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
                                         const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, lList **string_list) {
-   DENTER(CQUEUE_LAYER);
-
-   bool ret = true;
-
-   if (this_list && hgroup && string_list != nullptr) {
-      for (const auto cqueue : this_list) {
-         if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
-            const char *name = ocs::tom::get<CQ_name>(cqueue);
-
-            ocs::tom::emplace_back<ST_name>(string_list, name);
+   if (string_list != nullptr) {
+      auto found = cqueue_list_find_hgroup_references(this_list, answer_list, hgroup);
+      if (found) {
+         if (*string_list == nullptr) {
+            *string_list = found.release();
+         } else {
+            lList *found_raw = found.release();
+            lAddList(*string_list, &found_raw);
          }
       }
    }
-   DRETURN(ret);
+   return true;
 }
 
 /**
@@ -1577,8 +1482,6 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **
    bool ret = false;
    int index;
 
-   lList *sublist = nullptr;
-
    if (this_elem) {
       for (const auto ep : attr_list) {
          const char *attr_name = ocs::tom::get<US_name>(ep);
@@ -1586,14 +1489,18 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **
       
          /* purge hostlist */         
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, attr_name, SGE_ATTR_HOSTLIST, nullptr)) {
-            sublist = nullptr;
-            ocs::tom::exchange<CQ_hostlist>(this_elem, &sublist);
-            // the removal reports success for a missing list as well, which is no deletion
-            if (sublist != nullptr && ocs::tom::erase<HR_name>(&sublist, hgroup_or_hostname) == 1) {
+            auto hostlist = this_elem.exchange<CQ_hostlist>(ocs::tom::ListPtr<ocs::tom::HR>());
+            // a missing list or name is no deletion
+            if (hostlist && hgroup_or_hostname != nullptr &&
+                hostlist->erase<HR_name>(ocs::tom::Host(hgroup_or_hostname)) == 1) {
                DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, SGE_ATTR_HOSTLIST);
                ret = true;
+               // a list emptied by the removal is dropped, as the old removal freed it
+               if (hostlist->empty()) {
+                  hostlist.reset();
+               }
             }
-            ocs::tom::exchange<CQ_hostlist>(this_elem, &sublist);
+            static_cast<void>(this_elem.exchange<CQ_hostlist>(std::move(hostlist)));
          }
          
          /* purge attributes */ 
@@ -1606,7 +1513,7 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **
                // The list is taken out of the element and put back like the host list above:
                // lDelElemHost() frees a list that becomes empty and resets only the pointer it was
                // given, so a copy of the field pointer left the element pointing at freed memory (CS-3117).
-               sublist = nullptr;
+               lList *sublist = nullptr;
                lXchgList(this_elem, cqueue_attribute_array[index].cqueue_attr, &sublist);
                if (sublist != nullptr &&
                    lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
@@ -1667,8 +1574,8 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answ
     */
    {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-      lList *used_hosts_raw = nullptr;    // HR_Type, written by href_list_find_all_references()
-      lList *used_groups_raw = nullptr;   // HR_Type, written by href_list_find_all_references()
+      ocs::tom::ListPtr<ocs::tom::HR> used_hosts;
+      ocs::tom::ListPtr<ocs::tom::HR> used_groups;
       lList **answer_list = nullptr;
       int index;
       
@@ -1676,10 +1583,8 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answ
        * resolve href list of cqueue
        */
       href_list_find_all_references(ocs::tom::get<CQ_hostlist>(cqueue), answer_list,
-                                    master_hgroup_list, &used_hosts_raw,
-                                    &used_groups_raw);
-      const auto used_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_hosts_raw);
-      const auto used_groups = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_groups_raw);
+                                    master_hgroup_list, &used_hosts,
+                                    &used_groups);
 
       index = 0;
       while (cqueue_attribute_array[index].cqueue_attr != NoName) {
@@ -1701,10 +1606,10 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answ
             next_attr = lNext(attr);
             if (ocs::is_hgroup_name(name)) {
                if (strcmp(name, HOSTREF_DEFAULT)) {
-                  lList *used_hgroup_hosts_raw = nullptr;    // HR_Type, written by hgroup_find_all_references()
-                  lList *used_hgroup_groups_raw = nullptr;   // HR_Type, written by hgroup_find_all_references()
-                  lList *add_hosts_raw = nullptr;            // HR_Type, written by href_list_compare()
-                  lList *equity_hosts_raw = nullptr;         // HR_Type, written by href_list_compare()
+                  ocs::tom::ListPtr<ocs::tom::HR> used_hgroup_hosts;
+                  ocs::tom::ListPtr<ocs::tom::HR> used_hgroup_groups;
+                  ocs::tom::ListPtr<ocs::tom::HR> add_hosts;
+                  ocs::tom::ListPtr<ocs::tom::HR> equity_hosts;
 
                   const auto hgroup = hgroup_list_locate(master_hgroup_list, name);
 
@@ -1715,15 +1620,11 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answ
                    */
                   hgroup_find_all_references(hgroup, answer_list, 
                                              master_hgroup_list, 
-                                             &used_hgroup_hosts_raw,
-                                             &used_hgroup_groups_raw);
-                  const auto used_hgroup_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_hgroup_hosts_raw);
-                  const auto used_hgroup_groups = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_hgroup_groups_raw);
+                                             &used_hgroup_hosts,
+                                             &used_hgroup_groups);
                   href_list_compare(*used_hgroup_hosts, answer_list,
-                                    *used_hosts, &add_hosts_raw, nullptr,
-                                    &equity_hosts_raw, nullptr);
-                  const auto add_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(add_hosts_raw);
-                  const auto equity_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(equity_hosts_raw);
+                                    *used_hosts, &add_hosts, nullptr,
+                                    &equity_hosts, nullptr);
 
                   if (!add_hosts->empty()) {
                      DTRACE;

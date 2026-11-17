@@ -38,40 +38,49 @@
  * @see sge_proc.h
  */
 
+#include "uti/sge_rmon_macros.h"
+
 #include "sgeobj/sge_proc.h"
 #include "tom/ocs_Element.h"
 
+/// The process table; a process-lifetime list of PRO_Type elements, read through typed handles
 static lList *procList;
 
 /**
  * @brief Look for a certain process entry in the proc table
  *
  * Looks for the element with the specified pid and return it.
- * Otherwise return nullptr
+ * Otherwise return an empty handle. Creates the table if there is none yet.
  *
  * @param pid The process ID of the process we're looking for.
  *
- * @return PRO_Type object or nullptr
+ * @return the PRO_Type element, or an empty handle
  */
-lListElem *get_pr(int pid) {
+ocs::tom::Element<ocs::tom::PRO> get_pr(const int pid) {
+   DENTER(TOP_LAYER);
    if (procList == nullptr) {
       gen_procList();
-      return nullptr;
+      DRETURN(nullptr);
    }
 
-   return ocs::tom::find_first_rw<PRO_pid>(procList, pid);
+   DRETURN(ocs::tom::List<ocs::tom::PRO>(procList).find_first<PRO_pid>(pid));
 }
 
 /**
  * @brief Append a process element to the process list
  *
- * @param pr the element to append; ownership passes to the list
+ * Creates the table if there is none yet.
+ *
+ * @param pr the element to append; the list takes it over, @p pr is empty afterwards
+ * @return the handle on the element, now in the list
  */
-void append_pr(lListElem *pr) {
+ocs::tom::Element<ocs::tom::PRO> append_pr(ocs::tom::ElementPtr<ocs::tom::PRO> &&pr) {
+   DENTER(TOP_LAYER);
+   auto element = std::move(pr);
    if (procList == nullptr) {
       gen_procList();
    }
-   lAppendElem(procList, pr);
+   DRETURN(ocs::tom::List<ocs::tom::PRO>(procList).push_back(std::move(element)));
 }
 
 /**
@@ -80,14 +89,19 @@ void append_pr(lListElem *pr) {
  * Creates the hashed list procList
  */
 void gen_procList() {
-   procList = lCreateListHash("procList", PRO_Type, true);
+   DENTER(TOP_LAYER);
+   // the table is a process-lifetime static, so the owning handle hands it over
+   procList = ocs::tom::ListPtr<ocs::tom::PRO>::create("procList").release();
+   DRETURN_VOID;
 }
 
 /**
  * @brief Frees the formerly created procList
  */
 void free_procList() {
+   DENTER(TOP_LAYER);
    lFreeList(&procList);
+   DRETURN_VOID;
 }
 
 /**
@@ -97,26 +111,15 @@ void free_procList() {
  * Mark all remaining elements as not running.
  */
 void clean_procList() {
+   DENTER(TOP_LAYER);
+   const auto list = ocs::tom::List<ocs::tom::PRO>(procList);
 
-   lListElem *next = nullptr;
-   lListElem *ep = nullptr;
-   lCondition *cp = lWhere("%T(%I == %b)", PRO_Type, PRO_run, false); 
+   // free all finished jobs
+   list.remove_if(ocs::tom::field<PRO_run>() == false);
 
-   next = lFindFirstRW(procList, cp);
-
-   /* free all finished jobs */
-
-   while (next != nullptr) {
-      ep = lFindNextRW(next, cp);
-      lRemoveElem(procList, &next);
-      next = ep;
+   // mark all jobs to finished
+   for (auto pr : list) {
+      ocs::tom::set<PRO_run>(pr, false);
    }
-
-   lFreeWhere(&cp);
-
-   /* mark all jobs to finished */
-
-   for_each_rw (next, procList) {
-      ocs::tom::set<PRO_run>(next, false);
-   }
+   DRETURN_VOID;
 }

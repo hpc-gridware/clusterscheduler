@@ -1580,10 +1580,10 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
             lList *id_list = nullptr;
 
             if (drmaa_action == DRMAA_CONTROL_SUSPEND) {
-               id_list_build_from_str_list(&id_list, &alp, ref_list,
+               id_list_build_from_str_list(&id_list, &alp, ocs::tom::ConstList<ocs::tom::ST>(ref_list),
                                            QI_DO_SUSPEND, 0);
             } else {
-               id_list_build_from_str_list(&id_list, &alp, ref_list,
+               id_list_build_from_str_list(&id_list, &alp, ocs::tom::ConstList<ocs::tom::ST>(ref_list),
                                            QI_DO_UNSUSPEND, 0);
             }
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,

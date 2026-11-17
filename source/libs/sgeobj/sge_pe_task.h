@@ -39,6 +39,12 @@
  * @see sge_pe_task.cc
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_PETR.h"
+
 #include "sgeobj/cull/sge_pe_task_PET_L.h"
 #include "sgeobj/cull/sge_pe_task_PETR_L.h"
 #include "sgeobj/cull/sge_pe_task_FPET_L.h"
@@ -52,12 +58,14 @@
  */
 #define PE_TASK_PAST_USAGE_CONTAINER "past_usage"
 
-lListElem *pe_task_sum_past_usage(lListElem *container, 
-                                  const lListElem *pe_task);
+ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(ocs::tom::Element<ocs::tom::PET> container,
+                                                        ocs::tom::ConstElement<ocs::tom::PET> pe_task);
+OCS_TRANSITIONAL lListElem *pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task);
 
-lListElem *pe_task_sum_past_usage_all(lList *pe_task_list);
+ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_all(ocs::tom::List<ocs::tom::PET> pe_task_list);
 
-lListElem *pe_task_sum_past_usage_list(lList *pe_task_list, 
-                                       const lListElem *pe_task);
+ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(ocs::tom::List<ocs::tom::PET> pe_task_list,
+                                                             ocs::tom::ConstElement<ocs::tom::PET> pe_task);
+OCS_TRANSITIONAL lListElem *pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task);
 
-bool pe_task_verify_request(const lListElem *petr, lList **answer_list);
+bool pe_task_verify_request(ocs::tom::ConstElement<ocs::tom::PETR> petr, lList **answer_list);

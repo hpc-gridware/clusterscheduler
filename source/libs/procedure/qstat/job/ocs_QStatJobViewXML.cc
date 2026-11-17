@@ -88,9 +88,8 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    XML_out->push_back(std::move(xmlElem_xmle));
 
    // the head takes the list over
-   lListElem *xml_elem = xml_getHead("detailed_job_info", XML_out.release(), nullptr);
-   lWriteElemXMLTo(xml_elem, os);
-   lFreeElem(&xml_elem);
+   const auto xml_head = xml_getHead("detailed_job_info", std::move(XML_out), nullptr);
+   lWriteElemXMLTo(*xml_head, os);
 
    DRETURN_VOID;
 }
@@ -122,9 +121,8 @@ void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parame
    }
 
    /* print out xml info from list; the head takes the list over */
-   lListElem *xml_elem = xml_getHead("message", model.ilp.release(), nullptr);
-   lWriteElemXMLTo(xml_elem, os);
-   lFreeElem(&xml_elem);
+   const auto xml_head = xml_getHead("message", std::move(model.ilp), nullptr);
+   lWriteElemXMLTo(*xml_head, os);
 
    DRETURN_VOID;
 }

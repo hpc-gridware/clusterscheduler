@@ -385,8 +385,8 @@ int debit_host_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep,
                           bool do_per_host_booking, bool *just_check) {
    DENTER(TOP_LAYER);
    int mods = 0;
-   mods += rc_debit_consumable(jep, pe, hep, centry_list, slots, EH_consumable_config_list, EH_resource_utilization,
-                               ocs::tom::get<EH_name>(hep), is_master_task, do_per_host_booking, just_check);
+   mods += rc_debit_consumable<ocs::tom::EH, EH_consumable_config_list, EH_resource_utilization>(
+      jep, pe, hep, centry_list, slots, ocs::tom::get<EH_name>(hep), is_master_task, do_per_host_booking, just_check);
    if (jep != nullptr && jatep != nullptr) {
       mods += ja_task_debit_host_rsmaps(granted_resources_list, hep, slots, just_check);
       mods += ja_task_debit_host_bindings(granted_resources_list, hep, slots, just_check);

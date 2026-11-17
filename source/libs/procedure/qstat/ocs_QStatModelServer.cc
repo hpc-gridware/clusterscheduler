@@ -124,8 +124,8 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
    }
 
    // the access lists of the global configuration of qmaster
-   config_user_lists_ = ocs::tom::ListPtr<ocs::tom::US>(mconf_get_user_lists());
-   config_xuser_lists_ = ocs::tom::ListPtr<ocs::tom::US>(mconf_get_xuser_lists());
+   config_user_lists_ = mconf_get_user_lists();
+   config_xuser_lists_ = mconf_get_xuser_lists();
 
    const lList *master_hgrp_list = *DataStore::get_master_list(SGE_TYPE_HGROUP);
    lEnumeration *hgrp_what = get_hgrp_what();

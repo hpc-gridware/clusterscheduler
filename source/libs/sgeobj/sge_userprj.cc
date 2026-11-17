@@ -53,59 +53,71 @@
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /**
  * @brief Find project in list
  *
- * Find project in list.
- *
- * @param lp PR_Type list
+ * @param lp PR_Type list, may be an empty handle
  * @param name project name
  *
- * @return nullptr or element pointer
+ * @return the project, or an empty handle
  */
-lListElem *prj_list_locate(const lList *lp, const char *name) {
+ocs::tom::Element<ocs::tom::PR> prj_list_locate(const ocs::tom::ConstList<ocs::tom::PR> lp, const char *name) {
    DENTER(BASIS_LAYER);
-
-   lListElem *ep = nullptr;
-
-   ep = ocs::tom::find_first_rw<PR_name>(lp, name);
-
+   const auto ep = ocs::tom::find_first_rw<PR_name>(lp, name);
    DRETURN(ep);
+}
+
+/**
+ * @brief prj_list_locate() for an untyped caller
+ *
+ * @param lp PR_Type list, checked; may be nullptr
+ * @param name project name
+ *
+ * @return as prj_list_locate()
+ */
+ocs::tom::Element<ocs::tom::PR> prj_list_locate(const lList *lp, const char *name) {
+   return prj_list_locate(ocs::tom::ConstList<ocs::tom::PR>(lp), name);
 }
 
 /**
  * @brief Find user in list
  *
- * Find user in list.
- *
- * @param lp UU_Type list
+ * @param lp UU_Type list, may be an empty handle
  * @param name user name
  *
- * @return nullptr or element pointer
+ * @return the user, or an empty handle
  */
-lListElem *user_list_locate(const lList *lp, const char *name) {
+ocs::tom::Element<ocs::tom::UU> user_list_locate(const ocs::tom::ConstList<ocs::tom::UU> lp, const char *name) {
    DENTER(BASIS_LAYER);
-
-   lListElem *ep = nullptr;
-
-   ep = ocs::tom::find_first_rw<UU_name>(lp, name);
-
+   const auto ep = ocs::tom::find_first_rw<UU_name>(lp, name);
    DRETURN(ep);
 }
 
+/**
+ * @brief user_list_locate() for an untyped caller
+ *
+ * @param lp UU_Type list, checked; may be nullptr
+ * @param name user name
+ *
+ * @return as user_list_locate()
+ */
+ocs::tom::Element<ocs::tom::UU> user_list_locate(const lList *lp, const char *name) {
+   return user_list_locate(ocs::tom::ConstList<ocs::tom::UU>(lp), name);
+}
 
 /**
  * @brief Append prj from list to dstring
  *
  * Append all projects in list lp to dstring string.
  *
- * @param this_list PR_Type list
+ * @param this_list PR_Type list, may be an empty handle
  * @param string dstring to append to
  *
  * @return nullptr or resulting string of dstring
  */
-const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) {
+const char *prj_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::PR> this_list, dstring *string) {
    DENTER(BASIS_LAYER);
 
    const char *ret = nullptr;
@@ -113,9 +125,9 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) 
    if (string != nullptr) {
       bool printed = false;
 
-      for_each_ep_lv(elem, this_list) {
+      for (const auto elem : this_list) {
          sge_dstring_append(string, ocs::tom::get<PR_name>(elem));
-         if (lNext(elem)) {
+         if (elem.next()) {
             sge_dstring_append(string, " ");
          }
          printed = true;
@@ -129,21 +141,33 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) 
 }
 
 /**
+ * @brief prj_list_append_to_dstring() for an untyped caller
+ *
+ * @param this_list PR_Type list, checked; may be nullptr
+ * @param string dstring to append to
+ *
+ * @return as prj_list_append_to_dstring()
+ */
+const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) {
+   return prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR>(this_list), string);
+}
+
+/**
  * @brief Is every project of a list defined?
  *
- * @param this_list the defined projects to check against
+ * @param this_list the defined projects to check against (PR_Type), may be an empty handle
  * @param[out] answer_list receives the name of the first project that is missing
- * @param prj_list the projects to look for
+ * @param prj_list the projects to look for (PR_Type), may be an empty handle
  * @return true when all of them exist
  */
-bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
-                           const lList *prj_list) {
+bool prj_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PR> this_list, lList **answer_list,
+                           const ocs::tom::ConstList<ocs::tom::PR> prj_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
-   for_each_ep_lv(prj, prj_list) {
+   for (const auto prj : prj_list) {
       const char *name = ocs::tom::get<PR_name>(prj);
 
-      if (prj_list_locate(this_list, name) == nullptr) {
+      if (!prj_list_locate(this_list, name)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CQUEUE_UNKNOWNPROJECT_S, name);
@@ -155,17 +179,26 @@ bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/***************************************************
- Generate a Template for a user
- ***************************************************/
+/**
+ * @brief prj_list_do_all_exist() for an untyped caller
+ *
+ * @param this_list the defined projects to check against (PR_Type), checked; may be nullptr
+ * @param[out] answer_list receives the name of the first project that is missing
+ * @param prj_list the projects to look for (PR_Type), checked; may be nullptr
+ * @return as prj_list_do_all_exist()
+ */
+bool prj_list_do_all_exist(const lList *this_list, lList **answer_list, const lList *prj_list) {
+   return prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR>(this_list), answer_list,
+                                ocs::tom::ConstList<ocs::tom::PR>(prj_list));
+}
+
 /**
  * @brief A user object template, as `qconf -suser template` prints it
  *
  * @return the new element; the caller owns it
  */
-lListElem *getUserTemplate() {
+ocs::tom::ElementPtr<ocs::tom::UU> getUserTemplate() {
    DENTER(TOP_LAYER);
-
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::UU>::create();
    ocs::tom::set<UU_name>(ep, "template");
@@ -177,20 +210,16 @@ lListElem *getUserTemplate() {
    ocs::tom::set<UU_usage>(ep, nullptr);
    ocs::tom::set<UU_long_term_usage>(ep, nullptr);
 
-   DRETURN(ep.release());
+   DRETURN(ep);
 }
 
-/***************************************************
- Generate a Template for a user or project
- ***************************************************/
 /**
  * @brief A project object template, as `qconf -sprj template` prints it
  *
  * @return the new element; the caller owns it
  */
-lListElem *getPrjTemplate() {
+ocs::tom::ElementPtr<ocs::tom::PR> getPrjTemplate() {
    DENTER(TOP_LAYER);
-
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::PR>::create();
    ocs::tom::set<PR_name>(ep, "template");
@@ -203,5 +232,5 @@ lListElem *getPrjTemplate() {
    ocs::tom::set<PR_acl>(ep, nullptr);
    ocs::tom::set<PR_xacl>(ep, nullptr);
 
-   DRETURN(ep.release());
+   DRETURN(ep);
 }

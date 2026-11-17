@@ -275,7 +275,7 @@ ocs::QHostModelClient::prepare_data(lList **answer_list, const ocs::tom::List<oc
       const char *cell_root = bootstrap_get_cell_root();
       const uint32_t progid = component_get_component_id();
 
-      merge_configuration(nullptr, progid, cell_root, global_conf, nullptr, nullptr);
+      merge_configuration(nullptr, progid, cell_root, global_conf, nullptr);
    }
 
    DRETURN(true);

@@ -53,6 +53,8 @@
 #include <cstring>
 #include <pthread.h>
 #include <limits>
+#include <tuple>
+#include <utility>
 
 #include "cull/cull.h"
 
@@ -76,9 +78,13 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/cull_parse_util.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
-#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_PARA.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_SC.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "msg_common.h"
 #include "uti/sge.h"
@@ -248,7 +254,7 @@ static ScThreadInit sc_obj{};
  *
  * @see `sconf_eval_set_profiling`
  */
-typedef bool (*setParam_func)(lList *param_list, lList **answer_list, const char* param);
+typedef bool (*setParam_func)(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
 
 /**
  * specifies an array of valid parameters and its validation functions
@@ -285,7 +291,9 @@ static schedd_pe_algorithm  pe_algorithm = SCHEDD_PE_AUTO;
 
 static void ocs_sconf_reset_cache();
 
-static const lListElem *ocs_sconf_elem();
+static ocs::tom::ConstElement<ocs::tom::SC> ocs_sconf_elem();
+
+static ocs::tom::Element<ocs::tom::SC> ocs_sconf_elem_rw();
 
 static bool is_config_set();
 static const char * get_algorithm();
@@ -294,21 +302,21 @@ static const char *get_load_adjustment_decay_time_str();
 static const char *reprioritize_interval_str();
 static const char *get_halflife_decay_list_str();
 static const char *get_default_duration_str();
-static const lList *get_usage_weight_list();
-static const lList *get_job_load_adjustments();
+static ocs::tom::ConstList<ocs::tom::UA> get_usage_weight_list();
+static ocs::tom::ConstList<ocs::tom::CE> get_job_load_adjustments();
 static const char* get_load_formula();
 
 static bool
-sconf_eval_set_profiling(lList *param_list, lList **answer_list, const char* param);
+sconf_eval_set_profiling(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
 
 static bool
-sconf_eval_set_monitoring(lList *param_list, lList **answer_list, const char* param);
+sconf_eval_set_monitoring(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
 
 static bool
-sconf_eval_set_duration_offset(lList *param_list, lList **answer_list, const char* param);
+sconf_eval_set_duration_offset(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
 
 static bool
-sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, const char* param);
+sconf_eval_set_pe_range_alg(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
 
 static char policy_hierarchy_enum2char(policy_type_t value);
 
@@ -379,8 +387,22 @@ static void ocs_sconf_reset_cache() {
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to hold the Sched_Conf_Lock
  */
-static const lListElem *ocs_sconf_elem() {
-   return lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+static ocs::tom::ConstElement<ocs::tom::SC> ocs_sconf_elem() {
+   // the master list is a process-lifetime global and holds SC_Type elements only;
+   // read on the scheduler hot path, so the handle is made without a check
+   return ocs::tom::ConstList<ocs::tom::SC>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)).front();
+}
+
+/**
+ * @brief The scheduler configuration element, for a change
+ *
+ * @return the configuration, or an empty handle if none is set
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to hold the Sched_Conf_Lock
+ */
+static ocs::tom::Element<ocs::tom::SC> ocs_sconf_elem_rw() {
+   // the master list is a process-lifetime global and holds SC_Type elements only
+   return ocs::tom::List<ocs::tom::SC>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)).front();
 }
 
 /**
@@ -389,62 +411,50 @@ static const lListElem *ocs_sconf_elem() {
  * - validates the new configuration
  * - precalculates some values and caches them
  * - and sets the new configuration, if the validation worked
- * If the new configuration is a nullptr pointer, the current configuration
- * if deleted.
+ * An empty @p config deletes the current configuration.
  *
- * @param config new configuration (SC_Type)
+ * If the validation fails, the previous configuration stays (or a default
+ * one is installed if there was none) and @p config is left with the caller.
+ *
+ * @param[in,out] config new configuration (SC_Type); taken over, i.e. left empty, on success
  * @param answer_list error messages
  *
  * @return true, if it worked SG TODO: use a internal eval config function and not the external one.
  *
  * @note MT-NOTE: is MT-safe, uses LOCK_SCHED_CONF(write)
  */
-bool sconf_set_config(lList **config, lList **answer_list) {
+bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, lList **answer_list) {
    DENTER(TOP_LAYER);
-
-   lList *store = nullptr;
-   bool ret = true;
-   lList **master_sconf_list = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   master_sconf_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF);
+   // the master list is a process-lifetime global, so it stays a raw pointer here
+   lList **master_sconf_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF);
+   lList *store = *master_sconf_list;
 
-#if 0
-   store = Master_Sched_Config_List;
-#else
-   store = *master_sconf_list;
-#endif
+   *master_sconf_list = config.get();
 
-   if (config) {
-#if 0
-      Master_Sched_Config_List = *config;
-#endif
-      *master_sconf_list = *config;
+   sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
+   const bool ret = sconf_validate_config_(answer_list);
+   sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-      sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      ret = sconf_validate_config_(answer_list);
-      sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-
-      if (ret) {
-         lFreeList(&store);
-         *config = nullptr;
-      } else {
-         *master_sconf_list = store;
-         if (!*master_sconf_list) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_USE_DEFAULT_CONFIG);
-            answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING);
-
-            *master_sconf_list = lCreateList("schedd config list", SC_Type);
-            lAppendElem(*master_sconf_list, sconf_create_default());
-
-         }
-         sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-         sconf_validate_config_(nullptr);
-         sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      }
+   if (ret) {
+      // the configuration now belongs to the master list
+      static_cast<void>(config.release());
+      ocs::tom::ListPtr<ocs::tom::SC>::from_typed(store).reset();
    } else {
-      ocs_sconf_reset_cache();
+      *master_sconf_list = store;
+      if (*master_sconf_list == nullptr) {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_USE_DEFAULT_CONFIG);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING);
+
+         auto default_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd config list");
+         default_list->push_back(sconf_create_default());
+         *master_sconf_list = default_list.release();
+      }
+      sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
+      sconf_validate_config_(nullptr);
+      sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -452,21 +462,45 @@ bool sconf_set_config(lList **config, lList **answer_list) {
 }
 
 /**
+ * @brief sconf_set_config() for an untyped caller
+ *
+ * A nullptr @p config only resets the cached values.
+ *
+ * @param[in,out] config new configuration (SC_Type), checked; set to nullptr when taken over
+ * @param answer_list error messages
+ *
+ * @return as sconf_set_config()
+ */
+bool sconf_set_config(lList **config, lList **answer_list) {
+   if (config == nullptr) {
+      sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
+      ocs_sconf_reset_cache();
+      sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
+      return true;
+   }
+   auto typed = ocs::tom::ListPtr<ocs::tom::SC>(*config);
+   *config = nullptr;
+   const bool ret = sconf_set_config(typed, answer_list);
+   *config = typed.release();
+   return ret;
+}
+
+/**
  * @brief Does the configured `load_formula` name only existing complex entries?
  *
  * @param[out] answer_list receives the reason the formula was rejected
- * @param centry_list the complex entries the formula may refer to
+ * @param centry_list the complex entries the formula may refer to (CE_Type), may be an empty handle
  *
  * @return true when the formula is usable
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list) {
+bool sconf_is_valid_load_formula(lList **answer_list, const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   const lListElem *schedd_conf = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const auto schedd_conf = ocs_sconf_elem();
    const char *load_formula = ocs::tom::get<SC_load_formula>(schedd_conf);
    sge_strip_blanks((char *)load_formula);
    bool is_valid = validate_load_formula(load_formula, answer_list, centry_list, SGE_ATTR_LOAD_FORMULA);
@@ -482,13 +516,12 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list) 
  * active configuration. A set config has to be used to make the
  * current configuration the active one.
  *
- * @return default configuration (SC_Type)
+ * @return default configuration (SC_Type), owned by the caller
  *
  * @note MT-NOTE: is MT-safe, does not use global variables
  */
-lListElem *sconf_create_default() {
+ocs::tom::ElementPtr<ocs::tom::SC> sconf_create_default() {
    DENTER(TOP_LAYER);
-
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::SC>::create();
 
@@ -498,7 +531,7 @@ lListElem *sconf_create_default() {
 
    ocs::tom::set<SC_queue_sort_method>(ep, QSM_LOAD);
 
-   ocs::tom::Element<ocs::tom::CE> added = ocs::tom::emplace_back_in<SC_job_load_adjustments, CE_name>(ep, "np_load_avg");
+   const auto added = ocs::tom::emplace_back_in<SC_job_load_adjustments, CE_name>(ep, "np_load_avg");
    ocs::tom::set<CE_stringval>(added, "0.50");
 
    ocs::tom::set<SC_load_adjustment_decay_time>(ep,
@@ -512,11 +545,11 @@ lListElem *sconf_create_default() {
    ocs::tom::set<SC_reprioritize_interval>(ep, REPRIORITIZE_INTERVAL);
    ocs::tom::set<SC_halftime>(ep, 168);
 
-   ocs::tom::Element<ocs::tom::UA> added_ua = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_CPU);
+   const auto added_ua = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_CPU);
    ocs::tom::set<UA_value>(added_ua, 1.00);
-   ocs::tom::Element<ocs::tom::UA> added_ua_2 = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_MEM);
+   const auto added_ua_2 = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_MEM);
    ocs::tom::set<UA_value>(added_ua_2, 0.0);
-   ocs::tom::Element<ocs::tom::UA> added_ua_3 = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_IO);
+   const auto added_ua_3 = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_IO);
    ocs::tom::set<UA_value>(added_ua_3, 0.0);
 
    ocs::tom::set<SC_compensation_factor>(ep, 5);
@@ -543,7 +576,7 @@ lListElem *sconf_create_default() {
    ocs::tom::set<SC_weight_priority>(ep, 0.0 );
    ocs::tom::set<SC_default_duration>(ep, DEFAULT_DURATION);
 
-   DRETURN(ep.release());
+   DRETURN(ep);
 }
 
 /**
@@ -552,23 +585,25 @@ lListElem *sconf_create_default() {
  * Checks both `job_load_adjustments` and `load_formula`. Callers use it to
  * refuse deleting a complex entry that the scheduler still needs.
  *
- * @param centry the complex entry to look for
+ * @param centry the complex entry to look for (CE_Type)
  *
  * @return true when either attribute refers to it
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_is_centry_referenced(const lListElem *centry) {
+bool sconf_is_centry_referenced(const ocs::tom::ConstElement<ocs::tom::CE> centry) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      ocs::tom::ConstList<ocs::tom::CE> centry_list = ocs::tom::get<SC_job_load_adjustments>(sc_ep);
-      const lListElem *centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
+      const auto centry_list = ocs::tom::get<SC_job_load_adjustments>(sc_ep);
+      const auto centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
 
-      ret = ((centry_ref != nullptr)? true : false);
+      ret = centry_ref ? true : false;
 
       if (!ret) {
          if (load_formula_is_centry_referenced(ocs::tom::get<SC_load_formula>(sc_ep), centry)) {
@@ -578,7 +613,7 @@ bool sconf_is_centry_referenced(const lListElem *centry) {
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -591,7 +626,7 @@ bool sconf_is_centry_referenced(const lListElem *centry) {
  * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_load_adjustment_decay_time_str() {
-   const lListElem *sc_ep = ocs_sconf_elem();
+   const auto sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
       return ocs::tom::get<SC_load_adjustment_decay_time>(sc_ep);
@@ -631,38 +666,38 @@ uint32_t sconf_get_load_adjustment_decay_time() {
  *
  * That is load values a newly dispatched job is assumed to add.
  *
- * @return returns a copy, needs to be freed
+ * @return a copy (CE_Type), owned by the caller; empty if the attribute is not set
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lList *sconf_get_job_load_adjustments() {
-   lList *load_adjustments = nullptr;
+ocs::tom::ListPtr<ocs::tom::CE> sconf_get_job_load_adjustments() {
+   DENTER(BASIS_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   load_adjustments = lCopyList("load_adj_copy", get_job_load_adjustments());
+   auto load_adjustments = get_job_load_adjustments().clone("load_adj_copy");
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return load_adjustments;
+   DRETURN(load_adjustments);
 }
 
 /**
- * @brief The `load_formula` attribute of the scheduler configuration
+ * @brief The `job_load_adjustments` attribute of the scheduler configuration
  *
- * That is expression the hosts are sorted by.
+ * That is load values a newly dispatched job is assumed to add.
  *
- * @return the configured value
+ * @return the configured value (CE_Type), an empty handle if none is set
  *
  * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const lList *get_job_load_adjustments() {
-   const lListElem *sc_ep = ocs_sconf_elem();
+static ocs::tom::ConstList<ocs::tom::CE> get_job_load_adjustments() {
+   DENTER(BASIS_LAYER);
 
-   if (sc_ep != nullptr) {
-      return ocs::tom::get<SC_job_load_adjustments>(sc_ep);
-   } else {
-      return nullptr;
+   ocs::tom::ConstList<ocs::tom::CE> ret;
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      ret = ocs::tom::get<SC_job_load_adjustments>(sc_ep);
    }
+   DRETURN(ret);
 }
 
 
@@ -696,7 +731,7 @@ char* sconf_get_load_formula() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_load_formula() {
-   const lListElem *sc_ep = ocs_sconf_elem();
+   const auto sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
       return ocs::tom::get<SC_load_formula>(sc_ep);
@@ -720,7 +755,7 @@ uint32_t sconf_get_queue_sort_method() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       sort_method = ocs::tom::get<SC_queue_sort_method>(sc_ep);
    }
 
@@ -742,7 +777,7 @@ uint32_t sconf_get_maxujobs() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       jobs = ocs::tom::get<SC_maxujobs>(sc_ep);
    }
 
@@ -760,7 +795,7 @@ uint32_t sconf_get_maxujobs() {
  * @note MT-NOTE: is not MT-safe, the caller needs to hold the LOCK_SCHED_CONF(read)
  */
 static const char *get_schedule_interval_str() {
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       return ocs::tom::get<SC_schedule_interval>(sc_ep);
    }
    else {
@@ -803,7 +838,7 @@ uint32_t sconf_get_schedule_interval() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *reprioritize_interval_str() {
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       return ocs::tom::get<SC_reprioritize_interval>(sc_ep);
    }
    else {
@@ -1040,15 +1075,16 @@ uint32_t sconf_get_schedd_job_info() {
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lList *sconf_get_schedd_job_info_range() {
-   lList *range_copy = nullptr;
+ocs::tom::ListPtr<ocs::tom::RN> sconf_get_schedd_job_info_range() {
+   DENTER(BASIS_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   range_copy = lCopyList("copy_range", pos.c_schedd_job_info_range);
+   // the cache is a process-lifetime static holding RN_Type elements
+   auto range_copy = ocs::tom::ConstList<ocs::tom::RN>::from_typed(pos.c_schedd_job_info_range).clone("copy_range");
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return range_copy;
+   DRETURN(range_copy);
 }
 
 /**
@@ -1065,23 +1101,23 @@ bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number) {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   is_in_range = range_list_is_id_within(pos.c_schedd_job_info_range, job_number);
+   // the cached range is a process-lifetime static of RN_Type elements; read per job, so no check
+   is_in_range = range_list_is_id_within(ocs::tom::ConstList<ocs::tom::RN>::from_typed(pos.c_schedd_job_info_range),
+                                         job_number);
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    return is_in_range;
 }
 
 /**
- * @brief The `usage_weight_list` attribute of the scheduler configuration
+ * @brief The `algorithm` attribute of the scheduler configuration
  *
- * That is weight of each usage attribute in the share tree policy.
- *
- * @return the configured value
+ * @return the configured value, "default" if no configuration is set
  *
  * @note MT-NOTE: is not MT-safe, the caller needs the LOCK_SCHED_CONF(read)
  */
 static const char *get_algorithm() {
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       return ocs::tom::get<SC_algorithm>(sc_ep);
    }
    else {
@@ -1095,40 +1131,39 @@ static const char *get_algorithm() {
  *
  * That is the weight of each usage attribute in the share tree policy.
  *
- * @return returns a copy, needs to be freed
+ * @return a copy (UA_Type), owned by the caller; empty if the attribute is not set
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lList *sconf_get_usage_weight_list() {
-   lList *weight_list = nullptr;
+ocs::tom::ListPtr<ocs::tom::UA> sconf_get_usage_weight_list() {
+   DENTER(BASIS_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   weight_list = lCopyList("copy_weight", get_usage_weight_list());
+   auto weight_list = get_usage_weight_list().clone("copy_weight");
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return weight_list;
+   DRETURN(weight_list);
 }
 
 
 /**
- * @brief The `weight_user` attribute of the scheduler configuration
+ * @brief The `usage_weight_list` attribute of the scheduler configuration
  *
- * That is weight of the user share in the functional policy.
+ * That is the weight of each usage attribute in the share tree policy.
  *
- * @return the configured value
+ * @return the configured value (UA_Type), an empty handle if none is set
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const lList *get_usage_weight_list() {
-   const lListElem *sc_ep = ocs_sconf_elem();
+static ocs::tom::ConstList<ocs::tom::UA> get_usage_weight_list() {
+   DENTER(BASIS_LAYER);
 
-   if (sc_ep != nullptr) {
-      return ocs::tom::get<SC_usage_weight_list>(sc_ep);
+   ocs::tom::ConstList<ocs::tom::UA> ret;
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      ret = ocs::tom::get<SC_usage_weight_list>(sc_ep);
    }
-   else {
-      return nullptr;
-   }
+   DRETURN(ret);
 }
 
 
@@ -1146,7 +1181,7 @@ double sconf_get_weight_user() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_user>(sc_ep);
    }
 
@@ -1168,7 +1203,7 @@ double sconf_get_weight_department() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_department>(sc_ep);
    }
 
@@ -1190,7 +1225,7 @@ double sconf_get_weight_project() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_project>(sc_ep);
    }
 
@@ -1212,7 +1247,7 @@ double sconf_get_weight_job() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_job>(sc_ep);
    }
 
@@ -1234,7 +1269,7 @@ uint32_t sconf_get_weight_tickets_share() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_tickets_share>(sc_ep);
    }
 
@@ -1256,7 +1291,7 @@ uint32_t sconf_get_weight_tickets_functional() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_tickets_functional>(sc_ep);
    }
 
@@ -1278,7 +1313,7 @@ uint32_t sconf_get_halftime() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       halftime = ocs::tom::get<SC_halftime>(sc_ep);
    }
 
@@ -1292,23 +1327,21 @@ uint32_t sconf_get_halftime() {
  *
  * That is total number of override tickets.
  *
- * @param active
+ * @param active the number of override tickets
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(write)
  */
-void sconf_set_weight_tickets_override(uint32_t active) {
-   lListElem *sc_ep = nullptr;
+void sconf_set_weight_tickets_override(const uint32_t active) {
+   DENTER(BASIS_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   sc_ep = lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF));
-
-   if (sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem_rw(); sc_ep) {
       ocs::tom::set<SC_weight_tickets_override>(sc_ep, active);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return;
+   DRETURN_VOID;
 }
 
 /**
@@ -1325,7 +1358,7 @@ uint32_t sconf_get_weight_tickets_override() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       tickets = ocs::tom::get<SC_weight_tickets_override>(sc_ep);
    }
 
@@ -1347,7 +1380,7 @@ double sconf_get_compensation_factor() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       factor = ocs::tom::get<SC_compensation_factor>(sc_ep);
    }
 
@@ -1369,7 +1402,7 @@ double sconf_get_weight_ticket() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_ticket>(sc_ep);
    }
 
@@ -1383,25 +1416,26 @@ double sconf_get_weight_ticket() {
  * Reading them separately would take the lock three times and could mix
  * weights from two configurations.
  *
- * @param[out] ticket weight of the ticket term
- * @param[out] urgency weight of the urgency term
- * @param[out] priority weight of the POSIX priority term
- *
- * @note All three are left untouched when the configuration does not have all
- *       three attributes.
+ * @return the weight of the ticket term, of the urgency term and of the POSIX priority term;
+ *         all three are 0.0 when no configuration is set
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority) {
+std::tuple<double, double, double> sconf_get_weight_ticket_urgency_priority() {
+   double ticket = 0.0;
+   double urgency = 0.0;
+   double priority = 0.0;
+
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      *ticket = ocs::tom::get<SC_weight_ticket>(sc_ep);
-      *urgency = ocs::tom::get<SC_weight_urgency>(sc_ep);
-      *priority = ocs::tom::get<SC_weight_priority>(sc_ep);
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      ticket = ocs::tom::get<SC_weight_ticket>(sc_ep);
+      urgency = ocs::tom::get<SC_weight_urgency>(sc_ep);
+      priority = ocs::tom::get<SC_weight_priority>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
+   return {ticket, urgency, priority};
 }
 
 /**
@@ -1418,7 +1452,7 @@ double sconf_get_weight_waiting_time() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_waiting_time>(sc_ep);
    }
 
@@ -1440,7 +1474,7 @@ double sconf_get_weight_deadline() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_deadline>(sc_ep);
    }
 
@@ -1462,7 +1496,7 @@ double sconf_get_weight_urgency() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_urgency>(sc_ep);
    }
 
@@ -1487,7 +1521,7 @@ uint32_t sconf_get_max_reservations() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       max_res = ocs::tom::get<SC_max_reservation>(sc_ep);
    }
 
@@ -1505,7 +1539,7 @@ uint32_t sconf_get_max_reservations() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_default_duration_str() {
-   const lListElem *sc_ep = ocs_sconf_elem();
+   const auto sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
       return ocs::tom::get<SC_default_duration>(sc_ep);
@@ -1528,7 +1562,7 @@ double sconf_get_weight_priority() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       weight = ocs::tom::get<SC_weight_priority>(sc_ep);
    }
 
@@ -1551,7 +1585,7 @@ bool sconf_get_share_override_tickets() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       is_share = ocs::tom::get<SC_share_override_tickets>(sc_ep) ? true : false;
    }
 
@@ -1570,7 +1604,7 @@ bool sconf_get_share_functional_shares() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       is_share = ocs::tom::get<SC_share_functional_shares>(sc_ep) ? true : false;
    }
 
@@ -1592,7 +1626,7 @@ bool sconf_get_report_pjob_tickets() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       is_report = ocs::tom::get<SC_report_pjob_tickets>(sc_ep) ? true : false;
    }
 
@@ -1614,7 +1648,7 @@ uint32_t sconf_get_flush_submit_sec() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       flush_sec = ocs::tom::get<SC_flush_submit_sec>(sc_ep);
    }
 
@@ -1636,7 +1670,7 @@ uint32_t sconf_get_flush_finish_sec() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       flush_sec = ocs::tom::get<SC_flush_finish_sec>(sc_ep);
    }
 
@@ -1659,7 +1693,7 @@ uint32_t sconf_get_max_functional_jobs_to_schedule() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       amount = ocs::tom::get<SC_max_functional_jobs_to_schedule>(sc_ep);
    }
 
@@ -1681,7 +1715,7 @@ uint32_t sconf_get_max_pending_tasks_per_job() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       max_pending = ocs::tom::get<SC_max_pending_tasks_per_job>(sc_ep);
    }
 
@@ -1699,7 +1733,7 @@ uint32_t sconf_get_max_pending_tasks_per_job() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_halflife_decay_list_str() {
-   const lListElem *sc_ep = ocs_sconf_elem();
+   const auto sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
       return ocs::tom::get<SC_halflife_decay_list>(sc_ep);
@@ -1714,19 +1748,21 @@ static const char *get_halflife_decay_list_str() {
  *
  * That is a per attribute half life overriding `halftime`.
  *
- * @return the configured value
+ * @return a copy of the parsed value (UA_Type), owned by the caller; empty if the attribute is "none"
  *
  * @note MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
  */
-lList* sconf_get_halflife_decay_list(){
-   lList *decay_list = nullptr;
+ocs::tom::ListPtr<ocs::tom::UA> sconf_get_halflife_decay_list() {
+   DENTER(BASIS_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   decay_list = lCopyList("copy_decay_list",pos.c_halflife_decay_list);
+   // the cache is a process-lifetime static, filled with UA_Type elements in sconf_validate_config_()
+   auto decay_list =
+      ocs::tom::ConstList<ocs::tom::UA>::from_typed(pos.c_halflife_decay_list).clone("copy_decay_list");
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return decay_list;
+   DRETURN(decay_list);
 }
 
 /**
@@ -1737,7 +1773,7 @@ lList* sconf_get_halflife_decay_list(){
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static bool is_config_set() {
-   return ocs_sconf_elem() != nullptr;
+   return static_cast<bool>(ocs_sconf_elem());
 }
 
 /**
@@ -1762,36 +1798,46 @@ bool sconf_is() {
 /**
  * @brief Returns a config object
  *
- * @return a copy of the current config object NOTE DO NOT USE this method. ONLY when there is NO OTHER way. All config settings can be accessed via access function.
+ * @return a copy of the current config object (SC_Type), owned by the caller; empty if none is set
+ *
+ * @note DO NOT USE this method, ONLY when there is NO OTHER way. All config
+ *       settings can be accessed via access function.
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lListElem *sconf_get_config() {
-   lListElem *config = nullptr;
+ocs::tom::ElementPtr<ocs::tom::SC> sconf_get_config() {
+   DENTER(BASIS_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   config = lCopyElem(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
+   auto config = ocs_sconf_elem().clone();
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   return config;
+   DRETURN(config);
 }
 
 /**
- * @brief Returns a pointer to the list, which contains
+ * @brief A copy of the scheduler configuration list
  *
- * @return a copy of the config list NOTE DO NOT USE this method. ONLY when there is NO OTHER way. All config settings can be accessed via access function. The config can be set via sconf_set_config(...) IMPORTANT If you modify the configuration by directly accessing, you have to call sconf_validate_config_ afterwards to ensure, that the caches reflect your changes.
+ * @return a copy of the config list (SC_Type), owned by the caller
+ *
+ * @note DO NOT USE this method, ONLY when there is NO OTHER way. All config
+ *       settings can be accessed via access function. The config can be set
+ *       via sconf_set_config(). IMPORTANT: If you modify the configuration by
+ *       directly accessing, you have to call sconf_validate_config_()
+ *       afterwards to ensure that the caches reflect your changes.
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lList *sconf_get_config_list() {
+ocs::tom::ListPtr<ocs::tom::SC> sconf_get_config_list() {
    DENTER(TOP_LAYER);
-
-   lList *copy_list = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   copy_list = lCopyList("sched_conf_copy", *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   // the master list is a process-lifetime global holding SC_Type elements only
+   const auto master_list =
+      ocs::tom::ConstList<ocs::tom::SC>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   auto copy_list = master_list.clone("sched_conf_copy");
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    DRETURN(copy_list);
@@ -1806,7 +1852,6 @@ void sconf_print_config(){
    char tmp_buffer[1024];
    uint32_t uval;
    const char *s;
-   const lList *lval= nullptr;
    double dval;
 
    if (!sconf_is()){
@@ -1834,10 +1879,10 @@ void sconf_print_config(){
    INFO(MSG_ATTRIB_USINGXFORY_SS, get_load_formula(), "load_formula");
 
    /* --- SC_schedd_job_info */
-   INFO(MSG_ATTRIB_USINGXFORY_SS, ocs::tom::get<SC_schedd_job_info>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF))), "schedd_job_info");
+   INFO(MSG_ATTRIB_USINGXFORY_SS, ocs::tom::get<SC_schedd_job_info>(ocs_sconf_elem()), "schedd_job_info");
 
    /* --- SC_params */
-   s=ocs::tom::get<SC_params>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
+   s = ocs::tom::get<SC_params>(ocs_sconf_elem());
    INFO(MSG_READ_PARAM_S, s);
 
    /* --- SC_reprioritize_interval */
@@ -1853,12 +1898,12 @@ void sconf_print_config(){
    INFO(MSG_ATTRIB_USINGXFORY_SS, s, "halflife_decay_list");
 
    /* --- SC_policy_hierarchy */
-   s = ocs::tom::get<SC_policy_hierarchy>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
+   s = ocs::tom::get<SC_policy_hierarchy>(ocs_sconf_elem());
    INFO(MSG_ATTRIB_USINGXFORY_SS, s, "policy_hierarchy");
 
    /* --- SC_job_load_adjustments */
-   lval = get_job_load_adjustments();
-   uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0);
+   uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), get_job_load_adjustments(), load_adjustment_fields, delis,
+                  0);
    INFO(MSG_ATTRIB_USINGXFORY_SS, tmp_buffer, "job_load_adjustments");
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2004,7 +2049,6 @@ bool sconf_validate_config_(lList **answer_list) {
    char tmp_buffer[1024], tmp_error[1024];
    uint32_t uval;
    const char *s;
-   const lList *lval= nullptr;
    bool ret = true;
    uint32_t max_reservation = 0;
 
@@ -2020,7 +2064,7 @@ bool sconf_validate_config_(lList **answer_list) {
 
  /* --- SC_params */
    {
-      const char *sparams = ocs::tom::get<SC_params>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
+      const char *sparams = ocs::tom::get<SC_params>(ocs_sconf_elem());
       char *s = nullptr;
 
       /* the implementation has a problem. If an entry is removed, its setting is not
@@ -2035,15 +2079,19 @@ bool sconf_validate_config_(lList **answer_list) {
          struct saved_vars_s *context = nullptr;
 
          if (pos.c_params == nullptr) {
-            pos.c_params = lCreateList("params", PARA_Type);
+            // the cache is a process-lifetime static and stays a raw pointer
+            pos.c_params = ocs::tom::ListPtr<ocs::tom::PARA>::create("params").release();
          }
-         for (s=sge_strtok_r(sparams, PARAMS_DELIMITER, &context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &context)) {
+         // filled with PARA_Type elements only, see above
+         const auto c_params = ocs::tom::List<ocs::tom::PARA>::from_typed(pos.c_params);
+         for (s = sge_strtok_r(sparams, PARAMS_DELIMITER, &context); s;
+              s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &context)) {
             int i = 0;
             bool added = false;
             for(i=0; params[i].name ;i++ ){
                if (!strncasecmp(s, params[i].name, sizeof(params[i].name)-1)){
                   if (params[i].setParam) {
-                     ret &= params[i].setParam(pos.c_params, answer_list, s);
+                     ret &= params[i].setParam(c_params, answer_list, s);
                   }
                   added = true;
                }
@@ -2056,7 +2104,7 @@ bool sconf_validate_config_(lList **answer_list) {
          }
          sge_free_saved_vars(context);
       } else {
-         ocs::tom::set<SC_params>(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), "none");
+         ocs::tom::set<SC_params>(ocs_sconf_elem_rw(), "none");
       }
    }
 
@@ -2078,7 +2126,8 @@ bool sconf_validate_config_(lList **answer_list) {
 
    /* --- SC_schedule_interval */
    s = get_schedule_interval_str();
-   if (!s || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error, sizeof(tmp_error), 0, true) ) {
+   if (!s || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error, sizeof(tmp_error), 0,
+                                       true)) {
       if (!s)
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
       else
@@ -2089,7 +2138,8 @@ bool sconf_validate_config_(lList **answer_list) {
 
    /* --- SC_load_adjustment_decay_time */
    s = get_load_adjustment_decay_time_str();
-   if (!s || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error, sizeof(tmp_error), 0, true)) {
+   if (!s || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error, sizeof(tmp_error), 0,
+                                       true)) {
       if (!s) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
       }
@@ -2106,7 +2156,7 @@ bool sconf_validate_config_(lList **answer_list) {
       char* key = nullptr;
       int ikey = 0;
       lList *rlp=nullptr, *alp=nullptr;
-      const char *schedd_info = ocs::tom::get<SC_schedd_job_info>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
+      const char *schedd_info = ocs::tom::get<SC_schedd_job_info>(ocs_sconf_elem());
 
       if (schedd_info == nullptr){
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM );
@@ -2170,7 +2220,7 @@ bool sconf_validate_config_(lList **answer_list) {
    {
       s = get_halflife_decay_list_str();
       if (s && (strcasecmp(s, "none") != 0)) {
-         lList *halflife_decay_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::UA> halflife_decay_list;
          const char *s0 = nullptr;
          const char *s1 = nullptr;
          const char *s2 = nullptr;
@@ -2184,32 +2234,36 @@ bool sconf_validate_config_(lList **answer_list) {
             if (((s2=sge_strtok_r(s1, "=", &sv2)) != nullptr) &&
                 ((s3=sge_strtok_r(nullptr, "=", &sv2)) != nullptr) &&
                 (sscanf(s3, "%lf", &value) == 1)) {
-               ocs::tom::Element<ocs::tom::UA> ep = ocs::tom::emplace_back<UA_name>(&halflife_decay_list, s2);
+               if (!halflife_decay_list) {
+                  halflife_decay_list = ocs::tom::ListPtr<ocs::tom::UA>::create("");
+               }
+               const auto ep = halflife_decay_list->emplace_back<UA_name>(s2);
                ocs::tom::set<UA_value>(ep, value);
             }
             sge_free_saved_vars(sv2);
          }
          sge_free_saved_vars(sv1);
 
-         if (lGetNumberOfElem(halflife_decay_list) == 0) {
+         if (halflife_decay_list.get().empty()) {
             answer_list_add(answer_list, MSG_GDI_INVALIDHALFLIFE_DECAY, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
             ret = false;
          }
 
-         pos.c_halflife_decay_list = halflife_decay_list;
+         // the cache is a process-lifetime static and stays a raw pointer
+         pos.c_halflife_decay_list = halflife_decay_list.release();
       }
    }
 
    /* --- SC_policy_hierarchy */
    {
-      const char *value_string = ocs::tom::get<SC_policy_hierarchy>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
+      const char *value_string = ocs::tom::get<SC_policy_hierarchy>(ocs_sconf_elem());
       if (value_string) {
          if (policy_hierarchy_verify_value(value_string) != 0) {
             answer_list_add(answer_list, MSG_GDI_INVALIDPOLICYSTRING, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
             ret = false;
-            ocs::tom::set<SC_policy_hierarchy>(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), policy_hierarchy_chars);
+            ocs::tom::set<SC_policy_hierarchy>(ocs_sconf_elem_rw(), policy_hierarchy_chars);
          }
       }
       else {
@@ -2255,8 +2309,8 @@ bool sconf_validate_config_(lList **answer_list) {
    }
 
    /* --- SC_job_load_adjustments */
-   lval = get_job_load_adjustments();
-   if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0) < 0) {
+   if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), get_job_load_adjustments(), load_adjustment_fields,
+                      delis, 0) < 0) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SCHEDD_JOB_LOAD_ADJUSTMENTS_S, s);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
@@ -2266,8 +2320,10 @@ bool sconf_validate_config_(lList **answer_list) {
 
    /* --- SC_load_formula */
    {
-      const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-      if (master_centry_list != nullptr && !sconf_is_valid_load_formula(answer_list, master_centry_list)) {
+      // the master list is a process-lifetime global holding CE_Type elements only
+      const auto master_centry_list =
+         ocs::tom::ConstList<ocs::tom::CE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+      if (master_centry_list && !sconf_is_valid_load_formula(answer_list, master_centry_list)) {
          ret = false;
       }
    }
@@ -2287,21 +2343,21 @@ bool sconf_validate_config_(lList **answer_list) {
  * @brief Validate a given configuration
  *
  * @param answer_list error messages
- * @param config config to validate
+ * @param config config to validate (SC_Type), may be an empty handle; stays with the caller
  *
  * @return true, if the config is valid SG TODO: needs cleanup!!
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
  */
-bool sconf_validate_config(lList **answer_list, lList *config){
+bool sconf_validate_config(lList **answer_list, const ocs::tom::List<ocs::tom::SC> config) {
    DENTER(TOP_LAYER);
 
-   const lList *store = nullptr;
    bool ret = true;
 
-   if (config){
+   if (config) {
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      store = *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF);
+      // the master list is a process-lifetime global; it is swapped for the time of the check
+      const lList *store = *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF);
       *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF) = config;
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
@@ -2423,7 +2479,7 @@ void sconf_ph_fill_array(policy_hierarchy_t array[]) {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+   if (const auto sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       policy_hierarchy_string = ocs::tom::get<SC_policy_hierarchy>(sc_ep);
    }
 
@@ -2531,23 +2587,24 @@ static char policy_hierarchy_enum2char(policy_type_t value) {
  *
  * @return true when the setting was understood
  */
-static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, const char* param){
+static bool sconf_eval_set_profiling(const ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list,
+                                     const char *param) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lListElem *elem = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::PARA> elem;
    schedd_profiling = false;
 
    if (!strncasecmp(param, "PROFILE=1", sizeof("PROFILE=1")-1) ||
        !strncasecmp(param, "PROFILE=TRUE", sizeof("PROFILE=TRUE")-1) ) {
       schedd_profiling = true;
-      elem = lCreateElem(PARA_Type);
+      elem = ocs::tom::ElementPtr<ocs::tom::PARA>::create();
       ocs::tom::set<PARA_name>(elem, "profile");
       ocs::tom::set<PARA_value>(elem, "true");
    }
    else if (!strncasecmp(param, "PROFILE=0", sizeof("PROFILE=0")-1) ||
             !strncasecmp(param, "PROFILE=FALSE", sizeof("PROFILE=FALSE")-1) ) {
-      elem = lCreateElem(PARA_Type);
+      elem = ocs::tom::ElementPtr<ocs::tom::PARA>::create();
       ocs::tom::set<PARA_name>(elem, "profile");
       ocs::tom::set<PARA_value>(elem, "false");
    }
@@ -2556,8 +2613,8 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
-   if (elem){
-      lAppendElem(param_list, elem);
+   if (elem && param_list) {
+      param_list.push_back(std::move(elem));
    }
 
    DRETURN(ret);
@@ -2569,19 +2626,20 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
  * The MONITOR param allows schedule entry recording facility module
  * be switched on/off.
  *
- * @param param_list
- * @param answer_list
- * @param param
+ * @param param_list the parsed parameters (PARA_Type), extended by one entry
+ * @param[out] answer_list receives the message naming the bad setting
+ * @param param the raw `MONITOR=...` text
  *
- * @return parsing error
+ * @return true when the setting was understood
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
  */
-static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, const char* param){
+static bool sconf_eval_set_monitoring(const ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list,
+                                      const char *param) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lListElem *elem = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::PARA> elem;
    const char mon_true[] = "MONITOR=TRUE", mon_one[] = "MONITOR=1";
    const char mon_false[] = "MONITOR=FALSE", mon_zero[] = "MONITOR=0";
    bool do_monitoring = false;
@@ -2589,13 +2647,13 @@ static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, co
    if (!strncasecmp(param, mon_one, sizeof(mon_one)-1) ||
        !strncasecmp(param, mon_true, sizeof(mon_true)-1) ) {
       do_monitoring = true;
-      elem = lCreateElem(PARA_Type);
+      elem = ocs::tom::ElementPtr<ocs::tom::PARA>::create();
       ocs::tom::set<PARA_name>(elem, "monitor");
       ocs::tom::set<PARA_value>(elem, "true");
    }
    else if (!strncasecmp(param, mon_zero, sizeof(mon_zero)-1) ||
             !strncasecmp(param, mon_false, sizeof(mon_false)-1) ) {
-      elem = lCreateElem(PARA_Type);
+      elem = ocs::tom::ElementPtr<ocs::tom::PARA>::create();
       ocs::tom::set<PARA_name>(elem, "monitor");
       ocs::tom::set<PARA_value>(elem, "false");
    }
@@ -2604,8 +2662,8 @@ static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, co
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
-   if (elem){
-      lAppendElem(param_list, elem);
+   if (elem && param_list) {
+      param_list.push_back(std::move(elem));
    }
 
    current_serf_do_monitoring = do_monitoring;
@@ -2613,28 +2671,49 @@ static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, co
    DRETURN(ret);
 }
 
-static bool sconf_eval_set_duration_offset(lList *param_list, lList **answer_list, const char *param) {
+/**
+ * @brief Parses the `DURATION_OFFSET=...` entry of the scheduler `params`
+ *
+ * Caches the offset; an unparsable value sets the default.
+ *
+ * @param param_list the parsed parameters (PARA_Type); not extended by this entry
+ * @param answer_list unused, the caller reports nothing for this entry
+ * @param param the raw `DURATION_OFFSET=...` text
+ *
+ * @return true when the setting was understood
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
+ */
+static bool sconf_eval_set_duration_offset([[maybe_unused]] const ocs::tom::List<ocs::tom::PARA> param_list,
+                                           [[maybe_unused]] lList **answer_list, const char *param) {
+   DENTER(TOP_LAYER);
+
    uint32_t uval;
    char *s;
 
    if (!(s=strchr((char *)param, '=')) ||
        !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, ++s, nullptr, 0, 0, true)) {
       pos.s_duration_offset = DEFAULT_DURATION_OFFSET;
-      return false;
+      DRETURN(false);
    }
    pos.s_duration_offset = uval;
 
-   return true;
+   DRETURN(true);
 }
 
 /**
- * @brief Parses the sched. param
+ * @brief Parses the `PE_RANGE_ALG=...` entry of the scheduler `params`
+ *
+ * @param param_list the parsed parameters (PARA_Type); not extended by this entry
+ * @param answer_list unused, the caller reports nothing for this entry
+ * @param param the raw `PE_RANGE_ALG=...` text
  *
  * @return true, if successful
  *
  * @note MT-NOTE: sconf_eval_set_pe_range_alg() is not MT safe, caller needs LOCK_SCHED_CONF(write)
  */
-static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, const char *param) {
+static bool sconf_eval_set_pe_range_alg([[maybe_unused]] const ocs::tom::List<ocs::tom::PARA> param_list,
+                                        [[maybe_unused]] lList **answer_list, const char *param) {
    DENTER(TOP_LAYER);
 
    char *s;
@@ -2860,11 +2939,12 @@ int schedd_mes_get_logging() {
  *
  * The setting is thread local, so each scheduling thread has its own.
  *
- * @return the element, or nullptr when messaging is not initialised
+ * @return the element (SME_Type), an empty handle when messaging is not initialised
  */
-lListElem *sconf_get_sme() {
+ocs::tom::Element<ocs::tom::SME> sconf_get_sme() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
-   return sc_state->sme;
+   // the thread local store holds SME_Type elements only (sconf_set_sme()); read per job, so no check
+   return ocs::tom::Element<ocs::tom::SME>::from_typed(sc_state->sme);
 }
 
 /**
@@ -2872,11 +2952,16 @@ lListElem *sconf_get_sme() {
  *
  * The setting is thread local, so each scheduling thread has its own.
  *
- * @param sme the element to use
+ * The thread local store takes the element over; an element stored before
+ * is not freed, the caller takes it out with sconf_get_sme() first.
+ *
+ * @param sme the element to use (SME_Type), may be empty
  */
-void sconf_set_sme(lListElem *sme) {
+void sconf_set_sme(ocs::tom::ElementPtr<ocs::tom::SME> &&sme) {
+   auto taken = std::move(sme);
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
-   sc_state->sme = sme;
+   // the thread local store stays a raw pointer
+   sc_state->sme = taken.release();
 }
 
 /**
@@ -2884,11 +2969,12 @@ void sconf_set_sme(lListElem *sme) {
  *
  * The setting is thread local, so each scheduling thread has its own.
  *
- * @return the element, or nullptr when messaging is not initialised
+ * @return the element (SME_Type), an empty handle when messaging is not initialised
  */
-lListElem *sconf_get_tmp_sme() {
+ocs::tom::Element<ocs::tom::SME> sconf_get_tmp_sme() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
-   return sc_state->tmp_sme;
+   // the thread local store holds SME_Type elements only (sconf_set_tmp_sme()); read per job, so no check
+   return ocs::tom::Element<ocs::tom::SME>::from_typed(sc_state->tmp_sme);
 }
 
 /**
@@ -2896,11 +2982,16 @@ lListElem *sconf_get_tmp_sme() {
  *
  * The setting is thread local, so each scheduling thread has its own.
  *
- * @param sme the element to use
+ * The thread local store takes the element over; an element stored before
+ * is not freed, the caller takes it out with sconf_get_tmp_sme() first.
+ *
+ * @param sme the element to use (SME_Type), may be empty
  */
-void sconf_set_tmp_sme(lListElem *sme) {
+void sconf_set_tmp_sme(ocs::tom::ElementPtr<ocs::tom::SME> &&sme) {
+   auto taken = std::move(sme);
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
-   sc_state->tmp_sme = sme;
+   // the thread local store stays a raw pointer
+   sc_state->tmp_sme = taken.release();
 }
 
 /**

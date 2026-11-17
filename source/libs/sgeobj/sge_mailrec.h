@@ -39,11 +39,21 @@
  * @see sge_mailrec.cc
  */
 
+#include <utility>
+
+#include "uti/sge_dstring.h"
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
+
 #include "sgeobj/cull/sge_mailrec_MR_L.h"
 
-int mailrec_parse(lList **lpp, const char *mail_str);
+[[nodiscard]] std::pair<int, ocs::tom::ListPtr<ocs::tom::MR>> mailrec_parse(const char *mail_str);
+OCS_TRANSITIONAL int mailrec_parse(lList **lpp, const char *mail_str);
 
-int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len);
+int mailrec_unparse(ocs::tom::ConstList<ocs::tom::MR> head, char *mail_str, unsigned int mail_str_len);
 
 bool
 sge_mailopt_to_dstring(uint32_t opt, dstring *string);

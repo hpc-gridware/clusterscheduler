@@ -1973,13 +1973,10 @@ read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const 
       fp = fopen(usage_file, "r");
       if (fp) {
          char buf[10000];
-         // raw out parameter of read_config_list()
-         lList *cflp_raw = nullptr;
          uint32_t wait_status;
 
-         read_config_list(fp, &cflp_raw, nullptr, CF_Type, CF_name, CF_value, 0, "=", 0, buf, sizeof(buf));
          // freed on every way out, also when FCLOSE() jumps to FCLOSE_ERROR
-         const auto cflp = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(cflp_raw);
+         const auto cflp = read_config_list(fp, nullptr, false, "=", 0, buf, sizeof(buf)).second;
          FCLOSE(fp);
 
          if (extract_ulong_attribute(*cflp, "wait_status", &wait_status)==0)
@@ -2021,7 +2018,7 @@ read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const 
             const char *name = ocs::tom::get<CF_name>(ep);
             const char *value = ocs::tom::get<CF_value>(ep);
             DEBUG("additional usage variable %s = %s", name, value);
-            auto parsed = ocs::tom::ElementPtr<ocs::tom::UA>::from_typed(usage_parse_value(name, value));
+            auto parsed = usage_parse_value(name, value);
             if (!parsed) {
                continue;
             }
@@ -2261,7 +2258,7 @@ convert_attribute(const ocs::tom::List<ocs::tom::CF> cflp, const ocs::tom::Eleme
 
    const char *s;
 
-   s = get_conf_value(nullptr, cflp, CF_name, CF_value, name);
+   s = get_conf_value(nullptr, cflp, name);
    add_usage(jr, name, s, (double)udefault);
    // an empty list stays rather than being freed as before: nothing reads it as "no entries"
    if (cflp) {
@@ -2286,7 +2283,7 @@ extract_ulong_attribute(const ocs::tom::List<ocs::tom::CF> cflp, const char *nam
    const char *s;
    int ret;
 
-   if (!(s = get_conf_value(nullptr, cflp, CF_name, CF_value, name))) {
+   if (!(s = get_conf_value(nullptr, cflp, name))) {
       DRETURN(-1);
    }
    ret = sscanf(s, sge_u32, valuep);

@@ -40,6 +40,9 @@
 #include <string>
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
 #include "ocs_BindingType.h"
 #include "ocs_BindingUnit.h"
 #include "ocs_BindingStart.h"
@@ -51,24 +54,56 @@ namespace ocs {
    /**
     * @brief Reading a binding request out of any object that can carry one
     *
-    * The field number makes this generic: @ref ocs::Job and
-    * @ref ocs::AdvanceReservation are thin wrappers that pass their own field.
+    * The field template parameter makes this generic: @ref ocs::Job and
+    * @ref ocs::AdvanceReservation are thin wrappers that pass their own field
+    * (JB_binding, AR_binding). Both forms are instantiated in ocs_BindingObj.cc.
     */
    class Binding {
    public:
-      static lListElem *binding_get_or_create_elem(lListElem *parent, lList **answer_list, int nm);
-      static void clear(lListElem *parent, int nm);
-      static bool binding_was_requested(const lListElem *parent, int nm);
-      static BindingType::Type binding_get_type(const lListElem *parent, int nm);
-      static BindingUnit::Unit binding_get_unit(const lListElem *parent, int nm);
-      static std::string binding_get_sort(const lListElem *parent, int nm);
-      static BindingStart::Start binding_get_start(const lListElem *parent, int nm);
-      static BindingStop::Stop binding_get_end(const lListElem *parent, int nm);
-      static BindingStrategy::Strategy binding_get_strategy(const lListElem *parent, int nm);
-      static std::string binding_get_filter(const lListElem *parent, int nm);
-      static uint32_t binding_get_amount(const lListElem *parent, int nm);
-      static BindingInstance::Instance binding_get_instance(const lListElem *parent, int nm);
-      static void binding_set_missing_defaults(lListElem *parent, lList **answer_list, int nm);
+      /// The object type that holds the binding field F
+      template <auto F>
+      using Parent = typename ocs::tom::FieldTraits<F>::Type;
 
+      template <auto F>
+      static ocs::tom::Element<ocs::tom::BN> binding_get_or_create_elem(ocs::tom::Element<Parent<F>> parent,
+                                                                        lList **answer_list);
+      template <auto F>
+      static void clear(ocs::tom::Element<Parent<F>> parent);
+      template <auto F>
+      static bool binding_was_requested(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static BindingType::Type binding_get_type(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static BindingUnit::Unit binding_get_unit(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static std::string binding_get_sort(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static BindingStart::Start binding_get_start(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static BindingStop::Stop binding_get_end(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static BindingStrategy::Strategy binding_get_strategy(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static std::string binding_get_filter(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static uint32_t binding_get_amount(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static BindingInstance::Instance binding_get_instance(ocs::tom::ConstElement<Parent<F>> parent);
+      template <auto F>
+      static void binding_set_missing_defaults(ocs::tom::Element<Parent<F>> parent, lList **answer_list);
+
+      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *parent, lList **answer_list, int nm);
+      OCS_TRANSITIONAL static void clear(lListElem *parent, int nm);
+      OCS_TRANSITIONAL static bool binding_was_requested(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static BindingType::Type binding_get_type(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static BindingUnit::Unit binding_get_unit(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static std::string binding_get_sort(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static BindingStart::Start binding_get_start(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static BindingStop::Stop binding_get_end(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static BindingStrategy::Strategy binding_get_strategy(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static std::string binding_get_filter(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static uint32_t binding_get_amount(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static BindingInstance::Instance binding_get_instance(const lListElem *parent, int nm);
+      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *parent, lList **answer_list, int nm);
    };
 }

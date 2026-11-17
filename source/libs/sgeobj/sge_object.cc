@@ -76,7 +76,10 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_SO.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_common.h"
@@ -821,46 +824,36 @@ object_delete_range_id(lListElem *object, lList **answer_list,
  *
  * The function stores the initial range id values ("start", "end"
  * and "step") in the range list of an object. It should only be used
- * in functions initializing objects range lists.
+ * in functions initializing objects range lists. The first range of the
+ * list is overwritten; an object without a range list gets a new list
+ * holding one range.
  *
  * @param object object to handle
- * @param rnm attribute containing the range list
+ * @param rnm attribute containing the range list (`RN_Type`); it varies per call
  * @param start first id
  * @param end last id
  * @param step step size
  *
- * @return 0 -> OK 1 -> no memory
+ * @return 0; the former result 1 for a lack of memory is gone, the handles throw then
  *
  * @note MT-NOTE: object_set_range_id() is MT safe
  */
 int
-object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end,
-                    uint32_t step) {
-   lListElem *range_elem;  /* RN_Type */
-   int ret = 0;
+object_set_range_id(lListElem *object, const int rnm, const uint32_t start, const uint32_t end,
+                    const uint32_t step) {
+   DENTER(OBJECT_LAYER);
 
-   range_elem = lFirstRW(lGetList(object, rnm));
-   if (range_elem == nullptr) {
-
-      range_elem = lCreateElem(RN_Type);
+   // the field number varies per call, so the list is read raw and checked to hold ranges
+   auto range_elem = ocs::tom::List<ocs::tom::RN>(lGetListRW(object, rnm)).front();
+   if (!range_elem) {
       auto range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("task_id_range");
-      if (range_elem == nullptr || range_list == nullptr) {
-         lFreeElem(&range_elem);
-         range_list.reset();
-
-         /* No memory */
-         ret = 1;
-      } else {
-         lAppendElem(*range_list, range_elem);
-         lSetList(object, rnm, std::move(range_list));
-      }
+      range_elem = range_list->push_back(ocs::tom::ElementPtr<ocs::tom::RN>::create());
+      lSetList(object, rnm, std::move(range_list));
    }
-   if (range_elem != nullptr) {
-      ocs::tom::set<RN_min>(range_elem, start);
-      ocs::tom::set<RN_max>(range_elem, end);
-      ocs::tom::set<RN_step>(range_elem, step);
-   }
-   return ret;
+   ocs::tom::set<RN_min>(range_elem, start);
+   ocs::tom::set<RN_max>(range_elem, end);
+   ocs::tom::set<RN_step>(range_elem, step);
+   DRETURN(0);
 }
 
 
@@ -1188,24 +1181,28 @@ object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int n
 }
 
 /**
- * @brief Parse a subordinate list and store it in a field *
+ * @brief Parse a subordinate list and store it in a field
+ *
  * Two forms are accepted: queue wise (`A.q=3,B.q=4`) and slot wise
- * (`slots=4(A.q:1:lr, B.q:2:sr)`). *
+ * (`slots=4(A.q:1:lr, B.q:2:sr)`). A slot wise list that fails to parse in
+ * one of its entries clears the field; a queue wise list that fails leaves it
+ * as it was.
+ *
  * @param[in,out] this_elem the element whose field is set
  * @param[out] answer_list receives the parse error
- * @param name the field to set
+ * @param name the field to set, a list of `SO_Type`; it varies per call
  * @param string the text to parse; nullptr is an error
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, const int name, const char *string) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
 
    if (this_elem != nullptr && string != nullptr) {
-      lList *tmp_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::SO> tmp_list;
       struct saved_vars_s *last = nullptr;
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
+      const int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
       /*
        * The queue wise subordinate is defined like this:
@@ -1220,7 +1217,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
        * that begins with a queue called "slots" will be interpreted as
        * slotwise subordinate and therefore lead to an error.
        */
-      char *slots_text = sge_strtok_r(string, "=", &last);
+      const char *slots_text = sge_strtok_r(string, "=", &last);
       if (slots_text != nullptr && strncasecmp("slots", slots_text, 5) == 0) {
          /*
           * slot-wise suspend on subordinate
@@ -1233,7 +1230,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
           */
          /* the "slots=" was already skipped in the first sge_strtok_r() */
          /* parse the "8" in our example above */
-         char *slots_sum_text = sge_strtok_r(nullptr, "(", &last);
+         const char *slots_sum_text = sge_strtok_r(nullptr, "(", &last);
          if (slots_sum_text != nullptr) {
             slots_sum_value = strtol(slots_sum_text, &end_ptr, 10);
          } else {
@@ -1248,10 +1245,10 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
          }
          if (ret) {
             /* point the "sub_queues_text" to the start of the sub queue list */
-            char *sub_queues_text = sge_strtok_r(nullptr, ")", &last);
+            const char *sub_queues_text = sge_strtok_r(nullptr, ")", &last);
             /* split up the original string from the first subordinated queue on */
-            lString2List(sub_queues_text, &tmp_list, SO_Type, SO_name, ",) \t");
-            for_each_rw_lv (tmp_elem, tmp_list) {
+            tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(sub_queues_text, ",) \t");
+            for (const auto tmp_elem : *tmp_list) {
                const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
                char *queuename = sge_strtok(queue_value, ":");
                char *value_str = sge_strtok(nullptr, ":");
@@ -1266,7 +1263,6 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                           MSG_ERRORPARSINGVALUEFORNM_S, string);
-                  lFreeList(&tmp_list);
                   ret = false;
                   break;
                }
@@ -1276,21 +1272,19 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                           MSG_ERRORPARSINGVALUEFORNM_S, string);
-                  lFreeList(&tmp_list);
                   ret = false;
                   break;
                }
 
                if (value_str != nullptr) {
                   char *value_end = nullptr;
-                  uint32_t value = strtol(value_str, &value_end, 10);
+                  const uint32_t value = strtol(value_str, &value_end, 10);
 
                   if (value_end != nullptr && *value_end == '\0') {
                      ocs::tom::set<SO_seq_no>(tmp_elem, value);
                   } else {
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                              MSG_ERRORPARSINGVALUEFORNM_S, string);
-                     lFreeList(&tmp_list);
                      ret = false;
                      break;
                   }
@@ -1306,7 +1300,6 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                   } else {
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                              MSG_ERRORPARSINGVALUEFORNM_S, string);
-                     lFreeList(&tmp_list);
                      ret = false;
                      break;
                   }
@@ -1315,18 +1308,23 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                   ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
                }
             }
-            lSetPosList(this_elem, pos, tmp_list);
+            // a failed entry drops the whole list, and the field is cleared, as it always was
+            if (!ret) {
+               tmp_list.reset();
+            }
+            // the field number varies per call, so the list is handed over raw
+            lSetPosList(this_elem, pos, tmp_list.release());
          }
       } else {
-         lString2List(string, &tmp_list, SO_Type, SO_name, ", \t");
-         if (tmp_list != nullptr) {
-            if (!strcasecmp("NONE", ocs::tom::get<SO_name>(lFirst(tmp_list)))) {
-               lFreeList(&tmp_list);
+         tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(string, ", \t");
+         if (tmp_list) {
+            if (!strcasecmp("NONE", ocs::tom::get<SO_name>(tmp_list->front()))) {
+               tmp_list.reset();
             } else {
                /* 
                 * queue instance-wise suspend on subordinate
                 */
-               for_each_rw_lv (tmp_elem, tmp_list) {
+               for (const auto tmp_elem : *tmp_list) {
                   const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
                   const char *queuename = sge_strtok(queue_value, ":=");
                   const char *value_str = sge_strtok(nullptr, ":=");
@@ -1334,14 +1332,13 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                   ocs::tom::set<SO_name>(tmp_elem, queuename);
                   if (value_str != nullptr) {
                      char *endptr = nullptr;
-                     uint32_t value = strtol(value_str, &endptr, 10);
+                     const uint32_t value = strtol(value_str, &endptr, 10);
 
                      if (endptr != nullptr && *endptr == '\0') {
                         ocs::tom::set<SO_threshold>(tmp_elem, value);
                      } else {
                         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                                 MSG_ERRORPARSINGVALUEFORNM_S, string);
-                        lFreeList(&tmp_list);
                         ret = false;
                         break;
                      }
@@ -1352,7 +1349,8 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                   }
                }
                if (ret) {
-                  lSetPosList(this_elem, pos, tmp_list);
+                  // the field number varies per call, so the list is handed over raw
+                  lSetPosList(this_elem, pos, tmp_list.release());
                }
             }
          }
@@ -2737,9 +2735,10 @@ object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) 
 /**
  * @brief Verify string attribute expression syntax
  *
- * Verifies that a string is expression in correct format.
+ * Verifies that the value of a complex entry of a string like type is an
+ * expression in correct format; entries of other types pass.
  *
- * @param elem the object to verify
+ * @param elem the complex entry to verify
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false on error with error message in answer_list
@@ -2747,22 +2746,21 @@ object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) 
  * @note MT-NOTE: object_verify_expression_syntax() is MT safe
  */
 bool
-object_verify_expression_syntax(const lListElem *elem, lList **answer_list) {
+object_verify_expression_syntax(const ocs::tom::ConstElement<ocs::tom::CE> elem, lList **answer_list) {
+   DENTER(OBJECT_LAYER);
    bool ret = true;
-   const char *expr;
    switch (const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(elem))) {
       case ocs::CEntry::Type::STR:
       case ocs::CEntry::Type::CSTR:
       case ocs::CEntry::Type::RESTR:
       case ocs::CEntry::Type::HOST:
-         expr = ocs::tom::get<CE_stringval>(elem);
-         if (sge_eval_expression(type, expr, "*", answer_list) == -1) {
+         if (sge_eval_expression(type, ocs::tom::get<CE_stringval>(elem), "*", answer_list) == -1) {
             ret = false;
          }
          break;
       default:;
    }
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -2818,22 +2816,22 @@ object_verify_name(const lListElem *object, lList **answer_list, int name) {
  *
  * @param alpp Returns answer list with error context.
  * @param pe_name PE request
- * @param pe_range PE range to be verified
+ * @param pe_range PE range to be verified; it is sorted and compressed in place
  * @param object_descr object description for user messages
  *
  * @return STATUS_OK on success
  */
 int
-object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr) {
+object_verify_pe_range(lList **alpp, const char *pe_name, const ocs::tom::List<ocs::tom::RN> pe_range,
+                       const char *object_descr) {
    DENTER(TOP_LAYER);
-   const lListElem *range_elem;
 
    /* ensure jobs PE range list request is normalized and ascending */
    range_list_sort_uniq_compress(pe_range, nullptr, true);
 
-   for_each_ep(range_elem, pe_range) {
-      unsigned long pe_range_min = ocs::tom::get<RN_min>(range_elem);
-      unsigned long pe_range_max = ocs::tom::get<RN_max>(range_elem);
+   for (const auto range_elem : pe_range) {
+      const unsigned long pe_range_min = ocs::tom::get<RN_min>(range_elem);
+      const unsigned long pe_range_max = ocs::tom::get<RN_max>(range_elem);
       DPRINTF("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min);
       if (pe_range_max == 0 || pe_range_min == 0) {
          ERROR(MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr);
@@ -2846,11 +2844,11 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
     finally being used for urgency value computation be ambiguous. We reject such
     jobs */
    if (range_list_get_number_of_ids(pe_range) > 1) {
-      const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-      const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
-      const lListElem *pe;
-      int nslots = pe_urgency_slots(reference_pe, ocs::tom::get<PE_urgency_slots>(reference_pe), pe_range);
-      for_each_ep(pe, master_pe_list) {
+      // the master list of the data store is a process-lifetime global; it holds parallel environments
+      const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+      const ocs::tom::ConstElement<ocs::tom::PE> reference_pe(pe_list_find_matching(master_pe_list, pe_name));
+      const int nslots = pe_urgency_slots(reference_pe, ocs::tom::get<PE_urgency_slots>(reference_pe), pe_range);
+      for (const auto pe : master_pe_list) {
          if (pe_is_matching(pe, pe_name) &&
              nslots != pe_urgency_slots(pe, ocs::tom::get<PE_urgency_slots>(pe), pe_range)) {
             ERROR(MSG_OBJECT_WILD_RANGE_AMBIGUOUS_S, object_descr);
@@ -2870,21 +2868,20 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
  * this can't be done fully in clients without having complex definitions
  * -l arch=linux -l a=sun4
  *
- * @param alpp Returns answer list with error context.
- * @param rl object description for user messages
- * @param object_descr object description
+ * The list is walked from its end; of several requests for one resource the
+ * last one stays. A request for `slots` is rejected.
  *
- * @return 0 on success
+ * @param alpp Returns answer list with error context.
+ * @param rl the resource requests, `CE_Type`; may be an empty handle
+ * @param object_descr object description for user messages
+ *
+ * @return 0 on success, -1 for an explicit `slots` request
  */
-int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
+int compress_ressources(lList **alpp, const ocs::tom::List<ocs::tom::CE> rl, const char *object_descr) {
    DENTER(TOP_LAYER);
-   const lListElem *ep;
-   lListElem *prev;
-   lListElem *rm_ep;
-   const char *attr_name;
 
-   for_each_rev (ep, rl) {
-      attr_name = ocs::tom::get<CE_name>(ep);
+   for (auto ep = rl.back(); ep; ep = ep.prev()) {
+      const char *attr_name = ocs::tom::get<CE_name>(ep);
 
       /* ensure 'slots' is not requested explicitly */
       if (!strcmp(attr_name, "slots")) {
@@ -2893,14 +2890,14 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
          DRETURN(-1);
       }
 
-      /* remove all previous requests with the same name */
-      prev = lPrevRW(ep);
-      while ((rm_ep = prev)) {
-         prev = lPrevRW(rm_ep);
+      /* remove all previous requests with the same name; the next one is fetched before an erase */
+      auto prev = ep.prev();
+      while (const auto rm_ep = prev) {
+         prev = rm_ep.prev();
          if (!strcmp(ocs::tom::get<CE_name>(rm_ep), attr_name)) {
             DPRINTF("resource request -l " SFN "=" SFN " overrides previous -l " SFN "=" SFN "\n",
                     attr_name, ocs::tom::get<CE_stringval>(ep), attr_name, ocs::tom::get<CE_stringval>(rm_ep));
-            lRemoveElem(rl, &rm_ep);
+            rl.erase(rm_ep);
          }
       }
    }

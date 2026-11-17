@@ -82,7 +82,7 @@
 /// Debug layer the answer list traces are written to
 #define ANSWER_LAYER CULL_LAYER
 
-static bool answer_log(const lListElem *answer, bool show_info);
+static bool answer_log(ocs::tom::ConstElement<ocs::tom::AN> answer, bool show_info);
 
 /**
  * @brief Check for certain answer quality
@@ -297,13 +297,15 @@ void answer_to_dstring(const lListElem *answer, dstring *diag) {
  * @note MT-NOTE: answer_list_to_dstring() is MT safe
  */
 void answer_list_to_dstring(const lList *alp, dstring *diag) {
+   DENTER(ANSWER_LAYER);
    if (diag) {
-      if (!alp || (lGetNumberOfElem (alp) == 0)) {
+      const ocs::tom::ConstList<ocs::tom::AN> answers(alp);
+      if (answers.empty()) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
       } else {
          sge_dstring_clear(diag);
          
-         for_each_ep_lv(aep, alp) {
+         for (const auto aep : answers) {
             const char *s = ocs::tom::get<AN_text>(aep);
             sge_dstring_append(diag, s);
 
@@ -313,6 +315,7 @@ void answer_list_to_dstring(const lList *alp, dstring *diag) {
          }
       }
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -384,7 +387,7 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality) {
    bool ret = false;
 
    if (answer_list != nullptr) {
-      for_each_ep_lv(answer, *answer_list) {
+      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
          if (answer_has_quality(answer, quality)) {
             ret = true;
             break;
@@ -408,12 +411,14 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality) {
 void answer_list_remove_quality(lList *answer_list, answer_quality_t quality) {
    DENTER(ANSWER_LAYER);
 
-   lListElem *aep, *nxt = lFirstRW(answer_list);
+   const ocs::tom::List<ocs::tom::AN> answers(answer_list);
+   auto nxt = answers.front();
 
-   while ((aep=nxt)) {
-      nxt=lNextRW(aep);
+   while (nxt) {
+      const auto aep = nxt;
+      nxt = aep.next();
       if (ocs::tom::get<AN_quality>(aep) == quality) {
-         lRemoveElem(answer_list, &aep);
+         answers.erase(aep);
       }
    }
 
@@ -440,7 +445,7 @@ bool answer_list_has_status(lList **answer_list, uint32_t status) {
    bool ret = false;
 
    if (answer_list != nullptr) {
-      for_each_ep_lv(answer, *answer_list) {
+      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
          if (answer_get_status(answer) == status) {
             ret = true;
             break;
@@ -488,7 +493,7 @@ bool answer_list_has_error(lList **answer_list) {
  */
 void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream) {
    DENTER(ANSWER_LAYER);
-   for_each_ep_lv(answer, *answer_list) {
+   for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
       answer_exit_if_not_recoverable(answer);
       answer_print_text(answer, stream, nullptr, nullptr);
    }
@@ -529,7 +534,7 @@ int answer_list_print_err_warn(lList **answer_list,
    int do_exit = 0;
    uint32_t status = 0;
 
-   for_each_ep_lv(answer, *answer_list) {
+   for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
       if (answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
          answer_print_text(answer, stderr, critical_prefix, nullptr);
          if (do_exit == 0) {
@@ -575,9 +580,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
    int ret = STATUS_OK;
 
    if(answer_list != nullptr && *answer_list != nullptr) {
-      const lListElem *answer;
-
-      for_each_ep(answer, *answer_list) {
+      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
          if(answer_has_quality(answer, ANSWER_QUALITY_CRITICAL) ||
             answer_has_quality(answer, ANSWER_QUALITY_ERROR) ||
             answer_has_quality(answer, ANSWER_QUALITY_WARNING)) {
@@ -590,7 +593,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
       lFreeList(answer_list);
    } else {
       fprintf(stream, "%s\n", MSG_ANSWER_NOANSWERLIST);
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
    DRETURN(ret);
 }
@@ -625,25 +628,21 @@ bool answer_list_add(lList **answer_list, const char *text,
    bool ret = false;
 
    if (answer_list != nullptr) {
-      lListElem *answer = lCreateElem(AN_Type);
+      // freed by the handle unless the list takes it over
+      auto answer = ocs::tom::ElementPtr<ocs::tom::AN>::create();
 
-      if (answer != nullptr) {
-         ocs::tom::set<AN_text>(answer, text);
-         ocs::tom::set<AN_status>(answer, status);
-         ocs::tom::set<AN_quality>(answer, quality);
+      ocs::tom::set<AN_text>(answer, text);
+      ocs::tom::set<AN_status>(answer, status);
+      ocs::tom::set<AN_quality>(answer, quality);
 
-         if (*answer_list == nullptr) {
-            *answer_list = lCreateList("", AN_Type);
-         }
-
-         if (*answer_list != nullptr) {
-            lAppendElem(*answer_list, answer);
-            ret = true;
-         }
+      // the answer list API hands raw lists to every module, so the list is created raw
+      if (*answer_list == nullptr) {
+         *answer_list = lCreateList("", AN_Type);
       }
 
-      if (!ret) {
-         lFreeElem(&answer);
+      if (*answer_list != nullptr) {
+         ocs::tom::List<ocs::tom::AN>(*answer_list).push_back(std::move(answer));
+         ret = true;
       }
    }
    DRETURN(ret);
@@ -749,10 +748,9 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
    DENTER(ANSWER_LAYER);
 
    bool ret = false;
-   const lListElem *answer;   /* AN_Type */
 
    if (answer_list != nullptr && *answer_list != nullptr) {
-      for_each_ep(answer, *answer_list) {
+      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
          ret = answer_log(answer, show_info);
       }
       if (is_free_list) {
@@ -770,12 +768,13 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
  * The CRITICAL, ERROR, WARNING and INFO macros will be used for output.
  *
  * @param answer AN_Type element
+ * @param show_info log also info messages
  *
- * @return true if answer is an error, false otherwise and if answer == nullptr
+ * @return true if answer is an error, false otherwise and if answer is an empty handle
  *
  * @note MT-NOTE: answer_log() is MT safe
  */
-static bool answer_log(const lListElem *answer, bool show_info) {
+static bool answer_log(const ocs::tom::ConstElement<ocs::tom::AN> answer, const bool show_info) {
    DENTER(ANSWER_LAYER);
 
    bool ret = false;
@@ -843,18 +842,18 @@ bool answer_list_output(lList **answer_list) {
 int show_answer(lList *alp) {
    DENTER(TOP_LAYER);
 
-   const lListElem *aep = nullptr;
    int ret = 0;
    
    if (alp != nullptr) {
+      const ocs::tom::ConstList<ocs::tom::AN> answers(alp);
     
-      for_each_ep(aep,alp) {
+      for (const auto aep : answers) {
          answer_exit_if_not_recoverable(aep);
          if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
             ret = 1;
          }
       }
-      aep = lLast(alp);
+      const auto aep = answers.back();
       if (ocs::tom::get<AN_quality>(aep) != ANSWER_QUALITY_END) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
@@ -874,11 +873,10 @@ int show_answer(lList *alp) {
 int show_answer_list(lList *alp) {
    DENTER(TOP_LAYER);
 
-   const lListElem *aep = nullptr;
    int ret = 0;
    
    if (alp != nullptr) {
-      for_each_ep(aep,alp) {
+      for (const auto aep : ocs::tom::ConstList<ocs::tom::AN>(alp)) {
          if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_END) {
             continue;
          }

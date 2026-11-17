@@ -711,7 +711,7 @@ sge_scheduler_main(void *arg) {
 
             const auto global = master_config_list.find_first<CONF_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
             const auto local = master_config_list.find_first<CONF_name>(ocs::tom::Host(hostname));
-            merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
+            merge_configuration(nullptr, progid, cell_root, global, local);
 
             // reset the flag
             st_set_flag_new_global_conf(false);

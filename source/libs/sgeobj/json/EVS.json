@@ -53,8 +53,8 @@
             "We can for example configure: We are only interested in job id, job name and job owner."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "PACK",
+         "subCullPrefix": "PACK",
          "flags": []
       },
       {
@@ -65,8 +65,8 @@
             "We can for example configure: Send only events for jobs of user xyz."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "PACK",
+         "subCullPrefix": "PACK",
          "flags": []
       }
    ]

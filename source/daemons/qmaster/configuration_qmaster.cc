@@ -193,7 +193,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    // different order, are brought into the defined order here - the spool file itself is
    // rewritten with the next modification of the configuration
    for_each_rw_lv(conf, *config_list) {
-      conf_sort_entries(conf);
+      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
@@ -214,7 +214,8 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
 
    uint32_t progid = component_get_component_id();
    const char *cell_root = bootstrap_get_cell_root();
-   int ret = merge_configuration(answer_list, progid, cell_root, global, local, nullptr);
+   int ret = merge_configuration(answer_list, progid, cell_root, ocs::tom::ConstElement<ocs::tom::CONF>(global),
+                                 ocs::tom::ConstElement<ocs::tom::CONF>(local)).first;
    answer_list_output(answer_list);
 
    lFreeElem(&local);
@@ -385,7 +386,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    // the client sends the entries in the order they were written in the configuration file
    // (qconf -Aconf/-Mconf) or in the order the editor left them in (qconf -aconf/-mconf) -
    // bring them into the defined order before they are stored
-   conf_sort_entries(aConf);
+   conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(aConf));
 
    lListElem *old_conf = sge_get_configuration_for_host(unique_name);
    if (old_conf != nullptr) {
@@ -424,7 +425,8 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
          ERROR(SFNMAX, MSG_CONFIG_NOGLOBAL);
       }
 
-      if (merge_configuration(&answer_list, progid, cell_root, global, local, nullptr) != 0) {
+      if (merge_configuration(&answer_list, progid, cell_root, ocs::tom::ConstElement<ocs::tom::CONF>(global),
+                              ocs::tom::ConstElement<ocs::tom::CONF>(local)).first != 0) {
          ERROR(MSG_CONF_CANTMERGECONFIGURATIONFORHOST_S, qualified_hostname);
       }
       answer_list_output(&answer_list);

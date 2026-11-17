@@ -40,6 +40,9 @@
  */
 
 #include "sgeobj/cull/sge_pack_PACK_L.h"
+#include "sgeobj/tom/ocs_tom_PACK.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
 
 /// What a packed CULL condition object is
 enum {
@@ -47,6 +50,14 @@ enum {
    SGE_WHERE   ///< a filter condition, as `lWhere` builds it
 };
 
-lListElem *lWhereToElem(const lCondition *where);
+ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where);
+OCS_TRANSITIONAL lListElem *lWhereToElem(const lCondition *where);
 
-lCondition *lWhereFromElem(const lListElem *where);
+lCondition *ocs_where_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> where);
+OCS_TRANSITIONAL lCondition *lWhereFromElem(const lListElem *where);
+
+ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what);
+OCS_TRANSITIONAL lListElem *lWhatToElem(const lEnumeration *what);
+
+lEnumeration *ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> what);
+OCS_TRANSITIONAL lEnumeration *lWhatFromElem(const lListElem *what);

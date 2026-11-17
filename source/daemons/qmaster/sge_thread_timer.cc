@@ -208,7 +208,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    ++tet_decay_run;
 
    const uint64_t curr_time = sge_get_gmt64();
-   const auto decay_list = ocs::tom::ListPtr<ocs::tom::UA>(ocs::Usage::get_decay_list());
+   const auto decay_list = ocs::Usage::get_decay_list();
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -249,7 +249,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    lList **user_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
    if (user_list != nullptr) {
       for (const auto user : ocs::tom::List<ocs::tom::UU>(*user_list)) {
-         ocs::UserProject::decay_userprj_usage(user, true, *decay_list, tet_decay_run, curr_time);
+         ocs::UserProject::decay_userprj_usage(user, *decay_list, tet_decay_run, curr_time);
          ocs::SharetreeUsage::mark_user_event_dirty(user.get<UU_name>());
          any_object = true;
       }
@@ -257,7 +257,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    lList **project_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
    if (project_list != nullptr) {
       for (const auto project : ocs::tom::List<ocs::tom::PR>(*project_list)) {
-         ocs::UserProject::decay_userprj_usage(project, false, *decay_list, tet_decay_run, curr_time);
+         ocs::UserProject::decay_userprj_usage(project, *decay_list, tet_decay_run, curr_time);
          ocs::SharetreeUsage::mark_project_event_dirty(project.get<PR_name>());
          any_object = true;
       }
@@ -306,9 +306,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
                if (owner == nullptr && project == nullptr) {
                   continue;
                }
-               lListElem *parent = nullptr;
-               const auto leaf = ocs::tom::Element<ocs::tom::STN>(
-                       ocs::ShareTree::search_user_project_node(root, owner, project, &parent, root));
+               const auto leaf = ocs::ShareTree::search_user_project_node(root, owner, project, root).first;
                if (leaf) {
                   leaf.set<STN_job_ref_count>(leaf.get<STN_job_ref_count>() + 1);
                   leaf.set<STN_active_job_ref_count>(leaf.get<STN_active_job_ref_count>() + 1);

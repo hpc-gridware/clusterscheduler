@@ -40,6 +40,14 @@
 #include <string>
 
 #include "cull/cull.h"
+#include "uti/sge_dstring.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 #include "ocs_BindingType.h"
 #include "ocs_BindingUnit.h"
 #include "ocs_BindingStart.h"
@@ -57,22 +65,35 @@ namespace ocs {
     */
    class Job {
    public:
-      static void sgeee_sort_jobs(lList *job_list);
-      static bool job_get_systemd_slice_and_scope(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
+      static void sgeee_sort_jobs(ocs::tom::List<ocs::tom::JB> job_list);
+      static bool job_get_systemd_slice_and_scope(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                  ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                                  ocs::tom::ConstElement<ocs::tom::PET> pe_task,
                                                   std::string &slice, std::string &scope, dstring *error_dstr);
 
-      static lListElem *binding_get_or_create_elem(lListElem *pjob, lList**answer);
-      static bool binding_was_requested(const lListElem *job);
-      static BindingType::Type binding_get_type(const lListElem *job);
-      static BindingUnit::Unit binding_get_unit(const lListElem *job);
-      static std::string binding_get_sort(const lListElem *job);
-      static BindingStart::Start binding_get_start(const lListElem *job);
-      static BindingStop::Stop binding_get_stop(const lListElem *job);
-      static BindingStrategy::Strategy binding_get_strategy(const lListElem *job);
-      static std::string binding_get_filter(const lListElem *job);
-      static uint32_t binding_get_amount(const lListElem *job);
-      static BindingInstance::Instance binding_get_instance(const lListElem *job);
-      static void binding_set_missing_defaults(lListElem *job, lList **answer_list);
-
+      static ocs::tom::Element<ocs::tom::BN> binding_get_or_create_elem(ocs::tom::Element<ocs::tom::JB> job,
+                                                                        lList **answer_list);
+      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *job, lList **answer_list);
+      static bool binding_was_requested(ocs::tom::ConstElement<ocs::tom::JB> job);
+      static BindingType::Type binding_get_type(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static BindingType::Type binding_get_type(const lListElem *job);
+      static BindingUnit::Unit binding_get_unit(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static BindingUnit::Unit binding_get_unit(const lListElem *job);
+      static std::string binding_get_sort(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static std::string binding_get_sort(const lListElem *job);
+      static BindingStart::Start binding_get_start(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static BindingStart::Start binding_get_start(const lListElem *job);
+      static BindingStop::Stop binding_get_stop(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static BindingStop::Stop binding_get_stop(const lListElem *job);
+      static BindingStrategy::Strategy binding_get_strategy(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static BindingStrategy::Strategy binding_get_strategy(const lListElem *job);
+      static std::string binding_get_filter(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static std::string binding_get_filter(const lListElem *job);
+      static uint32_t binding_get_amount(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static uint32_t binding_get_amount(const lListElem *job);
+      static BindingInstance::Instance binding_get_instance(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static BindingInstance::Instance binding_get_instance(const lListElem *job);
+      static void binding_set_missing_defaults(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
+      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *job, lList **answer_list);
    };
 }

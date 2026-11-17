@@ -40,6 +40,13 @@
  */
 
 #include "uti/sge_dstring.h"
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_SO.h"
+
 #include "sgeobj/cull/sge_subordinate_SO_L.h"
 
 /**
@@ -53,17 +60,17 @@
 #define SO_ACTION_LR 0x00000010 ///< suspend the job and leave it where it is
 /** @} */
 
-bool
-tst_sos(int used, int total, const lListElem *so);
+bool tst_sos(int used, int total, ocs::tom::ConstElement<ocs::tom::SO> so);
+OCS_TRANSITIONAL bool tst_sos(int used, int total, const lListElem *so);
 
-const char *
-so_list_append_to_dstring(const lList *this_list, dstring *string);
+const char *so_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::SO> this_list, dstring *string);
+OCS_TRANSITIONAL const char *so_list_append_to_dstring(const lList *this_list, dstring *string);
 
-bool
-so_list_add(lList **this_list, lList **answer_list, const char *so_name,
-            uint32_t threshold, uint32_t slots_sum, uint32_t seq_no, uint32_t action);
+bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list, lList **answer_list, const char *so_name,
+                 uint32_t threshold, uint32_t slots_sum, uint32_t seq_no, uint32_t action);
 
-bool
-so_list_resolve(const lList *so_list, lList **answer_list,
-                lList **resolved_so_list, const char *qinstance_name,
-                const char *hostname, const lList *master_cqueue_list);
+bool so_list_resolve(ocs::tom::ConstList<ocs::tom::SO> so_list, lList **answer_list,
+                     ocs::tom::ListPtr<ocs::tom::SO> &resolved_so_list, const char *cq_name, const char *hostname,
+                     ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list);
+OCS_TRANSITIONAL bool so_list_resolve(const lList *so_list, lList **answer_list, lList **resolved_so_list,
+                                      const char *cq_name, const char *hostname, const lList *master_cqueue_list);

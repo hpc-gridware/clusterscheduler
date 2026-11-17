@@ -38,6 +38,7 @@
 
 #include <cstring>
 #include <sstream>
+#include <utility>
 
 #include "uti/ocs_Systemd.h"
 #include "uti/sge.h"
@@ -50,35 +51,37 @@
 #include "sge_grantedres.h"
 #include "sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"
 
-/** @brief Convert granted resources to a comma-separated string
+/**
+ * @brief Convert granted resources to a comma-separated string
  *
- * @param granted_resources List of granted resources (list of GRU_Type)
- * @return String representation of granted resources
+ * @param granted_resources List of granted resources (GRU_Type), may be an empty handle
+ *
+ * @return String representation of granted resources, NONE for an empty handle
  */
 std::string
-ocs::GrantedResources::to_string(const lList *granted_resources) {
+ocs::GrantedResources::to_string(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources) {
    DENTER(TOP_LAYER);
 
    // NONE
-   if (granted_resources == nullptr) {
+   if (!granted_resources) {
       DRETURN(NONE_STR);
    }
 
    // <hostname>=<topo>, ...
    std::stringstream ss;
    const void *iterator = nullptr;
-   const lListElem *next = ocs::tom::find_first<GRU_name>(granted_resources, SGE_ATTR_SLOTS, &iterator);
-   const lListElem *curr;
+   auto next = ocs::tom::find_first<GRU_name>(granted_resources, SGE_ATTR_SLOTS, &iterator);
    bool add_separator = false;
-   while ((curr = next) != nullptr) {
+   while (next) {
+      const auto curr = next;
       next = ocs::tom::find_next<GRU_name>(granted_resources, SGE_ATTR_SLOTS, &iterator);
 
       const char *hostname = ocs::tom::get<GRU_host>(curr);
-      ocs::tom::ConstList<ocs::tom::ST> binding_in_use_list = ocs::tom::get<GRU_binding_inuse>(curr);
-      for (ocs::tom::ConstElement<ocs::tom::ST> binding_in_use : binding_in_use_list) {
+      for (const auto binding_in_use : ocs::tom::get<GRU_binding_inuse>(curr)) {
          TopologyString topo_in_use(ocs::tom::get<ST_name>(binding_in_use));
          ss << (add_separator ? "," : "") << hostname << "=" << topo_in_use.to_product_topology_string();
          add_separator = true;
@@ -87,57 +90,81 @@ ocs::GrantedResources::to_string(const lList *granted_resources) {
    DRETURN(ss.str());
 }
 
-/** @brief Add binding-to-use for a specific host as granted binding information
+/**
+ * @brief Add binding-to-use for a specific host as granted binding information
  *
- * @param granted_resources_list List of granted resources to add to
+ * Nothing is added if @p binding_touse_list is an empty handle or @p host_name is nullptr.
+ *
+ * @param granted_resources_list List of granted resources (GRU_Type) to add to, created if it is empty
  * @param host_name Hostname to add the binding information for
- * @param binding_touse_list List of binding information to add (list of ST_Type)
+ * @param binding_touse_list List of binding information to add (ST_Type), copied
  */
 void
-ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list) {
+ocs::GrantedResources::add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &granted_resources_list,
+                                          const char *host_name,
+                                          const ocs::tom::ConstList<ocs::tom::ST> binding_touse_list) {
    DENTER(TOP_LAYER);
 
-   if (binding_touse_list == nullptr || host_name == nullptr) {
+   if (!binding_touse_list || host_name == nullptr) {
       DRETURN_VOID;
    }
 
-   ocs::tom::Element<ocs::tom::GRU> gru = ocs::tom::emplace_back<GRU_name>(granted_resources_list, SGE_ATTR_SLOTS);
+   if (!granted_resources_list) {
+      granted_resources_list = ocs::tom::ListPtr<ocs::tom::GRU>::create("");
+   }
+   const auto gru = granted_resources_list->emplace_back<GRU_name>(SGE_ATTR_SLOTS);
    ocs::tom::set<GRU_host>(gru, host_name);
    ocs::tom::set<GRU_type>(gru, static_cast<lUlong>(Type::GRU_BINDING_TYPE));
-   ocs::tom::set<GRU_binding_inuse>(gru, lCopyList("binding_to_use", binding_touse_list));
+   ocs::tom::set<GRU_binding_inuse>(gru, binding_touse_list.clone("binding_to_use"));
    DRETURN_VOID;
 }
 
-/** @brief Get a combined binding_to_use for all granted resources of a host
+/**
+ * @brief add_binding_to_use() for an untyped caller
  *
- * The combined binding_to_use contains all PUs that are reserved for any of the slots (in case there are multiple).
- * If no binding information is found, the returned binding_to_use will be empty.
- *
- * @param gr_list List of granted resources
- * @param hostname Hostname to search for
- * @param binding_to_use Returned combined binding_to_use (empty if no binding information is found)
+ * @param granted_resources_list List of granted resources (GRU_Type) to add to, created if *granted_resources_list
+ *                               is nullptr; not nullptr itself
+ * @param host_name Hostname to add the binding information for
+ * @param binding_touse_list List of binding information to add (ST_Type), copied
  */
+void
+ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const char *host_name,
+                                          const ocs::tom::ConstList<ocs::tom::ST> binding_touse_list) {
+   if (granted_resources_list == nullptr) {
+      return;
+   }
+   auto list = ocs::tom::ListPtr<ocs::tom::GRU>::from_typed(std::exchange(*granted_resources_list, nullptr));
+   add_binding_to_use(list, host_name, binding_touse_list);
+   *granted_resources_list = list.release();
+}
+
 /**
  * @brief Collect everything granted on one host into a single topology
  *
  * A job may hold several grants on the same host, one per slot; this
  * merges them so the execution side sees one binding.
+ * The combined binding_to_use contains all PUs that are reserved for any of the slots (in case there are multiple).
+ * If no binding information is found, the returned binding_to_use will be empty.
+ *
+ * @param gr_list List of granted resources (GRU_Type), may be an empty handle
+ * @param hostname Hostname to search for
+ * @param binding_to_use Returned combined binding_to_use (empty if no binding information is found)
  */
 void
-ocs::GrantedResources::get_combined_binding_for_host(const lList *gr_list, const char *hostname, TopologyString &binding_to_use) {
+ocs::GrantedResources::get_combined_binding_for_host(const ocs::tom::ConstList<ocs::tom::GRU> gr_list,
+                                                     const char *hostname, TopologyString &binding_to_use) {
    DENTER(TOP_LAYER);
    const void *iterator = nullptr;
-   const lListElem *next_gr = ocs::tom::find_first<GRU_host>(gr_list, hostname, &iterator);
-   const lListElem *gr;
-   while ((gr = next_gr) != nullptr) {
+   auto next_gr = ocs::tom::find_first<GRU_host>(gr_list, hostname, &iterator);
+   while (next_gr) {
+      const auto gr = next_gr;
       next_gr = ocs::tom::find_next<GRU_host>(gr_list, hostname, &iterator);
 
       if (const uint32_t type = ocs::tom::get<GRU_type>(gr); static_cast<Type>(type) != Type::GRU_BINDING_TYPE) {
          continue; // we are only interested in binding resources
       }
 
-      ocs::tom::ConstList<ocs::tom::ST> binding_list = ocs::tom::get<GRU_binding_inuse>(gr);
-      for (ocs::tom::ConstElement<ocs::tom::ST> be : binding_list) {
+      for (const auto be : ocs::tom::get<GRU_binding_inuse>(gr)) {
          if (binding_to_use.is_empty()) {
             binding_to_use.reset_topology(ocs::tom::get<ST_name>(be));
          } else {

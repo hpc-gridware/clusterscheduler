@@ -70,13 +70,14 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
    spool_read_list(anAnswer, aSpoolContext, &sched_conf, SGE_TYPE_SCHEDD_CONF);
 
    if (lGetNumberOfElem(sched_conf) == 0) {
-      lListElem *ep = sconf_create_default();
+      auto default_conf = sconf_create_default();
 
       if (sched_conf == nullptr) {
          sched_conf = lCreateList("schedd_config_list", SC_Type);
       }
 
-      lAppendElem(sched_conf, ep);
+      // the spooled list holds SC_Type elements only
+      const auto ep = ocs::tom::List<ocs::tom::SC>::from_typed(sched_conf).push_back(std::move(default_conf));
       spool_write_object(anAnswer, spool_get_default_context(), ep, "schedd_conf", SGE_TYPE_SCHEDD_CONF);
    }
 

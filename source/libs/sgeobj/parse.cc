@@ -57,115 +57,148 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "sge_options.h"
 #include "parse_qsub.h"
 #include "msg_common.h"
 
-/*-------------------------------------------------------------------------*/
+/**
+ * @brief Run a parser step on an option list held by an untyped caller
+ *
+ * The list "ppcmdline" refers to is taken over by an owning handle for the
+ * step and handed back afterwards, also when the step throws, so the step may
+ * create the list as the old functions did.
+ *
+ * @tparam Step the step, called with an `ocs::tom::ListPtr<ocs::tom::SPA> &`
+ * @param ppcmdline the list reference, not nullptr; the list is checked to be an SPA_Type list
+ * @param step the step
+ * @return what the step returns
+ */
+template <typename Step>
+static auto ocs_parse_on_untyped_cmdline(lList **ppcmdline, Step step) {
+   /// gives the list back to the untyped caller when the step is done
+   struct GiveBack {
+      lList **ppcmdline;                          ///< the caller's list reference
+      ocs::tom::ListPtr<ocs::tom::SPA> &cmdline;  ///< the handle that holds the list meanwhile
+      /** @brief Hand the list back */
+      ~GiveBack() {
+         *ppcmdline = cmdline.release();
+      }
+   };
+
+   auto cmdline = ocs::tom::ListPtr<ocs::tom::SPA>(*ppcmdline);
+   *ppcmdline = nullptr;
+   const GiveBack give_back{ppcmdline, cmdline};
+   return step(cmdline);
+}
+
 /**
  * @brief Append the names of a comma separated string to a list
  *
  * Use cstring_list_parse_from_string() if you need a parsing function. If the
  * attribute is unique, a name already in the list is not added again (CS-3053).
  *
- * @param[in,out] lp the list to append to, created if *lp is nullptr
+ * @tparam F the string field that receives a name
+ * @param[in,out] list the list to append to, created if it is empty
  * @param str the comma separated names
- * @param field the string attribute that receives a name
- * @param descr the type of the list
  */
-static void sge_parse_string_list(lList **lp, const char *str, const int field, const lDescr *descr) {
+template <auto F>
+static void sge_parse_string_list(ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> &list, const char *str) {
    DENTER(TOP_LAYER);
 
-   const int pos = lGetPosInDescr(descr, field);
-   const bool unique = pos >= 0 && mt_is_unique(descr[pos].mt);
-
+   using Type = typename ocs::tom::FieldTraits<F>::Type;
    for (const char *cp = sge_strtok(str, ","); cp != nullptr; cp = sge_strtok(nullptr, ",")) {
-      if (!unique || lGetElemStr(*lp, field, cp) == nullptr) {
-         lAddElemStr(lp, field, cp, descr);
+      if (!ocs::tom::FieldTraits<F>::unique || list->template find_first<F>(cp) == nullptr) {
+         if (!list) {
+            list = ocs::tom::ListPtr<Type>::create("");
+         }
+         list->template emplace_back<F>(cp);
       }
    }
 
    DRETURN_VOID;
 }
 
-/***************************************************************************/
-/* MT-NOTE: sge_add_noarg() is MT safe */
 /**
  * @brief Record a command line switch that takes no argument
  *
- * @param[in,out] popt_list the parsed option list, created when it is nullptr
+ * @param[in,out] opt_list the parsed option list, created when it is empty
  * @param opt_number the switch's id
  * @param opt_switch the switch as it was written
  * @param opt_switch_arg the argument text, if the caller wants to keep it
- * @return the new element, or nullptr when it could not be created
+ * @return the new element
  *
  * @note MT-NOTE: sge_add_noarg() is MT safe
  */
-lListElem *sge_add_noarg(
-lList **popt_list,
-uint32_t opt_number,
-const char *opt_switch,
-const char *opt_switch_arg 
-) {
-   lListElem *ep;
+ocs::tom::Element<ocs::tom::SPA> sge_add_noarg(ocs::tom::ListPtr<ocs::tom::SPA> &opt_list, const uint32_t opt_number,
+                                               const char *opt_switch, const char *opt_switch_arg) {
+   DENTER(TOP_LAYER);
 
-   if (!popt_list) {
-      return nullptr;
-   }
-   if (!*popt_list) {
-      *popt_list = lCreateList("option list", SPA_Type);
-      if (!*popt_list) {
-         return nullptr;
-      }
+   if (!opt_list) {
+      opt_list = ocs::tom::ListPtr<ocs::tom::SPA>::create("option list");
    }
 
-   ep = lCreateElem(SPA_Type);
-   if (!ep) {
-      return nullptr;
-   }
-   ocs::tom::set<SPA_number>(ep, opt_number);
-   ocs::tom::set<SPA_switch_val>(ep, opt_switch);
-   ocs::tom::set<SPA_switch_arg>(ep, opt_switch_arg);
-   ocs::tom::set<SPA_occurrence>(ep, BIT_SPA_OCC_NOARG);
-   lAppendElem(*popt_list, ep);
-   return ep;
+   auto new_ep = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
+   ocs::tom::set<SPA_number>(new_ep, opt_number);
+   ocs::tom::set<SPA_switch_val>(new_ep, opt_switch);
+   ocs::tom::set<SPA_switch_arg>(new_ep, opt_switch_arg);
+   ocs::tom::set<SPA_occurrence>(new_ep, BIT_SPA_OCC_NOARG);
+   auto ep = opt_list->push_back(std::move(new_ep));
+
+   DRETURN(ep);
 }
 
-/***************************************************************************/
+/**
+ * @brief sge_add_noarg() for an untyped caller
+ *
+ * @param[in,out] popt_list the parsed option list (`SPA_Type`), checked; created when it is nullptr
+ * @param opt_number the switch's id
+ * @param opt_switch the switch as it was written
+ * @param opt_switch_arg the argument text, if the caller wants to keep it
+ * @return the new element, or nullptr if "popt_list" is nullptr
+ */
+lListElem *sge_add_noarg(lList **popt_list, const uint32_t opt_number, const char *opt_switch,
+                         const char *opt_switch_arg) {
+   if (popt_list == nullptr) {
+      return nullptr;
+   }
+   return ocs_parse_on_untyped_cmdline(popt_list, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
+      return sge_add_noarg(cmdline, opt_number, opt_switch, opt_switch_arg).raw();
+   });
+}
 
-/* MT-NOTE: sge_add_arg() is MT safe */
 /**
  * @brief Record a command line switch that takes an argument
  *
- * @param[in,out] popt_list the parsed option list, created when it is nullptr
+ * @param[in,out] opt_list the parsed option list, created when it is empty
  * @param opt_number the switch's id
  * @param opt_type the argument's type
  * @param opt_switch the switch as it was written
  * @param opt_switch_arg the argument text
- * @return the new element, or nullptr when it could not be created
+ * @return the new element, or an empty handle if "opt_switch" is nullptr
  *
  * @note MT-NOTE: sge_add_arg() is MT safe
  */
-lListElem *sge_add_arg(
-lList **popt_list,
-uint32_t opt_number,
-uint32_t opt_type,
-const char *opt_switch,
-const char *opt_switch_arg
-) {
+ocs::tom::Element<ocs::tom::SPA> sge_add_arg(ocs::tom::ListPtr<ocs::tom::SPA> &opt_list, const uint32_t opt_number,
+                                             const uint32_t opt_type, const char *opt_switch,
+                                             const char *opt_switch_arg) {
    DENTER(TOP_LAYER);
 
-   
-   if (popt_list == nullptr) {
-       DRETURN(nullptr);
-   }
+   ocs::tom::Element<ocs::tom::SPA> ep;
 
-   ocs::tom::Element<ocs::tom::SPA> ep = ocs::tom::emplace_back<SPA_switch_val>(popt_list, opt_switch);
-
-   if (ep != nullptr) {
+   if (opt_switch != nullptr) {
+      if (!opt_list) {
+         opt_list = ocs::tom::ListPtr<ocs::tom::SPA>::create("");
+      }
+      ep = opt_list->emplace_back<SPA_switch_val>(opt_switch);
       ocs::tom::set<SPA_number>(ep, opt_number);
       ocs::tom::set<SPA_argtype>(ep, opt_type);
       ocs::tom::set<SPA_switch_arg>(ep, opt_switch_arg);
@@ -175,432 +208,454 @@ const char *opt_switch_arg
    DRETURN(ep);
 }
 
-/***************************************************************************/
+/**
+ * @brief sge_add_arg() for an untyped caller
+ *
+ * @param[in,out] popt_list the parsed option list (`SPA_Type`), checked; created when it is nullptr
+ * @param opt_number the switch's id
+ * @param opt_type the argument's type
+ * @param opt_switch the switch as it was written
+ * @param opt_switch_arg the argument text
+ * @return the new element, or nullptr if "popt_list" or "opt_switch" is nullptr
+ */
+lListElem *sge_add_arg(lList **popt_list, const uint32_t opt_number, const uint32_t opt_type, const char *opt_switch,
+                       const char *opt_switch_arg) {
+   if (popt_list == nullptr) {
+      return nullptr;
+   }
+   return ocs_parse_on_untyped_cmdline(popt_list, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
+      return sge_add_arg(cmdline, opt_number, opt_type, opt_switch, opt_switch_arg).raw();
+   });
+}
 
-
-/****
- **** parse_noopt
- ****
- **** parse a option from the commandline (sp). The option
- **** is given by shortopt and longopt (optional). 
- **** The parsed option is stored in ppcmdline (SPA_Type).
- **** An errormessage is appended to the answer-list (alpp).
- **** The function returns a pointer to the next argument.
- ****/
 /**
  * @brief Parse a switch that takes no argument
  *
- * @param[in,out] sp the current argument; the parser advances past what it consumed
+ * A switch given twice is recorded once.
+ *
+ * @param sp the current argument
  * @param shortopt the short form of the switch
  * @param longopt the long form, or nullptr
- * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
+ * @param[in,out] cmdline receives the parsed option, created when it is empty
  * @param[out] alpp receives the error message
  * @return a pointer to the next argument
  */
-char **parse_noopt(
-char **sp,
-const char *shortopt,
-const char *longopt,
-lList **ppcmdline,
-lList **alpp 
-) {
+char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                   [[maybe_unused]] lList **alpp) {
    DENTER(TOP_LAYER);
 
-   if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
-      if(!ocs::tom::find_first<SPA_switch_val>(*ppcmdline, shortopt)) {
-         sge_add_noarg(ppcmdline, 0, shortopt, nullptr);
+   if ((!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp))) {
+      if (cmdline->find_first<SPA_switch_val>(shortopt) == nullptr) {
+         sge_add_noarg(cmdline, 0, shortopt, nullptr);
       }
       sp++;
    }
    DRETURN(sp);
 }
 
-/****
- **** parse_until_next_opt
- ****
- **** parse an option from the commandline (sp). The option 
- **** is given by shortopt and longopt (optional).
- **** Arguments are parsed until another option is reached
- **** (beginning with '-'). The parsed option is stored
- **** in ppcmdline (SPA_Type). An errormessage will be
- **** appended to the answer-list (alpp).
- **** The function returns a pointer to the next argument.
- **** If shortopt or longopt contains a '*' as its last (!)
- **** character, then all options matching the first given
- **** charcters are valid (e.g. 'OAport' matches 'OA*')
- ****/
+/**
+ * @brief parse_noopt() for an untyped caller
+ *
+ * @param sp the current argument
+ * @param shortopt the short form of the switch
+ * @param longopt the long form, or nullptr
+ * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
+ * @param[out] alpp receives the error message
+ * @return as parse_noopt()
+ */
+char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp) {
+   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
+      return parse_noopt(sp, shortopt, longopt, cmdline, alpp);
+   });
+}
+
 /**
  * @brief Parse a switch and everything up to the next switch as its argument
  *
- * Used where an option takes a list, e.g. `-l a=1,b=2`.
+ * Used where an option takes a list, e.g. `-l a=1,b=2`. Arguments are parsed
+ * until another option is reached (beginning with '-'). If shortopt or longopt
+ * ends in a '*', every option starting with the characters before it matches
+ * (e.g. 'OAport' matches 'OA*').
  *
- * @param[in,out] sp the current argument; the parser advances past what it consumed
+ * @param sp the current argument
  * @param shortopt the short form of the switch
  * @param longopt the long form, or nullptr
- * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
+ * @param[in,out] cmdline receives the parsed option with its arguments as an `ST_Type` list, created when it is empty
  * @param[out] alpp receives the error message
  * @return a pointer to the next argument
  */
-char **parse_until_next_opt(
-char **sp,
-const char *shortopt,
-const char *longopt,
-lList **ppcmdline,
-lList **alpp 
-) {
+char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt,
+                            ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp) {
    DENTER(TOP_LAYER);
 
-char **rp;
-stringT str;
-lListElem *ep; /* SPA_Type */
-   rp = sp;
-   if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) 
-        || ((shortopt[strlen(shortopt)-1] == '*')
-           && !strncmp(shortopt, *sp, strlen(shortopt)-1)) 
-        || (longopt && (longopt[strlen(longopt)-1] == '*')
-           && !strncmp(longopt, *sp, strlen(longopt)-1)) ) {
-      if(!*(++rp) || (**rp == '-') || (!**rp)) {
+   char **rp = sp;
+   if ((!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp))
+       || ((shortopt[strlen(shortopt) - 1] == '*')
+           && !strncmp(shortopt, *sp, strlen(shortopt) - 1))
+       || (longopt && (longopt[strlen(longopt) - 1] == '*')
+           && !strncmp(longopt, *sp, strlen(longopt) - 1))) {
+      if (!*(++rp) || (**rp == '-') || (!**rp)) {
+         stringT str;
          snprintf(str, sizeof(str), MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *sp);
          answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(rp);
       }
-      ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, nullptr);
+      const auto ep = sge_add_arg(cmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
-         lAddSubStr(ep, ST_name, *rp, SPA_argval_lListT, ST_Type);
+         ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), *rp);
          rp++;
       }
    }
    DRETURN(rp);
 }
 
-
-/****
- **** parse_until_next_opt2
- ****
- **** parse an option from the commandline (sp). The option 
- **** is given by shortopt and longopt (optional).
- **** Arguments are parsed until another option is reached
- **** (beginning with '-'). The parsed option is stored
- **** in ppcmdline (SPA_Type). An errormessage will be
- **** appended to the answer-list (alpp).
- **** The function returns a pointer to the next argument.
- ****/
 /**
- * @brief Parse a switch and everything up to the next switch, requiring an argument
+ * @brief parse_until_next_opt() for an untyped caller
  *
- * Like #parse_until_next_opt, but an empty argument is an error rather than
- * an accepted switch without a value.
- *
- * @param[in,out] sp the current argument; the parser advances past what it consumed
+ * @param sp the current argument
  * @param shortopt the short form of the switch
  * @param longopt the long form, or nullptr
- * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
+ * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
  * @param[out] alpp receives the error message
+ * @return as parse_until_next_opt()
+ */
+char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp) {
+   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
+      return parse_until_next_opt(sp, shortopt, longopt, cmdline, alpp);
+   });
+}
+
+/**
+ * @brief Parse a switch and everything up to the next switch
+ *
+ * Like #parse_until_next_opt, but without a check for a missing argument and
+ * without the '*' patterns.
+ *
+ * @param sp the current argument
+ * @param shortopt the short form of the switch
+ * @param longopt the long form, or nullptr
+ * @param[in,out] cmdline receives the parsed option with its arguments as an `ST_Type` list, created when it is empty
+ * @param[out] alpp not used
  * @return a pointer to the next argument
  */
-char **parse_until_next_opt2(
-char **sp,
-const char *shortopt,
-const char *longopt,
-lList **ppcmdline,
-lList **alpp 
-) {
+char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt,
+                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, [[maybe_unused]] lList **alpp) {
    DENTER(TOP_LAYER);
 
-   char **rp;
-   lListElem *ep; /* SPA_Type */
-
-   rp = sp;
-   if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
+   char **rp = sp;
+   if ((!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp))) {
       ++rp;
-      
-      ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, nullptr);
+
+      const auto ep = sge_add_arg(cmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
-         lAddSubStr(ep, ST_name, *rp, SPA_argval_lListT, ST_Type);
+         ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), *rp);
          rp++;
       }
    }
    DRETURN(rp);
 }
 
-/****
- **** parse_param
- ****
- **** parse a list of parameters from the commandline (sp).
- **** Parameters are parsed until the next option ("-...")
- **** is reached. The parsed parameters are stored in
- **** ppcmdline (SPA_Type).
- **** The function returns a pointer to the next argument.
- ****/
 /**
- * @brief Parse a switch whose argument is a free form parameter string
+ * @brief parse_until_next_opt2() for an untyped caller
  *
- * @param[in,out] sp the current argument; the parser advances past what it consumed
- * @param opt the switch to match
- * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
- * @param[out] alpp receives the error message
+ * @param sp the current argument
+ * @param shortopt the short form of the switch
+ * @param longopt the long form, or nullptr
+ * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
+ * @param[out] alpp not used
+ * @return as parse_until_next_opt2()
+ */
+char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp) {
+   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
+      return parse_until_next_opt2(sp, shortopt, longopt, cmdline, alpp);
+   });
+}
+
+/**
+ * @brief Parse the parameters up to the next switch as the argument of a pseudo switch
+ *
+ * Parameters are parsed until the next option ("-...") is reached.
+ *
+ * @param sp the current argument
+ * @param opt the name the parameters are recorded under
+ * @param[in,out] cmdline receives the parameters as an `ST_Type` list, created when it is empty
+ * @param[out] alpp not used
  * @return a pointer to the next argument
  */
-char **parse_param(
-char **sp,
-const char *opt,
-lList **ppcmdline,
-lList **alpp 
-) {
+char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                   [[maybe_unused]] lList **alpp) {
    DENTER(TOP_LAYER);
 
-char **rp;
-lListElem *ep = nullptr; /* SPA_Type */
-
-   rp = sp;
-   while( (*rp) && (**rp != '-') ) {
+   char **rp = sp;
+   ocs::tom::Element<ocs::tom::SPA> ep;
+   while ((*rp) && (**rp != '-')) {
       /* string under rp is parameter, no option! */
-      if(!ep)
-         ep = sge_add_arg(ppcmdline, 0, lListT, opt, nullptr);
+      if (ep == nullptr) {
+         ep = sge_add_arg(cmdline, 0, lListT, opt, nullptr);
+      }
       ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), *rp);
       rp++;
    }
    DRETURN(rp);
 }
 
-/****
- **** parse_flag
- ****
- **** look in the ppcmdline-list for a flag given
- **** by 'opt'. If it is found, true is returned and
- **** flag is set to 1. If it is not found, false
- **** is returned and flag will be untouched.
- ****
- **** If the switch occures more than one time, every
- **** occurence is removed from the ppcmdline-list.
- ****
- **** The answerlist ppal is not used yet.
- ****/
+/**
+ * @brief parse_param() for an untyped caller
+ *
+ * @param sp the current argument
+ * @param opt the name the parameters are recorded under
+ * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
+ * @param[out] alpp not used
+ * @return as parse_param()
+ */
+char **parse_param(char **sp, const char *opt, lList **ppcmdline, lList **alpp) {
+   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
+      return parse_param(sp, opt, cmdline, alpp);
+   });
+}
+
 /**
  * @brief Take a flag switch out of the parsed option list
  *
- * Every occurrence of the switch is removed from `ppcmdline`, so the list left
- * over afterwards is the set of options nobody consumed.
+ * Every occurrence of the switch is removed from "cmdline", so the list left
+ * over afterwards is the set of options nobody consumed. The switch may end
+ * in '*' to match every switch starting with the characters before it.
  *
- * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
  * @param[out] ppal not used yet
- * @param[out] pflag set to 1 when the switch was present
+ * @param[out] pflag set to 1 when the switch was present, untouched otherwise
  * @return true when the switch was present
  */
-bool parse_flag(
-lList **ppcmdline,
-const char *opt,
-lList **ppal,
-uint32_t *pflag
-) {
+bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
+                uint32_t *pflag) {
    DENTER(BASIS_LAYER);
 
-lListElem *ep;
-char* actual_opt;
-
-   if((ep = ocs::tom::find_first_like_rw<SPA_switch_val>(*ppcmdline, opt))) {
-      actual_opt = sge_strdup(nullptr, ocs::tom::get<SPA_switch_val>(ep));
-      while(ep) {
+   auto ep = cmdline.find_first_like<SPA_switch_val>(opt);
+   if (ep != nullptr) {
+      char *actual_opt = sge_strdup(nullptr, ocs::tom::get<SPA_switch_val>(ep));
+      while (ep != nullptr) {
          /* remove _all_ flags of same type */
-         lRemoveElem(*ppcmdline, &ep);
-         ep = ocs::tom::find_first_like_rw<SPA_switch_val>(*ppcmdline, actual_opt);
+         cmdline.erase(ep);
+         ep = cmdline.find_first_like<SPA_switch_val>(actual_opt);
       }
       sge_free(&actual_opt);
       *pflag = 1;
       DRETURN(true);
-   } else {
-      DRETURN(false);
    }
+   DRETURN(false);
 }
 
-/****
- **** parse_multi_stringlist
- ****
- **** looks in the ppcmdline-list for a option given
- **** by 'opt'. If it is found, true is returned,
- **** otherwise false.
- **** Arguments after the option switch are parsed
- **** into the ppdestlist-list (given field and type).
- **** There can be multiple occurences of this switch.
- **** The arguments are collected. 
- **** The arguments can be eiter comma-separated. 
- ****/ 
+/**
+ * @brief parse_flag() for an untyped caller
+ *
+ * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked
+ * @param opt the switch to look for
+ * @param[out] ppal not used yet
+ * @param[out] pflag set to 1 when the switch was present
+ * @return as parse_flag()
+ */
+bool parse_flag(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *pflag) {
+   return parse_flag(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, ppal, pflag);
+}
+
 /**
  * @brief Take a switch and its list argument out of the parsed option list
  *
  * The switch may occur several times and each argument may itself be a comma
- * separated list; everything is collected into one destination list.
+ * separated list; everything is collected into one destination list. The
+ * arguments of the switch are an `ST_Type` list, as parse_until_next_opt()
+ * records them.
  *
- * @param[in,out] ppcmdline the parsed option list to consume from
+ * @tparam F the string field the collected names go into
+ * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
- * @param[out] ppal receives error messages
- * @param[out] ppdestlist receives the collected values
- * @param type the descriptor of the elements to create
- * @param field the attribute the value is stored in
+ * @param[out] ppal not used
+ * @param[in,out] dest receives the collected names, created when it is empty
  * @return true when the switch was present
  */
-bool parse_multi_stringlist(
-lList **ppcmdline,
-const char *opt,
-lList **ppal,
-lList **ppdestlist,
-const lDescr *type,
-int field 
-) {
+template <auto F>
+bool parse_multi_stringlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                            [[maybe_unused]] lList **ppal,
+                            ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> &dest) {
    DENTER(TOP_LAYER);
-   lListElem *ep;
 
-
-   if((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt))) {
-      while(ep) {
+   auto ep = cmdline.find_first<SPA_switch_val>(opt);
+   if (ep != nullptr) {
+      while (ep != nullptr) {
          /* collect all opts of same type, this is what 'multi' means in funcname!  */
-         for_each_ep_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
-            sge_parse_string_list(ppdestlist, ocs::tom::get<ST_name>(sep), field, type);
+         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ocs::tom::get<SPA_argval_lListT>(ep))) {
+            sge_parse_string_list<F>(dest, ocs::tom::get<ST_name>(sep));
          }
-         lRemoveElem(*ppcmdline, &ep);
-         ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
+         cmdline.erase(ep);
+         ep = cmdline.find_first<SPA_switch_val>(opt);
       }
       DRETURN(true);
-   } else {
-      DRETURN(false);
    }
+   DRETURN(false);
 }
+
+/// parse_multi_stringlist() into a string list
+template bool parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal,
+                                              ocs::tom::ListPtr<ocs::tom::ST> &dest);
+/// parse_multi_stringlist() into a queue reference list
+template bool parse_multi_stringlist<QR_name>(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal,
+                                              ocs::tom::ListPtr<ocs::tom::QR> &dest);
 
 /**
  * @brief Take a switch and its job/task id list out of the parsed option list
  *
  * An argument may name a whole job or single array tasks of it
- * (`jobid.taskrange`), and the switch may occur several times.
+ * (`jobid.taskrange`), and the switch may occur several times. A `-t` switch
+ * right after the switch gives the task range of its last argument.
  *
- * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
  * @param[out] alpp receives error messages
- * @param[out] ppdestlist receives the collected ids
+ * @param[in,out] ppdestlist receives the collected ids (`ID_Type`), created when it is nullptr
  * @param include_names true to accept a job name where an id is expected
  * @param action what the caller intends to do with the jobs, recorded per entry
- * @return true when the switch was present
+ * @return true when the switch was present and every argument was understood
  */
-bool parse_multi_jobtaskslist(
-lList **ppcmdline,
-const char *opt,
-lList **alpp,
-lList **ppdestlist,
-bool include_names,
-uint32_t action
-) {
+bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **alpp,
+                              lList **ppdestlist, const bool include_names, const uint32_t action) {
    DENTER(TOP_LAYER);
-   lListElem *ep;
+   ocs::tom::Element<ocs::tom::SPA> ep;
    bool ret = false;
    bool is_run_once = false;
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt))) {
-      lListElem *arrayDef = lNextRW(ep);
-      const lList *arrayDefList = nullptr;
+   while ((ep = cmdline.find_first<SPA_switch_val>(opt)) != nullptr) {
+      const auto array_def = ep.next();
+      ocs::tom::ConstList<ocs::tom::RN> array_def_list;
 
       ret = true;
       is_run_once = true;
-      if ((arrayDef != nullptr) && ocs::tom::get<SPA_number>(arrayDef) ==  t_OPT) {
-         arrayDefList = ocs::tom::get<SPA_argval_lListT>(arrayDef);
+      if (array_def != nullptr && ocs::tom::get<SPA_number>(array_def) == t_OPT) {
+         array_def_list = ocs::tom::ConstList<ocs::tom::RN>(ocs::tom::get<SPA_argval_lListT>(array_def));
       }
-      for_each_rw_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
-         const lList *tempArrayList = nullptr;
-     
-         if ((arrayDefList != nullptr) && (lNext(sep) == nullptr)) {
-            tempArrayList = arrayDefList;
-         }   
+      for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ocs::tom::get<SPA_argval_lListT>(ep))) {
+         ocs::tom::ConstList<ocs::tom::RN> temp_array_list;
+
+         if (array_def_list && sep.next() == nullptr) {
+            temp_array_list = array_def_list;
+         }
          const auto [parse_ret, idp] = sge_parse_jobtasks(ppdestlist, ocs::tom::get<ST_name>(sep), nullptr,
-                                                          include_names,
-                                                          ocs::tom::ConstList<ocs::tom::RN>(tempArrayList));
+                                                          include_names, temp_array_list);
          if (parse_ret == -1) {
             answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                     MSG_JOB_XISINVALIDJOBTASKID_S, ocs::tom::get<ST_name>(sep));
 
-            lRemoveElem(*ppcmdline, &ep);
+            cmdline.erase(ep);
             DRETURN(false);
          }
          ocs::tom::set<ID_action>(idp, action);
       }
-      if (arrayDefList != nullptr) {
-         lRemoveElem(*ppcmdline, &arrayDef);
-         arrayDef = nullptr;
-         arrayDefList = nullptr;
+      if (array_def_list) {
+         cmdline.erase(array_def);
       }
-      lRemoveElem(*ppcmdline, &ep);
+      cmdline.erase(ep);
    }
-   
-   if (is_run_once && (ep = ocs::tom::find_first_rw<SPA_number>(*ppcmdline, t_OPT )) != nullptr) {
+
+   if (is_run_once && (ep = cmdline.find_first<SPA_number>(t_OPT)) != nullptr) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
-      while ((ep = ocs::tom::find_first_rw<SPA_number>(*ppcmdline, t_OPT )) != nullptr) {
-         lRemoveElem(*ppcmdline, &ep);
-      }  
-      
+      while ((ep = cmdline.find_first<SPA_number>(t_OPT)) != nullptr) {
+         cmdline.erase(ep);
+      }
+
       DRETURN(false);
    }
-   
+
    DRETURN(ret);
+}
+
+/**
+ * @brief parse_multi_jobtaskslist() for an untyped caller
+ *
+ * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked
+ * @param opt the switch to look for
+ * @param[out] alpp receives error messages
+ * @param[in,out] ppdestlist receives the collected ids
+ * @param include_names true to accept a job name where an id is expected
+ * @param action what the caller intends to do with the jobs, recorded per entry
+ * @return as parse_multi_jobtaskslist()
+ */
+bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **alpp, lList **ppdestlist,
+                              const bool include_names, const uint32_t action) {
+   return parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, alpp, ppdestlist, include_names,
+                                   action);
 }
 
 /**
  * @brief Take a switch and its string argument out of the parsed option list
  *
- * @param[in,out] ppcmdline the parsed option list to consume from
+ * The arguments of the switch are an `ST_Type` list. If it holds more than
+ * one, only the first is taken and the switch stays for the next call.
+ *
+ * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
- * @param[out] ppal receives error messages
- * @param[out] str receives a freshly allocated copy of the argument
+ * @param[out] ppal not used
+ * @param[out] str receives a freshly allocated copy of the argument, or nullptr if there is none
  * @return 1 when the switch was present
  */
-int parse_string(
-lList **ppcmdline,
-const char *opt,
-lList **ppal,
-char **str 
-) {
+int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
+                 char **str) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep, *ep2;
-
-   if((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt))) {
-      ep2 = lFirstRW(ocs::tom::get<SPA_argval_lListT>(ep));
-      if (ep2)
+   const auto ep = cmdline.find_first<SPA_switch_val>(opt);
+   if (ep != nullptr) {
+      const auto args = ocs::tom::List<ocs::tom::ST>(ocs::tom::get<SPA_argval_lListT>(ep));
+      const auto ep2 = args.front();
+      if (ep2 != nullptr) {
          *str = sge_strdup(nullptr, ocs::tom::get<ST_name>(ep2));
-      else
-         *str = nullptr;
-      
-      if (lGetNumberOfElem(ocs::tom::get<SPA_argval_lListT>(ep)) > 1) {
-         lRemoveElem(ocs::tom::get<SPA_argval_lListT>(ep), &ep2);
       } else {
-         lRemoveElem(*ppcmdline, &ep);
+         *str = nullptr;
       }
-     
+
+      if (args.size() > 1) {
+         args.erase(ep2);
+      } else {
+         cmdline.erase(ep);
+      }
+
       DRETURN(true);
-   } else {
-      DRETURN(false);
    }
+   DRETURN(false);
 }
 
 /**
- * @brief Take a switch and its argument out of the parsed option list, without copying
+ * @brief parse_string() for an untyped caller
  *
- * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked
  * @param opt the switch to look for
- * @param[out] ppal receives error messages
- * @param[out] value receives the argument; it belongs to the option list
+ * @param[out] ppal not used
+ * @param[out] str receives a freshly allocated copy of the argument
+ * @return as parse_string()
+ */
+int parse_string(lList **ppcmdline, const char *opt, lList **ppal, char **str) {
+   return parse_string(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, ppal, str);
+}
+
+/**
+ * @brief Take a switch and its string argument out of the parsed option list
+ *
+ * @param cmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] ppal not used
+ * @param[out] value receives a freshly allocated copy of the argument
  * @return 1 when the switch was present
  */
-int parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **value) {
+int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
+                     char **value) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   lListElem *ep = nullptr;
 
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
-   if(ep != nullptr) {
+   if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
       *value = sge_strdup(nullptr, ocs::tom::get<SPA_argval_lStringT>(ep));
 
-      lRemoveElem(*ppcmdline, &ep);
+      cmdline.erase(ep);
       ret = true;
    }
    DRETURN(ret);
@@ -609,23 +664,22 @@ int parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **va
 /**
  * @brief Take a switch and its numeric argument out of the parsed option list
  *
- * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
- * @param[out] ppal receives error messages
+ * @param[out] ppal not used
  * @param[out] value receives the number
  * @return 1 when the switch was present
  */
-int parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *value) {
+int parse_uint32_t(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
+                   uint32_t *value) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   lListElem *ep = nullptr;
 
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
-   if(ep != nullptr) {
-      *value = ocs::tom::get<SPA_argval_lUlongT>(ep); 
+   if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
+      *value = ocs::tom::get<SPA_argval_lUlongT>(ep);
 
-      lRemoveElem(*ppcmdline, &ep);
+      cmdline.erase(ep);
       ret = true;
    }
    DRETURN(ret);
@@ -634,29 +688,31 @@ int parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *v
 /**
  * @brief Take a switch and its list of numbers out of the parsed option list
  *
- * @param[in,out] ppcmdline the parsed option list to consume from
+ * The arguments of the switch are an `ULNG_Type` list, as the command line
+ * parser records them for `-ar`.
+ *
+ * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
- * @param[out] ppal receives error messages
- * @param[out] value receives the numbers
- * @return 1 when the switch was present
+ * @param[out] ppal not used
+ * @return the numbers of the first occurrence of the switch, possibly an empty handle; std::nullopt when the
+ *         switch is not present
  */
-int parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value) {
+std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>>
+parse_u_longlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal) {
    DENTER(TOP_LAYER);
 
-   bool ret = false;
-   lListElem *ep = nullptr;
+   std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>> ret;
 
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
-   if(ep != nullptr) {
-      *value = nullptr;
-      ocs::tom::exchange<SPA_argval_lListT>(ep, value);
+   if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
+      lList *value = nullptr;
+      ocs::tom::exchange<SPA_argval_lListT>(ep, &value);
+      // the parser records the numbers of the switch as an ULNG_Type list, so it is taken over unchecked
+      ret = ocs::tom::ListPtr<ocs::tom::ULNG>::from_typed(value);
 
-      lRemoveElem(*ppcmdline, &ep);
-      ret = true;
+      cmdline.erase(ep);
    }
    DRETURN(ret);
 }
-
 
 /**
  * @brief Parse the `-g` grouping options of the query clients
@@ -666,11 +722,11 @@ int parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **v
  * @return the combined `GROUP_*` bit mask
  */
 uint32_t
-parse_group_options(lList *string_list, lList **answer_list) {
+parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, lList **answer_list) {
    DENTER(TOP_LAYER);
    uint32_t group_opt = GROUP_DEFAULT;
 
-   for_each_ep_lv(str_elem, string_list) {
+   for (const auto str_elem : string_list) {
       const char *letter_string = ocs::tom::get<ST_name>(str_elem);
       size_t i, len;
       len = strlen(letter_string);

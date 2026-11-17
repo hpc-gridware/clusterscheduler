@@ -2736,7 +2736,7 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
          case sgeE_SCHED_CONF:
             /* the only payload not built by the copy below, so a
              * CULL_NO_TRANSFER field on SC_Type would need handling here */
-            copy_lp = sconf_get_config_list();
+            copy_lp = sconf_get_config_list().release();
             break;
          case sgeE_USER_LIST:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_USER);

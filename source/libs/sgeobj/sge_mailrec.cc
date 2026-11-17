@@ -55,61 +55,42 @@
 #include "msg_common.h"
 
 /**
- * @brief Parse a list of mail recipients
+ * @brief Parse a list of mail recipients into a list
  *
- * Parse a list of mail recipients.
- * user[`@host`][,user[`@host`],...]
+ * Parse a list of mail recipients: user[`@host`][,user[`@host`],...].
+ * Recipients the list already holds are skipped.
  *
- * @param lpp MR_Type list
+ * @param[in,out] list MR_Type list the recipients are appended to; created if empty, reset on the errors 2 and 3
  * @param mail_str stringlist of mail recipients
  *
  * @return error state 0 - success >0 - error
  *
- * @note MT-NOTE: mailrec_parse() is MT safe
- *
- * @see #mailrec_unparse
+ * @note MT-NOTE: mailrec_parse_into() is MT safe
  */
-int mailrec_parse(lList **lpp, const char *mail_str) {
+static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char *mail_str) {
    DENTER(TOP_LAYER);
 
-   const char *user;
-   const char *host;
-   char **str_str;
-   char **pstr;
-   ocs::tom::ConstElement<ocs::tom::MR> tmp;
-   char *mail;
-   struct saved_vars_s *context;
-
-   if (!lpp) {
-      DRETURN(1);
-   }
-
-   mail = sge_strdup(nullptr, mail_str);
+   char *mail = sge_strdup(nullptr, mail_str);
    if (!mail) {
-      *lpp = nullptr;
+      list.reset();
       DRETURN(2);
    }
-   str_str = string_list(mail, ",", nullptr);
+   char **str_str = string_list(mail, ",", nullptr);
    if (!str_str || !*str_str) {
-      *lpp = nullptr;
+      list.reset();
       sge_free(&mail);
       DRETURN(3);
    }
 
-   if (!*lpp) {
-      *lpp = lCreateList("mail_list", MR_Type);
-      if (!*lpp) {
-         sge_free(&mail);
-         sge_free(&str_str);
-         DRETURN(4);
-      }
+   if (!list) {
+      list = ocs::tom::ListPtr<ocs::tom::MR>::create("mail_list");
    }
 
-   for (pstr = str_str; *pstr; pstr++) {
-      context = nullptr;
-      user = sge_strtok_r(*pstr, "@", &context);
-      host = sge_strtok_r(nullptr, "@", &context);
-      if ((tmp=ocs::tom::find_first<MR_user>(*lpp, user))) {
+   for (char **pstr = str_str; *pstr; pstr++) {
+      struct saved_vars_s *context = nullptr;
+      const char *user = sge_strtok_r(*pstr, "@", &context);
+      const char *host = sge_strtok_r(nullptr, "@", &context);
+      if (const auto tmp = list->find_first<MR_user>(user)) {
          if (!sge_strnullcmp(host, ocs::tom::get<MR_host>(tmp))) {
             /* got this mail adress twice */
             sge_free_saved_vars(context);
@@ -122,7 +103,7 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
       ocs::tom::set<MR_user>(ep, user);
       if (host) 
          ocs::tom::set<MR_host>(ep, host);
-      lAppendElem(*lpp, std::move(ep));
+      list->push_back(std::move(ep));
 
       sge_free_saved_vars(context);
    }
@@ -130,6 +111,45 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
    sge_free(&mail);
    sge_free(&str_str);
    DRETURN(0);
+}
+
+/**
+ * @brief Parse a list of mail recipients
+ *
+ * Parse a list of mail recipients.
+ * user[`@host`][,user[`@host`],...]
+ *
+ * @param mail_str stringlist of mail recipients
+ *
+ * @return error state 0 - success >0 - error, and the MR_Type list (empty handle on an error)
+ *
+ * @note MT-NOTE: mailrec_parse() is MT safe
+ *
+ * @see #mailrec_unparse
+ */
+std::pair<int, ocs::tom::ListPtr<ocs::tom::MR>> mailrec_parse(const char *mail_str) {
+   DENTER(TOP_LAYER);
+   ocs::tom::ListPtr<ocs::tom::MR> list;
+   const int ret = mailrec_parse_into(list, mail_str);
+   DRETURN(std::make_pair(ret, std::move(list)));
+}
+
+/**
+ * @brief mailrec_parse() for an untyped caller
+ *
+ * @param lpp MR_Type list the recipients are appended to, created if nullptr; checked
+ * @param mail_str stringlist of mail recipients
+ *
+ * @return error state 0 - success >0 - error; 1 if @p lpp is nullptr
+ */
+int mailrec_parse(lList **lpp, const char *mail_str) {
+   if (!lpp) {
+      return 1;
+   }
+   auto list = ocs::tom::ListPtr<ocs::tom::MR>::from_typed(ocs::tom::List<ocs::tom::MR>(*lpp).raw());
+   const int ret = mailrec_parse_into(list, mail_str);
+   *lpp = list.release();
+   return ret;
 }
 
 /**
@@ -145,31 +165,32 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
  *
  * @see #mailrec_parse
  */
-int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len) {
+int mailrec_unparse(const ocs::tom::ConstList<ocs::tom::MR> head, char *mail_str, const unsigned int mail_str_len) {
+   DENTER(TOP_LAYER);
    int len=0;
    int comma_needed = 0; /* whether we need to insert a comma */
    char tmpstr[1000];    /* need 1000 for brain damaged mail addresse(e)s */
-   const char *h;
-   const char *u;
 
    if (!head) {
       strcpy(mail_str, MSG_NONE);
-      return 0;
+      DRETURN(0);
    }
 
    *mail_str = '\0';
 
-   for_each_ep_lv(elem,head) {
-      if (!(u = ocs::tom::get<MR_user>(elem)))
+   for (const auto elem : head) {
+      const char *u = ocs::tom::get<MR_user>(elem);
+      if (!u)
          u = MSG_SMALLNULL;
 
-      if (!(h = ocs::tom::get<MR_host>(elem)))
+      const char *h = ocs::tom::get<MR_host>(elem);
+      if (!h)
          snprintf(tmpstr, sizeof(tmpstr), "%s", u);
       else
          snprintf(tmpstr, sizeof(tmpstr), "%s@%s", u, h);
 
       if (strlen(tmpstr)+len+1+comma_needed > mail_str_len)
-         return 1;              /* forgot the rest */
+         DRETURN(1);              /* forgot the rest */
 
       if (comma_needed)
          strcat(mail_str, ",");
@@ -178,7 +199,7 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
 
       strcat(mail_str, tmpstr);
    }
-   return 0;
+   DRETURN(0);
 }
 
 /**

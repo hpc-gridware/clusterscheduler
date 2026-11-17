@@ -63,6 +63,24 @@
  * @param[out] answer_list receives the reason when it could not be created
  * @return the binding sub-object, or nullptr on error
  */
+ocs::tom::Element<ocs::tom::BN>
+ocs::AdvanceReservation::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::AR> ar, lList **answer_list) {
+   DENTER(TOP_LAYER);
+   // AR_binding holds a BN_Type object
+   DRETURN(ocs::tom::Element<ocs::tom::BN>::from_typed(
+      Binding::binding_get_or_create_elem(ar, answer_list, AR_binding)));
+}
+
+/**
+ * @brief binding_get_or_create_elem() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @param[out] answer_list receives the reason when it could not be created
+ * @return as binding_get_or_create_elem()
+ */
 lListElem *
 ocs::AdvanceReservation::binding_get_or_create_elem(lListElem *ar, lList **answer_list) {
    return Binding::binding_get_or_create_elem(ar, answer_list, AR_binding);
@@ -73,6 +91,21 @@ ocs::AdvanceReservation::binding_get_or_create_elem(lListElem *ar, lList **answe
  *
  * @param ar the advance reservation carrying the binding request
  * @return true when the object carries a binding request
+ */
+bool
+ocs::AdvanceReservation::binding_was_requested(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_was_requested(ar, AR_binding));
+}
+
+/**
+ * @brief binding_was_requested() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_was_requested()
  */
 bool
 ocs::AdvanceReservation::binding_was_requested(const lListElem *ar) {
@@ -86,6 +119,21 @@ ocs::AdvanceReservation::binding_was_requested(const lListElem *ar) {
  * @return the requested @ref ocs::BindingType::Type
  */
 ocs::BindingType::Type
+ocs::AdvanceReservation::binding_get_type(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_type(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_type() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_type()
+ */
+ocs::BindingType::Type
 ocs::AdvanceReservation::binding_get_type(const lListElem *ar) {
    return Binding::binding_get_type(ar, AR_binding);
 }
@@ -95,6 +143,21 @@ ocs::AdvanceReservation::binding_get_type(const lListElem *ar) {
  *
  * @param ar the advance reservation carrying the binding request
  * @return the requested @ref ocs::BindingUnit::Unit
+ */
+ocs::BindingUnit::Unit
+ocs::AdvanceReservation::binding_get_unit(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_unit(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_unit() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_unit()
  */
 ocs::BindingUnit::Unit
 ocs::AdvanceReservation::binding_get_unit(const lListElem *ar) {
@@ -108,6 +171,21 @@ ocs::AdvanceReservation::binding_get_unit(const lListElem *ar) {
  * @return the sort specification, empty when none was given
  */
 std::string
+ocs::AdvanceReservation::binding_get_sort(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_sort(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_sort() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_sort()
+ */
+std::string
 ocs::AdvanceReservation::binding_get_sort(const lListElem *ar) {
    return Binding::binding_get_sort(ar, AR_binding);
 }
@@ -117,6 +195,21 @@ ocs::AdvanceReservation::binding_get_sort(const lListElem *ar) {
  *
  * @param ar the advance reservation carrying the binding request
  * @return the requested @ref ocs::BindingStart::Start
+ */
+ocs::BindingStart::Start
+ocs::AdvanceReservation::binding_get_start(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_start(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_start() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_start()
  */
 ocs::BindingStart::Start
 ocs::AdvanceReservation::binding_get_start(const lListElem *ar) {
@@ -130,6 +223,21 @@ ocs::AdvanceReservation::binding_get_start(const lListElem *ar) {
  * @return the requested @ref ocs::BindingStop::Stop
  */
 ocs::BindingStop::Stop
+ocs::AdvanceReservation::binding_get_stop(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_end(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_stop() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_stop()
+ */
+ocs::BindingStop::Stop
 ocs::AdvanceReservation::binding_get_stop(const lListElem *ar) {
    return Binding::binding_get_end(ar, AR_binding);
 }
@@ -139,6 +247,21 @@ ocs::AdvanceReservation::binding_get_stop(const lListElem *ar) {
  *
  * @param ar the advance reservation carrying the binding request
  * @return the requested @ref ocs::BindingStrategy::Strategy
+ */
+ocs::BindingStrategy::Strategy
+ocs::AdvanceReservation::binding_get_strategy(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_strategy(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_strategy() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_strategy()
  */
 ocs::BindingStrategy::Strategy
 ocs::AdvanceReservation::binding_get_strategy(const lListElem *ar) {
@@ -152,6 +275,21 @@ ocs::AdvanceReservation::binding_get_strategy(const lListElem *ar) {
  * @return the requested @ref ocs::BindingInstance::Instance
  */
 ocs::BindingInstance::Instance
+ocs::AdvanceReservation::binding_get_instance(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_instance(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_instance() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_instance()
+ */
+ocs::BindingInstance::Instance
 ocs::AdvanceReservation::binding_get_instance(const lListElem *ar) {
    return Binding::binding_get_instance(ar, AR_binding);
 }
@@ -161,6 +299,21 @@ ocs::AdvanceReservation::binding_get_instance(const lListElem *ar) {
  *
  * @param ar the advance reservation carrying the binding request
  * @return the filter expression, empty when none was given
+ */
+std::string
+ocs::AdvanceReservation::binding_get_filter(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_filter(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_filter() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_filter()
  */
 std::string
 ocs::AdvanceReservation::binding_get_filter(const lListElem *ar) {
@@ -174,6 +327,21 @@ ocs::AdvanceReservation::binding_get_filter(const lListElem *ar) {
  * @return the requested amount
  */
 uint32_t
+ocs::AdvanceReservation::binding_get_amount(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
+   DENTER(TOP_LAYER);
+   DRETURN(Binding::binding_get_amount(ar, AR_binding));
+}
+
+/**
+ * @brief binding_get_amount() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
+ * @return as binding_get_amount()
+ */
+uint32_t
 ocs::AdvanceReservation::binding_get_amount(const lListElem *ar) {
    return Binding::binding_get_amount(ar, AR_binding);
 }
@@ -182,6 +350,22 @@ ocs::AdvanceReservation::binding_get_amount(const lListElem *ar) {
  * @brief Fill in the binding fields the request left out
  *
  * @param ar the advance reservation whose binding request is completed
+ * @param[out] answer_list receives the reason on failure
+ */
+void ocs::AdvanceReservation::binding_set_missing_defaults(const ocs::tom::Element<ocs::tom::AR> ar,
+                                                           lList **answer_list) {
+   DENTER(TOP_LAYER);
+   Binding::binding_set_missing_defaults(ar, answer_list, AR_binding);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief binding_set_missing_defaults() for an untyped caller
+ *
+ * The binding is completed through the descriptor-generic ocs::Binding, so the
+ * reservation is passed on unchecked, as before.
+ *
+ * @param ar the advance reservation (AR_Type)
  * @param[out] answer_list receives the reason on failure
  */
 void ocs::AdvanceReservation::binding_set_missing_defaults(lListElem *ar, lList **answer_list) {

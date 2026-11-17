@@ -41,13 +41,17 @@
 
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
-
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
 
 namespace ocs {
    /// Rendering a binding request back into the textual form users typed it in
    class BindingIo {
    public:
-      static void
-      binding_print_to_string(const lListElem *this_list, std::string &binding_string, bool as_switches = false);
+      static void binding_print_to_string(ocs::tom::ConstElement<ocs::tom::BN> binding_elem,
+                                          std::string &binding_string, bool as_switches = false);
+      OCS_TRANSITIONAL static void binding_print_to_string(const lListElem *binding_elem, std::string &binding_string,
+                                                           bool as_switches = false);
    };
 }

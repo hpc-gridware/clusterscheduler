@@ -160,8 +160,8 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
    ocs::Usage::calculate_default_decay_constant(sconf_get_halftime());
 
    const uint64_t curr_time = sge_get_gmt64();
-   lList *decay_list = ocs::Usage::get_decay_list();
-   lList *usage_weight_list = sconf_get_usage_weight_list();
+   const auto decay_list = ocs::Usage::get_decay_list();
+   const auto usage_weight_list = sconf_get_usage_weight_list();
 
    /* Seed "finished_jobs"=1 onto the job's scaled_usage_list before we
     * sum it into UU_/PR_/UPP_. The pending-priority calculation in
@@ -194,9 +194,8 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * the stamp but NOT update the stored seqno - the TET tick owns the
     * seqno namespace, we just want a catch-up decay tick here. */
    ocs::Usage::decay_and_sum_usage(jep, jatep, nullptr, user, project,
-                                   decay_list, usage_weight_list,
+                                   decay_list.get(), usage_weight_list.get(),
                                    static_cast<u_long>(-1), curr_time);
-   lFreeList(&usage_weight_list);
 
    const uint32_t job_number = ocs::tom::get<JB_job_number>(jep);
 
@@ -245,7 +244,6 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * Keeping this function a pure "book the usage" routine keeps its
     * pre-/post-conditions reviewable in isolation. */
 
-   lFreeList(&decay_list);
    return 0;
 }
 

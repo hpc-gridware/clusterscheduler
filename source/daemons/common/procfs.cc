@@ -526,8 +526,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
 #if defined(LINUX)
       // check only processes that belong to a job
-      // the process table holds PRO_Type elements, so the entry is checked against its fixed type
-      if ((pr = ocs::tom::Element<ocs::tom::PRO>(get_pr(atoi(pidname))))) {
+      if ((pr = get_pr(atoi(pidname)))) {
          /* set process as still running */
          ocs::tom::set<PRO_run>(pr, true);
          if (ocs::tom::get<PRO_rel>(pr) != true) {
@@ -618,9 +617,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
             auto new_pr = ocs::tom::ElementPtr<ocs::tom::PRO>::create();
             ocs::tom::set<PRO_pid>(new_pr, pid);
             ocs::tom::set<PRO_rel>(new_pr, false);
-            pr = new_pr.get();
             // the process table takes the element over
-            append_pr(new_pr.release());
+            pr = append_pr(std::move(new_pr));
          }
 
          ocs::tom::set<PRO_utime>(pr, utime);

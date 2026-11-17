@@ -396,7 +396,8 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                         if (!ocs::tom::get<PET_do_contact>(pe_task)) {
                            auto dummy_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
 
-                           job_report_init_from_job_with_usage(*dummy_jr, job, ja_task, pe_task, now);
+                           job_report_init_from_job_with_usage(*dummy_jr, ocs::tom::ConstElement<ocs::tom::JB>(job),
+                                                               ocs::tom::Element<ocs::tom::JAT>(ja_task), pe_task, now);
                            ocs::ReportingFileWriter::create_acct_records(nullptr, *dummy_jr, job, ja_task, false);
                         }
                      }
@@ -406,7 +407,8 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                    * Accounting for the job itself
                    */
                   auto dummy_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
-                  job_report_init_from_job_with_usage(*dummy_jr, job, ja_task, nullptr, now);
+                  job_report_init_from_job_with_usage(*dummy_jr, ocs::tom::ConstElement<ocs::tom::JB>(job),
+                                                      ocs::tom::Element<ocs::tom::JAT>(ja_task), nullptr, now);
                   ocs::ReportingFileWriter::create_acct_records(nullptr, *dummy_jr, job, ja_task, false);
                   dummy_jr.reset();
                   ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD,

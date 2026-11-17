@@ -41,6 +41,13 @@
 
 #include "cull/cull.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+
 #include "sgeobj/cull/sge_report_REP_L.h"
 #include "sgeobj/cull/sge_report_JR_L.h"
 #include "sgeobj/cull/sge_report_LIC_L.h"
@@ -122,10 +129,11 @@
  *          does not link. There are no callers.
  */
 void job_report_print_usage(const lListElem *jr, FILE *fp);
-void job_report_init_from_job(lListElem *jr, const lListElem *jep, 
-                              const lListElem *jatep, const lListElem *petep);
-void job_report_init_from_job_with_usage(lListElem *job_report,
-                                         const lListElem *job,
-                                         lListElem *ja_task,
-                                         lListElem *pe_task,
+void job_report_init_from_job(ocs::tom::Element<ocs::tom::JR> job_report, ocs::tom::ConstElement<ocs::tom::JB> job,
+                              ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                              ocs::tom::ConstElement<ocs::tom::PET> pe_task);
+void job_report_init_from_job_with_usage(ocs::tom::Element<ocs::tom::JR> job_report,
+                                         ocs::tom::ConstElement<ocs::tom::JB> job,
+                                         ocs::tom::Element<ocs::tom::JAT> ja_task,
+                                         ocs::tom::Element<ocs::tom::PET> pe_task,
                                          uint64_t time_stamp);

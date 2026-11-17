@@ -39,7 +39,8 @@
  * `cqueue_attribute_array`; qmaster calls the one belonging to an attribute
  * before it accepts a changed cluster queue. They all share a signature so the
  * table can hold them, which means several of them ignore the `master_list`
- * argument.
+ * argument. The entry to verify and the master list are of a type that
+ * differs per attribute, so the table passes them untyped.
  *
  * @see sge_cqueue_verify.h
  */
@@ -74,6 +75,7 @@
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
@@ -94,14 +96,13 @@
  * @param master_calendar_list the defined calendars (CAL_Type)
  * @return true when the value is acceptable
  */
-bool
-cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
-                       const lList *master_calendar_list) {
+bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                            lListElem *attr_elem, const lList *master_calendar_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *name = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (name != nullptr && strcasecmp("none", name)) {
@@ -116,7 +117,6 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that every checkpointing environment a queue refers to exists
  *
@@ -129,12 +129,13 @@ bool
  * @param master_ckpt_list the defined checkpointing environments
  * @return true when the value is acceptable
  */
-cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_ckpt_list) {
+bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                             lListElem *attr_elem, const lList *master_ckpt_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       ocs::tom::ConstList<ocs::tom::ST> ckpt_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (ckpt_list != nullptr) {
@@ -158,13 +159,12 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
  * @param master_centry_list the defined complex entries
  * @return true when the value is acceptable
  */
-bool
-cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
-                                     const lList *master_centry_list) {
+bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                                          lListElem *attr_elem, const lList *master_centry_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    // early exit if there is nothing to do
-   if (cqueue == nullptr || attr_elem == nullptr) {
+   if (!cqueue || attr_elem == nullptr) {
       DRETURN(true);
    }
 
@@ -186,7 +186,6 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
    DRETURN(true);
 }
 
-bool
 /**
  * @brief Verify that the initial state is one of the accepted words
  *
@@ -199,12 +198,13 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                                 lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *names[] = {"default", "enabled", "disabled", nullptr};
       const char *name = ocs::tom::get<ASTR_value>(attr_elem);
       bool found = false;
@@ -226,7 +226,6 @@ cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *a
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that every parallel environment a queue refers to exists
  *
@@ -239,12 +238,13 @@ bool
  * @param master_pe_list the defined parallel environments
  * @return true when the value is acceptable
  */
-cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_pe_list) {
+bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                           lListElem *attr_elem, const lList *master_pe_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       ocs::tom::ConstList<ocs::tom::ST> pe_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (pe_list != nullptr) {
@@ -256,7 +256,6 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that the priority is within the range a nice value allows
  *
@@ -269,12 +268,13 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_priority(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                            lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *priority_string = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (priority_string != nullptr) {
@@ -292,7 +292,6 @@ cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_e
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that the processor set specification is well formed
  *
@@ -305,18 +304,19 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                              lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *processors_string = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (processors_string != nullptr) {
-         lList *range_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::RN> range_list;   // stays empty: the string is only parsed
 
-         range_list_parse_from_string(&range_list, answer_list, processors_string, JUST_PARSE, false, INF_ALLOWED);
+         range_list_parse_from_string(range_list, answer_list, processors_string, JUST_PARSE, false, INF_ALLOWED);
          if (*answer_list) {
             ret = false;
          }
@@ -325,7 +325,6 @@ cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that every project a queue refers to exists
  *
@@ -338,12 +337,13 @@ bool
  * @param master_project_list the defined projects
  * @return true when the value is acceptable
  */
-cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_project_list) {
+bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                                lListElem *attr_elem, const lList *master_project_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       ocs::tom::ConstList<ocs::tom::PR> project_list = ocs::tom::get<APRJLIST_value>(attr_elem);
 
       if (project_list != nullptr) {
@@ -355,7 +355,6 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that the shell start mode is one of the accepted words
  *
@@ -368,12 +367,13 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                                    lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *names[] = {
          "unix_behavior", "posix_compliant", "script_from_stdin",
          nullptr
@@ -397,7 +397,6 @@ cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem
    }
    DRETURN(ret);
 }
-bool
 /**
  * @brief Verify that the login shell is given as an absolute path
  *
@@ -410,7 +409,8 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                         lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
@@ -443,14 +443,13 @@ cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem
  * @param master_cqueue_list the defined cluster queues (CQ_Type)
  * @return true when the value is acceptable
  */
-bool
-cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
-                               const lList *master_cqueue_list) {
+bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                                    lListElem *attr_elem, const lList *master_cqueue_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
       const auto so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
       const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list(master_cqueue_list);
@@ -488,7 +487,6 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that every userset a queue refers to exists
  *
@@ -501,12 +499,13 @@ bool
  * @param master_userset_list the defined usersets
  * @return true when the value is acceptable
  */
-cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_userset_list) {
+bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                             lListElem *attr_elem, const lList *master_userset_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       ocs::tom::ConstList<ocs::tom::US> user_list = ocs::tom::get<AUSRLIST_value>(attr_elem);
 
       if (user_list != nullptr) {
@@ -534,12 +533,13 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
  *
  * @note MT-NOTE: cqueue_verify_job_slots() is MT safe
  */
-bool cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                             lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       uint32_t slots = ocs::tom::get<AULNG_value>(attr_elem);
 
       if (slots > std::numeric_limits<uint32_t>::max()) {
@@ -568,13 +568,13 @@ bool cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *
  *
  * @note MT-NOTE: cqueue_verify_memory_value() is MT safe
  */
-bool cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
-                                const lList *master_list) {
+bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                                lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *memory_string = ocs::tom::get<AMEM_value>(attr_elem);
 
 #if 1
@@ -609,12 +609,13 @@ bool cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListEle
  *
  * @note MT-NOTE: cqueue_verify_time_value() is MT safe
  */
-bool cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_time_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                              lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && attr_elem != nullptr) {
+   if (cqueue && attr_elem != nullptr) {
       const char *time_string = ocs::tom::get<ATIME_value>(attr_elem);
 
       if (time_string == nullptr || !strcasecmp(time_string, "none")) {

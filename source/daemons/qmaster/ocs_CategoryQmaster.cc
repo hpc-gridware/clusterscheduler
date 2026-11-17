@@ -215,7 +215,8 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem *job,
    ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_str>(*master_category_list, cat_str);
    if (category == nullptr) {
       category = ocs::tom::emplace_back<CT_str>(master_category_list, cat_str);
-      ocs::tom::set<CT_id>(category, Category::get_next_id(*master_category_list));
+      ocs::tom::set<CT_id>(category,
+                           Category::get_next_id(ocs::tom::ConstList<ocs::tom::CT>::from_typed(*master_category_list)));
       is_new = true;
    }
    sge_dstring_free(&category_str);

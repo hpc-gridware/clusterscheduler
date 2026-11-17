@@ -40,8 +40,17 @@
  */
 
 #include <ostream>
+#include <utility>
 
 #include "cull/cull.h"
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 /// Is this CULL type one whose value is printed as a number?
 #define L_IS_NUM_TYPE(x) ((x == lDoubleT) || (x == lUlongT) || (x == lLongT)  || (x == lIntT))
@@ -67,10 +76,15 @@
 #define FLG_LIST_MERGE_DOUBLE_KEY    8 ///< like #FLG_LIST_MERGE, but the key is a name/value pair
 /** @} */
 
-int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field, int nm_var, int nm_value, uint32_t flags);
+int parse_list_simple(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, lListElem *job, int field, int nm_var,
+                      int nm_value, uint32_t flags);
+OCS_TRANSITIONAL int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field, int nm_var,
+                                       int nm_value, uint32_t flags);
 
-void
-parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uint32_t scope, int hard_field, int soft_field);
+void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job,
+                         uint32_t scope, int hard_field, int soft_field);
+OCS_TRANSITIONAL void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uint32_t scope,
+                                          int hard_field, int soft_field);
 
 int cull_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
 
@@ -95,8 +109,10 @@ int
 parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
                   int nm_var, int nm_value, uint32_t flags);
 
-int cull_parse_path_list(lList **lpp, const char *path_str);
+std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char *path_str);
+OCS_TRANSITIONAL int cull_parse_path_list(lList **lpp, const char *path_str);
 
-int cull_parse_jid_hold_list(lList **lpp, const char *str);
+std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> cull_parse_jid_hold_list(const char *str);
+OCS_TRANSITIONAL int cull_parse_jid_hold_list(lList **lpp, const char *str);
 
 int sge_parse_hold_list(const char *hold_str, uint32_t prog_number);

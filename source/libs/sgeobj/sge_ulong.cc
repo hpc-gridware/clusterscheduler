@@ -616,33 +616,37 @@ bool ulong_parse_from_string(uint32_t *this_ulong,
 /**
  * @brief Parse a delimited list of unsigned integers
  *
- * A value given twice is kept once.
+ * A value given twice is kept once. On a parse error the values read before
+ * the bad one are returned with false.
  *
- * @param[out] this_list receives the parsed values
  * @param[out] answer_list receives the message naming the bad text
  * @param string the text to parse
  * @param delimitor the characters separating two values
- * @return true when the whole text was understood
+ * @return true when the whole text was understood, and the parsed values; an empty handle if "string" or
+ *         "delimitor" is nullptr or no value was read
  */
-bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
-                                  const char *string, const char *delimitor) {
+std::pair<bool, ocs::tom::ListPtr<ocs::tom::ULNG>>
+ulong_list_parse_from_string(lList **answer_list, const char *string, const char *delimitor) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-                                
-   if (this_list != nullptr && string != nullptr && delimitor != nullptr) {
+   ocs::tom::ListPtr<ocs::tom::ULNG> list;
+
+   if (string != nullptr && delimitor != nullptr) {
       struct saved_vars_s *context = nullptr;
-      const char *token;
-            
-      token = sge_strtok_r(string, delimitor, &context);
+
+      const char *token = sge_strtok_r(string, delimitor, &context);
       while (token != nullptr) {
          uint32_t value;
 
          ret = ulong_parse_from_string(&value, answer_list, token);
          if (ret) {
+            if (!list) {
+               list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
+            }
             // ULNG_value is unique: a value given twice is kept once (CS-3053)
-            if (static_cast<const lListElem *>(ocs::tom::find_first<ULNG_value>(*this_list, value)) == nullptr) {
-               ocs::tom::emplace_back<ULNG_value>(this_list, value);
+            if (list->find_first<ULNG_value>(value) == nullptr) {
+               list->emplace_back<ULNG_value>(value);
             }
          } else {
             break;
@@ -650,8 +654,43 @@ bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
          token = sge_strtok_r(nullptr, delimitor, &context);
       }
       sge_free_saved_vars(context);
-   }        
-   DRETURN(ret);
+   }
+   DRETURN(std::make_pair(ret, std::move(list)));
+}
+
+/**
+ * @brief ulong_list_parse_from_string() for an untyped caller
+ *
+ * The parsed values are appended to the list "this_list" refers to, which is
+ * created if it is nullptr; a value the list holds already is skipped.
+ *
+ * @param[in,out] this_list ULNG_Type list, checked; may refer to nullptr
+ * @param[out] answer_list receives the message naming the bad text
+ * @param string the text to parse
+ * @param delimitor the characters separating two values
+ * @return as ulong_list_parse_from_string()
+ */
+bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
+                                  const char *string, const char *delimitor) {
+   if (this_list == nullptr) {
+      return true;
+   }
+   auto [ret, parsed] = ulong_list_parse_from_string(answer_list, string, delimitor);
+   if (parsed) {
+      if (*this_list == nullptr) {
+         *this_list = parsed.release();
+      } else {
+         const auto list = ocs::tom::List<ocs::tom::ULNG>(*this_list);
+         for (auto elem = parsed->front(); elem != nullptr;) {
+            const auto next = elem.next();
+            if (list.find_first<ULNG_value>(ocs::tom::get<ULNG_value>(elem)) == nullptr) {
+               list.emplace_back<ULNG_value>(ocs::tom::get<ULNG_value>(elem));
+            }
+            elem = next;
+         }
+      }
+   }
+   return ret;
 }
 
 /**

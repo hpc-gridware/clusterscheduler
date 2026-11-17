@@ -45,6 +45,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include <cinttypes>
 #include "msg_qmaster.h"
@@ -57,23 +58,28 @@
  * If an element for this user already exists than this element will
  * be returned.
  *
- * @param suser_list SU_Type list
- * @param answer_list AN_Type list
+ * The list is a master list, a process-lifetime global held as a raw
+ * pointer; it is created if it does not exist yet.
+ *
+ * @param suser_list SU_Type list reference
+ * @param answer_list AN_Type list; unused
  * @param suser_name username
  *
- * @return SU_Type element or nullptr
+ * @return SU_Type element or an empty handle
  */
-lListElem *suser_list_add(lList **suser_list, lList **answer_list,
-                          const char *suser_name) {
-   lListElem *ret = nullptr;
+ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list, [[maybe_unused]] lList **answer_list,
+                                               const char *suser_name) {
+   DENTER(TOP_LAYER);
+
+   ocs::tom::Element<ocs::tom::SU> ret;
 
    if (suser_list != nullptr) {
-      ret = suser_list_find(*suser_list, suser_name);
-      if (ret == nullptr) {
+      ret = suser_list_find(ocs::tom::ConstList<ocs::tom::SU>::from_typed(*suser_list), suser_name);
+      if (!ret) {
          ret = ocs::tom::emplace_back<SU_name>(suser_list, suser_name);
       }
    }
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -82,18 +88,33 @@ lListElem *suser_list_add(lList **suser_list, lList **answer_list,
  * This function tries to find the first entry for user "suser_name"
  * in the list "suser_list".
  *
- * @param suser_list SU_Type list
+ * @param suser_list SU_Type list, may be an empty handle
  * @param suser_name username
  *
- * @return SU_Type element pointer or nullptr
+ * @return SU_Type element or an empty handle
  */
-lListElem *suser_list_find(const lList *suser_list, const char *suser_name) {
-   lListElem *ret = nullptr;
+ocs::tom::Element<ocs::tom::SU> suser_list_find(const ocs::tom::ConstList<ocs::tom::SU> suser_list,
+                                                const char *suser_name) {
+   DENTER(TOP_LAYER);
 
-   if (suser_list != nullptr && suser_name != nullptr) {
+   ocs::tom::Element<ocs::tom::SU> ret;
+
+   if (suser_list && suser_name != nullptr) {
       ret = ocs::tom::find_first_rw<SU_name>(suser_list, suser_name);
    }
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief suser_list_find() for an untyped caller
+ *
+ * @param suser_list SU_Type list, checked; may be nullptr
+ * @param suser_name username
+ *
+ * @return as suser_list_find()
+ */
+ocs::tom::Element<ocs::tom::SU> suser_list_find(const lList *suser_list, const char *suser_name) {
+   return suser_list_find(ocs::tom::ConstList<ocs::tom::SU>(suser_list), suser_name);
 }
 
 /**
@@ -101,12 +122,15 @@ lListElem *suser_list_find(const lList *suser_list, const char *suser_name) {
  *
  * The job counter within "suser" will be increased by one
  *
- * @param suser SU_Type list
+ * @param suser SU_Type element, may be an empty handle
  */
-void suser_increase_job_counter(lListElem *suser) {
-   if (suser != nullptr) {
+void suser_increase_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
+   DENTER(TOP_LAYER);
+
+   if (suser) {
       ocs::tom::add<SU_jobs>(suser, 1);
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -114,14 +138,14 @@ void suser_increase_job_counter(lListElem *suser) {
  *
  * The job counter within "suser" will be decreased by one
  *
- * @param suser SU_Type list
+ * @param suser SU_Type element, may be an empty handle
  */
-void suser_decrease_job_counter(lListElem *suser) {
+void suser_decrease_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
    DENTER(TOP_LAYER);
 
-   if (suser != nullptr) {
-      uint32_t jobs = ocs::tom::get<SU_jobs>(suser);
-    
+   if (suser) {
+      const uint32_t jobs = ocs::tom::get<SU_jobs>(suser);
+
       if (jobs == 0) {
          ERROR(MSG_SUSERCNTISALREADYZERO_S, ocs::tom::get<SU_name>(suser));
       } else {
@@ -136,17 +160,37 @@ void suser_decrease_job_counter(lListElem *suser) {
  *
  * Returns the current number of jobs registed for "suser"
  *
- * @param suser SU_Type element
+ * @param suser SU_Type element, may be an empty handle
  *
- * @return number of jobs
+ * @return number of jobs, 0 for an empty handle
  */
-uint32_t suser_get_job_counter(lListElem *suser) {
+uint32_t suser_get_job_counter(const ocs::tom::ConstElement<ocs::tom::SU> suser) {
+   DENTER(TOP_LAYER);
+
    uint32_t ret = 0;
 
-   if (suser != nullptr) {
+   if (suser) {
       ret = ocs::tom::get<SU_jobs>(suser);
    }
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief Find the entry of a user, adding one if the list has none
+ *
+ * @param master_suser_list the submit users (SU_Type), not empty
+ * @param submit_user the user, not nullptr
+ * @return the entry
+ */
+static ocs::tom::Element<ocs::tom::SU>
+ocs_suser_list_find_or_add(const ocs::tom::List<ocs::tom::SU> master_suser_list, const char *submit_user) {
+   DENTER(TOP_LAYER);
+
+   auto suser = suser_list_find(master_suser_list, submit_user);
+   if (!suser) {
+      suser = master_suser_list.emplace_back<SU_name>(submit_user);
+   }
+   DRETURN(suser);
 }
 
 /**
@@ -158,28 +202,48 @@ uint32_t suser_get_job_counter(lListElem *suser) {
  * the current number of registered jobs with "max_u_jobs". If the
  * limit would be exceeded than the function will return 1 otherwise 0.
  *
+ * A user without an entry gets one with no jobs. Without a list the user
+ * counts as one with no jobs.
+ *
  * @param job JB_Type element
  * @param max_u_jobs maximum number of allowed jobs per user
- * @param master_suser_list the submit users to count in
+ * @param master_suser_list the submit users to count in (SU_Type), may be an empty handle
  *
  * @return 1 => limit would be exceeded 0 => otherwise
  */
-int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master_suser_list) {
+int suser_check_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t max_u_jobs,
+                        const ocs::tom::List<ocs::tom::SU> master_suser_list) {
    DENTER(TOP_LAYER);
 
-   const char *submit_user = nullptr;
-   lListElem *suser = nullptr;
    int ret = 1;
+   const char *submit_user = ocs::tom::get<JB_owner>(job);
 
-   submit_user = ocs::tom::get<JB_owner>(job);
-   suser = suser_list_add(&master_suser_list, nullptr, submit_user);
-   if (suser != nullptr) {
-      if (max_u_jobs == 0 || max_u_jobs > suser_get_job_counter(suser))
+   if (submit_user != nullptr) {
+      uint32_t jobs = 0;
+      if (master_suser_list) {
+         jobs = suser_get_job_counter(ocs_suser_list_find_or_add(master_suser_list, submit_user));
+      }
+      if (max_u_jobs == 0 || max_u_jobs > jobs) {
          ret = 0;
-      else
+      } else {
          ret = 1;
-   }      
+      }
+   }
    DRETURN(ret);
+}
+
+/**
+ * @brief suser_check_new_job() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param max_u_jobs maximum number of allowed jobs per user
+ * @param master_suser_list the submit users to count in (SU_Type), checked; may be nullptr
+ *
+ * @return as suser_check_new_job()
+ */
+int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master_suser_list) {
+   return suser_check_new_job(ocs::tom::ConstElement<ocs::tom::JB>(job), max_u_jobs,
+                              ocs::tom::List<ocs::tom::SU>(master_suser_list));
 }
 
 /**
@@ -196,32 +260,48 @@ int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master
  * with "force_registration".
  *
  * @param job JB_Type element
- * @param master_suser_list the submit users to look in
  * @param max_u_jobs maximum number of allowed jobs per user
  * @param force_registration force job registration
+ * @param master_suser_list the submit users to look in (SU_Type), may be an empty handle;
+ *                          then nothing is counted
  *
  * @return 1 => limit would be exceeded 0 => otherwise
  *
  * @see `job_list_register_new_job()`
  */
-int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs,
-                           int force_registration, lList *master_suser_list) {
+int suser_register_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t max_u_jobs,
+                           const int force_registration, const ocs::tom::List<ocs::tom::SU> master_suser_list) {
    DENTER(TOP_LAYER);
 
-   const char *submit_user = nullptr;
-   lListElem *suser = nullptr;
    int ret = 0;
 
    if (!force_registration) {
       ret = suser_check_new_job(job, max_u_jobs, master_suser_list);
    }
    if (ret == 0) {
-      submit_user = ocs::tom::get<JB_owner>(job);
-      suser = suser_list_add(&master_suser_list, nullptr, submit_user);
-      suser_increase_job_counter(suser);
+      const char *submit_user = ocs::tom::get<JB_owner>(job);
+      if (master_suser_list && submit_user != nullptr) {
+         suser_increase_job_counter(ocs_suser_list_find_or_add(master_suser_list, submit_user));
+      }
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief suser_register_new_job() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param max_u_jobs maximum number of allowed jobs per user
+ * @param force_registration force job registration
+ * @param master_suser_list the submit users to look in (SU_Type), checked; may be nullptr
+ *
+ * @return as suser_register_new_job()
+ */
+int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs, int force_registration,
+                           lList *master_suser_list) {
+   return suser_register_new_job(ocs::tom::ConstElement<ocs::tom::JB>(job), max_u_jobs, force_registration,
+                                 ocs::tom::List<ocs::tom::SU>(master_suser_list));
 }
 
 /**
@@ -230,23 +310,31 @@ int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs,
  * number of jobs for a given user
  *
  * @param job JB_Type element
- * @param master_suser_list the submit users to unregister from
+ * @param master_suser_list the submit users to look in (SU_Type), may be an empty handle
  *
  * @return number of jobs in the system
  */
-uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list) {
+uint32_t suser_job_count(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                         const ocs::tom::ConstList<ocs::tom::SU> master_suser_list) {
    DENTER(TOP_LAYER);
 
-   const char *submit_user = nullptr;
-   lListElem *suser = nullptr;
-   uint32_t ret = 0;
+   const char *submit_user = ocs::tom::get<JB_owner>(job);
+   const uint32_t ret = suser_get_job_counter(suser_list_find(master_suser_list, submit_user));
 
-   submit_user = ocs::tom::get<JB_owner>(job);  
-   suser = suser_list_find(master_suser_list, submit_user);
-   if (suser != nullptr) {
-      ret = suser_get_job_counter(suser);
-   }
    DRETURN(ret);
+}
+
+/**
+ * @brief suser_job_count() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param master_suser_list the submit users to look in (SU_Type), checked; may be nullptr
+ *
+ * @return as suser_job_count()
+ */
+uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list) {
+   return suser_job_count(ocs::tom::ConstElement<ocs::tom::JB>(job),
+                          ocs::tom::ConstList<ocs::tom::SU>(master_suser_list));
 }
 
 /**
@@ -255,18 +343,25 @@ uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list) {
  * Decrease the jobcounter for the job owner of "job".
  *
  * @param job JB_Type element
- * @param master_suser_list the submit users to unregister from
+ * @param master_suser_list the submit users to unregister from (SU_Type), may be an empty handle
  */
-void suser_unregister_job(const lListElem *job, const lList *master_suser_list) {
+void suser_unregister_job(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                          const ocs::tom::ConstList<ocs::tom::SU> master_suser_list) {
    DENTER(TOP_LAYER);
 
-   const char *submit_user = nullptr;
-   lListElem *suser = nullptr;
+   const char *submit_user = ocs::tom::get<JB_owner>(job);
+   suser_decrease_job_counter(suser_list_find(master_suser_list, submit_user));
 
-   submit_user = ocs::tom::get<JB_owner>(job);  
-   suser = suser_list_find(master_suser_list, submit_user);
-   if (suser != nullptr) {
-      suser_decrease_job_counter(suser);
-   }
    DRETURN_VOID;
+}
+
+/**
+ * @brief suser_unregister_job() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param master_suser_list the submit users to unregister from (SU_Type), checked; may be nullptr
+ */
+void suser_unregister_job(const lListElem *job, const lList *master_suser_list) {
+   suser_unregister_job(ocs::tom::ConstElement<ocs::tom::JB>(job),
+                        ocs::tom::ConstList<ocs::tom::SU>(master_suser_list));
 }

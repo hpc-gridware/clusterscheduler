@@ -28,9 +28,17 @@
 #include <string>
 
 #include "sgeobj/cull/sge_grantedres_GRU_L.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
 
 const char *
-granted_res_get_id_string(std::string &buffer, const lList *resource_map_list);
+granted_res_get_id_string(std::string &buffer, ocs::tom::ConstList<ocs::tom::RESL> resource_map_list);
 
-lListElem *
-gru_list_search(lList *granted_resources_list, const char *name, const char *host_name);
+ocs::tom::ConstElement<ocs::tom::GRU>
+gru_list_search(ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list, const char *name, const char *host_name);
+ocs::tom::Element<ocs::tom::GRU>
+gru_list_search(ocs::tom::List<ocs::tom::GRU> granted_resources_list, const char *name, const char *host_name);
+OCS_TRANSITIONAL lListElem *gru_list_search(lList *granted_resources_list, const char *name, const char *host_name);

@@ -59,6 +59,10 @@
 
 #include "cull/sge_eejob_SGEJ_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_SGEJ.h"
@@ -67,33 +71,34 @@
 #include "ocs_BindingInstance.h"
 #include "ocs_BindingObj.h"
 
-/** @brief Sort jobs in the job list based on  prio, submit time and job number
+/**
+ * @brief Sort jobs in the job list based on prio, submit time and job number
  *
  * This function sorts the jobs in the provided job list based on the
  * task priority, submit time and job number. The sorting is done in descending order
- * of task priority, and in ascending order of job number for jobs with the same priority.
+ * of task priority, and in ascending order of submit time and job number for jobs with the same priority.
  *
- * @param job_list Pointer to the list of jobs to be sorted.
+ * @param job_list the list of jobs to be sorted (JB_Type), may be an empty handle
  */
-void ocs::Job::sgeee_sort_jobs(lList *job_list) {
+void ocs::Job::sgeee_sort_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
    DENTER(TOP_LAYER);
 
-   if (job_list == nullptr) {
+   if (!job_list) {
       DRETURN_VOID;
    }
 
    // Create a temporary list and store the job reference and all data required to sort to list
    auto tmp_list = ocs::tom::ListPtr<ocs::tom::SGEJ>::create("tmp list");
-   lListElem *job = nullptr;
-   lListElem *nxt_job = lFirstRW(job_list);
-   while((job = nxt_job) != nullptr) {
-      nxt_job = lNextRW(nxt_job);
+   auto nxt_job = job_list.front();
+   while (nxt_job) {
+      const auto job = nxt_job;
+      nxt_job = nxt_job.next();
 
       // First try to find an enrolled task. Those will have the highest priority
       // If there is no enrolled task then take the template element
-      ocs::tom::ConstElement<ocs::tom::JAT> tmp_task = lFirst(ocs::tom::get<JB_ja_tasks>(job));
-      if (tmp_task == nullptr) {
-         tmp_task = lFirst(ocs::tom::get<JB_ja_template>(job));
+      ocs::tom::ConstElement<ocs::tom::JAT> tmp_task = ocs::tom::get<JB_ja_tasks>(job).front();
+      if (!tmp_task) {
+         tmp_task = ocs::tom::get<JB_ja_template>(job).front();
       }
 
       // Store sort-criteria and job reference in the temporary list
@@ -101,19 +106,21 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
       ocs::tom::set<SGEJ_priority>(tmp_sge_job, ocs::tom::get<JAT_prio>(tmp_task));
       ocs::tom::set<SGEJ_submission_time>(tmp_sge_job, ocs::tom::get<JB_submission_time>(job));
       ocs::tom::set<SGEJ_job_number>(tmp_sge_job, ocs::tom::get<JB_job_number>(job));
-      ocs::tom::set<SGEJ_job_reference>(tmp_sge_job, job);
-      lAppendElem(*tmp_list, std::move(tmp_sge_job));
+      ocs::tom::set<SGEJ_job_reference>(tmp_sge_job, job.raw());
+      tmp_list->push_back(std::move(tmp_sge_job));
 
-      // Remove the job from the original list
-      lDechainElem(job_list, job);
+      // Remove the job from the original list; the temporary list holds the only reference now
+      static_cast<void>(job_list.extract(job).release());
    }
 
    // Sort the temporary list according to the following criteria:
-   lPSortList(*tmp_list, "%I- %I+ %I+", SGEJ_priority, SGEJ_submission_time, SGEJ_job_number);
+   tmp_list->sort<ocs::tom::desc<SGEJ_priority>, ocs::tom::asc<SGEJ_submission_time>,
+                  ocs::tom::asc<SGEJ_job_number>>();
 
    // The job list is empty at this point, so we can just append the sorted jobs
-   for_each_rw(job, *tmp_list) {
-      lAppendElem(job_list, static_cast<lListElem *>(ocs::tom::get<SGEJ_job_reference>(job)));
+   for (const auto tmp_sge_job : *tmp_list) {
+      job_list.push_back(ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(
+         static_cast<lListElem *>(ocs::tom::get<SGEJ_job_reference>(tmp_sge_job))));
    }
 
    // we need to free the tmp list, but not the job references
@@ -125,16 +132,18 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
 /**
  * @brief The systemd slice and scope names a job's processes run under
  *
- * @param job the job
- * @param ja_task the array task, or nullptr
- * @param pe_task the parallel task, or nullptr
+ * @param job the job (JB_Type)
+ * @param ja_task the array task (JAT_Type), may be an empty handle
+ * @param pe_task the parallel task (PET_Type), an empty handle for the master task
  * @param[out] slice receives the slice name
  * @param[out] scope receives the scope name
  * @param[out] error_dstr receives the reason on failure
  * @return true when both names could be built
  */
 bool
-ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
+ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                          const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                          const ocs::tom::ConstElement<ocs::tom::PET> pe_task,
                                           std::string &slice, std::string &scope, dstring *error_dstr) {
    DENTER(TOP_LAYER);
 
@@ -151,11 +160,10 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
    }
 
    if (ret) {
-      bool is_array = job_is_array(job);
+      const bool is_array = job_is_array(job);
       bool is_tightly_integrated = false;
-      if (ja_task != nullptr) {
-         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
-         if (pe != nullptr) {
+      if (ja_task) {
+         if (const auto pe = ocs::tom::get<JAT_pe_object>(ja_task); pe) {
             is_tightly_integrated = ocs::tom::get<PE_control_slaves>(pe);
          }
       }
@@ -164,13 +172,14 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
       slice = toplevel_slice + "-jobs";
       scope = toplevel_slice + ".";
       if (is_array) {
-         std::string jobtask_id = std::to_string(ocs::tom::get<JB_job_number>(job)) + "." + std::to_string(ocs::tom::get<JAT_task_number>(ja_task));
+         std::string jobtask_id = std::to_string(ocs::tom::get<JB_job_number>(job)) + "." +
+                                  std::to_string(ocs::tom::get<JAT_task_number>(ja_task));
          // array job
          if (is_tightly_integrated) {
             // array PE job, we have master and slave tasks
             // ocs8012-jobs-1234.1.slice, ocs8012.1234.1.master.scope or ocs8012.1234.1.<num>.<hostname>.scope
             slice += "-" + jobtask_id;
-            if (pe_task == nullptr) {
+            if (!pe_task) {
                scope += jobtask_id + ".master";
             } else {
                scope += jobtask_id + '.' + ocs::tom::get<PET_id>(pe_task);
@@ -186,7 +195,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
             // sequential PE job, we have master and slave tasks
             // ocs8012-jobs-1234.slice, ocs8012.master.scope or ocs8012.<num>.<hostname>.scope
             slice += "-" + job_id;
-            if (pe_task == nullptr) {
+            if (!pe_task) {
                scope += job_id + ".master";
             } else {
                scope += job_id + '-' + ocs::tom::get<PET_id>(pe_task);
@@ -216,9 +225,26 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
 /**
  * @brief The binding sub-object, created on first access
  *
- * @param job the job to read or extend
+ * @param job the job to read or extend (JB_Type)
  * @param[out] answer_list receives the reason when it could not be created
  * @return the binding sub-object, or nullptr on error
+ */
+ocs::tom::Element<ocs::tom::BN>
+ocs::Job::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
+   // JB_binding holds a BN_Type object
+   return ocs::tom::Element<ocs::tom::BN>::from_typed(
+      Binding::binding_get_or_create_elem(job, answer_list, JB_binding));
+}
+
+/**
+ * @brief binding_get_or_create_elem() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @param[out] answer_list receives the reason on failure
+ * @return as binding_get_or_create_elem()
  */
 lListElem *
 ocs::Job::binding_get_or_create_elem(lListElem *job, lList **answer_list) {
@@ -228,19 +254,33 @@ ocs::Job::binding_get_or_create_elem(lListElem *job, lList **answer_list) {
 /**
  * @brief Was a binding requested at all?
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return true when the object carries a binding request
  */
 bool
-ocs::Job::binding_was_requested(const lListElem *job) {
+ocs::Job::binding_was_requested(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_was_requested(job, JB_binding);
 }
 
 /**
  * @brief Who applies the binding
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the requested @ref ocs::BindingType::Type
+ */
+ocs::BindingType::Type
+ocs::Job::binding_get_type(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_type(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_type() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_type()
  */
 ocs::BindingType::Type
 ocs::Job::binding_get_type(const lListElem *job) {
@@ -250,8 +290,22 @@ ocs::Job::binding_get_type(const lListElem *job) {
 /**
  * @brief The hardware unit the binding counts in
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the requested @ref ocs::BindingUnit::Unit
+ */
+ocs::BindingUnit::Unit
+ocs::Job::binding_get_unit(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_unit(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_unit() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_unit()
  */
 ocs::BindingUnit::Unit
 ocs::Job::binding_get_unit(const lListElem *job) {
@@ -261,8 +315,22 @@ ocs::Job::binding_get_unit(const lListElem *job) {
 /**
  * @brief How the selected hardware is ordered
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the sort specification, empty when none was given
+ */
+std::string
+ocs::Job::binding_get_sort(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_sort(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_sort() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_sort()
  */
 std::string
 ocs::Job::binding_get_sort(const lListElem *job) {
@@ -272,8 +340,22 @@ ocs::Job::binding_get_sort(const lListElem *job) {
 /**
  * @brief Where on the topology the binding starts
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the requested @ref ocs::BindingStart::Start
+ */
+ocs::BindingStart::Start
+ocs::Job::binding_get_start(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_start(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_start() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_start()
  */
 ocs::BindingStart::Start
 ocs::Job::binding_get_start(const lListElem *job) {
@@ -283,8 +365,22 @@ ocs::Job::binding_get_start(const lListElem *job) {
 /**
  * @brief Where the binding stops
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the requested @ref ocs::BindingStop::Stop
+ */
+ocs::BindingStop::Stop
+ocs::Job::binding_get_stop(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_end(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_stop() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_stop()
  */
 ocs::BindingStop::Stop
 ocs::Job::binding_get_stop(const lListElem *job) {
@@ -294,8 +390,22 @@ ocs::Job::binding_get_stop(const lListElem *job) {
 /**
  * @brief How the binding walks the topology
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the requested @ref ocs::BindingStrategy::Strategy
+ */
+ocs::BindingStrategy::Strategy
+ocs::Job::binding_get_strategy(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_strategy(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_strategy() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_strategy()
  */
 ocs::BindingStrategy::Strategy
 ocs::Job::binding_get_strategy(const lListElem *job) {
@@ -305,8 +415,22 @@ ocs::Job::binding_get_strategy(const lListElem *job) {
 /**
  * @brief Which instance of the job the binding applies to
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the requested @ref ocs::BindingInstance::Instance
+ */
+ocs::BindingInstance::Instance
+ocs::Job::binding_get_instance(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_instance(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_instance() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_instance()
  */
 ocs::BindingInstance::Instance
 ocs::Job::binding_get_instance(const lListElem *job) {
@@ -316,8 +440,22 @@ ocs::Job::binding_get_instance(const lListElem *job) {
 /**
  * @brief Which hardware the binding is restricted to
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the filter expression, empty when none was given
+ */
+std::string
+ocs::Job::binding_get_filter(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_filter(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_filter() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_filter()
  */
 std::string
 ocs::Job::binding_get_filter(const lListElem *job) {
@@ -327,8 +465,22 @@ ocs::Job::binding_get_filter(const lListElem *job) {
 /**
  * @brief How many units the binding asks for
  *
- * @param job the job carrying the binding request
+ * @param job the job carrying the binding request (JB_Type)
  * @return the requested amount
+ */
+uint32_t
+ocs::Job::binding_get_amount(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return Binding::binding_get_amount(job, JB_binding);
+}
+
+/**
+ * @brief binding_get_amount() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @return as binding_get_amount()
  */
 uint32_t
 ocs::Job::binding_get_amount(const lListElem *job) {
@@ -338,10 +490,24 @@ ocs::Job::binding_get_amount(const lListElem *job) {
 /**
  * @brief Fill in the binding fields the request left out
  *
- * @param job the job whose binding request is completed
+ * @param job the job whose binding request is completed (JB_Type)
  * @param[out] answer_list receives the reason on failure
  */
-void ocs::Job::binding_set_missing_defaults(lListElem *job, lList **answer_list) {
-   return Binding::binding_set_missing_defaults(job, answer_list, JB_binding);
+void
+ocs::Job::binding_set_missing_defaults(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
+   Binding::binding_set_missing_defaults(job, answer_list, JB_binding);
 }
 
+/**
+ * @brief binding_set_missing_defaults() for an untyped caller
+ *
+ * The binding is read through the descriptor-generic ocs::Binding, so the job
+ * is passed on unchecked, as before.
+ *
+ * @param job the job (JB_Type)
+ * @param[out] answer_list receives the reason on failure
+ */
+void
+ocs::Job::binding_set_missing_defaults(lListElem *job, lList **answer_list) {
+   Binding::binding_set_missing_defaults(job, answer_list, JB_binding);
+}

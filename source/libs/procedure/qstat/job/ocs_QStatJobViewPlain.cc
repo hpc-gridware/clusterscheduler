@@ -1367,8 +1367,7 @@ void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const ocs::to
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ja_structure>(job)) {
       if (job_is_array(job)) {
-         uint32_t start, end, step;
-         job_get_submit_task_ids(job, &start, &end, &step);
+         const auto [start, end, step] = job_get_submit_task_ids(job);
          std::ostringstream ss_range;
          ss_range << std::format("{}-{}:{}", start, end, step);
          os << std::format("{:<{}} {}", ocs::ascii_width("job-array tasks:"), left_width, ss_range.str()) << "\n";
@@ -1433,7 +1432,7 @@ void ocs::QStatJobViewPlain::report_ctx_list(std::ostream &os, const ocs::tom::C
 void ocs::QStatJobViewPlain::report_binding(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_binding>(job)) {
-      const lListElem *binding_elem = ocs::tom::get<JB_binding>(job);
+      const auto binding_elem = ocs::tom::get<JB_binding>(job);
       std::string binding_param;;
       BindingIo::binding_print_to_string(binding_elem, binding_param);
       os << std::format("{:<{}} {}", ocs::ascii_width("binding:"), left_width, binding_param) << "\n";
@@ -1654,16 +1653,13 @@ void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os,
 
       // get the list of granted hosts and make it unique
       // skip tasks that have not been scheduled so far
-      if (lList *gdil_unique = gdil_make_host_unique(gdil_org)) {
+      if (const auto gdil_unique = gdil_make_host_unique(gdil_org)) {
          // print the task number and the list of granted hosts
          std::stringstream ss_list2;
          const int host_fields[] = {JG_qhostname, JG_slots, 0};
-         uni_print_list(ss_list2, gdil_unique, host_fields, delis, 0);
+         uni_print_list(ss_list2, gdil_unique.get(), host_fields, delis, 0);
          os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_host_list"), left_width_short, task_number,
                            mid_width, ss_list2.str());
-
-         // free the list of granted hosts
-         lFreeList(&gdil_unique);
       }
    }
    DRETURN_VOID;

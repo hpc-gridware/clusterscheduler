@@ -64,6 +64,7 @@
 #include "sgeobj/sge_cull_xml.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_XMLA.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
 #include "sgeobj/tom/ocs_tom_XMLS.h"
 #include "sgeobj/tom/ocs_tom_XMLH.h"
 
@@ -71,37 +72,40 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
 
 static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os);
 
-static bool lAttributesToString_(const lList *attr_list, dstring *attr);
+static bool lAttributesToString_(ocs::tom::ConstList<ocs::tom::XMLA> attr_list, dstring *attr);
 
-static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream &os);
+static void lWriteXMLHead_(ocs::tom::ConstElement<ocs::tom::XMLH> ep, int nesting_level, std::ostream &os);
 
-static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value);
+static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(ocs::tom::List<ocs::tom::XMLE> attributeList, const char *name,
+                                                       const char *value);
 
 /**
- * @brief Create the root element of an XML document
+ * @brief Create the root element of an XML document, without the elements nested in it
+ *
+ * The part of xml_getHead() that does not depend on the type of the nested
+ * elements: the version, the name, the attributes and the schema reference.
  *
  * @param name the root element's tag name
- * @param list the elements nested inside it; ownership passes to the document
- * @param attributes the root element's attributes; ownership passes to it
+ * @param attributes the root element's attributes; the document takes them over
  * @return the new document root
  */
-lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
-
+ocs::tom::ElementPtr<ocs::tom::XMLH> ocs_xml_create_head(const char *name,
+                                                         ocs::tom::ListPtr<ocs::tom::XMLA> &&attributes) {
+   DENTER(CULL_LAYER);
+   auto attribute_list = std::move(attributes);
    auto xml_head = ocs::tom::ElementPtr<ocs::tom::XMLH>::create();
 
-   if (xml_head) {
-      
-      ocs::tom::set<XMLH_Version>(xml_head, "<?xml version='1.0'?>");
-      ocs::tom::set<XMLH_Name>(xml_head, name);
-      ocs::tom::set<XMLH_Attribute>(xml_head, attributes);
-      ocs::tom::set<XMLH_Element>(xml_head, list);
-      xml_addAttribute(*xml_head, "xmlns:xsd", "https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qstat/qstat.xsd");
+   ocs::tom::set<XMLH_Version>(xml_head, "<?xml version='1.0'?>");
+   ocs::tom::set<XMLH_Name>(xml_head, name);
+   ocs::tom::set<XMLH_Attribute>(xml_head, std::move(attribute_list));
+   xml_addAttribute(*xml_head, "xmlns:xsd",
+                    "https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/"
+                    "schemas/qstat/qstat.xsd");
 
-/* we do not support stylesheets yet */
-/*    xml_addStylesheet(xml_head, "xmlns:xsl", "http://www.w3.org/1999/XSL/Transform", "1.0");*/
-   }
-   
-   return xml_head.release();
+   /* we do not support stylesheets yet */
+   /* xml_addStylesheet(xml_head, "xmlns:xsl", "http://www.w3.org/1999/XSL/Transform", "1.0"); */
+
+   DRETURN(xml_head);
 }
 
 /**
@@ -136,9 +140,62 @@ void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, c
  * @param name the attribute name
  * @param value the value, rendered with `%f`
  */
-void xml_addAttributeD(lListElem *xml_elem, const char *name, double value){
+void xml_addAttributeD(const ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *name, const double value) {
+   DENTER(CULL_LAYER);
    DSTRING_STATIC(string, 512);
    xml_addAttribute(xml_elem, name, sge_dstring_sprintf(&string, "%f", value));
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Add a string valued attribute to the attribute list of an XML head or element
+ *
+ * The value is XML escaped on the way in, so the caller passes plain text.
+ * The attribute list is created when the element has none yet. An empty
+ * handle aborts, as the former untyped function did for an element of a wrong
+ * structure.
+ *
+ * @tparam F the attribute list field, `XMLH_Attribute` or `XMLE_Attribute`
+ * @tparam T the object type of the element, deduced
+ * @param[in,out] xml_elem the element to add to
+ * @param name the attribute name
+ * @param value the value
+ */
+template <auto F, ocs::tom::ObjectType T>
+static void ocs_xml_add_attribute(const ocs::tom::Element<T> xml_elem, const char *name, const char *value) {
+   DENTER(CULL_LAYER);
+
+   if (!xml_elem) {
+      CRITICAL("xml_addAttribute() called on wrong cull structure");
+      ocs::TerminationManager::trigger_abort();
+      DRETURN_VOID;
+   }
+
+   dstring mod_value = DSTRING_INIT;
+   const bool is_mod_value = escape_string(value, &mod_value);
+
+   auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
+   ocs::tom::set<XMLA_Name>(attr_elem, name);
+   ocs::tom::set<XMLA_Value>(attr_elem, (is_mod_value ? sge_dstring_get_string(&mod_value) : ""));
+   ocs::tom::get_or_create<F>(xml_elem, "Attributes").push_back(std::move(attr_elem));
+
+   sge_dstring_free(&mod_value);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Add a string valued attribute to an XML document head
+ *
+ * The value is XML escaped on the way in, so the caller passes plain text.
+ *
+ * @param[in,out] xml_elem the document head to add to
+ * @param name the attribute name
+ * @param value the value
+ */
+void xml_addAttribute(const ocs::tom::Element<ocs::tom::XMLH> xml_elem, const char *name, const char *value) {
+   DENTER(CULL_LAYER);
+   ocs_xml_add_attribute<XMLH_Attribute>(xml_elem, name, value);
+   DRETURN_VOID;
 }
 
 /**
@@ -150,47 +207,24 @@ void xml_addAttributeD(lListElem *xml_elem, const char *name, double value){
  * @param name the attribute name
  * @param value the value
  */
-void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
+void xml_addAttribute(const ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *name, const char *value) {
    DENTER(CULL_LAYER);
-
-   auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-   lList *attr_list = nullptr;
-   dstring mod_value = DSTRING_INIT;
-   bool is_mod_value; 
-   is_mod_value = escape_string(value, &mod_value); 
-   
-   if (attr_elem) {
-      ocs::tom::set<XMLA_Name>(attr_elem, name);
-      ocs::tom::set<XMLA_Value>(attr_elem, (is_mod_value?sge_dstring_get_string(&mod_value):""));
-      if (ocs::tom::has<XMLH_Attribute>(xml_elem)) {   
-         attr_list = ocs::tom::get<XMLH_Attribute>(xml_elem);
-         if (!attr_list)
-            ocs::tom::set<XMLH_Attribute>(xml_elem, (attr_list = lCreateList("Attributes", XMLA_Type)));
-      }
-      else if (ocs::tom::has<XMLE_Attribute>(xml_elem)) {
-         attr_list = ocs::tom::get<XMLE_Attribute>(xml_elem);
-         if (!attr_list)
-            ocs::tom::set<XMLE_Attribute>(xml_elem, (attr_list = lCreateList("Attributes", XMLA_Type)));
-      }
-      else {
-         sge_dstring_free(&mod_value);
-         CRITICAL("xml_addAttribute() called on wrong cull structure");
-         ocs::TerminationManager::trigger_abort();
-      }
-      lAppendElem(attr_list, std::move(attr_elem));
-   }
-   sge_dstring_free(&mod_value);
+   ocs_xml_add_attribute<XMLE_Attribute>(xml_elem, name, value);
    DRETURN_VOID;
 }
 
 /**
- * @brief Write a list to a file stream
+ * @brief Write a list to a stream
  *
- * Write a list to a file stream in XML format
+ * Write a list to a stream in XML format. The list holds elements of any
+ * type; an XML element to be printed is written as its tag, any other element
+ * field by field, wrapped into a tag named after the list.
  *
  * @param lp list
  * @param nesting_level current nesting level
- * @param fp file stream NOTE: MT-NOTE: is thread save, works only on the objects which are passed in
+ * @param[out] os the stream to write to
+ *
+ * @note MT-NOTE: is thread safe, works only on the objects which are passed in
  */
 static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os) {
    DENTER(CULL_LAYER);
@@ -215,26 +249,32 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
       indent[i] = '\0';
    }
 
+   // the list holds elements of any type; one holding the attribute list of an XML element is written as such
    for_each_ep_lv(ep, lp) {
       is_XML_elem = false;
       is_attr = false;
 
+      ocs::tom::ConstElement<ocs::tom::XMLE> xml_elem;
       if (ocs::tom::has<XMLE_Attribute>(ep)) {
+         xml_elem = ocs::tom::ConstElement<ocs::tom::XMLE>(ep);
          sge_dstring_clear(&attr);
-         is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(ep), &attr);  
+         is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(xml_elem), &attr);
          is_XML_elem = true;
       }
       
-      if (is_XML_elem && (ocs::tom::get<XMLE_Print>(ep)))  {
-         const lListElem *elem = ocs::tom::get<XMLE_Element>(ep);
+      if (is_XML_elem && (ocs::tom::get<XMLE_Print>(xml_elem)))  {
+         // an element to be printed holds the name and the value of its tag
+         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(ocs::tom::get<XMLE_Element>(xml_elem));
          if (ocs::tom::get<XMLA_Value>(elem) != nullptr){
-            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
+            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "")
+               << ">";
             os << ocs::tom::get<XMLA_Value>(elem);
-            lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level + 1, os);
+            lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level + 1, os);
             os << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
          } else {
-            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
-            lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level + 1, os);
+            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "")
+               << ">\n";
+            lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level + 1, os);
             os << indent << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
          }
       }
@@ -320,23 +360,26 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
    }
    space[i] = '\0';
 
+   // ep is of any type; an element holding the fields of an XML head or element is written as such
    if (ocs::tom::has<XMLH_Version>(ep)) {   
-      lWriteXMLHead_(ep, nesting_level, os);
+      lWriteXMLHead_(ocs::tom::ConstElement<ocs::tom::XMLH>(ep), nesting_level, os);
    } else if (ocs::tom::has<XMLE_Attribute>(ep) ) {
-      if (ocs::tom::get<XMLE_Print>(ep)) {
+      const ocs::tom::ConstElement<ocs::tom::XMLE> xml_elem(ep);
+      if (ocs::tom::get<XMLE_Print>(xml_elem)) {
          dstring attr = DSTRING_INIT;
-         const lListElem *elem = ocs::tom::get<XMLE_Element>(ep);
-         bool is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(ep), &attr);
+         // an element to be printed holds the name and the value of its tag
+         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(ocs::tom::get<XMLE_Element>(xml_elem));
+         const bool is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(xml_elem), &attr);
 
          os << space << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
          os << ocs::tom::get<XMLA_Value>(elem);
-         lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level + 1, os);
+         lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level + 1, os);
          os << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
 
          sge_dstring_free(&attr);
       } else{
-         lWriteElemXML_(ocs::tom::get<XMLE_Element>(ep), nesting_level, os);
-         lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level, os);
+         lWriteElemXML_(ocs::tom::get<XMLE_Element>(xml_elem), nesting_level, os);
+         lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level, os);
       }
    } else {  
       for (const auto f : ocs_cull_present_fields(ep->descr)) {
@@ -455,27 +498,32 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
  * @param value the value
  * @return the new attribute element
  */
-lListElem *xml_append_Attr_D(lList *attributeList, const char *name, double value) {
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D(const ocs::tom::List<ocs::tom::XMLE> attributeList,
+                                                    const char *name, const double value) {
+   DENTER(CULL_LAYER);
    char buffer[20];
    snprintf(buffer, sizeof(buffer), "%.5f", value);
-   return append_Attr_S(attributeList, name, buffer);
+   DRETURN(append_Attr_S(attributeList, name, buffer));
 }
 
 /**
- * @brief Append an attribute holding a double, rendered in at most eight characters - fixed point below 99999999, otherwise three significant digits
+ * @brief Append an attribute holding a double, rendered in at most eight characters - fixed point below
+ *        99999999, otherwise three significant digits
  *
  * @param[in,out] attributeList the attribute list to append to
  * @param name the attribute name
  * @param value the value
  * @return the new attribute element
  */
-lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double value) {
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D8(const ocs::tom::List<ocs::tom::XMLE> attributeList,
+                                                     const char *name, const double value) {
+   DENTER(CULL_LAYER);
    char buffer[20];
    if (value > 99999999)
       snprintf(buffer, sizeof(buffer), "%.3g", value);
    else
       snprintf(buffer, sizeof(buffer), "%.0f", value);
-   return append_Attr_S(attributeList, name, buffer);
+   DRETURN(append_Attr_S(attributeList, name, buffer));
 }
 
 /**
@@ -486,18 +534,20 @@ lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double val
  * @param value the value
  * @return the new attribute element
  */
-lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char *value){
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_S(const ocs::tom::List<ocs::tom::XMLE> attributeList,
+                                                    const char *name, const char *value) {
+   DENTER(CULL_LAYER);
    dstring string = DSTRING_INIT;
-   lListElem *xml_Elem = nullptr;
+   ocs::tom::Element<ocs::tom::XMLE> xml_Elem;
    
    if (escape_string(value, &string)) {
       xml_Elem = append_Attr_S(attributeList, name, sge_dstring_get_string(&string));
       sge_dstring_free(&string);
-   }
-   else
+   } else {
       xml_Elem = append_Attr_S(attributeList, name, "");
-         
-   return xml_Elem;         
+   }
+
+   DRETURN(xml_Elem);
 }
 
 /**
@@ -508,10 +558,12 @@ lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char 
  * @param value the value
  * @return the new attribute element
  */
-lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value) {
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_I(const ocs::tom::List<ocs::tom::XMLE> attributeList,
+                                                    const char *name, const int value) {
+   DENTER(CULL_LAYER);
    char buffer[20];
    snprintf(buffer, sizeof(buffer), "%d", value);
-   return append_Attr_S(attributeList, name, buffer);
+   DRETURN(append_Attr_S(attributeList, name, buffer));
 }
 
 /**
@@ -522,30 +574,48 @@ lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value) 
  * @param value the value
  * @return the new attribute element
  */
-lListElem *xml_append_Attr_U(lList *attributeList, const char *name, uint32_t value) {
+ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_U(const ocs::tom::List<ocs::tom::XMLE> attributeList,
+                                                    const char *name, const uint32_t value) {
+   DENTER(CULL_LAYER);
    char buffer[20];
    snprintf(buffer, sizeof(buffer), sge_u32, value);
-   return append_Attr_S(attributeList, name, buffer);
+   DRETURN(append_Attr_S(attributeList, name, buffer));
 }
 
-static bool lAttributesToString_(const lList *attr_list, dstring *attr){
-   if(attr == nullptr)
-      return false;
-
-   if (lGetNumberOfElem(attr_list) == 0){
-      return false;
-   } else {
-      for_each_ep_lv(attr_elem, attr_list) {
-         const char *name = ocs::tom::get<XMLA_Name>(attr_elem);
-         const char *value = ocs::tom::get<XMLA_Value>(attr_elem);
-
-         sge_dstring_sprintf_append(attr, " %s=\"%s\"", name, value);
-      }
+/**
+ * @brief Render an attribute list as the attributes of an XML tag
+ *
+ * @param attr_list the attributes; may be an empty handle
+ * @param[out] attr receives ` name="value"` per attribute, appended
+ * @return true when there was an attribute to render, false for none or a missing @p attr
+ */
+static bool lAttributesToString_(const ocs::tom::ConstList<ocs::tom::XMLA> attr_list, dstring *attr) {
+   DENTER(CULL_LAYER);
+   if (attr == nullptr) {
+      DRETURN(false);
    }
-   return true;
+
+   if (attr_list.empty()) {
+      DRETURN(false);
+   }
+   for (const auto attr_elem : attr_list) {
+      const char *name = ocs::tom::get<XMLA_Name>(attr_elem);
+      const char *value = ocs::tom::get<XMLA_Value>(attr_elem);
+
+      sge_dstring_sprintf_append(attr, " %s=\"%s\"", name, value);
+   }
+   DRETURN(true);
 }
 
-static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream &os) {
+/**
+ * @brief Write an XML document head, its stylesheets and the elements nested in it
+ *
+ * @param ep the document head; an empty handle writes nothing
+ * @param nesting_level indentation depth of the nested elements, less one
+ * @param os the stream to write to
+ */
+static void lWriteXMLHead_(const ocs::tom::ConstElement<ocs::tom::XMLH> ep, const int nesting_level,
+                           std::ostream &os) {
    DENTER(CULL_LAYER);
 
    if (!ep){
@@ -553,12 +623,13 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream 
    }
 
    dstring attr = DSTRING_INIT;
-   bool is_attr = lAttributesToString_(ocs::tom::get<XMLH_Attribute>(ep), &attr);
+   const bool is_attr = lAttributesToString_(ocs::tom::get<XMLH_Attribute>(ep), &attr);
 
    os << ocs::tom::get<XMLH_Version>(ep) << "\n";
 
-   for (ocs::tom::ConstElement<ocs::tom::XMLS> elem : ocs::tom::get<XMLH_Stylesheet>(ep)) {
-      os << "<xsl:stylesheet " << ocs::tom::get<XMLS_Name>(elem) << "=\"" << ocs::tom::get<XMLS_Value>(elem) << "\" version=\"" << ocs::tom::get<XMLS_Version>(elem) << "\">\n";
+   for (const auto elem : ocs::tom::get<XMLH_Stylesheet>(ep)) {
+      os << "<xsl:stylesheet " << ocs::tom::get<XMLS_Name>(elem) << "=\"" << ocs::tom::get<XMLS_Value>(elem)
+         << "\" version=\"" << ocs::tom::get<XMLS_Version>(elem) << "\">\n";
    }
 
    const char *name = ocs::tom::get<XMLH_Name>(ep);
@@ -570,22 +641,28 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream 
    DRETURN_VOID;
 }
 
-static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value) {
-   lListElem *parent = nullptr;
-   if (!value)
-      return parent;
-   parent = lCreateElem(XMLE_Type);
-   if (parent) {
-      auto elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-      if (elem){
-         ocs::tom::set<XMLA_Name>(elem, name);
-         ocs::tom::set<XMLA_Value>(elem, value);
-         ocs::tom::set<XMLE_Element>(parent, std::move(elem));
-      }
-      ocs::tom::set<XMLE_Print>(parent, true);
-      lAppendElem(attributeList, parent);
+/**
+ * @brief Append an XML element to be printed, holding a tag name and its value
+ *
+ * @param[in,out] attributeList the list to append to; an empty handle appends nothing
+ * @param name the tag name
+ * @param value the value, already escaped; nullptr appends nothing
+ * @return the new element, or an empty handle when nothing was appended
+ */
+static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(const ocs::tom::List<ocs::tom::XMLE> attributeList,
+                                                       const char *name, const char *value) {
+   DENTER(CULL_LAYER);
+   if (value == nullptr || !attributeList) {
+      DRETURN(nullptr);
    }
-   return parent;
+   auto elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
+   ocs::tom::set<XMLA_Name>(elem, name);
+   ocs::tom::set<XMLA_Value>(elem, value);
+
+   auto parent = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
+   ocs::tom::set<XMLE_Element>(parent, std::move(elem));
+   ocs::tom::set<XMLE_Print>(parent, true);
+   DRETURN(attributeList.push_back(std::move(parent)));
 }
 
 /**

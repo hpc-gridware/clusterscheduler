@@ -503,11 +503,10 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
          break;
       case ocs::gdi::Target::SC_LIST: /* TODO EB: move this into the scheduler configuration,
                                     and pack the list right away */ {
-         lList *conf = sconf_get_config_list();
-         task->data_list = lSelectHashPack("", conf, task->condition, task->enumeration, false, nullptr);
+         const auto conf = sconf_get_config_list();
+         task->data_list = lSelectHashPack("", conf.get(), task->condition, task->enumeration, false, nullptr);
          task->do_select_pack_simultaneous = false;
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
-         lFreeList(&conf);
          break;
       }
       case ocs::gdi::Target::PROCEDURE:
@@ -613,7 +612,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
          /* fill in authentication infos from request */
          ocs::tom::set<EV_uid>(ep, packet->uid);
-         if (!event_client_verify(ep, &(task->answer_list), true)) {
+         if (!event_client_verify(ocs::tom::ConstElement<ocs::tom::EV>(ep), &(task->answer_list), true)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
             sge_add_event_client(packet, ep, &(task->answer_list),
@@ -1214,7 +1213,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
 
          /* fill in authentication infos from request */
          ocs::tom::set<EV_uid>(ep, packet->uid);
-         if (!event_client_verify(ep, &(task->answer_list), false)) {
+         if (!event_client_verify(ocs::tom::ConstElement<ocs::tom::EV>(ep), &(task->answer_list), false)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
             sge_mod_event_client(ep, &(task->answer_list), packet->user, packet->host);
@@ -1325,7 +1324,8 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
          */
          break;
       case ocs::gdi::Target::AR_LIST: {
-         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+         const auto master_userset_list =
+            ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
 
          // only managers and ARUSERS are allowed to create AR's
          if (!manop_is_manager(packet) && !user_is_ar_user(packet, master_userset_list)) {

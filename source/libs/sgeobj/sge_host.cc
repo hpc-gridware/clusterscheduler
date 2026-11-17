@@ -163,7 +163,7 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
       DRETURN(false);
    }
 
-   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
    /*
     * CS-2680. Not const, and that is the signature saying what happens here: a
     * hit in the matching cache advances the time of its last use, so asking
@@ -171,7 +171,7 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
     * lock of its own; only a structural change of the cache takes one, and that
     * one is neither of the data store's.
     */
-   lListElem *hgroup = hgroup_list_locate(master_hgroup_list, group_name);
+   const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name);
 
    /*
     * CS-2680. Two layers, and the order is the rule rather than an optimisation.
@@ -303,8 +303,8 @@ cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ
    DENTER(TOP_LAYER);
 
    const auto cq_hostlist = cqueue_get_hostlist(cqueue, hgrp_list);
-   // created by the first entry that passes the filter, so that no entry leaves it nullptr as before
-   lList *filtered_raw = nullptr;
+   // created by the first entry that passes the filter, so that no entry leaves it empty as before
+   ocs::tom::ListPtr<ocs::tom::HR> filtered;
    bool reaches = false;
 
    for (const auto href : cq_hostlist) {
@@ -313,15 +313,12 @@ cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ
       if (entry == nullptr || strcmp(entry, EXEC_HOSTGROUP) == 0) {
          continue;
       }
-      ocs::tom::emplace_back<HR_name>(&filtered_raw, entry);
+      ocs_href_list_emplace(filtered, entry);
    }
-   const auto filtered = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(filtered_raw);
 
    if (filtered) {
-      // out-parameter of the host reference search, which takes a raw in-out list
-      lList *resolved_raw = nullptr;
-      const bool found = href_list_find_all_references(*filtered, nullptr, hgrp_list, &resolved_raw, nullptr);
-      const auto resolved = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(resolved_raw);
+      ocs::tom::ListPtr<ocs::tom::HR> resolved;
+      const bool found = href_list_find_all_references(*filtered, nullptr, hgrp_list, &resolved, nullptr);
 
       if (found) {
          reaches = static_cast<bool>(ocs::tom::find_first<HR_name>(*resolved, hostname));
@@ -448,10 +445,8 @@ bool host_is_referenced(const lListElem *host, lList **answer_list,
              * requirement this feature exists for: an elastically provisioned
              * node has to be able to disappear again.
              */
-            // out-parameter of the host group search, which takes a raw in-out list
-            lList *host_list_raw = nullptr;
-            hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list_raw, nullptr, nullptr, false);
-            const auto host_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(host_list_raw);
+            ocs::tom::ListPtr<ocs::tom::HR> host_list;
+            hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr, nullptr, false);
             if (ocs::tom::find_first<HR_name>(*host_list, hostname)) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

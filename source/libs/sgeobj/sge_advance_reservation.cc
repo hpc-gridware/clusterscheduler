@@ -79,18 +79,24 @@
  * @param ar_list list to be searched in
  * @param ar_id id of interest
  *
- * @return if found the reference to the ar object, else nullptr
+ * @return if found the reference to the ar object, else an empty handle
  *
  * @note MT-NOTE: ar_list_locate() is MT safe
  */
-lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id) {
+ocs::tom::Element<ocs::tom::AR> ar_list_locate(const ocs::tom::ConstList<ocs::tom::AR> ar_list, const uint32_t ar_id) {
    DENTER(TOP_LAYER);
+   DRETURN(ocs::tom::find_first_rw<AR_id>(ar_list, ar_id));
+}
 
-   lListElem *ep = nullptr;
-
-   ep = ocs::tom::find_first_rw<AR_id>(ar_list, ar_id);
-
-   DRETURN(ep);
+/**
+ * @brief ar_list_locate() for an untyped caller
+ *
+ * @param ar_list list to be searched in (AR_Type), checked
+ * @param ar_id id of interest
+ * @return as ar_list_locate()
+ */
+lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id) {
+   return ar_list_locate(ocs::tom::ConstList<ocs::tom::AR>(ar_list), ar_id);
 }
 
 /**
@@ -113,9 +119,13 @@ lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id) {
  *
  * @note MT-NOTE: ar_validate() is MT safe
  */
-bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list,
-                 const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
-                 const lList *master_pe_list, const lList *master_userset_list) {
+bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, lList **alpp, const bool in_master, const bool is_spool,
+                 const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                 const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                 const ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
+                 const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
+                 const ocs::tom::ConstList<ocs::tom::PE> master_pe_list,
+                 const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
 
    uint64_t start_time;
@@ -196,7 +206,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
 
          ckpt_name = ocs::tom::get<AR_checkpoint_name>(ar);
          if (ckpt_name != nullptr) {
-            lListElem *ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
+            const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
             if (!ckpt_ep) {
                ERROR(MSG_JOB_CKPTUNKNOWN_S, ckpt_name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -219,14 +229,16 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          }
       }
       /*   AR_queue_list, SGE_LIST */
-      if (!qref_list_is_valid(ocs::tom::get<AR_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+      if (!qref_list_is_valid(ocs::tom::get<AR_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list,
+                              master_centry_list)) {
          goto ERROR;
       }
       /*   AR_mail_options, SGE_ULONG   */
       /*   AR_mail_list, SGE_LIST */
       
       /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
-      if (!qref_list_is_valid(ocs::tom::get<AR_master_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+      if (!qref_list_is_valid(ocs::tom::get<AR_master_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list,
+                              master_centry_list)) {
          goto ERROR;
       }
        
@@ -239,7 +251,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          
          pe_name = ocs::tom::get<AR_pe>(ar);
          if (pe_name) {
-            const lListElem *pep = pe_list_find_matching(master_pe_list, pe_name);
+            const auto pep = pe_list_find_matching(master_pe_list, pe_name);
             if (!pep) {
                ERROR(MSG_JOB_PEUNKNOWN_S, pe_name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -274,12 +286,14 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       }
 
       /*   AR_acl_list, SGE_LIST */
-      if (userset_list_validate_access(ocs::tom::get<AR_acl_list>(ar), ARA_name, alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ocs::tom::get<AR_acl_list>(ar), ARA_name, alpp,
+                                       master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       
       /*   AR_xacl_list, SGE_LIST */
-      if (userset_list_validate_access(ocs::tom::get<AR_xacl_list>(ar), ARA_name, alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ocs::tom::get<AR_xacl_list>(ar), ARA_name, alpp,
+                                       master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 
@@ -310,6 +324,33 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
 
 ERROR:
    DRETURN(false);
+}
+
+/**
+ * @brief ar_validate() for an untyped caller
+ *
+ * @param ar the ar to check, checked
+ * @param alpp answer list pointer
+ * @param in_master are we in qmaster?
+ * @param is_spool do we validate for spooling?
+ * @param master_cqueue_list the cluster queues (CQ_Type), checked
+ * @param master_hgroup_list the host groups (HGRP_Type), checked
+ * @param master_centry_list the complex entries (CE_Type), checked
+ * @param master_ckpt_list the checkpointing environments (CK_Type), checked
+ * @param master_pe_list the parallel environments (PE_Type), checked
+ * @param master_userset_list the usersets (US_Type), checked
+ * @return as ar_validate()
+ */
+bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list,
+                 const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
+                 const lList *master_pe_list, const lList *master_userset_list) {
+   return ar_validate(ocs::tom::Element<ocs::tom::AR>(ar), alpp, in_master, is_spool,
+                      ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
+                      ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list),
+                      ocs::tom::ConstList<ocs::tom::CE>(master_centry_list),
+                      ocs::tom::ConstList<ocs::tom::CK>(master_ckpt_list),
+                      ocs::tom::ConstList<ocs::tom::PE>(master_pe_list),
+                      ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
 }
 
 /**
@@ -449,7 +490,7 @@ void ar_state2dstring(ar_state_t state, dstring *state_as_string) {
  *
  * @note MT-NOTE: sge_ar_has_errors() is MT safe
  */
-bool sge_ar_has_errors(lListElem *ar) {
+bool sge_ar_has_errors(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -459,4 +500,14 @@ bool sge_ar_has_errors(lListElem *ar) {
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief sge_ar_has_errors() for an untyped caller
+ *
+ * @param ar advance reservation object (AR_Type), checked
+ * @return as sge_ar_has_errors()
+ */
+bool sge_ar_has_errors(const lListElem *ar) {
+   return sge_ar_has_errors(ocs::tom::ConstElement<ocs::tom::AR>(ar));
 }

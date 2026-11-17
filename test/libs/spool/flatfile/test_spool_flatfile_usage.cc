@@ -127,10 +127,10 @@ int main(int /*argc*/, char * /*argv*/[]) {
    lList *alp = nullptr;
    int id = 1;
 
-   lListElem *sconf = sconf_create_default();
-   CHECK(id, "sconf_create_default returns a scheduler config", sconf != nullptr); id++;
+   const auto sconf = sconf_create_default();
+   CHECK(id, "sconf_create_default returns a scheduler config", static_cast<bool>(sconf)); id++;
 
-   const char *file1 = spool_flatfile_write_object(&alp, sconf, false,
+   const char *file1 = spool_flatfile_write_object(&alp, sconf.get(), false,
                                                    SC_fields, &qconf_comma_sfi,
                                                    SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
    CHECK(id, "scheduler config write returns non-null", file1 != nullptr); id++;
@@ -163,8 +163,6 @@ int main(int /*argc*/, char * /*argv*/[]) {
       sge_free(&file1);
       lFreeList(&alp);
    }
-
-   lFreeElem(&sconf);
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

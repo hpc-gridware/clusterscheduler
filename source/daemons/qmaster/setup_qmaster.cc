@@ -177,7 +177,7 @@ static int
 remove_invalid_job_references(int user);
 
 static void
-remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list);
+remove_irrelevant_userprj_usage(bool user, ocs::tom::ConstList<ocs::tom::UA> usage_weight_list);
 
 static void
 debit_all_jobs_from_qs();
@@ -1269,10 +1269,9 @@ setup_qmaster() {
     * from objects that were spooled by such older versions.
     */
    {
-      lList *usage_weight_list = sconf_get_usage_weight_list();
-      remove_irrelevant_userprj_usage(true, usage_weight_list);
-      remove_irrelevant_userprj_usage(false, usage_weight_list);
-      lFreeList(&usage_weight_list);
+      const auto usage_weight_list = sconf_get_usage_weight_list();
+      remove_irrelevant_userprj_usage(true, usage_weight_list.get());
+      remove_irrelevant_userprj_usage(false, usage_weight_list.get());
    }
 
    DPRINTF("share tree list-----------------------------------\n");
@@ -1550,10 +1549,10 @@ remove_invalid_job_references(int user) {
  * the master list, so it walks the list for writing.
  *
  * @param user true for the user objects, false for the project objects
- * @param usage_weight_list the usage weights that define the relevant attributes
+ * @param usage_weight_list the usage weights that define the relevant attributes (UA_Type), may be an empty handle
  */
 static void
-remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list) {
+remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::tom::UA> usage_weight_list) {
    DENTER(TOP_LAYER);
 
    lListElem *up;

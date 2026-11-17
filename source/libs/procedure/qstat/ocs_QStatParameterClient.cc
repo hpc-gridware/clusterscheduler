@@ -270,7 +270,6 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
    int usageshowed = 0;
    char *argstr;
    uint32_t full = 0;
-   lList *plstringopt = nullptr;
 
 
    /* Loop over all options. Only valid options can be in the
@@ -289,9 +288,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
          if (argstr) {
             // a later -j replaces the job list of an earlier one
             jid_list_.reset();
-            lList *jids = nullptr;
-            str_list_parse_from_string(&jids, argstr, ",");
-            jid_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(jids);
+            jid_list_ = str_list_parse_from_string(argstr, ",");
             sge_free(&argstr);
          }
       }
@@ -439,33 +436,27 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
          sge_free(&argstr);
       }
 
-      // the parser appends to the lists, so they are handed over and taken back
-      lList *users = user_list_.release();
-      while (parse_multi_stringlist(ppcmdline, "-u", &alp, &users, ST_Type, ST_name)) {
+      // the parser appends to the lists
+      const auto cmdline = ocs::tom::List<ocs::tom::SPA>(*ppcmdline);
+      while (parse_multi_stringlist<ST_name>(cmdline, "-u", &alp, user_list_)) {
          ;
       }
-      user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
 
-      lList *queue_users = queue_user_list_.release();
-      while (parse_multi_stringlist(ppcmdline, "-U", &alp, &queue_users, ST_Type, ST_name)) {
+      while (parse_multi_stringlist<ST_name>(cmdline, "-U", &alp, queue_user_list_)) {
          need_queues_ = true;
       }
-      queue_user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(queue_users);
 
-      lList *pe_refs = pe_ref_list_.release();
-      while (parse_multi_stringlist(ppcmdline, "-pe", &alp, &pe_refs, ST_Type, ST_name)) {
+      while (parse_multi_stringlist<ST_name>(cmdline, "-pe", &alp, pe_ref_list_)) {
          need_queues_ = true;
       }
-      pe_ref_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(pe_refs);
 
-      lList *queue_refs = queue_ref_list_.release();
-      while (parse_multi_stringlist(ppcmdline, "-q", &alp, &queue_refs, QR_Type, QR_name)) {
+      while (parse_multi_stringlist<QR_name>(cmdline, "-q", &alp, queue_ref_list_)) {
          need_queues_ = true;
       }
-      queue_ref_list_ = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_refs);
 
-      while (parse_multi_stringlist(ppcmdline, "-g", &alp, &plstringopt, ST_Type, ST_name)) {
-         group_opt_ |= parse_group_options(plstringopt, &alp);
+      ocs::tom::ListPtr<ocs::tom::ST> plstringopt;
+      while (parse_multi_stringlist<ST_name>(cmdline, "-g", &alp, plstringopt)) {
+         group_opt_ |= parse_group_options(*plstringopt, &alp);
 
          // -g c is here misused to switch to a different output mode.
          // @todo We should consider to introduce a switch like -mode ...
@@ -474,7 +465,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
             group_opt_ &= ~GROUP_CQ_SUMMARY;
          }
          need_queues_ = true;
-         lFreeList(&plstringopt);
+         plstringopt.reset();
       }
    }
 
@@ -623,9 +614,7 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       sge_exit(1);
    }
 
-   lList *users = user_list_.release();
-   str_list_transform_user_list(&users, answer_list, username);
-   user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
+   str_list_transform_user_list(user_list_, answer_list, username);
 
    // CS-2387: resolve SGE_QSTAT_LOAD_AVG on the client side so that the value
    // reaches server-rendered qstat (ExecContext::SERVER) through the marshalled

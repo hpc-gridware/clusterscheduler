@@ -41,6 +41,11 @@
 
 #include <iosfwd>
 
+#include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+
 #include "sgeobj/cull/sge_sharetree_STN_L.h"
 
 /**
@@ -99,19 +104,22 @@ enum {
 /// The path from the share tree root down to one node
 typedef struct {
    int depth;           ///< how many entries `nodes` has
-   lListElem **nodes;   ///< the nodes, root first
+   ocs::tom::Element<ocs::tom::STN> *nodes;   ///< the nodes, root first; allocated with sge_malloc()
 } ancestors_t;
 
-bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id);
-int show_sharetree_path(std::ostream &os, lListElem *root, const char *path);
-int show_sharetree(std::ostream &os, const lListElem *ep, const char *indent, int level = 0);
-lListElem *getSNTemplate();
-lListElem *search_named_node ( lListElem *ep, const char *name );
-lListElem *search_named_node_path ( lListElem *ep, const char *path, ancestors_t *ancestors );
+bool id_sharetree(lList **alpp, ocs::tom::Element<ocs::tom::STN> ep, int id);
+OCS_TRANSITIONAL bool id_sharetree(lList **alpp, lListElem *ep, int id);
+int show_sharetree_path(std::ostream &os, ocs::tom::Element<ocs::tom::STN> root, const char *path);
+int show_sharetree(std::ostream &os, ocs::tom::ConstElement<ocs::tom::STN> ep, const char *indent, int level = 0);
+ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate();
+ocs::tom::Element<ocs::tom::STN> search_named_node(ocs::tom::Element<ocs::tom::STN> ep, const char *name);
+ocs::tom::Element<ocs::tom::STN> search_named_node_path(ocs::tom::Element<ocs::tom::STN> ep, const char *path,
+                                                        ancestors_t *ancestors);
+OCS_TRANSITIONAL lListElem *search_named_node_path(lListElem *ep, const char *path, ancestors_t *ancestors);
 void free_ancestors( ancestors_t *ancestors);
-lListElem *sge_search_unspecified_node(lListElem *ep);
+ocs::tom::Element<ocs::tom::STN> sge_search_unspecified_node(ocs::tom::Element<ocs::tom::STN> ep);
 #ifdef notdef
 lListElem *search_ancestor_list ( lListElem *ep, char *name, ancestors_t *ancestors );
 #endif
-lListElem *search_ancestors(lListElem *ep, const char *name,
-                                   ancestors_t *ancestors, int depth);
+ocs::tom::Element<ocs::tom::STN> search_ancestors(ocs::tom::Element<ocs::tom::STN> ep, const char *name,
+                                                  ancestors_t *ancestors, int depth);

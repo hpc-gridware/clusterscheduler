@@ -74,8 +74,8 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                                sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
 
-   // in-out parameter of sconf_set_config(), which takes the list over on success
-   lList *list = nullptr;
+   // sconf_set_config() takes the list over on success
+   ocs::tom::ListPtr<ocs::tom::SC> list;
    lList *answer_list = nullptr;
 
    // the event carries the scheduler configuration (SC_Type); taken without a check, as the untyped code did
@@ -83,13 +83,12 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    /* if neccessary, create list and copy schedd info */
    if (const auto ep = data_list.front(); ep) {
-      auto new_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd config");
-      new_list->push_back(data_list.extract(ep));
-      list = new_list.release();
+      list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd config");
+      list->push_back(data_list.extract(ep));
    }
 
-   if (!sconf_set_config(&list, &answer_list)) {
-      lFreeList(&list);
+   if (!sconf_set_config(list, &answer_list)) {
+      list.reset();
       answer_list_output(&answer_list);
    }
 

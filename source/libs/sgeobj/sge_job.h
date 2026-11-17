@@ -39,7 +39,9 @@
  * @see sge_job.cc
  */
 
+#include <array>
 #include <tuple>
+#include <utility>
 
 #include "uti/sge_htable.h"
 #include "uti/sge_dstring.h"
@@ -52,11 +54,13 @@
 #include "sgeobj/tom/ocs_tom_CX.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
 #include "sgeobj/tom/ocs_tom_PA.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_QR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
@@ -367,14 +371,11 @@ uint32_t job_get_enrolled_ja_tasks(ocs::tom::ConstElement<ocs::tom::JB> job);
 OCS_TRANSITIONAL uint32_t job_get_enrolled_ja_tasks(const lListElem *job);
 
 uint32_t job_get_submit_ja_tasks(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL uint32_t job_get_submit_ja_tasks(const lListElem *job);
 
 ocs::tom::Element<ocs::tom::JAT> job_enroll(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
                                             uint32_t ja_task_number);
-OCS_TRANSITIONAL lListElem *job_enroll(lListElem *job, lList **answer_list, uint32_t task_number);
 
 void job_unenroll(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list, lListElem **ja_task);
-OCS_TRANSITIONAL void job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task);
 
 void job_delete_not_enrolled_ja_task(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
                                      uint32_t ja_task_number);
@@ -401,8 +402,6 @@ OCS_TRANSITIONAL uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id
 
 ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_hold(ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                uint32_t ja_task_id, uint32_t hold_state);
-OCS_TRANSITIONAL lListElem *job_get_ja_task_template_hold(const lListElem *job, uint32_t ja_task_id,
-                                                          uint32_t hold_state);
 
 ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                   uint32_t ja_task_id);
@@ -414,19 +413,16 @@ OCS_TRANSITIONAL lListElem *job_search_task(const lListElem *job, lList **answer
 
 ocs::tom::Element<ocs::tom::JAT> job_create_task(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
                                                  uint32_t ja_task_id);
-OCS_TRANSITIONAL lListElem *job_create_task(lListElem *job, lList **answer_list, uint32_t ja_task_id);
 
 int job_list_add_job(lList **job_list, const char *name, ocs::tom::Element<ocs::tom::JB> job, int check);
 OCS_TRANSITIONAL int job_list_add_job(lList **job_list, const char *name, lListElem *job, int check);
 
-void job_destroy_hold_id_lists(ocs::tom::ConstElement<ocs::tom::JB> job, lList *id_list[16]);
+[[nodiscard]] std::array<std::pair<uint32_t, ocs::tom::ListPtr<ocs::tom::RN>>, 16>
+job_create_hold_id_lists(ocs::tom::ConstElement<ocs::tom::JB> job);
+OCS_TRANSITIONAL void job_create_hold_id_lists(const lListElem *job, lList *id_list[16], uint32_t hold_state[16]);
 OCS_TRANSITIONAL void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]);
 
-void job_create_hold_id_lists(ocs::tom::ConstElement<ocs::tom::JB> job, lList *id_list[16], uint32_t hold_state[16]);
-OCS_TRANSITIONAL void job_create_hold_id_lists(const lListElem *job, lList *id_list[16], uint32_t hold_state[16]);
-
 const char *job_get_shell_start_mode(ocs::tom::ConstElement<ocs::tom::QU> queue, const char *conf_shell_start_mode);
-OCS_TRANSITIONAL const char *job_get_shell_start_mode(const lListElem *queue, const char *conf_shell_start_mode);
 
 bool job_is_array(ocs::tom::ConstElement<ocs::tom::JB> job);
 OCS_TRANSITIONAL bool job_is_array(const lListElem *job);
@@ -459,8 +455,6 @@ OCS_TRANSITIONAL uint32_t job_get_biggest_enrolled_task_id(const lListElem *job)
 int job_list_register_new_job(ocs::tom::ConstList<ocs::tom::JB> job_list, uint32_t max_jobs, int force_registration);
 OCS_TRANSITIONAL int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int force_registration);
 
-lList* ja_task_list_split_group(lList **task_list);
-
 int job_initialize_id_lists(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
 OCS_TRANSITIONAL int job_initialize_id_lists(lListElem *job, lList **answer_list);
 
@@ -471,7 +465,6 @@ OCS_TRANSITIONAL void job_initialize_env(lListElem *job, lList **answer_list, co
                                          const char *unqualified_hostname, const char *qualified_hostname);
 
 const char *job_get_env_string(ocs::tom::ConstElement<ocs::tom::JB> job, const char *variable);
-OCS_TRANSITIONAL const char *job_get_env_string(const lListElem *job, const char *variable);
 
 void job_check_correct_id_sublists(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
 OCS_TRANSITIONAL void job_check_correct_id_sublists(lListElem *job, lList **answer_list);
@@ -518,12 +511,8 @@ OCS_TRANSITIONAL const lListElem *job_get_request(const lListElem *job, const ch
 bool job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, const char *name,
                                    double *value, ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
                                    uint32_t scope);
-OCS_TRANSITIONAL bool job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const char *name,
-                                                    double *value, const lListElem *complex_definition,
-                                                    uint32_t scope);
 
 void adjust_slave_task_debit_slots(ocs::tom::ConstElement<ocs::tom::PE> pe, int &slave_debit_slots);
-OCS_TRANSITIONAL void adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots);
 
 /* unparse functions */
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem,
@@ -553,7 +542,6 @@ OCS_TRANSITIONAL bool sge_unparse_acl_dstring(dstring *category_str, const char 
                                               const lList *grp_list, const lList *acl_list, const char *option);
 
 bool job_verify(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, bool do_cull_verify);
-OCS_TRANSITIONAL bool job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify);
 
 bool job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
 OCS_TRANSITIONAL bool job_verify_submitted_job(lListElem *job, lList **answer_list);
@@ -600,7 +588,6 @@ bool
 job_parse_validation_level(int *level, const char *input, int prog_number, lList **answer_list);
 
 bool job_is_requesting_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, const char *resource_name);
-OCS_TRANSITIONAL bool job_is_requesting_consumable(const lListElem *jep, const char *resource_name);
 
 // Defines and Functions for Job Resource Sets (JRS_Type)
 
@@ -643,14 +630,12 @@ std::string get_scope_list_name(uint32_t scope, int nm, bool with_colon = false)
 
 ocs::tom::ConstElement<ocs::tom::JRS> job_get_request_set(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t scope);
 ocs::tom::Element<ocs::tom::JRS> job_get_request_setRW(ocs::tom::Element<ocs::tom::JB> job, uint32_t scope);
-OCS_TRANSITIONAL lListElem *job_get_request_setRW(lListElem *job, uint32_t scope);
 ocs::tom::Element<ocs::tom::JRS> job_get_or_create_request_setRW(ocs::tom::Element<ocs::tom::JB> job, uint32_t scope);
 OCS_TRANSITIONAL lListElem *job_get_or_create_request_setRW(lListElem *job, uint32_t scope);
 
 bool job_request_set_remove_duplicates(ocs::tom::Element<ocs::tom::JB> job);
 OCS_TRANSITIONAL bool job_request_set_remove_duplicates(lListElem *job);
 bool job_request_set_has_queue_requests(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL bool job_request_set_has_queue_requests(const lListElem *job);
 
 ocs::tom::ConstElement<ocs::tom::CE> job_get_highest_hard_request(ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                   const char *request_name);
@@ -674,18 +659,14 @@ OCS_TRANSITIONAL const lList *job_get_hard_queue_list(const lListElem *job);
 ocs::tom::ConstList<ocs::tom::QR> job_get_hard_queue_list(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t scope);
 OCS_TRANSITIONAL const lList *job_get_hard_queue_list(const lListElem *job, uint32_t scope);
 ocs::tom::ConstList<ocs::tom::QR> job_get_soft_queue_list(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL const lList *job_get_soft_queue_list(const lListElem *job);
 ocs::tom::ConstList<ocs::tom::QR> job_get_soft_queue_list(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t scope);
-OCS_TRANSITIONAL const lList *job_get_soft_queue_list(const lListElem *job, uint32_t scope);
 ocs::tom::ConstList<ocs::tom::QR> job_get_master_hard_queue_list(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL const lList *job_get_master_hard_queue_list(const lListElem *job);
 
 ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(ocs::tom::Element<ocs::tom::JB> job, uint32_t scope, bool hard);
 OCS_TRANSITIONAL lList *job_get_resource_listRW(lListElem *job, uint32_t scope, bool hard);
 ocs::tom::List<ocs::tom::CE> job_get_hard_resource_listRW(ocs::tom::Element<ocs::tom::JB> job);
 OCS_TRANSITIONAL lList *job_get_hard_resource_listRW(lListElem *job);
 ocs::tom::List<ocs::tom::CE> job_get_soft_resource_listRW(ocs::tom::Element<ocs::tom::JB> job);
-OCS_TRANSITIONAL lList *job_get_soft_resource_listRW(lListElem *job);
 ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(ocs::tom::Element<ocs::tom::JB> job, uint32_t scope, bool hard);
 OCS_TRANSITIONAL lList *job_get_queue_listRW(lListElem *job, uint32_t scope, bool hard);
 
@@ -725,7 +706,6 @@ OCS_TRANSITIONAL void job_set_allocation_rule(lListElem *job, const char *alloca
 
 const char *
 job_get_effective_command_line(ocs::tom::ConstElement<ocs::tom::JB> job, dstring *dstr, const char *client);
-OCS_TRANSITIONAL const char *job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *client);
 
 void job_set_command_line(ocs::tom::Element<ocs::tom::JB> job, const char *client);
 OCS_TRANSITIONAL void job_set_command_line(lListElem *job, const char *client);
@@ -737,7 +717,6 @@ void job_set_sync_options(ocs::tom::Element<ocs::tom::JB> job, uint32_t sync_opt
 OCS_TRANSITIONAL void job_set_sync_options(lListElem *job, uint32_t sync_options);
 
 std::string job_get_sync_options_string(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL std::string job_get_sync_options_string(const lListElem *job);
 
 bool
 job_is_visible(const ocs::gdi::Packet *packet, const char *owner, bool is_manager);
@@ -745,8 +724,7 @@ job_is_visible(const ocs::gdi::Packet *packet, const char *owner, bool is_manage
 void job_normalize_priority(ocs::tom::Element<ocs::tom::JB> jep, uint32_t priority);
 OCS_TRANSITIONAL void job_normalize_priority(lListElem *jep, uint32_t priority);
 
-lList *
-gdil_make_host_unique(const lList *gdil_in);
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::JG> gdil_make_host_unique(ocs::tom::ConstList<ocs::tom::JG> gdil_list);
 
 uint32_t jatask_combine_state_and_status_for_output(ocs::tom::ConstElement<ocs::tom::JB> job,
                                                     ocs::tom::ConstElement<ocs::tom::JAT> jatep);

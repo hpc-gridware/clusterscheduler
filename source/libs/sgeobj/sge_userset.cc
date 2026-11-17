@@ -88,24 +88,18 @@ const char* userset_types[] = {
  * @param answer_list AN_Type list
  * @param name the name the userset carries
  *
- * @return US_Type object, or nullptr with the reason in the answer list
+ * @return US_Type object, or an empty handle with the reason in the answer list
  */
-lListElem *
+ocs::tom::ElementPtr<ocs::tom::US>
 userset_create(lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
-   lListElem *ret = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::US> ret;
 
    if (name != nullptr) {
-      ret = lCreateElem(US_Type);
-
-      if (ret != nullptr) {
-         ocs::tom::set<US_name>(ret, name);
-         ocs::tom::set<US_type>(ret, US_ACL | US_DEPT);
-      } else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-         answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
-      }
+      ret = ocs::tom::ElementPtr<ocs::tom::US>::create();
+      ocs::tom::set<US_name>(ret, name);
+      ocs::tom::set<US_type>(ret, US_ACL | US_DEPT);
    } else {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);

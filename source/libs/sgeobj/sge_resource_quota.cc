@@ -885,7 +885,7 @@ int rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *
  * @param rqs rule set (RQS_Type)
  * @param user user name
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be nullptr
+ * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
  * @param project project name
  * @param pe pe name
  * @param host host name
@@ -899,7 +899,8 @@ int rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *
  * @note MT-NOTE: rqs_get_matching_rule() is MT safe
  */
 ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(const ocs::tom::ConstElement<ocs::tom::RQS> rqs,
-                                                       const char *user, const char *group, const lList *grp_list,
+                                                       const char *user, const char *group,
+                                                       const ocs::tom::ConstList<ocs::tom::ST> grp_list,
                                                        const char *project, const char *pe, const char *host,
                                                        const char *queue,
                                                        const ocs::tom::ConstList<ocs::tom::US> userset_list,
@@ -1080,7 +1081,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
  * @param master_hgroup_list master hostgroup list (HGRP_Type)
  * @param group the user's primary group
  * @param is_xscope true when @p scope is the exclusion side of the filter
- * @param grp_list the user's supplementary groups (ST_Type), may be nullptr
+ * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
  *
  * @return true, if value was found in scope false, if value was not found in scope
  *
@@ -1089,7 +1090,8 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
 static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> scope, const int filter_type,
                                       const char *value, const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                                       const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
-                                      const char *group, const bool is_xscope, const lList *grp_list) {
+                                      const char *group, const bool is_xscope,
+                                      const ocs::tom::ConstList<ocs::tom::ST> grp_list) {
    DENTER(TOP_LAYER);
 
    bool found = false;
@@ -1156,10 +1158,8 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                } else { /* FILTER_HOSTS */
                   if (!ocs::is_pattern(group_name)) {
                      if (const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name)) {
-                        // out-parameter of hgroup_find_all_references(), which has no typed form for it
-                        lList *raw_host_list = nullptr;
-                        hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &raw_host_list, nullptr);
-                        const auto host_list = ocs::tom::ListPtr<ocs::tom::HR>(raw_host_list);
+                        ocs::tom::ListPtr<ocs::tom::HR> host_list;
+                        hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
                         if (host_list && ocs::tom::find_first<HR_name>(*host_list, query)) {
                            found = true;
                            break;
@@ -1178,10 +1178,8 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                   } else {
                      for (const auto hgroup : master_hgroup_list) {
                         if (fnmatch(group_name, ocs::tom::get<HGRP_name>(hgroup), 0) == 0) {
-                           // out-parameter of hgroup_find_all_references(), which has no typed form for it
-                           lList *raw_host_list = nullptr;
-                           hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &raw_host_list, nullptr);
-                           const auto host_list = ocs::tom::ListPtr<ocs::tom::HR>(raw_host_list);
+                           ocs::tom::ListPtr<ocs::tom::HR> host_list;
+                           hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
                            if (host_list && ocs::tom::find_first<HR_name>(*host_list, query)) {
                               found = true;
                               break;
@@ -1264,10 +1262,8 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
             } else {
                for (const auto hgroup : master_hgroup_list) {
                   if (fnmatch(group_name, ocs::tom::get<HGRP_name>(hgroup), 0) == 0) {
-                     // out-parameter of hgroup_find_all_references(), which has no typed form for it
-                     lList *raw_host_list = nullptr;
-                     hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &raw_host_list, nullptr);
-                     const auto host_list = ocs::tom::ListPtr<ocs::tom::HR>(raw_host_list);
+                     ocs::tom::ListPtr<ocs::tom::HR> host_list;
+                     hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
                      for (const auto host_ep : *host_list) {
                         if (fnmatch(query, ocs::tom::get<HR_name>(host_ep), 0) == 0) {
                            found = true;
@@ -1299,7 +1295,7 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
  * @param rule resource quota rule (RQR_Type)
  * @param user user name
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be nullptr
+ * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
  * @param project project name
  * @param pe pe name
  * @param host host name
@@ -1312,33 +1308,35 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
  * @note MT-NOTE: rqs_is_matching_rule() is MT safe
  */
 bool rqs_is_matching_rule(const ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *user, const char *group,
-                          const lList *grp_list, const char *project, const char *pe, const char *host,
-                          const char *queue, const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                          const ocs::tom::ConstList<ocs::tom::ST> grp_list, const char *project, const char *pe,
+                          const char *host, const char *queue,
+                          const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                           const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    // typed empty handles: a bare nullptr would be ambiguous with the untyped rqs_filter_match()
    const ocs::tom::ConstList<ocs::tom::US> no_usersets;
    const ocs::tom::ConstList<ocs::tom::HGRP> no_hgroups;
+   const ocs::tom::ConstList<ocs::tom::ST> no_groups;
 
    if (!rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, user, master_userset_list, no_hgroups,
                          group, grp_list)) {
       DRETURN(false);
    }
    if (!rqs_filter_match(ocs::tom::get<RQR_filter_projects>(rule), FILTER_PROJECTS, project, no_usersets, no_hgroups,
-                         nullptr, nullptr)) {
+                         nullptr, no_groups)) {
       DRETURN(false);
    }
    if (!rqs_filter_match(ocs::tom::get<RQR_filter_pes>(rule), FILTER_PES, pe, no_usersets, no_hgroups, nullptr,
-                         nullptr)) {
+                         no_groups)) {
       DRETURN(false);
    }
    if (!rqs_filter_match(ocs::tom::get<RQR_filter_queues>(rule), FILTER_QUEUES, queue, no_usersets, no_hgroups,
-                         nullptr, nullptr)) {
+                         nullptr, no_groups)) {
       DRETURN(false);
    }
    if (!rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(rule), FILTER_HOSTS, host, no_usersets, master_hgroup_list,
-                         nullptr, nullptr)) {
+                         nullptr, no_groups)) {
       DRETURN(false);
    }
 
@@ -1351,7 +1349,7 @@ bool rqs_is_matching_rule(const ocs::tom::ConstElement<ocs::tom::RQR> rule, cons
  * @param rule resource quota rule (RQR_Type), checked
  * @param user user name
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be nullptr
+ * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
  * @param project project name
  * @param pe pe name
  * @param host host name
@@ -1364,8 +1362,9 @@ bool rqs_is_matching_rule(const ocs::tom::ConstElement<ocs::tom::RQR> rule, cons
 bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
                           const char *project, const char *pe, const char *host, const char *queue,
                           const lList *master_userset_list, const lList *master_hgroup_list) {
-   return rqs_is_matching_rule(ocs::tom::ConstElement<ocs::tom::RQR>(rule), user, group, grp_list, project, pe, host,
-                               queue, ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
+   return rqs_is_matching_rule(ocs::tom::ConstElement<ocs::tom::RQR>(rule), user, group,
+                               ocs::tom::ConstList<ocs::tom::ST>(grp_list), project, pe, host, queue,
+                               ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
                                ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
 }
 
@@ -1381,7 +1380,7 @@ bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, 
  * @param name hostname/hostgroup name/wildcard expression
  * @param master_hgroup_list the host group list (HGRP_Type)
  * @param is_xscope true when @p scope is the exclusion side of the filter
- * @param grp_list the user's supplementary groups (ST_Type), may be nullptr
+ * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
  *
  * @return Returns true if 'name' matches
  *
@@ -1389,7 +1388,7 @@ bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, 
  */
 static bool rqs_match_host_scope(const ocs::tom::ConstList<ocs::tom::ST> scope, const char *name,
                                  const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, const bool is_xscope,
-                                 const lList *grp_list) {
+                                 const ocs::tom::ConstList<ocs::tom::ST> grp_list) {
    DENTER(TOP_LAYER);
 
    if (ocs::tom::find_first<ST_name>(scope, "*")) {
@@ -1433,7 +1432,7 @@ static bool rqs_match_host_scope(const ocs::tom::ConstList<ocs::tom::ST> scope, 
  * @param master_userset_list master userset list (US_Type)
  * @param master_hgroup_list master hostgroup list (HGRP_Type)
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be nullptr
+ * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
  *
  * @return true if the value does match false if the value does not match
  *
@@ -1442,7 +1441,7 @@ static bool rqs_match_host_scope(const ocs::tom::ConstList<ocs::tom::ST> scope, 
 bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const int filter_type, const char *value,
                       const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                       const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, const char *group,
-                      const lList *grp_list) {
+                      const ocs::tom::ConstList<ocs::tom::ST> grp_list) {
    DENTER(BASIS_LAYER);
    bool ret = true;
 
@@ -1535,7 +1534,7 @@ bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const
  * @param master_userset_list master userset list (US_Type), checked; may be nullptr
  * @param master_hgroup_list master hostgroup list (HGRP_Type), checked; may be nullptr
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be nullptr
+ * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
  *
  * @return as rqs_filter_match()
  */
@@ -1543,7 +1542,8 @@ bool rqs_filter_match(const lListElem *filter, int filter_type, const char *valu
                       const lList *master_hgroup_list, const char *group, const lList *grp_list) {
    return rqs_filter_match(ocs::tom::ConstElement<ocs::tom::RQRF>(filter), filter_type, value,
                            ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
-                           ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list), group, grp_list);
+                           ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list), group,
+                           ocs::tom::ConstList<ocs::tom::ST>(grp_list));
 }
 
 /**

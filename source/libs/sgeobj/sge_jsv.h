@@ -42,6 +42,11 @@
 
 #include "uti/sge_dstring.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JSV.h"
+
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
 
 /// The JSV runs in a submit client rather than in qmaster
@@ -52,17 +57,17 @@ jsv_url_parse(dstring *jsv_url_str, lList **answer_list, dstring *type,
               dstring *user, dstring *path, bool in_client);
 
 bool
-jsv_send_command(lListElem *jsv, lList **answer_list, const char *message);
+jsv_send_command(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const char *message);
 
 bool
-jsv_do_verify(const char *context, lListElem **job,
-              lList **answer_list, bool hold_global_lock);
+jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job, lList **answer_list, bool holding_lock);
+OCS_TRANSITIONAL bool jsv_do_verify(const char *context, lListElem **job, lList **answer_list, bool holding_lock);
 
 bool
-jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit);
+jsv_stop(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, bool try_soft_quit);
 
 bool
-jsv_start(lListElem *jsv, lList **answer_list);
+jsv_start(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list);
 
 bool
 jsv_list_add(const char *name, const char *context, 

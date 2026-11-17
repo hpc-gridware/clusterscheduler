@@ -58,15 +58,18 @@ ocs::Role::locate(const lList *role_list, const char *name) {
 }
 
 /**
- * Validate a Role element.
+ * @brief Validate a Role element
+ *
  * Checks that the role name is a valid GCS object name.
- * @param role         The role element to validate.
- * @param answer_list  Receives error messages.
- * @param startup      True when called during qmaster startup (relaxes some checks).
- * @return             True if the role is valid.
+ *
+ * @param role the role element to validate
+ * @param answer_list receives error messages
+ * @param startup true when called during qmaster startup (relaxes some checks)
+ * @return true if the role is valid
  */
 bool
-ocs::Role::validate(const lListElem *role, lList **answer_list, bool startup) {
+ocs::Role::validate(const ocs::tom::ConstElement<ocs::tom::RL> role, lList **answer_list,
+                    [[maybe_unused]] const bool startup) {
    DENTER(TOP_LAYER);
 
    if (const char *name = ocs::tom::get<RL_name>(role);
@@ -75,6 +78,19 @@ ocs::Role::validate(const lListElem *role, lList **answer_list, bool startup) {
    }
 
    DRETURN(true);
+}
+
+/**
+ * @brief validate() for an untyped caller
+ *
+ * @param role the role element to validate (RL_Type), checked
+ * @param answer_list receives error messages
+ * @param startup true when called during qmaster startup
+ * @return as validate()
+ */
+bool
+ocs::Role::validate(const lListElem *role, lList **answer_list, const bool startup) {
+   return validate(ocs::tom::ConstElement<ocs::tom::RL>(role), answer_list, startup);
 }
 
 /**
@@ -89,10 +105,11 @@ ocs::Role::validate(const lListElem *role, lList **answer_list, bool startup) {
  * @param[out] answer_list receives the warnings
  */
 void
-ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list) {
+ocs::Role::check_integrity(const ocs::tom::ConstList<ocs::tom::RL> role_list,
+                           const ocs::tom::ConstList<ocs::tom::US> userset_list, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   for_each_ep_lv(role, role_list) {
+   for (const auto role : role_list) {
       const char *role_name = ocs::tom::get<RL_name>(role);
 
       // check each user_list entry against the master userset list
@@ -115,6 +132,19 @@ ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lL
    }
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief check_integrity() for an untyped caller
+ *
+ * @param role_list the roles to scan (RL_Type), checked
+ * @param userset_list the usersets the roles may refer to (US_Type), checked
+ * @param[out] answer_list receives the warnings
+ */
+void
+ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list) {
+   check_integrity(ocs::tom::ConstList<ocs::tom::RL>(role_list), ocs::tom::ConstList<ocs::tom::US>(userset_list),
+                   answer_list);
 }
 
 /**
@@ -487,15 +517,15 @@ static bool match_value_constraint(const std::string &field, const ocs::Role::Ma
 }
 
 /**
- * DFS reachability check: returns true if @a target is reachable from @a from
- * via parent_role_list links.
- * @param from      Starting role name.
- * @param target    Role name to search for.
- * @param role_list Master role list.
- * @param visited   Accumulates visited role names to avoid redundant traversal.
- * @return          True if @a target is reachable from @a from.
+ * @brief DFS reachability check over parent_role_list links
+ *
+ * @param from starting role name
+ * @param target role name to search for
+ * @param role_list master role list
+ * @param visited accumulates visited role names to avoid redundant traversal
+ * @return true if @p target is reachable from @p from
  */
-static bool reachable(const char *from, const char *target, const lList *role_list,
+static bool reachable(const char *from, const char *target, const ocs::tom::ConstList<ocs::tom::RL> role_list,
                       std::unordered_set<std::string> &visited) {
    DENTER(TOP_LAYER);
    if (strcmp(from, target) == 0) {
@@ -518,15 +548,18 @@ static bool reachable(const char *from, const char *target, const lList *role_li
 }
 
 /**
- * DFS helper for collect_perm_rules(): appends rules from @a role_name and its
- * ancestors into @a rules in child-first DFS order.
- * @param role_name  Current role being processed.
- * @param role_list  Master role list.
- * @param rules      Accumulates parsed PermRule objects.
- * @param visited    Prevents re-processing roles reached via multiple paths.
+ * @brief DFS helper for collect_perm_rules()
+ *
+ * Appends rules from @p role_name and its ancestors into @p rules in
+ * child-first DFS order.
+ *
+ * @param role_name current role being processed
+ * @param role_list master role list
+ * @param rules accumulates parsed PermRule objects
+ * @param visited prevents re-processing roles reached via multiple paths
  */
-static void collect_recursive(const char *role_name, const lList *role_list, ocs::Role::PermRuleList &rules,
-                               std::unordered_set<std::string> &visited) {
+static void collect_recursive(const char *role_name, const ocs::tom::ConstList<ocs::tom::RL> role_list,
+                              ocs::Role::PermRuleList &rules, std::unordered_set<std::string> &visited) {
    DENTER(TOP_LAYER);
    if (role_name == nullptr || !visited.insert(role_name).second) {
       DRETURN_VOID;
@@ -559,25 +592,23 @@ static void collect_recursive(const char *role_name, const lList *role_list, ocs
 // -----------------------------------------------------------------------------
 
 /**
- * Create a Role template element with default attribute values.
+ * @brief Create a Role template element with default attribute values
+ *
  * Used by qconf -arole when opening an editor for a new role.
- * The caller is responsible for freeing the returned element.
- * @return  A new RL_Type element with default values, or nullptr on error.
+ *
+ * @return a new RL_Type element with default values
  */
-lListElem *
+ocs::tom::ElementPtr<ocs::tom::RL>
 ocs::Role::create_template() {
    DENTER(TOP_LAYER);
 
    auto role = ocs::tom::ElementPtr<ocs::tom::RL>::create();
-   if (role == nullptr) {
-      DRETURN(nullptr);
-   }
 
    ocs::tom::set<RL_name>(role, "template");
    ocs::tom::set<RL_enabled>(role, true);
    ocs::tom::set<RL_perm_list>(role, "NONE");
 
-   DRETURN(role.release());
+   DRETURN(role);
 }
 
 /**
@@ -600,15 +631,19 @@ ocs::Role::match_rule(const PermRule &rule, const MatchContext &ctx) {
 }
 
 /**
- * Check whether adding candidate_parent to role_name's parent_role_list would
- * create a cycle in the role hierarchy.
- * @param role_name        The role being modified.
- * @param candidate_parent The proposed new parent.
- * @param role_list        The master role list.
- * @return                 True if a cycle would result.
+ * @brief Would a new parent create a cycle in the role hierarchy?
+ *
+ * Checks whether adding candidate_parent to role_name's parent_role_list
+ * would create a cycle.
+ *
+ * @param role_name the role being modified
+ * @param candidate_parent the proposed new parent
+ * @param role_list the master role list
+ * @return true if a cycle would result
  */
 bool
-ocs::Role::would_create_cycle(const char *role_name, const char *candidate_parent, const lList *role_list) {
+ocs::Role::would_create_cycle(const char *role_name, const char *candidate_parent,
+                              const ocs::tom::ConstList<ocs::tom::RL> role_list) {
    DENTER(TOP_LAYER);
    // a cycle forms if role_name is already reachable from candidate_parent
    std::unordered_set<std::string> visited;
@@ -616,16 +651,32 @@ ocs::Role::would_create_cycle(const char *role_name, const char *candidate_paren
 }
 
 /**
- * Transitively collect all PermRules from role_name and its ancestors.
+ * @brief would_create_cycle() for an untyped caller
+ *
+ * @param role_name the role being modified
+ * @param candidate_parent the proposed new parent
+ * @param role_list the master role list (RL_Type), checked
+ * @return as would_create_cycle()
+ */
+bool
+ocs::Role::would_create_cycle(const char *role_name, const char *candidate_parent, const lList *role_list) {
+   return would_create_cycle(role_name, candidate_parent, ocs::tom::ConstList<ocs::tom::RL>(role_list));
+}
+
+/**
+ * @brief Transitively collect all PermRules from role_name and its ancestors
+ *
  * Rules are appended in DFS order: role's own rules first, then parent roles
  * left-to-right, recursively. A visited set prevents duplicate entries when
  * multiple inheritance paths converge on the same ancestor.
- * @param role_name   Starting role.
- * @param role_list   The master role list.
- * @param rules       Receives the collected rules (appended, not replaced).
+ *
+ * @param role_name starting role
+ * @param role_list the master role list
+ * @param rules receives the collected rules (appended, not replaced)
  */
 void
-ocs::Role::collect_perm_rules(const char *role_name, const lList *role_list, PermRuleList &rules) {
+ocs::Role::collect_perm_rules(const char *role_name, const ocs::tom::ConstList<ocs::tom::RL> role_list,
+                              PermRuleList &rules) {
    DENTER(TOP_LAYER);
    std::unordered_set<std::string> visited;
    collect_recursive(role_name, role_list, rules, visited);
@@ -633,20 +684,23 @@ ocs::Role::collect_perm_rules(const char *role_name, const lList *role_list, Per
 }
 
 /**
- * Evaluate whether a request is authorized under the current role configuration.
+ * @brief Evaluate whether a request is authorized under the current role configuration
+ *
  * Iterates all enabled roles; for each role the requesting user belongs to,
  * collects the effective rule set (own + inherited) and evaluates each rule.
  * Returns true on the first matching rule. Returns false if no rule matches
  * across all applicable roles (default-deny).
- * @param role_list     The master role list.
- * @param userset_list  The master userset list (for membership checks).
- * @param ctx           The request context.
- * @return              True if the request is authorized.
+ *
+ * @param role_list the master role list
+ * @param userset_list the master userset list (for membership checks)
+ * @param ctx the request context
+ * @return true if the request is authorized
  */
 bool
-ocs::Role::is_authorized(const lList *role_list, const lList *userset_list, const MatchContext &ctx) {
+ocs::Role::is_authorized(const ocs::tom::ConstList<ocs::tom::RL> role_list,
+                         const ocs::tom::ConstList<ocs::tom::US> userset_list, const MatchContext &ctx) {
    DENTER(TOP_LAYER);
-   for_each_ep_lv(role_ep, role_list) {
+   for (const auto role_ep : role_list) {
       // skip disabled roles
       if (!ocs::tom::get<RL_enabled>(role_ep)) {
          continue;
@@ -655,7 +709,7 @@ ocs::Role::is_authorized(const lList *role_list, const lList *userset_list, cons
       bool user_in_role = false;
       for (ocs::tom::ConstElement<ocs::tom::US> acl_ep : ocs::tom::get<RL_user_list>(role_ep)) {
          const char *userset_name = ocs::tom::get<US_name>(acl_ep);
-         const lListElem *userset_ep = ocs::tom::find_first<US_name>(userset_list, userset_name);
+         const auto userset_ep = ocs::tom::find_first<US_name>(userset_list, userset_name);
          if (userset_ep == nullptr) {
             continue;
          }

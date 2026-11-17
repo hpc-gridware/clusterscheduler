@@ -55,7 +55,10 @@
 #include "cull/cull_list.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
 
 namespace ocs {
    /** @brief A key that a unique attribute of a list holds a second time */
@@ -72,17 +75,27 @@ namespace ocs {
  *
  * Users write `none` where the object model wants an unset field. The
  * comparison is case insensitive; a field that is already nullptr is left
- * alone. The field is a template argument, so a field that is no string
- * field of the element's type does not compile.
+ * alone. The field is a template argument and fixes the element's type, so a
+ * field that is no string field of the element's type does not compile.
  *
  * @tparam F the string field
- * @param ep the element
+ * @param ep the element, of the field's object type; an empty handle is left alone
  */
 template <auto F>
-inline void ocs_null_out_none(lListElem *ep) {
+inline void ocs_null_out_none(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep) {
    if (const char *value = ocs::tom::get<F>(ep); value != nullptr && strcasecmp(value, "none") == 0) {
       ocs::tom::set<F>(ep, nullptr);
    }
+}
+
+/**
+ * @brief ocs_null_out_none() for an untyped caller
+ * @tparam F the string field
+ * @param ep the element, of the field's object type, or nullptr
+ */
+template <auto F>
+OCS_TRANSITIONAL inline void ocs_null_out_none(lListElem *ep) {
+   ocs_null_out_none<F>(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type>(ep));
 }
 
 /**
@@ -315,13 +328,14 @@ bool
 object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm);
 
 bool
-object_verify_expression_syntax(const lListElem *ep, lList **answer_list);
+object_verify_expression_syntax(ocs::tom::ConstElement<ocs::tom::CE> elem, lList **answer_list);
 
 int
 object_verify_name(const lListElem *object, lList **answer_list, int name);
 
 int
-object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr);
+object_verify_pe_range(lList **alpp, const char *pe_name, ocs::tom::List<ocs::tom::RN> pe_range,
+                       const char *object_descr);
 
 int
-compress_ressources(lList **alpp, lList *rl, const char *object_descr );
+compress_ressources(lList **alpp, ocs::tom::List<ocs::tom::CE> rl, const char *object_descr);

@@ -49,10 +49,60 @@
 
 #include "sgeobj/cull/sge_href_HR_L.h"
 
-bool href_list_add(lList **this_list, lList **answer_list, const char *host_or_group);
+namespace ocs {
+   /**
+    * @brief Hands the in-out host reference list of an untyped caller to a typed function and back
+    *
+    * Used by the OCS_TRANSITIONAL wrappers of this module and of sge_hgroup: the
+    * list the caller's reference points to is taken over by an owning handle for
+    * the call and handed back when the object goes out of scope, also when the
+    * call throws, so the typed function may create, replace or free the list as
+    * the untyped one did.
+    */
+   class UntypedHrefList {
+   public:
+      /**
+       * @brief Take over the list the reference points to
+       * @param lpp the caller's list reference, may be nullptr; the list is checked to be an HR_Type list
+       */
+      explicit UntypedHrefList(lList **lpp)
+         : lpp_(lpp), list_(lpp != nullptr ? ocs::tom::ListPtr<ocs::tom::HR>(*lpp) : nullptr) {
+         if (lpp_ != nullptr) {
+            *lpp_ = nullptr;
+         }
+      }
 
-bool href_list_remove_existing(lList **this_list, lList **answer_list, ocs::tom::ConstList<ocs::tom::HR> list);
-OCS_TRANSITIONAL bool href_list_remove_existing(lList **this_list, lList **answer_list, lList *list);
+      /** @brief Hand the list back */
+      ~UntypedHrefList() {
+         if (lpp_ != nullptr) {
+            *lpp_ = list_.release();
+         }
+      }
+
+      UntypedHrefList(const UntypedHrefList &) = delete;
+      UntypedHrefList &operator=(const UntypedHrefList &) = delete;
+
+      /**
+       * @brief The owning handle, as the typed functions take an optional in-out list
+       * @return the handle, or nullptr when the caller passed no reference
+       */
+      [[nodiscard]] ocs::tom::ListPtr<ocs::tom::HR> *get() noexcept {
+         return lpp_ != nullptr ? &list_ : nullptr;
+      }
+
+   private:
+      lList **lpp_;                           ///< the caller's list reference, or nullptr
+      ocs::tom::ListPtr<ocs::tom::HR> list_;  ///< holds the list meanwhile
+   };
+}
+
+bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, lList **answer_list, const char *host_or_group);
+void ocs_href_list_emplace(ocs::tom::ListPtr<ocs::tom::HR> &this_list, const char *name);
+OCS_TRANSITIONAL bool href_list_add(lList **this_list, lList **answer_list, const char *host_or_group);
+
+bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, lList **answer_list,
+                               ocs::tom::ConstList<ocs::tom::HR> list);
+OCS_TRANSITIONAL bool href_list_remove_existing(lList **this_list, lList **answer_list, const lList *list);
 
 bool href_list_has_member(ocs::tom::ConstList<ocs::tom::HR> this_list, const char *host_or_group);
 OCS_TRANSITIONAL bool href_list_has_member(const lList *this_list, const char *host_or_group);
@@ -61,34 +111,42 @@ bool href_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::HR> this_list, ds
 OCS_TRANSITIONAL bool href_list_append_to_dstring(const lList *this_list, dstring *string);
 
 bool href_list_compare(ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
-                       ocs::tom::ConstList<ocs::tom::HR> list, lList **add_hosts, lList **add_groups,
-                       lList **equity_hosts, lList **equity_groups);
+                       ocs::tom::ConstList<ocs::tom::HR> list, ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
+                       ocs::tom::ListPtr<ocs::tom::HR> *add_groups, ocs::tom::ListPtr<ocs::tom::HR> *equity_hosts,
+                       ocs::tom::ListPtr<ocs::tom::HR> *equity_groups);
 OCS_TRANSITIONAL bool href_list_compare(const lList *this_list, lList **answer_list, const lList *list,
                                         lList **add_hosts, lList **add_groups, lList **equity_hosts,
                                         lList **equity_groups);
 
 bool href_list_find_diff(ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
-                         ocs::tom::ConstList<ocs::tom::HR> list, lList **add_hosts, lList **rem_hosts,
-                         lList **add_groups, lList **rem_groups);
+                         ocs::tom::ConstList<ocs::tom::HR> list, ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
+                         ocs::tom::ListPtr<ocs::tom::HR> *rem_hosts, ocs::tom::ListPtr<ocs::tom::HR> *add_groups,
+                         ocs::tom::ListPtr<ocs::tom::HR> *rem_groups);
 OCS_TRANSITIONAL bool href_list_find_diff(const lList *this_list, lList **answer_list, const lList *list,
                                           lList **add_hosts, lList **rem_hosts, lList **add_groups,
                                           lList **rem_groups);
 
 bool href_list_find_effective_diff(lList **answer_list, ocs::tom::ConstList<ocs::tom::HR> add_groups,
                                    ocs::tom::ConstList<ocs::tom::HR> rem_groups,
-                                   ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **add_hosts,
-                                   lList **rem_hosts);
+                                   ocs::tom::ConstList<ocs::tom::HGRP> master_list,
+                                   ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
+                                   ocs::tom::ListPtr<ocs::tom::HR> *rem_hosts);
 OCS_TRANSITIONAL bool href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
                                                     const lList *rem_groups, const lList *master_list,
                                                     lList **add_hosts, lList **rem_hosts);
 
 bool href_list_find_references(ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
-                               ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **used_hosts,
-                               lList **used_groups, lList **used_matchers = nullptr, bool expand_matchers = true);
+                               ocs::tom::ConstList<ocs::tom::HGRP> master_list,
+                               ocs::tom::ListPtr<ocs::tom::HR> *used_hosts,
+                               ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
+                               ocs::tom::ListPtr<ocs::tom::HR> *used_matchers = nullptr,
+                               bool expand_matchers = true);
 
 bool href_list_find_all_references(ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
-                                   ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **used_hosts,
-                                   lList **used_groups, lList **used_matchers = nullptr,
+                                   ocs::tom::ConstList<ocs::tom::HGRP> master_list,
+                                   ocs::tom::ListPtr<ocs::tom::HR> *used_hosts,
+                                   ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
+                                   ocs::tom::ListPtr<ocs::tom::HR> *used_matchers = nullptr,
                                    bool expand_matchers = true);
 OCS_TRANSITIONAL bool href_list_find_all_references(const lList *this_list, lList **answer_list,
                                                     const lList *master_list, lList **used_hosts,
@@ -96,10 +154,12 @@ OCS_TRANSITIONAL bool href_list_find_all_references(const lList *this_list, lLis
                                                     bool expand_matchers = true);
 
 bool href_list_find_referencees(ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
-                                ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **occupant_groups);
+                                ocs::tom::ConstList<ocs::tom::HGRP> master_list,
+                                ocs::tom::ListPtr<ocs::tom::HR> *occupant_groups);
 
 bool href_list_find_all_referencees(ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
-                                    ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **occupant_groups);
+                                    ocs::tom::ConstList<ocs::tom::HGRP> master_list,
+                                    ocs::tom::ListPtr<ocs::tom::HR> *occupant_groups);
 
 ocs::tom::Element<ocs::tom::HR> href_list_locate(ocs::tom::ConstList<ocs::tom::HR> this_list, const char *name);
 OCS_TRANSITIONAL lListElem *href_list_locate(const lList *this_list, const char *name);

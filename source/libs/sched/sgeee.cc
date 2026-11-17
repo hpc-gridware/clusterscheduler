@@ -696,11 +696,7 @@ recompute_prio(sge_task_ref_t *tref, const ocs::tom::Element<ocs::tom::JAT> task
 
    double min_tix, max_tix, prio;
    double ntix = 0.5;
-   double weight_ticket = 0.0;
-   double weight_urgency = 0.0;
-   double weight_priority = 0.0;
-
-   sconf_get_weight_ticket_urgency_priority(&weight_ticket, &weight_urgency, &weight_priority);
+   const auto [weight_ticket, weight_urgency, weight_priority] = sconf_get_weight_ticket_urgency_priority();
 
    /* need to know min/max tix values to normalize new ticket value */
    tix_range_get(&min_tix, &max_tix);
@@ -842,15 +838,14 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
     *-------------------------------------------------------------*/
 
    if (const auto root = lists->share_tree->front(); root) {
-      lListElem *pnode = nullptr;
-
       ref->share_tree_type = ocs::tom::get<STN_type>(root);
 
       if (ref->user || ref->project) {
-         ref->node = ocs::tom::Element<ocs::tom::STN>(ocs::ShareTree::search_user_project_node(root,
+         const auto [node, pnode] = ocs::ShareTree::search_user_project_node(root,
                ref->user ? ocs::tom::get<UU_name>(ref->user) : nullptr,
                ref->project ? ocs::tom::get<PR_name>(ref->project) : nullptr,
-               &pnode, root));
+               root);
+         ref->node = node;
 
          /*
           * if the found node is a "default" node, then create a
@@ -863,8 +858,7 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
             auto temp_node = ref->node.clone();
             ocs::tom::set<STN_name>(*temp_node, ocs::tom::get<UU_name>(ref->user));
             ocs::tom::set<STN_temp>(*temp_node, 1);
-            ref->node = ocs::tom::get<STN_children>(ocs::tom::Element<ocs::tom::STN>(pnode))
-                              .push_back(std::move(temp_node));
+            ref->node = ocs::tom::get<STN_children>(pnode).push_back(std::move(temp_node));
          }
       } else
          ref->node = nullptr;
@@ -1112,7 +1106,7 @@ combine_usage(sge_ref_t *ref) {
        * Sum usage weighting factors
        *-------------------------------------------------------------*/
 
-      const auto usage_weight_list = ocs::tom::ListPtr<ocs::tom::UA>(sconf_get_usage_weight_list());
+      const auto usage_weight_list = sconf_get_usage_weight_list();
       if (usage_weight_list) {
          for (const auto usage_weight : *usage_weight_list) {
             sum_of_usage_weights += ocs::tom::get<UA_value>(usage_weight);
@@ -2200,12 +2194,12 @@ sge_calc_tickets(scheduler_all_data_t *lists,
 
    sge_scheduling_run++;
 
-   const auto decay_list = ocs::tom::ListPtr<ocs::tom::UA>(ocs::Usage::get_decay_list());
+   const auto decay_list = ocs::Usage::get_decay_list();
 
    /* the configured usage weights decide which usage attributes are
     * relevant for share tree usage and may be booked into the
     * user/project usage lists (CS-1385) */
-   const auto usage_weight_list = ocs::tom::ListPtr<ocs::tom::UA>(sconf_get_usage_weight_list());
+   const auto usage_weight_list = sconf_get_usage_weight_list();
 
 
    /*-------------------------------------------------------------
@@ -3612,11 +3606,7 @@ sgeee_priority(const ocs::tom::Element<ocs::tom::JAT> task, [[maybe_unused]] con
    DENTER(TOP_LAYER);
 
    double nta, geee_priority;
-   double weight_ticket = 0.0;
-   double weight_urgency = 0.0;
-   double weight_priority = 0.0;
-
-   sconf_get_weight_ticket_urgency_priority(&weight_ticket, &weight_urgency, &weight_priority);
+   const auto [weight_ticket, weight_urgency, weight_priority] = sconf_get_weight_ticket_urgency_priority();
 
    /* now compute normalized ticket amount (NTA) for each job/task */
    nta = sge_normalize_value(ocs::tom::get<JAT_tix>(task), min_tix, max_tix);

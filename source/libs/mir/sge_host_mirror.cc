@@ -179,8 +179,7 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
            action == SGE_EMA_MOD && before && !ocs::Matcher::cache_carries_over(before, after);
    const bool carry = action == SGE_EMA_MOD && before && !matchers_changed &&
                       static_cast<bool>(ocs::tom::get<HGRP_match_cache>(before));
-   // stays untyped: ocs::MatchCache::detach() and adopt() hand it over raw
-   lList *cache = nullptr;
+   ocs::tom::ListPtr<ocs::tom::HM> cache;
 
    /*
     * CS-2690. A matcher that is taken away has to stop admitting, by every
@@ -216,19 +215,18 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    if (sge_mirror_update_master_list_host_key(list, list_descr, key_nm, key,
                                               action, event) != SGE_EM_OK) {
-      lFreeList(&cache);
+      // a detached cache is freed with its handle
       DRETURN(SGE_EMA_FAILURE);
    }
 
    if (carry) {
       // the pruning that goes with the move needs the resolved membership of the
       // new element, so it happens here and not above
-      ocs::MatchCache::adopt(ocs::tom::find_first_rw<HGRP_name>(*list, key), &cache);
+      ocs::MatchCache::adopt(ocs::tom::find_first_rw<HGRP_name>(*list, key), std::move(cache));
    }
-   lFreeList(&cache);
 
    if (drop_everything) {
-      ocs::MatchCache::discard_all(*list);
+      ocs::MatchCache::discard_all(ocs::tom::List<ocs::tom::HGRP>::from_typed(*list));
    }
 
    DRETURN(SGE_EMA_OK);

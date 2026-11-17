@@ -236,7 +236,7 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                            qquota_filter.host = ocs::tom::get<ST_name>(host_ep);
                         }
 
-                        if (rqs_is_matching_rule(rule, qquota_filter.user, nullptr, nullptr,
+                        if (rqs_is_matching_rule(rule, qquota_filter.user, nullptr, ocs::tom::ConstList<ocs::tom::ST>(),
                                                  qquota_filter.project, qquota_filter.pe, qquota_filter.host,
                                                  qquota_filter.queue, model.get_user_set_list(),
                                                  model.get_hgroup_list())) {

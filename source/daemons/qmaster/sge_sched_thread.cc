@@ -476,7 +476,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 
    uint32_t queue_sort_method = sconf_get_queue_sort_method();
    uint32_t maxujobs = sconf_get_maxujobs();
-   const auto job_load_adjustments = ocs::tom::ListPtr<ocs::tom::CE>(sconf_get_job_load_adjustments());
+   const auto job_load_adjustments = sconf_get_job_load_adjustments();
    sconf_set_host_order_changed(false);
 
    // the members of the snapshot whose list does not change during the run; the queue lists do
@@ -1400,7 +1400,7 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
       }
 
       // clear the QU_tagged4schedule - we re/mis-use it in sge_load_list_alarm() and sge_split_queue_load()
-      qinstance_list_set_tag(*queue_list, 0, QU_tagged4schedule);
+      qinstance_list_set_tag<QU_tagged4schedule>(*queue_list, 0);
 
       bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list, centry_list);
 

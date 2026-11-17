@@ -73,11 +73,17 @@ const char *queue_types[] = {
    nullptr
 };
 
+/**
+ * @brief Is a type bit of a queue instance set?
+ *
+ * On the scheduler's hot path; it has no trace frame, as before.
+ *
+ * @param this_elem the queue instance to check
+ * @param type the bits to test, #BQ or #IQ
+ * @return true when one of the bits is set
+ */
 static bool
-qinstance_has_type(const lListElem *this_elem, uint32_t type);
-
-static bool
-qinstance_has_type(const lListElem *this_elem, uint32_t type) {
+qinstance_has_type(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, const uint32_t type) {
    bool ret = false;
 
    if (ocs::tom::get<QU_qtype>(this_elem) & type) {
@@ -137,24 +143,24 @@ qtype_append_to_dstring(uint32_t qtype, dstring *string) {
  * a checkpointing one, which the long form does not - those two are derived
  * from references, not from the stored bits.
  *
- * @param this_elem the queue instance to read
+ * @param this_elem the queue instance to read, may be an empty handle
  * @param[out] string receives the text, appended
  * @param only_first_char true for the one letter per type form, false for the names
  * @return always true
  */
-bool qinstance_print_qtype_to_dstring(const lListElem *this_elem,
-                                      dstring *string, bool only_first_char) {
+bool qinstance_print_qtype_to_dstring(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string,
+                                      const bool only_first_char) {
    DENTER(QINSTANCE_TYPE_LAYER);
 
    bool ret = true;
 
-   if (this_elem != nullptr && string != nullptr) {
+   if (this_elem && string != nullptr) {
       const char **ptr = nullptr;
       uint32_t bitmask = 1;
       bool qtype_defined = false;
 
       for (ptr = queue_types; *ptr != nullptr; ptr++) {
-         if (bitmask & ocs::tom::get<QU_qtype>(this_elem)) {
+         if (bitmask & this_elem.get<QU_qtype>()) {
             qtype_defined = true;
             if (only_first_char) {
                sge_dstring_sprintf_append(string, "%c", (*ptr)[0]);
@@ -186,16 +192,28 @@ bool qinstance_print_qtype_to_dstring(const lListElem *this_elem,
 }
 
 /**
+ * @brief qinstance_print_qtype_to_dstring() for an untyped caller
+ *
+ * @param this_elem the queue instance to read (QU_Type), checked; may be nullptr
+ * @param[out] string receives the text, appended
+ * @param only_first_char true for the one letter per type form, false for the names
+ * @return as qinstance_print_qtype_to_dstring()
+ */
+bool qinstance_print_qtype_to_dstring(const lListElem *this_elem, dstring *string, const bool only_first_char) {
+   return qinstance_print_qtype_to_dstring(ocs::tom::ConstElement<ocs::tom::QU>(this_elem), string, only_first_char);
+}
+
+/**
  * @brief Parse a queue type list and store it in the queue
  *
  * An empty or missing value clears the type, it is not an error.
  *
- * @param[in,out] this_elem the queue instance to change
+ * @param[in,out] this_elem the queue instance to change, may be an empty handle
  * @param[out] answer_list receives the message naming the bad type
  * @param value the type names, as an administrator wrote them
  * @return true when the value was understood
  */
-bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
+bool qinstance_parse_qtype_from_string(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
                                        const char *value) {
    DENTER(QINSTANCE_TYPE_LAYER);
 
@@ -210,8 +228,20 @@ bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list
       }
    }
 
-   ocs::tom::set<QU_qtype>(this_elem, type);
+   this_elem.set<QU_qtype>(type);
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_parse_qtype_from_string() for an untyped caller
+ *
+ * @param[in,out] this_elem the queue instance to change (QU_Type), checked; may be nullptr
+ * @param[out] answer_list receives the message naming the bad type
+ * @param value the type names, as an administrator wrote them
+ * @return as qinstance_parse_qtype_from_string()
+ */
+bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list, const char *value) {
+   return qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list, value);
 }
 
 /**
@@ -220,7 +250,7 @@ bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list
  * @param this_elem the queue instance to check
  * @return true when the #BQ bit is set
  */
-bool qinstance_is_batch_queue(const lListElem *this_elem) {
+bool qinstance_is_batch_queue(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_type(this_elem, BQ);
 }
 
@@ -230,7 +260,7 @@ bool qinstance_is_batch_queue(const lListElem *this_elem) {
  * @param this_elem the queue instance to check
  * @return true when the #IQ bit is set
  */
-bool qinstance_is_interactive_queue(const lListElem *this_elem) {
+bool qinstance_is_interactive_queue(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    return qinstance_has_type(this_elem, IQ);
 }
 
@@ -240,8 +270,8 @@ bool qinstance_is_interactive_queue(const lListElem *this_elem) {
  * @param this_elem the queue instance to check
  * @return true when it references a checkpointing environment
  */
-bool qinstance_is_checkpointing_queue(const lListElem *this_elem) {
-   return qinstance_is_a_ckpt_referenced(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
+bool qinstance_is_checkpointing_queue(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
+   return qinstance_is_a_ckpt_referenced(this_elem);
 }
 
 /**
@@ -250,6 +280,6 @@ bool qinstance_is_checkpointing_queue(const lListElem *this_elem) {
  * @param this_elem the queue instance to check
  * @return true when it references a parallel environment
  */
-bool qinstance_is_parallel_queue(const lListElem *this_elem) {
-   return qinstance_is_a_pe_referenced(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
+bool qinstance_is_parallel_queue(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
+   return qinstance_is_a_pe_referenced(this_elem);
 }

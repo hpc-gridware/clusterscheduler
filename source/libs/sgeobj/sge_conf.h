@@ -43,11 +43,16 @@
 
 #include <string>
 #include <tuple>
+#include <utility>
 #include <limits>
 #include <vector>
 
 #include "sgeobj/cull/sge_conf_CONF_L.h"
 #include "sgeobj/cull/sge_conf_CF_L.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_CEntry.h"   /* ocs::CEntry::Type for config_param_value_type */
@@ -107,8 +112,10 @@ typedef int (*tDaemonizeFunc)(void *ctx);
  */
 extern lList *Execd_Config_List;
 
-int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp);
-void conf_sort_entries(lListElem *conf);
+std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
+merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root,
+                    ocs::tom::ConstElement<ocs::tom::CONF> global, ocs::tom::ConstElement<ocs::tom::CONF> local);
+void conf_sort_entries(ocs::tom::Element<ocs::tom::CONF> conf);
 void sge_show_conf();
 void conf_update_thread_profiling(const char *thread_name);
 
@@ -129,10 +136,10 @@ char* mconf_get_enforce_project();
 char* mconf_get_enforce_user();
 char* mconf_get_administrator_mail();
 char* mconf_get_mail_tag();
-lList* mconf_get_user_lists();
-lList* mconf_get_xuser_lists();
-lList* mconf_get_projects();
-lList* mconf_get_xprojects();
+ocs::tom::ListPtr<ocs::tom::US> mconf_get_user_lists();
+ocs::tom::ListPtr<ocs::tom::US> mconf_get_xuser_lists();
+ocs::tom::ListPtr<ocs::tom::PR> mconf_get_projects();
+ocs::tom::ListPtr<ocs::tom::PR> mconf_get_xprojects();
 char* mconf_get_set_token_cmd();
 char* mconf_get_pag_cmd();
 uint32_t mconf_get_token_extend_time();
@@ -194,7 +201,6 @@ bool mconf_get_enable_mem_details();
  *          Use #mconf_is_binding_enabled instead, which reads the `enabled`
  *          key of `binding_params`.
  */
-bool mconf_get_enable_binding();
 bool mconf_get_simulate_execds();
 bool mconf_get_simulate_jobs();
 long mconf_get_ptf_max_priority();

@@ -139,7 +139,7 @@ main(int argc, char *argv[]) {
       static const char *out[] = {"execd_spool_dir", "mailer", "loglevel", "topology_file", nullptr};
       lListElem *conf = make_conf(in);
 
-      conf_sort_entries(conf);
+      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
       ret += check_conf("arbitrary order is sorted", conf, out);
       lFreeElem(&conf);
    }
@@ -149,7 +149,7 @@ main(int argc, char *argv[]) {
       static const char *in[] = {"execd_spool_dir", "mailer", "loglevel", "topology_file", nullptr};
       lListElem *conf = make_conf(in);
 
-      conf_sort_entries(conf);
+      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
       ret += check_conf("sorted order is kept", conf, in);
       lFreeElem(&conf);
    }
@@ -160,7 +160,7 @@ main(int argc, char *argv[]) {
       static const char *out[] = {"mailer", "loglevel", "zzz_unknown", "aaa_unknown", nullptr};
       lListElem *conf = make_conf(in);
 
-      conf_sort_entries(conf);
+      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
       ret += check_conf("unknown entries are appended", conf, out);
       lFreeElem(&conf);
    }
@@ -173,7 +173,7 @@ main(int argc, char *argv[]) {
       static const char *out[] = {"mailer", "loglevel", "loglevel", nullptr};
       lListElem *conf = make_conf(in);
 
-      conf_sort_entries(conf);
+      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
       ret += check_conf("duplicate names are kept", conf, out);
       lFreeElem(&conf);
    }
@@ -184,7 +184,7 @@ main(int argc, char *argv[]) {
       static const char *out[] = {"MAILER", "Topology_File", nullptr};
       lListElem *conf = make_conf(in);
 
-      conf_sort_entries(conf);
+      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
       ret += check_conf("names are matched case insensitively", conf, out);
       lFreeElem(&conf);
    }
@@ -194,7 +194,7 @@ main(int argc, char *argv[]) {
       static const char *in[] = {nullptr};
       lListElem *conf = make_conf(in);
 
-      conf_sort_entries(conf);
+      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
       if (static_cast<const lList *>(ocs::tom::get<CONF_entries>(conf)) != nullptr) {
          printf("FAILED: empty configuration - entry list should still be empty\n");
          ret++;

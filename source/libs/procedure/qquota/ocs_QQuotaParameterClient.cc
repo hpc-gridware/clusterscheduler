@@ -60,9 +60,8 @@ static bool
 parse_multi_stringlist_into(lList **switch_list, const char *opt, lList **answer_list,
                             ocs::tom::ListPtr<ocs::tom::ST> &list) {
    DENTER(TOP_LAYER);
-   lList *names = list.release();
-   const bool found = parse_multi_stringlist(switch_list, opt, answer_list, &names, ST_Type, ST_name);
-   list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(names);
+   const bool found = parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*switch_list), opt, answer_list,
+                                                      list);
    DRETURN(found);
 }
 

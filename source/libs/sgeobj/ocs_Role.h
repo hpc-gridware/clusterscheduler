@@ -28,6 +28,13 @@
 
 #include "cull/cull.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_RL.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+
 #include "sgeobj/cull/sge_role_RL_L.h"
 
 namespace ocs {
@@ -62,27 +69,36 @@ namespace ocs {
          std::string object_owner;                            ///< owner of the target object
          std::string request_user;                            ///< authenticated requesting user
          std::string request_group;                           ///< primary UNIX group of the requesting user
-         const lList *request_grp_list{nullptr};              ///< supplementary UNIX groups (ST_Type list)
+         ocs::tom::ConstList<ocs::tom::ST> request_grp_list;  ///< supplementary UNIX groups
          std::vector<std::string> source_hostgroups;          ///< host groups the source host belongs to
          std::vector<std::string> required_value_constraints; ///< elevated permissions required by the request
       };
 
       static lListElem *locate(const lList *role_list, const char *name);
 
-      static bool validate(const lListElem *role, lList **answer_list, bool startup);
+      static bool validate(ocs::tom::ConstElement<ocs::tom::RL> role, lList **answer_list, bool startup);
+      OCS_TRANSITIONAL static bool validate(const lListElem *role, lList **answer_list, bool startup);
 
-      static void check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list);
+      static void check_integrity(ocs::tom::ConstList<ocs::tom::RL> role_list,
+                                  ocs::tom::ConstList<ocs::tom::US> userset_list, lList **answer_list);
+      OCS_TRANSITIONAL static void check_integrity(const lList *role_list, const lList *userset_list,
+                                                   lList **answer_list);
 
       static bool parse_perm_list(const char *perm_list_str, PermRuleList &rules, lList **answer_list);
 
-      static lListElem *create_template();
+      [[nodiscard]] static ocs::tom::ElementPtr<ocs::tom::RL> create_template();
 
       static bool match_rule(const PermRule &rule, const MatchContext &ctx);
 
-      static bool would_create_cycle(const char *role_name, const char *candidate_parent, const lList *role_list);
+      static bool would_create_cycle(const char *role_name, const char *candidate_parent,
+                                     ocs::tom::ConstList<ocs::tom::RL> role_list);
+      OCS_TRANSITIONAL static bool would_create_cycle(const char *role_name, const char *candidate_parent,
+                                                      const lList *role_list);
 
-      static void collect_perm_rules(const char *role_name, const lList *role_list, PermRuleList &rules);
+      static void collect_perm_rules(const char *role_name, ocs::tom::ConstList<ocs::tom::RL> role_list,
+                                     PermRuleList &rules);
 
-      static bool is_authorized(const lList *role_list, const lList *userset_list, const MatchContext &ctx);
+      static bool is_authorized(ocs::tom::ConstList<ocs::tom::RL> role_list,
+                                ocs::tom::ConstList<ocs::tom::US> userset_list, const MatchContext &ctx);
    };
 }

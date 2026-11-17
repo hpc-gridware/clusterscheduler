@@ -169,10 +169,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
       if (!strcmp("-u", *sp)) {
          sp++;
          if (*sp) {
-            lList *users_out = nullptr;
-            str_list_parse_from_string(&users_out, *sp, ",");
-            /* str_list_parse_from_string() creates the list with ST_Type, so it is taken over unchecked */
-            auto user_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users_out);
+            auto user_list = str_list_parse_from_string(*sp, ",");
 
             lListElem *ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
             ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(user_list));
@@ -211,7 +208,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
 
    uint32_t pforce = 0;
    uint32_t helpflag;
-   lList *users_out = nullptr;
+   ocs::tom::ListPtr<ocs::tom::ST> user_list;
    bool ret = true;
 
    while (lGetNumberOfElem(*ppcmdline)) {
@@ -223,15 +220,12 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
       if (parse_flag(ppcmdline, "-f", alpp, &pforce))
          continue;
 
-      if (parse_multi_stringlist(ppcmdline, "-u", alpp, &users_out, ST_Type, ST_name)) {
+      if (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), "-u", alpp, user_list)) {
          continue;
       }
 
-      lList *ars_out = nullptr;
-      const bool found = parse_multi_stringlist(ppcmdline, "ars", alpp, &ars_out, ST_Type, ST_name);
-      /* parse_multi_stringlist() creates the list with ST_Type, so it is taken over unchecked */
-      const auto ars = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(ars_out);
-      if (found) {
+      ocs::tom::ListPtr<ocs::tom::ST> ars;
+      if (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), "ars", alpp, ars)) {
          for (const auto ep : *ars) {
             const char *id = ocs::tom::get<ST_name>(ep);
             ocs::tom::emplace_back<ID_str>(ppid_list, id);
@@ -249,8 +243,6 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
       break;
    }
 
-   /* parse_multi_stringlist() creates the list with ST_Type, so it is taken over unchecked */
-   const auto user_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users_out);
    if (answer_list_has_error(alpp)) {
       ret = false;
       lFreeList(ppid_list);

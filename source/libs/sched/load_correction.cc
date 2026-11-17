@@ -221,7 +221,7 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
    ocs::tom::ListPtr<ocs::tom::CE> local_load_adjustments;
    auto job_load_adj_list = load_adjustments;
    if (job_load_adj_list == nullptr) {
-      local_load_adjustments = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(sconf_get_job_load_adjustments());
+      local_load_adjustments = sconf_get_job_load_adjustments();
       job_load_adj_list = local_load_adjustments.get();
    }
  

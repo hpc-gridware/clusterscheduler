@@ -119,7 +119,7 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
    auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_raw);
 
    const char *cell_root = bootstrap_get_cell_root();
-   ret = merge_configuration(nullptr, progid, cell_root, *global, *local, nullptr);
+   ret = merge_configuration(nullptr, progid, cell_root, *global, *local).first;
    if (ret) {
       DPRINTF("Error %d merging configuration \"%s\"\n", ret, qualified_hostname);
    }
@@ -175,7 +175,7 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
       DRETURN(-1);
    }
 
-   ret = merge_configuration(nullptr, progid, cell_root, *global, *local, nullptr);
+   ret = merge_configuration(nullptr, progid, cell_root, *global, *local).first;
    if (ret) {
       ERROR(MSG_CONF_NOMERGECONF_IS, ret, qualified_hostname);
       DRETURN(-2);

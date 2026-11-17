@@ -76,7 +76,7 @@ static int s_fail = 0;
 static ocs::tom::ElementPtr<ocs::tom::CQ>
 make_template_queue(const char *name) {
    lList *alp = nullptr;
-   auto cqueue = ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(cqueue_create(&alp, name));
+   auto cqueue = cqueue_create(&alp, name);
    if (cqueue && !cqueue_set_template_attributes(*cqueue, &alp)) {
       cqueue.reset();
    }

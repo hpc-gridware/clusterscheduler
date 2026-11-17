@@ -191,18 +191,6 @@ bool qinstance_has_state(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, c
 }
 
 /**
- * @brief qinstance_has_state() for an untyped caller
- *
- * @param this_elem queue instance (QU_Type), checked
- * @param bit state mask
- *
- * @return as qinstance_has_state()
- */
-bool qinstance_has_state(const lListElem *this_elem, const uint32_t bit) {
-   return qinstance_has_state(ocs::tom::ConstElement<ocs::tom::QU>(this_elem), bit);
-}
-
-/**
  * @brief Is transition valid
  *
  * Checks if the given transition is valid for a qinstance object.
@@ -561,17 +549,6 @@ bool qinstance_state_set_alarm(const ocs::tom::Element<ocs::tom::QU> this_elem, 
 }
 
 /**
- * @brief qinstance_state_set_alarm() for an untyped caller
- *
- * @param[in,out] this_elem the queue instance to change (QU_Type), checked
- * @param set_state true to set the bit, false to clear it
- * @return as qinstance_state_set_alarm()
- */
-bool qinstance_state_set_alarm(lListElem *this_elem, const bool set_state) {
-   return qinstance_state_set_alarm(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
-}
-
-/**
  * @brief Is #QI_ALARM set?
  *
  * That bit means a load threshold is exceeded.
@@ -609,17 +586,6 @@ bool qinstance_state_set_suspend_alarm(const ocs::tom::Element<ocs::tom::QU> thi
 
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPEND_ALARM);
    DRETURN(changed);
-}
-
-/**
- * @brief qinstance_state_set_suspend_alarm() for an untyped caller
- *
- * @param[in,out] this_elem the queue instance to change (QU_Type), checked
- * @param set_state true to set the bit, false to clear it
- * @return as qinstance_state_set_suspend_alarm()
- */
-bool qinstance_state_set_suspend_alarm(lListElem *this_elem, const bool set_state) {
-   return qinstance_state_set_suspend_alarm(ocs::tom::Element<ocs::tom::QU>(this_elem), set_state);
 }
 
 /**

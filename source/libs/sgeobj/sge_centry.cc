@@ -456,33 +456,27 @@ map_type2str(ocs::CEntry::Type type) {
  *
  * Create a preinitialized centry element with the given "name".
  *
- * @param answer_list AN_Type
+ * @param answer_list AN_Type, receives an error when @p name is nullptr
  * @param name full name
  *
- * @return CE_Type element
+ * @return the CE_Type element, or an empty handle when @p name is nullptr
  */
-lListElem *
+ocs::tom::ElementPtr<ocs::tom::CE>
 centry_create(lList **answer_list, const char *name) {
    DENTER(CENTRY_LAYER);
 
-   lListElem *ret = nullptr;  /* CE_Type */
+   ocs::tom::ElementPtr<ocs::tom::CE> ret;
 
    if (name != nullptr) {
-      ret = lCreateElem(CE_Type);
-      if (ret != nullptr) {
-         ocs::tom::set<CE_name>(ret, name);
-         ocs::tom::set<CE_shortcut>(ret, name);
-         ocs::tom::set<CE_valtype>(ret, static_cast<uint32_t>(ocs::CEntry::Type::INT));
-         ocs::tom::set<CE_relop>(ret, CMPLXLE_OP);
-         ocs::tom::set<CE_requestable>(ret, REQU_NO);
-         ocs::tom::set<CE_consumable>(ret, CONSUMABLE_NO);
-         ocs::tom::set<CE_defaultval>(ret, "0");
-         ocs::tom::set<CE_urgency_weight>(ret, "0");
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EMALLOC,
-                                 ANSWER_QUALITY_ERROR,
-                                 MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-      }
+      ret = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+      ocs::tom::set<CE_name>(ret, name);
+      ocs::tom::set<CE_shortcut>(ret, name);
+      ocs::tom::set<CE_valtype>(ret, static_cast<uint32_t>(ocs::CEntry::Type::INT));
+      ocs::tom::set<CE_relop>(ret, CMPLXLE_OP);
+      ocs::tom::set<CE_requestable>(ret, REQU_NO);
+      ocs::tom::set<CE_consumable>(ret, CONSUMABLE_NO);
+      ocs::tom::set<CE_defaultval>(ret, "0");
+      ocs::tom::set<CE_urgency_weight>(ret, "0");
    } else {
       answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
                               MSG_INAVLID_PARAMETER_IN_S, __func__);
@@ -1961,18 +1955,6 @@ bool load_formula_is_centry_referenced(const char *load_formula, const ocs::tom:
    sge_free_saved_vars(term_context);
 
    DRETURN(ret);
-}
-
-/**
- * @brief load_formula_is_centry_referenced() for an untyped caller
- *
- * @param load_formula load formula expression, may be nullptr
- * @param centry centry to search for (CE_Type), checked
- *
- * @return as load_formula_is_centry_referenced()
- */
-bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry) {
-   return load_formula_is_centry_referenced(load_formula, ocs::tom::ConstElement<ocs::tom::CE>(centry));
 }
 
 /**

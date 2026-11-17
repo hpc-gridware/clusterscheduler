@@ -25,8 +25,17 @@
 
 #include "cull/cull.h"
 
+#include "uti/sge_dstring.h"
+
 #include "sgeobj/cull/sge_ct_CT_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 namespace ocs {
    /// Job categories: jobs with identical scheduling relevant requests share one category
@@ -34,20 +43,11 @@ namespace ocs {
       static uint32_t next_id;
 
    public:
-      /**
-       * @brief Hand out an unused category id
-       * @param master_category_list the categories in use, so no id is handed out twice
-       * @return an id that is neither 0 nor already taken
-       */
-      static uint32_t get_next_id(lList *master_category_list) {
-         uint32_t id;
-
-         // do not use 0 as ID or IDs that already have been used
-         do {
-            id = next_id++;
-         } while (id == 0 || static_cast<const lListElem *>(ocs::tom::find_first<CT_id>(master_category_list, id)) != nullptr);
-         return id;
-      }
-      static void build_string(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, const lList *rqs_list);
+      static uint32_t get_next_id(ocs::tom::ConstList<ocs::tom::CT> master_category_list);
+      static void build_string(dstring *category_str, ocs::tom::Element<ocs::tom::JB> job,
+                               ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ConstList<ocs::tom::PR> prj_list,
+                               ocs::tom::ConstList<ocs::tom::RQS> rqs_list);
+      OCS_TRANSITIONAL static void build_string(dstring *category_str, lListElem *job, const lList *acl_list,
+                                                const lList *prj_list, const lList *rqs_list);
    };
 }

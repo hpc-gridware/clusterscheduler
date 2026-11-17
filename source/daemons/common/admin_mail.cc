@@ -245,11 +245,9 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
          err_str = MSG_MAIL_UNKNOWN_REASON;
       }
 
-      // out-parameter of mailrec_parse(), which hands the recipients over raw
-      lList *lp_mail_raw = nullptr;
-      ret = mailrec_parse(&lp_mail_raw, administrator_mail);
       // the recipients (MR_Type); freed on every way out of this block, also on a failed parse
-      const auto lp_mail = ocs::tom::ListPtr<ocs::tom::MR>::from_typed(lp_mail_raw);
+      auto [parse_ret, lp_mail] = mailrec_parse(administrator_mail);
+      ret = parse_ret;
       if (ret) {
          ERROR(MSG_MAIL_PARSE_S, (administrator_mail ? administrator_mail : MSG_NULL));
          sge_free(&administrator_mail);

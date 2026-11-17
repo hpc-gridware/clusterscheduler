@@ -764,21 +764,16 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    }
 
    {
-      lList *user_lists = mconf_get_user_lists();
-      lList *xuser_lists = mconf_get_xuser_lists();
-      lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
+      const auto user_lists = mconf_get_user_lists();
+      const auto xuser_lists = mconf_get_xuser_lists();
+      const auto grp_list = grp_list_array2list(packet->amount, packet->grp_array);
 
-      if (!sge_has_access_(packet->user, packet->group, grp_list, user_lists, xuser_lists, master_userset_list)) {
+      if (!sge_has_access_(packet->user, packet->group, *grp_list, *user_lists, *xuser_lists,
+                           master_userset_list)) {
          ERROR(MSG_JOB_NOPERMS_SS, packet->user, packet->host);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-         lFreeList(&user_lists);
-         lFreeList(&xuser_lists);
-         lFreeList(&grp_list);
          DRETURN(STATUS_EUNKNOWN);
       }
-      lFreeList(&user_lists);
-      lFreeList(&xuser_lists);
-      lFreeList(&grp_list);
    }
 
    /*
@@ -860,13 +855,13 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    /* first check user permissions */
    {
       int has_permissions = 0;
-      lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
+      const auto grp_list = grp_list_array2list(packet->amount, packet->grp_array);
 
       for_each_ep_lv(cqueue, master_cqueue_list) {
          ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
          for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : qinstance_list) {
-            if (sge_has_access(packet->user, packet->group, grp_list, qinstance, master_userset_list)) {
+            if (sge_has_access(packet->user, packet->group, *grp_list, qinstance, master_userset_list)) {
                DPRINTF("job has access to queue " SFQ "\n", ocs::tom::get<QU_qname>(qinstance));
                has_permissions = 1;
                break;
@@ -876,7 +871,6 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
             break;
          }
       }
-      lFreeList(&grp_list);
       if (has_permissions == 0) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_NOTINANYQ_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -938,7 +932,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
     * If it is a deadline job the user has to be a deadline user
     */
    if (ocs::tom::get<JB_deadline>(jep) > 0) {
-      if (!user_is_deadline_user(packet, master_userset_list)) {
+      if (!user_is_deadline_user(packet, ocs::tom::ConstList<ocs::tom::US>(master_userset_list))) {
          ERROR(MSG_JOB_NODEADLINEUSER_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);

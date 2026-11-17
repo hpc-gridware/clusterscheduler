@@ -41,7 +41,29 @@
 
 uint32_t ocs::Category::next_id = 0;
 
-/** @brief Build the job category string
+/**
+ * @brief Hand out an unused category id
+ *
+ * @param master_category_list the categories in use (CT_Type), so no id is handed out twice; may be an empty handle
+ *
+ * @return an id that is neither 0 nor already taken
+ */
+uint32_t
+ocs::Category::get_next_id(const ocs::tom::ConstList<ocs::tom::CT> master_category_list) {
+   DENTER(TOP_LAYER);
+
+   uint32_t id;
+
+   // do not use 0 as ID or IDs that already have been used
+   do {
+      id = next_id++;
+   } while (id == 0 || master_category_list.find_first<CT_id>(id));
+
+   DRETURN(id);
+}
+
+/**
+ * @brief Build the job category string
  *
  * This function builds the job category string for a job. The category string is
  * used to group jobs together for scheduling purposes. The function takes a
@@ -49,21 +71,25 @@ uint32_t ocs::Category::next_id = 0;
  * information from. It also takes a lists to identify if a job indirectly
  * references certain configuration objects (e.g. resource quota sets).
  *
+ * The queue and resource request lists of the job are sorted in place.
+ *
  * @param category_str   The target string, contains the category or nothing
- * @param job            The job for the category creating
- * @param acl_list       Global access list
- * @param prj_list       Project list
- * @param rqs_list       Resource quota set list
+ * @param job            The job for the category creating (JB_Type, possibly reduced)
+ * @param acl_list       Global access list (US_Type), may be an empty handle
+ * @param prj_list       Project list (PR_Type), may be an empty handle
+ * @param rqs_list       Resource quota set list (RQS_Type), may be an empty handle
  */
 void
-ocs::Category::build_string(dstring *category_str, lListElem *job,
-                            const lList *acl_list, const lList *prj_list, const lList *rqs_list) {
+ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::tom::JB> job,
+                            const ocs::tom::ConstList<ocs::tom::US> acl_list,
+                            const ocs::tom::ConstList<ocs::tom::PR> prj_list,
+                            const ocs::tom::ConstList<ocs::tom::RQS> rqs_list) {
    DENTER(TOP_LAYER);
 
    // owner (user, UNIX group, and ACLs)
    const char *owner = ocs::tom::get<JB_owner>(job);
    const char *group = ocs::tom::get<JB_group>(job);
-   ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
+   const ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
    sge_unparse_acl_dstring(category_str, owner, group, grp_list, acl_list, "-U");
 
    // -u if referenced in resource quota sets
@@ -78,26 +104,33 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    }
 
    // -scope global -hard -q <queue_list>
-   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, true), "-scope global -hard -q");
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, true),
+                                  "-scope global -hard -q");
 
    // -scope master -hard -q <queue_list>
-   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_MASTER, true), "-scope master -hard -q");
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_MASTER, true),
+                                  "-scope master -hard -q");
 
    // -scope slave -hard -q <queue_list>
-   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_SLAVE, true), "-scope slave -hard -q");
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_SLAVE, true),
+                                  "-scope slave -hard -q");
 
    // -scope global -hard -l <resource_list>
-   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, true), "-scope global -hard -l");
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, true),
+                                     "-scope global -hard -l");
 
    // -scope master -hard -l <resource_list>
-   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_MASTER, true), "-scope master -hard -l");
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_MASTER, true),
+                                     "-scope master -hard -l");
 
    // -scope slave -hard -l <resource_list>
-   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_SLAVE, true), "-scope slave -hard -l");
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_SLAVE, true),
+                                     "-scope slave -hard -l");
 
    // -scope global|master|slave -hard -par <allocation_rule>
+   // the unparse function takes a run-time position, as the request set may be reduced
    int par_pos = -1;
-   for (ocs::tom::ConstElement<ocs::tom::JRS> request_set : ocs::tom::get<JB_request_set_list>(job)) {
+   for (const auto request_set : ocs::tom::get<JB_request_set_list>(job)) {
       // Get the position of JRS_allocation_rule only once.
       if (par_pos == -1) {
          par_pos = lGetPosViaElem(request_set, JRS_allocation_rule, SGE_NO_ABORT);
@@ -119,35 +152,40 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    // TODO: evaluate if soft requests should be part of the category string
 #if 1
    // -scope global -soft -q <resource_list>
-   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -q");
+   sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_GLOBAL, false),
+                                  "-scope global -soft -q");
 
    // -scope global -soft -l <resource_list>
-   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -l");
+   sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, false),
+                                     "-scope global -soft -l");
 #endif
+
+   // the unparse functions below take run-time positions, as the job may be reduced
 
    // -btype -bunit -bamount -bsort -bstart -bstop
    sge_unparse_binding_dstring(category_str, job, lGetPosViaElem(job, JB_binding, SGE_NO_ABORT));
 
    // -pe pe_name pe_range
-   sge_unparse_pe_dstring(category_str, job, lGetPosViaElem(job, JB_pe, SGE_NO_ABORT), lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT), "-pe");
+   sge_unparse_pe_dstring(category_str, job, lGetPosViaElem(job, JB_pe, SGE_NO_ABORT),
+                          lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT), "-pe");
 
    // -ckpt ckpt_name
-   sge_unparse_string_option_dstring(category_str, job, lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT), "-ckpt");
+   sge_unparse_string_option_dstring(category_str, job, lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT),
+                                     "-ckpt");
 
    // interactive job type
-   if (JOB_TYPE_IS_IMMEDIATE(lGetPosUlong(job, lGetPosViaElem(job, JB_type, SGE_NO_ABORT)))) {
+   if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
       sge_dstring_append(category_str, "-I y ");
    }
 
    // -P project
-   int project_nm = lGetPosViaElem(job, JB_project, SGE_NO_ABORT);
-   const char *project = lGetPosString(job, project_nm);
+   const char *project = ocs::tom::get<JB_project>(job);
 
    if (project != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::PR> prj = ocs::tom::find_first<PR_name>(prj_list, project);
+      const auto prj = prj_list.find_first<PR_name>(project);
 
-      if (prj != nullptr && ocs::tom::get<PR_consider_with_categories>(prj)) {
-         sge_unparse_string_option_dstring(category_str, job, project_nm, "-P");
+      if (prj && ocs::tom::get<PR_consider_with_categories>(prj)) {
+         sge_unparse_string_option_dstring(category_str, job, lGetPosViaElem(job, JB_project, SGE_NO_ABORT), "-P");
       }
    }
 
@@ -163,4 +201,20 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    }
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief build_string() for an untyped caller
+ *
+ * @param category_str   The target string, contains the category or nothing
+ * @param job            The job for the category creating (JB_Type), checked
+ * @param acl_list       Global access list (US_Type), checked; may be nullptr
+ * @param prj_list       Project list (PR_Type), checked; may be nullptr
+ * @param rqs_list       Resource quota set list (RQS_Type), checked; may be nullptr
+ */
+void
+ocs::Category::build_string(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list,
+                            const lList *rqs_list) {
+   build_string(category_str, ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::ConstList<ocs::tom::US>(acl_list),
+                ocs::tom::ConstList<ocs::tom::PR>(prj_list), ocs::tom::ConstList<ocs::tom::RQS>(rqs_list));
 }

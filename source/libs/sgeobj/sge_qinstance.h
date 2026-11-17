@@ -93,8 +93,6 @@ OCS_TRANSITIONAL void qinstance_set_full_name(lListElem *this_elem);
 
 ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(ocs::tom::ConstList<ocs::tom::QU> this_list, const char *hostname,
                                                       const char *cqueue_name);
-OCS_TRANSITIONAL lListElem *qinstance_list_locate(const lList *this_list, const char *hostname,
-                                                   const char *cqueue_name);
 
 ocs::tom::Element<ocs::tom::QU> qinstance_list_locate2(ocs::tom::ConstList<ocs::tom::QU> qinstance_list,
                                                        const char *full_name);
@@ -102,7 +100,24 @@ ocs::tom::Element<ocs::tom::QU> qinstance_list_locate2(ocs::tom::ConstList<ocs::
 const char *qinstance_get_name(ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string_buffer);
 OCS_TRANSITIONAL const char *qinstance_get_name(const lListElem *this_elem, dstring *string_buffer);
 
-void qinstance_list_set_tag(ocs::tom::List<ocs::tom::QU> this_list, uint32_t tag_value, int tag_nm = QU_tag);
+/**
+ * @brief Tag a list of qinstances
+ *
+ * Tag a list of qinstances ("this_list") with "tag_value".
+ * Examples for tags are QU_tag (default) and QU_tagged4schedule.
+ *
+ * @tparam F which tag attribute to use, a 32 bit field of QU_Type
+ * @param this_list QU_Type list, may be an empty handle
+ * @param tag_value unsigned long value (not a bitmask)
+ *
+ * @note MT-NOTE: qinstance_list_set_tag() is MT safe
+ */
+template <auto F = QU_tag>
+void qinstance_list_set_tag(const ocs::tom::List<ocs::tom::QU> this_list, const uint32_t tag_value) {
+   for (const auto qinstance : this_list) {
+      qinstance.set<F>(tag_value);
+   }
+}
 
 void qinstance_increase_qversion(ocs::tom::Element<ocs::tom::QU> this_elem);
 OCS_TRANSITIONAL void qinstance_increase_qversion(lListElem *this_elem);
@@ -124,7 +139,6 @@ bool qinstance_is_centry_a_complex_value(ocs::tom::ConstElement<ocs::tom::QU> th
                                          ocs::tom::ConstElement<ocs::tom::CE> centry);
 
 void qinstance_set_slots_used(ocs::tom::Element<ocs::tom::QU> this_elem, int new_slots);
-OCS_TRANSITIONAL void qinstance_set_slots_used(lListElem *this_elem, int new_slots);
 
 int qinstance_slots_used(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
 OCS_TRANSITIONAL int qinstance_slots_used(const lListElem *this_elem);
@@ -148,10 +162,12 @@ OCS_TRANSITIONAL bool qinstance_message_add(lListElem *this_elem, uint32_t type,
 bool qinstance_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::QU> this_elem, uint32_t type);
 OCS_TRANSITIONAL bool qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type);
 
+/// Instantiated for queue instances (QU_Type with QU_consumable_config_list, QU_resource_utilization) and
+/// execution hosts (EH_Type with EH_consumable_config_list, EH_resource_utilization); see sge_qinstance.cc
+template <typename T, auto CONFIG_NM, auto ACTUAL_NM>
 int rc_debit_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::PE> pe,
-                        lListElem *ep, ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, int config_nm,
-                        int actual_nm, const char *obj_name, bool is_master_task, bool do_per_host_booking,
-                        bool *just_check);
+                        ocs::tom::Element<T> ep, ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots,
+                        const char *obj_name, bool is_master_task, bool do_per_host_booking, bool *just_check);
 
 //lListElem *
 //explicit_job_request(lListElem *jep, const char *name);
@@ -161,7 +177,6 @@ int rc_debit_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Cons
                                                                          const char *hostname_pattern);
 
 bool qinstance_verify(ocs::tom::ConstElement<ocs::tom::QU> qep, lList **answer_list);
-OCS_TRANSITIONAL bool qinstance_verify(const lListElem *qep, lList **answer_list);
 
 bool
 qinstance_verify_full_name(lList **answer_list, const char *full_name);

@@ -22,6 +22,8 @@
  * @brief Carrying a cull answer list as a C++ exception
  */
 
+#include "uti/sge_rmon_macros.h"
+
 #include "ocs_AnswerException.h"
 
 #include "sgeobj/sge_answer.h"
@@ -32,17 +34,24 @@ ocs::AnswerException::Holder::~Holder() {
    lFreeList(&list);
 }
 
+/**
+ * @brief Find the message of an answer list
+ * @param answer_list an AN_Type list, may be nullptr
+ * @return the text of the last entry of quality error or critical, or a
+ *         fixed text if there is none
+ */
 std::string
 ocs::AnswerException::get_last_error_message(const lList *answer_list) {
-   for (const lListElem *answer = lLast(answer_list); answer != nullptr; answer = lPrev(answer)) {
+   DENTER(TOP_LAYER);
+   for (auto answer = ocs::tom::ConstList<ocs::tom::AN>(answer_list).back(); answer; answer = answer.prev()) {
       if (answer_has_quality(answer, ANSWER_QUALITY_ERROR) || answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
          const char *message = ocs::tom::get<AN_text>(answer);
          if (message != nullptr) {
-            return message;
+            DRETURN(message);
          }
       }
    }
-   return "No error details available";
+   DRETURN("No error details available");
 }
 
 ocs::AnswerException::AnswerException(lList **answer_list)

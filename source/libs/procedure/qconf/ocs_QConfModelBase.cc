@@ -1195,7 +1195,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
     * view which of the two it got, the same test the client made on a null
     * pattern list. */
    if (qref_pattern_list_->empty()) {
-      auto created = ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(cqueue_create(answer_list, "template"));
+      auto created = cqueue_create(answer_list, "template");
       if (created == nullptr || !cqueue_set_template_attributes(*created, answer_list)) {
          DRETURN(false);
       }

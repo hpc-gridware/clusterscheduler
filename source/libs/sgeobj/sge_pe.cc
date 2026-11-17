@@ -95,8 +95,9 @@ bool pe_name_is_matching(const char *pe_name, const char *wildcard) {
  *
  * @return true or false
  */
-bool pe_is_matching(const lListElem *pe, const char *wildcard) {
-   return pe_name_is_matching(ocs::tom::get<PE_name>(pe), wildcard);
+bool pe_is_matching(const ocs::tom::ConstElement<ocs::tom::PE> pe, const char *wildcard) {
+   DENTER(TOP_LAYER);
+   DRETURN(pe_name_is_matching(ocs::tom::get<PE_name>(pe), wildcard));
 }
 
 /**
@@ -107,15 +108,28 @@ bool pe_is_matching(const lListElem *pe, const char *wildcard) {
  * @param pe_list PE_Type list
  * @param wildcard Wildcard expression
  *
- * @return PE_Type object or nullptr
+ * @return the first matching PE_Type object or an empty handle
  */
-lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) {
-   for_each_rw_lv (ret, pe_list) {
-      if (pe_is_matching(ret, wildcard)) {
-         return ret;
+ocs::tom::ConstElement<ocs::tom::PE> pe_list_find_matching(const ocs::tom::ConstList<ocs::tom::PE> pe_list,
+                                                           const char *wildcard) {
+   DENTER(TOP_LAYER);
+   for (const auto pe : pe_list) {
+      if (pe_is_matching(pe, wildcard)) {
+         DRETURN(pe);
       }
    }
-   return nullptr;
+   DRETURN(nullptr);
+}
+
+/**
+ * @brief pe_list_find_matching() for an untyped caller
+ *
+ * @param pe_list PE_Type list, checked
+ * @param wildcard Wildcard expression
+ * @return as pe_list_find_matching()
+ */
+const lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) {
+   return pe_list_find_matching(ocs::tom::ConstList<ocs::tom::PE>(pe_list), wildcard);
 }
 
 /**
@@ -126,12 +140,24 @@ lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) {
  * @param pe_list PE_Type list
  * @param pe_name PE name
  *
- * @return PE_Type object or nullptr
+ * @return PE_Type object or an empty handle
  *
  * @note MT-NOTE: pe_list_locate() is MT safe
  */
+ocs::tom::Element<ocs::tom::PE> pe_list_locate(const ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *pe_name) {
+   DENTER(TOP_LAYER);
+   DRETURN(ocs::tom::find_first_rw<PE_name>(pe_list, pe_name));
+}
+
+/**
+ * @brief pe_list_locate() for an untyped caller
+ *
+ * @param pe_list PE_Type list, checked
+ * @param pe_name PE name
+ * @return as pe_list_locate()
+ */
 lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) {
-   return ocs::tom::find_first_rw<PE_name>(pe_list, pe_name);
+   return pe_list_locate(ocs::tom::ConstList<ocs::tom::PE>(pe_list), pe_name);
 }
 
 /**
@@ -149,12 +175,13 @@ lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) {
  *
  * @return true or false
  */
-bool pe_is_referenced(const lListElem *pe, lList **answer_list,
-                      const lList *master_job_list,
-                      const lList *master_cqueue_list) {
+bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, lList **answer_list,
+                      const ocs::tom::ConstList<ocs::tom::JB> master_job_list,
+                      const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
+   DENTER(TOP_LAYER);
    bool ret = false;
 
-   for_each_ep_lv(job, master_job_list) {
+   for (const auto job : master_job_list) {
       if (job_is_pe_referenced(job, pe)) {
          const char *pe_name = ocs::tom::get<PE_name>(pe);
          uint32_t job_id = ocs::tom::get<JB_job_number>(job);
@@ -172,8 +199,8 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
        */
       const char *pe_name = ocs::tom::get<PE_name>(pe);
 
-      for_each_ep_lv(cqueue, master_cqueue_list) {
-         for_each_ep_lv(cpl, ocs::tom::get<CQ_pe_list>(cqueue)){
+      for (const auto cqueue : master_cqueue_list) {
+         for (const auto cpl : ocs::tom::get<CQ_pe_list>(cqueue)) {
             if (ocs::tom::find_first_in<ASTRLIST_value, ST_name>(cpl, pe_name))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO,
@@ -185,7 +212,23 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
          }
       }
    }
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief pe_is_referenced() for an untyped caller
+ *
+ * @param pe PE_Type object, checked
+ * @param answer_list AN_Type list
+ * @param master_job_list JB_Type list, checked
+ * @param master_cqueue_list CQ_Type list, checked
+ * @return as pe_is_referenced()
+ */
+bool pe_is_referenced(const lListElem *pe, lList **answer_list, const lList *master_job_list,
+                      const lList *master_cqueue_list) {
+   return pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE>(pe), answer_list,
+                           ocs::tom::ConstList<ocs::tom::JB>(master_job_list),
+                           ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
 }
 
 /**
@@ -197,23 +240,24 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
  *    - validity of the allocation rule
  *    - correctness of the queue list, the user list and the xuser list
  *
- * @param pep the pe to check
- * @param alpp answer list pointer, if an answer shall be created, else
- * @param master_userset_list errors will in any case be output using the Cluster Scheduler error logging macros.
- * @param startup are we in qmaster startup phase?
+ * @param pep the pe to check; `PE_start_proc_args` and `PE_stop_proc_args` set to "none" are nulled out
+ * @param alpp answer list pointer, if an answer shall be created, else errors will in any case be output
+ *             using the Cluster Scheduler error logging macros
+ * @param startup are we in qmaster startup phase? Only then the user lists are checked.
+ * @param master_userset_list the defined usersets the user lists are checked against (US_Type)
  *
  * @return STATUS_OK, if everything is ok, else other status values, see libs/gdi/sge_answer.h
  *
  * @note MT-NOTE: pe_validate() is not MT safe
  */
-int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list) {
+int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, lList **alpp, const int startup,
+                const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
 
    const char *s;
-   const char *pe_name;
    int ret;
 
-   pe_name = ocs::tom::get<PE_name>(pep);
+   const char *pe_name = ocs::tom::get<PE_name>(pep);
    if (pe_name != nullptr && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_INVALIDCHARACTERINPE_S, pe_name);
@@ -267,12 +311,14 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    /* do this only in qmaster. we don't have the usersets in qconf */
    if (startup) {
       /* -------- PE_user_list */
-      if ((ret=userset_list_validate_acl_list(ocs::tom::get<PE_user_list>(pep), alpp, master_userset_list))!=STATUS_OK) {
+      if ((ret = userset_list_validate_acl_list(ocs::tom::get<PE_user_list>(pep), alpp,
+                                                master_userset_list)) != STATUS_OK) {
          DRETURN(ret);
       }
 
       /* -------- PE_xuser_list */
-      if ((ret=userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pep), alpp, master_userset_list))!=STATUS_OK) {
+      if ((ret = userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pep), alpp,
+                                                master_userset_list)) != STATUS_OK) {
          DRETURN(ret);
       }
    }
@@ -283,6 +329,20 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    }
 
    DRETURN(STATUS_OK);
+}
+
+/**
+ * @brief pe_validate() for an untyped caller
+ *
+ * @param pep the pe to check, checked
+ * @param alpp answer list pointer or nullptr
+ * @param startup are we in qmaster startup phase?
+ * @param master_userset_list the defined usersets (US_Type), checked
+ * @return as pe_validate()
+ */
+int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list) {
+   return pe_validate(ocs::tom::Element<ocs::tom::PE>(pep), alpp, startup,
+                      ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
 }
 
 /**
@@ -415,22 +475,22 @@ pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bo
  * @param pe_ref_list ST_Type list of PE names
  * @param ignore_make_pe bool
  *
- * @return if all PE's exist false - if at least one PE does not exist
+ * @return true if all PE's exist, false if at least one PE does not exist
  *
- * @note MT-NOTE: pe_urgency_slots() is MT safe
+ * @note MT-NOTE: pe_list_do_all_exist() is MT safe
  */
-bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
-                          const lList *pe_ref_list, bool ignore_make_pe) {
+bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, lList **answer_list,
+                          const ocs::tom::ConstList<ocs::tom::ST> pe_ref_list, const bool ignore_make_pe) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for_each_ep_lv(pe_ref_elem, pe_ref_list) {
+   for (const auto pe_ref_elem : pe_ref_list) {
       const char *pe_ref_string = ocs::tom::get<ST_name>(pe_ref_elem);
 
       if (ignore_make_pe && !strcmp(pe_ref_string, "make")) {
          continue;
       }
-      if (pe_list_locate(pe_list, pe_ref_string) == nullptr) {
+      if (!pe_list_locate(pe_list, pe_ref_string)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_PEREFDOESNOTEXIST_S, pe_ref_string);
@@ -439,6 +499,20 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
       }
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief pe_list_do_all_exist() for an untyped caller
+ *
+ * @param pe_list PE_Type list, checked
+ * @param answer_list AN_Type list
+ * @param pe_ref_list ST_Type list of PE names, checked
+ * @param ignore_make_pe skip the PE named "make"
+ * @return as pe_list_do_all_exist()
+ */
+bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list, const lList *pe_ref_list, bool ignore_make_pe) {
+   return pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE>(pe_list), answer_list,
+                               ocs::tom::ConstList<ocs::tom::ST>(pe_ref_list), ignore_make_pe);
 }
 
 /**
@@ -456,8 +530,8 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
  *
  * @note MT-NOTE: pe_urgency_slots() is MT safe
  */
-int pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
-                     const lList *range_list) {
+int pe_urgency_slots(const ocs::tom::ConstElement<ocs::tom::PE> pe, const char *urgency_slot_setting,
+                     const ocs::tom::ConstList<ocs::tom::RN> range_list) {
    DENTER(TOP_LAYER);
 
    int n;
@@ -493,15 +567,15 @@ int pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
  *
  * build up a generic pe object
  *
- * @param pe_name name used for the PE_name attribute of the generic pe object. If nullptr then "template" is the default name.
+ * @param pe_name name used for the PE_name attribute of the generic pe object. If nullptr then "template"
+ *                is the default name.
  *
- * @return !nullptr - Pointer to a new CULL object of type PE_Type nullptr - Error
+ * @return the new PE_Type object
  *
- * @note MT-NOTE: pe_set_slots_used() is MT safe
+ * @note MT-NOTE: pe_create_template() is MT safe
  */
-lListElem *pe_create_template(char *pe_name) {
+ocs::tom::ElementPtr<ocs::tom::PE> pe_create_template(const char *pe_name) {
    DENTER(TOP_LAYER);
-
 
    auto pep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
 
@@ -520,7 +594,7 @@ lListElem *pe_create_template(char *pe_name) {
 
    ocs::tom::set<PE_urgency_slots>(pep, SGE_ATTRVAL_MIN);
 
-   DRETURN(pep.release());
+   DRETURN(pep);
 }
 
 /**
@@ -534,14 +608,15 @@ lListElem *pe_create_template(char *pe_name) {
  *
  * @note MT-NOTE: pe_get_slots_used() is MT safe
  */
-int pe_get_slots_used(const lListElem *pe) {
+int pe_get_slots_used(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
+   DENTER(TOP_LAYER);
    int ret = -1;
-   ocs::tom::ConstElement<ocs::tom::RUE> actual = ocs::tom::find_first_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
+   const auto actual = ocs::tom::find_first_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
 
    if (actual) {
       ret = ocs::tom::get<RUE_utilized_now>(actual);
    }
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -556,12 +631,25 @@ int pe_get_slots_used(const lListElem *pe) {
  *
  * @note MT-NOTE: pe_set_slots_used() is MT safe
  */
-int pe_set_slots_used(lListElem *pe, int slots) {
-   ocs::tom::Element<ocs::tom::RUE> actual = ocs::tom::find_first_in_rw<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
-   if (!actual && (!(actual = ocs::tom::emplace_back_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS))))
-      return -1;
+int pe_set_slots_used(const ocs::tom::Element<ocs::tom::PE> pe, const int slots) {
+   DENTER(TOP_LAYER);
+   auto actual = ocs::tom::find_first_in_rw<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
+   if (!actual && (!(actual = ocs::tom::emplace_back_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS)))) {
+      DRETURN(-1);
+   }
    ocs::tom::set<RUE_utilized_now>(actual, slots);
-   return 0;
+   DRETURN(0);
+}
+
+/**
+ * @brief pe_set_slots_used() for an untyped caller
+ *
+ * @param pe The pe object (PE_Type), checked
+ * @param slots Number of slots.
+ * @return as pe_set_slots_used()
+ */
+int pe_set_slots_used(lListElem *pe, int slots) {
+   return pe_set_slots_used(ocs::tom::Element<ocs::tom::PE>(pe), slots);
 }
 
 
@@ -576,13 +664,12 @@ int pe_set_slots_used(lListElem *pe, int slots) {
  *
  * @note MT-NOTE: pe_debit_slots() is MT safe
  */
-void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
+void pe_debit_slots(const ocs::tom::Element<ocs::tom::PE> pep, const int slots,
+                    [[maybe_unused]] const uint32_t job_id) {
    DENTER(TOP_LAYER);
 
-   int n;
-
    if (pep) {
-      n = pe_get_slots_used(pep);
+      int n = pe_get_slots_used(pep);
       n += slots;
       if (n < 0) {
          ERROR(MSG_PE_USEDSLOTSTOOBIG_S, ocs::tom::get<PE_name>(pep));
@@ -590,6 +677,17 @@ void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
       pe_set_slots_used(pep, n);
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief pe_debit_slots() for an untyped caller
+ *
+ * @param pep The PE (PE_Type), checked; may be nullptr
+ * @param slots Pos/neg number of slots.
+ * @param job_id Job id for monitoring purposes.
+ */
+void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
+   pe_debit_slots(ocs::tom::Element<ocs::tom::PE>(pep), slots, job_id);
 }
 
 /**
@@ -606,16 +704,27 @@ void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
  *
  * @note MT-NOTE: pe_do_accounting_summary() is MT safe
  */
-bool pe_do_accounting_summary(const lListElem *pe) {
+bool pe_do_accounting_summary(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
+   DENTER(TOP_LAYER);
    bool ret = false;
 
    /*
     * the accounting_summary attribute has only a meaning
     * for tightly integrated jobs
     */
-   if (pe != nullptr && ocs::tom::get<PE_control_slaves>(pe)) {
+   if (pe && ocs::tom::get<PE_control_slaves>(pe)) {
       ret = ocs::tom::get<PE_accounting_summary>(pe) ? true : false;
    }
 
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief pe_do_accounting_summary() for an untyped caller
+ *
+ * @param pe the parallel environment, checked; may be nullptr
+ * @return as pe_do_accounting_summary()
+ */
+bool pe_do_accounting_summary(const lListElem *pe) {
+   return pe_do_accounting_summary(ocs::tom::ConstElement<ocs::tom::PE>(pe));
 }

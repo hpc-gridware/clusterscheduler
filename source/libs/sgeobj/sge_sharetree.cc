@@ -44,6 +44,7 @@
 
 #include <cstring>
 #include <format>
+#include <optional>
 #include <ostream>
 
 #include "uti/sge_log.h"
@@ -56,14 +57,34 @@
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
 
 #include "msg_common.h"
 
 
-/************************************************************************
-   id_sharetree - set the sharetree node id
-************************************************************************/
+/**
+ * @brief Number a share tree node and its subtree
+ *
+ * @param ep the node to start at, not empty
+ * @param id the id to give this node
+ * @return the next unused id
+ */
+static int
+ocs_id_sharetree_subtree(const ocs::tom::Element<ocs::tom::STN> ep, const int id) {
+   DENTER(TOP_LAYER);
+
+   int my_id = id;
+   ocs::tom::set<STN_id>(ep, my_id++);
+
+   /* handle the children */
+   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
+      my_id = ocs_id_sharetree_subtree(cep, my_id);
+   }
+
+   DRETURN(my_id);
+}
+
 /**
  * @brief Number the share tree nodes
  *
@@ -71,34 +92,33 @@
  * referred to by number rather than by path.
  *
  * @param[out] alpp receives error messages
- * @param ep the node to start at
+ * @param ep the node to start at, may be an empty handle
  * @param id the id to give this node
- * @param[out] ret_id receives the next unused id
- * @return true when the whole subtree could be numbered
+ * @return true when the whole subtree could be numbered, false for an empty @p ep
  */
-bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id) {
+bool id_sharetree(lList **alpp, const ocs::tom::Element<ocs::tom::STN> ep, const int id) {
    DENTER(TOP_LAYER);
-   int my_id = id;
 
-   if (ep == nullptr) {
+   if (!ep) {
       answer_list_add(alpp, MSG_OBJ_NOSTREEELEM, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
-   
-   ocs::tom::set<STN_id>(ep, my_id++);
 
-   /* handle the children */
-   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
-      if (false == id_sharetree(nullptr, cep, my_id, &my_id)) {
-         DRETURN(false);
-      }
-   }
-
-   if (ret_id) {
-      *ret_id = my_id;
-   }   
+   ocs_id_sharetree_subtree(ep, id);
 
    DRETURN(true);
+}
+
+/**
+ * @brief id_sharetree() for an untyped caller
+ *
+ * @param[out] alpp receives error messages
+ * @param ep the node to start at (STN_Type), checked; may be nullptr
+ * @param id the id to give this node
+ * @return as id_sharetree()
+ */
+bool id_sharetree(lList **alpp, lListElem *ep, int id) {
+   return id_sharetree(alpp, ocs::tom::Element<ocs::tom::STN>(ep), id);
 }
 
 /**
@@ -123,7 +143,7 @@ stn_cstr(const char *s) {
  * Writes `name=shares` per node, one level of indentation per depth.
  *
  * @param os     the stream to write to
- * @param ep     the node to start at
+ * @param ep     the node to start at (STN_Type), may be an empty handle
  * @param indent the string one level of depth is indented by
  * @param level  the depth `ep` sits at, 0 for the root; the recursion passes
  *               its own depth down (CS-1841: it used to live in a function
@@ -131,12 +151,8 @@ stn_cstr(const char *s) {
  *               this runs inside qmaster)
  * @return 0 on success, -1 when `ep` is nullptr
  */
-int show_sharetree(
-std::ostream &os,
-const lListElem *ep,
-const char *indent,
-int level
-) {
+int show_sharetree(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::STN> ep, const char *indent,
+                   const int level) {
    DENTER(TOP_LAYER);
 
    if (!ep) {
@@ -147,7 +163,7 @@ int level
       os << (indent != nullptr ? indent : "");
    }
    os << std::format("{}={}\n", stn_cstr(ocs::tom::get<STN_name>(ep)), ocs::tom::get<STN_shares>(ep));
-   for (ocs::tom::ConstElement<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
+   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
       show_sharetree(os, cep, "   ", level + 1);
    }
 
@@ -160,7 +176,7 @@ int level
  * Writes the full path of every node, which is the form `qconf` accepts back.
  *
  * @param os   the stream to write to
- * @param root the node to start at
+ * @param root the node to start at (STN_Type), may be an empty handle
  * @param path the path prefix the printed paths start with
  * @return 0 on success, 1 when `root` is nullptr or `path` names no node
  *
@@ -171,13 +187,9 @@ int level
  *       hit. The return value is the whole signal now, and the caller turns it
  *       into a message where it has an answer list to put one in.
  */
-int show_sharetree_path(
-std::ostream &os,
-lListElem *root,
-const char *path 
-) {
+int show_sharetree_path(std::ostream &os, const ocs::tom::Element<ocs::tom::STN> root, const char *path) {
    DENTER(TOP_LAYER);
-   lListElem *node;
+   ocs::tom::Element<ocs::tom::STN> node;
    ancestors_t ancestors;
    int i;
    dstring sb = DSTRING_INIT;
@@ -201,7 +213,7 @@ const char *path
       else
          os << std::format("={}\n", ocs::tom::get<STN_shares>(node));
       free_ancestors(&ancestors);
-      for (ocs::tom::ConstElement<ocs::tom::STN> cep : ocs::tom::get<STN_children>(node)) {
+      for (const auto cep : ocs::tom::get<STN_children>(node)) {
 
          if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
             sge_dstring_sprintf(&sb, "/%s", ocs::tom::get<STN_name>(cep));
@@ -233,9 +245,8 @@ const char *path
  *
  * @return the new node; the caller owns it
  */
-lListElem *getSNTemplate() {
+ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate() {
    DENTER(TOP_LAYER);
-
 
    /* Use the catch-all "default" node so the offered template is a valid,
     * acceptable sharetree as-is: a single leaf named "template" would be rejected
@@ -247,13 +258,9 @@ lListElem *getSNTemplate() {
    ocs::tom::set<STN_shares>(ep, 0);
    ocs::tom::set<STN_children>(ep, nullptr);
 
-   DRETURN(ep.release());
+   DRETURN(ep);
 }
 
-/********************************************************
- Search for a share tree node with a given name in a
- share tree
- ********************************************************/
 /**
  * @brief Find the first share tree node with a given name
  *
@@ -261,14 +268,12 @@ lListElem *getSNTemplate() {
  * tree, so the first match wins - use #search_named_node_path when the exact
  * node matters.
  *
- * @param ep root of the tree
+ * @param ep root of the tree (STN_Type), may be an empty handle
  * @param name the node name to look for
- * @return the node, or nullptr when no node has that name
+ * @return the node, or an empty handle when no node has that name
  */
-lListElem *search_named_node(lListElem *ep, /* root of the tree */
-                             const char *name) {
+ocs::tom::Element<ocs::tom::STN> search_named_node(const ocs::tom::Element<ocs::tom::STN> ep, const char *name) {
    DENTER(TOP_LAYER);
-   lListElem *fep;
 
    if (!ep || !name) {
       DRETURN(nullptr);
@@ -278,19 +283,16 @@ lListElem *search_named_node(lListElem *ep, /* root of the tree */
       DRETURN(ep);
    }
 
-   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
-      if ((fep = search_named_node(cep, name))) {
+   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
+      if (const auto fep = search_named_node(cep, name); fep) {
          DRETURN(fep);
       }
    }
-      
+
    DRETURN(nullptr);
 }
 
 
-/********************************************************
- Free internals of ancestors structure
- ********************************************************/
 /**
  * @brief Release the node array of an ancestors structure
  *
@@ -300,28 +302,49 @@ lListElem *search_named_node(lListElem *ep, /* root of the tree */
  * @param[in,out] ancestors the structure to clean up; nullptr is ignored
  */
 void free_ancestors(ancestors_t *ancestors) {
+   DENTER(TOP_LAYER);
    if (ancestors && ancestors->nodes) {
       sge_free(&(ancestors->nodes));
    }
+   DRETURN_VOID;
 }
 
 
-/********************************************************
- Search for a share tree node with a given path in a
- share tree
- ********************************************************/
+/**
+ * @brief Allocate the node array of an ancestors structure
+ *
+ * @param[out] ancestors the structure to fill
+ * @param depth how many nodes the path has
+ */
+static void
+ocs_ancestors_alloc(ancestors_t *ancestors, const int depth) {
+   DENTER(TOP_LAYER);
+   ancestors->depth = depth;
+   // a handle is trivially copyable and destructible, so a malloc'ed array of them is fine
+   ancestors->nodes = static_cast<ocs::tom::Element<ocs::tom::STN> *>(
+      static_cast<void *>(sge_malloc(depth * sizeof(ocs::tom::Element<ocs::tom::STN>))));
+   DRETURN_VOID;
+}
 
-static lListElem *
-search_by_path(lListElem *ep, /* root of the [sub]tree */
-               const char *name,
-               const char *path,
-               int delim,
-               ancestors_t *ancestors,
-               int depth) {
-   ocs::tom::List<ocs::tom::STN> children;
-   lListElem *ret = nullptr;
-   lListElem *child;
-   char *buf=nullptr, *bufp;
+/**
+ * @brief Search a share tree node by the rest of a path
+ *
+ * @param ep root of the [sub]tree, not empty
+ * @param name the path component this node has to match; nullptr at the start of the search
+ * @param path the rest of the path
+ * @param delim the delimiter that preceded @p name, '.' or '/'
+ * @param[out] ancestors receives the nodes from the root down to the match; may be nullptr
+ * @param depth the depth @p ep sits at, 0 for the root
+ * @return the node, or an empty handle when the path does not resolve
+ */
+static ocs::tom::Element<ocs::tom::STN>
+search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, const char *path, int delim,
+               ancestors_t *ancestors, const int depth) {
+   DENTER(TOP_LAYER);
+
+   ocs::tom::Element<ocs::tom::STN> ret;
+   char *buf = nullptr;
+   char *bufp;
 
    if (name == nullptr)
       delim = '.';
@@ -332,13 +355,11 @@ search_by_path(lListElem *ep, /* root of the [sub]tree */
          if (name) {
             ret = ep;
             if (ancestors && depth > 0) {
-               ancestors->depth = depth;
-               ancestors->nodes =
-                     (lListElem **)sge_malloc(depth * sizeof(lListElem *));
+               ocs_ancestors_alloc(ancestors, depth);
                ancestors->nodes[depth-1] = ep;
             }
          }
-         return ret;
+         DRETURN(ret);
       }
 
       /* get next component from path */
@@ -350,26 +371,22 @@ search_by_path(lListElem *ep, /* root of the [sub]tree */
          *bufp++ = *path++;
       *bufp = 0;
       name = buf;
-   } else if (delim == '/')
-      return nullptr;
+   } else if (delim == '/') {
+      DRETURN(nullptr);
+   }
 
-   if ((children = ocs::tom::get<STN_children>(ep)))
-      for (child=lFirstRW(children); child && !ret; child = child->next)
-         ret = search_by_path(child, name, path, delim, ancestors, depth+1);
+   for (auto child = ocs::tom::get<STN_children>(ep).front(); child && !ret; child = child.next()) {
+      ret = search_by_path(child, name, path, delim, ancestors, depth+1);
+   }
 
    if (ret && ancestors && ancestors->nodes && depth > 0)
       ancestors->nodes[depth-1] = ep;
    if (buf) {
       sge_free(&buf);
    }
-   return ret;
+   DRETURN(ret);
 }
 
-
-/********************************************************
- Search for a share tree node with a given path in a
- share tree
- ********************************************************/
 /**
  * @brief Find a share tree node by its path
  *
@@ -377,17 +394,30 @@ search_by_path(lListElem *ep, /* root of the [sub]tree */
  * Unlike #search_named_node this identifies exactly one node even when the
  * same name occurs several times in the tree.
  *
- * @param ep root of the tree
+ * @param ep root of the tree (STN_Type), not empty
  * @param path the path to resolve
  * @param[out] ancestors receives the nodes from the root down to the match;
  *             may be nullptr. The caller frees it with #free_ancestors.
- * @return the node, or nullptr when the path does not resolve
+ * @return the node, or an empty handle when the path does not resolve
+ */
+ocs::tom::Element<ocs::tom::STN>
+search_named_node_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *path, ancestors_t *ancestors) {
+   DENTER(TOP_LAYER);
+   const auto ret = search_by_path(ep, nullptr, path, 0, ancestors, 0);
+   DRETURN(ret);
+}
+
+/**
+ * @brief search_named_node_path() for an untyped caller
+ *
+ * @param ep root of the tree (STN_Type), checked
+ * @param path the path to resolve
+ * @param[out] ancestors receives the nodes from the root down to the match; may be nullptr
+ * @return as search_named_node_path()
  */
 lListElem *
-search_named_node_path(lListElem *ep, /* root of the tree */
-                       const char *path,
-                       ancestors_t *ancestors) {
-   return search_by_path(ep, nullptr, path, 0, ancestors, 0);
+search_named_node_path(lListElem *ep, const char *path, ancestors_t *ancestors) {
+   return search_named_node_path(ocs::tom::Element<ocs::tom::STN>(ep), path, ancestors);
 }
 
 
@@ -420,39 +450,35 @@ lListElem *search_ancestor_list(lListElem *ep, /* root of the tree */
  * Like #search_named_node, but additionally fills `ancestors` with the nodes
  * from the root down to the match, in that order.
  *
- * @param ep root of the [sub]tree
+ * @param ep root of the [sub]tree (STN_Type), may be an empty handle
  * @param name the node name to look for
  * @param[out] ancestors receives the path; the caller frees it with
  *             #free_ancestors
  * @param depth the depth `ep` sits at, 1 for the root
- * @return the node, or nullptr when no node has that name
+ * @return the node, or an empty handle when no node has that name
  */
-lListElem *
-search_ancestors(lListElem *ep,
-                 const char *name,
-                 ancestors_t *ancestors,
-                 int depth) {
+ocs::tom::Element<ocs::tom::STN>
+search_ancestors(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, ancestors_t *ancestors,
+                 const int depth) {
    DENTER(TOP_LAYER);
-   lListElem *fep;
 
    if (!ep || !name) {
       DRETURN(nullptr);
    }
 
    if (strcmp(ocs::tom::get<STN_name>(ep), name) == 0) {
-      ancestors->depth = depth;
-      ancestors->nodes = (lListElem **)sge_malloc(depth * sizeof(lListElem *));
+      ocs_ancestors_alloc(ancestors, depth);
       ancestors->nodes[depth-1] = ep;
       DRETURN(ep);
    }
 
-   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
-      if ((fep = search_ancestors(cep, name, ancestors, depth+1))) {
+   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
+      if (const auto fep = search_ancestors(cep, name, ancestors, depth+1); fep) {
          ancestors->nodes[depth-1] = ep;
          DRETURN(fep);
       }
    }
-      
+
    DRETURN(nullptr);
 }
 
@@ -463,22 +489,21 @@ search_ancestors(lListElem *ep,
  * has no name.  A node with no name means that it was created as a result of
  * a dangling or circular child reference.
  *
- * @param ep root of the tree
+ * @param ep root of the tree (STN_Type), may be an empty handle
  *
- * @return the first node which has no name or nullptr if all nodes have names
+ * @return the first node which has no name or an empty handle if all nodes have names
  */
-lListElem *sge_search_unspecified_node(lListElem *ep) {
+ocs::tom::Element<ocs::tom::STN> sge_search_unspecified_node(const ocs::tom::Element<ocs::tom::STN> ep) {
    DENTER(TOP_LAYER);
-   lListElem *ret = nullptr;
 
-   if (ep == nullptr) {
+   if (!ep) {
       DRETURN(nullptr);
    }
 
-   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
-      if ((ret = sge_search_unspecified_node(cep))) {
+   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
+      if (const auto ret = sge_search_unspecified_node(cep); ret) {
          DRETURN(ret);
-      }   
+      }
    }
 
    if (ocs::tom::get<STN_name>(ep) == nullptr) {

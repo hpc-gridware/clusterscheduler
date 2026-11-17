@@ -253,11 +253,8 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    }
    if (fp) {
       /* read in config file */
-      lList *cluster_out = nullptr;
-      const int read_ret = read_config_list(fp, &cluster_out, alpp, CF_Type, CF_name, CF_value,
-                                            CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1);
-      /* read_config_list() creates the list with CF_Type, so it is taken over unchecked */
-      clp_cluster = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(cluster_out);
+      auto [read_ret, config] = read_config_list(fp, alpp, true, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1);
+      clp_cluster = std::move(config);
       if (read_ret) {
          FCLOSE(fp);
          goto Error;
@@ -302,11 +299,8 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    }
    if (fp) {
       /* read in config file */
-      lList *user_out = nullptr;
-      const int read_ret = read_config_list(fp, &user_out, alpp, CF_Type, CF_name, CF_value,
-                                            CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1);
-      /* read_config_list() creates the list with CF_Type, so it is taken over unchecked */
-      clp_user = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(user_out);
+      auto [read_ret, config] = read_config_list(fp, alpp, true, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1);
+      clp_user = std::move(config);
       if (read_ret) {
          FCLOSE(fp);
          goto Error;

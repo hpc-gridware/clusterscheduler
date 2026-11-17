@@ -54,16 +54,35 @@
 #include "sge_resource_quota_service.h"
 #include "sge_object.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRF.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
-static bool is_global(const lListElem *rule, int nm) {
-   lListElem *filter = lGetObject(rule, nm);
-   if (!filter)
-      return true;
-   if (ocs::tom::find_first_in<RQRF_scope, ST_name>(filter, "*") && lGetNumberOfElem(ocs::tom::get<RQRF_xscope>(filter))==0)
-      return true;
-   return false;
+/**
+ * @brief Does a filter of a rule leave its scope open?
+ *
+ * A filter is global when it is missing, or when it names `*` and excludes
+ * nothing.
+ *
+ * @tparam F the filter field of the rule (RQR_filter_*)
+ * @param rule the rule (RQR_Type)
+ * @return true when the filter puts no restriction on the scope
+ */
+template <auto F>
+static bool is_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
+   DENTER(BASIS_LAYER);
+
+   const auto filter = ocs::tom::get<F>(rule);
+   if (!filter) {
+      DRETURN(true);
+   }
+   if (ocs::tom::find_first_in<RQRF_scope, ST_name>(filter, "*") && ocs::tom::get<RQRF_xscope>(filter).empty()) {
+      DRETURN(true);
+   }
+   DRETURN(false);
 }
 
 /**
@@ -75,8 +94,9 @@ static bool is_global(const lListElem *rule, int nm) {
  *
  * @note MT-NOTE: is_cqueue_global() is MT safe
  */
-bool is_cqueue_global(const lListElem *rule) {
-   return is_global(rule, RQR_filter_queues);
+bool is_cqueue_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
+   DENTER(BASIS_LAYER);
+   DRETURN(is_global<RQR_filter_queues>(rule));
 }
 
 
@@ -91,16 +111,24 @@ bool is_cqueue_global(const lListElem *rule) {
  *
  * @note MT-NOTE: is_host_global() is MT safe
  */
-bool is_host_global(const lListElem *rule) {
-   return is_global(rule, RQR_filter_hosts);
+bool is_host_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
+   DENTER(BASIS_LAYER);
+   DRETURN(is_global<RQR_filter_hosts>(rule));
 }
 
-static bool is_expand(const lListElem *rule, int nm) {
-   lListElem *filter = lGetObject(rule, nm);
-   if (filter && ocs::tom::get<RQRF_expand>(filter))
-      return true;
-   else
-      return false;
+/**
+ * @brief Does a filter of a rule expand?
+ *
+ * @tparam F the filter field of the rule (RQR_filter_*)
+ * @param rule the rule (RQR_Type)
+ * @return true when the filter exists and is written in braces (`{...}`)
+ */
+template <auto F>
+static bool is_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
+   DENTER(BASIS_LAYER);
+
+   const auto filter = ocs::tom::get<F>(rule);
+   DRETURN(filter && ocs::tom::get<RQRF_expand>(filter));
 }
 
 
@@ -120,8 +148,9 @@ static bool is_expand(const lListElem *rule, int nm) {
  *
  * @note MT-NOTE: is_host_expand() is MT safe
  */
-bool is_host_expand(const lListElem *rule) {
-   return is_expand(rule, RQR_filter_hosts);
+bool is_host_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
+   DENTER(BASIS_LAYER);
+   DRETURN(is_expand<RQR_filter_hosts>(rule));
 }
 
 /**
@@ -140,8 +169,9 @@ bool is_host_expand(const lListElem *rule) {
  *
  * @note MT-NOTE: is_cqueue_expand() is MT safe
  */
-bool is_cqueue_expand(const lListElem *rule) {
-   return is_expand(rule, RQR_filter_queues);
+bool is_cqueue_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
+   DENTER(BASIS_LAYER);
+   DRETURN(is_expand<RQR_filter_queues>(rule));
 }
 
 
@@ -150,26 +180,30 @@ bool is_cqueue_expand(const lListElem *rule) {
  *
  * Search for a user reference in the resource quota sets
  *
- * @param rqs resource quota set list
+ * @param rqs resource quota set list (RQS_Type)
  * @param user user to search
  * @param group user's group
- * @param grp_list the user's supplementary groups
- * @param acl_list acl list for user resolving
+ * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
+ * @param acl_list acl list for user resolving (US_Type)
  *
  * @return true if user was found false if user was not found
  *
  * @note MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe
  */
-bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list) {
+bool sge_user_is_referenced_in_rqs(const ocs::tom::ConstList<ocs::tom::RQS> rqs, const char *user, const char *group,
+                                   const ocs::tom::ConstList<ocs::tom::ST> grp_list,
+                                   const ocs::tom::ConstList<ocs::tom::US> acl_list) {
+   DENTER(BASIS_LAYER);
+
+   const ocs::tom::ConstList<ocs::tom::HGRP> no_hgroups;
    bool ret = false;
 
-   for_each_ep_lv(ep, rqs) {
-      ocs::tom::ConstList<ocs::tom::RQR> rule_list = ocs::tom::get<RQS_rule>(ep);
-
-      for (ocs::tom::ConstElement<ocs::tom::RQR> rule : rule_list) {
+   for (const auto ep : rqs) {
+      for (const auto rule : ocs::tom::get<RQS_rule>(ep)) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
-         if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
-             rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, user, acl_list, nullptr, group, grp_list)) {
+         if ((is_expand<RQR_filter_users>(rule) || !is_global<RQR_filter_users>(rule)) &&
+             rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, user, acl_list, no_hgroups, group,
+                              grp_list)) {
             ret = true;
             break;
          }
@@ -178,5 +212,23 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
          break;
       }
    }
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief sge_user_is_referenced_in_rqs() for an untyped caller
+ *
+ * @param rqs resource quota set list (RQS_Type), checked; may be nullptr
+ * @param user user to search
+ * @param group user's group
+ * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
+ * @param acl_list acl list for user resolving (US_Type), checked; may be nullptr
+ *
+ * @return as sge_user_is_referenced_in_rqs()
+ */
+bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list,
+                                   const lList *acl_list) {
+   return sge_user_is_referenced_in_rqs(ocs::tom::ConstList<ocs::tom::RQS>(rqs), user, group,
+                                        ocs::tom::ConstList<ocs::tom::ST>(grp_list),
+                                        ocs::tom::ConstList<ocs::tom::US>(acl_list));
 }

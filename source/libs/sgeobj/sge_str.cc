@@ -60,10 +60,10 @@
  * Append the strings contained in "this_list" to the dstring
  * "string". Separate them by the character contained in
  * "delimiter".
- * If "this_list" is nullptr or conaines no elements, "NONE" will
+ * If "this_list" is nullptr or contains no elements, "NONE" will
  * be added to the dstring.
  *
- * @param this_list ST_Type list
+ * @param this_list ST_Type list, may be empty
  * @param string dynamic string
  * @param delimiter delimiter
  *
@@ -72,17 +72,16 @@
  * @see #str_list_parse_from_string
  */
 const char *
-str_list_append_to_dstring(const lList *this_list, dstring *string,
-                           const char delimiter) {
+str_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::ST> this_list, dstring *string, const char delimiter) {
    DENTER(STR_LAYER);
    const char *ret = nullptr;
 
    if (string != nullptr) {
       bool printed = false;
 
-      for_each_ep_lv(elem, this_list) {
+      for (const auto elem : this_list) {
          sge_dstring_append(string, ocs::tom::get<ST_name>(elem));
-         if (lNext(elem) != nullptr) {
+         if (elem.next() != nullptr) {
             sge_dstring_sprintf_append(string, "%c", delimiter);
          }
          printed = true;
@@ -96,35 +95,49 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
 }
 
 /**
+ * @brief str_list_append_to_dstring() for an untyped caller
+ *
+ * @param this_list ST_Type list, checked; may be nullptr
+ * @param string dynamic string
+ * @param delimiter delimiter
+ *
+ * @return as str_list_append_to_dstring()
+ */
+const char *
+str_list_append_to_dstring(const lList *this_list, dstring *string, const char delimiter) {
+   return str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST>(this_list), string, delimiter);
+}
+
+/**
  * @brief Parse a list of strings
  *
  * Parse a list of strings from "string". The strings have to be
- * separated by a token contained in "delimitor". for each string
- * an element of type ST_Type will be added to "this_list".
+ * separated by a token contained in "delimitor". For each string
+ * an element of type ST_Type is added to the list.
  *
- * @param this_list ST_Type list
  * @param string string to be parsed
  * @param delimitor delimitor string
  *
- * @return error state true  - success false - error
+ * @return the new list; an empty handle if "string" or "delimitor" is nullptr or "string" holds no token
  *
  * @note MT-NOTE: str_list_parse_from_string() is MT safe
  *
  * @see #str_list_append_to_dstring
  */
-bool str_list_parse_from_string(lList **this_list,
-                                const char *string, const char *delimitor) {
+ocs::tom::ListPtr<ocs::tom::ST> str_list_parse_from_string(const char *string, const char *delimitor) {
    DENTER(STR_LAYER);
 
-   bool ret = true;
+   ocs::tom::ListPtr<ocs::tom::ST> ret;
 
-   if (this_list != nullptr && string != nullptr && delimitor != nullptr) {
+   if (string != nullptr && delimitor != nullptr) {
       struct saved_vars_s *context = nullptr;
-      const char *token;
 
-      token = sge_strtok_r(string, delimitor, &context);
+      const char *token = sge_strtok_r(string, delimitor, &context);
       while (token != nullptr) {
-         ocs::tom::emplace_back<ST_name>(this_list, token);
+         if (!ret) {
+            ret = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+         }
+         ret->emplace_back<ST_name>(token);
          token = sge_strtok_r(nullptr, delimitor, &context);
       }
       sge_free_saved_vars(context);
@@ -133,65 +146,103 @@ bool str_list_parse_from_string(lList **this_list,
 }
 
 /**
+ * @brief str_list_parse_from_string() for an untyped caller
+ *
+ * The parsed strings are appended to the list "this_list" refers to; it is
+ * created if it is nullptr.
+ *
+ * @param[in,out] this_list ST_Type list, checked; may refer to nullptr
+ * @param string string to be parsed
+ * @param delimitor delimitor string
+ *
+ * @return always true
+ */
+bool str_list_parse_from_string(lList **this_list, const char *string, const char *delimitor) {
+   if (this_list != nullptr) {
+      auto parsed = str_list_parse_from_string(string, delimitor);
+      if (parsed) {
+         if (*this_list == nullptr) {
+            *this_list = parsed.release();
+         } else {
+            ocs::tom::List<ocs::tom::ST>(*this_list).splice(std::move(parsed));
+         }
+      }
+   }
+   return true;
+}
+
+/**
  * @brief Are all strings valid
  *
  * Does each element in "this_list" contain a valid string (!= nullptr).
  *
- * @param this_list ST_Type list
+ * @param this_list ST_Type list, may be empty
  * @param answer_list AN_Type list
  *
- * @return result true  - all strings are != nullptr false - at least one entry is nullptr
+ * @return always true; an invalid string only adds an error to "answer_list"
  */
-bool str_list_is_valid(const lList *this_list, lList **answer_list) {
+bool str_list_is_valid(const ocs::tom::ConstList<ocs::tom::ST> this_list, lList **answer_list) {
    DENTER(STR_LAYER);
    bool ret = true;
 
-   if (this_list != nullptr) {
-      for_each_ep_lv(elem, this_list) {
-         if (ocs::tom::get<ST_name>(elem) == nullptr) {
-            answer_list_add(answer_list, MSG_STR_INVALIDSTR, 
-                            STATUS_ENOKEY, ANSWER_QUALITY_ERROR);
-            break;
-         }
+   for (const auto elem : this_list) {
+      if (ocs::tom::get<ST_name>(elem) == nullptr) {
+         answer_list_add(answer_list, MSG_STR_INVALIDSTR, STATUS_ENOKEY, ANSWER_QUALITY_ERROR);
+         break;
       }
    }
    DRETURN(ret);
 }
 
 /**
+ * @brief str_list_is_valid() for an untyped caller
+ *
+ * @param this_list ST_Type list, checked; may be nullptr
+ * @param answer_list AN_Type list
+ *
+ * @return as str_list_is_valid()
+ */
+bool str_list_is_valid(const lList *this_list, lList **answer_list) {
+   return str_list_is_valid(ocs::tom::ConstList<ocs::tom::ST>(this_list), answer_list);
+}
+
+/**
  * @brief Replace the placeholder for "the current user" in a string list
  *
  * A user may write `$user` where a user name is expected; this substitutes the
- * name the request came from.
+ * name the request came from. A `*` frees the whole list. An empty handle
+ * becomes a list holding only "username".
  *
  * @param[in,out] this_list the list to rewrite
  * @param[out] answer_list receives error messages
  * @param username the name to substitute
  * @return true when the list could be rewritten
  */
-bool str_list_transform_user_list(lList **this_list, lList **answer_list, const char *username) {
+bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list, [[maybe_unused]] lList **answer_list,
+                                  const char *username) {
    DENTER(STR_LAYER);
    bool ret = true;
 
-   if (this_list != nullptr && *this_list != nullptr) {
-      for_each_rw_lv (elem, *this_list) {
+   if (this_list) {
+      for (const auto elem : *this_list) {
          const char *string = ocs::tom::get<ST_name>(elem);
 
          if (string != nullptr) {
             /*
              * '$user' will be replaced by the current unix username
-             * '*'     empty the remove the list 
+             * '*'     empties the list
              */
             if (strcasecmp(string, "$user") == 0) {
                ocs::tom::set<ST_name>(elem, username);
             } else if (strcmp(string, "*") == 0) {
-               lFreeList(this_list);
+               this_list.reset();
                break;
             }
          }
       }
-   } else {
-      ocs::tom::emplace_back<ST_name>(this_list, username);
+   } else if (username != nullptr) {
+      this_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      this_list->emplace_back<ST_name>(username);
    }
    DRETURN(ret);
 }
@@ -201,18 +252,20 @@ bool str_list_transform_user_list(lList **this_list, lList **answer_list, const 
  *
  * @param amount how many entries `grp_array` has
  * @param grp_array the groups to convert
- * @return the new list; the caller owns it
+ * @return the new list, an empty handle if "amount" is 0
  */
-lList *
-grp_list_array2list(int amount, ocs_grp_elem_t *grp_array) {
+ocs::tom::ListPtr<ocs::tom::ST>
+grp_list_array2list(const int amount, const ocs_grp_elem_t *grp_array) {
    DENTER(TOP_LAYER);
-   lList *grp_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::ST> grp_list;
 
-   for(int i = 0; i < amount; i++) {
-      ocs::tom::Element<ocs::tom::ST> new_grp = ocs::tom::emplace_back<ST_name>(&grp_list, grp_array[i].name);
+   for (int i = 0; i < amount; i++) {
+      if (!grp_list) {
+         grp_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      }
+      auto new_grp = grp_list->emplace_back<ST_name>(grp_array[i].name);
 
       ocs::tom::set<ST_id>(new_grp, grp_array[i].id);
    }
    DRETURN(grp_list);
 }
-

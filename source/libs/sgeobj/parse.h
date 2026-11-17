@@ -39,6 +39,15 @@
  * @see parse.cc
  */
 
+#include <optional>
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
+
 #include "sgeobj/cull/sge_parse_SPA_L.h"
 
 /**
@@ -54,36 +63,63 @@
 #define GROUP_CQ_SUMMARY         0x00000004 ///< one line per cluster queue instead of per queue instance
 /** @} */
 
-char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp);
+char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                   lList **alpp);
+OCS_TRANSITIONAL char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
+                                    lList **alpp);
 
-char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp);
+char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt,
+                            ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp);
+OCS_TRANSITIONAL char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
+                                             lList **alpp);
 
-char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp);
+char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt,
+                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp);
+OCS_TRANSITIONAL char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
+                                              lList **alpp);
 
-char **parse_param(char **sp, const char *opt, lList **ppcmdline, lList **alpp);
+char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp);
+OCS_TRANSITIONAL char **parse_param(char **sp, const char *opt, lList **ppcmdline, lList **alpp);
 
-lListElem *sge_add_arg(lList **popt_list, uint32_t opt_number,
-                       uint32_t opt_type, const char *opt_switch,
-                       const char *opt_switch_arg);
+ocs::tom::Element<ocs::tom::SPA> sge_add_arg(ocs::tom::ListPtr<ocs::tom::SPA> &opt_list, uint32_t opt_number,
+                                             uint32_t opt_type, const char *opt_switch, const char *opt_switch_arg);
+OCS_TRANSITIONAL lListElem *sge_add_arg(lList **popt_list, uint32_t opt_number, uint32_t opt_type,
+                                        const char *opt_switch, const char *opt_switch_arg);
 
-lListElem *sge_add_noarg(lList **popt_list, uint32_t opt_number, const char *opt_switch, const char *opt_switch_arg);
+ocs::tom::Element<ocs::tom::SPA> sge_add_noarg(ocs::tom::ListPtr<ocs::tom::SPA> &opt_list, uint32_t opt_number,
+                                               const char *opt_switch, const char *opt_switch_arg);
+OCS_TRANSITIONAL lListElem *sge_add_noarg(lList **popt_list, uint32_t opt_number, const char *opt_switch,
+                                          const char *opt_switch_arg);
 
-bool parse_multi_stringlist(lList **ppcmdline, const char *opt, lList **ppal, lList **ppdestlist, const lDescr *type, int field);
+/**
+ * @brief Take a switch and its list argument out of the parsed option list
+ *
+ * Instantiated for ST_name and QR_name.
+ *
+ * @tparam F the string field the collected names go into
+ * @see the definition in parse.cc
+ */
+template <auto F>
+bool parse_multi_stringlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal,
+                            ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> &dest);
 
-bool parse_flag(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *pflag);
+bool parse_flag(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, uint32_t *pflag);
+OCS_TRANSITIONAL bool parse_flag(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *pflag);
 
-int parse_string(lList **ppcmdline, const char *opt, lList **ppal, char **str);
+int parse_string(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, char **str);
+OCS_TRANSITIONAL int parse_string(lList **ppcmdline, const char *opt, lList **ppal, char **str);
 
-int
-parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **value);
+int parse_string_arg(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, char **value);
 
-int
-parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *value);
+int parse_uint32_t(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, uint32_t *value);
 
-int   
-parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value);
+std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>>
+parse_u_longlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal);
 
-bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **ppal, lList **ppdestlist, bool include_names, uint32_t action);
+bool parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **alpp, lList **ppdestlist,
+                              bool include_names, uint32_t action);
+OCS_TRANSITIONAL bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **alpp, lList **ppdestlist,
+                                               bool include_names, uint32_t action);
 
 /**
  * @brief Render a mail recipient list back into the form a user writes
@@ -95,7 +131,7 @@ bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **ppal, 
  */
 int sge_unparse_ma_list(lList *head, char *mail_str, unsigned int mail_str_len); 
 
-uint32_t parse_group_options(lList *string_list, lList **anser_list);
+uint32_t parse_group_options(ocs::tom::ConstList<ocs::tom::ST> string_list, lList **answer_list);
 
 bool sge_parse_bitfield_str(const char *str, const char *set_specifier[],
                            uint32_t *value, const char *name, lList **alpp,  bool none_allowed);

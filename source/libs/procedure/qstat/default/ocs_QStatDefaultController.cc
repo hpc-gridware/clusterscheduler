@@ -69,23 +69,6 @@
 #include "qstat/default/ocs_QStatDefaultController.h"
 #include "sched/sge_resource_utilization.h"
 
-/** @brief Split the first group of tasks in the same state off a task list
- *
- * The typed form of ja_task_list_split_group(), which takes a list it may
- * free: the list is handed over and taken back.
- *
- * @param ja_task_list the tasks; empty once the last group was split off
- * @return the group, an empty handle when no task is left
- */
-static ocs::tom::ListPtr<ocs::tom::JAT>
-split_task_group(ocs::tom::ListPtr<ocs::tom::JAT> &ja_task_list) {
-   DENTER(TOP_LAYER);
-   lList *remaining = ja_task_list.release();
-   auto group = ocs::tom::ListPtr<ocs::tom::JAT>::from_typed(ja_task_list_split_group(&remaining));
-   ja_task_list = ocs::tom::ListPtr<ocs::tom::JAT>::from_typed(remaining);
-   DRETURN(group);
-}
-
 /** @brief Drop the tasks that were already reported with their queue
  *
  * What is left are the tasks that wait for a queue.
@@ -1062,7 +1045,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
           (parameter.group_opt_ & GROUP_NO_TASK_GROUPS) == 0 &&
           FoundTasks &&
           ja_task_list) {
-         while (const auto task_group = split_task_group(ja_task_list)) {
+         while (const auto task_group = ja_task_list_split_group(ja_task_list)) {
             sge_dstring_clear(&dyn_task_str);
             ja_task_list_print_to_string(*task_group, &dyn_task_str);
 
@@ -1154,7 +1137,7 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
       }
 
       if ((parameter.group_opt_ & GROUP_NO_TASK_GROUPS) == 0 && FoundTasks && ja_task_list != nullptr) {
-         while (const auto task_group = split_task_group(ja_task_list)) {
+         while (const auto task_group = ja_task_list_split_group(ja_task_list)) {
             sge_dstring_clear(&dyn_task_str);
             ja_task_list_print_to_string(*task_group, &dyn_task_str);
 
@@ -1240,36 +1223,32 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, co
                                                             const int slot, int *count, QStatParameter &parameter,
                                                             QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
-   lList *range_list[16];         /* RN_Type */
-   uint32_t hold_state[16];
-   int i;
    dstring ja_task_id_string = DSTRING_INIT;
 
-
-   job_create_hold_id_lists(job, range_list, hold_state);
-   for (i = 0; i <= 15; i++) {
+   const auto hold_id_lists = job_create_hold_id_lists(job);
+   for (const auto &[hold_state, range_list] : hold_id_lists) {
       lList *answer_list = nullptr;
       uint32_t first_id;
       int show = 0;
 
-      if (((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (hold_state[i] & MINUS_H_TGT_USER)) ||
-          ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (hold_state[i] & MINUS_H_TGT_OPERATOR)) ||
-          ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (hold_state[i] & MINUS_H_TGT_SYSTEM)) ||
-          ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (hold_state[i] & MINUS_H_TGT_JA_AD)) ||
+      if (((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (hold_state & MINUS_H_TGT_USER)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (hold_state & MINUS_H_TGT_OPERATOR)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (hold_state & MINUS_H_TGT_SYSTEM)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (hold_state & MINUS_H_TGT_JA_AD)) ||
           ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) && (ocs::tom::get<JB_execution_time>(job) > 0)) ||
           ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) && (ocs::tom::get<JB_jid_predecessor_list>(job) != nullptr)) ||
           (!(parameter.show_ & QSTAT_DISPLAY_HOLD))
          ) {
          show = 1;
       }
-      if (range_list[i] != nullptr && show) {
+      if (range_list && show) {
          if ((parameter.group_opt_ & GROUP_NO_TASK_GROUPS) == 0) {
             sge_dstring_clear(&ja_task_id_string);
-            range_list_print_to_string(range_list[i], &ja_task_id_string, false, false, false);
-            first_id = range_list_get_first_id(range_list[i], &answer_list);
+            range_list_print_to_string(*range_list, &ja_task_id_string, false, false, false);
+            first_id = range_list_get_first_id(*range_list, &answer_list);
             if (answer_list_has_error(&answer_list) != 1) {
                const auto ja_task = ocs::tom::ConstElement<ocs::tom::JAT>::from_typed(
-                  job_get_ja_task_template_hold(job, first_id, hold_state[i]));
+                  job_get_ja_task_template_hold(job, first_id, hold_state));
                // the id lists are taken out while the line is reported and put back after; raw, since the
                // exchange swaps the lists of the job with these
                lList *n_h_ids = nullptr;
@@ -1297,12 +1276,12 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, co
                (*count)++;
             }
          } else {
-            for (const auto range : ocs::tom::ConstList<ocs::tom::RN>::from_typed(range_list[i])) {
+            for (const auto range : *range_list) {
                uint32_t start, end, step;
                range_get_all_ids(range, &start, &end, &step);
                for (; start <= end; start += step) {
                   const auto ja_task = ocs::tom::ConstElement<ocs::tom::JAT>::from_typed(
-                     job_get_ja_task_template_hold(job, start, hold_state[i]));
+                     job_get_ja_task_template_hold(job, start, hold_state));
                   sge_dstring_sprintf(&ja_task_id_string, sge_u32, start);
 
                   if (*count == 0) {
@@ -1318,7 +1297,6 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, co
       lFreeList(&answer_list);
    }
 
-   job_destroy_hold_id_lists(job, range_list);
    sge_dstring_free(&ja_task_id_string);
    DRETURN_VOID;
 }

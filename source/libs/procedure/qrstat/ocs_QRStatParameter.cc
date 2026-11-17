@@ -58,9 +58,7 @@ ocs::QRStatParameter::QRStatParameter(lList *bundle, gdi::Packet *packet) : Proc
  */
 void ocs::QRStatParameter::transform_user_list() {
    DENTER(TOP_LAYER);
-   lList *user_list = user_list_.release();
-   str_list_transform_user_list(&user_list, nullptr,  user_);
-   user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(user_list);
+   str_list_transform_user_list(user_list_, nullptr, user_);
    DRETURN_VOID;
 }
 

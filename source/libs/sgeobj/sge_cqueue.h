@@ -53,6 +53,7 @@
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_QR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sgeobj/cull/sge_cqueue_CQ_L.h"
@@ -91,7 +92,9 @@ typedef struct _list_attribute_struct {
    bool verify_client;     ///< the client verifies the value too, not only qmaster
    /// validates a new value, or nullptr; called with the cluster queue, the answer list, one entry of the
    /// attribute list and the master list the attribute refers to
-   bool (*verify_function)(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list);
+   /// (the entry and the master list are of a type that differs per attribute, so they stay untyped)
+   bool (*verify_function)(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list, lListElem *attr_elem,
+                           const lList *master_list);
 } list_attribute_struct;
 
 /// Every cluster queue attribute, terminated by an entry whose `name` is nullptr
@@ -103,8 +106,7 @@ cqueue_name_split(const char *name, dstring *cqueue_name, dstring *host_domain,
 
 char* cqueue_get_name_from_qinstance(const char *queue_instance);
 
-lListElem *
-cqueue_create(lList **answer_list, const char *name);
+[[nodiscard]] ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create(lList **answer_list, const char *name);
 
 /* CS-2677: the host list of a cluster queue, i.e. the member list of the host
  * group "@@<queue>" it owns. Replaces lGetList(cqueue, CQ_hostlist), which is
@@ -152,8 +154,13 @@ cqueue_list_find_all_matching_references(ocs::tom::ConstList<ocs::tom::CQ> this_
 OCS_TRANSITIONAL bool cqueue_list_find_all_matching_references(const lList *this_list, lList **answer_list,
                                                                const char *cqueue_pattern, lList **qref_list);
 
-bool cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
-                                        ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, lList **string_list);
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::ST>
+cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
+                                   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup);
+OCS_TRANSITIONAL bool cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list,
+                                                         lList **answer_list,
+                                                         ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
+                                                         lList **string_list);
 
 bool
 cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list);

@@ -264,13 +264,20 @@ attr_create(lList **answer_list, const char *href, void *value,
  * @param this_list attribute list
  * @param answer_list AN_Type list
  * @param attr attribute pointer
- * @param flags behaviour bitmask
- * @param HOSTATTR_OVERWRITE If there is already an element in "this_list" which has the same hostname or hgroup, then the value of this element will be overwritten if this flag is set. If this flag is not given and the function should add a duplicate, then this will be counted as function error.
- * @param HOSTATTR_ALLOW_AMBIGUITY If the resulting "this_list" would result in an ambigous configuration for a ceratin host then this is allowed if the flag is given. Otherwise it will be rejected. In that case "ambiguous_href_list" will be filled with the conflicting hostnames.
+ * @param flags behaviour bitmask:
+ *        - HOSTATTR_OVERWRITE: if there is already an element in "this_list"
+ *          which has the same hostname or hgroup, then the value of this
+ *          element will be overwritten. Without this flag a duplicate is an
+ *          error.
+ *        - HOSTATTR_ALLOW_AMBIGUITY: a resulting "this_list" that would give
+ *          a certain host an ambiguous configuration is accepted. Otherwise
+ *          it is rejected, and "ambiguous_href_list" is filled with the
+ *          conflicting hostnames.
  * @param ambiguous_href_list HR_Type list
  * @param descriptor CULL descriptor
  * @param href_nm CULL field name
  * @param value_nm CULL value name
+ * @param master_hgroup_list the host groups (`HGRP_Type`)
  *
  * @return error state true  - success false - error
  *
@@ -346,8 +353,9 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
              * (except HOSTREF_DEFAULT, and host entries)
              */
             if (lret) {
+               // the list is of the runtime type "descriptor", so its host reference is read through "href_nm"
                for_each_rw(attr_elem, *this_list) {
-                  const char *href = ocs::tom::get<ASTR_href>(attr_elem); 
+                  const char *href = lGetHost(attr_elem, href_nm);
 
                   if (strcmp(href, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href)) {
                      lret &= href_list_add(&href_list, nullptr, href);
@@ -448,11 +456,28 @@ attr_list_add_set_del(lList **this_list, lList **answer_list,
    return ret;
 }
 
-/*
-descriptor        ASTR_Type
-href_nm           ASTR_href
-value_nm          ASTR_value
-*/
+/**
+ * @brief Find the value a per host attribute list gives a host
+ *
+ * A value for the host itself wins; otherwise the value of the one host group
+ * that contains the host, and if no group does, the default value
+ * (#HOSTREF_DEFAULT). Two groups that both contain the host make the setting
+ * ambiguous.
+ *
+ * @param this_list the attribute list, of type "descriptor" (e.g. ASTR_Type)
+ * @param[out] answer_list receives an error if there is no value at all
+ * @param hostname the host
+ * @param[out] value_buffer receives the value, in the C type of "value_nm"
+ * @param[out] matching_host_or_group receives the host group the value comes from, if any
+ * @param[out] matching_group receives the second host group if the setting is ambiguous
+ * @param[out] is_ambiguous set to true if two host groups give the host a value; written only when the host
+ *             has no value of its own
+ * @param descriptor the descriptor of the list elements
+ * @param href_nm the field holding an entry's host reference (e.g. ASTR_href)
+ * @param value_nm the field holding its value (e.g. ASTR_value)
+ * @param master_hroup_list the host groups (`HGRP_Type`)
+ * @return true if a value was found
+ */
 static bool
 attr_list_find_value(const lList *this_list, lList **answer_list,
                      const char *hostname, void *value_buffer,
@@ -490,15 +515,17 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
             const char *href_name = lGetHost(href, href_nm);
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href_name)) {
+               // out-parameters of the host reference functions, which have no typed form yet
                lList *tmp_href_list = nullptr;
-               lListElem *tmp_href = nullptr;
                lList *host_list = nullptr;
 
                href_list_add(&tmp_href_list, nullptr, href_name);
                href_list_find_all_references(tmp_href_list, nullptr,
                                              master_hroup_list, &host_list,
                                              nullptr);
-               tmp_href = href_list_locate(host_list, hostname);
+               // href_list_find_all_references() fills "host_list" with HR_Type elements
+               const auto tmp_href = href_list_locate(ocs::tom::ConstList<ocs::tom::HR>::from_typed(host_list),
+                                                      hostname);
                if (tmp_href != nullptr) {
                   if (!already_found) {
                      already_found = true;

@@ -54,8 +54,11 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "uti/sge.h"
 
@@ -77,13 +80,6 @@
    the used slots of queue B meet the thresold for C
 
 */
-/*
-int used,      number of slots actually used in queue B
-int total,     total number of slots in queue B              
-lListElem *so  SO_Type referencing to a queue C
-Return value: true if queue C is to be suspended,
-              false else.
-*/
 /**
  * @brief Is a subordinate queue's suspend threshold reached?
  *
@@ -91,12 +87,12 @@ Return value: true if queue C is to be suspended,
  * superordinate one is busy enough. The threshold is a slot count, and 0 means
  * "all slots".
  *
- * @param used slots in use in the superordinate queue
- * @param total slots the superordinate queue has
- * @param so the subordinate relation, holding the threshold
- * @return true when the subordinate queue should be suspended
+ * @param used slots in use in the superordinate queue B
+ * @param total slots the superordinate queue B has
+ * @param so the subordinate relation (SO_Type) referencing a queue C, holding the threshold
+ * @return true when the subordinate queue C should be suspended
  */
-bool tst_sos(int used, int total, const lListElem *so) {
+bool tst_sos(const int used, const int total, const ocs::tom::ConstElement<ocs::tom::SO> so) {
    DENTER(TOP_LAYER);
    uint32_t threshold;
    bool     ret = false;
@@ -119,24 +115,35 @@ bool tst_sos(int used, int total, const lListElem *so) {
 }
 
 /**
+ * @brief tst_sos() for an untyped caller
+ *
+ * @param used slots in use in the superordinate queue
+ * @param total slots the superordinate queue has
+ * @param so the subordinate relation (SO_Type), checked
+ * @return as tst_sos()
+ */
+bool tst_sos(const int used, const int total, const lListElem *so) {
+   return tst_sos(used, total, ocs::tom::ConstElement<ocs::tom::SO>(so));
+}
+
+/**
  * @brief Render a subordinate list as an administrator writes it
  *
- * @param this_list the subordinate relations to render
+ * @param this_list the subordinate relations to render, may be an empty handle
  * @param[out] string receives the text, appended
  * @return the resulting text
  */
-const char *
-so_list_append_to_dstring(const lList *this_list, dstring *string) {
+const char *so_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::SO> this_list, dstring *string) {
    DENTER(BASIS_LAYER);
 
    const char *ret = nullptr;
 
    if (string != nullptr) {
       bool printed = false;
-      const lListElem *so = nullptr;
+      ocs::tom::ConstElement<ocs::tom::SO> so;
       uint32_t slots_sum = 0;
 
-      if (this_list != nullptr && (so = lFirst(this_list)) != nullptr) {
+      if (this_list && (so = this_list.front())) {
          slots_sum = ocs::tom::get<SO_slots_sum>(so);
 
          if (slots_sum > 0) {
@@ -145,7 +152,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
              */
             sge_dstring_sprintf_append(string, "slots=" sge_u32"(", slots_sum);
 
-            for_each_ep_lv(elem, this_list) {
+            for (const auto elem : this_list) {
                const char *action_str = "sr";
 
                if (ocs::tom::get<SO_action>(elem) == SO_ACTION_LR) {
@@ -156,7 +163,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
                   ocs::tom::get<SO_name>(elem),
                   ocs::tom::get<SO_seq_no>(elem),
                   action_str,
-                  lNext(elem) ? ", " : "");
+                  elem.next() ? ", " : "");
             }
             sge_dstring_sprintf_append(string, ")");
             printed = true;
@@ -164,7 +171,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
             /*
              * queue instance-wise suspend on subordinate
              */
-            for_each_ep_lv(elem, this_list) {
+            for (const auto elem : this_list) {
                if (printed) {
                   sge_dstring_append (string, " ");
                }
@@ -173,7 +180,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
                if (ocs::tom::get<SO_threshold>(elem)) {
                   sge_dstring_sprintf_append(string, "=" sge_u32"%s",
                                              ocs::tom::get<SO_threshold>(elem),
-                                             lNext(elem) ? "," : "");
+                                             elem.next() ? "," : "");
                }
                printed = true;
             }
@@ -187,16 +194,26 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
    DRETURN(ret);
 }
 
-/*
-   add new so elements
-   if element already exists then possibly overwrite threshold value
-   (lower values are prefered)
-*/
+/**
+ * @brief so_list_append_to_dstring() for an untyped caller
+ *
+ * @param this_list the subordinate relations to render (SO_Type), checked; may be nullptr
+ * @param[out] string receives the text, appended
+ * @return as so_list_append_to_dstring()
+ */
+const char *so_list_append_to_dstring(const lList *this_list, dstring *string) {
+   return so_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::SO>(this_list), string);
+}
+
 /**
  * @brief Add one subordinate relation to a list
  *
- * @param[in,out] this_list the list to extend; created when it is nullptr
- * @param[out] answer_list receives error messages
+ * If the list holds a relation to the queue already, its values are
+ * updated instead: a lower threshold, a lower slots_sum, a higher seq_no and
+ * another action replace the ones held.
+ *
+ * @param[in,out] this_list the list to extend; created named "" when it is an empty handle
+ * @param[out] answer_list not written
  * @param so_name the subordinate queue's name
  * @param threshold slots that have to be in use before it is suspended; 0 means all
  * @param slots_sum for a slot wise relation, how many slots the two queues share
@@ -204,14 +221,17 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
  * @param action one of the `SO_ACTION_*` values
  * @return true when the relation was added
  */
-bool so_list_add(lList **this_list, lList **answer_list, const char *so_name,
-                 uint32_t threshold, uint32_t slots_sum, uint32_t seq_no,
-                 uint32_t action) {
+bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list, [[maybe_unused]] lList **answer_list,
+                 const char *so_name, const uint32_t threshold, const uint32_t slots_sum, const uint32_t seq_no,
+                 const uint32_t action) {
    DENTER(TOP_LAYER);
 
-   if (this_list != nullptr && so_name != nullptr) {
-      ocs::tom::Element<ocs::tom::SO> elem = ocs::tom::find_first_rw<SO_name>(*this_list, so_name);
-   
+   if (so_name != nullptr) {
+      ocs::tom::Element<ocs::tom::SO> elem;
+      if (this_list) {
+         elem = this_list->find_first<SO_name>(so_name);
+      }
+
       if (elem != nullptr) {
          uint32_t current_threshold = ocs::tom::get<SO_threshold>(elem);
          uint32_t current_slots_sum = ocs::tom::get<SO_slots_sum>(elem);
@@ -236,7 +256,10 @@ bool so_list_add(lList **this_list, lList **answer_list, const char *so_name,
          }
       } else {
          DPRINTF("Adding new entry with threshold: %d, slots_sum: %d, seq_no: %d\n", threshold, slots_sum, seq_no);
-         ocs::tom::Element<ocs::tom::SO> elem = ocs::tom::emplace_back<SO_name>(this_list, so_name);
+         if (!this_list) {
+            this_list = ocs::tom::ListPtr<ocs::tom::SO>::create("");
+         }
+         ocs::tom::Element<ocs::tom::SO> elem = this_list->emplace_back<SO_name>(so_name);
          ocs::tom::set<SO_threshold>(elem, threshold);
          ocs::tom::set<SO_slots_sum>(elem, slots_sum);
          ocs::tom::set<SO_seq_no>(elem,    seq_no);
@@ -256,23 +279,23 @@ bool so_list_add(lList **this_list, lList **answer_list, const char *so_name,
  * subordinate list will be checked to make sure that it doesn't contain the
  * queue to which the list is subordinate.
  *
- * @param so_list the list of subordinates to resolve
+ * @param so_list the list of subordinates to resolve, may be an empty handle
  * @param answer_list answer list for errors
- * @param resolved_so_list the destination list for resolved subordinates
+ * @param[in,out] resolved_so_list the destination list for resolved subordinates; created by the first one
  * @param cq_name the queue name of the qinstance to which the subordinate list is subordinate
  * @param hostname the hostname for the queue to which the subordinate list is subordinate
  * @param master_cqueue_list the cluster queues a relation may name
  *
  * @return error state true  - success false - error
  */
-bool so_list_resolve(const lList *so_list, lList **answer_list,
-                     lList **resolved_so_list, const char *cq_name,
-                     const char *hostname, const lList *master_cqueue_list) {
+bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, lList **answer_list,
+                     ocs::tom::ListPtr<ocs::tom::SO> &resolved_so_list, const char *cq_name, const char *hostname,
+                     const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if ((so_list != nullptr) && (hostname != nullptr)) {
+   if (so_list && hostname != nullptr) {
       if (cq_name != nullptr) {
          DPRINTF("Finding subordinates for %s on %s\n", cq_name, hostname);
       } else {
@@ -280,22 +303,22 @@ bool so_list_resolve(const lList *so_list, lList **answer_list,
       }
       
       /* Get the list of resolved qinstances for each subordinate. */
-      for_each_ep_lv(so, so_list) {
+      for (const auto so : so_list) {
          const char *qinstance_name = nullptr;
-         const char *cq_name_str = ocs::tom::get<SO_name> (so);
+         const char *cq_name_str = ocs::tom::get<SO_name>(so);
 
-         lListElem *cqueue = cqueue_list_locate(master_cqueue_list, cq_name_str);
+         const auto cqueue = cqueue_list_locate(master_cqueue_list, cq_name_str);
 
-         if (cqueue != nullptr) {
-            lListElem *qinstance = cqueue_locate_qinstance(cqueue, hostname);
+         if (cqueue) {
+            const auto qinstance = cqueue_locate_qinstance(cqueue, hostname);
 
             /* If this cqueue doesn't have a qinstance on this host,
              * just skip it. */
-            if (qinstance != nullptr) {
-               lUlong threshold   = ocs::tom::get<SO_threshold>(so);
-               lUlong slots_sum   = ocs::tom::get<SO_slots_sum>(so);
-               lUlong seq_no      = ocs::tom::get<SO_seq_no>(so);
-               lUlong action      = ocs::tom::get<SO_action>(so);
+            if (qinstance) {
+               uint32_t threshold   = ocs::tom::get<SO_threshold>(so);
+               uint32_t slots_sum   = ocs::tom::get<SO_slots_sum>(so);
+               uint32_t seq_no      = ocs::tom::get<SO_seq_no>(so);
+               uint32_t action      = ocs::tom::get<SO_action>(so);
                qinstance_name     = ocs::tom::get<QU_full_name>(qinstance);
 
                so_list_add(resolved_so_list, answer_list, qinstance_name,
@@ -305,10 +328,10 @@ bool so_list_resolve(const lList *so_list, lList **answer_list,
          }
          if (cq_name && strcmp(cq_name, cq_name_str) == 0){
             dstring buffer = DSTRING_INIT;
-            lUlong threshold     = ocs::tom::get<SO_threshold>(so);
-            lUlong slots_sum     = ocs::tom::get<SO_slots_sum>(so);
-            lUlong seq_no        = ocs::tom::get<SO_seq_no>(so);
-            lUlong action        = ocs::tom::get<SO_action>(so);
+            uint32_t threshold     = ocs::tom::get<SO_threshold>(so);
+            uint32_t slots_sum     = ocs::tom::get<SO_slots_sum>(so);
+            uint32_t seq_no        = ocs::tom::get<SO_seq_no>(so);
+            uint32_t action        = ocs::tom::get<SO_action>(so);
             
             qinstance_name = sge_dstring_sprintf(&buffer, "%s@%s", cq_name, hostname);
             so_list_add(resolved_so_list, answer_list, qinstance_name, threshold,
@@ -319,4 +342,29 @@ bool so_list_resolve(const lList *so_list, lList **answer_list,
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief so_list_resolve() for an untyped caller
+ *
+ * @param so_list the list of subordinates to resolve (SO_Type), checked; may be nullptr
+ * @param answer_list answer list for errors
+ * @param[in,out] resolved_so_list the destination list (SO_Type), checked; nullptr resolves nothing into it
+ * @param cq_name the queue name of the qinstance to which the subordinate list is subordinate
+ * @param hostname the hostname for the queue to which the subordinate list is subordinate
+ * @param master_cqueue_list the cluster queues a relation may name (CQ_Type), checked
+ *
+ * @return as so_list_resolve()
+ */
+bool so_list_resolve(const lList *so_list, lList **answer_list, lList **resolved_so_list, const char *cq_name,
+                     const char *hostname, const lList *master_cqueue_list) {
+   if (resolved_so_list == nullptr) {
+      // the old function added nothing to a missing list
+      return true;
+   }
+   ocs::tom::ListPtr<ocs::tom::SO> resolved(*resolved_so_list);
+   const bool ret = so_list_resolve(ocs::tom::ConstList<ocs::tom::SO>(so_list), answer_list, resolved, cq_name,
+                                    hostname, ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
+   *resolved_so_list = resolved.release();
+   return ret;
 }

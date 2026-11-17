@@ -59,7 +59,6 @@
 
 ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                                         const char *pe_task_id);
-OCS_TRANSITIONAL lListElem *ja_task_search_pe_task(const lListElem *ja_task, const char *pe_task_id);
 
 void ja_task_set_deleted_by(ocs::tom::Element<ocs::tom::JAT> ja_task, const char *deleted_by);
 OCS_TRANSITIONAL void ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by);
@@ -69,10 +68,10 @@ OCS_TRANSITIONAL const char *ja_task_get_deleted_by(const lListElem *ja_task);
 
 void ja_task_list_print_to_string(ocs::tom::ConstList<ocs::tom::JAT> ja_task_list, dstring *range_string);
 
-lList *ja_task_list_split_group(lList **ja_task_list);
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::JAT>
+ja_task_list_split_group(ocs::tom::ListPtr<ocs::tom::JAT> &ja_task_list);
 
 bool ja_task_add_finished_pe_task(ocs::tom::Element<ocs::tom::JAT> ja_task, const char *pe_task_id);
-OCS_TRANSITIONAL bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id);
 
 bool ja_task_clear_finished_pe_tasks(ocs::tom::Element<ocs::tom::JAT> ja_task);
 OCS_TRANSITIONAL bool ja_task_clear_finished_pe_tasks(lListElem *ja_task);

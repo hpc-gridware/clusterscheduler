@@ -87,6 +87,9 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_ListCore.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 
 #include <cinttypes>
@@ -582,8 +585,8 @@ typedef struct {
   char *envp;              ///< pointer to environment variable
 } tConfEntry;
 
-static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg);
-static void setConfFromCull(lList *lpCfg);
+static ocs::tom::ListPtr<ocs::tom::CF> sge_set_defined_defaults(const char *cell_root);
+static void setConfFromCull(ocs::tom::ConstList<ocs::tom::CF> lpCfg);
 static tConfEntry *getConfEntry(const char *name, tConfEntry conf_entries[]);
 static void clean_conf();
 
@@ -722,7 +725,7 @@ static tConfEntry conf_entries[] = {
  * @brief Classify a config parameter's list-ness for JSON rendering (CS-2313a).
  *
  * The two sets below mirror exactly how the config loader parses them above: the value
- * lists are split via lString2ListNone(..., " \t,"); the *_params are tokenized via
+ * lists are split at " \t," (chg_conf_list()); the *_params are tokenized via
  * sge_strtok_r(..., PARAMS_DELIMITER) into KEY=VALUE entries. Everything else is a
  * plain scalar string.
  *
@@ -793,16 +796,16 @@ config_param_value_type(const char *name) {
 }
 
 /**
- * @brief Initialize config list with compiled in values.
+ * @brief Create a configuration list with the compiled in values
  *
  * @details
  * This function sets the spool directories from the cell and initializes
  * the configuration list with compiled in values.
  *
  * @param cell_root The root directory of the cell.
- * @param lpCfg Pointer to the configuration list.
+ * @return the configuration list, one entry per compiled in parameter
  */
-static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
+static ocs::tom::ListPtr<ocs::tom::CF> sge_set_defined_defaults(const char *cell_root) {
    DENTER(BASIS_LAYER);
 
    int i = 0;
@@ -816,21 +819,21 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
       pConf->value = new_value;
    }
 
-   lFreeList(lpCfg);
-
+   auto config = ocs::tom::ListPtr<ocs::tom::CF>::create("");
    while (conf_entries[i].name) {
-
-      ocs::tom::Element<ocs::tom::CF> ep = ocs::tom::emplace_back<CF_name>(lpCfg, conf_entries[i].name);
+      auto ep = config->emplace_back<CF_name>(conf_entries[i].name);
       ocs::tom::set<CF_value>(ep, conf_entries[i].value);
       ocs::tom::set<CF_local>(ep, conf_entries[i].local);
 
       i++;
    }
 
-   DRETURN_VOID;
+   DRETURN(config);
 }
 
 /**
+ * @brief Sort the entries of a configuration into the defined order
+ *
  * Sorts the entries of a global or local configuration into the order of the conf_entries
  * array. This is the order in which a configuration is shown by qconf -sconf and written
  * to the spool file. Configurations entering the qmaster via qconf -aconf/-Aconf/-mconf/
@@ -844,28 +847,26 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
  * @param conf the global or local configuration whose entries are sorted in place
  */
 void
-conf_sort_entries(lListElem *conf) {
+conf_sort_entries(const ocs::tom::Element<ocs::tom::CONF> conf) {
    DENTER(BASIS_LAYER);
 
-   ocs::tom::List<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(conf);
+   const ocs::tom::List<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(conf);
    if (entries == nullptr) {
       DRETURN_VOID;
    }
 
-   auto sorted = ocs::tom::ListPtr<ocs::tom::CF>::create(lGetListName(entries));
+   auto sorted = ocs::tom::ListPtr<ocs::tom::CF>::create(entries.name());
    for (int i = 0; conf_entries[i].name != nullptr; i++) {
-      lListElem *ep;
-
       // a well formed configuration holds every name at most once, but a hand written
       // one might repeat a name - keep all occurrences, next to each other
-      while ((ep = ocs::tom::find_first_nocase_rw<CF_name>(entries, conf_entries[i].name)) != nullptr) {
-         lAppendElem(*sorted, lDechainElem(entries, ep));
+      for (auto ep = entries.find_first_nocase<CF_name>(conf_entries[i].name); ep;
+           ep = entries.find_first_nocase<CF_name>(conf_entries[i].name)) {
+         sorted->push_back(entries.extract(ep));
       }
    }
 
-   lListElem *ep;
-   while ((ep = lFirstRW(entries)) != nullptr) {
-      lAppendElem(*sorted, lDechainElem(entries, ep));
+   for (auto ep = entries.front(); ep; ep = entries.front()) {
+      sorted->push_back(entries.extract(ep));
    }
 
    ocs::tom::set<CONF_entries>(conf, std::move(sorted));
@@ -887,12 +888,12 @@ conf_sort_entries(lListElem *conf) {
  * @param type The type of the value.
  */
 static void
-chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CEntry::Type type) {
-   ocs::tom::ConstElement<ocs::tom::CF> ep;
-   const char *s;
+chg_conf_val(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, char **cpp, uint32_t *val,
+             const ocs::CEntry::Type type) {
+   DENTER(BASIS_LAYER);
 
-   if ((ep = ocs::tom::find_first<CF_name>(lp_cfg, name))) {
-      s = ocs::tom::get<CF_value>(ep);
+   if (const auto ep = lp_cfg.find_first<CF_name>(name)) {
+      const char *s = ocs::tom::get<CF_value>(ep);
 #if 0
       if (s) {
          int old_verbose = log_state_get_log_verbose();
@@ -910,6 +911,46 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CE
       else
          parse_ulong_val(nullptr, val, type, s, nullptr, 0);
    }
+
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Seeks for a config attribute "name" holding a list of names and replaces *target with its value
+ *
+ * The value is split at blanks, tabs and commas; `none` gives no list. A value that cannot be parsed, such as
+ * `none` beside other names, keeps the old list, as does an entry without a value.
+ *
+ * @tparam T the object type of the list
+ * @tparam F the name field of T the names go into
+ * @param lp_cfg The configuration list.
+ * @param name The name of the configuration attribute.
+ * @param[in,out] target the process-lifetime list of the master configuration to replace; the old list is freed
+ */
+template <typename T, auto F>
+static void
+chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, lList *&target) {
+   DENTER(BASIS_LAYER);
+
+   const auto ep = lp_cfg.find_first<CF_name>(name);
+   const char *value = ep ? ocs::tom::get<CF_value>(ep) : nullptr;
+   if (value != nullptr) {
+      try {
+         auto names = ocs::tom::ListPtr<T>::template from_string<F>(value, " \t,", ocs::tom::NoneName::Empty);
+         // the master configuration is a process-lifetime static, so it holds the raw list
+         lFreeList(&target);
+         target = names.release();
+      } catch (const ocs::tom::ListCoreError &) {
+         // keep the old list, as on an error of lString2ListNone()
+      } catch (const ocs::tom::FieldException &e) {
+         if (e.reason() == ocs::tom::FieldException::Reason::DuplicateKey) {
+            throw;
+         }
+         // keep the old list, as on an error of lString2ListNone()
+      }
+   }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -924,10 +965,8 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CE
  * MT-NOTE: setConfFromCull() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
  */
 static void
-setConfFromCull(lList *lpCfg) {
+setConfFromCull(const ocs::tom::ConstList<ocs::tom::CF> lpCfg) {
    DENTER(BASIS_LAYER);
-
-   ocs::tom::ConstElement<ocs::tom::CF> ep;
 
    /* get following logging entries logged if log_info is selected */
    chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, ocs::CEntry::Type::TYPE_LOG);
@@ -946,37 +985,10 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "gid_range", &Master_Config.gid_range, nullptr, ocs::CEntry::Type::NONE);
    chg_conf_val(lpCfg, "port_range", &Master_Config.port_range, nullptr, ocs::CEntry::Type::NONE);
 
-   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "user_lists"))) {
-      lList *lp = nullptr;
-      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, US_Type, US_name, " \t,")) {
-         lFreeList(&(Master_Config.user_lists));
-         Master_Config.user_lists = lp;
-      }
-   }
-
-   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "xuser_lists"))) {
-      lList *lp = nullptr;
-      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, US_Type, US_name, " \t,")) {
-         lFreeList(&(Master_Config.xuser_lists));
-         Master_Config.xuser_lists = lp;
-      }
-   }
-
-   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "projects"))) {
-      lList *lp = nullptr;
-      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, PR_Type, PR_name, " \t,")) {
-         lFreeList(&(Master_Config.projects));
-         Master_Config.projects = lp;
-      }
-   }
-
-   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "xprojects"))) {
-      lList *lp = nullptr;
-      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, PR_Type, PR_name, " \t,")) {
-         lFreeList(&(Master_Config.xprojects));
-         Master_Config.xprojects = lp;
-      }
-   }
+   chg_conf_list<ocs::tom::US, US_name>(lpCfg, "user_lists", Master_Config.user_lists);
+   chg_conf_list<ocs::tom::US, US_name>(lpCfg, "xuser_lists", Master_Config.xuser_lists);
+   chg_conf_list<ocs::tom::PR, PR_name>(lpCfg, "projects", Master_Config.projects);
+   chg_conf_list<ocs::tom::PR, PR_name>(lpCfg, "xprojects", Master_Config.xprojects);
 
    chg_conf_val(lpCfg, "load_report_time", nullptr, &Master_Config.load_report_time, ocs::CEntry::Type::TIME);
    chg_conf_val(lpCfg, "enforce_project", &Master_Config.enforce_project, nullptr, ocs::CEntry::Type::NONE);
@@ -1046,31 +1058,27 @@ getConfEntry(const char *name, tConfEntry conf[]) {
  * @brief merge global and local configuration
  *
  * @details
- * Merge global and local configuration and set lpp list and
- * set conf struct from lpp.
+ * Merge the global and the local configuration into the compiled in defaults
+ * and set the conf struct from the result.
  *
  * @param[out] answer_list receives error messages
  * @param progid the component asking, so component specific parameters are applied
  * @param cell_root the cell directory, used to build the compiled in defaults
- * @param global Global configuration.
- * @param local Local configuration.
- * @param[in,out] lpp Target configuration; when nullptr a temporary list is used and freed
+ * @param global Global configuration, or an empty handle
+ * @param local Local configuration, or an empty handle
  *
- * @return 0 on success, -2 if no global configuration.
+ * @return 0 on success, -2 if no global configuration, and the merged configuration list, also on -2
  *
  * @note
  * MT-NOTE: merge_configuration() is MT safe.
  */
-int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp) {
+std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
+merge_configuration(lList **answer_list, const uint32_t progid, const char *cell_root,
+                    const ocs::tom::ConstElement<ocs::tom::CONF> global,
+                    const ocs::tom::ConstElement<ocs::tom::CONF> local) {
    DENTER(BASIS_LAYER);
 
-   ocs::tom::ConstElement<ocs::tom::CF> elem;
-   lList *mlist = nullptr;
-
-   if (lpp == nullptr) {
-      lpp = &mlist;
-   }
-   sge_set_defined_defaults(cell_root, lpp);
+   auto merged = sge_set_defined_defaults(cell_root);
 
    /* Merge global configuration */
    /*
@@ -1078,9 +1086,8 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
    ** handled later
    */
    if (global) {
-      ocs::tom::ConstList<ocs::tom::CF> cl = ocs::tom::get<CONF_entries>(global);
-      for_each_ep(elem, cl) {
-         ocs::tom::Element<ocs::tom::CF> ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
+      for (const auto elem : ocs::tom::get<CONF_entries>(global)) {
+         const auto ep2 = merged->find_first_nocase<CF_name>(ocs::tom::get<CF_name>(elem));
          if (ep2) {
             ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
          }
@@ -1090,9 +1097,8 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
 
    /* Merge in local configuration */
    if (local) {
-      ocs::tom::ConstList<ocs::tom::CF> cl = ocs::tom::get<CONF_entries>(local);
-      for_each_ep(elem, cl) {
-         ocs::tom::Element<ocs::tom::CF> ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
+      for (const auto elem : ocs::tom::get<CONF_entries>(local)) {
+         const auto ep2 = merged->find_first_nocase<CF_name>(ocs::tom::get<CF_name>(elem));
          if (ep2 && ocs::tom::get<CF_local>(ep2)) {
             ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
          }
@@ -1101,7 +1107,7 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
    clean_conf();
-   setConfFromCull(*lpp);
+   setConfFromCull(*merged);
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    /* put contents of qmaster_params and execd_params
@@ -1771,14 +1777,12 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       sge_free(&jsv_params);
    }
 
-   lFreeList(&mlist);
-
    if (!global) {
       WARNING(SFNMAX, MSG_CONF_NOCONFIGFROMMASTER);
-      DRETURN(-2);
+      DRETURN(std::make_pair(-2, std::move(merged)));
    }
 
-   DRETURN(0);
+   DRETURN(std::make_pair(0, std::move(merged)));
 }
 
 /**
@@ -2362,16 +2366,14 @@ char* mconf_get_mail_tag() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @return the configured value
+ * @return a copy of the configured list, owned by the caller; an empty handle if none is configured
  */
-lList* mconf_get_user_lists() {
+ocs::tom::ListPtr<ocs::tom::US> mconf_get_user_lists() {
    DENTER(BASIS_LAYER);
-
-   lList* user_lists = nullptr;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   user_lists = lCopyList("user_lists", Master_Config.user_lists);
+   auto user_lists = ocs::tom::ConstList<ocs::tom::US>(Master_Config.user_lists).clone("user_lists");
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(user_lists);
@@ -2383,16 +2385,14 @@ lList* mconf_get_user_lists() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @return the configured value
+ * @return a copy of the configured list, owned by the caller; an empty handle if none is configured
  */
-lList* mconf_get_xuser_lists() {
+ocs::tom::ListPtr<ocs::tom::US> mconf_get_xuser_lists() {
    DENTER(BASIS_LAYER);
-
-   lList* xuser_lists = nullptr;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   xuser_lists = lCopyList("xuser_lists", Master_Config.xuser_lists);
+   auto xuser_lists = ocs::tom::ConstList<ocs::tom::US>(Master_Config.xuser_lists).clone("xuser_lists");
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(xuser_lists);
@@ -2404,16 +2404,14 @@ lList* mconf_get_xuser_lists() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @return the configured value
+ * @return a copy of the configured list, owned by the caller; an empty handle if none is configured
  */
-lList* mconf_get_projects() {
+ocs::tom::ListPtr<ocs::tom::PR> mconf_get_projects() {
    DENTER(BASIS_LAYER);
-
-   lList* projects = nullptr;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   projects = lCopyList("projects", Master_Config.projects);
+   auto projects = ocs::tom::ConstList<ocs::tom::PR>(Master_Config.projects).clone("projects");
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(projects);
@@ -2425,16 +2423,14 @@ lList* mconf_get_projects() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @return the configured value
+ * @return a copy of the configured list, owned by the caller; an empty handle if none is configured
  */
-lList* mconf_get_xprojects() {
+ocs::tom::ListPtr<ocs::tom::PR> mconf_get_xprojects() {
    DENTER(BASIS_LAYER);
-
-   lList* xprojects = nullptr;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   xprojects = lCopyList("xprojects", Master_Config.xprojects);
+   auto xprojects = ocs::tom::ConstList<ocs::tom::PR>(Master_Config.xprojects).clone("xprojects");
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(xprojects);

@@ -38,6 +38,7 @@
 
 #include <cstring>
 #include <math.h>
+#include <utility>
 
 #ifndef NO_SGE_COMPILE_DEBUG
 #   define NO_SGE_COMPILE_DEBUG
@@ -57,10 +58,15 @@
 
 #include "cull/sge_eejob_SGEJ_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UPP.h"
 #include "sgeobj/tom/ocs_tom_UPU.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 /** @brief Calculate decay rate and constant based on half-life
  *
@@ -70,11 +76,15 @@
  * calculated as 1 - (decay_rate * sge_usage_interval).
  *
  * @param halftime The half-life in minutes.
- * @param decay_rate Pointer to store the calculated decay rate.
- * @param decay_constant Pointer to store the calculated decay constant.
+ * @return the decay rate and the decay constant
  */
-void
-ocs::Usage::calculate_decay_constant(const double halftime, double *decay_rate, double *decay_constant) {
+std::pair<double, double>
+ocs::Usage::calculate_decay_constant(const double halftime) {
+   DENTER(BASIS_LAYER);
+
+   double decay_rate;
+   double decay_constant;
+
    if (halftime < 0) {
       /* Sentinel "no decay" (used for the "finished_jobs" counter by
        * get_decay_list when no halflife_decay_list is configured).
@@ -85,15 +95,17 @@ ocs::Usage::calculate_decay_constant(const double halftime, double *decay_rate, 
        * 0 + pending_position, starving leaves with many pending jobs.
        * decay_constant=1.0 means pow(1, x)=1, leaving the value
        * untouched - the intended "no decay" semantics for the sentinel. */
-      *decay_rate = 0;
-      *decay_constant = 1.0;
+      decay_rate = 0;
+      decay_constant = 1.0;
    } else if (halftime == 0) {
-      *decay_rate = 0;
-      *decay_constant = 1.0;
+      decay_rate = 0;
+      decay_constant = 1.0;
    } else {
-      *decay_rate = -log(0.5) / (halftime * 60);
-      *decay_constant = 1 - (*decay_rate * sge_usage_interval);
+      decay_rate = -log(0.5) / (halftime * 60);
+      decay_constant = 1 - (decay_rate * sge_usage_interval);
    }
+
+   DRETURN(std::make_pair(decay_rate, decay_constant));
 }
 
 /** @brief Calculate the default decay constant based on half-life
@@ -107,24 +119,31 @@ ocs::Usage::calculate_decay_constant(const double halftime, double *decay_rate, 
  */
 void
 ocs::Usage::calculate_default_decay_constant(const int halftime) {
-   double sge_decay_rate = 0.0;
-   double sge_decay_constant = 0.0;
+   DENTER(BASIS_LAYER);
 
-   calculate_decay_constant(halftime * 60.0, &sge_decay_rate, &sge_decay_constant);
+   const auto [sge_decay_rate, sge_decay_constant] = calculate_decay_constant(halftime * 60.0);
    sconf_set_decay_constant(sge_decay_constant);
+
+   DRETURN_VOID;
 }
 
 /**
  * @brief Add one named decay constant to a decay list
- * @param[in,out] decay_list the list to extend
- * @param value the decay constant
+ * @param[in,out] decay_list the list to extend (UA_Type); created if it is empty
+ * @param value the half life the decay constant is computed from
  * @param name the usage attribute it applies to
  */
-void ocs::Usage::add_decay_element(lList **decay_list, double value, const char *name) {
-   double decay_rate, decay_constant;
-   calculate_decay_constant(value, &decay_rate, &decay_constant);
-   ocs::tom::Element<ocs::tom::UA> u = ocs::tom::emplace_back<UA_name>(decay_list, name);
+void ocs::Usage::add_decay_element(ocs::tom::ListPtr<ocs::tom::UA> &decay_list, const double value, const char *name) {
+   DENTER(BASIS_LAYER);
+
+   const auto [decay_rate, decay_constant] = calculate_decay_constant(value);
+   if (!decay_list) {
+      decay_list = ocs::tom::ListPtr<ocs::tom::UA>::create("");
+   }
+   const auto u = decay_list->emplace_back<UA_name>(name);
    ocs::tom::set<UA_value>(u, decay_constant);
+
+   DRETURN_VOID;
 }
 
 /** @brief Calculate decay constants for half-life decay list
@@ -132,16 +151,19 @@ void ocs::Usage::add_decay_element(lList **decay_list, double value, const char 
  * This function calculates the decay list based on the half-life
  * and decay constants provided in the configuration.
  *
- * @return A list of decay elements with their corresponding decay constants.
+ * @return A list of decay elements with their corresponding decay constants (UA_Type), owned by the caller;
+ *         empty if the configured half life list has no entries
  */
-lList *
+ocs::tom::ListPtr<ocs::tom::UA>
 ocs::Usage::get_decay_list() {
-   lList *decay_list = nullptr;
-   lList *halflife_decay_list = sconf_get_halflife_decay_list();
+   DENTER(BASIS_LAYER);
 
-   if (halflife_decay_list != nullptr) {
-      for_each_rw_lv(ep, halflife_decay_list) {
-         add_decay_element(&decay_list, ocs::tom::get<UA_value>(ep), ocs::tom::get<UA_name>(ep));
+   ocs::tom::ListPtr<ocs::tom::UA> decay_list;
+   const auto halflife_decay_list = sconf_get_halflife_decay_list();
+
+   if (halflife_decay_list) {
+      for (const auto ep : halflife_decay_list.get()) {
+         add_decay_element(decay_list, ocs::tom::get<UA_value>(ep), ocs::tom::get<UA_name>(ep));
       }
    } else {
       /* The "finished_jobs" counter is summed into UU_/PR_/UPP_ from each
@@ -155,10 +177,9 @@ ocs::Usage::get_decay_list() {
        * weight. If the admin configures halflife_decay_list explicitly,
        * they are expected to provide their own "finished_jobs" entry
        * with the decay they want. */
-      add_decay_element(&decay_list, -1, "finished_jobs");
+      add_decay_element(decay_list, -1, "finished_jobs");
    }
-   lFreeList(&halflife_decay_list);
-   return decay_list;
+   DRETURN(decay_list);
 }
 
 /** @brief Decay usage for the passed usage list
@@ -167,25 +188,28 @@ ocs::Usage::get_decay_list() {
  * the decay list and the specified interval. If a decay value is not found
  * in the decay list, a default decay constant is used.
  *
- * @param usage_list The list of usage elements to be decayed.
- * @param decay_list The list of decay elements to use for decay calculations.
+ * @param usage_list The list of usage elements to be decayed (UA_Type), may be an empty handle.
+ * @param decay_list The list of decay elements to use for decay calculations (UA_Type), may be an empty handle.
  * @param interval The time interval over which to apply the decay.
  */
 void
-ocs::Usage::decay_usage(const lList *usage_list, const lList *decay_list, const double interval) {
-   if (usage_list) {
-      for_each_rw_lv (usage, usage_list) {
-         double decay;
+ocs::Usage::decay_usage(const ocs::tom::List<ocs::tom::UA> usage_list,
+                        const ocs::tom::ConstList<ocs::tom::UA> decay_list, const double interval) {
+   DENTER(BASIS_LAYER);
 
-         if (const lListElem *decay_elem;
-             decay_list != nullptr && (decay_elem = ocs::tom::find_first<UA_name>(decay_list, lGetPosString(usage, UA_name_POS))) != nullptr) {
-            decay = pow(lGetPosDouble(decay_elem, UA_value_POS), interval / sge_usage_interval);
-         } else {
-            decay = pow(sconf_get_decay_constant(), interval / sge_usage_interval);
-         }
-         lSetPosDouble(usage, UA_value_POS, lGetPosDouble(usage, UA_value_POS) * decay);
+   for (const auto usage : usage_list) {
+      double decay;
+
+      if (const auto decay_elem = ocs::tom::find_first<UA_name>(decay_list, ocs::tom::get<UA_name>(usage));
+          decay_elem) {
+         decay = pow(ocs::tom::get<UA_value>(decay_elem), interval / sge_usage_interval);
+      } else {
+         decay = pow(sconf_get_decay_constant(), interval / sge_usage_interval);
       }
+      ocs::tom::set<UA_value>(usage, ocs::tom::get<UA_value>(usage) * decay);
    }
+
+   DRETURN_VOID;
 }
 
 
@@ -199,47 +223,95 @@ ocs::Usage::decay_usage(const lList *usage_list, const lList *decay_list, const 
  * finished_jobs counter. All other attributes must not be booked into the
  * user/project usage lists - otherwise those objects (and their spooled
  * representation) grow huge over time (see CS-1385).
+ *
+ * @param name the usage attribute
+ * @param usage_weight_list the configured usage weights (UA_Type), may be an empty handle
+ * @return true if the attribute is booked into the user and project usage
  */
 static bool
-usage_relevant_for_sharetree(const char *name, const lList *usage_weight_list) {
+usage_relevant_for_sharetree(const char *name, const ocs::tom::ConstList<ocs::tom::UA> usage_weight_list) {
+   DENTER(BASIS_LAYER);
+
+   bool ret;
    if (strcmp(name, USAGE_ATTR_CPU) == 0 ||
        strcmp(name, USAGE_ATTR_MEM) == 0 ||
        strcmp(name, USAGE_ATTR_IO) == 0 ||
        strcmp(name, "finished_jobs") == 0) {
-      return true;
+      ret = true;
+   } else {
+      ret = static_cast<bool>(ocs::tom::find_first<UA_name>(usage_weight_list, name));
    }
-   return usage_weight_list != nullptr && static_cast<const lListElem *>(ocs::tom::find_first<UA_name>(usage_weight_list, name)) != nullptr;
+   DRETURN(ret);
 }
 
-/*--------------------------------------------------------------------
- * book_user_project_usage - shared body of decay_and_sum_usage and
- * sum_usage. The decay step is gated by do_decay so the worker-thread
- * booking path (CS-1239) can sum the finished job's usage without
- * applying decay; decay is then done by a periodic TET task.
- *--------------------------------------------------------------------*/
+/**
+ * @brief The usage list held in a field, built with the default attributes if the field holds none
+ *
+ * @tparam F the usage list field, UU_usage, UPP_long_term_usage, ...
+ * @tparam E the element handle type holding @p F
+ * @param ep the user, project or user-project element, not empty
+ * @param name the name a new list gets
+ * @return the list held in the field
+ */
+template <auto F, typename E>
+static ocs::tom::List<ocs::tom::UA>
+ocs_usage_list_get_or_build(const E ep, const char *name) {
+   DENTER(BASIS_LAYER);
+
+   auto list = ocs::tom::get<F>(ep);
+   if (!list) {
+      ocs::tom::set<F>(ep, ocs::Usage::build_usage_list(name, nullptr));
+      list = ocs::tom::get<F>(ep);
+   }
+   DRETURN(list);
+}
+
+/**
+ * @brief The usage element of an attribute in a usage list, appended with value 0 if the list has none
+ *
+ * @param usage_list the usage list (UA_Type), not empty
+ * @param name the usage attribute
+ * @return the element
+ */
+static ocs::tom::Element<ocs::tom::UA>
+ocs_usage_find_or_append(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name) {
+   DENTER(BASIS_LAYER);
+
+   auto usage = ocs::Usage::get_usage(usage_list, name);
+   if (!usage) {
+      usage = usage_list.push_back(ocs::Usage::create_usage_elem(name));
+   }
+   DRETURN(usage);
+}
+
+/**
+ * @brief Shared body of decay_and_sum_usage() and sum_usage()
+ *
+ * The decay step is gated by do_decay so the worker-thread booking path
+ * (CS-1239) can sum the finished job's usage without applying decay;
+ * decay is then done by a periodic TET task.
+ *
+ * @param job the job
+ * @param ja_task the array task, may be an empty handle
+ * @param user the job owner's user object, may be an empty handle
+ * @param project the job's project object, may be an empty handle
+ * @param decay_list the decay constants (UA_Type), may be an empty handle; only read if @p do_decay
+ * @param usage_weight_list the usage weights (UA_Type), may be an empty handle
+ * @param seqno the current usage sequence number, see ocs::UserProject::decay_userprj_usage()
+ * @param curr_time now, the base of the decay
+ * @param do_decay whether the user and project usage is decayed first
+ */
 static void
-book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
-                        lList *decay_list, const lList *usage_weight_list, u_long seqno, uint64_t curr_time,
-                        bool do_decay) {
-   lList *job_usage_list=nullptr,
-         *old_usage_list=nullptr,
-         *user_usage_list=nullptr,
-         *project_usage_list=nullptr,
-         *user_long_term_usage_list=nullptr,
-         *project_long_term_usage_list=nullptr;
-   lListElem *userprj = nullptr;
-   int obj_debited_job_usage = PR_debited_job_usage;
+book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                        const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, const ocs::tom::Element<ocs::tom::UU> user,
+                        const ocs::tom::Element<ocs::tom::PR> project,
+                        const ocs::tom::ConstList<ocs::tom::UA> decay_list,
+                        const ocs::tom::ConstList<ocs::tom::UA> usage_weight_list, const u_long seqno,
+                        const uint64_t curr_time, const bool do_decay) {
+   DENTER(BASIS_LAYER);
 
    if (!user && !project) {
-      return;
-   }
-
-   if (user) {
-      userprj = user;
-      obj_debited_job_usage = UU_debited_job_usage;
-   } else if (project) {
-      userprj = project;
-      obj_debited_job_usage = PR_debited_job_usage;
+      DRETURN_VOID;
    }
 
    /*-------------------------------------------------------------
@@ -248,11 +320,11 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
 
    if (do_decay) {
       if (user) {
-         ocs::UserProject::decay_userprj_usage(user, true, decay_list, seqno, curr_time);
+         ocs::UserProject::decay_userprj_usage(user, decay_list, seqno, curr_time);
       }
 
       if (project) {
-         ocs::UserProject::decay_userprj_usage(project, false, decay_list, seqno, curr_time);
+         ocs::UserProject::decay_userprj_usage(project, decay_list, seqno, curr_time);
       }
    }
 
@@ -265,253 +337,174 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
     * depending on the type of share tree.
     *-------------------------------------------------------------*/
 
-   if (ja_task != nullptr) {
-      job_usage_list = lCopyList("", ocs::tom::get<JAT_scaled_usage_list>(ja_task));
+   ocs::tom::ListPtr<ocs::tom::UA> job_usage_list;
+   if (ja_task) {
+      job_usage_list = ocs::tom::get<JAT_scaled_usage_list>(ja_task).clone("");
 
       /* sum sub-task usage into job_usage_list */
       if (job_usage_list) {
-         for (ocs::tom::Element<ocs::tom::PET> petask : ocs::tom::get<JAT_task_list>(ja_task)) {
-            ocs::tom::Element<ocs::tom::UA> dst;
-            for (ocs::tom::Element<ocs::tom::UA> src : ocs::tom::get<PET_scaled_usage>(petask)) {
-               if ((dst=ocs::tom::find_first_rw<UA_name>(job_usage_list, ocs::tom::get<UA_name>(src)))) {
+         for (const auto petask : ocs::tom::get<JAT_task_list>(ja_task)) {
+            for (const auto src : ocs::tom::get<PET_scaled_usage>(petask)) {
+               const auto dst = ocs::tom::find_first_rw<UA_name>(job_usage_list.get(), ocs::tom::get<UA_name>(src));
+               if (dst) {
                   ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
                } else {
-                  lAppendElem(job_usage_list, lCopyElem(src));
+                  job_usage_list->push_back(src.clone());
                }
             }
          }
       }
    }
 
-   if (userprj) {
-      ocs::tom::ConstElement<ocs::tom::UPU> upu;
-      const lList *upu_list = lGetList(userprj, obj_debited_job_usage);
-      if (upu_list) {
-         if ((upu = ocs::tom::find_first<UPU_job_number>(upu_list, ocs::tom::get<JB_job_number>(job)))) {
-            if (ocs::tom::ConstList<ocs::tom::UA> debited_usage = ocs::tom::get<UPU_old_usage_list>(upu)) {
-               old_usage_list = lCopyList("", debited_usage);
-            }
-         }
-      }
+   // the debited job usage is kept in the user if there is one, else in the project
+   ocs::tom::ListPtr<ocs::tom::UA> old_usage_list;
+   const ocs::tom::ConstList<ocs::tom::UPU> upu_list =
+      user ? ocs::tom::get<UU_debited_job_usage>(user) : ocs::tom::get<PR_debited_job_usage>(project);
+   if (const auto upu = ocs::tom::find_first<UPU_job_number>(upu_list, ocs::tom::get<JB_job_number>(job)); upu) {
+      old_usage_list = ocs::tom::get<UPU_old_usage_list>(upu).clone("");
    }
 
    if (!old_usage_list) {
       old_usage_list = ocs::Usage::build_usage_list("old_usage_list", nullptr);
    }
 
+   ocs::tom::List<ocs::tom::UA> user_usage_list;
+   ocs::tom::List<ocs::tom::UA> project_usage_list;
+   ocs::tom::List<ocs::tom::UA> user_long_term_usage_list;
+   ocs::tom::List<ocs::tom::UA> project_long_term_usage_list;
+
    if (user) {
 
       /* if there is a user & project, usage is kept in the project sub-list */
 
       if (project) {
-         lList *upp_list = ocs::tom::get<UU_project>(user);
-         ocs::tom::Element<ocs::tom::UPP> upp;
          const char *project_name = ocs::tom::get<PR_name>(project);
-
-         if (!upp_list) {
-            upp_list = lCreateList("", UPP_Type);
-            ocs::tom::set<UU_project>(user, upp_list);
+         const auto upp_list = ocs::tom::get_or_create<UU_project>(user, "");
+         auto upp = ocs::tom::find_first_rw<UPP_name>(upp_list, project_name);
+         if (!upp) {
+            upp = upp_list.emplace_back<UPP_name>(project_name);
          }
-         if (!((upp = ocs::tom::find_first_rw<UPP_name>(upp_list, project_name))))
-            upp = ocs::tom::emplace_back<UPP_name>(&upp_list, project_name);
-         user_long_term_usage_list = ocs::tom::get<UPP_long_term_usage>(upp);
-         if (!user_long_term_usage_list) {
-            user_long_term_usage_list = ocs::Usage::build_usage_list("upp_long_term_usage_list", nullptr);
-            ocs::tom::set<UPP_long_term_usage>(upp, user_long_term_usage_list);
-         }
-         user_usage_list = ocs::tom::get<UPP_usage>(upp);
-         if (!user_usage_list) {
-            user_usage_list = ocs::Usage::build_usage_list("upp_usage_list", nullptr);
-            ocs::tom::set<UPP_usage>(upp, user_usage_list);
-         }
-
+         user_long_term_usage_list = ocs_usage_list_get_or_build<UPP_long_term_usage>(upp, "upp_long_term_usage_list");
+         user_usage_list = ocs_usage_list_get_or_build<UPP_usage>(upp, "upp_usage_list");
       } else {
-         user_long_term_usage_list = ocs::tom::get<UU_long_term_usage>(user);
-         if (!user_long_term_usage_list) {
-            user_long_term_usage_list = ocs::Usage::build_usage_list("user_long_term_usage_list", nullptr);
-            ocs::tom::set<UU_long_term_usage>(user, user_long_term_usage_list);
-         }
-         user_usage_list = ocs::tom::get<UU_usage>(user);
-         if (!user_usage_list) {
-            user_usage_list = ocs::Usage::build_usage_list("user_usage_list", nullptr);
-            ocs::tom::set<UU_usage>(user, user_usage_list);
-         }
+         user_long_term_usage_list = ocs_usage_list_get_or_build<UU_long_term_usage>(user, "user_long_term_usage_list");
+         user_usage_list = ocs_usage_list_get_or_build<UU_usage>(user, "user_usage_list");
       }
    }
 
    if (project) {
-      project_long_term_usage_list = ocs::tom::get<PR_long_term_usage>(project);
-      if (!project_long_term_usage_list) {
-         project_long_term_usage_list = ocs::Usage::build_usage_list("project_long_term_usage_list", nullptr);
-         ocs::tom::set<PR_long_term_usage>(project, project_long_term_usage_list);
-      }
-      project_usage_list = ocs::tom::get<PR_usage>(project);
-      if (!project_usage_list) {
-         project_usage_list = ocs::Usage::build_usage_list("project_usage_list", nullptr);
-         ocs::tom::set<PR_usage>(project, project_usage_list);
-      }
+      project_long_term_usage_list =
+         ocs_usage_list_get_or_build<PR_long_term_usage>(project, "project_long_term_usage_list");
+      project_usage_list = ocs_usage_list_get_or_build<PR_usage>(project, "project_usage_list");
    }
 
-   if (job_usage_list) {
-      /*-------------------------------------------------------------
-       * Add to node usage for each usage type
-       *-------------------------------------------------------------*/
-      for_each_rw_lv(job_usage, job_usage_list) {
+   /*-------------------------------------------------------------
+    * Add to node usage for each usage type
+    *-------------------------------------------------------------*/
+   for (const auto job_usage : job_usage_list.get()) {
+      const char *usage_name = ocs::tom::get<UA_name>(job_usage);
 
-         lListElem *old_usage=nullptr,
-                   *user_usage=nullptr, *project_usage=nullptr,
-                   *user_long_term_usage=nullptr,
-                   *project_long_term_usage=nullptr;
-         const char *usage_name = ocs::tom::get<UA_name>(job_usage);
+      /*---------------------------------------------------------
+       * Only attributes relevant for share tree usage may be
+       * booked into the user/project usage lists. All other
+       * online usage attributes are ignored here (CS-1385).
+       *---------------------------------------------------------*/
 
-         /*---------------------------------------------------------
-          * Only attributes relevant for share tree usage may be
-          * booked into the user/project usage lists. All other
-          * online usage attributes are ignored here (CS-1385).
-          *---------------------------------------------------------*/
-
-         if (!usage_relevant_for_sharetree(usage_name, usage_weight_list)) {
-            continue;
-         }
-
-         /*---------------------------------------------------------
-          * Locate the corresponding usage element for the job
-          * usage type in the node usage, old job usage, user usage,
-          * and project usage.  If it does not exist, create a new
-          * corresponding usage element.
-          *---------------------------------------------------------*/
-
-         if (old_usage_list) {
-            old_usage = ocs::Usage::get_usage(old_usage_list, usage_name);
-            if (!old_usage) {
-               old_usage = ocs::Usage::create_usage_elem(usage_name);
-               lAppendElem(old_usage_list, old_usage);
-            }
-         }
-
-         if (user_usage_list) {
-            user_usage = ocs::Usage::get_usage(user_usage_list, usage_name);
-            if (!user_usage) {
-               user_usage = ocs::Usage::create_usage_elem(usage_name);
-               lAppendElem(user_usage_list, user_usage);
-            }
-         }
-
-         if (user_long_term_usage_list) {
-            user_long_term_usage = ocs::Usage::get_usage(user_long_term_usage_list,
-                                                       usage_name);
-            if (!user_long_term_usage) {
-               user_long_term_usage = ocs::Usage::create_usage_elem(usage_name);
-               lAppendElem(user_long_term_usage_list, user_long_term_usage);
-            }
-         }
-
-         if (project_usage_list) {
-            project_usage = ocs::Usage::get_usage(project_usage_list, usage_name);
-            if (!project_usage) {
-               project_usage = ocs::Usage::create_usage_elem(usage_name);
-               lAppendElem(project_usage_list, project_usage);
-            }
-         }
-
-         if (project_long_term_usage_list) {
-            project_long_term_usage =
-                  ocs::Usage::get_usage(project_long_term_usage_list, usage_name);
-            if (!project_long_term_usage) {
-               project_long_term_usage = ocs::Usage::create_usage_elem(usage_name);
-               lAppendElem(project_long_term_usage_list,
-			   project_long_term_usage);
-            }
-         }
-
-         if (job_usage && old_usage) {
-
-            double usage_value;
-
-            usage_value = std::max(ocs::tom::get<UA_value>(job_usage) - ocs::tom::get<UA_value>(old_usage), 0.0);
-
-            /*---------------------------------------------------
-             * Add usage to decayed user usage
-             *---------------------------------------------------*/
-
-            if (user_usage)
-                ocs::tom::set<UA_value>(user_usage,
-                      ocs::tom::get<UA_value>(user_usage) +
-                      usage_value);
-
-            /*---------------------------------------------------
-             * Add usage to long term user usage
-             *---------------------------------------------------*/
-
-            if (user_long_term_usage)
-                ocs::tom::set<UA_value>(user_long_term_usage,
-                      ocs::tom::get<UA_value>(user_long_term_usage) +
-                      usage_value);
-
-            /*---------------------------------------------------
-             * Add usage to decayed project usage
-             *---------------------------------------------------*/
-
-            if (project_usage)
-                ocs::tom::set<UA_value>(project_usage,
-                      ocs::tom::get<UA_value>(project_usage) +
-                      usage_value);
-
-            /*---------------------------------------------------
-             * Add usage to long term project usage
-             *---------------------------------------------------*/
-
-            if (project_long_term_usage)
-                ocs::tom::set<UA_value>(project_long_term_usage,
-                      ocs::tom::get<UA_value>(project_long_term_usage) +
-                      usage_value);
-
-
-         }
-
+      if (!usage_relevant_for_sharetree(usage_name, usage_weight_list)) {
+         continue;
       }
 
+      /*---------------------------------------------------------
+       * Locate the corresponding usage element for the job
+       * usage type in the node usage, old job usage, user usage,
+       * and project usage.  If it does not exist, create a new
+       * corresponding usage element.
+       *---------------------------------------------------------*/
+
+      const auto old_usage = ocs_usage_find_or_append(old_usage_list.get(), usage_name);
+      ocs::tom::Element<ocs::tom::UA> user_usage;
+      ocs::tom::Element<ocs::tom::UA> user_long_term_usage;
+      ocs::tom::Element<ocs::tom::UA> project_usage;
+      ocs::tom::Element<ocs::tom::UA> project_long_term_usage;
+
+      if (user_usage_list) {
+         user_usage = ocs_usage_find_or_append(user_usage_list, usage_name);
+      }
+      if (user_long_term_usage_list) {
+         user_long_term_usage = ocs_usage_find_or_append(user_long_term_usage_list, usage_name);
+      }
+      if (project_usage_list) {
+         project_usage = ocs_usage_find_or_append(project_usage_list, usage_name);
+      }
+      if (project_long_term_usage_list) {
+         project_long_term_usage = ocs_usage_find_or_append(project_long_term_usage_list, usage_name);
+      }
+
+      const double usage_value =
+         std::max(ocs::tom::get<UA_value>(job_usage) - ocs::tom::get<UA_value>(old_usage), 0.0);
+
+      /*---------------------------------------------------
+       * Add usage to decayed user usage
+       *---------------------------------------------------*/
+      if (user_usage) {
+         ocs::tom::set<UA_value>(user_usage, ocs::tom::get<UA_value>(user_usage) + usage_value);
+      }
+
+      /*---------------------------------------------------
+       * Add usage to long term user usage
+       *---------------------------------------------------*/
+      if (user_long_term_usage) {
+         ocs::tom::set<UA_value>(user_long_term_usage, ocs::tom::get<UA_value>(user_long_term_usage) + usage_value);
+      }
+
+      /*---------------------------------------------------
+       * Add usage to decayed project usage
+       *---------------------------------------------------*/
+      if (project_usage) {
+         ocs::tom::set<UA_value>(project_usage, ocs::tom::get<UA_value>(project_usage) + usage_value);
+      }
+
+      /*---------------------------------------------------
+       * Add usage to long term project usage
+       *---------------------------------------------------*/
+      if (project_long_term_usage) {
+         ocs::tom::set<UA_value>(project_long_term_usage,
+                                 ocs::tom::get<UA_value>(project_long_term_usage) + usage_value);
+      }
    }
 
    /*-------------------------------------------------------------
     * save off current job usage in debitted job usage list
     *-------------------------------------------------------------*/
 
-   lFreeList(&old_usage_list);
+   old_usage_list.reset();
 
    if (job_usage_list) {
-      if (userprj) {
-         lListElem *upu;
-         u_long jobnum = ocs::tom::get<JB_job_number>(job);
-         lList *upu_list = lGetListRW(userprj, obj_debited_job_usage);
-         if (!upu_list) {
-            upu_list = lCreateList("", UPU_Type);
-            lSetList(userprj, obj_debited_job_usage, upu_list);
-         }
-         if ((upu = ocs::tom::find_first_rw<UPU_job_number>(upu_list, jobnum))) {
-            ocs::tom::set<UPU_old_usage_list>(upu, lCopyList(lGetListName(job_usage_list), job_usage_list));
-         } else {
-            auto upu = ocs::tom::ElementPtr<ocs::tom::UPU>::create();
-            ocs::tom::set<UPU_job_number>(upu, jobnum);
-            ocs::tom::set<UPU_old_usage_list>(upu, lCopyList(lGetListName(job_usage_list), job_usage_list));
-            lAppendElem(upu_list, std::move(upu));
-         }
+      const uint32_t jobnum = ocs::tom::get<JB_job_number>(job);
+      const auto debited = user ? ocs::tom::get_or_create<UU_debited_job_usage>(user, "")
+                                : ocs::tom::get_or_create<PR_debited_job_usage>(project, "");
+      if (const auto upu = ocs::tom::find_first_rw<UPU_job_number>(debited, jobnum); upu) {
+         ocs::tom::set<UPU_old_usage_list>(upu, job_usage_list->clone());
+      } else {
+         auto new_upu = ocs::tom::ElementPtr<ocs::tom::UPU>::create();
+         ocs::tom::set<UPU_job_number>(new_upu, jobnum);
+         ocs::tom::set<UPU_old_usage_list>(new_upu, job_usage_list->clone());
+         debited.push_back(std::move(new_upu));
       }
-      lFreeList(&job_usage_list);
    }
 
+   DRETURN_VOID;
 }
-
-/*--------------------------------------------------------------------
- * decay_and_sum_usage - accumulates and decays usage in the correct
- * user and project objects for the specified job
- *--------------------------------------------------------------------*/
 
 /**
  * @brief Decay the already booked usage and add this job's scaled usage on top
+ *
+ * Accumulates and decays usage in the correct user and project objects for
+ * the specified job.
+ *
  * @param job the finished job
  * @param ja_task the finished array task
- * @param node the job owner's share tree node
+ * @param node the job owner's share tree node; unused
  * @param user the submitting user's object
  * @param project the job's project
  * @param decay_list the decay constants, one per usage attribute
@@ -520,10 +513,40 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
  * @param curr_time now, in seconds, as the base of the decay
  */
 void
-ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem * /* node */, lListElem *user,
-                                lListElem *project, lList *decay_list, const lList *usage_weight_list, u_long seqno,
-                                uint64_t curr_time) {
+ocs::Usage::decay_and_sum_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                [[maybe_unused]] const ocs::tom::Element<ocs::tom::STN> node,
+                                const ocs::tom::Element<ocs::tom::UU> user,
+                                const ocs::tom::Element<ocs::tom::PR> project,
+                                const ocs::tom::ConstList<ocs::tom::UA> decay_list,
+                                const ocs::tom::ConstList<ocs::tom::UA> usage_weight_list, const u_long seqno,
+                                const uint64_t curr_time) {
+   DENTER(BASIS_LAYER);
    book_user_project_usage(job, ja_task, user, project, decay_list, usage_weight_list, seqno, curr_time, true);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief decay_and_sum_usage() for an untyped caller
+ *
+ * @param job the finished job (JB_Type), checked
+ * @param ja_task the finished array task (JAT_Type), checked
+ * @param node the job owner's share tree node; unused
+ * @param user the submitting user's object (UU_Type), checked
+ * @param project the job's project (PR_Type), checked
+ * @param decay_list the decay constants (UA_Type), checked
+ * @param usage_weight_list the weights each usage attribute is scaled by (UA_Type), checked
+ * @param seqno the current usage sequence number, so usage is decayed only once
+ * @param curr_time now, in seconds, as the base of the decay
+ */
+void
+ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user,
+                                lListElem *project, const lList *decay_list, const lList *usage_weight_list,
+                                const u_long seqno, const uint64_t curr_time) {
+   decay_and_sum_usage(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
+                       ocs::tom::Element<ocs::tom::STN>(node), ocs::tom::Element<ocs::tom::UU>(user),
+                       ocs::tom::Element<ocs::tom::PR>(project), ocs::tom::ConstList<ocs::tom::UA>(decay_list),
+                       ocs::tom::ConstList<ocs::tom::UA>(usage_weight_list), seqno, curr_time);
 }
 
 /**
@@ -541,9 +564,30 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem * 
  * @param usage_weight_list the weights each usage attribute is scaled by
  */
 void
+ocs::Usage::sum_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, const ocs::tom::Element<ocs::tom::UU> user,
+                      const ocs::tom::Element<ocs::tom::PR> project,
+                      const ocs::tom::ConstList<ocs::tom::UA> usage_weight_list) {
+   DENTER(BASIS_LAYER);
+   book_user_project_usage(job, ja_task, user, project, nullptr, usage_weight_list, 0, 0, false);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief sum_usage() for an untyped caller
+ *
+ * @param job the finished job (JB_Type), checked
+ * @param ja_task the finished array task (JAT_Type), checked
+ * @param user the submitting user's object (UU_Type), checked
+ * @param project the job's project (PR_Type), checked
+ * @param usage_weight_list the weights each usage attribute is scaled by (UA_Type), checked
+ */
+void
 ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
                       const lList *usage_weight_list) {
-   book_user_project_usage(job, ja_task, user, project, nullptr, usage_weight_list, 0, 0, false);
+   sum_usage(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
+             ocs::tom::Element<ocs::tom::UU>(user), ocs::tom::Element<ocs::tom::PR>(project),
+             ocs::tom::ConstList<ocs::tom::UA>(usage_weight_list));
 }
 
 
@@ -556,39 +600,43 @@ ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lList
  * This strips a usage list down to the attributes that actually matter for
  * share tree usage.
  *
- * @param usage_list the list to strip; nullptr is treated as an empty list
- * @param usage_weight_list the weights; an attribute without a weight is irrelevant
+ * @param usage_list the list to strip (UA_Type); an empty handle is treated as an empty list
+ * @param usage_weight_list the weights (UA_Type); an attribute without a weight is irrelevant
  * @return true when at least one element was removed, so the caller knows the
  *         owning object has to be re-spooled
  */
 bool
-ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_list) {
+ocs::Usage::strip_irrelevant_usage(const ocs::tom::List<ocs::tom::UA> usage_list,
+                                   const ocs::tom::ConstList<ocs::tom::UA> usage_weight_list) {
+   DENTER(BASIS_LAYER);
+
    bool removed = false;
 
-   lListElem *next_usage = lFirstRW(usage_list);
-   lListElem *usage;
-   while ((usage = next_usage) != nullptr) {
-      next_usage = lNextRW(usage);
+   auto next_usage = usage_list.front();
+   while (const auto usage = next_usage) {
+      next_usage = usage.next();
       if (!usage_relevant_for_sharetree(ocs::tom::get<UA_name>(usage), usage_weight_list)) {
-         lRemoveElem(usage_list, &usage);
+         usage_list.erase(usage);
          removed = true;
       }
    }
-   return removed;
+   DRETURN(removed);
 }
 
-/*--------------------------------------------------------------------
- * build_usage_list - create a new usage list from an existing list
- *--------------------------------------------------------------------*/
-
-/** @brief Build a named usage list, reusing the values of an existing one
+/** @brief Build a named usage list, reusing the attributes of an existing one
+ *
+ * The values are zero. Without an existing list the list holds the default
+ * attributes cpu, mem and io.
+ *
  * @param name the name the resulting list is stored under
- * @param old_usage_list the list to take the existing values from; may be nullptr
- * @return the new list
+ * @param old_usage_list the list to take the existing attributes from (UA_Type); may be an empty handle
+ * @return the new list, owned by the caller
  */
-lList *
-ocs::Usage::build_usage_list(const char *name, lList *old_usage_list) {
-   lList *usage_list = nullptr;
+ocs::tom::ListPtr<ocs::tom::UA>
+ocs::Usage::build_usage_list(const char *name, const ocs::tom::ConstList<ocs::tom::UA> old_usage_list) {
+   DENTER(BASIS_LAYER);
+
+   ocs::tom::ListPtr<ocs::tom::UA> usage_list;
 
    if (old_usage_list) {
 
@@ -596,54 +644,48 @@ ocs::Usage::build_usage_list(const char *name, lList *old_usage_list) {
        * Copy the old list and zero out the usage values
        *-------------------------------------------------------------*/
 
-      usage_list = lCopyList(name, old_usage_list);
-      for_each_rw_lv(usage, usage_list)
+      usage_list = old_usage_list.clone(name);
+      for (const auto usage : usage_list.get()) {
          ocs::tom::set<UA_value>(usage, 0);
+      }
 
    } else {
 
       /*
        * the UA_value fields are implicitly set to 0 at creation
-       * time of a new element with lCreateElem or lAddElemStr
+       * time of a new element
        */
 
-      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_CPU);
-      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_MEM);
-      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_IO);
+      usage_list = ocs::tom::ListPtr<ocs::tom::UA>::create("");
+      usage_list->emplace_back<UA_name>(USAGE_ATTR_CPU);
+      usage_list->emplace_back<UA_name>(USAGE_ATTR_MEM);
+      usage_list->emplace_back<UA_name>(USAGE_ATTR_IO);
    }
 
-   return usage_list;
+   DRETURN(usage_list);
 }
 
-/*--------------------------------------------------------------------
- * get_usage - return usage entry based on name
- *--------------------------------------------------------------------*/
 /** @brief Look up one usage attribute by name
- * @param usage_list the list to search
+ * @param usage_list the list to search (UA_Type), may be an empty handle
  * @param name the attribute to find
- * @return the element, or nullptr when the attribute is not booked
+ * @return the element, or an empty handle when the attribute is not booked
  */
-lListElem *
-ocs::Usage::get_usage(lList *usage_list, const char *name) {
-   return ocs::tom::find_first_rw<UA_name>(usage_list, name);
+ocs::tom::Element<ocs::tom::UA>
+ocs::Usage::get_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name) {
+   DENTER(BASIS_LAYER);
+   const auto ret = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+   DRETURN(ret);
 }
 
-
-/*--------------------------------------------------------------------
- * create_usage_elem - create a new usage element
- *--------------------------------------------------------------------*/
 /** @brief Create a usage element for the named attribute, initialised to zero
  * @param name the attribute name
- * @return the new element
+ * @return the new element, owned by the caller
  */
-lListElem *
-ocs::Usage::create_usage_elem( const char *name ) {
+ocs::tom::ElementPtr<ocs::tom::UA>
+ocs::Usage::create_usage_elem(const char *name) {
+   DENTER(BASIS_LAYER);
    auto usage = ocs::tom::ElementPtr<ocs::tom::UA>::create();
    ocs::tom::set<UA_name>(usage, name);
    ocs::tom::set<UA_value>(usage, 0);
-   return usage.release();
+   DRETURN(usage);
 }
-
-
-
-

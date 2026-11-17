@@ -39,11 +39,22 @@
  * @see sge_resource_quota_service.cc
  */
 
-bool is_cqueue_global(const lListElem *rule);
-bool is_host_global(const lListElem *rule);
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
-bool is_cqueue_expand(const lListElem *rule);
-bool is_host_expand(const lListElem *rule);
+bool is_cqueue_global(ocs::tom::ConstElement<ocs::tom::RQR> rule);
+bool is_host_global(ocs::tom::ConstElement<ocs::tom::RQR> rule);
 
-bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list);
+bool is_cqueue_expand(ocs::tom::ConstElement<ocs::tom::RQR> rule);
+bool is_host_expand(ocs::tom::ConstElement<ocs::tom::RQR> rule);
 
+bool sge_user_is_referenced_in_rqs(ocs::tom::ConstList<ocs::tom::RQS> rqs, const char *user, const char *group,
+                                   ocs::tom::ConstList<ocs::tom::ST> grp_list,
+                                   ocs::tom::ConstList<ocs::tom::US> acl_list);
+OCS_TRANSITIONAL bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group,
+                                                    const lList *grp_list, const lList *acl_list);

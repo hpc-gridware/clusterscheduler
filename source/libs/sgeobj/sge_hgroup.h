@@ -211,8 +211,10 @@ bool hgroup_add_references(ocs::tom::Element<ocs::tom::HGRP> this_elem, lList **
                            ocs::tom::ConstList<ocs::tom::HR> hostref_or_groupref);
 
 bool hgroup_find_all_references(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
-                                ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **used_hosts,
-                                lList **used_groups, lList **used_matchers = nullptr,
+                                ocs::tom::ConstList<ocs::tom::HGRP> master_list,
+                                ocs::tom::ListPtr<ocs::tom::HR> *used_hosts,
+                                ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
+                                ocs::tom::ListPtr<ocs::tom::HR> *used_matchers = nullptr,
                                 bool expand_matchers = true);
 OCS_TRANSITIONAL bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
                                                  const lList *master_list, lList **used_hosts,
@@ -220,14 +222,15 @@ OCS_TRANSITIONAL bool hgroup_find_all_references(const lListElem *this_elem, lLi
                                                  bool expand_matchers = true);
 
 bool hgroup_find_all_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
-                                 ocs::tom::ConstList<ocs::tom::HGRP> master_list, lList **used_groups);
+                                 ocs::tom::ConstList<ocs::tom::HGRP> master_list,
+                                 ocs::tom::ListPtr<ocs::tom::HR> *used_groups);
 OCS_TRANSITIONAL bool hgroup_find_all_referencees(const lListElem *this_elem, lList **answer_list,
                                                   const lList *master_list, lList **used_groups);
 
 bool hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
                              ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
-                             ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list, lList **occupants_groups,
-                             lList **occupants_queues);
+                             ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                             ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups, lList **occupants_queues);
 OCS_TRANSITIONAL bool hgroup_find_referencees(const lListElem *this_elem, lList **answer_list,
                                               const lList *master_hgroup_list, const lList *master_cqueue_list,
                                               lList **occupants_groups, lList **occupants_queues);
@@ -243,9 +246,11 @@ bool hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **a
 OCS_TRANSITIONAL bool hgroup_list_exists(const lList *this_list, lList **answer_list, const lList *href_list);
 
 bool hgroup_list_find_matching_and_resolve(ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **answer_list,
-                                           const char *hgroup_pattern, lList **used_hosts);
+                                           const char *hgroup_pattern, ocs::tom::ListPtr<ocs::tom::HR> *used_hosts);
 OCS_TRANSITIONAL bool hgroup_list_find_matching_and_resolve(const lList *this_list, lList **answer_list,
                                                             const char *hgroup_pattern, lList **used_hosts);
 
 bool hgroup_list_find_matching(ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **answer_list,
-                               const char *hgroup_pattern, lList **used_hosts);
+                               const char *hgroup_pattern, ocs::tom::ListPtr<ocs::tom::HR> *href_list);
+OCS_TRANSITIONAL bool hgroup_list_find_matching(const lList *this_list, lList **answer_list,
+                                                const char *hgroup_pattern, lList **href_list);

@@ -372,7 +372,6 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
 
    const char *name;
    lListElem *ep;
-   lList *projects;
 
    if (!up_ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -440,22 +439,16 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
       }
 
       /* check global configuration */
-      projects = mconf_get_projects();
-      if (prj_list_locate(projects, name)) {
+      if (prj_list_locate(*mconf_get_projects(), name)) {
          ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-         lFreeList(&projects);
          DRETURN(STATUS_EEXIST);
       }
-      lFreeList(&projects);
-      projects = mconf_get_xprojects();
-      if (prj_list_locate(projects, name)) {
+      if (prj_list_locate(*mconf_get_xprojects(), name)) {
          ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-         lFreeList(&projects);
          DRETURN(STATUS_EEXIST);
       }
-      lFreeList(&projects);
 
       /* check user list for reference */
       if (ocs::tom::ConstElement<ocs::tom::UU> prj = ocs::tom::find_first<UU_default_project>(*ocs::DataStore::get_master_list(SGE_TYPE_USER), name); prj != nullptr) {

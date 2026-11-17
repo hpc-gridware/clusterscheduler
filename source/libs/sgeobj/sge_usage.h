@@ -39,6 +39,12 @@
  * @see sge_usage.cc
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_HS.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+
 #include "sgeobj/cull/sge_usage_UA_L.h"
 
 /**
@@ -121,28 +127,29 @@ enum {
 #define USAGE_ATTR_MAXRSS "maxrss"
 /** @} */
 
-int
-usage_list_get_int_usage(const lList *usage_list, const char *name, int def);
-uint32_t
-usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def);
-uint64_t
-usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def);
-double
-usage_list_get_double_usage(const lList *usage_list, const char *name, double def);
+int usage_list_get_int_usage(ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name, int def);
+OCS_TRANSITIONAL int usage_list_get_int_usage(const lList *usage_list, const char *name, int def);
+uint32_t usage_list_get_ulong_usage(ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name, uint32_t def);
+OCS_TRANSITIONAL uint32_t usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def);
+uint64_t usage_list_get_ulong64_usage(ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name, uint64_t def);
+OCS_TRANSITIONAL uint64_t usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def);
+double usage_list_get_double_usage(ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name, double def);
+OCS_TRANSITIONAL double usage_list_get_double_usage(const lList *usage_list, const char *name, double def);
 
-void
-usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value);
-void
-usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value);
-void
-usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage = true);
-void
-usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage = true);
+void usage_list_set_ulong_usage(ocs::tom::List<ocs::tom::UA> usage_list, const char *name, uint32_t value);
+OCS_TRANSITIONAL void usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value);
+void usage_list_set_ulong64_usage(ocs::tom::List<ocs::tom::UA> usage_list, const char *name, uint64_t value);
+OCS_TRANSITIONAL void usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value);
+void usage_list_set_double_usage(ocs::tom::List<ocs::tom::UA> usage_list, const char *name, double value,
+                                 bool create_usage = true);
+OCS_TRANSITIONAL void usage_list_set_double_usage(lList *usage_list, const char *name, double value,
+                                                  bool create_usage = true);
+void usage_list_max_double_usage(ocs::tom::List<ocs::tom::UA> usage_list, const char *name, double value,
+                                 bool create_usage = true);
 
-void
-usage_list_sum(lList *usage_list, const lList *add_usage_list);
+void usage_list_sum(ocs::tom::List<ocs::tom::UA> usage_list, ocs::tom::ConstList<ocs::tom::UA> add_usage_list);
 
-lList *scale_usage(const lList *scaling, const lList *prev_usage, lList *scaled_usage);
+void scale_usage(ocs::tom::ConstList<ocs::tom::HS> scaling, ocs::tom::ConstList<ocs::tom::UA> prev_usage,
+                 ocs::tom::List<ocs::tom::UA> scaled_usage);
 
-lListElem *
-usage_parse_value(const char *name, const char *value);
+ocs::tom::ElementPtr<ocs::tom::UA> usage_parse_value(const char *name, const char *value);

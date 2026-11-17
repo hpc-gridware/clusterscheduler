@@ -39,11 +39,15 @@
  * @see sge_proc.cc
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_PRO.h"
+
 #include "sgeobj/cull/sge_proc_PRO_L.h"
 #include "sgeobj/cull/sge_proc_GR_L.h"
 
-lListElem *get_pr (int pid);
-void append_pr (lListElem *pr);
+ocs::tom::Element<ocs::tom::PRO> get_pr(int pid);
+ocs::tom::Element<ocs::tom::PRO> append_pr(ocs::tom::ElementPtr<ocs::tom::PRO> &&pr);
 void gen_procList ();
 void free_procList ();
 /**

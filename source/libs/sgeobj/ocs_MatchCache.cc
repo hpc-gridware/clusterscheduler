@@ -25,6 +25,7 @@
  */
 
 #include <mutex>
+#include <utility>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
@@ -35,6 +36,8 @@
 #include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/sge_conf.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HM.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 
@@ -91,32 +94,38 @@ static constexpr int MATCH_CACHE_PRUNE_BOUND = 64;
  * old entries are exactly the ones whose hosts are gone and which are therefore
  * never refreshed.
  *
- * @param cache the matching cache, already guarded by the caller
+ * The time of last use is read with the atomic accessor of the list library, which has no typed form.
+ *
+ * @param cache the matching cache (HM_Type), already guarded by the caller; not an empty handle
  * @param now the current time as a 64 bit timestamp, that is in microseconds
  */
 static void
-match_cache_reclaim(lList *cache, const uint64_t now) {
+match_cache_reclaim(const ocs::tom::List<ocs::tom::HM> cache, const uint64_t now) {
+   DENTER(TOP_LAYER);
+
    const int ttl_seconds = mconf_get_matcher_cache_time();
 
    if (ttl_seconds <= 0) {
       // 0 means an entry does not expire
-      return;
+      DRETURN_VOID;
    }
 
    // the time of last use is a 64 bit timestamp, which in this product means
    // microseconds; the configured period is in seconds
    const uint64_t ttl = sge_gmt32_to_gmt64(static_cast<uint32_t>(ttl_seconds));
 
-   lListElem *entry = lFirstRW(cache);
+   auto entry = cache.front();
 
-   for (int examined = 0; entry != nullptr && examined < MATCH_CACHE_RECLAIM_BOUND; examined++) {
-      lListElem *next = lNextRW(entry);
+   for (int examined = 0; entry && examined < MATCH_CACHE_RECLAIM_BOUND; examined++) {
+      const auto next = entry.next();
 
       if (now > lGetUlong64Atomic(entry, HM_last_used) + ttl) {
-         lRemoveElem(cache, &entry);
+         cache.erase(entry);
       }
       entry = next;
    }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -131,28 +140,43 @@ match_cache_reclaim(lList *cache, const uint64_t now) {
  * writing "now" produce competing values every one of which is a valid recent
  * time of use. Only a structural change takes the lock.
  *
- * @param hgroup the group to ask
+ * The time of last use is written with the atomic accessor of the list library, which has no typed form.
+ *
+ * @param hgroup the group to ask; an empty handle answers no
  * @param hostname the host in question, already resolved by the caller
  *
  * @return true if the host has an unexpired entry
  */
 bool
-ocs::MatchCache::lookup(lListElem *hgroup, const char *hostname) {
+ocs::MatchCache::lookup(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const char *hostname) {
    DENTER(TOP_LAYER);
 
-   if (hgroup == nullptr || hostname == nullptr) {
+   if (!hgroup || hostname == nullptr) {
       DRETURN(false);
    }
 
-   lListElem *entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), hostname);
+   const auto entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), hostname);
 
-   if (entry == nullptr) {
+   if (!entry) {
       DRETURN(false);
    }
 
    lSetUlong64Atomic(entry, HM_last_used, sge_get_gmt64());
 
    DRETURN(true);
+}
+
+/**
+ * @brief lookup() for an untyped caller
+ *
+ * @param hgroup the group to ask (HGRP_Type), checked; nullptr answers no
+ * @param hostname the host in question, already resolved by the caller
+ *
+ * @return as lookup()
+ */
+bool
+ocs::MatchCache::lookup(lListElem *hgroup, const char *hostname) {
+   return lookup(ocs::tom::Element<ocs::tom::HGRP>(hgroup), hostname);
 }
 
 /**
@@ -164,27 +188,28 @@ ocs::MatchCache::lookup(lListElem *hgroup, const char *hostname) {
  * walk on every one of its requests, which is the only path here whose frequency
  * is set by someone other than the administrator.
  *
- * @param hgroup the group that admitted the host
+ * @param hgroup the group that admitted the host; an empty handle changes nothing
  * @param hostname the admitted host, already resolved by the caller
  *
  * @see #match_cache_reclaim
  */
 void
-ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
+ocs::MatchCache::insert(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const char *hostname) {
    DENTER(TOP_LAYER);
 
-   if (hgroup == nullptr || hostname == nullptr) {
+   if (!hgroup || hostname == nullptr) {
       DRETURN_VOID;
    }
 
    const uint64_t now = sge_get_gmt64();
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   lList *cache = ocs::tom::get<HGRP_match_cache>(hgroup);
-   const bool created = (cache == nullptr);
+   auto cache = ocs::tom::get<HGRP_match_cache>(hgroup);
+   ocs::tom::ListPtr<ocs::tom::HM> created;
 
-   if (created) {
-      cache = lCreateList("", HM_Type);
+   if (!cache) {
+      created = ocs::tom::ListPtr<ocs::tom::HM>::create("");
+      cache = *created;
    }
    match_cache_reclaim(cache, now);
 
@@ -192,18 +217,27 @@ ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
    // unique and hashed, and a list that ever holds two entries under one key
    // cannot be repaired: removing either drops the key from the hash and leaves
    // the other present but unfindable.
-   if (static_cast<const lListElem *>(ocs::tom::find_first<HM_name>(cache, hostname)) == nullptr) {
-      ocs::tom::Element<ocs::tom::HM> fresh = ocs::tom::emplace_back<HM_name>(&cache, hostname);
+   if (!ocs::tom::find_first<HM_name>(cache, hostname)) {
+      const auto fresh = cache.emplace_back<HM_name>(ocs::tom::Host(hostname));
 
-      if (fresh != nullptr) {
-         ocs::tom::set<HM_last_used>(fresh, now);
-      }
+      ocs::tom::set<HM_last_used>(fresh, now);
    }
    if (created) {
-      ocs::tom::set<HGRP_match_cache>(hgroup, cache);
+      ocs::tom::set<HGRP_match_cache>(hgroup, std::move(created));
    }
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief insert() for an untyped caller
+ *
+ * @param hgroup the group that admitted the host (HGRP_Type), checked; nullptr changes nothing
+ * @param hostname the admitted host, already resolved by the caller
+ */
+void
+ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
+   insert(ocs::tom::Element<ocs::tom::HGRP>(hgroup), hostname);
 }
 
 /**
@@ -218,26 +252,34 @@ ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
  * caller may free it without this lock. That is the failure path, and it is the
  * only place a cache is touched outside the lock.
  *
- * @param hgroup the group the cache is taken from
+ * @param hgroup the group the cache is taken from; an empty handle gives an empty handle
  *
- * @return the cache, or nullptr if the group carried none
+ * @return the cache, owned by the caller, or an empty handle if the group carried none
  *
  * @see #adopt
  */
-lList *
-ocs::MatchCache::detach(lListElem *hgroup) {
+ocs::tom::ListPtr<ocs::tom::HM>
+ocs::MatchCache::detach(const ocs::tom::Element<ocs::tom::HGRP> hgroup) {
    DENTER(TOP_LAYER);
 
-   if (hgroup == nullptr) {
+   if (!hgroup) {
       DRETURN(nullptr);
    }
 
-   lList *cache = nullptr;
-
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   ocs::tom::exchange<HGRP_match_cache>(hgroup, &cache);
+   DRETURN(hgroup.exchange<HGRP_match_cache>(nullptr));
+}
 
-   DRETURN(cache);
+/**
+ * @brief detach() for an untyped caller
+ *
+ * @param hgroup the group the cache is taken from (HGRP_Type), checked; nullptr gives nullptr
+ *
+ * @return the cache, owned by the caller, or nullptr if the group carried none
+ */
+lList *
+ocs::MatchCache::detach(lListElem *hgroup) {
+   return detach(ocs::tom::Element<ocs::tom::HGRP>(hgroup)).release();
 }
 
 /**
@@ -262,43 +304,56 @@ ocs::MatchCache::detach(lListElem *hgroup) {
  * iteration is bounded as well, not as an economy but as a relief valve, so that
  * a cache temporarily grown large during a roll-out burst cannot hold the lock.
  *
- * @param hgroup the group that receives the cache
- * @param[in,out] cache the detached cache; emptied, whatever the outcome
+ * @param hgroup the group that receives the cache; with an empty handle the cache is freed
+ * @param cache the detached cache (HM_Type); taken over, whatever the outcome
  *
  * @see #detach
  */
 void
-ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
+ocs::MatchCache::adopt(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ListPtr<ocs::tom::HM> &&cache) {
    DENTER(TOP_LAYER);
 
-   if (cache == nullptr || *cache == nullptr) {
-      DRETURN_VOID;
-   }
-   if (hgroup == nullptr) {
-      lFreeList(cache);
+   auto list = std::move(cache);
+
+   if (!list || !hgroup) {
+      // a cache without a group to receive it is freed with the handle
       DRETURN_VOID;
    }
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   ocs::tom::ConstList<ocs::tom::HR> resolved = ocs::tom::get<HGRP_cached_hosts>(hgroup);
-   lListElem *entry = lFirstRW(*cache);
+   const ocs::tom::ConstList<ocs::tom::HR> resolved = ocs::tom::get<HGRP_cached_hosts>(hgroup);
+   auto entry = list->front();
 
-   for (int examined = 0; entry != nullptr && examined < MATCH_CACHE_PRUNE_BOUND; examined++) {
-      lListElem *next = lNextRW(entry);
+   for (int examined = 0; entry && examined < MATCH_CACHE_PRUNE_BOUND; examined++) {
+      const auto next = entry.next();
 
-      if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(resolved, ocs::tom::get<HM_name>(entry))) != nullptr) {
-         lRemoveElem(*cache, &entry);
+      if (ocs::tom::find_first<HR_name>(resolved, ocs::tom::get<HM_name>(entry))) {
+         list->erase(entry);
       }
       entry = next;
    }
 
    // Exchange rather than set: the new element carries an empty cache of its own,
    // because the field does not travel in an event payload, and that one is freed
-   // with the list below.
-   ocs::tom::exchange<HGRP_match_cache>(hgroup, cache);
-   lFreeList(cache);
+   // with the handle below, still under the lock.
+   const auto replaced = hgroup.exchange<HGRP_match_cache>(std::move(list));
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief adopt() for an untyped caller
+ *
+ * @param hgroup the group that receives the cache (HGRP_Type), checked; with nullptr the cache is freed
+ * @param[in,out] cache the detached cache (HM_Type); emptied, whatever the outcome
+ */
+void
+ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
+   if (cache == nullptr) {
+      return;
+   }
+   adopt(ocs::tom::Element<ocs::tom::HGRP>(hgroup),
+         ocs::tom::ListPtr<ocs::tom::HM>::from_typed(std::exchange(*cache, nullptr)));
 }
 
 /**
@@ -322,22 +377,30 @@ ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
  * the matcher that granted it, by any route - which is the one property of this
  * design that must not be argued, only guaranteed.
  *
- * @param master_hgroup_list the host groups of one data store
+ * @param master_hgroup_list the host groups of one data store; may be an empty handle
  *
  * @see #carry_over, ocs::Matcher::cache_carries_over
  */
 void
-ocs::MatchCache::discard_all(lList *master_hgroup_list) {
+ocs::MatchCache::discard_all(const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
 
-   for_each_rw_lv(hgroup, master_hgroup_list) {
-      lList *cache = nullptr;
-
-      ocs::tom::exchange<HGRP_match_cache>(hgroup, &cache);
-      lFreeList(&cache);
+   for (const auto hgroup : master_hgroup_list) {
+      // the cache taken out is freed with the handle, still under the lock
+      static_cast<void>(hgroup.exchange<HGRP_match_cache>(nullptr));
    }
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief discard_all() for an untyped caller
+ *
+ * @param master_hgroup_list the host groups of one data store (HGRP_Type), checked; may be nullptr
+ */
+void
+ocs::MatchCache::discard_all(lList *master_hgroup_list) {
+   discard_all(ocs::tom::List<ocs::tom::HGRP>(master_hgroup_list));
 }

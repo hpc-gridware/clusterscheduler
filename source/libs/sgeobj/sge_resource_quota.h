@@ -50,6 +50,7 @@
 #include "sgeobj/tom/ocs_tom_RQR.h"
 #include "sgeobj/tom/ocs_tom_RQRF.h"
 #include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sgeobj/cull/sge_resource_quota_RQS_L.h"
@@ -120,7 +121,8 @@ OCS_TRANSITIONAL int rqs_debit_consumable(lListElem *rqs, const lListElem *job, 
                                           bool do_per_host_booking);
 
 ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(ocs::tom::ConstElement<ocs::tom::RQS> rqs, const char *user,
-                                                       const char *group, const lList *grp_list,
+                                                       const char *group,
+                                                       ocs::tom::ConstList<ocs::tom::ST> grp_list,
                                                        const char *project, const char *pe, const char *host,
                                                        const char *queue,
                                                        ocs::tom::ConstList<ocs::tom::US> userset_list,
@@ -128,8 +130,8 @@ ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(ocs::tom::ConstElement<oc
                                                        dstring *rule_name);
 
 bool rqs_is_matching_rule(ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *user, const char *group,
-                          const lList *grp_list, const char *project, const char *pe, const char *host,
-                          const char *queue, ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                          ocs::tom::ConstList<ocs::tom::ST> grp_list, const char *project, const char *pe,
+                          const char *host, const char *queue, ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                           ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
 OCS_TRANSITIONAL bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
                                            const char *project, const char *pe, const char *host, const char *queue,
@@ -141,7 +143,7 @@ bool sge_centry_referenced_in_rqs(ocs::tom::ConstElement<ocs::tom::RQS> rqs,
 bool rqs_filter_match(ocs::tom::ConstElement<ocs::tom::RQRF> filter, int filter_type, const char *value,
                       ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                       ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, const char *group,
-                      const lList *grp_list);
+                      ocs::tom::ConstList<ocs::tom::ST> grp_list);
 OCS_TRANSITIONAL bool rqs_filter_match(const lListElem *filter, int filter_type, const char *value,
                                        const lList *master_userset_list, const lList *master_hgroup_list,
                                        const char *group, const lList *grp_list);

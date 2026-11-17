@@ -910,16 +910,19 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
       config_name  = "qlogin_command";
    }
 
-   /* get configuration from qmaster; the configuration objects come as CONF_Type and the
-    * merged list as CF_Type, so they are taken over unchecked */
+   /* get configuration from qmaster; the configuration objects come as CONF_Type, so they are taken over
+    * unchecked */
    lListElem *global_out = nullptr;
    lListElem *local_out = nullptr;
-   lList *conf_out = nullptr;
-   const bool failed = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global_out, &local_out) ||
-                       merge_configuration(nullptr, progid, cell_root, global_out, local_out, &conf_out);
+   bool failed = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global_out, &local_out);
    const auto global = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(global_out);
    const auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_out);
-   const auto conf_list = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(conf_out);
+   ocs::tom::ListPtr<ocs::tom::CF> conf_list;
+   if (!failed) {
+      int merge_ret;
+      std::tie(merge_ret, conf_list) = merge_configuration(nullptr, progid, cell_root, *global, *local);
+      failed = merge_ret != 0;
+   }
    if (failed) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
       DRETURN(nullptr);
@@ -1017,10 +1020,7 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
    ocs::tom::set<JB_type>(job, jb_now);
    ocs::tom::set<JB_job_name>(job, job_name);
 
-   lList *paths_out = nullptr;
-   cull_parse_path_list(&paths_out, "/dev/null");
-   /* cull_parse_path_list() creates the list with PN_Type, so it is taken over unchecked */
-   const auto stdout_stderr_path = ocs::tom::ListPtr<ocs::tom::PN>::from_typed(paths_out);
+   [[maybe_unused]] const auto [path_ret, stdout_stderr_path] = cull_parse_path_list("/dev/null");
    ocs::tom::set<JB_stdout_path_list>(job, stdout_stderr_path->clone("stdout_path_list"));
    ocs::tom::set<JB_stderr_path_list>(job, stdout_stderr_path->clone("stderr_path_list"));
 

@@ -324,10 +324,7 @@ static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, 
       if (!strcmp("-u", *sp)) {
          sp++;
          if (*sp) {
-            lList *users_out = nullptr;
-            str_list_parse_from_string(&users_out, *sp, ",");
-            /* str_list_parse_from_string() creates the list with ST_Type, so it is taken over unchecked */
-            auto user_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users_out);
+            auto user_list = str_list_parse_from_string(*sp, ",");
 
             lListElem *ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
             ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(user_list));
@@ -372,11 +369,8 @@ static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, 
 
       /* job id's */
       if (*sp) {
-         lList *del_out = nullptr;
          lListElem *ep = nullptr;
-         str_list_parse_from_string(&del_out, *sp, ",");
-         /* str_list_parse_from_string() creates the list with ST_Type, so it is taken over unchecked */
-         const auto del_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(del_out);
+         const auto del_list = str_list_parse_from_string(*sp, ",");
         
          for (const auto job : *del_list) {
             const char *job_name = ocs::tom::get<ST_name>(job);
@@ -441,8 +435,16 @@ lList **alpp
          lRemoveElem(*ppcmdline, &ep);
       } 
 
-      if(parse_multi_stringlist(ppcmdline, "-u", alpp, ppuserlist, ST_Type, ST_name)) {
-         continue;  
+      {
+         // the user list is an ST_Type list: the -u argument above or what the parser collects
+         auto user_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(*ppuserlist);
+         *ppuserlist = nullptr;
+         const bool found = parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), "-u", alpp,
+                                                            user_list);
+         *ppuserlist = user_list.release();
+         if (found) {
+            continue;
+         }
       }
 
       if(parse_multi_jobtaskslist(ppcmdline, "jobs", alpp, ppreflist, true, 0)) {

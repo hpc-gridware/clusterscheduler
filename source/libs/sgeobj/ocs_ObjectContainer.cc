@@ -27,6 +27,10 @@
 
 #include "cull/cull_list.h"
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RQRL.h"
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
@@ -35,28 +39,31 @@
 
 #include "msg_sgeobjlib.h"
 
-/** @brief Check for duplicate string entries in a list
+/**
+ * @brief Check for duplicate string entries in a list
  *
- *  @param obj_list cull list to check for duplicates
- *  @param nm name of the attribute that holds the names to check for duplicates (type string)
- *  @param answer_list If not nullptr, error messages are added to this list
- *  @param object_name Optional name of the object owning the centry list
- *  @return true if duplicates were found, false otherwise
+ * @tparam F the string field that holds the names to check for duplicates, e.g. CE_name
+ * @param obj_list list to check for duplicates
+ * @param answer_list If not nullptr, error messages are added to this list
+ * @param object_name Optional name of the object owning the list
+ * @return true if duplicates were found, false otherwise
  */
+template <auto F>
 bool
-ocs::ObjectContainer::has_duplicates(const lList *obj_list, int nm, lList **answer_list, const std::string& object_name) {
+ocs::ObjectContainer::has_duplicates(const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> obj_list,
+                                     lList **answer_list, const std::string& object_name) {
    DENTER(TOP_LAYER);
 
    // early exit if there is nothing to do
-   if (obj_list == nullptr || lGetNumberOfElem(obj_list) == 0) {
+   if (obj_list.empty()) {
       DRETURN(false);
    }
 
    // to check for duplicates we try to add each element into a hash table
    // if an element is already in the hash table we have found a duplicate
    std::unordered_set<std::string> centry_names;
-   for_each_ep_lv(obj, obj_list) {
-      const char *name = lGetString(obj, nm);
+   for (const auto obj : obj_list) {
+      const char *name = ocs::tom::get<F>(obj);
       if (name == nullptr) {
          continue;
       }
@@ -75,11 +82,39 @@ ocs::ObjectContainer::has_duplicates(const lList *obj_list, int nm, lList **answ
       if (object_name.empty()) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJCONT_DUP_S, name);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJCONT_DUP_SS, name, object_name.c_str());
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJCONT_DUP_SS, name,
+                                 object_name.c_str());
       }
       DRETURN(true);
    }
 
    // found no duplicates otherwise we would have returned earlier
    DRETURN(false);
+}
+
+template bool ocs::ObjectContainer::has_duplicates<CE_name>(ocs::tom::ConstList<ocs::tom::CE> obj_list,
+                                                            lList **answer_list, const std::string &object_name);
+template bool ocs::ObjectContainer::has_duplicates<RQRL_name>(ocs::tom::ConstList<ocs::tom::RQRL> obj_list,
+                                                              lList **answer_list, const std::string &object_name);
+
+/**
+ * @brief has_duplicates() for an untyped caller
+ *
+ * @param obj_list list to check for duplicates (CE_Type or RQRL_Type, checked)
+ * @param nm the string field that holds the names: CE_name or RQRL_name
+ * @param answer_list If not nullptr, error messages are added to this list
+ * @param object_name Optional name of the object owning the list
+ * @return as has_duplicates(); false for another field
+ */
+bool
+ocs::ObjectContainer::has_duplicates(const lList *obj_list, const int nm, lList **answer_list,
+                                     const std::string& object_name) {
+   switch (nm) {
+      case CE_name:
+         return has_duplicates<CE_name>(ocs::tom::ConstList<ocs::tom::CE>(obj_list), answer_list, object_name);
+      case RQRL_name:
+         return has_duplicates<RQRL_name>(ocs::tom::ConstList<ocs::tom::RQRL>(obj_list), answer_list, object_name);
+      default:
+         return false;
+   }
 }

@@ -34,21 +34,19 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Declarations for reading a flat configuration file into an object
+ * @brief Declarations for reading a flat configuration file into a name/value list
  *
  * @see config.cc
  */
 
+#include <cstdio>
+#include <utility>
+
 #include "cull/cull.h"
 #include "sgeobj/cull_parse_util.h"
-
-/// How a configured value relates to the one already stored
-enum {
-   MODE_RELATIVE, ///< the value is a factor applied to the current one
-   MODE_SET,      ///< the value replaces the current one
-   MODE_ADD,      ///< the value is added to the current one
-   MODE_SUB       ///< the value is subtracted from the current one
-};
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
 
 int add_nm_to_set(int fields[], int name_nm);
 
@@ -57,87 +55,8 @@ enum {
    RCL_NO_VALUE = 0x0001 ///< accept a line that carries a name but no value
 };
 
-int read_config_list(FILE *fp, lList **clpp, lList **alpp, const lDescr *dp, int nm1, int nm2, int nm3, const char *delimitor, int flag, char *buf, int size);
+std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
+read_config_list(FILE *fp, lList **alpp, bool sublists, const char *delimitor, int flag, char *buffer,
+                 int buffer_size);
 
-char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm, const char *key);
-
-lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm, const char *key);
-
-bool set_conf_string(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm);
-
-bool set_conf_bool(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm);
-
-bool set_conf_ulong(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm);
-
-bool set_conf_double(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm, int operation_nm);
-
-bool set_conf_deflist(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm, const lDescr *descr, int *interpretation_rule);
-
-bool set_conf_timestr(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm);
-
-bool set_conf_memstr(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm);
-
-bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm, const char **enum_strings);
-
-bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm, const char **enum_strings);
-
-bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm, const lDescr *descr, int sub_name_nm);
-
-bool set_conf_subordlist(lList **alpp, lList **clpp, int fields[], const char *key, lListElem *ep, int name_nm, const lDescr *descr, int subname_nm, int subval_nm);
-
-bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
-                            const char *key, lListElem *ep, int name_nm,
-                            const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
-                             const char *key, lListElem *ep, int name_nm,
-                             const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
-                             const char *key, lListElem *ep, int name_nm,
-                             const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
-                             const char *key, lListElem *ep, int name_nm,
-                             const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
-                             const char *key, lListElem *ep, int name_nm,
-                             const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
-                              const char *key, lListElem *ep, int name_nm,
-                              const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
-                                const char *key, lListElem *ep, int name_nm,
-                                const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
-                                const char *key, lListElem *ep, int name_nm,
-                                const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
-                                const char *key, lListElem *ep, int name_nm,
-                                const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
-                               const char *key, lListElem *ep, int name_nm,
-                               const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
-                               const char *key, lListElem *ep, int name_nm,
-                               const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
-                               const char *key, lListElem *ep, int name_nm,
-                               const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
-
-bool set_conf_centry_type(lList **alpp, lList **clpp, int fields[], 
-                          const char *key, lListElem *ep, int name_nm);
-
-bool set_conf_centry_relop(lList **alpp, lList **clpp, int fields[], 
-                           const char *key, lListElem *ep, int name_nm);
-
-bool set_conf_centry_requestable(lList **alpp, lList **clpp, int fields[], 
-                           const char *key, lListElem *ep, int name_nm);
+const char *get_conf_value(lList **alpp, ocs::tom::ConstList<ocs::tom::CF> config, const char *key);

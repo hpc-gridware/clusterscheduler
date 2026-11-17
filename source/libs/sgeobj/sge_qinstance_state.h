@@ -128,17 +128,14 @@ transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list);
 #endif
 
 bool qinstance_has_state(ocs::tom::ConstElement<ocs::tom::QU> this_elem, uint32_t bit);
-OCS_TRANSITIONAL bool qinstance_has_state(const lListElem *this_elem, uint32_t bit);
 
 const char *qinstance_state_as_string(uint32_t bit);
 
 uint32_t qinstance_state_from_string(const char *state, lList **answer_list, uint32_t filter);
 
 bool qinstance_state_set_alarm(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
-OCS_TRANSITIONAL bool qinstance_state_set_alarm(lListElem *this_elem, bool set_state);
 
 bool qinstance_state_set_suspend_alarm(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
-OCS_TRANSITIONAL bool qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state);
 
 bool qinstance_state_set_manual_disabled(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
 OCS_TRANSITIONAL bool qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state);

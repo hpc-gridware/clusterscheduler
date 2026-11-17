@@ -62,6 +62,9 @@
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JSV.h"
 
 /*
  * defines the timeout between the soft shutdown signal and the kill
@@ -79,7 +82,7 @@ static pthread_mutex_t jsv_mutex = PTHREAD_MUTEX_INITIALIZER;
  * of the corresponding JSV. The order of the elements in the list 
  * is important because the JSV's are executed in that order.
  */
-static lList *jsv_list = nullptr;   /* JSV_Type */
+static lList *jsv_list = nullptr;   /* JSV_Type; process lifetime, read through checked handles */
 
 /**
  * @brief Creates a new JSV object and initializes its attributes
@@ -94,71 +97,65 @@ static lList *jsv_list = nullptr;   /* JSV_Type */
  * @param user user part of 'jsv_url'
  * @param scriptfile path part of 'jsv_url'
  *
- * @return JSV_Type element
+ * @return the new JSV, now first in the list of JSVs, or an empty handle if 'scriptfile' does not exist
  *
  * @note MT-NOTE: jsv_create() is MT safe
  */
-static lListElem *
+static ocs::tom::Element<ocs::tom::JSV>
 jsv_create(const char *name, const char *context, lList **answer_list, const char *jsv_url,
            const char *type, const char *user, const char *scriptfile) {
    DENTER(TOP_LAYER);
 
-   lListElem *new_jsv = nullptr;
+   ocs::tom::Element<ocs::tom::JSV> ret;
 
    if (name != nullptr && scriptfile != nullptr) {
-      new_jsv = lCreateElem(JSV_Type);
+      SGE_STRUCT_STAT st{};
 
-      if (new_jsv != nullptr) {
-         SGE_STRUCT_STAT st{};
+      if (SGE_STAT(scriptfile, &st) == 0) {
+         auto new_jsv = ocs::tom::ElementPtr<ocs::tom::JSV>::create();
+         char pid_buffer[256];
 
-         if (SGE_STAT(scriptfile, &st) == 0) {
-            char pid_buffer[256];
+         snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, (pid_t)-1);
+         ocs::tom::set<JSV_name>(new_jsv, name);
+         ocs::tom::set<JSV_context>(new_jsv, context);
+         ocs::tom::set<JSV_url>(new_jsv, jsv_url);
+         ocs::tom::set<JSV_type>(new_jsv, type);
+         ocs::tom::set<JSV_user>(new_jsv, user);
+         ocs::tom::set<JSV_command>(new_jsv, scriptfile);
+         ocs::tom::set<JSV_pid>(new_jsv, pid_buffer);
+         ocs::tom::set<JSV_send_env>(new_jsv, false);
+         ocs::tom::set<JSV_in>(new_jsv, nullptr);
+         ocs::tom::set<JSV_out>(new_jsv, nullptr);
+         ocs::tom::set<JSV_err>(new_jsv, nullptr);
+         ocs::tom::set<JSV_has_to_restart>(new_jsv, false);
+         ocs::tom::set<JSV_last_mod>(new_jsv, st.st_mtime);
+         ocs::tom::set<JSV_test>(new_jsv, false);
 
-            snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, (pid_t)-1);
-            ocs::tom::set<JSV_name>(new_jsv, name);
-            ocs::tom::set<JSV_context>(new_jsv, context);
-            ocs::tom::set<JSV_url>(new_jsv, jsv_url);
-            ocs::tom::set<JSV_type>(new_jsv, type);
-            ocs::tom::set<JSV_user>(new_jsv, user);
-            ocs::tom::set<JSV_command>(new_jsv, scriptfile);
-            ocs::tom::set<JSV_pid>(new_jsv, pid_buffer);
-            ocs::tom::set<JSV_send_env>(new_jsv, false);
-            ocs::tom::set<JSV_in>(new_jsv, nullptr);
-            ocs::tom::set<JSV_out>(new_jsv, nullptr);
-            ocs::tom::set<JSV_err>(new_jsv, nullptr);
-            ocs::tom::set<JSV_has_to_restart>(new_jsv, false);
-            ocs::tom::set<JSV_last_mod>(new_jsv, st.st_mtime);
-            ocs::tom::set<JSV_test>(new_jsv, false);
+         sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
-            sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
-
-            if (jsv_list == nullptr) {
-               jsv_list = lCreateList("", JSV_Type);
-            }
-            if (jsv_list != nullptr) {
-               lInsertElem(jsv_list, nullptr, new_jsv);
-            } else {
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                       MSG_JSV_INSTANCIATE_S, scriptfile);
-            }
-
-            sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
-
-         } else {
-            lFreeElem(&new_jsv);
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_JSV_EXISTS_S, scriptfile);
+         if (jsv_list == nullptr) {
+            // the list lives as long as the process, so it stays a raw static
+            jsv_list = ocs::tom::ListPtr<ocs::tom::JSV>::create("").release();
          }
+         ret = ocs::tom::List<ocs::tom::JSV>(jsv_list).push_front(std::move(new_jsv));
+
+         sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_JSV_INSTANCIATE_S, scriptfile);
-      } 
+                                 MSG_JSV_EXISTS_S, scriptfile);
+      }
    }
-   DRETURN(new_jsv);
+   DRETURN(ret);
 }
 
+/**
+ * @brief The process id of a JSV script
+ *
+ * @param jsv the JSV
+ * @return the process id, or -1 if the script is not running
+ */
 static pid_t
-jsv_get_pid(lListElem *jsv) {
+jsv_get_pid(const ocs::tom::ConstElement<ocs::tom::JSV> jsv) {
    DENTER(TOP_LAYER);
 
    pid_t pid = -1;
@@ -171,8 +168,14 @@ jsv_get_pid(lListElem *jsv) {
    DRETURN(pid);
 }
 
+/**
+ * @brief Store the process id of a JSV script
+ *
+ * @param jsv the JSV
+ * @param pid the process id, -1 if the script is not running
+ */
 static void
-jsv_set_pid(lListElem *jsv, pid_t pid) {
+jsv_set_pid(const ocs::tom::Element<ocs::tom::JSV> jsv, const pid_t pid) {
    DENTER(TOP_LAYER);
 
    char pid_buffer[256]; /* it is sure that pid is smaller than 256 characters */
@@ -182,14 +185,27 @@ jsv_set_pid(lListElem *jsv, pid_t pid) {
    DRETURN_VOID;
 }
 
-
+/**
+ * @brief Whether the script of a JSV is running
+ *
+ * @param jsv the JSV
+ * @return true if the script was started and not stopped since
+ */
 static bool
-jsv_is_started(lListElem *jsv) {
-   return (jsv_get_pid(jsv) != -1) ? true : false;
+jsv_is_started(const ocs::tom::ConstElement<ocs::tom::JSV> jsv) {
+   DENTER(TOP_LAYER);
+   DRETURN((jsv_get_pid(jsv) != -1) ? true : false);
 }
 
+/**
+ * @brief Whether the stdin pipe of a JSV script takes data, waiting at most 5 seconds
+ *
+ * @param jsv the JSV, started
+ * @param answer_list not used
+ * @return true if data can be sent
+ */
 static bool
-jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
+jsv_is_send_ready(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -220,8 +236,18 @@ jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Write data to the stdin pipe of a JSV script
+ *
+ * @param jsv the JSV, started
+ * @param answer_list receives an error message
+ * @param buffer the data, a null terminated string
+ * @param size the length of 'buffer'
+ * @return true if all data was written
+ */
 static bool
-jsv_send_data(lListElem *jsv, lList **answer_list, const char *buffer, size_t size) {
+jsv_send_data(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, lList **answer_list, const char *buffer,
+              const size_t size) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -259,7 +285,7 @@ jsv_send_data(lListElem *jsv, lList **answer_list, const char *buffer, size_t si
  *
  * @note MT-NOTE: jsv_start() is not MT safe
  */
-bool jsv_start(lListElem *jsv, lList **answer_list) {
+bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -329,8 +355,8 @@ bool jsv_start(lListElem *jsv, lList **answer_list) {
  *
  * @see #jsv_start
  */
-bool 
-jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
+bool
+jsv_stop(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const bool try_soft_quit) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -495,7 +521,7 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
  *
  * @note MT-NOTE: jsv_send_command() is MT safe
  */
-bool jsv_send_command(lListElem *jsv, lList **answer_list, const char *message) {
+bool jsv_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const char *message) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -538,7 +564,6 @@ bool jsv_list_add(const char *name, const char *context, lList **answer_list, co
 
    bool ret = true;
    if (strcasecmp("none", jsv_url) != 0) {
-      lListElem *new_jsv = nullptr;
       dstring input = DSTRING_INIT;
       dstring type = DSTRING_INIT;
       dstring user = DSTRING_INIT;
@@ -549,11 +574,11 @@ bool jsv_list_add(const char *name, const char *context, lList **answer_list, co
       in_client = (strcmp(context, JSV_CONTEXT_CLIENT) == 0) ? true : false;
       jsv_url_parse(&input, answer_list, &type, &user, &path, in_client);
 
-      new_jsv = jsv_create(name, context, answer_list, jsv_url, 
-                           sge_dstring_get_string(&type),
-                           sge_dstring_get_string(&user),
-                           sge_dstring_get_string(&path));
-      if (new_jsv == nullptr) {
+      const auto new_jsv = jsv_create(name, context, answer_list, jsv_url,
+                                      sge_dstring_get_string(&type),
+                                      sge_dstring_get_string(&user),
+                                      sge_dstring_get_string(&path));
+      if (!new_jsv) {
          ret = false;
       }   
 
@@ -586,16 +611,17 @@ bool jsv_list_remove(const char *name, const char *context) {
 
    if (name != nullptr && context != nullptr) {
       const void *iterator = nullptr;
-      lListElem *jsv_next;
-      lListElem *jsv;
 
       sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
-      jsv_next = ocs::tom::find_first_rw<JSV_context>(jsv_list, context, &iterator);
-      while ((jsv = jsv_next) != nullptr) {
-         jsv_next = ocs::tom::find_next_rw<JSV_context>(jsv_list, context, &iterator);
+      const ocs::tom::List<ocs::tom::JSV> list(jsv_list);
+      auto jsv_next = ocs::tom::find_first_rw<JSV_context>(list, context, &iterator);
+      while (jsv_next) {
+         const auto jsv = jsv_next;
+         jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
 
-         if ((strcmp(ocs::tom::get<JSV_name>(jsv), name) == 0) && (strcmp(ocs::tom::get<JSV_context>(jsv), context) == 0)) {
-            lRemoveElem(jsv_list, &jsv);
+         if ((strcmp(ocs::tom::get<JSV_name>(jsv), name) == 0) &&
+             (strcmp(ocs::tom::get<JSV_context>(jsv), context) == 0)) {
+            list.erase(jsv);
          }
       }
       sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
@@ -627,7 +653,7 @@ jsv_is_enabled(const char *context) {
    jsv_list_update("jsv", context, nullptr, jsv_url);
    sge_free(&jsv_url);
    sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
-   ret = (lGetNumberOfElem(jsv_list) > 0) ? true : false;
+   ret = !ocs::tom::List<ocs::tom::JSV>(jsv_list).empty();
    sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
    DRETURN(ret);
 }
@@ -645,15 +671,15 @@ bool jsv_list_remove_all() {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lListElem *jsv;
-   lListElem *jsv_next;
 
    sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
-   jsv_next = lFirstRW(jsv_list);
-   while ((jsv = jsv_next) != nullptr) {
-      jsv_next = lNextRW(jsv);
+   const ocs::tom::List<ocs::tom::JSV> list(jsv_list);
+   auto jsv_next = list.front();
+   while (jsv_next) {
+      const auto jsv = jsv_next;
+      jsv_next = jsv.next();
       jsv_stop(jsv, nullptr, true);
-      lRemoveElem(jsv_list, &jsv);
+      list.erase(jsv);
    }
    sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
    DRETURN(ret);
@@ -702,16 +728,16 @@ bool jsv_list_update(const char *name, const char *context,
        */
       {
          const void *iterator = nullptr;
-         lListElem *jsv = nullptr;
-         lListElem *jsv_next = nullptr;
          bool not_parsed = true;
          bool use_old_url = (jsv_url == nullptr) ? true : false;
 
          sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
          ret = true;
-         jsv_next = ocs::tom::find_first_rw<JSV_context>(jsv_list, context, &iterator);
-         while (ret && ((jsv = jsv_next) != nullptr)) {
+         const ocs::tom::List<ocs::tom::JSV> list(jsv_list);
+         auto jsv_next = ocs::tom::find_first_rw<JSV_context>(list, context, &iterator);
+         while (ret && jsv_next) {
+            const auto jsv = jsv_next;
             dstring input = DSTRING_INIT;
             dstring type = DSTRING_INIT;
             dstring user = DSTRING_INIT;
@@ -720,7 +746,7 @@ bool jsv_list_update(const char *name, const char *context,
             bool in_client = false;
 
             /* position pointer to the next element */
-            jsv_next = ocs::tom::find_next_rw<JSV_context>(jsv_list, context, &iterator);
+            jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
 
             old_jsv_url = ocs::tom::get<JSV_url>(jsv);
             if (use_old_url) {
@@ -754,7 +780,7 @@ bool jsv_list_update(const char *name, const char *context,
                   jsv_stop(jsv, answer_list, true);
                } else {
                   jsv_stop(jsv, answer_list, true);
-                  lRemoveElem(jsv_list, &jsv);
+                  list.erase(jsv);
                   INFO(MSG_JSV_STOP_S, context);
                }
             } else {
@@ -830,7 +856,7 @@ bool jsv_list_update(const char *name, const char *context,
  * or accepted with modifications the returned value will be 'true'.
  *
  * @param context JSV_CONTEXT_CLIENT or thread name
- * @param job pointer or a job (JB_Type)
+ * @param job the job (JB_Type); replaced by the modified job when a JSV accepts it
  * @param answer_list answer_list for messages
  * @param holding_lock is the calling thread holding the global lock
  *
@@ -838,16 +864,14 @@ bool jsv_list_update(const char *name, const char *context,
  *
  * @note MT-NOTE: jsv_do_verify() is MT safe
  */
-bool jsv_do_verify(const char *context, lListElem **job,
-                   lList **answer_list, bool holding_lock) {
+bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job, lList **answer_list,
+                   const bool holding_lock) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lListElem *jsv;
-   lListElem *jsv_next;
    const void *iterator = nullptr;
-   
-   if (context != nullptr && job != nullptr) {
+
+   if (context != nullptr) {
       const char *jsv_url = nullptr;
       bool holding_mutex = false;
 
@@ -879,24 +903,26 @@ bool jsv_do_verify(const char *context, lListElem **job,
       /*
        * execute JSV scripts for this thread
        */
-      jsv_next = ocs::tom::find_first_rw<JSV_context>(jsv_list, context, &iterator);
-      while (ret && ((jsv = jsv_next) != nullptr)) {
-         jsv_next = ocs::tom::find_next_rw<JSV_context>(jsv_list, context, &iterator);
+      const ocs::tom::List<ocs::tom::JSV> list(jsv_list);
+      auto jsv_next = ocs::tom::find_first_rw<JSV_context>(list, context, &iterator);
+      while (ret && jsv_next) {
+         const auto jsv = jsv_next;
+         jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
 
          if (!jsv_is_started(jsv)) {
             DPRINTF("JSV is not started\n");
             ret &= jsv_start(jsv, answer_list);
          }
          if (ret) {
-            lListElem *old_job = *job;
-            lListElem *new_job = lCopyElem(*job);
+            auto new_job = job.get().clone();
 
             ocs::tom::set<JSV_restart>(jsv, false);
             ocs::tom::set<JSV_accept>(jsv, false);
             ocs::tom::set<JSV_done>(jsv, false);
-  
-            ocs::tom::set<JSV_old_job>(jsv, old_job);
-            ocs::tom::set<JSV_new_job>(jsv, new_job);
+
+            // JSV_old_job and JSV_new_job are references: the JSV does not own the jobs
+            ocs::tom::set<JSV_old_job>(jsv, job.get().raw());
+            ocs::tom::set<JSV_new_job>(jsv, new_job.get().raw());
 
             DPRINTF("JSVs local variables initialized for verification run\n");
 
@@ -951,9 +977,7 @@ bool jsv_do_verify(const char *context, lListElem **job,
 
             if (ocs::tom::get<JSV_accept>(jsv)) {
                DPRINTF("JSV accepts job");
-               lFreeElem(job);
-               *job = new_job;
-               new_job = nullptr;
+               job = std::move(new_job);
                ret = true;
             } else {
                uint32_t jid = ocs::tom::get<JB_job_number>(new_job);
@@ -965,7 +989,7 @@ bool jsv_do_verify(const char *context, lListElem **job,
                   INFO(MSG_JSV_REJECTED_SU, context, jid);
                }
                ret = false;
-               lFreeElem(&new_job);
+               new_job.reset();
             }
             if (ocs::tom::get<JSV_restart>(jsv)) {
                bool soft_shutdown = ocs::tom::get<JSV_soft_shutdown>(jsv) ? true : false;
@@ -985,4 +1009,23 @@ bool jsv_do_verify(const char *context, lListElem **job,
       sge_free(&jsv_url);
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief jsv_do_verify() for an untyped caller
+ *
+ * @param context JSV_CONTEXT_CLIENT or thread name
+ * @param job pointer to the job (JB_Type), checked; replaced by the modified job when a JSV accepts it
+ * @param answer_list answer_list for messages
+ * @param holding_lock is the calling thread holding the global lock
+ * @return as jsv_do_verify(); true if 'job' is nullptr
+ */
+bool jsv_do_verify(const char *context, lListElem **job, lList **answer_list, const bool holding_lock) {
+   bool ret = true;
+   if (job != nullptr) {
+      ocs::tom::ElementPtr<ocs::tom::JB> typed_job(*job);
+      ret = jsv_do_verify(context, typed_job, answer_list, holding_lock);
+      *job = typed_job.release();
+   }
+   return ret;
 }

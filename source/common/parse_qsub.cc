@@ -232,10 +232,7 @@ lList *cull_parse_cmdline(
 
             DPRINTF("\"-ar %s\"\n", *sp);
 
-            lList *ar_ids_out = nullptr;
-            ulong_list_parse_from_string(&ar_ids_out, &answer, *sp, ",");
-            /* ulong_list_parse_from_string() creates the list with ULNG_Type, so it is taken over unchecked */
-            auto ar_id_list = ocs::tom::ListPtr<ocs::tom::ULNG>::from_typed(ar_ids_out);
+            [[maybe_unused]] auto [ar_ids_parsed, ar_id_list] = ulong_list_parse_from_string(&answer, *sp, ",");
 
             ep_opt = sge_add_arg(pcmdline, ar_OPT, lListT, *(sp - 1), *sp);
             ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(ar_id_list));
@@ -971,10 +968,8 @@ lList *cull_parse_cmdline(
             ocs::tom::set<SPA_argval_lUlong64T>(ep_opt, sge_gmt32_to_gmt64(timeval));
          } else {
             /* next field is path_name */
-            lList *paths_out = nullptr;
-            i_ret = cull_parse_path_list(&paths_out, *sp);
-            /* cull_parse_path_list() creates the list with PN_Type, so it is taken over unchecked */
-            auto path_list = ocs::tom::ListPtr<ocs::tom::PN>::from_typed(paths_out);
+            auto [path_list_ret, path_list] = cull_parse_path_list(*sp);
+            i_ret = path_list_ret;
             if (i_ret) {
                 answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                         MSG_PARSE_WRONGPATHLISTFORMATXSPECTOEOPTION_S, *sp);
@@ -1003,10 +998,8 @@ lList *cull_parse_cmdline(
 
          DPRINTF("\"-i %s\"\n", *sp);
 
-         lList *paths_out = nullptr;
-         i_ret = cull_parse_path_list(&paths_out, *sp);
-         /* cull_parse_path_list() creates the list with PN_Type, so it is taken over unchecked */
-         auto path_list = ocs::tom::ListPtr<ocs::tom::PN>::from_typed(paths_out);
+         auto [path_list_ret, path_list] = cull_parse_path_list(*sp);
+         i_ret = path_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                      MSG_PARSE_WRONGPATHLISTFORMATXSPECTOEOPTION_S, *sp);
@@ -1127,10 +1120,8 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-hold_jid %s\"\n", *sp);
-         lList *jids_out = nullptr;
-         i_ret = cull_parse_jid_hold_list(&jids_out, *sp);
-         /* cull_parse_jid_hold_list() creates the list with ST_Type, so it is taken over unchecked */
-         auto jid_hold_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(jids_out);
+         auto [jid_hold_list_ret, jid_hold_list] = cull_parse_jid_hold_list(*sp);
+         i_ret = jid_hold_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                         MSG_PARSE_WRONGJIDHOLDLISTFORMATXSPECTOHOLDJIDOPTION_S, *sp);
@@ -1156,10 +1147,8 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-hold_jid_ad %s\"\n", *sp);
-         lList *jids_out = nullptr;
-         i_ret = cull_parse_jid_hold_list(&jids_out, *sp);
-         /* cull_parse_jid_hold_list() creates the list with ST_Type, so it is taken over unchecked */
-         auto jid_ad_hold_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(jids_out);
+         auto [jid_ad_hold_list_ret, jid_ad_hold_list] = cull_parse_jid_hold_list(*sp);
+         i_ret = jid_ad_hold_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                         MSG_PARSE_WRONGJIDHOLDLISTFORMATXSPECTOHOLDJIDADOPTION_S, *sp);
@@ -1388,10 +1377,8 @@ lList *cull_parse_cmdline(
 
          DPRINTF("\"-M %s\"\n", *sp);
 
-         lList *mails_out = nullptr;
-         i_ret = mailrec_parse(&mails_out, *sp);
-         /* mailrec_parse() creates the list with MR_Type, so it is taken over unchecked */
-         auto mail_list = ocs::tom::ListPtr<ocs::tom::MR>::from_typed(mails_out);
+         auto [mail_ret, mail_list] = mailrec_parse(*sp);
+         i_ret = mail_ret;
           if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                     MSG_PARSE_WRONGMAILLISTFORMATXSPECTOMOPTION_S, *sp);
@@ -1493,10 +1480,8 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-o %s\"\n", *sp);
-         lList *stdout_paths_out = nullptr;
-         i_ret = cull_parse_path_list(&stdout_paths_out, *sp);
-         /* cull_parse_path_list() creates the list with PN_Type, so it is taken over unchecked */
-         auto stdout_path_list = ocs::tom::ListPtr<ocs::tom::PN>::from_typed(stdout_paths_out);
+         auto [stdout_path_list_ret, stdout_path_list] = cull_parse_path_list(*sp);
+         i_ret = stdout_path_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                     MSG_PARSE_WRONGSTDOUTPATHLISTFORMATXSPECTOOOPTION_S, *sp );
@@ -1908,10 +1893,8 @@ DTRACE;
 
          DPRINTF("\"-S %s\"\n", *sp);
 
-         lList *shells_out = nullptr;
-         i_ret = cull_parse_path_list(&shells_out, *sp);
-         /* cull_parse_path_list() creates the list with PN_Type, so it is taken over unchecked */
-         auto shell_list = ocs::tom::ListPtr<ocs::tom::PN>::from_typed(shells_out);
+         auto [shell_list_ret, shell_list] = cull_parse_path_list(*sp);
+         i_ret = shell_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                        MSG_PARSE_WRONGSHELLLISTFORMATXSPECTOSOPTION_S, *sp );
@@ -2019,7 +2002,8 @@ DTRACE;
             sge_free(&tmp);
             sge_free(&dest);
          } else {
-            str_list_parse_from_string(&user_list, *sp, ",");
+            // the list is ARA_Type for qrsub and ST_Type otherwise, so it stays untyped here
+            user_list = str_list_parse_from_string(*sp, ",").release();
          }
 
          ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
@@ -2376,10 +2360,8 @@ DTRACE;
                ep_opt = sge_add_noarg(pcmdline, 0, *sp, nullptr);
                break;
             }
-            lList *jids_out = nullptr;
-            i_ret = cull_parse_jid_hold_list(&jids_out, *sp);
-            /* cull_parse_jid_hold_list() creates the list with ST_Type, so it is taken over unchecked */
-            auto jid_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(jids_out);
+            auto [jid_list_ret, jid_list] = cull_parse_jid_hold_list(*sp);
+            i_ret = jid_list_ret;
 
             if (i_ret) {
                answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,

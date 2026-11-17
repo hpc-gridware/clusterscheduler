@@ -411,7 +411,6 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    DENTER(TOP_LAYER);
    int ret = STATUS_OK;
    const lListElem *ep;
-   lList *user_lists = nullptr;
    const lListElem *cl;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
@@ -491,21 +490,17 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    }
 
    /* global configuration */
-   user_lists = mconf_get_user_lists();
-   if (ocs::tom::find_first<US_name>(user_lists, userset_name)) {
+   if (mconf_get_user_lists()->find_first<US_name>(userset_name)) {
       ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
    }
-   lFreeList(&user_lists);
 
-   user_lists = mconf_get_xuser_lists();
-   if (ocs::tom::find_first<US_name>(user_lists, userset_name)) {
+   if (mconf_get_xuser_lists()->find_first<US_name>(userset_name)) {
       ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
    }
-   lFreeList(&user_lists);
 
    DRETURN(ret);
 }

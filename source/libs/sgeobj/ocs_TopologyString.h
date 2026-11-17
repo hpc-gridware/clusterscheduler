@@ -34,6 +34,8 @@
 #include "uti/ocs_Topo.h"
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
 
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_BindingStart.h"
@@ -149,7 +151,14 @@ namespace ocs {
       static bool has_contradicting_sort_orders(const std::string& sort_criterias);
       static bool is_same_topology(const TopologyString& topo1, const TopologyString& topo2);
 
-      static void elem_mark_nodes_as_used_or_unused(lListElem *elem, int nm, TopologyString &binding_now, const TopologyString &binding_to_use, bool mark_used);
+      template <auto F>
+      static void elem_mark_nodes_as_used_or_unused(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> elem,
+                                                    TopologyString &binding_now, const TopologyString &binding_to_use,
+                                                    bool mark_used);
+      OCS_TRANSITIONAL static void elem_mark_nodes_as_used_or_unused(lListElem *elem, int nm,
+                                                                     TopologyString &binding_now,
+                                                                     const TopologyString &binding_to_use,
+                                                                     bool mark_used);
 
       // Constructors
       TopologyString() = default;

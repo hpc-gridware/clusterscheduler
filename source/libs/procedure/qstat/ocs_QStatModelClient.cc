@@ -293,15 +293,14 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
       DRETURN(false);
    }
    if (const auto global_conf = conf_l->front(); global_conf != nullptr) {
-      const lListElem *local = nullptr;
       const char *cell_root = bootstrap_get_cell_root();
       const uint32_t progid = component_get_component_id();
-      merge_configuration(nullptr, progid, cell_root, global_conf, local, nullptr);
+      merge_configuration(nullptr, progid, cell_root, global_conf, nullptr);
    }
 
    // the access lists of the global configuration just merged
-   config_user_lists_ = ocs::tom::ListPtr<ocs::tom::US>(mconf_get_user_lists());
-   config_xuser_lists_ = ocs::tom::ListPtr<ocs::tom::US>(mconf_get_xuser_lists());
+   config_user_lists_ = mconf_get_user_lists();
+   config_xuser_lists_ = mconf_get_xuser_lists();
 
    DRETURN(true);
 }
@@ -319,9 +318,7 @@ bool ocs::QStatModelClient::prepare_data(lList **answer_list, QStatParameter &pa
    DENTER(TOP_LAYER);
 
    // init the sconf module; it takes the list over on success and leaves it untouched otherwise
-   lList *sconf = schedd_config_.release();
-   const bool sconf_ok = sconf_set_config(&sconf, answer_list);
-   schedd_config_ = ocs::tom::ListPtr<ocs::tom::SC>::from_typed(sconf);
+   const bool sconf_ok = sconf_set_config(schedd_config_, answer_list);
    if (!sconf_ok) {
       DRETURN(false);
    }

@@ -39,6 +39,14 @@
  * @see sge_userprj.cc
  */
 
+#include "cull/cull.h"
+#include "uti/sge_dstring.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
+
 #include "sgeobj/cull/sge_userprj_PR_L.h"
 #include "sgeobj/cull/sge_userprj_UU_L.h"
 #include "sgeobj/cull/sge_userprj_UPU_L.h"
@@ -116,16 +124,19 @@ enum {
    UPP_long_term_usage_POS                 ///< position of `UPP_long_term_usage`
 };
 
-lListElem *prj_list_locate(const lList *prj_list,
-                           const char *prj_name);
+ocs::tom::Element<ocs::tom::PR> prj_list_locate(ocs::tom::ConstList<ocs::tom::PR> prj_list, const char *prj_name);
+OCS_TRANSITIONAL ocs::tom::Element<ocs::tom::PR> prj_list_locate(const lList *prj_list, const char *prj_name);
 
-lListElem *user_list_locate(const lList *user_list,
-                            const char *user_name);
+ocs::tom::Element<ocs::tom::UU> user_list_locate(ocs::tom::ConstList<ocs::tom::UU> user_list, const char *user_name);
+OCS_TRANSITIONAL ocs::tom::Element<ocs::tom::UU> user_list_locate(const lList *user_list, const char *user_name);
 
-const char *prj_list_append_to_dstring(const lList *this_list, dstring *string);
+const char *prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR> this_list, dstring *string);
+OCS_TRANSITIONAL const char *prj_list_append_to_dstring(const lList *this_list, dstring *string);
 
-bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
-                           const lList *userprj_list);
+bool prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR> this_list, lList **answer_list,
+                           ocs::tom::ConstList<ocs::tom::PR> userprj_list);
+OCS_TRANSITIONAL bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
+                                            const lList *userprj_list);
 
-lListElem *getUserTemplate();
-lListElem *getPrjTemplate();
+ocs::tom::ElementPtr<ocs::tom::UU> getUserTemplate();
+ocs::tom::ElementPtr<ocs::tom::PR> getPrjTemplate();

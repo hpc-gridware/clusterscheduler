@@ -86,8 +86,7 @@
 /// The userset type names, indexed by their `US_type` bit
 extern const char *userset_types[];
 
-lListElem *
-userset_create(lList **answer_list, const char *name);
+ocs::tom::ElementPtr<ocs::tom::US> userset_create(lList **answer_list, const char *name);
 
 int userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US> object, lList **answer_list);
 OCS_TRANSITIONAL int userset_validate_entries(const lListElem *object, lList **answer_list);

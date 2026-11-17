@@ -78,12 +78,13 @@
  *
  * @return true or false
  */
-bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
-                        const lList *master_job_list,
-                        const lList *master_cqueue_list) {
+bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, lList **answer_list,
+                        const ocs::tom::ConstList<ocs::tom::JB> master_job_list,
+                        const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
+   DENTER(TOP_LAYER);
    bool ret = false;
 
-   for_each_ep_lv(job, master_job_list) {
+   for (const auto job : master_job_list) {
       if (job_is_ckpt_referenced(job, ckpt)) {
          const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
          uint32_t job_id = ocs::tom::get<JB_job_number>(job);
@@ -101,8 +102,8 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
        */
       const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
 
-      for_each_ep_lv(queue, master_cqueue_list) {
-         for_each_ep_lv(ckl, ocs::tom::get<CQ_ckpt_list>(queue)){
+      for (const auto queue : master_cqueue_list) {
+         for (const auto ckl : ocs::tom::get<CQ_ckpt_list>(queue)) {
             if (ocs::tom::find_first_in<ASTRLIST_value, ST_name>(ckl, ckpt_name))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO, 
@@ -114,7 +115,23 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
          }
       }
    }
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief ckpt_is_referenced() for an untyped caller
+ *
+ * @param ckpt CK_Type object, checked
+ * @param answer_list AN_Type list
+ * @param master_job_list JB_Type list, checked
+ * @param master_cqueue_list CQ_Type list, checked
+ * @return as ckpt_is_referenced()
+ */
+bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list, const lList *master_job_list,
+                        const lList *master_cqueue_list) {
+   return ckpt_is_referenced(ocs::tom::ConstElement<ocs::tom::CK>(ckpt), answer_list,
+                             ocs::tom::ConstList<ocs::tom::JB>(master_job_list),
+                             ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
 }
 
 /**
@@ -122,13 +139,26 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
  *
  * This function will return a ckpt object by name if it exists.
  *
- * @param ckpt_list CK_Type object
+ * @param ckpt_list CK_Type list
  * @param ckpt_name name of the ckpt object.
  *
- * @return ckpt object with name "ckpt_name" does not exist !nullptr - pointer to the cull element (CK_Type)
+ * @return the ckpt object (CK_Type) named "ckpt_name", or an empty handle if it does not exist
+ */
+ocs::tom::Element<ocs::tom::CK> ckpt_list_locate(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
+                                                 const char *ckpt_name) {
+   DENTER(TOP_LAYER);
+   DRETURN(ocs::tom::find_first_rw<CK_name>(ckpt_list, ckpt_name));
+}
+
+/**
+ * @brief ckpt_list_locate() for an untyped caller
+ *
+ * @param ckpt_list CK_Type list, checked
+ * @param ckpt_name name of the ckpt object.
+ * @return as ckpt_list_locate()
  */
 lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name) {
-   return ocs::tom::find_first_rw<CK_name>(ckpt_list, ckpt_name);
+   return ckpt_list_locate(ocs::tom::ConstList<ocs::tom::CK>(ckpt_list), ckpt_name);
 }
 
 /**
@@ -185,11 +215,11 @@ int sge_parse_checkpoint_attr(const char *attr_str) {
  * @param this_elem element which should be verified
  * @param alpp answer list where the function stores error messages
  *
- * @return [answer] - error messages will be added to this list STATUS_OK - success STATUS_EUNKNOWN or STATUS_EEXIST - error
+ * @return STATUS_OK - success, STATUS_EUNKNOWN or STATUS_EEXIST - error
  *
  * @note MT-NOTE: ckpt_validate() is not MT safe
  */
-int ckpt_validate(const lListElem *this_elem, lList **alpp) {
+int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, lList **alpp) {
    DENTER(TOP_LAYER);
 
    static const char* ckpt_interfaces[] = {
@@ -200,16 +230,6 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
       "CPR",
       "CRAY-CKPT"
    };
-   static struct attr {
-      int nm;
-      const char *text;
-   } ckpt_commands[] = {
-      { CK_ckpt_command, "ckpt_command" },
-      { CK_migr_command, "migr_command" },
-      { CK_rest_command, "restart_command"},
-      { CK_clean_command, "clean_command"},
-      { NoName,           nullptr} };
-
    size_t i;
    int found = 0;
    const char *s, *interface;
@@ -253,10 +273,19 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
       DRETURN(STATUS_EEXIST);
    }
 
-   for (i = 0; ckpt_commands[i].nm != NoName; i++) {
-      if (replace_params(lGetString(this_elem, ckpt_commands[i].nm),
-               nullptr, 0, ckpt_variables)) {
-         ERROR(MSG_OBJ_CKPTENV_SSS, ckpt_commands[i].text, ocs::tom::get<CK_name>(this_elem), err_msg);
+   // the command fields and their attribute names, checked in this order
+   const struct {
+      const char *value;
+      const char *text;
+   } ckpt_commands[] = {
+      { ocs::tom::get<CK_ckpt_command>(this_elem), "ckpt_command" },
+      { ocs::tom::get<CK_migr_command>(this_elem), "migr_command" },
+      { ocs::tom::get<CK_rest_command>(this_elem), "restart_command" },
+      { ocs::tom::get<CK_clean_command>(this_elem), "clean_command" }
+   };
+   for (const auto &command : ckpt_commands) {
+      if (replace_params(command.value, nullptr, 0, ckpt_variables)) {
+         ERROR(MSG_OBJ_CKPTENV_SSS, command.text, ocs::tom::get<CK_name>(this_elem), err_msg);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -275,6 +304,17 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
 }
 
 /**
+ * @brief ckpt_validate() for an untyped caller
+ *
+ * @param this_elem element which should be verified, checked; may be nullptr
+ * @param alpp answer list where the function stores error messages
+ * @return as ckpt_validate()
+ */
+int ckpt_validate(const lListElem *this_elem, lList **alpp) {
+   return ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK>(this_elem), alpp);
+}
+
+/**
  * @brief Do all ckpt's exist?
  *
  * Test if the checkpointing objects whose name is contained in
@@ -286,15 +326,15 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
  *
  * @return true if all ckpt objects exist
  */
-bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
-                            const lList *ckpt_ref_list) {
+bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list, lList **answer_list,
+                            const ocs::tom::ConstList<ocs::tom::ST> ckpt_ref_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for_each_ep_lv(ckpt_ref_elem, ckpt_ref_list) {
+   for (const auto ckpt_ref_elem : ckpt_ref_list) {
       const char *ckpt_ref_string = ocs::tom::get<ST_name>(ckpt_ref_elem);
 
-      if (ckpt_list_locate(ckpt_list, ckpt_ref_string) == nullptr) {
+      if (!ckpt_list_locate(ckpt_list, ckpt_ref_string)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CKPTREFDOESNOTEXIST_S, ckpt_ref_string);
@@ -305,19 +345,29 @@ bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief ckpt_list_do_all_exist() for an untyped caller
+ *
+ * @param ckpt_list CK_Type list, checked
+ * @param answer_list AN_Type list
+ * @param ckpt_ref_list ST_Type list containing ckpt names, checked
+ * @return as ckpt_list_do_all_exist()
+ */
+bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list, const lList *ckpt_ref_list) {
+   return ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK>(ckpt_list), answer_list,
+                                 ocs::tom::ConstList<ocs::tom::ST>(ckpt_ref_list));
+}
 
 /**
  * @brief Build up a generic ckpt object
  *
- * build up a generic ckpt object
+ * @param ckpt_name name used for the CK_name attribute of the generic ckpt object. If nullptr then "template"
+ *                  is the default name.
  *
- * @param ckpt_name name used for the CK_name attribute of the generic pe object. If nullptr then "template" is the default name.
- *
- * @return !nullptr - Pointer to a new CULL object of type CK_Type nullptr - Error
+ * @return the new CK_Type object
  */
-lListElem *sge_generic_ckpt(char *ckpt_name) {
+ocs::tom::ElementPtr<ocs::tom::CK> sge_generic_ckpt(const char *ckpt_name) {
    DENTER(TOP_LAYER);
-
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::CK>::create();
 
@@ -336,5 +386,5 @@ lListElem *sge_generic_ckpt(char *ckpt_name) {
    ocs::tom::set<CK_signal>(ep, NONE_STR);
    ocs::tom::set<CK_job_pid>(ep, 0);
 
-   DRETURN(ep.release());
+   DRETURN(ep);
 }

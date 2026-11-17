@@ -331,7 +331,7 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
 #ifdef LOAD_ADJUSTMENTS_LATE_FETCH
                ocs::tom::ListPtr<ocs::tom::CE> local_load_adjustments;
                if (load_adjustments == nullptr) {
-                  local_load_adjustments = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(sconf_get_job_load_adjustments());
+                  local_load_adjustments = sconf_get_job_load_adjustments();
                   load_adjustments = local_load_adjustments.get();
                }
 #endif

@@ -68,6 +68,7 @@
 
 static bool range_is_overlapping(ocs::tom::ConstElement<ocs::tom::RN> range1,
                                  ocs::tom::ConstElement<ocs::tom::RN> range2);
+static void ocs_range_list_insert_id(ocs::tom::List<ocs::tom::RN> list, uint32_t id);
 
 /**
  * @brief Merge a range into a range list that is kept in descending order without overlaps
@@ -77,11 +78,11 @@ static bool range_is_overlapping(ocs::tom::ConstElement<ocs::tom::RN> range1,
  * was merged into a range of the list, freed.
  *
  * @param r the range (`RN_Type`), which the function takes over
- * @param rl in-out: the `RN_Type` list, created if *rl is nullptr
+ * @param rl in-out: the `RN_Type` list, created if the handle is empty
  *
  * @note MT-NOTE: expand_range_list() is MT safe
  */
-static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, lList **rl) {
+static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::ListPtr<ocs::tom::RN> &rl) {
    DENTER(TOP_LAYER);
 
    const auto rmin = ocs::tom::get<RN_min>(*r);
@@ -89,10 +90,10 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, lList **rl
    const auto rstep = ocs::tom::get<RN_step>(*r);
 
    /* create list */
-   if (*rl == nullptr) {
-      *rl = ocs::tom::ListPtr<ocs::tom::RN>::create("ranges").release();
+   if (!rl) {
+      rl = ocs::tom::ListPtr<ocs::tom::RN>::create("ranges");
    }
-   const auto list = ocs::tom::List<ocs::tom::RN>(*rl);
+   const auto list = *rl;
 
    if (!list.empty()) {
       auto ep = list.front();
@@ -232,15 +233,6 @@ void range_correct_end(const ocs::tom::Element<ocs::tom::RN> this_range) {
 }
 
 /**
- * @brief range_correct_end() for an untyped caller
- *
- * @param this_range the range (`RN_Type`), checked; nullptr is a no-op
- */
-void range_correct_end(lListElem *this_range) {
-   range_correct_end(ocs::tom::Element<ocs::tom::RN>(this_range));
-}
-
-/**
  * @brief Do two ranges interleave?
  *
  * True will be returned when the given ranges interleave. This
@@ -284,33 +276,40 @@ static bool range_is_overlapping(const ocs::tom::ConstElement<ocs::tom::RN> this
  * 'this_list' will be created if it does not exist. If it already
  * exists all elements contained in this list will be removed.
  *
- * @param this_list Pointer to a RN_Type-list; nothing happens for nullptr
- * @param answer_list Pointer to a AN_Type-list or nullptr
- *
- * @note *this_list will be an empty RN_Type list *answer_list may contain error messages
+ * @param this_list in-out: the RN_Type list; afterwards an empty list
+ * @param answer_list Pointer to a AN_Type-list or nullptr; unused since creating the list throws on a lack
+ *                    of memory instead of failing
  */
-void range_list_initialize(lList **this_list, lList **answer_list) {
+void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list, [[maybe_unused]] lList **answer_list) {
    DENTER(RANGE_LAYER);
-   if (this_list != nullptr) {
-      if (*this_list != nullptr) {
-         const auto list = ocs::tom::List<ocs::tom::RN>(*this_list);
-         auto next_range = list.front();
+   if (this_list) {
+      const auto list = *this_list;
+      auto next_range = list.front();
 
-         while (next_range) {
-            const auto range = next_range;
+      while (next_range) {
+         const auto range = next_range;
 
-            next_range = range.next();
-            list.erase(range);
-         }
-      } else {
-         *this_list = ocs::tom::ListPtr<ocs::tom::RN>::create("").release();
-         if (*this_list == nullptr) {
-            answer_list_add(answer_list, "unable to create range list",
-                            STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-         }
+         next_range = range.next();
+         list.erase(range);
       }
+   } else {
+      this_list = ocs::tom::ListPtr<ocs::tom::RN>::create("");
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief range_list_initialize() for an untyped caller
+ *
+ * @param this_list Pointer to a RN_Type-list, checked; nothing happens for nullptr
+ * @param answer_list Pointer to a AN_Type-list or nullptr
+ */
+void range_list_initialize(lList **this_list, lList **answer_list) {
+   if (this_list != nullptr) {
+      ocs::tom::ListPtr<ocs::tom::RN> list(*this_list);
+      range_list_initialize(list, answer_list);
+      *this_list = list.release();
+   }
 }
 
 /**
@@ -376,17 +375,6 @@ uint32_t range_get_number_of_ids(const ocs::tom::ConstElement<ocs::tom::RN> this
    range_get_all_ids(this_elem, &start, &end, &step);
    const uint32_t ret = 1 + (end - start) / step;
    DRETURN(ret);
-}
-
-/**
- * @brief range_get_number_of_ids() for an untyped caller
- *
- * @param this_elem The RN_Type element to query, checked
- *
- * @return as range_get_number_of_ids()
- */
-uint32_t range_get_number_of_ids(const lListElem *this_elem) {
-   return range_get_number_of_ids(ocs::tom::ConstElement<ocs::tom::RN>(this_elem));
 }
 
 /**
@@ -632,14 +620,12 @@ void range_list_sort_uniq_compress(const ocs::tom::List<ocs::tom::RN> range_list
          /*
           * Insert all removed entries at the correct position
           */
-         // range_list_insert_id() takes the raw in-out list; it never replaces an existing list
-         lList *raw_list = range_list;
          for (const auto range1 : *tmp_list) {
             uint32_t start1, end1, step1;
 
             range_get_all_ids(range1, &start1, &end1, &step1);
             for (; start1 <= end1; start1 += step1) {
-               range_list_insert_id(&raw_list, answer_list, start1);
+               ocs_range_list_insert_id(range_list, start1);
             }
          }
 
@@ -878,18 +864,6 @@ bool range_containes_id_less_than(const ocs::tom::ConstElement<ocs::tom::RN> ran
 }
 
 /**
- * @brief range_containes_id_less_than() for an untyped caller
- *
- * @param range RN_Type element, checked; nullptr returns false
- * @param id The exclusive lower-bound threshold
- *
- * @return as range_containes_id_less_than()
- */
-bool range_containes_id_less_than(const lListElem *range, uint32_t id) {
-   return range_containes_id_less_than(ocs::tom::ConstElement<ocs::tom::RN>(range), id);
-}
-
-/**
  * @brief Test whether @p id is a member of the range @p range.
  *
  * A value is a member when all three conditions hold:
@@ -927,38 +901,22 @@ bool range_is_id_within(const ocs::tom::ConstElement<ocs::tom::RN> range, const 
 }
 
 /**
- * @brief range_is_id_within() for an untyped caller
- *
- * @param range RN_Type element, checked; nullptr returns false
- * @param id The id to test for membership
- *
- * @return as range_is_id_within()
- */
-bool range_is_id_within(const lListElem *range, uint32_t id) {
-   return range_is_id_within(ocs::tom::ConstElement<ocs::tom::RN>(range), id);
-}
-
-/**
  * @brief Remove an id from a range list
  *
  * 'id' will be removed from 'range_list'. A list that becomes empty is
- * freed and *range_list set to nullptr.
+ * freed and the handle emptied.
  *
- * The list stays a raw in-out parameter: callers pass the address of a
- * list held in a static structure, and the function is also used through
- * the #range_remove_insert_t callback.
- *
- * @param range_list pointer to a RN_Type list
+ * @param range_list in-out: the RN_Type list; nothing happens for an empty handle
  * @param answer_list pointer to a AN_Type list
- * @param id new id
+ * @param id the id to remove
  *
  * @note range_list and answer_list may be modified
  */
-void range_list_remove_id(lList **range_list, lList **answer_list, const uint32_t id) {
+void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list, const uint32_t id) {
    DENTER(RANGE_LAYER);
 
-   if (range_list != nullptr && *range_list != nullptr) {
-      const auto list = ocs::tom::List<ocs::tom::RN>(*range_list);
+   if (range_list) {
+      const auto list = *range_list;
       auto next_range = list.front();
 
       while (next_range) {
@@ -995,10 +953,27 @@ void range_list_remove_id(lList **range_list, lList **answer_list, const uint32_
          }
       }
       if (list.empty()) {
-         lFreeList(range_list);
+         range_list.reset();
       }
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief range_list_remove_id() for an untyped caller
+ *
+ * Also the #range_remove_insert_t callback form.
+ *
+ * @param range_list pointer to a RN_Type list, checked; nothing happens for nullptr
+ * @param answer_list pointer to a AN_Type list
+ * @param id the id to remove
+ */
+void range_list_remove_id(lList **range_list, lList **answer_list, uint32_t id) {
+   if (range_list != nullptr) {
+      ocs::tom::ListPtr<ocs::tom::RN> list(*range_list);
+      range_list_remove_id(list, answer_list, id);
+      *range_list = list.release();
+   }
 }
 
 /**
@@ -1007,12 +982,11 @@ void range_list_remove_id(lList **range_list, lList **answer_list, const uint32_
  * The first 'n' ids within 'range_list' will be moved into
  * 'range_list2'. Error messages may be found in 'answer_list'
  *
- * Both lists stay raw in-out parameters: the destination may be created
- * and the source freed when it becomes empty.
+ * The destination may be created and the source freed when it becomes empty.
  *
- * @param range_list pointer to a RN_Type list (source)
+ * @param range_list in-out: the RN_Type list (source); nothing happens for an empty handle
  * @param answer_list pointer to an AN_Type list
- * @param range_list2 pointer to a RN_Type list (destination)
+ * @param range_list2 in-out: the RN_Type list (destination), created if the handle is empty
  * @param n number of ids
  *
  * @note range_list, range_list2, answer_list may be modified
@@ -1021,23 +995,23 @@ void range_list_remove_id(lList **range_list, lList **answer_list, const uint32_
  *       loop, so the outer loop continues with the next range and n wraps
  *       around; kept unchanged here.
  */
-void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
-                                 lList **range_list2, uint32_t n) {
+void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list,
+                                 ocs::tom::ListPtr<ocs::tom::RN> &range_list2, uint32_t n) {
    DENTER(RANGE_LAYER);
-   if (range_list && *range_list && range_list2) {
-      for (const auto range : ocs::tom::ConstList<ocs::tom::RN>(*range_list)) {
+   if (range_list) {
+      for (const auto range : *range_list) {
          for (uint32_t id = ocs::tom::get<RN_min>(range);
               id <= ocs::tom::get<RN_max>(range);
               id += ocs::tom::get<RN_step>(range)) {
             range_list_insert_id(range_list2, answer_list, id);
-            range_list_compress(ocs::tom::List<ocs::tom::RN>(*range_list2));
+            range_list_compress(*range_list2);
             n--;
             if (n == 0) {
                break;
             }
          }
       }
-      for (const auto range : ocs::tom::ConstList<ocs::tom::RN>(*range_list2)) {
+      for (const auto range : *range_list2) {
          for (uint32_t id = ocs::tom::get<RN_min>(range);
               id <= ocs::tom::get<RN_max>(range);
               id += ocs::tom::get<RN_step>(range)) {
@@ -1049,20 +1023,38 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
 }
 
 /**
+ * @brief range_list_move_first_n_ids() for an untyped caller
+ *
+ * @param range_list pointer to a RN_Type list (source), checked
+ * @param answer_list pointer to an AN_Type list
+ * @param range_list2 pointer to a RN_Type list (destination), checked
+ * @param n number of ids
+ */
+void range_list_move_first_n_ids(lList **range_list, lList **answer_list, lList **range_list2, uint32_t n) {
+   if (range_list != nullptr && range_list2 != nullptr) {
+      // both checked before either is taken over
+      const ocs::tom::List<ocs::tom::RN> checked_source(*range_list);
+      const ocs::tom::List<ocs::tom::RN> checked_destination(*range_list2);
+      auto source = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(checked_source);
+      auto destination = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(checked_destination);
+      range_list_move_first_n_ids(source, answer_list, destination, n);
+      *range_list = source.release();
+      *range_list2 = destination.release();
+   }
+}
+
+/**
  * @brief Insert an id into a range list
  *
  * 'id' will be inserted into 'range_list'. The list is created if
- * *range_list is nullptr.
+ * the handle is empty.
  *
- * The list stays a raw in-out parameter: callers pass the address of a
- * list held in a static structure, and the function is also used through
- * the #range_remove_insert_t callback.
- *
- * @param range_list pointer to a RN_Type list; must not be nullptr
- * @param answer_list pointer to a AN_Type list
+ * @param range_list in-out: the RN_Type list
+ * @param answer_list pointer to a AN_Type list; unused since creating the list throws on a lack of memory
+ *                    instead of failing
  * @param id new id
  *
- * @note range_list and answer_list may be modified
+ * @note range_list may be modified
  *
  * @note It may be possible that 'id' is multiply contained in 'range_list'
  *       after using this function. Use range_list_compress() or
@@ -1072,20 +1064,44 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
  *
  * @see #range_list_compress, range_list_sort_uniq_compress()
  */
-void range_list_insert_id(lList **range_list, lList **answer_list, const uint32_t id) {
+void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, [[maybe_unused]] lList **answer_list,
+                          const uint32_t id) {
+   DENTER(RANGE_LAYER);
+   if (!range_list) {
+      range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("task_id_range");
+   }
+   ocs_range_list_insert_id(*range_list, id);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief range_list_insert_id() for an untyped caller
+ *
+ * Also the #range_remove_insert_t callback form.
+ *
+ * @param range_list pointer to a RN_Type list, checked; must not be nullptr
+ * @param answer_list pointer to a AN_Type list
+ * @param id new id
+ */
+void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) {
+   ocs::tom::ListPtr<ocs::tom::RN> list(*range_list);
+   range_list_insert_id(list, answer_list, id);
+   *range_list = list.release();
+}
+
+/**
+ * @brief Insert an id into an existing range list
+ *
+ * The core of range_list_insert_id(), for a list that exists already.
+ *
+ * @param list the RN_Type list; must not be an empty handle
+ * @param id new id
+ */
+static void ocs_range_list_insert_id(const ocs::tom::List<ocs::tom::RN> list, const uint32_t id) {
    DENTER(RANGE_LAYER);
 
    bool inserted = false;
 
-   if (*range_list == nullptr) {
-      *range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("task_id_range").release();
-      if (*range_list == nullptr) {
-         answer_list_add(answer_list, "unable to insert id into range",
-                         STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-         DRETURN_VOID;
-      }
-   }
-   const auto list = ocs::tom::List<ocs::tom::RN>(*range_list);
    list.sort<ocs::tom::asc<RN_min>>();
 
    ocs::tom::Element<ocs::tom::RN> range = nullptr;
@@ -1276,34 +1292,33 @@ void range_set_all_ids(lListElem *range, uint32_t min, uint32_t max, uint32_t st
  * contained in 'range_list' after a call of this function.
  * Nothing happens if both sources are empty handles.
  *
- * @param range_list pointer to union set RN_Type list; a list it held before is freed
+ * @param range_list in-out: the union set RN_Type list; a list it held before is freed
  * @param answer_list pointer to AN_Type list
  * @param range_list1 first source RN_Type list, may be an empty handle
  * @param range_list2 second source RN_Type list, may be an empty handle
  *
  * @note range_list and answer_list may be modified
  */
-void range_list_calculate_union_set(lList **range_list, lList **answer_list,
+void range_list_calculate_union_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list,
                                     const ocs::tom::ConstList<ocs::tom::RN> range_list1,
                                     const ocs::tom::ConstList<ocs::tom::RN> range_list2) {
    DENTER(RANGE_LAYER);
-   if (range_list != nullptr && (range_list1 || range_list2)) {
-      lFreeList(range_list);
+   if (range_list1 || range_list2) {
+      range_list.reset();
 
       if (range_list1) {
-         *range_list = range_list1.clone("").release();
+         range_list = range_list1.clone("");
       } else {
-         *range_list = range_list2.clone("").release();
-      }
-      if (*range_list == nullptr) {
-         DTRACE;
-         goto error;
+         range_list = range_list2.clone("");
       }
 
-      range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN>(*range_list), answer_list, true);
+      range_list_sort_uniq_compress(*range_list, answer_list, true);
       if (answer_list_has_error(answer_list)) {
          DTRACE;
-         goto error;
+         range_list.reset();
+         answer_list_add(answer_list, "unable to calculate union set",
+                         STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+         DRETURN_VOID;
       }
 
       if (range_list1 && range_list2) {
@@ -1315,30 +1330,30 @@ void range_list_calculate_union_set(lList **range_list, lList **answer_list,
                range_list_insert_id(range_list, answer_list, start2);
             }
          }
-         range_list_compress(ocs::tom::List<ocs::tom::RN>(*range_list));
+         range_list_compress(*range_list);
       }
    }
-   DRETURN_VOID;
-
-   error:
-   lFreeList(range_list);
-   answer_list_add(answer_list, "unable to calculate union set",
-                   STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    DRETURN_VOID;
 }
 
 /**
  * @brief range_list_calculate_union_set() for an untyped caller
  *
- * @param range_list pointer to union set RN_Type list
+ * @param range_list pointer to union set RN_Type list, checked; nothing happens for nullptr
  * @param answer_list pointer to AN_Type list
  * @param range_list1 first source RN_Type list, checked; may be nullptr
  * @param range_list2 second source RN_Type list, checked; may be nullptr
  */
 void range_list_calculate_union_set(lList **range_list, lList **answer_list,
                                     const lList *range_list1, const lList *range_list2) {
-   range_list_calculate_union_set(range_list, answer_list, ocs::tom::ConstList<ocs::tom::RN>(range_list1),
-                                  ocs::tom::ConstList<ocs::tom::RN>(range_list2));
+   if (range_list != nullptr) {
+      // the sources are checked before the result is taken over
+      const ocs::tom::ConstList<ocs::tom::RN> list1(range_list1);
+      const ocs::tom::ConstList<ocs::tom::RN> list2(range_list2);
+      ocs::tom::ListPtr<ocs::tom::RN> result(*range_list);
+      range_list_calculate_union_set(result, answer_list, list1, list2);
+      *range_list = result.release();
+   }
 }
 
 /**
@@ -1348,23 +1363,19 @@ void range_list_calculate_union_set(lList **range_list, lList **answer_list,
  * contained in 'range_list2'. Nothing happens if 'range_list1' is an
  * empty handle.
  *
- * @param range_list pointer to result RN_Type list; a list it held before is freed
+ * @param range_list in-out: the result RN_Type list; a list it held before is freed
  * @param answer_list pointer to AN_Type list
  * @param range_list1 first source RN_Type list, may be an empty handle
  * @param range_list2 second source RN_Type list, may be an empty handle
  */
-void range_list_calculate_difference_set(lList **range_list, lList **answer_list,
+void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list,
                                          const ocs::tom::ConstList<ocs::tom::RN> range_list1,
                                          const ocs::tom::ConstList<ocs::tom::RN> range_list2) {
    DENTER(RANGE_LAYER);
-   if (range_list != nullptr && range_list1) {
-      lFreeList(range_list);
-      *range_list = range_list1.clone("difference_set range list").release();
-      if (*range_list == nullptr) {
-         goto error;
-      }
+   if (range_list1) {
+      range_list = range_list1.clone("difference_set range list");
 
-      range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN>(*range_list), answer_list, true);
+      range_list_sort_uniq_compress(*range_list, answer_list, true);
       if (answer_list_has_error(answer_list)) {
          goto error;
       }
@@ -1381,13 +1392,13 @@ void range_list_calculate_difference_set(lList **range_list, lList **answer_list
                }
             }
          }
-         range_list_compress(ocs::tom::List<ocs::tom::RN>(*range_list));
+         range_list_compress(*range_list);
       }
    }
    DRETURN_VOID;
 
    error:
-   lFreeList(range_list);
+   range_list.reset();
    answer_list_add(answer_list, "unable to calculate union set",
                    STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    DRETURN_VOID;
@@ -1396,15 +1407,21 @@ void range_list_calculate_difference_set(lList **range_list, lList **answer_list
 /**
  * @brief range_list_calculate_difference_set() for an untyped caller
  *
- * @param range_list pointer to result RN_Type list
+ * @param range_list pointer to result RN_Type list, checked; nothing happens for nullptr
  * @param answer_list pointer to AN_Type list
  * @param range_list1 first source RN_Type list, checked; may be nullptr
  * @param range_list2 second source RN_Type list, checked; may be nullptr
  */
 void range_list_calculate_difference_set(lList **range_list, lList **answer_list,
                                          const lList *range_list1, const lList *range_list2) {
-   range_list_calculate_difference_set(range_list, answer_list, ocs::tom::ConstList<ocs::tom::RN>(range_list1),
-                                       ocs::tom::ConstList<ocs::tom::RN>(range_list2));
+   if (range_list != nullptr) {
+      // the sources are checked before the result is taken over
+      const ocs::tom::ConstList<ocs::tom::RN> list1(range_list1);
+      const ocs::tom::ConstList<ocs::tom::RN> list2(range_list2);
+      ocs::tom::ListPtr<ocs::tom::RN> result(*range_list);
+      range_list_calculate_difference_set(result, answer_list, list1, list2);
+      *range_list = result.release();
+   }
 }
 
 /**
@@ -1413,17 +1430,19 @@ void range_list_calculate_difference_set(lList **range_list, lList **answer_list
  * 'range_list' will contain all ids which are contained in
  * 'range_list1' and also in 'range_list2'.
  *
- * @param range_list pointer to result RN_Type list; a list it held before is freed, nullptr if the
- *                   intersection is empty
- * @param answer_list pointer to AN_Type list
+ * @param range_list in-out: the result RN_Type list; a list it held before is freed, an empty handle if
+ *                   the intersection is empty
+ * @param answer_list pointer to AN_Type list; unused since creating lists and elements throws on a lack of
+ *                    memory instead of failing
  * @param range_list1 first source RN_Type list, may be an empty handle
  * @param range_list2 second source RN_Type list, may be an empty handle
  */
-void range_list_calculate_intersection_set(lList **range_list, lList **answer_list,
+void range_list_calculate_intersection_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
+                                           [[maybe_unused]] lList **answer_list,
                                            const ocs::tom::ConstList<ocs::tom::RN> range_list1,
                                            const ocs::tom::ConstList<ocs::tom::RN> range_list2) {
    DENTER(RANGE_LAYER);
-   lFreeList(range_list);
+   range_list.reset();
    if (range_list1 && range_list2) {
       for (const auto range : range_list1) {
          uint32_t start, end, step;
@@ -1431,44 +1450,36 @@ void range_list_calculate_intersection_set(lList **range_list, lList **answer_li
          range_get_all_ids(range, &start, &end, &step);
          for (; start <= end; start += step) {
             if (range_list_is_id_within(range_list2, start)) {
-               if (*range_list == nullptr) {
-                  *range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("").release();
-                  if (*range_list == nullptr) {
-                     goto error;
-                  }
+               if (!range_list) {
+                  range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("");
                }
                auto new_range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
-               if (!new_range) {
-                  goto error;
-               }
                range_set_all_ids(*new_range, start, start, 1);
-               ocs::tom::List<ocs::tom::RN>(*range_list).push_back(std::move(new_range));
+               range_list->push_back(std::move(new_range));
             }
          }
       }
-      range_list_compress(ocs::tom::List<ocs::tom::RN>(*range_list));
+      range_list_compress(*range_list);
    }
-   DRETURN_VOID;
-
-   error:
-   lFreeList(range_list);
-   answer_list_add(answer_list, "unable to calculate intersection set",
-                   STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    DRETURN_VOID;
 }
 
 /**
  * @brief range_list_calculate_intersection_set() for an untyped caller
  *
- * @param range_list pointer to result RN_Type list
+ * @param range_list pointer to result RN_Type list, checked; must not be nullptr
  * @param answer_list pointer to AN_Type list
  * @param range_list1 first source RN_Type list, checked; may be nullptr
  * @param range_list2 second source RN_Type list, checked; may be nullptr
  */
 void range_list_calculate_intersection_set(lList **range_list, lList **answer_list,
                                            const lList *range_list1, const lList *range_list2) {
-   range_list_calculate_intersection_set(range_list, answer_list, ocs::tom::ConstList<ocs::tom::RN>(range_list1),
-                                         ocs::tom::ConstList<ocs::tom::RN>(range_list2));
+   // the sources are checked before the result is taken over
+   const ocs::tom::ConstList<ocs::tom::RN> list1(range_list1);
+   const ocs::tom::ConstList<ocs::tom::RN> list2(range_list2);
+   ocs::tom::ListPtr<ocs::tom::RN> result(*range_list);
+   range_list_calculate_intersection_set(result, answer_list, list1, list2);
+   *range_list = result.release();
 }
 
 /**
@@ -1720,11 +1731,8 @@ range_parse_get_ids(const char *value, const int step_allowed, uint32_t &start, 
  * The literal `UNDEFINED` yields no list, and may not be followed by further
  * ranges. On a syntax error the part parsed so far is freed.
  *
- * The list stays a raw in-out parameter: about fifteen callers in the clients,
- * the execd, the spooling and japi pass the address of their own raw list.
- *
- * @param[out] this_list receives the parsed list, nullptr on a syntax error;
- *                       pass nullptr to only check the syntax
+ * @param[in,out] this_list receives the parsed list, merged into a list it holds already; an empty
+ *                          handle on a syntax error
  * @param[out] answer_list receives the syntax error instead of the function
  *                         exiting; must point at a nullptr list
  * @param string the text to parse
@@ -1736,19 +1744,14 @@ range_parse_get_ids(const char *value, const int step_allowed, uint32_t &start, 
  * @note MT-NOTE: range_list_parse_from_string() is MT safe
  */
 bool
-range_list_parse_from_string(lList **this_list, lList **answer_list,
-                             const char *string, bool just_parse,
-                             bool step_allowed, bool inf_allowed) {
+range_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::RN> &this_list, lList **answer_list,
+                             const char *string, const bool just_parse,
+                             const bool step_allowed, const bool inf_allowed) {
    DENTER(TOP_LAYER);
 
    const char *s;
-   lList *range_list = nullptr;
    bool undefined = false, first = true;
    struct saved_vars_s *context = nullptr;
-
-   if (!this_list) {
-      this_list = &range_list;
-   }
 
    for (s = sge_strtok_r(string, RANGE_SEPARATOR_CHARS, &context);
         s; s = sge_strtok_r(nullptr, RANGE_SEPARATOR_CHARS, &context)) {
@@ -1758,7 +1761,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
          sge_free_saved_vars(context);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                          ANSWER_QUALITY_ERROR);
-         lFreeList(this_list);
+         this_list.reset();
          DRETURN(false);
       }
 
@@ -1773,7 +1776,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
             sge_free_saved_vars(context);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
-            lFreeList(this_list);
+            this_list.reset();
             DRETURN(false);
          }
       } else if (!just_parse) {
@@ -1785,8 +1788,27 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
    }
 
    sge_free_saved_vars(context);
-
-   // a list built without a target is not handed out
-   lFreeList(&range_list);
    DRETURN(true);
+}
+
+/**
+ * @brief range_list_parse_from_string() for an untyped caller
+ *
+ * @param[in,out] this_list receives the parsed list, checked; pass nullptr to only check the syntax
+ * @param[out] answer_list receives the syntax error
+ * @param string the text to parse
+ * @param just_parse true to validate only, without building a list
+ * @param step_allowed whether a `:step` suffix may appear
+ * @param inf_allowed whether an open upper bound may appear
+ * @return as range_list_parse_from_string()
+ */
+bool range_list_parse_from_string(lList **this_list, lList **answer_list, const char *string, bool just_parse,
+                                  bool step_allowed, bool inf_allowed) {
+   // a list built without a target is not handed out, the handle frees it
+   ocs::tom::ListPtr<ocs::tom::RN> list(this_list != nullptr ? *this_list : nullptr);
+   const bool ret = range_list_parse_from_string(list, answer_list, string, just_parse, step_allowed, inf_allowed);
+   if (this_list != nullptr) {
+      *this_list = list.release();
+   }
+   return ret;
 }

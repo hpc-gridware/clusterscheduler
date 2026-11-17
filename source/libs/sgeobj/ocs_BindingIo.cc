@@ -59,18 +59,19 @@
  * element, either as the value users write in a `-binding` request or as the
  * switch itself.
  *
- * @param binding_elem the binding list element; nullptr renders as "NONE"
+ * @param binding_elem the binding list element (BN_Type); an empty handle renders as "NONE"
  * @param[out] binding_string receives the rendered text and is overwritten
  * @param as_switches true to render including the `-binding` switch, false for the bare value
  *
  * @note MT-NOTE: is MT safe
  */
 void
-ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::string &binding_string, bool as_switches) {
+ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::BN> binding_elem,
+                                        std::string &binding_string, const bool as_switches) {
    DENTER(TOP_LAYER);
 
    // no binding
-   if (binding_elem == nullptr) {
+   if (!binding_elem) {
       if (!as_switches) {
          binding_string = NONE_STR;
       }
@@ -78,10 +79,10 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // no amount or strategy also causes to hide all other binding parameters because binding will not be done
-   auto amount = ocs::tom::get<BN_amount>(binding_elem);
+   const auto amount = ocs::tom::get<BN_amount>(binding_elem);
    if (amount == 0) {
       if (!as_switches) {
-         binding_string = NONE_STR;;
+         binding_string = NONE_STR;
       }
       DRETURN_VOID;
    }
@@ -187,4 +188,17 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief binding_print_to_string() for an untyped caller
+ *
+ * @param binding_elem the binding list element (BN_Type), checked; nullptr renders as "NONE"
+ * @param[out] binding_string receives the rendered text and is overwritten
+ * @param as_switches true to render including the `-binding` switch, false for the bare value
+ */
+void
+ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::string &binding_string,
+                                        const bool as_switches) {
+   binding_print_to_string(ocs::tom::ConstElement<ocs::tom::BN>(binding_elem), binding_string, as_switches);
 }

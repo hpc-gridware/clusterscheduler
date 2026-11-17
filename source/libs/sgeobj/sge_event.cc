@@ -54,6 +54,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
 
 #include "msg_common.h"
 
@@ -66,20 +67,20 @@
  *
  * @see @ref evc
  */
-const char *event_text(const lListElem *event, dstring *buffer) {
-   uint32_t type, intkey, number, intkey2;
+const char *event_text(const ocs::tom::ConstElement<ocs::tom::ET> event, dstring *buffer) {
+   DENTER(TOP_LAYER);
    int n=0;
-   const char *strkey, *strkey2;
-   const lList *lp;
    dstring id_dstring = DSTRING_INIT;
 
-   number = ocs::tom::get<ET_number>(event);
-   type = ocs::tom::get<ET_type>(event);
-   intkey = ocs::tom::get<ET_intkey>(event);
-   intkey2 = ocs::tom::get<ET_intkey2>(event);
-   strkey = ocs::tom::get<ET_strkey>(event);
-   strkey2 = ocs::tom::get<ET_strkey2>(event);
-   if ((lp=ocs::tom::get<ET_new_version>(event))) {
+   const uint32_t number = ocs::tom::get<ET_number>(event);
+   const uint32_t type = ocs::tom::get<ET_type>(event);
+   const uint32_t intkey = ocs::tom::get<ET_intkey>(event);
+   const uint32_t intkey2 = ocs::tom::get<ET_intkey2>(event);
+   const char *strkey = ocs::tom::get<ET_strkey>(event);
+   const char *strkey2 = ocs::tom::get<ET_strkey2>(event);
+   // the objects of the event; their type depends on the event type, so the list is untyped
+   const lList *lp = ocs::tom::get<ET_new_version>(event);
+   if (lp != nullptr) {
       n = lGetNumberOfElem(lp);
    }
 
@@ -145,26 +146,32 @@ const char *event_text(const lListElem *event, dstring *buffer) {
 
    /* -------------------- */
    case sgeE_JATASK_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JATASK",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JATASK_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JATASK",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JATASK_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JATASK",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
    /* -------------------- */
    case sgeE_PETASK_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "PETASK",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_PETASK_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "PETASK",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 #if 0      
    /* JG: we'll have it soon ;-) */
    case sgeE_PETASK_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "PETASK",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 #endif
 
@@ -173,13 +180,16 @@ const char *event_text(const lListElem *event, dstring *buffer) {
       sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "JOB", n);
       break;
    case sgeE_JOB_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JOB",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JOB",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_USAGE:
       sge_dstring_sprintf(buffer, MSG_EVENT_JOBXUSAGE_US, 
@@ -200,20 +210,27 @@ const char *event_text(const lListElem *event, dstring *buffer) {
       sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "JOB_SCHEDD_INFO", n);
       break;
    case sgeE_JOB_SCHEDD_INFO_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JOB_SCHEDD_INFO",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_SCHEDD_INFO_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JOB_SCHEDD_INFO",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_SCHEDD_INFO_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB_SCHEDD_INFO",
+                          job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
    /* -------------------- */
    case sgeE_NEW_SHARETREE:
-      sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, number,
-         lGetNumberOfNodes(nullptr, lp, STN_children),
-         lGetNumberOfLeafs(nullptr, lp, STN_children));
+      {
+         // a sharetree event carries the tree, STN_Type
+         const ocs::tom::ConstList<ocs::tom::STN> tree(lp);
+         sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, number,
+            tree.count_nodes<STN_children>(),
+            tree.count_leaves<STN_children>());
+      }
       break;
 
    /* -------------------- */
@@ -425,15 +442,35 @@ const char *event_text(const lListElem *event, dstring *buffer) {
 
    sge_dstring_free(&id_dstring);
 
-   return sge_dstring_get_string(buffer);
+   DRETURN(sge_dstring_get_string(buffer));
 }
 
-static bool event_client_verify_subscription(const lListElem *event_client, lList **answer_list, int d_time) {
+/**
+ * @brief event_text() for an untyped caller
+ *
+ * @param event the event to render (ET_Type, checked)
+ * @param[out] buffer receives the text
+ * @return as event_text()
+ */
+const char *event_text(const lListElem *event, dstring *buffer) {
+   return event_text(ocs::tom::ConstElement<ocs::tom::ET>(event), buffer);
+}
+
+/**
+ * @brief Verify the subscription list of an event client
+ *
+ * @param event_client the event client registration
+ * @param[out] answer_list receives the reason it was rejected
+ * @param d_time the event delivery interval, unused
+ * @return true when every subscribed event id is valid
+ */
+static bool event_client_verify_subscription(const ocs::tom::ConstElement<ocs::tom::EV> event_client,
+                                             lList **answer_list, [[maybe_unused]] const int d_time) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for (ocs::tom::ConstElement<ocs::tom::EVS> ep : ocs::tom::get<EV_subscribed>(event_client)) {
-      uint32_t id = ocs::tom::get<EVS_id>(ep);
+   for (const auto ep : ocs::tom::get<EV_subscribed>(event_client)) {
+      const uint32_t id = ocs::tom::get<EVS_id>(ep);
       if (id <= sgeE_ALL_EVENTS || id >= sgeE_EVENTSIZE) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDEVENT);
@@ -484,14 +521,14 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
  *
  * @note MT-NOTE: event_client_verify() is MT safe
  */
-bool event_client_verify(const lListElem *event_client, lList **answer_list, bool add) {
+bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client, lList **answer_list, const bool add) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
    const char *str;
    u_long d_time = 0;
   
-   if (event_client == nullptr) {
+   if (!event_client) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       DTRACE;

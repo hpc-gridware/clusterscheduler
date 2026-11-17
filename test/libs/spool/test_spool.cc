@@ -115,7 +115,8 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
       DRETURN(-1);
    }
 
-   ret = merge_configuration(&anAnswer, progid, cell_root, global, local, nullptr);
+   ret = merge_configuration(&anAnswer, progid, cell_root, ocs::tom::ConstElement<ocs::tom::CONF>(global),
+                             ocs::tom::ConstElement<ocs::tom::CONF>(local)).first;
    answer_list_output(&anAnswer);
 
    lFreeElem(&local);
@@ -173,7 +174,7 @@ static bool read_spooled_data() {
          if (sconf_set_config(&schedd_config, &answer_list))
             lFreeList(&schedd_config);
       answer_list_output(&answer_list);
-      DPRINTF("read %d entries to master scheduler configuration list\n", lGetNumberOfElem(sconf_get_config_list()));
+      DPRINTF("read %d entries to master scheduler configuration list\n", static_cast<int>(sconf_get_config_list().get().size()));
    }
    /* complexes */
    master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);

@@ -131,21 +131,21 @@ int main(int /*argc*/, char * /*argv*/[]) {
    int id = 1;
 
    // build a minimal CQ with a terminate_method sublist entry
-   lListElem *cqueue = cqueue_create(nullptr, "template");
-   cqueue_set_template_attributes(cqueue, &alp);
+   auto created = cqueue_create(nullptr, "template");
+   cqueue_set_template_attributes(*created, &alp);
    lFreeList(&alp);
 
-   ocs::tom::set<CQ_name>(cqueue, "foobar");
+   ocs::tom::set<CQ_name>(created, "foobar");
 
    auto lp = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Terminate Methods");
    auto ep = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
    ocs::tom::set<ASTR_href>(ep, "global");
    ocs::tom::set<ASTR_value>(ep, "/tmp/myterminate_method.sh");
    lAppendElem(*lp, std::move(ep));
-   ocs::tom::set<CQ_terminate_method>(cqueue, std::move(lp));
+   ocs::tom::set<CQ_terminate_method>(created, std::move(lp));
 
    auto cqueue_list = ocs::tom::ListPtr<ocs::tom::CQ>::create("CQ List");
-   lAppendElem(*cqueue_list, cqueue);
+   const auto cqueue = cqueue_list->push_back(std::move(created));
 
    // --- field alignment ---
    CHECK(id, "spool_flatfile_align_object with CQ_fields returns true",

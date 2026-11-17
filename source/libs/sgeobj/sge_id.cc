@@ -53,12 +53,13 @@
 /// Debug layer the id list traces are written to
 #define ID_LAYER BASIS_LAYER
 
-/* EB: ADOC: add commets */
-
 /**
  * @brief Turn a list of textual ids into an id list
  *
- * @param[out] id_list receives the parsed ids
+ * Every entry is parsed as job/task id when @p transition is no queue action;
+ * an entry that does not parse that way is added as string (queue pattern).
+ *
+ * @param[out] id_list receives the parsed ids (`ID_Type`); stays raw since sge_parse_jobtasks() writes into it
  * @param[out] answer_list receives the message naming an unparsable entry
  * @param str_list the texts to parse
  * @param transition the `QI_DO_*` action the ids are meant for
@@ -67,18 +68,18 @@
  */
 bool id_list_build_from_str_list(lList **id_list,
                                  lList **answer_list,
-                                 const lList *str_list,
-                                 uint32_t transition,
-                                 uint32_t option) {
+                                 const ocs::tom::ConstList<ocs::tom::ST> str_list,
+                                 const uint32_t transition,
+                                 const uint32_t option) {
    DENTER(ID_LAYER);
    bool ret = true;
 
    if (transition_is_valid_for_qinstance(transition, answer_list) &&
        transition_option_is_valid_for_qinstance(option, answer_list) &&
        str_list_is_valid(str_list, answer_list)) {
-      for_each_ep_lv(elem, str_list) {
+      for (const auto elem : str_list) {
          const char *string = ocs::tom::get<ST_name>(elem);
-         lListElem *new_id = nullptr;
+         ocs::tom::Element<ocs::tom::ID> new_id;
 
          /*
           * Try to parse and add jid/taskid
@@ -90,10 +91,10 @@ bool id_list_build_from_str_list(lList **id_list,
                                         ocs::tom::ConstList<ocs::tom::RN>()).second;
          }   
 
-         if (new_id == nullptr) {
+         if (!new_id) {
             new_id = ocs::tom::emplace_back<ID_str>(id_list, string);
          }
-         if (new_id != nullptr) {
+         if (new_id) {
             ocs::tom::set<ID_action>(new_id, transition);
             ocs::tom::set<ID_force>(new_id, option);
          } else {

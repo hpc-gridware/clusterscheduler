@@ -1061,7 +1061,8 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
             ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, job_number);
          }
 
-         job_report_init_from_job_with_usage(*dummy_jr, j, t, nullptr, now);
+         job_report_init_from_job_with_usage(*dummy_jr, ocs::tom::ConstElement<ocs::tom::JB>(j),
+                                             ocs::tom::Element<ocs::tom::JAT>(t), nullptr, now);
          ocs::ReportingFileWriter::create_acct_records(nullptr, *dummy_jr, j, t, false);
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
                                   MSG_LOG_DELFORCED);
@@ -1246,7 +1247,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
       DRETURN(ret);
    }
 
-   if (jsv_is_modify_rejected(alpp, jep)) {
+   if (jsv_is_modify_rejected(alpp, ocs::tom::ConstElement<ocs::tom::JB>(jep))) {
       DRETURN(ret);
    }
 
@@ -2187,7 +2188,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
    /* ---- JB_deadline */
    /* If it is a deadline job the user has to be a deadline user */
    if ((pos = lGetPosViaElem(jep, JB_deadline, SGE_NO_ABORT)) >= 0) {
-      if (!user_is_deadline_user(packet, master_userset_list)) {
+      if (!user_is_deadline_user(packet, ocs::tom::ConstList<ocs::tom::US>(master_userset_list))) {
          ERROR(MSG_JOB_NODEADLINEUSER_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
@@ -4289,7 +4290,7 @@ job_verify_project(const lListElem *job, lList **alpp,
 
    int ret = STATUS_OK;
    const char *project = ocs::tom::get<JB_project>(job);
-   lList *projects = mconf_get_projects();
+   const auto projects = mconf_get_projects();
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
@@ -4314,16 +4315,14 @@ job_verify_project(const lListElem *job, lList **alpp,
 
       if (ret == STATUS_OK) {
          /* verify project can use SGE cluster according to global config projects/xprojects */
-         lList *xprojects = mconf_get_xprojects();
+         const auto xprojects = mconf_get_xprojects();
 
-         if ((xprojects != nullptr && prj_list_locate(xprojects, project)) ||
-             (projects != nullptr && prj_list_locate(projects, project) == nullptr)) {
+         if ((xprojects && prj_list_locate(*xprojects, project)) ||
+             (projects && prj_list_locate(*projects, project) == nullptr)) {
             ERROR(MSG_JOB_PRJNOSUBMITPERMS_S, project);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
-
-         lFreeList(&xprojects);
       }
    } else {
       /*
@@ -4332,7 +4331,7 @@ job_verify_project(const lListElem *job, lList **alpp,
        * when we have a projects list in the global config,
        * every job *must* request a project
        */
-      if (lGetNumberOfElem(projects) > 0) {
+      if (!projects->empty()) {
          ERROR(SFNMAX, MSG_JOB_PRJREQUIRED);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
@@ -4350,7 +4349,6 @@ job_verify_project(const lListElem *job, lList **alpp,
       }
    }
 
-   lFreeList(&projects);
    DRETURN(ret);
 }
 

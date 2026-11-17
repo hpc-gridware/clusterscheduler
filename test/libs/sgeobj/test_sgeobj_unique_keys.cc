@@ -195,11 +195,9 @@ test_set_lists() {
          lGetNumberOfElem(acl) == 2 && strcmp(ocs::tom::get<ARA_name>(lLast(acl)), "u2") == 0);
    lFreeList(&acl);
 
-   lList *ulongs = nullptr;
    lList *answer_list = nullptr;
-   const bool parsed = ulong_list_parse_from_string(&ulongs, &answer_list, "1,2,1", ",");
-   CHECK(14, "a ulong list given 1,2,1 holds 1 once", parsed && lGetNumberOfElem(ulongs) == 2);
-   lFreeList(&ulongs);
+   const auto [parsed, ulongs] = ulong_list_parse_from_string(&answer_list, "1,2,1", ",");
+   CHECK(14, "a ulong list given 1,2,1 holds 1 once", parsed && ulongs->size() == 2);
    lFreeList(&answer_list);
 }
 

@@ -102,25 +102,42 @@ const char *var_get_sharedlib_path_name() {
  * it is created and initialized with `value`.
  * Otherwise, its value is overwritten with `value`
  *
- * @param varl VA_Type list
+ * @param[in,out] varl VA_Type list, created if the handle is empty
  * @param name the name of the variable
  * @param value the (new) value of the variable
  *
  * @see #var_list_set_int, #var_list_set_uint32t, #var_list_set_sharedlib_path
  */
-void var_list_set_string(lList **varl, const char *name, const char *value) {
+void var_list_set_string(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name, const char *value) {
    DENTER(TOP_LAYER);
 
-
-   if (varl == nullptr || name == nullptr || value == nullptr) {
+   if (name == nullptr || value == nullptr) {
       DRETURN_VOID;
    }
-   ocs::tom::Element<ocs::tom::VA> elem = ocs::tom::find_first_rw<VA_variable>(*varl, name);
-   if (elem == nullptr) {
-      elem = ocs::tom::emplace_back<VA_variable>(varl, name);
+   if (!varl) {
+      varl = ocs::tom::ListPtr<ocs::tom::VA>::create("");
+   }
+   auto elem = varl->find_first<VA_variable>(name);
+   if (!elem) {
+      elem = varl->emplace_back<VA_variable>(name);
    }
    ocs::tom::set<VA_value>(elem, value);
    DRETURN_VOID;
+}
+
+/**
+ * @brief var_list_set_string() for an untyped caller
+ *
+ * @param[in,out] varl VA_Type list, checked; nothing happens for nullptr
+ * @param name the name of the variable
+ * @param value the (new) value of the variable
+ */
+void var_list_set_string(lList **varl, const char *name, const char *value) {
+   if (varl != nullptr) {
+      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
+      var_list_set_string(list, name, value);
+      *varl = list.release();
+   }
 }
 
 /**
@@ -130,13 +147,13 @@ void var_list_set_string(lList **varl, const char *name, const char *value) {
  * it is created and initialized with `value`.
  * Otherwise, its value is overwritten with `value`
  *
- * @param varl VA_Type list
+ * @param[in,out] varl VA_Type list, created if the handle is empty
  * @param name the name of the variable
  * @param value the (new) value of the variable
  *
  * @see #var_list_set_string, #var_list_set_uint32t, #var_list_set_sharedlib_path
  */
-void var_list_set_int(lList **varl, const char *name, int value) {
+void var_list_set_int(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name, const int value) {
    DENTER(TOP_LAYER);
 
    char buffer[2048];
@@ -147,24 +164,54 @@ void var_list_set_int(lList **varl, const char *name, int value) {
 }
 
 /**
+ * @brief var_list_set_int() for an untyped caller
+ *
+ * @param[in,out] varl VA_Type list, checked; nothing happens for nullptr
+ * @param name the name of the variable
+ * @param value the (new) value of the variable
+ */
+void var_list_set_int(lList **varl, const char *name, int value) {
+   if (varl != nullptr) {
+      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
+      var_list_set_int(list, name, value);
+      *varl = list.release();
+   }
+}
+
+/**
  * @brief Add/change a variable
  *
  * If the variable `name` does not already exist in `varl`,
  * it is created and initialized with `value`.
  * Otherwise, its value is overwritten with `value`
  *
- * @param varl VA_Type list
+ * @param[in,out] varl VA_Type list, created if the handle is empty
  * @param name the name of the variable
  * @param value the (new) value of the variable
  *
  * @see #var_list_set_string, #var_list_set_int, #var_list_set_sharedlib_path
  */
-void var_list_set_uint32t(lList **varl, const char *name, uint32_t value) {
+void var_list_set_uint32t(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name, const uint32_t value) {
    DENTER(TOP_LAYER);
    char buffer[2048];
    snprintf(buffer, sizeof(buffer), sge_u32, value);
    var_list_set_string(varl, name, buffer);
    DRETURN_VOID;
+}
+
+/**
+ * @brief var_list_set_uint32t() for an untyped caller
+ *
+ * @param[in,out] varl VA_Type list, checked; nothing happens for nullptr
+ * @param name the name of the variable
+ * @param value the (new) value of the variable
+ */
+void var_list_set_uint32t(lList **varl, const char *name, uint32_t value) {
+   if (varl != nullptr) {
+      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
+      var_list_set_uint32t(list, name, value);
+      *varl = list.release();
+   }
 }
 
 /**
@@ -175,11 +222,11 @@ void var_list_set_uint32t(lList **varl, const char *name, uint32_t value) {
  * resulting shared lib path
  * (security, see var_get_sharedlib_path_name())
  *
- * @param varl list of nment variables
+ * @param[in,out] varl list of environment variables (VA_Type), created if the handle is empty
  *
  * @see #var_get_sharedlib_path_name, #var_list_set_string, #var_list_set_int, #var_list_set_uint32t
  */
-void var_list_set_sharedlib_path(lList **varl) {
+void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
    DENTER(TOP_LAYER);
 
    char *sharedlib_path;
@@ -194,8 +241,9 @@ void var_list_set_sharedlib_path(lList **varl) {
    snprintf(sge_sharedlib_path, sge_sharedlib_path_size, "%s/lib/%s", sge_root, sge_get_arch());
 
    /* if already in environment: extend by SGE sharedlib path, else set */
-   ocs::tom::Element<ocs::tom::VA> sharedlib_elem = ocs::tom::find_first_rw<VA_variable>(*varl, sharedlib_path_name);
-   if(sharedlib_elem != nullptr) {
+   const auto sharedlib_elem = varl ? varl->find_first<VA_variable>(sharedlib_path_name)
+                                    : ocs::tom::Element<ocs::tom::VA>();
+   if (sharedlib_elem) {
       const char *old_value = ocs::tom::get<VA_value>(sharedlib_elem);
 
       if(old_value && strlen(old_value) > 0) {
@@ -214,12 +262,26 @@ void var_list_set_sharedlib_path(lList **varl) {
       }
    } else {
       DPRINTF("creating new sharedlib path %s\n", sharedlib_path_name);
-      ocs::tom::Element<ocs::tom::VA> sharedlib_elem = ocs::tom::emplace_back<VA_variable>(varl, sharedlib_path_name);
-      ocs::tom::set<VA_value>(sharedlib_elem, sge_sharedlib_path);
+      if (!varl) {
+         varl = ocs::tom::ListPtr<ocs::tom::VA>::create("");
+      }
+      const auto new_elem = varl->emplace_back<VA_variable>(sharedlib_path_name);
+      ocs::tom::set<VA_value>(new_elem, sge_sharedlib_path);
    }
 
    sge_free(&sge_sharedlib_path);
    DRETURN_VOID;
+}
+
+/**
+ * @brief var_list_set_sharedlib_path() for an untyped caller
+ *
+ * @param[in,out] varl list of environment variables (VA_Type), checked; must not be nullptr
+ */
+void var_list_set_sharedlib_path(lList **varl) {
+   ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
+   var_list_set_sharedlib_path(list);
+   *varl = list.release();
 }
 
 /**
@@ -317,19 +379,18 @@ const char *var_list_get_string(const lList *varl, const char *variable) {
  * "__SGE_PREFIX__O_HOME" ===> "SGE_O_HOME
  * @endcode
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if *varl is nullptr
- * @param src_varl the list to copy from (VA_Type), may be an empty handle and may be *varl itself
+ * @param[in,out] varl VA_Type list the copies are added to, created if the handle is empty
+ * @param src_varl the list to copy from (VA_Type), may be an empty handle and may be varl itself
  * @param prefix prefix string (e.g. VAR_PREFIX)
  * @param new_prefix new prefix string (e.g. "SGE_")
  *
  * @see #var_list_remove_prefix_vars
  */
-void var_list_copy_prefix_vars(lList **varl, const ocs::tom::ConstList<ocs::tom::VA> src_varl, const char *prefix,
-                               const char *new_prefix) {
+void var_list_copy_prefix_vars(ocs::tom::ListPtr<ocs::tom::VA> &varl, const ocs::tom::ConstList<ocs::tom::VA> src_varl,
+                               const char *prefix, const char *new_prefix) {
    DENTER(TOP_LAYER);
    const size_t prefix_len = strlen(prefix);
-   // filled by var_list_set_string(), which takes a raw in-out list
-   lList *var_list2 = nullptr;
+   ocs::tom::ListPtr<ocs::tom::VA> var_list2;
 
    for (const auto var_elem : src_varl) {
       const char *prefix_name = ocs::tom::get<VA_variable>(var_elem);
@@ -340,13 +401,13 @@ void var_list_copy_prefix_vars(lList **varl, const ocs::tom::ConstList<ocs::tom:
          const char *value = ocs::tom::get<VA_value>(var_elem);
 
          snprintf(name, sizeof(name), "%s%s", new_prefix, name_without_prefix);
-         var_list_set_string(&var_list2, name, value);
+         var_list_set_string(var_list2, name, value);
       }
    }
-   if (*varl == nullptr) {
-      *varl = ocs::tom::ListPtr<ocs::tom::VA>::create("").release();
+   if (!varl) {
+      varl = ocs::tom::ListPtr<ocs::tom::VA>::create("");
    }
-   var_list_add_as_set(ocs::tom::List<ocs::tom::VA>(*varl), ocs::tom::ListPtr<ocs::tom::VA>::from_typed(var_list2));
+   var_list_add_as_set(*varl, std::move(var_list2));
 
    DRETURN_VOID;
 }
@@ -354,13 +415,17 @@ void var_list_copy_prefix_vars(lList **varl, const ocs::tom::ConstList<ocs::tom:
 /**
  * @brief var_list_copy_prefix_vars() for an untyped caller
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if *varl is nullptr
- * @param src_varl the list to copy from (VA_Type), checked; may be nullptr
+ * @param[in,out] varl VA_Type list the copies are added to, checked; created if *varl is nullptr
+ * @param src_varl the list to copy from (VA_Type), checked; may be nullptr and may be *varl itself
  * @param prefix prefix string (e.g. VAR_PREFIX)
  * @param new_prefix new prefix string (e.g. "SGE_")
  */
 void var_list_copy_prefix_vars(lList **varl, const lList *src_varl, const char *prefix, const char *new_prefix) {
-   var_list_copy_prefix_vars(varl, ocs::tom::ConstList<ocs::tom::VA>(src_varl), prefix, new_prefix);
+   // the source is checked before the target is taken over
+   const ocs::tom::ConstList<ocs::tom::VA> src(src_varl);
+   ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
+   var_list_copy_prefix_vars(list, src, prefix, new_prefix);
+   *varl = list.release();
 }
 
 /**
@@ -375,19 +440,19 @@ void var_list_copy_prefix_vars(lList **varl, const lList *src_varl, const char *
  * "__SGE_PREFIX2__TASK_ID" ===> "SGE_TASK_ID
  * @endcode
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if *varl is nullptr
- * @param src_varl the list to copy from (VA_Type), may be an empty handle and may be *varl itself
+ * @param[in,out] varl VA_Type list the copies are added to, created if the handle is empty
+ * @param src_varl the list to copy from (VA_Type), may be an empty handle and may be varl itself
  * @param prefix prefix string (e.g. VAR_PREFIX_NR)
  * @param new_prefix new prefix string (e.g. "SGE_")
  *
  * @see #var_list_remove_prefix_vars
  */
-void var_list_copy_prefix_vars_undef(lList **varl, const ocs::tom::ConstList<ocs::tom::VA> src_varl,
+void var_list_copy_prefix_vars_undef(ocs::tom::ListPtr<ocs::tom::VA> &varl,
+                                     const ocs::tom::ConstList<ocs::tom::VA> src_varl,
                                      const char *prefix, const char *new_prefix) {
    DENTER(TOP_LAYER);
    const size_t prefix_len = strlen(prefix);
-   // filled by var_list_set_string(), which takes a raw in-out list
-   lList *var_list2 = nullptr;
+   ocs::tom::ListPtr<ocs::tom::VA> var_list2;
 
    for (const auto var_elem : src_varl) {
       const char *prefix_name = ocs::tom::get<VA_variable>(var_elem);
@@ -398,29 +463,33 @@ void var_list_copy_prefix_vars_undef(lList **varl, const ocs::tom::ConstList<ocs
          const char *name_without_prefix = &prefix_name[prefix_len];
 
          snprintf(name, sizeof(name), "%s%s", new_prefix, name_without_prefix);
-         if (!ocs::tom::find_first<VA_variable>(*varl, name)) {
-            var_list_set_string(&var_list2, name, value);
+         if (!ocs::tom::find_first<VA_variable>(varl.get(), name)) {
+            var_list_set_string(var_list2, name, value);
          }
       }
    }
-   if (*varl == nullptr) {
-      *varl = ocs::tom::ListPtr<ocs::tom::VA>::create("").release();
+   if (!varl) {
+      varl = ocs::tom::ListPtr<ocs::tom::VA>::create("");
    }
-   ocs::tom::List<ocs::tom::VA>(*varl).splice(ocs::tom::ListPtr<ocs::tom::VA>::from_typed(var_list2));
+   varl->splice(std::move(var_list2));
    DRETURN_VOID;
 }
 
 /**
  * @brief var_list_copy_prefix_vars_undef() for an untyped caller
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if *varl is nullptr
- * @param src_varl the list to copy from (VA_Type), checked; may be nullptr
+ * @param[in,out] varl VA_Type list the copies are added to, checked; created if *varl is nullptr
+ * @param src_varl the list to copy from (VA_Type), checked; may be nullptr and may be *varl itself
  * @param prefix prefix string (e.g. VAR_PREFIX_NR)
  * @param new_prefix new prefix string (e.g. "SGE_")
  */
 void var_list_copy_prefix_vars_undef(lList **varl, const lList *src_varl, const char *prefix,
                                      const char *new_prefix) {
-   var_list_copy_prefix_vars_undef(varl, ocs::tom::ConstList<ocs::tom::VA>(src_varl), prefix, new_prefix);
+   // the source is checked before the target is taken over
+   const ocs::tom::ConstList<ocs::tom::VA> src(src_varl);
+   ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
+   var_list_copy_prefix_vars_undef(list, src, prefix, new_prefix);
+   *varl = list.release();
 }
 
 /**
@@ -429,14 +498,15 @@ void var_list_copy_prefix_vars_undef(lList **varl, const lList *src_varl, const 
  * Copies every variable from `src_varl` into `varl`. A variable without a
  * value is copied as the empty string, never as nullptr.
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if *varl is nullptr
+ * @param[in,out] varl VA_Type list the copies are added to, created if the handle is empty
  * @param src_varl source VA_Type list, may be an empty handle
  *
  * @note The banner this was converted from also described an `ignore_prefix`
  *       parameter that filtered the copied variables. Neither the parameter
  *       nor the filtering exist any more.
  */
-void var_list_copy_env_vars_and_value(lList **varl, const ocs::tom::ConstList<ocs::tom::VA> src_varl) {
+void var_list_copy_env_vars_and_value(ocs::tom::ListPtr<ocs::tom::VA> &varl,
+                                      const ocs::tom::ConstList<ocs::tom::VA> src_varl) {
    DENTER(TOP_LAYER);
 
    for (const auto env : src_varl) {
@@ -449,24 +519,36 @@ void var_list_copy_env_vars_and_value(lList **varl, const ocs::tom::ConstList<oc
 }
 
 /**
+ * @brief var_list_copy_env_vars_and_value() for an untyped caller
+ *
+ * @param[in,out] varl VA_Type list the copies are added to, checked; nothing happens for nullptr
+ * @param src_varl source VA_Type list, may be an empty handle
+ */
+void var_list_copy_env_vars_and_value(lList **varl, const ocs::tom::ConstList<ocs::tom::VA> src_varl) {
+   if (varl != nullptr) {
+      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
+      var_list_copy_env_vars_and_value(list, src_varl);
+      *varl = list.release();
+   }
+}
+
+/**
  * @brief Remove vars with certain prefix
  *
  * Remove all entries from "varl" where the name
  * beginns with "prefix"
  *
- * The list stays an untyped in-out reference: the callers pass the address
- * of their own list variable.
+ * The list itself stays, also when it becomes empty.
  *
- * @param varl VA_Type list
+ * @param varl VA_Type list, may be an empty handle
  * @param prefix prefix string (e.g. VAR_PREFIX)
  *
  * @see #var_list_split_prefix_vars
  */
-void var_list_remove_prefix_vars(lList **varl, const char *prefix) {
+void var_list_remove_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, const char *prefix) {
    DENTER(TOP_LAYER);
 
    const size_t prefix_len = strlen(prefix);
-   const ocs::tom::List<ocs::tom::VA> list(*varl);
 
    auto var_elem = list.front();
    while (var_elem) {
@@ -482,27 +564,35 @@ void var_list_remove_prefix_vars(lList **varl, const char *prefix) {
 }
 
 /**
+ * @brief var_list_remove_prefix_vars() for an untyped caller
+ *
+ * @param varl pointer to the VA_Type list, checked; the list may be nullptr
+ * @param prefix prefix string (e.g. VAR_PREFIX)
+ */
+void var_list_remove_prefix_vars(lList **varl, const char *prefix) {
+   var_list_remove_prefix_vars(ocs::tom::List<ocs::tom::VA>(*varl), prefix);
+}
+
+/**
  * @brief Split a list of variables
  *
  * Move all variable elements from "varl" to "pefix_vars" which
  * begin with "prefix". *pefix_vars will be created if is does not
  * exist.
  *
- * Both lists stay untyped in-out references: @p pefix_vars may already hold
- * variables and is appended to, and the callers (qmaster, qstat) pass the
- * addresses of their own list variables.
+ * @p pefix_vars may already hold variables and is appended to.
  *
- * @param varl VA_Type list
- * @param pefix_vars pointer to VA_Type list
+ * @param list VA_Type list, may be an empty handle
+ * @param[in,out] pefix_vars VA_Type list, created if the handle is empty and a variable is moved
  * @param prefix string (e.g. VAR_PREFIX)
  *
  * @see #var_list_remove_prefix_vars
  */
-void var_list_split_prefix_vars(lList **varl, lList **pefix_vars, const char *prefix) {
+void var_list_split_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, ocs::tom::ListPtr<ocs::tom::VA> &pefix_vars,
+                                const char *prefix) {
    DENTER(TOP_LAYER);
 
    const size_t prefix_len = strlen(prefix);
-   const ocs::tom::List<ocs::tom::VA> list(*varl);
 
    auto var_elem = list.front();
    while (var_elem) {
@@ -512,15 +602,30 @@ void var_list_split_prefix_vars(lList **varl, lList **pefix_vars, const char *pr
       if (!strncmp(prefix_name, prefix, prefix_len)) {
          auto dechained_elem = list.extract(var_elem);
 
-         if (*pefix_vars == nullptr) {
-            *pefix_vars = ocs::tom::ListPtr<ocs::tom::VA>::create("").release();
+         if (!pefix_vars) {
+            pefix_vars = ocs::tom::ListPtr<ocs::tom::VA>::create("");
          }
 
-         ocs::tom::List<ocs::tom::VA>(*pefix_vars).push_back(std::move(dechained_elem));
+         pefix_vars->push_back(std::move(dechained_elem));
       }
       var_elem = next_var_elem;
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief var_list_split_prefix_vars() for an untyped caller
+ *
+ * @param varl pointer to the VA_Type list, checked; the list may be nullptr
+ * @param pefix_vars pointer to the VA_Type list, checked; created if *pefix_vars is nullptr
+ * @param prefix string (e.g. VAR_PREFIX)
+ */
+void var_list_split_prefix_vars(lList **varl, lList **pefix_vars, const char *prefix) {
+   // the source is checked before the target is taken over
+   const ocs::tom::List<ocs::tom::VA> list(*varl);
+   ocs::tom::ListPtr<ocs::tom::VA> prefix_list(*pefix_vars);
+   var_list_split_prefix_vars(list, prefix_list, prefix);
+   *pefix_vars = prefix_list.release();
 }
 
 /**
@@ -628,23 +733,22 @@ bool var_list_verify(const ocs::tom::ConstList<ocs::tom::VA> lp, lList **answer_
  * @brief Parse a comma-separated variable list into a VA_Type list.
  *
  * Splits @p variable_str on ',' into "name[=value]" tokens and appends a VA_Type
- * element per token to @p lpp (creating the list if *lpp is nullptr). A name
+ * element per token to @p lpp (creating the list if the handle is empty). A name
  * that is already in the list keeps its element and takes the new value, so a
  * variable given twice holds the last value once (CS-3053). The input
  * is attacker-controlled (qsub/qalter -v/-V/-ac/-dc, JSV); a malformed token
  * that carries no name part (e.g. "==") is rejected with an error instead of
  * dereferencing NULL. MT-NOTE: this function is MT safe.
  *
- * @param[in,out] lpp              VA_Type list to append to; created if *lpp is
- *                                 nullptr
+ * @param[in,out] lpp              VA_Type list to append to; created if the
+ *                                 handle is empty, freed on error 2 and 3
  * @param[in]     variable_str     source string ("a=1,b=2,...")
  * @param[in]     check_environment if true, a name without "=value" takes its
  *                                 value from the caller's environment
- * @return 0 on success, >0 on error (1 lpp nullptr, 2 strdup, 3 empty list,
- *         4 list create, 5 malformed token)
+ * @return 0 on success, >0 on error (2 strdup, 3 empty list, 5 malformed token)
  */
-int var_list_parse_from_string(lList **lpp, const char *variable_str,
-                               int check_environment) {
+int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char *variable_str,
+                               const int check_environment) {
    DENTER(TOP_LAYER);
 
    char *variable;
@@ -654,29 +758,20 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
    char **pstr;
    char *va_string;
 
-   if (!lpp) {
-      DRETURN(1);
-   }
-
    va_string = sge_strdup(nullptr, variable_str);
    if (!va_string) {
-      *lpp = nullptr;
+      lpp.reset();
       DRETURN(2);
    }
    str_str = string_list(va_string, ",", nullptr);
    if (!str_str || !*str_str) {
-      *lpp = nullptr;
+      lpp.reset();
       sge_free(&va_string);
       DRETURN(3);
    }
 
-   if (!*lpp) {
-      *lpp = lCreateList("variable list", VA_Type);
-      if (!*lpp) {
-         sge_free(&va_string);
-         sge_free(&str_str);
-         DRETURN(4);
-      }
+   if (!lpp) {
+      lpp = ocs::tom::ListPtr<ocs::tom::VA>::create("variable list");
    }
 
    for (pstr = str_str; *pstr; pstr++) {
@@ -696,9 +791,9 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
          DRETURN(5);
       }
       var_len=strlen(variable);
-      ocs::tom::Element<ocs::tom::VA> ep = ocs::tom::find_first_rw<VA_variable>(*lpp, variable);
-      if (ep == nullptr) {
-         ep = ocs::tom::emplace_back<VA_variable>(lpp, variable);
+      auto ep = lpp->find_first<VA_variable>(variable);
+      if (!ep) {
+         ep = lpp->emplace_back<VA_variable>(variable);
       }
       val_str=*pstr;
 
@@ -722,5 +817,23 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
    sge_free(&va_string);
    sge_free(&str_str);
    DRETURN(0);
+}
+
+/**
+ * @brief var_list_parse_from_string() for an untyped caller
+ *
+ * @param[in,out] lpp VA_Type list to append to, checked; created if *lpp is nullptr
+ * @param[in] variable_str source string ("a=1,b=2,...")
+ * @param[in] check_environment if true, a name without "=value" takes its value from the caller's environment
+ * @return as var_list_parse_from_string(), and 1 if @p lpp is nullptr
+ */
+int var_list_parse_from_string(lList **lpp, const char *variable_str, int check_environment) {
+   if (lpp == nullptr) {
+      return 1;
+   }
+   ocs::tom::ListPtr<ocs::tom::VA> list(*lpp);
+   const int ret = var_list_parse_from_string(list, variable_str, check_environment);
+   *lpp = list.release();
+   return ret;
 }
 

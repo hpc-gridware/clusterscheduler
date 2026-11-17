@@ -39,7 +39,17 @@
  * @see sge_schedd_conf.cc
  */
 
+#include <tuple>
+
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
 #include "sgeobj/cull/sge_schedd_conf_SC_L.h"
@@ -117,22 +127,23 @@ void sconf_ph_print_array(policy_hierarchy_t array[]);
 
 void sconf_print_config();
 
-lListElem *sconf_create_default();
+ocs::tom::ElementPtr<ocs::tom::SC> sconf_create_default();
 
-bool sconf_set_config(lList **config, lList **answer_list);
+bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, lList **answer_list);
+OCS_TRANSITIONAL bool sconf_set_config(lList **config, lList **answer_list);
 
-bool sconf_is_valid_load_formula(lList **answer_list, const lList *cmplx_list);
+bool sconf_is_valid_load_formula(lList **answer_list, ocs::tom::ConstList<ocs::tom::CE> cmplx_list);
 
 bool
-sconf_is_centry_referenced(const lListElem *centry);
+sconf_is_centry_referenced(ocs::tom::ConstElement<ocs::tom::CE> centry);
 
-bool sconf_validate_config(lList **answer_list, lList *config);
+bool sconf_validate_config(lList **answer_list, ocs::tom::List<ocs::tom::SC> config);
 
 bool sconf_validate_config_(lList **answer_list);
 
-lListElem *sconf_get_config();
+ocs::tom::ElementPtr<ocs::tom::SC> sconf_get_config();
 
-lList *sconf_get_config_list();
+ocs::tom::ListPtr<ocs::tom::SC> sconf_get_config_list();
 
 bool sconf_is_new_config();
 void sconf_reset_new_config();
@@ -141,7 +152,7 @@ bool sconf_is();
 
 uint32_t sconf_get_load_adjustment_decay_time();
 
-lList *sconf_get_job_load_adjustments();
+ocs::tom::ListPtr<ocs::tom::CE> sconf_get_job_load_adjustments();
 
 char *sconf_get_load_formula();
 
@@ -155,11 +166,11 @@ uint32_t sconf_get_reprioritize_interval();
 
 uint32_t sconf_get_weight_tickets_share();
 
-lList *sconf_get_schedd_job_info_range();
+ocs::tom::ListPtr<ocs::tom::RN> sconf_get_schedd_job_info_range();
 
 bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number);
 
-lList *sconf_get_usage_weight_list();
+ocs::tom::ListPtr<ocs::tom::UA> sconf_get_usage_weight_list();
 
 double sconf_get_weight_user();
 
@@ -195,7 +206,7 @@ uint32_t sconf_get_max_functional_jobs_to_schedule();
 
 uint32_t sconf_get_max_pending_tasks_per_job();
 
-lList* sconf_get_halflife_decay_list();
+ocs::tom::ListPtr<ocs::tom::UA> sconf_get_halflife_decay_list();
 
 double sconf_get_weight_ticket();
 double sconf_get_weight_waiting_time();
@@ -254,12 +265,12 @@ bool sconf_get_mes_schedd_info();
 void schedd_mes_set_logging(int bval);
 int schedd_mes_get_logging();
 
-lListElem *sconf_get_sme();
-void sconf_set_sme(lListElem *sme);
+ocs::tom::Element<ocs::tom::SME> sconf_get_sme();
+void sconf_set_sme(ocs::tom::ElementPtr<ocs::tom::SME> &&sme);
 
-lListElem *sconf_get_tmp_sme();
-void sconf_set_tmp_sme(lListElem *sme);
+ocs::tom::Element<ocs::tom::SME> sconf_get_tmp_sme();
+void sconf_set_tmp_sme(ocs::tom::ElementPtr<ocs::tom::SME> &&sme);
 
 void sconf_reset_jobs();
 
-void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority);
+std::tuple<double, double, double> sconf_get_weight_ticket_urgency_priority();

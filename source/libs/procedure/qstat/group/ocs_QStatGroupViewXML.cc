@@ -43,9 +43,8 @@ void ocs::QStatGroupViewXML::report_finished(std::ostream &os, QStatParameter &p
    DENTER(TOP_LAYER);
    if (xml_elems != nullptr) {
       // the head takes the list over
-      lListElem *xml_elem = xml_getHead("job_info", xml_elems.release(), nullptr);
-      lWriteElemXMLTo(xml_elem, os);
-      lFreeElem(&xml_elem);
+      const auto xml_head = xml_getHead("job_info", std::move(xml_elems), nullptr);
+      lWriteElemXMLTo(*xml_head, os);
    }
    DRETURN_VOID;
 }

@@ -174,8 +174,7 @@ map_req2str(uint32_t op);
 const char *
 map_consumable2str(uint32_t op);
 
-lListElem *
-centry_create(lList **answer_list, const char *name);
+[[nodiscard]] ocs::tom::ElementPtr<ocs::tom::CE> centry_create(lList **answer_list, const char *name);
 
 bool centry_is_referenced(ocs::tom::ConstElement<ocs::tom::CE> centry, lList **answer_list,
                           ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
@@ -187,14 +186,6 @@ OCS_TRANSITIONAL bool centry_is_referenced(const lListElem *centry, lList **answ
 
 bool centry_print_resource_to_dstring(ocs::tom::ConstElement<ocs::tom::CE> this_elem, dstring *string);
 OCS_TRANSITIONAL bool centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string);
-
-/**
- * @brief The complex configuration of the active data store
- *
- * @return a pointer to the master list of complex entries
- */
-lList **
-centry_list_get_master_list();
 
 ocs::tom::Element<ocs::tom::CE> centry_list_locate(ocs::tom::ConstList<ocs::tom::CE> this_list, const char *name);
 OCS_TRANSITIONAL lListElem *centry_list_locate(const lList *this_list, const char *name);
@@ -256,7 +247,6 @@ OCS_TRANSITIONAL bool validate_load_formula(const char *formula, lList **answer_
                                             const char *name);
 
 bool load_formula_is_centry_referenced(const char *load_formula, ocs::tom::ConstElement<ocs::tom::CE> centry);
-OCS_TRANSITIONAL bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry);
 
 const char *sge_get_dominant_stringval(ocs::tom::ConstElement<ocs::tom::CE> rep, uint32_t *dominant_p,
                                        dstring *resource_string_p, double *dbl_value, uint64_t *uint64_value);

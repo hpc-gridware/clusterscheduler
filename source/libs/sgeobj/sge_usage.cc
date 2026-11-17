@@ -43,6 +43,7 @@
  * @see sge_usage.h
  */
 
+#include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <cmath>
@@ -52,21 +53,24 @@
 
 #include "cull/cull.h"
 
+#include "uti/sge_rmon_macros.h"
+
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/tom/ocs_tom_HS.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /**
- * @brief Return ulong usage value
+ * @brief Return a usage value as int
  *
  * Searches a usage object with the given name in the given usage
  * list. If such an element is found, returns the value of the
- * usage object as uint32_t value.
+ * usage object as int value.
  * If no such element is found, return the given default value.
  *
- * @param usage_list the usage list
+ * @param usage_list the usage list (UA_Type), may be an empty handle
  * @param name name of the element to search
  * @param def default value
  *
@@ -75,13 +79,28 @@
  * @see #usage_list_get_double_usage
  */
 int
-usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
-   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
-   if (ep != nullptr) {
-      return static_cast<int>(ocs::tom::get<UA_value>(ep));
-   } else {
-      return def;
+usage_list_get_int_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name, const int def) {
+   DENTER(BASIS_LAYER);
+   int ret = def;
+   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   if (ep) {
+      ret = static_cast<int>(ocs::tom::get<UA_value>(ep));
    }
+   DRETURN(ret);
+}
+
+/**
+ * @brief usage_list_get_int_usage() for an untyped caller
+ *
+ * @param usage_list the usage list (UA_Type), checked; may be nullptr
+ * @param name name of the element to search
+ * @param def default value
+ *
+ * @return as usage_list_get_int_usage()
+ */
+int
+usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
+   return usage_list_get_int_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
 }
 
 /**
@@ -89,7 +108,7 @@ usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
  *
  * Usage is stored as a double throughout; this converts on read.
  *
- * @param usage_list list to search
+ * @param usage_list list to search (UA_Type), may be an empty handle
  * @param name name of the element to search
  * @param def default value returned when the list has no such element
  * @return value of found object or default
@@ -97,19 +116,34 @@ usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
  * @note MT-NOTE: usage_list_get_ulong_usage() is MT safe
  */
 uint32_t
-usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def) {
-   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
-   if (ep != nullptr) {
-      return static_cast<uint32_t>(ocs::tom::get<UA_value>(ep));
-   } else {
-      return def;
+usage_list_get_ulong_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name,
+                           const uint32_t def) {
+   DENTER(BASIS_LAYER);
+   uint32_t ret = def;
+   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   if (ep) {
+      ret = static_cast<uint32_t>(ocs::tom::get<UA_value>(ep));
    }
+   DRETURN(ret);
+}
+
+/**
+ * @brief usage_list_get_ulong_usage() for an untyped caller
+ *
+ * @param usage_list list to search (UA_Type), checked; may be nullptr
+ * @param name name of the element to search
+ * @param def default value returned when the list has no such element
+ * @return as usage_list_get_ulong_usage()
+ */
+uint32_t
+usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def) {
+   return usage_list_get_ulong_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
 }
 
 /**
  * @brief Read a usage value as a 64 bit unsigned integer
  *
- * @param usage_list list to search
+ * @param usage_list list to search (UA_Type), may be an empty handle
  * @param name name of the element to search
  * @param def default value returned when the list has no such element
  * @return value of found object or default
@@ -117,13 +151,28 @@ usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t d
  * @note MT-NOTE: usage_list_get_ulong64_usage() is MT safe
  */
 uint64_t
-usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def) {
-   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
-   if (ep != nullptr) {
-      return static_cast<uint64_t>(ocs::tom::get<UA_value>(ep));
-   } else {
-      return def;
+usage_list_get_ulong64_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name,
+                             const uint64_t def) {
+   DENTER(BASIS_LAYER);
+   uint64_t ret = def;
+   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   if (ep) {
+      ret = static_cast<uint64_t>(ocs::tom::get<UA_value>(ep));
    }
+   DRETURN(ret);
+}
+
+/**
+ * @brief usage_list_get_ulong64_usage() for an untyped caller
+ *
+ * @param usage_list list to search (UA_Type), checked; may be nullptr
+ * @param name name of the element to search
+ * @param def default value returned when the list has no such element
+ * @return as usage_list_get_ulong64_usage()
+ */
+uint64_t
+usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def) {
+   return usage_list_get_ulong64_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
 }
 
 /**
@@ -134,7 +183,7 @@ usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t
  * usage object as double value.
  * If no such element is found, return the given default value.
  *
- * @param usage_list the usage list
+ * @param usage_list the usage list (UA_Type), may be an empty handle
  * @param name name of the element to search
  * @param def default value
  *
@@ -143,14 +192,29 @@ usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t
  * @see #usage_list_get_ulong_usage
  */
 double
-usage_list_get_double_usage(const lList *usage_list, const char *name,
-                            double def) {
-   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
-   if(ep != nullptr) {
-      return ocs::tom::get<UA_value>(ep);
-   } else {
-      return def;
+usage_list_get_double_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name,
+                            const double def) {
+   DENTER(BASIS_LAYER);
+   double ret = def;
+   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   if (ep) {
+      ret = ocs::tom::get<UA_value>(ep);
    }
+   DRETURN(ret);
+}
+
+/**
+ * @brief usage_list_get_double_usage() for an untyped caller
+ *
+ * @param usage_list the usage list (UA_Type), checked; may be nullptr
+ * @param name name of the element to search
+ * @param def default value
+ *
+ * @return as usage_list_get_double_usage()
+ */
+double
+usage_list_get_double_usage(const lList *usage_list, const char *name, double def) {
+   return usage_list_get_double_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
 }
 
 /**
@@ -159,7 +223,7 @@ usage_list_get_double_usage(const lList *usage_list, const char *name,
  * Updates the value of a usage record. If no usage record exists with the
  * given name in usage_list, a new record is created.
  *
- * @param usage_list list containing the usage record to update
+ * @param usage_list list containing the usage record to update (UA_Type), may be an empty handle
  * @param name name of the usage record to update
  * @param value the new value
  *
@@ -167,21 +231,74 @@ usage_list_get_double_usage(const lList *usage_list, const char *name,
  *
  * @see #usage_list_set_double_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
  */
-void usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value) {
+void
+usage_list_set_ulong_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name, const uint32_t value) {
+   DENTER(BASIS_LAYER);
    usage_list_set_double_usage(usage_list, name, value);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief usage_list_set_ulong_usage() for an untyped caller
+ *
+ * @param usage_list list containing the usage record to update (UA_Type), checked; may be nullptr
+ * @param name name of the usage record to update
+ * @param value the new value
+ */
+void
+usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value) {
+   usage_list_set_ulong_usage(ocs::tom::List<ocs::tom::UA>(usage_list), name, value);
 }
 
 /**
  * @brief Create or update a usage record from a 64 bit unsigned integer
  *
- * @param usage_list list containing the usage record to update
+ * @param usage_list list containing the usage record to update (UA_Type), may be an empty handle
  * @param name name of the usage record to update
  * @param value the new value
  *
  * @note MT-NOTE: usage_list_set_ulong64_usage() is MT safe
  */
-void usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value) {
+void
+usage_list_set_ulong64_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name,
+                             const uint64_t value) {
+   DENTER(BASIS_LAYER);
    usage_list_set_double_usage(usage_list, name, value);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief usage_list_set_ulong64_usage() for an untyped caller
+ *
+ * @param usage_list list containing the usage record to update (UA_Type), checked; may be nullptr
+ * @param name name of the usage record to update
+ * @param value the new value
+ */
+void
+usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value) {
+   usage_list_set_ulong64_usage(ocs::tom::List<ocs::tom::UA>(usage_list), name, value);
+}
+
+/**
+ * @brief Find a usage record, creating it on request
+ *
+ * An empty list handle or a null name gives no record: the list belongs to
+ * the caller and cannot be created here.
+ *
+ * @param usage_list the usage list (UA_Type), may be an empty handle
+ * @param name name of the usage record
+ * @param create_usage create the usage record if it does not exist
+ * @return the record, or an empty handle
+ */
+static ocs::tom::Element<ocs::tom::UA>
+ocs_usage_list_find_or_add(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name,
+                           const bool create_usage) {
+   DENTER(BASIS_LAYER);
+   auto ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+   if (!ep && create_usage && usage_list && name != nullptr) {
+      ep = usage_list.emplace_back<UA_name>(name);
+   }
+   DRETURN(ep);
 }
 
 /**
@@ -190,7 +307,7 @@ void usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t 
  * Updates the value of a usage record. If no usage record exists with the
  * given name in usage_list, a new record is created.
  *
- * @param usage_list list containing the usage record to update
+ * @param usage_list list containing the usage record to update (UA_Type), may be an empty handle
  * @param name name of the usage record to update
  * @param value the new value
  * @param create_usage create the usage element if it does not exist? Default: yes.
@@ -199,39 +316,51 @@ void usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t 
  *
  * @see #usage_list_set_ulong_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
  */
-void usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
-   ocs::tom::Element<ocs::tom::UA> ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
-   if (ep == nullptr && create_usage) {
-      ep = ocs::tom::emplace_back<UA_name>(&usage_list, name);
-   }
-
-   if (ep != nullptr) {
+void
+usage_list_set_double_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name, const double value,
+                            const bool create_usage) {
+   DENTER(BASIS_LAYER);
+   const auto ep = ocs_usage_list_find_or_add(usage_list, name, create_usage);
+   if (ep) {
       ocs::tom::set<UA_value>(ep, value);
    }
+   DRETURN_VOID;
 }
 
+/**
+ * @brief usage_list_set_double_usage() for an untyped caller
+ *
+ * @param usage_list list containing the usage record to update (UA_Type), checked; may be nullptr
+ * @param name name of the usage record to update
+ * @param value the new value
+ * @param create_usage create the usage element if it does not exist
+ */
+void
+usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
+   usage_list_set_double_usage(ocs::tom::List<ocs::tom::UA>(usage_list), name, value, create_usage);
+}
 
 /**
- * @brief Set the maximum value for a usage record.A
+ * @brief Set the maximum value for a usage record
  *
  * For a usage record with the given name, this function sets the value to the maximum
  * of the current value and the provided value. If no usage record exists with the
  * given name, a new record is created with the provided value.
  *
- * @param usage_list    - the usage list to update
- * @param name          - name of the usage record to update
- * @param value         - the value to compare and set
- * @param create_usage  - if true, create the usage element if it does not exist; default is true.
+ * @param usage_list the usage list to update (UA_Type), may be an empty handle
+ * @param name name of the usage record to update
+ * @param value the value to compare and set
+ * @param create_usage if true, create the usage element if it does not exist; default is true.
  */
-void usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
-   ocs::tom::Element<ocs::tom::UA> ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
-   if (ep == nullptr && create_usage) {
-      ep = ocs::tom::emplace_back<UA_name>(&usage_list, name);
-   }
-
-   if (ep != nullptr) {
+void
+usage_list_max_double_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name, const double value,
+                            const bool create_usage) {
+   DENTER(BASIS_LAYER);
+   const auto ep = ocs_usage_list_find_or_add(usage_list, name, create_usage);
+   if (ep) {
       ocs::tom::set<UA_value>(ep, std::max(value, ocs::tom::get<UA_value>(ep)));
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -247,13 +376,16 @@ void usage_list_max_double_usage(lList *usage_list, const char *name, double val
  *    - maxvmem
  *    - all ru_* attributes (see man getrusage.2)
  *
- * @param usage_list the usage list to contain all usage
- * @param add_usage_list usage to add to usage_list
+ * @param usage_list the usage list to contain all usage (UA_Type), not empty if @p add_usage_list holds a
+ *                   summed attribute
+ * @param add_usage_list usage to add to usage_list (UA_Type), may be an empty handle
  *
  * @note MT-NOTE: usage_list_sum() is MT safe
  */
-void usage_list_sum(lList *usage_list, const lList *add_usage_list) {
-   for_each_ep_lv(usage, add_usage_list) {
+void
+usage_list_sum(const ocs::tom::List<ocs::tom::UA> usage_list, const ocs::tom::ConstList<ocs::tom::UA> add_usage_list) {
+   DENTER(BASIS_LAYER);
+   for (const auto usage : add_usage_list) {
       const char *name = ocs::tom::get<UA_name>(usage);
       /* Sum up all usage attributes. */
       if (strcmp(name, USAGE_ATTR_CPU) == 0 ||
@@ -267,17 +399,17 @@ void usage_list_sum(lList *usage_list, const lList *add_usage_list) {
           strcmp(name, USAGE_ATTR_SMEM) == 0 ||
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
-         ocs::tom::Element<ocs::tom::UA> sum = ocs::tom::find_first_rw<UA_name>(usage_list, name);
-         if (sum == nullptr) {
-            lAppendElem(usage_list, lCopyElem(usage));
+         const auto sum = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+         if (!sum) {
+            usage_list.push_back(usage.clone());
          } else {
             ocs::tom::add<UA_value>(sum, ocs::tom::get<UA_value>(usage));
          }
       }
    }
+   DRETURN_VOID;
 }
 
-/* if the scaled usage list does not yet exist, it is created and returned */
 /**
  * @brief Apply an execution host's usage scaling factors
  *
@@ -285,126 +417,57 @@ void usage_list_sum(lList *usage_list, const lList *add_usage_list) {
  * charged comparably across a heterogeneous cluster. The scaling applies to
  * the usage accumulated *since* `prev_usage`, not to the total.
  *
- * @param scaling the host's scaling factors, one per usage attribute
- * @param prev_usage the usage already accounted for
- * @param[in,out] scaled_usage the usage to scale in place
- * @return the scaled list
+ * Without scaling factors nothing is done. An empty @p scaled_usage is left
+ * empty: the list belongs to the caller.
+ *
+ * @param scaling the host's scaling factors, one per usage attribute (HS_Type), may be an empty handle
+ * @param prev_usage the usage already accounted for (UA_Type), may be an empty handle
+ * @param scaled_usage the usage to scale in place (UA_Type), may be an empty handle
  */
-lList *scale_usage(
-const lList *scaling,     /* HS_Type */
-const lList *prev_usage,  /* HS_Type */
-lList *scaled_usage /* UA_Type */
-) {
-   ocs::tom::ConstElement<ocs::tom::HS> sep;
-   lListElem *ep;
-   const lListElem *prev;
+void
+scale_usage(const ocs::tom::ConstList<ocs::tom::HS> scaling, const ocs::tom::ConstList<ocs::tom::UA> prev_usage,
+            const ocs::tom::List<ocs::tom::UA> scaled_usage) {
+   DENTER(BASIS_LAYER);
 
-   if (!scaling) {
-      return nullptr;
+   if (!scaling || !scaled_usage) {
+      DRETURN_VOID;
    }
 
-   if (scaled_usage == nullptr) {
-      scaled_usage = lCreateList("usage", UA_Type);
-   }
-
-   for_each_rw (ep, scaled_usage) {
-      if ((sep=ocs::tom::find_first<HS_name>(scaling, ocs::tom::get<UA_name>(ep)))) {
+   for (const auto ep : scaled_usage) {
+      const auto sep = ocs::tom::find_first<HS_name>(scaling, ocs::tom::get<UA_name>(ep));
+      if (sep) {
          ocs::tom::set<UA_value>(ep, ocs::tom::get<UA_value>(ep) * ocs::tom::get<HS_value>(sep));
       }
    }
 
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_CPU)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_CPU))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_IO)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_IO))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_IOW)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_IOW))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_VMEM)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_VMEM))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MAXVMEM)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MAXVMEM))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_RSS)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_RSS))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MAXRSS)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MAXRSS))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MEM)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MEM))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
+   // the attributes whose previous usage is added, in this order
+   static constexpr const char *summed[] = {
+      USAGE_ATTR_CPU, USAGE_ATTR_IO, USAGE_ATTR_IOW, USAGE_ATTR_VMEM, USAGE_ATTR_MAXVMEM, USAGE_ATTR_RSS,
+      USAGE_ATTR_MAXRSS, USAGE_ATTR_MEM, USAGE_ATTR_PSS, USAGE_ATTR_MAXPSS, USAGE_ATTR_PMEM, USAGE_ATTR_SMEM
+   };
+   for (const char *attr : summed) {
+      const auto prev = ocs::tom::find_first<UA_name>(prev_usage, attr);
+      if (prev) {
+         const auto ep = ocs::tom::find_first_rw<UA_name>(scaled_usage, attr);
+         if (ep) {
+            ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
+         } else {
+            scaled_usage.push_back(prev.clone());
+         }
       }
    }
 
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_PSS)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_PSS))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MAXPSS)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MAXPSS))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_PMEM)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_PMEM))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_SMEM)) != nullptr) {
-      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_SMEM))) {
-         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
-      } else {
-         lAppendElem(scaled_usage, lCopyElem(prev));
-      }
-   }
-
-   return scaled_usage;
+   DRETURN_VOID;
 }
 
 /**
- * Case-insensitive equality for a null-terminated string against a fixed
- * literal. Local helper for the bool-coercion branch in usage_parse_value.
+ * @brief Case-insensitive equality for a null-terminated string against a fixed literal
+ *
+ * Local helper for the bool-coercion branch in usage_parse_value.
+ *
+ * @param value the text, not nullptr
+ * @param literal the literal to compare with, not nullptr
+ * @return true if both are equal ignoring case
  */
 static bool
 str_iequal(const char *value, const char *literal) {
@@ -443,37 +506,33 @@ parse_full_double(const char *value, double &out) {
 }
 
 /**
- * @brief Parse a raw shepherd usage file value into a fresh `UA_Type` element
+ * @brief Parse a raw `variable=value` pair from the shepherd usage file into a fresh `UA_Type` element
+ *
+ * Also used for equivalent sources. See `test/libs/sgeobj/test_sgeobj_usage_parse.cc`
+ * for the cases it covers.
  *
  * Discrimination rule (CS-849, origin AE3):
  *   1. length >= 2 && value starts and ends with the same quote character
  *      ('"' or '\''): strip both quotes, UA_svalue = interior, no escape processing.
- *      Empty pair "" yields an empty-string UA_svalue.
+ *      An empty pair yields no element, see below.
  *   2. Else parses as a full double: UA_value = the parsed number.
  *   3. Else case-insensitively equals "true" (UA_value = 1) or "false" (UA_value = 0).
  *   4. Else raw string: UA_svalue = the value as-is, including any stray
  *      leading quote (unmatched, mismatched, or single-character).
  * Standard `USAGE_ATTR_*` code paths never invoke this helper; `UA_svalue` is
  * reserved for custom usage values that arrive through the shepherd path.
+ * An empty value and an empty variable name are both accepted.
  *
  * @param name the usage attribute name; nullptr yields no element
  * @param value the raw text; nullptr is treated as the empty string
- * @return the new element, or nullptr when `name` was nullptr
+ * @return the new element, owned by the caller; empty when `name` was nullptr or the value an empty quoted pair
  */
-/**
- * @brief Parse a raw `variable=value` pair from the shepherd usage file
- *
- * Also used for equivalent sources. The result is a `UA_Type` element with a
- * correctly typed value; see CS-849 for the discrimination rule, and
- * `test/libs/sgeobj/test_sgeobj_usage.cc` for the cases it covers.
- *
- * The caller owns the returned element and has to free it or attach it to a
- * usage list. An empty value and an empty variable name are both accepted.
- */
-lListElem *
+ocs::tom::ElementPtr<ocs::tom::UA>
 usage_parse_value(const char *name, const char *value) {
+   DENTER(BASIS_LAYER);
+
    if (name == nullptr) {
-      return nullptr;
+      DRETURN(nullptr);
    }
    if (value == nullptr) {
       value = "";
@@ -495,32 +554,31 @@ usage_parse_value(const char *name, const char *value) {
        (value[0] == '"' || value[0] == '\'') &&
        value[len - 1] == value[0]) {
       if (len == 2) {
-         ep.reset();
-         return nullptr;
+         DRETURN(nullptr);
       }
       std::string interior(value + 1, len - 2);
       ocs::tom::set<UA_svalue>(ep, interior.c_str());
-      return ep.release();
+      DRETURN(ep);
    }
 
    // (2) full-double parse.
    double d = 0.0;
    if (parse_full_double(value, d)) {
       ocs::tom::set<UA_value>(ep, d);
-      return ep.release();
+      DRETURN(ep);
    }
 
    // (3) case-insensitive bool coercion.
    if (str_iequal(value, "true")) {
       ocs::tom::set<UA_value>(ep, 1.0);
-      return ep.release();
+      DRETURN(ep);
    }
    if (str_iequal(value, "false")) {
       ocs::tom::set<UA_value>(ep, 0.0);
-      return ep.release();
+      DRETURN(ep);
    }
 
    // (4) raw string.
    ocs::tom::set<UA_svalue>(ep, value);
-   return ep.release();
+   DRETURN(ep);
 }

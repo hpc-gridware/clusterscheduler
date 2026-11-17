@@ -561,12 +561,13 @@ static bool rqs_match_assignment(const ocs::tom::ConstElement<ocs::tom::RQR> rul
    // typed empty handles: a bare nullptr would be ambiguous with the untyped rqs_filter_match()
    const ocs::tom::ConstList<ocs::tom::US> no_usersets;
    const ocs::tom::ConstList<ocs::tom::HGRP> no_hgroups;
+   const ocs::tom::ConstList<ocs::tom::ST> no_groups;
    return (rqs_filter_match(ocs::tom::get<RQR_filter_projects>(rule), FILTER_PROJECTS, a->project, no_usersets,
-                            no_hgroups, nullptr, nullptr) &&
+                            no_hgroups, nullptr, no_groups) &&
            rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, a->user, a->acl_list, no_hgroups,
                             a->group, a->grp_list) &&
            rqs_filter_match(ocs::tom::get<RQR_filter_pes>(rule), FILTER_PES, nullptr, no_usersets, no_hgroups,
-                            nullptr, nullptr))?true:false;
+                            nullptr, no_groups))?true:false;
 }
 
 /**
@@ -878,7 +879,7 @@ static void rqs_expand_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
       if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname))
          continue;
       if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, ocs::tom::ConstList<ocs::tom::US>(),
-                           ocs::tom::ConstList<ocs::tom::HGRP>(), nullptr, nullptr) &&
+                           ocs::tom::ConstList<ocs::tom::HGRP>(), nullptr, ocs::tom::ConstList<ocs::tom::ST>()) &&
           !cqueue_shadowed_by(cqname, rule, a)) {
          if (!a->skip_cqueue_list) {
             a->skip_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
@@ -910,7 +911,7 @@ static void rqs_expand_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule, s
       if (ocs::tom::find_first<CTI_name>(*a->skip_host_list, hname))
          continue;
       if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr,
-                           nullptr) &&
+                           ocs::tom::ConstList<ocs::tom::ST>()) &&
           !host_shadowed_by(hname, rule, a)) {
          if (!a->skip_host_list) {
             a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
@@ -1014,7 +1015,7 @@ static void rqs_excluded_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rul
 
          if (rqs_filter_match(ocs::tom::get<RQR_filter_queues>(prev), FILTER_QUEUES, cqname,
                               ocs::tom::ConstList<ocs::tom::US>(), ocs::tom::ConstList<ocs::tom::HGRP>(), nullptr,
-                              nullptr)) {
+                              ocs::tom::ConstList<ocs::tom::ST>())) {
             exclude = false;
             break;
          }
@@ -1070,7 +1071,8 @@ static void rqs_excluded_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
             continue;
 
          if (rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(prev), FILTER_HOSTS, hname,
-                              ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr, nullptr)) {
+                              ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr,
+                              ocs::tom::ConstList<ocs::tom::ST>())) {
             exclude = false;
             break;
          }
@@ -1114,7 +1116,7 @@ static bool cqueue_shadowed_by(const char *cqname, const ocs::tom::ConstElement<
       if (rqs_match_assignment(prev, a) &&
           rqs_filter_match(ocs::tom::get<RQR_filter_queues>(prev), FILTER_QUEUES, cqname,
                            ocs::tom::ConstList<ocs::tom::US>(), ocs::tom::ConstList<ocs::tom::HGRP>(), nullptr,
-                           nullptr)) {
+                           ocs::tom::ConstList<ocs::tom::ST>())) {
          return true;
       }
    }
@@ -1144,7 +1146,8 @@ static bool host_shadowed_by(const char *host, const ocs::tom::ConstElement<ocs:
    for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
       if (rqs_match_assignment(prev, a) &&
           rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(prev), FILTER_HOSTS, host,
-                           ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr, nullptr)) {
+                           ocs::tom::ConstList<ocs::tom::US>(), a->hgrp_list, nullptr,
+                           ocs::tom::ConstList<ocs::tom::ST>())) {
          return true;
       }
    }

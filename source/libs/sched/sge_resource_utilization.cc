@@ -728,8 +728,8 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
          if (ocs::tom::get<RDE_binding_inuse>(start) != nullptr) {
             topo_binding_now.reset_topology(ocs::tom::get<RDE_binding_inuse>(start));
          }
-         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, true);
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(start, topo_binding_now,
+                                                                                   binding_to_use_obj, true);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(start, ocs::tom::get<RDE_resource_map_list>(start), rsmap_inuse,
@@ -757,8 +757,8 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
          if (binding_prev != nullptr) {
             topo_binding_now.reset_topology(binding_prev);
          }
-         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, true);
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(start, topo_binding_now,
+                                                                                   binding_to_use_obj, true);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(start, rsmap_prev, rsmap_inuse, rsmap_taken);
@@ -794,8 +794,8 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
          if (ocs::tom::get<RDE_binding_inuse>(thiz) != nullptr) {
             topo_binding_now.reset_topology(ocs::tom::get<RDE_binding_inuse>(thiz));
          }
-         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(thiz, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, true);
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(thiz, topo_binding_now,
+                                                                                   binding_to_use_obj, true);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(thiz, ocs::tom::get<RDE_resource_map_list>(thiz), rsmap_inuse,
@@ -818,8 +818,8 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
          if (binding_prev != nullptr) {
             topo_binding_now.reset_topology(binding_prev);
          }
-         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(new_end.get(), RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, false);
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(new_end.get(), topo_binding_now,
+                                                                                   binding_to_use_obj, false);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(new_end.get(), rsmap_prev_end, rsmap_inuse, !rsmap_taken);
@@ -1749,8 +1749,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
       // granted on.
       ocs::tom::ConstList<ocs::tom::RESL> rsmap_inuse;
       if ((tag == HOST_TAG || tag == GLOBAL_TAG) && static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(dcep)) == ocs::CEntry::Type::RSMAP) {
-         const auto gru = ocs::tom::ConstElement<ocs::tom::GRU>::from_typed(
-            gru_list_search(const_cast<lList *>(granted_resources_list.raw()), name, obj_name));
+         const auto gru = gru_list_search(granted_resources_list, name, obj_name);
          if (gru != nullptr && static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(gru)) == ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
             rsmap_inuse = ocs::tom::get<GRU_resource_map_list>(gru);
          }

@@ -45,6 +45,12 @@
 
 #include "gdi/ocs_gdi_Packet.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
+#include "sgeobj/tom/ocs_tom_EV.h"
+
 #include "sgeobj/cull/sge_event_EV_L.h"
 #include "sgeobj/cull/sge_event_EVS_L.h"
 #include "sgeobj/cull/sge_event_ET_L.h"
@@ -354,6 +360,7 @@ typedef bool (*evm_ack_func_t)(
   ((x)==sgeE_QMASTER_GOES_DOWN) || \
   ((x)==sgeE_ACK_TIMEOUT))
 
-const char *event_text(const lListElem *event, dstring *buffer);
+const char *event_text(ocs::tom::ConstElement<ocs::tom::ET> event, dstring *buffer);
+OCS_TRANSITIONAL const char *event_text(const lListElem *event, dstring *buffer);
 
-bool event_client_verify(const lListElem *event_client, lList **answer_list, bool add);
+bool event_client_verify(ocs::tom::ConstElement<ocs::tom::EV> event_client, lList **answer_list, bool add);

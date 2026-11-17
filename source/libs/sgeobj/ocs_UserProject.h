@@ -38,11 +38,22 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 namespace ocs {
    /// Operations shared by the user and the project object, which have the same usage layout
    class UserProject {
    public:
-      static void decay_userprj_usage(lListElem *userprj, bool user, const lList *decay_list, u_long seqno, uint64_t curr_time);
+      static void decay_userprj_usage(ocs::tom::Element<ocs::tom::UU> user,
+                                      ocs::tom::ConstList<ocs::tom::UA> decay_list, u_long seqno, uint64_t curr_time);
+      static void decay_userprj_usage(ocs::tom::Element<ocs::tom::PR> project,
+                                      ocs::tom::ConstList<ocs::tom::UA> decay_list, u_long seqno, uint64_t curr_time);
+      OCS_TRANSITIONAL static void decay_userprj_usage(lListElem *userprj, bool user, const lList *decay_list,
+                                                       u_long seqno, uint64_t curr_time);
    };
 }

@@ -40,107 +40,122 @@
 
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull_list.h"
-
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/tom/ocs_tom_QIM.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 #include "tom/ocs_Element.h"
 
-static bool
-qim_list_add(lList **this_list, uint32_t type, const char *message);
-
-static bool
-qim_list_trash_all_of_type_X(lList **this_list, uint32_t type);
-
-static bool
-qim_list_add(lList **this_list, uint32_t type, const char *message) {
+/**
+ * @brief Add a message to an object's message list
+ *
+ * Queue instances and jobs carry a list of messages explaining their state;
+ * this appends one. The list is created if the object holds none yet.
+ *
+ * @tparam F the list field holding the messages (QIM_Type), e.g. QU_message_list
+ * @param this_elem the object to add to; an empty handle changes nothing
+ * @param type the message type, so it can be trashed selectively
+ * @param message the text; nullptr adds nothing
+ * @return true
+ */
+template <auto F>
+bool object_message_add(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> this_elem,
+                        const uint32_t type, const char *message) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (this_list != nullptr && message != nullptr) {
-      ocs::tom::Element<ocs::tom::QIM> new_elem = ocs::tom::emplace_back<QIM_type>(this_list, type);
+   if (this_elem && message != nullptr) {
+      // "ulong_sublist" is the name the list library gives a list it creates for a uint32_t key
+      auto new_elem = this_elem.template get_or_create<F>("ulong_sublist").template emplace_back<QIM_type>(type);
 
       ocs::tom::set<QIM_message>(new_elem, message);
    }
    DRETURN(ret);
 }
 
-static bool
-qim_list_trash_all_of_type_X(lList **this_list, uint32_t type) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-   
-   if (this_list != nullptr) {
-      lListElem *elem = nullptr;
-      lListElem *next_elem = nullptr;
-
-      next_elem = lFirstRW(*this_list);
-      while ((elem = next_elem) != nullptr) {
-         uint32_t elem_type = ocs::tom::get<QIM_type>(elem);
-
-         next_elem = lNextRW(elem);
-         if ((elem_type & type) != 0) {
-            lRemoveElem(*this_list, &elem);
-         }
-      }
-      if (lGetNumberOfElem(*this_list) == 0) {
-         lFreeList(this_list);
-      }
-   }
-   DRETURN(ret);
-}
+template bool object_message_add<QU_message_list>(ocs::tom::Element<ocs::tom::QU> this_elem, uint32_t type,
+                                                  const char *message);
+template bool object_message_add<JAT_message_list>(ocs::tom::Element<ocs::tom::JAT> this_elem, uint32_t type,
+                                                   const char *message);
 
 /**
- * @brief Add a message to an object's message list
+ * @brief object_message_add() for an untyped caller
  *
- * Queue instances and jobs carry a list of messages explaining their state;
- * this appends one.
- *
- * @param[in,out] this_elem the object to add to
- * @param name the attribute holding the message list
+ * @param this_elem the object to add to (QU_Type or JAT_Type, checked)
+ * @param name the attribute holding the message list: QU_message_list or JAT_message_list
  * @param type the message type, so it can be trashed selectively
  * @param message the text
- * @return true when the message was added
+ * @return as object_message_add(); false for another attribute
  */
-bool object_message_add(lListElem *this_elem, int name,
-                        uint32_t type, const char *message) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   if (this_elem != nullptr) {
-      lList *qim_list = nullptr;
-
-      lXchgList(this_elem, name, &qim_list);
-      ret &= qim_list_add(&qim_list, type, message);
-      lXchgList(this_elem, name, &qim_list);
+bool object_message_add(lListElem *this_elem, const int name, const uint32_t type, const char *message) {
+   switch (name) {
+      case QU_message_list:
+         return object_message_add<QU_message_list>(ocs::tom::Element<ocs::tom::QU>(this_elem), type, message);
+      case JAT_message_list:
+         return object_message_add<JAT_message_list>(ocs::tom::Element<ocs::tom::JAT>(this_elem), type, message);
+      default:
+         return false;
    }
-   DRETURN(ret);
 }
 
 /**
  * @brief Remove every message of the given types from an object
  *
- * @param[in,out] this_elem the object to clean up
- * @param name the attribute holding the message list
+ * A message list emptied this way is freed and the field set to nullptr.
+ *
+ * @tparam F the list field holding the messages (QIM_Type), e.g. QU_message_list
+ * @param this_elem the object to clean up; an empty handle changes nothing
  * @param type a mask of the message types to remove
- * @return true when the list was changed
+ * @return true
  */
-bool object_message_trash_all_of_type_X(lListElem *this_elem, int name,
-                                        uint32_t type) {
+template <auto F>
+bool object_message_trash_all_of_type_X(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> this_elem,
+                                        const uint32_t type) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (this_elem != nullptr) {
-      lList *qim_list = nullptr;
+   if (this_elem) {
+      const auto qim_list = ocs::tom::get<F>(this_elem);
+      auto next_elem = qim_list.front();
 
-      lXchgList(this_elem, name, &qim_list);
-      ret &= qim_list_trash_all_of_type_X(&qim_list, type);
-      lXchgList(this_elem, name, &qim_list);
+      while (next_elem) {
+         const auto elem = next_elem;
+         next_elem = elem.next();
+         if ((ocs::tom::get<QIM_type>(elem) & type) != 0) {
+            qim_list.erase(elem);
+         }
+      }
+      if (qim_list.empty()) {
+         ocs::tom::set<F>(this_elem, ocs::tom::ListPtr<ocs::tom::QIM>());
+      }
    }
    DRETURN(ret);
+}
+
+template bool object_message_trash_all_of_type_X<QU_message_list>(ocs::tom::Element<ocs::tom::QU> this_elem,
+                                                                  uint32_t type);
+template bool object_message_trash_all_of_type_X<JAT_message_list>(ocs::tom::Element<ocs::tom::JAT> this_elem,
+                                                                   uint32_t type);
+
+/**
+ * @brief object_message_trash_all_of_type_X() for an untyped caller
+ *
+ * @param this_elem the object to clean up (QU_Type or JAT_Type, checked)
+ * @param name the attribute holding the message list: QU_message_list or JAT_message_list
+ * @param type a mask of the message types to remove
+ * @return as object_message_trash_all_of_type_X(); false for another attribute
+ */
+bool object_message_trash_all_of_type_X(lListElem *this_elem, const int name, const uint32_t type) {
+   switch (name) {
+      case QU_message_list:
+         return object_message_trash_all_of_type_X<QU_message_list>(ocs::tom::Element<ocs::tom::QU>(this_elem), type);
+      case JAT_message_list:
+         return object_message_trash_all_of_type_X<JAT_message_list>(ocs::tom::Element<ocs::tom::JAT>(this_elem),
+                                                                     type);
+      default:
+         return false;
+   }
 }

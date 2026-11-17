@@ -256,10 +256,9 @@ ar_verify_project(const lListElem *ar, const ocs::gdi::Packet *packet, lList **a
 
    // the user has to have access to the project
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
-   bool has_access = sge_has_access_(packet->user, packet->group, grp_list, ocs::tom::get<PR_acl>(pep),
+   const auto grp_list = grp_list_array2list(packet->amount, packet->grp_array);
+   bool has_access = sge_has_access_(packet->user, packet->group, *grp_list, ocs::tom::get<PR_acl>(pep),
                                      ocs::tom::get<PR_xacl>(pep), master_userset_list) != 0;
-   lFreeList(&grp_list);
    if (!has_access) {
       ERROR(MSG_AR_NOACCESS2PRJ4USER_SS, project, packet->user);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -267,12 +266,10 @@ ar_verify_project(const lListElem *ar, const ocs::gdi::Packet *packet, lList **a
    }
 
    // the projects and xprojects of the global configuration have to allow the project
-   lList *projects = mconf_get_projects();
-   lList *xprojects = mconf_get_xprojects();
-   bool allowed = (xprojects == nullptr || prj_list_locate(xprojects, project) == nullptr) &&
-                  (projects == nullptr || prj_list_locate(projects, project) != nullptr);
-   lFreeList(&projects);
-   lFreeList(&xprojects);
+   const auto projects = mconf_get_projects();
+   const auto xprojects = mconf_get_xprojects();
+   bool allowed = (!xprojects || prj_list_locate(*xprojects, project) == nullptr) &&
+                  (!projects || prj_list_locate(*projects, project) != nullptr);
    if (!allowed) {
       ERROR(MSG_AR_PRJNOTALLOWED_S, project);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

@@ -24,6 +24,11 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HM.h"
 
 namespace ocs {
    /** @brief Layer 3a: the hosts a matcher has already admitted
@@ -53,14 +58,19 @@ namespace ocs {
     */
    class MatchCache {
    public:
-      static bool lookup(lListElem *hgroup, const char *hostname);
+      static bool lookup(ocs::tom::Element<ocs::tom::HGRP> hgroup, const char *hostname);
+      OCS_TRANSITIONAL static bool lookup(lListElem *hgroup, const char *hostname);
 
-      static void insert(lListElem *hgroup, const char *hostname);
+      static void insert(ocs::tom::Element<ocs::tom::HGRP> hgroup, const char *hostname);
+      OCS_TRANSITIONAL static void insert(lListElem *hgroup, const char *hostname);
 
-      static lList *detach(lListElem *hgroup);
+      static ocs::tom::ListPtr<ocs::tom::HM> detach(ocs::tom::Element<ocs::tom::HGRP> hgroup);
+      OCS_TRANSITIONAL static lList *detach(lListElem *hgroup);
 
-      static void adopt(lListElem *hgroup, lList **cache);
+      static void adopt(ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ListPtr<ocs::tom::HM> &&cache);
+      OCS_TRANSITIONAL static void adopt(lListElem *hgroup, lList **cache);
 
-      static void discard_all(lList *master_hgroup_list);
+      static void discard_all(ocs::tom::List<ocs::tom::HGRP> master_hgroup_list);
+      OCS_TRANSITIONAL static void discard_all(lList *master_hgroup_list);
    };
 }

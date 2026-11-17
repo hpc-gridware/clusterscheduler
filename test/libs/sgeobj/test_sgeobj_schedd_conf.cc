@@ -88,14 +88,12 @@ typedef struct {
 // validate the whole config, and CHECK that the result matches the expected outcome
 static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
    for (int i = 0; settings[i].test_value != nullptr; i++, (*id)++) {
-      lListElem *schedd_conf = sconf_create_default();
       auto schedd_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_conf");
+      const auto schedd_conf = schedd_list->push_back(sconf_create_default());
       lList *answer_list = nullptr;
       bool passed = false;
 
-      if (schedd_conf != nullptr && schedd_list != nullptr) {
-         lAppendElem(*schedd_list, schedd_conf);
-
+      if (schedd_conf) {
          switch (conf->type) {
             case lStringT:
                lSetString(schedd_conf, (int)conf->test_attribute, settings[i].test_value);

@@ -97,18 +97,15 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
       }
 
       /* -u */
-      lList *users = user_list_.release();
-      while (parse_multi_stringlist(cmdline, "-u", answer_list,
-                                    &users, ST_Type, ST_name)) {
+      while (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-u", answer_list, user_list_)) {
       }
-      user_list_ = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
 
       /* -explain */
       while (parse_flag(cmdline, "-explain", answer_list, &value)) {
          is_explain_ = (value > 0) ? true : false;
       }
 
-      if (parse_string_arg(cmdline, "-ectx", answer_list, &argstr)) {
+      if (parse_string_arg(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-ectx", answer_list, &argstr)) {
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -124,7 +121,7 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
          continue;
       }
 
-      if (parse_string_arg(cmdline, "-fmt", answer_list, &argstr)) {
+      if (parse_string_arg(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-fmt", answer_list, &argstr)) {
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {
@@ -148,11 +145,11 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
       }
 
       /* -ar */
-      lList *ar_ids = ar_id_list_.release();
-      while (parse_u_longlist(cmdline, "-ar", answer_list, &ar_ids)) {
+      // a later -ar replaces the ids of an earlier one
+      while (auto ar_ids = parse_u_longlist(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-ar", answer_list)) {
+         ar_id_list_ = std::move(*ar_ids);
          is_summary_ = false;
       }
-      ar_id_list_ = ocs::tom::ListPtr<ocs::tom::ULNG>::from_typed(ar_ids);
 
       if (!ocs::tom::ConstList<ocs::tom::SPA>(*cmdline).empty()) {
          sge_usage(QRSTAT, stdout);

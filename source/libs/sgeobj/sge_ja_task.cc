@@ -110,18 +110,6 @@ ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstEle
 }
 
 /**
- * @brief ja_task_search_pe_task() for an untyped caller
- *
- * @param ja_task JAT_Type element, checked; may be nullptr
- * @param pe_task_id PE task id string (e.g. "1.speedy")
- *
- * @return the PET_Type element, or nullptr
- */
-lListElem *ja_task_search_pe_task(const lListElem *ja_task, const char *pe_task_id) {
-   return ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), pe_task_id);
-}
-
-/**
  * @brief Print task id ranges into string
  *
  * The ids of all tasks contained in 'ja_task_list' will be printed
@@ -154,21 +142,20 @@ void ja_task_list_print_to_string(const ocs::tom::ConstList<ocs::tom::JAT> ja_ta
  * task's `JAT_status`, `JAT_state` and `JAT_hold` are moved into a new list. Callers use this to
  * render one qstat line per group rather than per task.
  *
- * The list stays an untyped in-out reference: it is freed and set to nullptr
- * when the last group is split off, as lSplit() did, and the caller relies on
- * that.
+ * The list is freed and the handle emptied when the last group is split off,
+ * as lSplit() did.
  *
  * @param[in,out] ja_task_list the list to split (JAT_Type); the moved tasks are removed
- *                             from it
- * @return the tasks that were split off, or nullptr when the list was empty
+ *                             from it, it is empty once the last group was split off
+ * @return the tasks that were split off, an empty handle when the list was empty
  */
-lList *ja_task_list_split_group(lList **ja_task_list) {
+ocs::tom::ListPtr<ocs::tom::JAT> ja_task_list_split_group(ocs::tom::ListPtr<ocs::tom::JAT> &ja_task_list) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::JAT> ret_list;
 
-   if (ja_task_list && *ja_task_list) {
-      const ocs::tom::List<ocs::tom::JAT> list(*ja_task_list);
+   if (ja_task_list) {
+      const auto list = *ja_task_list;
       const auto first_task = list.front();
 
       if (first_task) {
@@ -182,11 +169,11 @@ lList *ja_task_list_split_group(lList **ja_task_list) {
                                    ocs::tom::field<JAT_hold>() != hold);
          if (list.empty()) {
             // lSplit() freed a source list it emptied
-            lFreeList(ja_task_list);
+            ja_task_list.reset();
          }
       }
    }
-   DRETURN(ret_list.release());
+   DRETURN(ret_list);
 }
 
 /**
@@ -221,18 +208,6 @@ bool ja_task_add_finished_pe_task(const ocs::tom::Element<ocs::tom::JAT> ja_task
    ocs::tom::emplace_back_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id);
 
    DRETURN(true);
-}
-
-/**
- * @brief ja_task_add_finished_pe_task() for an untyped caller
- *
- * @param ja_task the ja_task to check/modify (JAT_Type), checked
- * @param pe_task_id the pe_task_id to check/insert
- *
- * @return as ja_task_add_finished_pe_task()
- */
-bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id) {
-   return ja_task_add_finished_pe_task(ocs::tom::Element<ocs::tom::JAT>(ja_task), pe_task_id);
 }
 
 /**
@@ -354,7 +329,7 @@ sge_parse_jobtasks(lList **ipp, const char *str_jobtask, lList **alpp, const boo
    auto task_id_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(task_id_range_list_raw);
    if (arrayDefList) {
       if (!task_id_range_list) {
-         task_id_range_list = arrayDefList.clone(lGetListName(arrayDefList));
+         task_id_range_list = arrayDefList.clone(arrayDefList.name());
       } else {
          task_id_range_list->splice(arrayDefList.clone(""));
       }
@@ -616,7 +591,8 @@ bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::
    }
 
    if (ret) {
-      const auto queue = ocs::tom::get<JG_queue>(ep);
+      // JG_queue names no sub-type, it holds a QU_Type object
+      const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(ep));
 
       if (queue) {
          ret = qinstance_verify(queue, answer_list);

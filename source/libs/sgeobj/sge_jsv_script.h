@@ -39,10 +39,14 @@
  * @see sge_jsv_script.cc
  */
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JSV.h"
+
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
 
 bool
-jsv_do_communication(lListElem *jsv, lList **answer_list);
+jsv_do_communication(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list);
 
 bool
-jsv_is_modify_rejected(lList **answer_list, const lListElem *job);
+jsv_is_modify_rejected(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JB> job);

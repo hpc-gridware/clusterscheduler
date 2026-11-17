@@ -1418,8 +1418,7 @@ void ocs::QStatJobViewJSON::report_ja_structure(std::ostream &os, const ocs::tom
    if (!ocs::tom::has<JB_ja_structure>(job)) {
       DRETURN_VOID;
    }
-   uint32_t start, end, step;
-   job_get_submit_task_ids(job, &start, &end, &step);
+   const auto [start, end, step] = job_get_submit_task_ids(job);
 
    if (first_attribute) {
       os << "\n";
@@ -1927,7 +1926,7 @@ void ocs::QStatJobViewJSON::report_task_exec_host_list(std::ostream &os, const o
    }
 
    ocs::tom::ConstList<ocs::tom::JG> gdil_org = ocs::tom::get<JAT_granted_destin_identifier_list>(task);
-   lList *gdil_unique = gdil_make_host_unique(gdil_org);
+   const auto gdil_unique = gdil_make_host_unique(gdil_org);
 
    if (first_task_attribute) {
       os << "\n";
@@ -1939,7 +1938,7 @@ void ocs::QStatJobViewJSON::report_task_exec_host_list(std::ostream &os, const o
    indent++;
 
    bool is_first = true;
-   for (const ocs::tom::ConstElement<ocs::tom::JG> elem : ocs::tom::ConstList<ocs::tom::JG>(gdil_unique)) {
+   for (const ocs::tom::ConstElement<ocs::tom::JG> elem : *gdil_unique) {
       if (is_first) {
          os << "\n";
          is_first = false;
@@ -1961,7 +1960,6 @@ void ocs::QStatJobViewJSON::report_task_exec_host_list(std::ostream &os, const o
    indent--;
    os << "\n" << std::string(indent * 3, ' ') << "]";
 
-   lFreeList(&gdil_unique);
    DRETURN_VOID;
 }
 

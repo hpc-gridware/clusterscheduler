@@ -57,7 +57,8 @@ static int s_fail = 0;
    } while (0)
 
 /**
- * Small helper: build a UA_Type element via the R8a helper and inspect it.
+ * @brief Build a UA_Type element via the R8a helper and inspect it
+ *
  * The R8a helper (usage_parse_value) produces a fresh UA_Type element with
  * UA_name set and either UA_value or UA_svalue populated according to the
  * discrimination rule described in CS-849 / origin AE3.
@@ -65,20 +66,26 @@ static int s_fail = 0;
  * expect_string == true means we expect UA_svalue set and UA_value 0.0
  * (svalue takes precedence). expect_string == false means we expect the
  * opposite: UA_svalue nullptr and UA_value set to expected_double.
+ *
+ * @param variable the usage attribute name
+ * @param value the raw text to parse
+ * @param expect_string whether a string value is expected
+ * @param expected_svalue the expected string value
+ * @param expected_double the expected number
+ * @return true if the element matches the expectation
  */
 static bool
 check_element(const char *variable, const char *value,
               bool expect_string, const char *expected_svalue,
               double expected_double) {
-   lListElem *ep = usage_parse_value(variable, value);
-   if (ep == nullptr) {
+   const auto ep = usage_parse_value(variable, value);
+   if (!ep) {
       printf("       usage_parse_value returned nullptr for value='%s'\n", value);
       return false;
    }
    const char *name = ocs::tom::get<UA_name>(ep);
    if (name == nullptr || std::strcmp(name, variable) != 0) {
       printf("       UA_name='%s', expected '%s'\n", name ? name : "(nullptr)", variable);
-      lFreeElem(&ep);
       return false;
    }
    const char *svalue = ocs::tom::get<UA_svalue>(ep);
@@ -103,7 +110,6 @@ check_element(const char *variable, const char *value,
          ok = false;
       }
    }
-   lFreeElem(&ep);
    return ok;
 }
 
@@ -148,11 +154,10 @@ int main(int, char *[]) {
    // format cannot distinguish empty string from nullptr, so empty custom
    // usage values are dropped at parse time to keep semantics consistent.
    {
-      lListElem *empty_ep = usage_parse_value("x", "\"\"");
-      if (empty_ep != nullptr) {
+      const auto empty_ep = usage_parse_value("x", "\"\"");
+      if (empty_ep) {
          printf("FAIL  [T10] \"\" -> expected nullptr (skip), got element\n");
          ++s_fail;
-         lFreeElem(&empty_ep);
       } else {
          printf("ok    [T10] \"\" -> nullptr (empty pair skipped)\n");
       }

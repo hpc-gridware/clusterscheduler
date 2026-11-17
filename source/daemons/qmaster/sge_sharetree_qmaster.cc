@@ -145,7 +145,7 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
 
    ocs::tom::set<STN_version>(ep, prev_version + 1);
 
-   id_sharetree(alpp, ep, 0, nullptr);
+   id_sharetree(alpp, ep, 0);
 
    /* now insert new element */
    lAppendElem(*lpp, lCopyElem(ep));

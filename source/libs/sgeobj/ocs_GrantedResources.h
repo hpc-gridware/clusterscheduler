@@ -43,6 +43,11 @@
 
 #include "cull/sge_grantedres_GRU_L.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/ocs_TopologyString.h"
 
 namespace ocs {
@@ -58,9 +63,14 @@ namespace ocs {
       };
       
       /// Render a grant list for logging and accounting
-      static std::string to_string(const lList *granted_resources);
+      static std::string to_string(ocs::tom::ConstList<ocs::tom::GRU> granted_resources);
       /// Record the CPU hardware granted to a job on one host
-      static void add_binding_to_use(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list);
-      static void get_combined_binding_for_host(const lList *gr_list, const char *hostname, TopologyString &binding_to_use);
+      static void add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &granted_resources_list, const char *host_name,
+                                     ocs::tom::ConstList<ocs::tom::ST> binding_touse_list);
+      OCS_TRANSITIONAL static void add_binding_to_use(lList **granted_resources_list, const char *host_name,
+                                                      ocs::tom::ConstList<ocs::tom::ST> binding_touse_list);
+      /// Collect everything granted on one host into a single topology
+      static void get_combined_binding_for_host(ocs::tom::ConstList<ocs::tom::GRU> gr_list, const char *hostname,
+                                                TopologyString &binding_to_use);
    };
 }

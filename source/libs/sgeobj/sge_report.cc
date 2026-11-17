@@ -52,6 +52,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "execution_states.h"
 
@@ -96,30 +97,30 @@ void job_report_print_usage(const lListElem *job_report, FILE *fp)
  * @param job_report JR_Type object
  * @param job JB_Type object
  * @param ja_task JAT_Type object
- * @param pe_task PET_Type object
+ * @param pe_task PET_Type object, or an empty handle
  */
-void job_report_init_from_job(lListElem *job_report,
-                              const lListElem *job,
-                              const lListElem *ja_task,
-                              const lListElem *pe_task) {
+void job_report_init_from_job(const ocs::tom::Element<ocs::tom::JR> job_report,
+                              const ocs::tom::ConstElement<ocs::tom::JB> job,
+                              const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                              const ocs::tom::ConstElement<ocs::tom::PET> pe_task) {
    DENTER(TOP_LAYER);
 
-   uint32_t job_id = ocs::tom::get<JB_job_number>(job);
-   uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+   const uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+   const uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    ocs::tom::ConstElement<ocs::tom::JG> queue;
 
    ocs::tom::set<JR_job_number>(job_report, job_id);
    ocs::tom::set<JR_ja_task_number>(job_report, ja_task_id);
 
-   if (pe_task != nullptr) {
+   if (pe_task) {
       ocs::tom::set<JR_pe_task_id_str>(job_report, ocs::tom::get<PET_id>(pe_task));
-      queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(pe_task));
+      queue = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task).front();
    } else {
-      queue = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task));
+      queue = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).front();
    }
 
    if (ocs::tom::get<JAT_status>(ja_task) == JSLAVE){
-      if (pe_task == nullptr) {
+      if (!pe_task) {
          ocs::tom::set<JR_state>(job_report, JSLAVE);
       } else {
          ocs::tom::set<JR_state>(job_report, JWRITTEN);
@@ -128,7 +129,7 @@ void job_report_init_from_job(lListElem *job_report,
       ocs::tom::set<JR_state>(job_report, JWRITTEN);
    }
 
-   if (queue != nullptr) {
+   if (queue) {
       ocs::tom::set<JR_queue_name>(job_report, ocs::tom::get<JG_qname>(queue));
    }
 
@@ -144,18 +145,15 @@ void job_report_init_from_job(lListElem *job_report,
  * @param[in,out] job_report the report to fill
  * @param job the job the report is about
  * @param ja_task the array task
- * @param pe_task the parallel task, or nullptr
+ * @param pe_task the parallel task, or an empty handle
  * @param time_stamp the time the usage was collected
  */
-void job_report_init_from_job_with_usage(lListElem *job_report,
-                                         const lListElem *job,
-                                         lListElem *ja_task,
-                                         lListElem *pe_task,
-                                         uint64_t time_stamp) {
+void job_report_init_from_job_with_usage(const ocs::tom::Element<ocs::tom::JR> job_report,
+                                         const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                         const ocs::tom::Element<ocs::tom::JAT> ja_task,
+                                         const ocs::tom::Element<ocs::tom::PET> pe_task,
+                                         const uint64_t time_stamp) {
    DENTER(TOP_LAYER);
-
-   lListElem *obj;
-   int nm;
 
    /*
     * initialize the job jeport like any other job report...
@@ -168,23 +166,21 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
    ocs::tom::set<JR_wait_status>(job_report, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0));
    ocs::tom::set<JR_failed>(job_report, SSTATE_QMASTER_ENFORCED_LIMIT);
 
-   if (pe_task == nullptr) {
-      nm = JAT_scaled_usage_list;
-      obj = ja_task;
+   // the qmaster may enforce a limit on the same task more than once, so the usage can hold these entries already
+   ocs::tom::List<ocs::tom::UA> usage;
+   if (!pe_task) {
+      usage = ja_task.get_or_create<JAT_scaled_usage_list>("scaled");
    } else {
-      nm = PET_scaled_usage;
-      obj = pe_task;
+      usage = pe_task.get_or_create<PET_scaled_usage>("scaled");
 
       ocs::tom::set<JR_pe_task_id_str>(job_report, ocs::tom::get<PET_id>(pe_task));
    }
 
-   // the qmaster may enforce a limit on the same task more than once, so the usage can hold these entries already
-   lList *usage = lGetOrCreateList(obj, nm, "scaled", UA_Type);
    usage_list_set_double_usage(usage, "submission_time", ocs::tom::get<JB_submission_time>(job));
    usage_list_set_double_usage(usage, "start_time", ocs::tom::get<JAT_start_time>(ja_task));
    usage_list_set_double_usage(usage, "end_time", time_stamp);
    usage_list_set_double_usage(usage, "ru_wallclock", 0.0);
 
-   ocs::tom::set<JR_usage>(job_report, lCopyList("", lGetList(obj, nm)));
+   ocs::tom::set<JR_usage>(job_report, usage.clone(""));
    DRETURN_VOID;
 }
