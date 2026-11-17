@@ -238,23 +238,18 @@ dump_object(const char *key) {
    } else {
       /* job script is spooled as string, not as cull object */
       if (strncmp(key, "JOBSCRIPT:", 10) == 0) {
-         const char *job_script = nullptr;
-         lListElem *job_script_ep;
-
-         // job script is written as a pseudo STU_Type object in field STU_name
-         job_script_ep = spool_read_object(&answer_list, spool_get_default_context(),
-                                           SGE_TYPE_JOBSCRIPT, key);
-         if (job_script_ep != nullptr) {
-            job_script = ocs::tom::get<STU_name>(job_script_ep);
-         }
+         // job script is written as a pseudo STU_Type object in field STU_name; the element owns the
+         // string and is freed with it - the string alone was freed before and the element leaked (CS-3127)
+         const auto job_script_ep = ocs::tom::ElementPtr<ocs::tom::STU>::from_typed(
+               spool_read_object(&answer_list, spool_get_default_context(), SGE_TYPE_JOBSCRIPT, key));
+         const char *job_script = job_script_ep ? job_script_ep->get<STU_name>() : nullptr;
 
          if (job_script == nullptr) {
             answer_list_output(&answer_list);
             ret = EXIT_FAILURE;
          } else {
             /* dump job script with a trailing linefeed, it might be missing in the script */
-            printf("%s\n", job_script != nullptr ? job_script : "no job script");
-            sge_free(&job_script);
+            printf("%s\n", job_script);
          }
       } else {
          /* read object */
