@@ -289,10 +289,10 @@ get_slotwise_sos_super_qinstance(const ocs::tom::ConstElement<ocs::tom::QU> qins
 }
 
 /** @brief One running task that slot-wise suspension may act on */
-typedef struct {
+struct ssos_task_t {
    uint32_t job_id = 0;                    ///< The job the task belongs to
    ocs::tom::Element<ocs::tom::JAT> task;  ///< the task
-} ssos_task_t;
+};
 
 /** @brief One queue instance in the slot-wise suspension tree
  *
@@ -301,14 +301,14 @@ typedef struct {
  * slot can cascade downwards. #depth is how far down this instance sits, which
  * decides the order the tree is walked in.
  */
-typedef struct {
+struct ssos_qinstance_t {
    uint32_t depth = 0;                         ///< How deep in the subordination tree this instance sits
    uint32_t seq_no = 0;                        ///< from the parents QU_subordinate_list
    uint32_t action = 0;                        ///< from the parents QU_subordinate_list
    ocs::tom::Element<ocs::tom::QU> qinstance;  ///< the queue instance
    ocs::tom::Element<ocs::tom::QU> parent;     ///< the superordinate instance, empty at the root
    sge_sl_list_t *tasks = nullptr;             ///< The tasks running here, as #ssos_task_t
-} ssos_qinstance_t;
+};
 
 /**
  * @brief Destructor for the elements of a sge simple list of ssos_task_t elements
