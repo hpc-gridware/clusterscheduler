@@ -589,37 +589,6 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
 }
 
 /**
- * @brief Verifies the attributes of a rqs list
- *
- * This function iterates over a rqs list and checks for every rqs the attributes
- *
- * @param rqs_list List that should be verified (RQS_Type), may be an empty handle
- * @param answer_list answer list
- * @param in_master flag if called by qmaster or qconf
- * @param master_centry_list the complex entries a limit may name (CE_Type), may be an empty handle
- *
- * @return true on success false on error
- *
- * @note MT-NOTE: rqs_list_verify_attributes() is MT safe
- *
- * @see #rqs_verify_attributes
- */
-bool rqs_list_verify_attributes(const ocs::tom::List<ocs::tom::RQS> rqs_list, lList **answer_list,
-                                const bool in_master, const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   for (const auto rqs : rqs_list) {
-      ret = rqs_verify_attributes(rqs, answer_list, in_master, master_centry_list);
-      if (!ret) {
-         break;
-      }
-   }
-   DRETURN(ret);
-}
-
-/**
  * @brief Locate a specific resource quota set by name
  *
  * This function searches the rule set list for a specific resource quota
