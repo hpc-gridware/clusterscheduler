@@ -256,7 +256,7 @@ bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_
       const auto n_h_ids = ocs::tom::get<JB_ja_n_h_ids>(pending);
 
       const uint32_t ja_task_id = range_list_get_first_id(n_h_ids, nullptr);
-      ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(job_search_task(pending, nullptr, ja_task_id));
+      ja_task = job_search_task(pending, nullptr, ja_task_id);
       /* JG: TODO: do we need the ja_task instance here or can we
        *           wait until the JATASK_ADD event arrives from qmaster?
        *           The function should work on a copy if the job list.
@@ -264,7 +264,7 @@ bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_
        *           So the code should be ok.
        */
       if (ja_task == nullptr) {
-         ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(job_create_task(pending, nullptr, ja_task_id));
+         ja_task = job_create_task(pending, nullptr, ja_task_id);
       }
       ja_task_list = ocs::tom::get<JB_ja_tasks>(pending);
    }
@@ -324,7 +324,7 @@ job_get_next_task(const ocs::tom::Element<ocs::tom::JB> job) {
          lFreeList(&answer_list);
          DRETURN(std::nullopt);
       }
-      ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(job_get_ja_task_template_pending(job, ja_task_id));
+      ja_task = job_get_ja_task_template_pending(job, ja_task_id);
    } else {
       ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    }

@@ -489,7 +489,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
       ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // book the global resources
-      for (const auto request : ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL))) {
+      for (const auto request : job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL)) {
          uint32_t consumable = ocs::tom::get<CE_consumable>(request);
 
          if (consumable == CONSUMABLE_NO ||
@@ -512,7 +512,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
       // book the master resources
       if (is_master_task) {
          for (const auto request :
-              ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER))) {
+              job_get_hard_resource_list(job, JRS_SCOPE_MASTER)) {
             uint32_t consumable = ocs::tom::get<CE_consumable>(request);
 
             if (consumable == CONSUMABLE_NO) {
@@ -535,7 +535,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
       }
 
       // book slave resources
-      for (const auto request : ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE))) {
+      for (const auto request : job_get_hard_resource_list(job, JRS_SCOPE_SLAVE)) {
          uint32_t consumable = ocs::tom::get<CE_consumable>(request);
 
          if (consumable == CONSUMABLE_NO) {

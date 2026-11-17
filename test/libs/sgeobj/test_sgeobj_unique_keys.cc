@@ -307,7 +307,7 @@ test_context_change() {
    setenv("JOB_ID", "42", 1);
    job_add_parent_id_to_context(*child);
    unsetenv("JOB_ID");
-   lList *effective = ocs_context_get_effective(*child);
+   lList *effective = ocs_context_get_effective(*child).release();
    ocs::tom::ConstElement<ocs::tom::VA> parent = ocs::tom::find_first<VA_variable>(effective, CONTEXT_PARENT);
    CHECK(21, "PARENT given after a trailing -dc is in the effective context",
          lGetNumberOfElem(effective) == 1 && parent != nullptr && strcmp(ocs::tom::get<VA_value>(parent), "42") == 0);

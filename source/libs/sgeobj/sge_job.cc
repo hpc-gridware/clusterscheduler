@@ -58,6 +58,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <limits>
+#include <tuple>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
@@ -93,9 +94,16 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_CX.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JRE.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
@@ -121,22 +129,25 @@
  * The task number (JAT_task_number) of this template task will be
  * initialized with the value given by 'ja_task_id'.
  *
+ * The template element belongs to the job and is reinitialised by every
+ * call; it is writable although the job is passed read only, as before.
+ *
  * @param job JB_Type
  * @param ja_task_id array task number
  *
- * @return template task (JAT_Type)
+ * @return template task (JAT_Type), an empty handle if the job has no template
  *
  * @note MT-NOTE: job_get_ja_task_template_pending() is MT safe
  *
  * @see #job_get_ja_task_template_pending, #job_get_ja_task_template_hold, #job_get_ja_task_template
  */
-lListElem *job_get_ja_task_template_pending(const lListElem *job,
-                                            uint32_t ja_task_id) {
+ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                                  const uint32_t ja_task_id) {
    DENTER(BASIS_LAYER);
 
-       /* JAT_Type */
-
-   ocs::tom::Element<ocs::tom::JAT> template_task = lFirstRW(ocs::tom::get<JB_ja_template>(job));
+   // the template list of a read only job hands out a writable element, as lFirstRW() did
+   const auto template_task =
+      ocs::tom::Element<ocs::tom::JAT>::from_typed(lFirstRW(ocs::tom::get<JB_ja_template>(job)));
 
    if (!template_task) {
       ERROR("unable to retrieve template task");
@@ -147,6 +158,17 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
    DRETURN(template_task);
 }
 
+/**
+ * @brief job_get_ja_task_template_pending() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param ja_task_id array task number
+ *
+ * @return template task (JAT_Type), or nullptr
+ */
+lListElem *job_get_ja_task_template_pending(const lListElem *job, const uint32_t ja_task_id) {
+   return job_get_ja_task_template_pending(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task_id);
+}
 
 /**
  * @brief Create a ja task template
@@ -164,31 +186,40 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
  * @param ja_task_id array task number
  * @param hold_state the hold state the template task is initialized with
  *
- * @return template task (JAT_Type)
+ * @return template task (JAT_Type), an empty handle if the job has no template
  *
  * @see #job_get_ja_task_template_pending, #job_get_ja_task_hold_state, #job_get_ja_task_template
  */
-lListElem *job_get_ja_task_template_hold(const lListElem *job,
-                                         uint32_t ja_task_id,
-                                         uint32_t hold_state) {
+ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_hold(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                               const uint32_t ja_task_id,
+                                                               const uint32_t hold_state) {
    DENTER(BASIS_LAYER);
 
-   lListElem *template_task = nullptr;    /* JAT_Type */
-
-   template_task = job_get_ja_task_template_pending(job, ja_task_id);
+   const auto template_task = job_get_ja_task_template_pending(job, ja_task_id);
    if (template_task) {
-      uint32_t state;
-
       ocs::tom::set<JAT_task_number>(template_task, ja_task_id);
       ocs::tom::set<JAT_hold>(template_task, hold_state);
       ocs::tom::set<JAT_status>(template_task, JIDLE);
-      state = JQUEUED | JWAITING;
+      uint32_t state = JQUEUED | JWAITING;
       if (ocs::tom::get<JAT_hold>(template_task)) {
          state |= JHELD;
       }
       ocs::tom::set<JAT_state>(template_task, state);
    }
    DRETURN(template_task);
+}
+
+/**
+ * @brief job_get_ja_task_template_hold() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param ja_task_id array task number
+ * @param hold_state the hold state the template task is initialized with
+ *
+ * @return template task (JAT_Type), or nullptr
+ */
+lListElem *job_get_ja_task_template_hold(const lListElem *job, const uint32_t ja_task_id, const uint32_t hold_state) {
+   return job_get_ja_task_template_hold(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task_id, hold_state);
 }
 
 /**
@@ -257,17 +288,21 @@ uint32_t job_get_ja_task_hold_state(const lListElem *job,
  * After using 'id_list' the function job_destroy_hold_id_lists()
  * has to be called to free allocated memory.
  *
+ * The intermediate and the resulting lists stay raw: they are the
+ * out-parameters of the range set functions.
+ *
  * @param job JB_Type
- * @param[out] id_list nullptr initialized pointer array, one list per hold combination
+ * @param[out] id_list nullptr initialized pointer array, one list (RN_Type) per hold combination
  * @param[out] hold_state array for the hold state combinations
  *
  * @see #job_destroy_hold_id_lists
  */
-void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
+void job_create_hold_id_lists(const ocs::tom::ConstElement<ocs::tom::JB> job, lList *id_list[16],
                               uint32_t hold_state[16]) {
    DENTER(TOP_LAYER);
 
    int i;
+   // out-parameters of the range set functions
    lList *list[24];
 
    hold_state[0] = 0;
@@ -382,7 +417,7 @@ void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
    range_list_calculate_difference_set(&id_list[1], nullptr, list[23], id_list[7]);
 
    /* UOSA -> 0 */
-   id_list[0] = lCopyList("task_id_range", ocs::tom::get<JB_ja_n_h_ids>(job));
+   id_list[0] = ocs::tom::get<JB_ja_n_h_ids>(job).clone("task_id_range").release();
 
    for (i = 0; i < 24; i++) {
       lFreeList(&(list[i]));
@@ -392,23 +427,42 @@ void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
 }
 
 /**
+ * @brief job_create_hold_id_lists() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param[out] id_list nullptr initialized pointer array, one list (RN_Type) per hold combination
+ * @param[out] hold_state array for the hold state combinations
+ */
+void job_create_hold_id_lists(const lListElem *job, lList *id_list[16], uint32_t hold_state[16]) {
+   job_create_hold_id_lists(ocs::tom::ConstElement<ocs::tom::JB>(job), id_list, hold_state);
+}
+
+/**
  * @brief Destroy hold combination lists
  *
  * This function frees all memory allocated by a previous call of
  * job_create_hold_id_lists().
  *
- * @param job JB_Type
+ * @param job JB_Type, not used
  * @param id_list array of RN_Type lists, as #job_create_hold_id_lists filled it
  */
-void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]) {
+void job_destroy_hold_id_lists([[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::JB> job, lList *id_list[16]) {
    DENTER(TOP_LAYER);
 
-   int i;
-
-   for (i = 0; i < 16; i++) {
+   for (int i = 0; i < 16; i++) {
       lFreeList(&(id_list[i]));
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief job_destroy_hold_id_lists() for an untyped caller
+ *
+ * @param job JB_Type, checked; not used
+ * @param id_list array of RN_Type lists, as #job_create_hold_id_lists filled it
+ */
+void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]) {
+   job_destroy_hold_id_lists(ocs::tom::ConstElement<ocs::tom::JB>(job), id_list);
 }
 
 /**
@@ -423,7 +477,7 @@ void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]) {
  *
  * @return true or false
  */
-bool job_is_enrolled(const lListElem *job, uint32_t task_number) {
+bool job_is_enrolled(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t task_number) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -436,6 +490,18 @@ bool job_is_enrolled(const lListElem *job, uint32_t task_number) {
       ret = false;
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief job_is_enrolled() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param task_number task_number
+ *
+ * @return as job_is_enrolled()
+ */
+bool job_is_enrolled(const lListElem *job, const uint32_t task_number) {
+   return job_is_enrolled(ocs::tom::ConstElement<ocs::tom::JB>(job), task_number);
 }
 
 /**
@@ -453,10 +519,20 @@ bool job_is_enrolled(const lListElem *job, uint32_t task_number) {
  *
  * @note MT-NOTE: job_is_ja_task_defined() is MT safe
  */
-bool job_is_ja_task_defined(const lListElem *job, uint32_t ja_task_number) {
-   ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_structure>(job);
+bool job_is_ja_task_defined(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t ja_task_number) {
+   return range_list_is_id_within(ocs::tom::get<JB_ja_structure>(job), ja_task_number);
+}
 
-   return range_list_is_id_within(range_list, ja_task_number);
+/**
+ * @brief job_is_ja_task_defined() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param ja_task_number task number
+ *
+ * @return as job_is_ja_task_defined()
+ */
+bool job_is_ja_task_defined(const lListElem *job, const uint32_t ja_task_number) {
+   return job_is_ja_task_defined(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task_number);
 }
 
 /**
@@ -470,19 +546,29 @@ bool job_is_ja_task_defined(const lListElem *job, uint32_t ja_task_number) {
  *
  * @see #job_get_ja_tasks, #job_get_enrolled_ja_tasks, #job_get_not_enrolled_ja_tasks, #job_get_submit_ja_tasks
  */
-uint32_t job_get_ja_tasks(const lListElem *job) {
+uint32_t job_get_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
    uint32_t ret = 0;
-   uint32_t n = 0;
 
-   n = job_get_not_enrolled_ja_tasks(job);
+   uint32_t n = job_get_not_enrolled_ja_tasks(job);
    ret += n;
    DPRINTF("Not enrolled ja_tasks: " sge_u32 "\n", n);
    n = job_get_enrolled_ja_tasks(job);
    ret += n;
    DPRINTF("Enrolled ja_tasks: " sge_u32 "\n", n);
    DRETURN(ret);
+}
+
+/**
+ * @brief job_get_ja_tasks() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ *
+ * @return as job_get_ja_tasks()
+ */
+uint32_t job_get_ja_tasks(const lListElem *job) {
+   return job_get_ja_tasks(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -497,31 +583,44 @@ uint32_t job_get_ja_tasks(const lListElem *job) {
  *
  * @see #job_get_ja_tasks, #job_get_enrolled_ja_tasks, #job_get_not_enrolled_ja_tasks, #job_get_submit_ja_tasks
  */
-uint32_t job_get_not_enrolled_ja_tasks(const lListElem *job) {
+uint32_t job_get_not_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
+   // out-parameters of range_list_calculate_union_set(), adopted right after
    lList *answer_list = nullptr;
-   lList *uosa_ids = nullptr;
-   lList *uos_ids = nullptr;
-   lList *uo_ids = nullptr;
+   lList *uo_ids_raw = nullptr;
+   lList *uos_ids_raw = nullptr;
+   lList *uosa_ids_raw = nullptr;
    uint32_t ret = 0;
 
-   range_list_calculate_union_set(&uo_ids, &answer_list,
+   range_list_calculate_union_set(&uo_ids_raw, &answer_list,
                                   ocs::tom::get<JB_ja_u_h_ids>(job),
                                   ocs::tom::get<JB_ja_o_h_ids>(job));
-   range_list_calculate_union_set(&uos_ids, &answer_list, uo_ids,
+   const auto uo_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(uo_ids_raw);
+   range_list_calculate_union_set(&uos_ids_raw, &answer_list, uo_ids.get(),
                                   ocs::tom::get<JB_ja_s_h_ids>(job));
-   range_list_calculate_union_set(&uosa_ids, &answer_list, uos_ids,
+   const auto uos_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(uos_ids_raw);
+   range_list_calculate_union_set(&uosa_ids_raw, &answer_list, uos_ids.get(),
                                   ocs::tom::get<JB_ja_a_h_ids>(job));
+   const auto uosa_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(uosa_ids_raw);
 
    ret += range_list_get_number_of_ids(ocs::tom::get<JB_ja_n_h_ids>(job));
-   ret += range_list_get_number_of_ids(uosa_ids);
+   ret += range_list_get_number_of_ids(uosa_ids.get());
 
-   lFreeList(&uosa_ids);
-   lFreeList(&uos_ids);
-   lFreeList(&uo_ids);
-
+   // the answer list was never freed before
+   lFreeList(&answer_list);
    DRETURN(ret);
+}
+
+/**
+ * @brief job_get_not_enrolled_ja_tasks() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ *
+ * @return as job_get_not_enrolled_ja_tasks()
+ */
+uint32_t job_get_not_enrolled_ja_tasks(const lListElem *job) {
+   return job_get_not_enrolled_ja_tasks(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -536,8 +635,19 @@ uint32_t job_get_not_enrolled_ja_tasks(const lListElem *job) {
  *
  * @see #job_get_ja_tasks, #job_get_enrolled_ja_tasks, #job_get_not_enrolled_ja_tasks, #job_get_submit_ja_tasks
  */
+uint32_t job_get_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return static_cast<uint32_t>(ocs::tom::get<JB_ja_tasks>(job).size());
+}
+
+/**
+ * @brief job_get_enrolled_ja_tasks() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ *
+ * @return as job_get_enrolled_ja_tasks()
+ */
 uint32_t job_get_enrolled_ja_tasks(const lListElem *job) {
-   return lGetNumberOfElem(ocs::tom::get<JB_ja_tasks>(job));
+   return job_get_enrolled_ja_tasks(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -552,66 +662,97 @@ uint32_t job_get_enrolled_ja_tasks(const lListElem *job) {
  *
  * @see #job_get_ja_tasks, #job_get_enrolled_ja_tasks, #job_get_not_enrolled_ja_tasks, #job_get_submit_ja_tasks
  */
-uint32_t job_get_submit_ja_tasks(const lListElem *job) {
-   uint32_t start, end, step;
-
-   job_get_submit_task_ids(job, &start, &end, &step);
+uint32_t job_get_submit_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   const auto [start, end, step] = job_get_submit_task_ids(job);
    return ((end - start) / step + 1);
 }
 
-/** @brief Enrolls a task into the JB_ja_tasks list of a job
+/**
+ * @brief job_get_submit_ja_tasks() for an untyped caller
  *
- * @param job the job
+ * @param job JB_Type, checked
+ *
+ * @return as job_get_submit_ja_tasks()
+ */
+uint32_t job_get_submit_ja_tasks(const lListElem *job) {
+   return job_get_submit_ja_tasks(ocs::tom::ConstElement<ocs::tom::JB>(job));
+}
+
+/**
+ * @brief Enrolls a task into the JB_ja_tasks list of a job
+ *
+ * @param job the job (JB_Type)
  * @param answer_list the answer list
  * @param ja_task_number the task number
  *
- * @return the enrolled task
+ * @return the enrolled task (JAT_Type)
  */
-lListElem *
-job_enroll(lListElem *job, lList **answer_list, uint32_t ja_task_number) {
+ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+                                            const uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
    object_delete_range_id(job, answer_list, JB_ja_n_h_ids, ja_task_number);
-   lListElem *ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_number);
-   if (ja_task == nullptr) {
-      lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
-      lListElem *template_task = job_get_ja_task_template_pending(job, ja_task_number);
-
-      if (ja_task_list == nullptr) {
-         ja_task_list = lCreateList("ulong_sublist", lGetElemDescr(template_task) );
-         ocs::tom::set<JB_ja_tasks>(job, ja_task_list);
+   auto ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_number);
+   if (!ja_task) {
+      auto ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
+      const auto template_task = job_get_ja_task_template_pending(job, ja_task_number);
+      if (!template_task) {
+         // nothing to enroll from: the old code ended up with nullptr here as well
+         DRETURN(ocs::tom::Element<ocs::tom::JAT>());
       }
-      ja_task = lCopyElem(template_task);
-      lAppendElem(ja_task_list, ja_task);
+
+      if (!ja_task_list) {
+         // the list gets the descriptor of the (possibly reduced) template task
+         auto created = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", lGetElemDescr(template_task));
+         ja_task_list = created.get();
+         ocs::tom::set<JB_ja_tasks>(job, std::move(created));
+      }
+      ja_task = ja_task_list.push_back(template_task.clone());
    }
 
    DRETURN(ja_task);
 }
 
-/** @brief Unenrolls a task from the JB_ja_tasks list of a job
+/**
+ * @brief job_enroll() for an untyped caller
+ *
+ * @param job the job (JB_Type), checked
+ * @param answer_list the answer list
+ * @param ja_task_number the task number
+ *
+ * @return the enrolled task (JAT_Type)
+ */
+lListElem *job_enroll(lListElem *job, lList **answer_list, const uint32_t ja_task_number) {
+   return job_enroll(ocs::tom::Element<ocs::tom::JB>(job), answer_list, ja_task_number);
+}
+
+/**
+ * @brief Unenrolls a task from the JB_ja_tasks list of a job
  *
  * The task ID is added to the list of unenrolled tasks not in hold state (n_h)
  *
- * @param job the job
+ * The task stays an untyped in-out pointer: it is freed and set to nullptr,
+ * and the caller relies on that.
+ *
+ * @param job the job (JB_Type), may be an empty handle
  * @param answer_list the answer list
- * @param ja_task the task to unenroll
+ * @param[in,out] ja_task the task to unenroll (JAT_Type); freed and set to nullptr
  */
-void
-job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task) {
+void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list, lListElem **ja_task) {
    DENTER(TOP_LAYER);
-   if (job == nullptr || ja_task == nullptr || *ja_task == nullptr) {
+   if (!job || ja_task == nullptr || *ja_task == nullptr) {
       // nothing to do
       DRETURN_VOID;
    }
 
-   ocs::tom::List<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
-   if (ja_task_list == nullptr) {
+   const auto ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
+   if (!ja_task_list) {
       // no enrolled task - should never happen
       DRETURN_VOID;
    }
 
-   // add the task id to the list of unenrolled tasks
-   uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(*ja_task);
+   // add the task id to the list of unenrolled tasks; range_list_insert_id() takes a raw in-out list
+   const uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ocs::tom::ConstElement<ocs::tom::JAT>(*ja_task));
    lList *ids = ocs::tom::get<JB_ja_n_h_ids>(job);
    const lList *before_ids = ids;
    range_list_insert_id(&ids, answer_list, ja_task_id);
@@ -620,14 +761,25 @@ job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task) {
       ocs::tom::set<JB_ja_n_h_ids>(job, ids);
    }
 
-   // remove the enrolled task
+   // remove the enrolled task, which frees it and sets the caller's pointer to nullptr
    lRemoveElem(ja_task_list, ja_task);
 
    // trash the list if it was the last task
-   if (lGetNumberOfElem(ja_task_list) == 0) {
+   if (ja_task_list.empty()) {
       ocs::tom::set<JB_ja_tasks>(job, nullptr);
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief job_unenroll() for an untyped caller
+ *
+ * @param job the job (JB_Type), checked; may be nullptr
+ * @param answer_list the answer list
+ * @param[in,out] ja_task the task to unenroll (JAT_Type); freed and set to nullptr
+ */
+void job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task) {
+   job_unenroll(ocs::tom::Element<ocs::tom::JB>(job), answer_list, ja_task);
 }
 
 /**
@@ -644,12 +796,11 @@ job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task) {
  *
  * @note MT-NOTE: job_count_rescheduled_ja_tasks() is MT safe
  */
-static int job_count_rescheduled_ja_tasks(const lListElem *job, bool count_all) {
-   uint32_t state;
+static int job_count_rescheduled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job, const bool count_all) {
    int n = 0;
 
-   for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-      state = ocs::tom::get<JAT_state>(ja_task);
+   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+      const uint32_t state = ocs::tom::get<JAT_state>(ja_task);
       if ((ocs::tom::get<JAT_status>(ja_task) == JIDLE) && ((state & JQUEUED) != 0) && ((state & JWAITING) != 0)) {
          n++;
          if (!count_all)
@@ -670,7 +821,7 @@ static int job_count_rescheduled_ja_tasks(const lListElem *job, bool count_all) 
  *
  * @return number of tasks or simply 0/1 if count_all is 'false'
  */
-uint32_t job_count_pending_tasks(const lListElem *job, bool count_all) {
+uint32_t job_count_pending_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job, const bool count_all) {
    DENTER(TOP_LAYER);
 
    if (count_all) {
@@ -686,29 +837,53 @@ uint32_t job_count_pending_tasks(const lListElem *job, bool count_all) {
    DRETURN(0);
 }
 
+/**
+ * @brief job_count_pending_tasks() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param count_all false to stop at the first pending task
+ *
+ * @return as job_count_pending_tasks()
+ */
+uint32_t job_count_pending_tasks(const lListElem *job, const bool count_all) {
+   return job_count_pending_tasks(ocs::tom::ConstElement<ocs::tom::JB>(job), count_all);
+}
 
 /**
  * @brief Remove unenrolled task
  *
  * Removes an unenrolled pending task from the id lists.
  *
+ * The id lists are addressed by a table of field numbers, so they are
+ * changed through the raw object_delete_range_id().
+ *
  * @param job JB_Type
  * @param answer_list AN_Type
  * @param ja_task_number Task to be removed
  */
-void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
-                                     uint32_t ja_task_number) {
+void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+                                     const uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
    const int attributes = 5;
    const int attribute[] = {JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_o_h_ids,
                             JB_ja_s_h_ids, JB_ja_a_h_ids};
-   int i;
 
-   for (i = 0; i < attributes; i++) {
+   for (int i = 0; i < attributes; i++) {
       object_delete_range_id(job, answer_list, attribute[i], ja_task_number);
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief job_delete_not_enrolled_ja_task() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param answer_list AN_Type
+ * @param ja_task_number Task to be removed
+ */
+void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list, const uint32_t ja_task_number) {
+   job_delete_not_enrolled_ja_task(ocs::tom::Element<ocs::tom::JB>(job), answer_list, ja_task_number);
 }
 
 /**
@@ -722,12 +897,10 @@ void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
  *
  * @note MT-NOTES: job_has_soft_requests() is MT safe
  */
-bool job_has_soft_requests(lListElem *job) {
+bool job_has_soft_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    bool ret = false;
-   ocs::tom::ConstElement<ocs::tom::JRS> jrs;
-   for_each_ep(jrs, ocs::tom::get<JB_request_set_list>(job)) {
-      if (static_cast<const lList *>(ocs::tom::get<JRS_soft_resource_list>(jrs)) != nullptr ||
-          static_cast<const lList *>(ocs::tom::get<JRS_soft_queue_list>(jrs)) != nullptr) {
+   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
+      if (ocs::tom::get<JRS_soft_resource_list>(jrs) || ocs::tom::get<JRS_soft_queue_list>(jrs)) {
          ret = true;
          break;
       }
@@ -741,14 +914,18 @@ bool job_has_soft_requests(lListElem *job) {
  *
  * This function changes the hold state of a job/array-task.
  *
+ * The id lists of an unenrolled task are addressed by a table of field
+ * numbers and changed through a table of range_remove_insert_t functions, so
+ * that part stays raw.
+ *
  * @param job JB_Type
  * @param answer_list AN_Type
  * @param ja_task_id Array task id
  * @param new_hold_state hold state (see MINUS_H_TGT_*)
  */
-void job_set_hold_state(lListElem *job, lList **answer_list,
-                        uint32_t ja_task_id,
-                        uint32_t new_hold_state) {
+void job_set_hold_state(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+                        const uint32_t ja_task_id,
+                        const uint32_t new_hold_state) {
    DENTER(TOP_LAYER);
    if (!job_is_enrolled(job, ja_task_id)) {
       const int lists = 5;
@@ -767,9 +944,8 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
                                                      range_list_remove_id,
                                                      range_list_remove_id,
                                                      range_list_remove_id};
-      int i;
 
-      for (i = 0; i < lists; i++) {
+      for (int i = 0; i < lists; i++) {
          lList *range_list = nullptr;
 
          if (new_hold_state & mask[i]) {
@@ -784,9 +960,9 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
          range_list_compress(lGetListRW(job, attribute[i]));
       }
    } else {
-      lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
+      const auto ja_task = job_search_task(job, nullptr, ja_task_id);
 
-      if (ja_task != nullptr) {
+      if (ja_task) {
          ocs::tom::set<JAT_hold>(ja_task, new_hold_state);
          if (new_hold_state) {
             ocs::tom::set<JAT_state>(ja_task, ocs::tom::get<JAT_state>(ja_task) | JHELD);
@@ -799,6 +975,19 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
 }
 
 /**
+ * @brief job_set_hold_state() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param answer_list AN_Type
+ * @param ja_task_id Array task id
+ * @param new_hold_state hold state (see MINUS_H_TGT_*)
+ */
+void job_set_hold_state(lListElem *job, lList **answer_list, const uint32_t ja_task_id,
+                        const uint32_t new_hold_state) {
+   job_set_hold_state(ocs::tom::Element<ocs::tom::JB>(job), answer_list, ja_task_id, new_hold_state);
+}
+
+/**
  * @brief Returns the hold state of a task
  *
  * Returns the hold state of a job/array-task
@@ -808,14 +997,14 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
  *
  * @return hold state (see MINUS_H_TGT_*)
  */
-uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id) {
+uint32_t job_get_hold_state(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
    uint32_t ret = 0;
 
    if (job_is_enrolled(job, ja_task_id)) {
-      lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
+      const auto ja_task = job_search_task(job, nullptr, ja_task_id);
 
-      if (ja_task != nullptr) {
+      if (ja_task) {
          ret = ocs::tom::get<JAT_hold>(ja_task) & MINUS_H_TGT_ALL;
       } else {
          ret = 0;
@@ -827,32 +1016,58 @@ uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id) {
 }
 
 /**
+ * @brief job_get_hold_state() for an untyped caller
+ *
+ * @param job JB_Type, checked
+ * @param ja_task_id array task id
+ *
+ * @return as job_get_hold_state()
+ */
+uint32_t job_get_hold_state(lListElem *job, const uint32_t ja_task_id) {
+   return job_get_hold_state(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task_id);
+}
+
+/**
  * @brief Search an array task
  *
  * This function return the array task with the id 'ja_task_id' if
  * it exists in the JB_ja_tasks-sublist of 'job'. If the task
  * is not found in the sublist, nullptr is returned.
  *
- * @param job JB_Type
+ * @param job JB_Type, may be an empty handle
  * @param answer_list AN_Type
  * @param ja_task_id array task id
  *
- * @return JAT_Type element
+ * @return JAT_Type element, writable although the job is passed read only, as before; an empty handle if
+ *         there is none
  *
  * @note In case of errors, the function should return a message in a
  *       given answer_list (answer_list != nullptr).
  *       MT-NOTE: job_search_task() is MT safe
  */
-lListElem *job_search_task(const lListElem *job, lList **answer_list,
-                           uint32_t ja_task_id) {
+ocs::tom::Element<ocs::tom::JAT> job_search_task(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                 [[maybe_unused]] lList **answer_list, const uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
 
-   lListElem *ja_task = nullptr;
+   ocs::tom::Element<ocs::tom::JAT> ja_task = nullptr;
 
-   if (job != nullptr) {
+   if (job) {
       ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_id);
    }
    DRETURN(ja_task);
+}
+
+/**
+ * @brief job_search_task() for an untyped caller
+ *
+ * @param job JB_Type, checked; may be nullptr
+ * @param answer_list AN_Type
+ * @param ja_task_id array task id
+ *
+ * @return JAT_Type element, or nullptr
+ */
+lListElem *job_search_task(const lListElem *job, lList **answer_list, const uint32_t ja_task_id) {
+   return job_search_task(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, ja_task_id);
 }
 
 /**
@@ -864,25 +1079,39 @@ lListElem *job_search_task(const lListElem *job, lList **answer_list,
  * of 'job' and a pointer to the new element will be returned.
  * Errors may be found in the 'answer_list'
  *
- * @param job JB_Type
+ * @param job JB_Type, may be an empty handle
  * @param answer_list AN_Type
  * @param ja_task_id array task id
  *
- * @return JAT_Type element
+ * @return JAT_Type element, an empty handle if the task is not defined
  *
  * @note In case of errors, the function should return a message in a
  *       given answer_list (answer_list != nullptr).
  */
-lListElem *job_create_task(lListElem *job, lList **answer_list, uint32_t ja_task_id) {
+ocs::tom::Element<ocs::tom::JAT> job_create_task(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+                                                 const uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
 
-   lListElem *ja_task = nullptr;
+   ocs::tom::Element<ocs::tom::JAT> ja_task = nullptr;
 
-   if (job != nullptr && job_is_ja_task_defined(job, ja_task_id)) {
+   if (job && job_is_ja_task_defined(job, ja_task_id)) {
       ja_task = job_enroll(job, answer_list, ja_task_id);
    }
 
    DRETURN(ja_task);
+}
+
+/**
+ * @brief job_create_task() for an untyped caller
+ *
+ * @param job JB_Type, checked; may be nullptr
+ * @param answer_list AN_Type
+ * @param ja_task_id array task id
+ *
+ * @return JAT_Type element, or nullptr
+ */
+lListElem *job_create_task(lListElem *job, lList **answer_list, const uint32_t ja_task_id) {
+   return job_create_task(ocs::tom::Element<ocs::tom::JB>(job), answer_list, ja_task_id);
 }
 
 /**
@@ -895,13 +1124,26 @@ lListElem *job_create_task(lListElem *job, lList **answer_list, uint32_t ja_task
  *
  * @return shell start mode
  */
-const char *job_get_shell_start_mode(const lListElem *queue, const char *conf_shell_start_mode) {
+const char *job_get_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                                     const char *conf_shell_start_mode) {
    DENTER(TOP_LAYER);
    if (const char *queue_start_mode = ocs::tom::get<QU_shell_start_mode>(queue);
        queue_start_mode && strcasecmp(queue_start_mode, "none") != 0) {
       DRETURN(queue_start_mode);
    }
    DRETURN(conf_shell_start_mode);
+}
+
+/**
+ * @brief job_get_shell_start_mode() for an untyped caller
+ *
+ * @param queue QU_Type element, checked
+ * @param conf_shell_start_mode shell start mode of configuration
+ *
+ * @return as job_get_shell_start_mode()
+ */
+const char *job_get_shell_start_mode(const lListElem *queue, const char *conf_shell_start_mode) {
+   return job_get_shell_start_mode(ocs::tom::ConstElement<ocs::tom::QU>(queue), conf_shell_start_mode);
 }
 
 /**
@@ -915,15 +1157,18 @@ const char *job_get_shell_start_mode(const lListElem *queue, const char *conf_sh
  * 'JB_job_number' like 'job'. If this is true than -1 will be
  * returned by this function.
  *
- * @param job_list JB_Type
+ * The list stays an untyped in-out reference, the callers pass master list
+ * slots. The job is taken over by the list unless an error is returned.
+ *
+ * @param job_list JB_Type, created if *job_list is nullptr
  * @param name name of the list
- * @param job JB_Type element
+ * @param job JB_Type element, may be an empty handle
  * @param check Does the element already exist?
  *
  * @return error code 1 => invalid parameter -1 => check failed: element already exists 0 => OK
  */
-int job_list_add_job(lList **job_list, const char *name, lListElem *job,
-                     int check) {
+int job_list_add_job(lList **job_list, const char *name, const ocs::tom::Element<ocs::tom::JB> job,
+                     const int check) {
    DENTER(TOP_LAYER);
 
    if (!job_list) {
@@ -935,13 +1180,14 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
       DRETURN(1);
    }
 
-   if(!*job_list) {
-      *job_list = lCreateList(name, JB_Type);
+   if (!*job_list) {
+      *job_list = ocs::tom::ListPtr<ocs::tom::JB>::create(name).release();
    }
 
    if (check && *job_list && ocs::tom::find_first<JB_job_number>(*job_list, ocs::tom::get<JB_job_number>(job))) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR(MSG_JOB_JOBALREADYEXISTS_S, job_get_id_string(ocs::tom::get<JB_job_number>(job), 0, nullptr, &id_dstring));
+      ERROR(MSG_JOB_JOBALREADYEXISTS_S,
+            job_get_id_string(ocs::tom::get<JB_job_number>(job), 0, nullptr, &id_dstring));
       sge_dstring_free(&id_dstring);
       DRETURN(-1);
    }
@@ -949,6 +1195,20 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
    lAppendElem(*job_list, job);
 
    DRETURN(0);
+}
+
+/**
+ * @brief job_list_add_job() for an untyped caller
+ *
+ * @param job_list JB_Type, created if *job_list is nullptr
+ * @param name name of the list
+ * @param job JB_Type element, checked; may be nullptr
+ * @param check Does the element already exist?
+ *
+ * @return as job_list_add_job()
+ */
+int job_list_add_job(lList **job_list, const char *name, lListElem *job, const int check) {
+   return job_list_add_job(job_list, name, ocs::tom::Element<ocs::tom::JB>(job), check);
 }
 
 /**
@@ -963,10 +1223,21 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
  *
  * @see #job_is_parallel, #job_is_tight_parallel
  */
-bool job_is_array(const lListElem *job) {
-   uint32_t job_type = ocs::tom::get<JB_type>(job);
+bool job_is_array(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   const uint32_t job_type = ocs::tom::get<JB_type>(job);
 
    return JOB_TYPE_IS_ARRAY(job_type) ? true : false;
+}
+
+/**
+ * @brief job_is_array() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ *
+ * @return as job_is_array()
+ */
+bool job_is_array(const lListElem *job) {
+   return job_is_array(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -998,19 +1269,18 @@ bool job_is_parallel(const lListElem *job) {
  *
  * @see #job_is_array, #job_is_parallel, #job_might_be_tight_parallel
  */
-bool job_is_tight_parallel(const lListElem *job, const lList *pe_list) {
+bool job_is_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                           const ocs::tom::ConstList<ocs::tom::PE> pe_list) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const char *pe_name = nullptr;
 
-   pe_name = ocs::tom::get<JB_pe>(job);
+   const char *pe_name = ocs::tom::get<JB_pe>(job);
    if (pe_name != nullptr) {
       int found_pe = 0;
       int all_are_tight = 1;
-      const lListElem *pe;
 
-      for_each_ep(pe, pe_list) {
+      for (const auto pe : pe_list) {
          if (pe_is_matching(pe, pe_name)) {
             found_pe = 1;
             all_are_tight &= ocs::tom::get<PE_control_slaves>(pe);
@@ -1022,6 +1292,18 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list) {
       }
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief job_is_tight_parallel() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param pe_list PE_Type list with all existing PEs, checked
+ *
+ * @return as job_is_tight_parallel()
+ */
+bool job_is_tight_parallel(const lListElem *job, const lList *pe_list) {
+   return job_is_tight_parallel(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstList<ocs::tom::PE>(pe_list));
 }
 
 /**
@@ -1039,17 +1321,15 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list) {
  *
  * @see #job_is_array, #job_is_parallel, #job_is_tight_parallel, #job_might_be_tight_parallel
  */
-bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list) {
+bool job_might_be_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                 const ocs::tom::ConstList<ocs::tom::PE> pe_list) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const char *pe_name = nullptr;
 
-   pe_name = ocs::tom::get<JB_pe>(job);
+   const char *pe_name = ocs::tom::get<JB_pe>(job);
    if (pe_name != nullptr) {
-      const lListElem *pe;
-
-      for_each_ep(pe, pe_list) {
+      for (const auto pe : pe_list) {
          if (pe_is_matching(pe, pe_name) && ocs::tom::get<PE_control_slaves>(pe)) {
             ret = true;
             break;
@@ -1060,29 +1340,50 @@ bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list) {
 }
 
 /**
+ * @brief job_might_be_tight_parallel() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param pe_list PE_Type list with all existing PEs, checked
+ *
+ * @return as job_might_be_tight_parallel()
+ */
+bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list) {
+   return job_might_be_tight_parallel(ocs::tom::ConstElement<ocs::tom::JB>(job),
+                                      ocs::tom::ConstList<ocs::tom::PE>(pe_list));
+}
+
+/**
  * @brief Submit time task specification
  *
  * The function returns the "start", "end" and "step" numbers
  * which where used to create "job" (qsub -t `range`).
  *
+ * The three numbers used to be out-parameters; they are returned now.
+ *
  * @param job JB_Type element
- * @param start first id
- * @param end last id
- * @param step step size (>=1)
+ *
+ * @return first id, last id and step size (>=1); 1, 1, 1 if the job has no task range
  */
-void job_get_submit_task_ids(const lListElem *job, uint32_t *start,
-                             uint32_t *end, uint32_t *step) {
-   ocs::tom::ConstElement<ocs::tom::RN> range_elem = lFirst(ocs::tom::get<JB_ja_structure>(job));
+std::tuple<uint32_t, uint32_t, uint32_t> job_get_submit_task_ids(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   const auto range_elem = ocs::tom::get<JB_ja_structure>(job).front();
    if (range_elem) {
-      uint32_t tmp_step;
+      const uint32_t tmp_step = ocs::tom::get<RN_step>(range_elem);
 
-      *start = ocs::tom::get<RN_min>(range_elem);
-      *end = ocs::tom::get<RN_max>(range_elem);
-      tmp_step = ocs::tom::get<RN_step>(range_elem);
-      *step = tmp_step ? tmp_step : 1;
-   } else {
-      *start = *end = *step = 1;
+      return {ocs::tom::get<RN_min>(range_elem), ocs::tom::get<RN_max>(range_elem), tmp_step ? tmp_step : 1};
    }
+   return {1, 1, 1};
+}
+
+/**
+ * @brief job_get_submit_task_ids() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param[out] start first id
+ * @param[out] end last id
+ * @param[out] step step size (>=1)
+ */
+void job_get_submit_task_ids(const lListElem *job, uint32_t *start, uint32_t *end, uint32_t *step) {
+   std::tie(*start, *end, *step) = job_get_submit_task_ids(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -1101,23 +1402,42 @@ void job_get_submit_task_ids(const lListElem *job, uint32_t *start,
  *
  * @note MT-NOTE: job_set_submit_task_ids() is MT safe
  */
-int job_set_submit_task_ids(lListElem *job, uint32_t start, uint32_t end,
-                            uint32_t step) {
+int job_set_submit_task_ids(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t start, const uint32_t end,
+                            const uint32_t step) {
    return object_set_range_id(job, JB_ja_structure, start, end, step);
 }
 
 /**
- * @brief Get smallest id
+ * @brief job_set_submit_task_ids() for an untyped caller
  *
- * Returns the smallest task id currently existing in a job
+ * @param job JB_Type job, checked
+ * @param start first id
+ * @param end last id
+ * @param step step size
+ *
+ * @return as job_set_submit_task_ids()
+ */
+int job_set_submit_task_ids(lListElem *job, const uint32_t start, const uint32_t end, const uint32_t step) {
+   return job_set_submit_task_ids(ocs::tom::Element<ocs::tom::JB>(job), start, end, step);
+}
+
+/**
+ * @brief Get the smallest or the biggest unenrolled id
+ *
+ * Returns the smallest or the biggest task id currently existing in a job
  * which is not enrolled in the JB_ja_tasks sublist of 'job'.
  * If all tasks are enrolled 0 will be returned.
  *
+ * The id lists are addressed by a table of field numbers, so they are read
+ * through the raw lGetList().
+ *
  * @param job JB_Type element
+ * @param find_min true for the smallest id, false for the biggest
  *
  * @return task id or 0
  */
-static uint32_t job_get_extreme_unenrolled_task_id(const lListElem *job, bool find_min) {
+static uint32_t job_get_extreme_unenrolled_task_id(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                   const bool find_min) {
    const int lists[5] = {JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_o_h_ids,
                          JB_ja_s_h_ids, JB_ja_a_h_ids};
    uint32_t ids[5];
@@ -1149,11 +1469,21 @@ static uint32_t job_get_extreme_unenrolled_task_id(const lListElem *job, bool fi
  * Pending tasks of an array job are stored as ranges rather than as elements;
  * they only get an element when they are about to run.
  *
- * @param job the array job to search
+ * @param job the array job to search (JB_Type)
  * @return the id, or 0 when every task is enrolled
  */
-uint32_t job_get_smallest_unenrolled_task_id(const lListElem *job) {
+uint32_t job_get_smallest_unenrolled_task_id(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return job_get_extreme_unenrolled_task_id(job, true);
+}
+
+/**
+ * @brief job_get_smallest_unenrolled_task_id() for an untyped caller
+ *
+ * @param job the array job to search (JB_Type), checked
+ * @return as job_get_smallest_unenrolled_task_id()
+ */
+uint32_t job_get_smallest_unenrolled_task_id(const lListElem *job) {
+   return job_get_smallest_unenrolled_task_id(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -1167,29 +1497,28 @@ uint32_t job_get_smallest_unenrolled_task_id(const lListElem *job) {
  *
  * @return task id or 0
  */
-uint32_t job_get_smallest_enrolled_task_id(const lListElem *job) {
-   const lListElem *ja_task;        /* JAT_Type */
-   const lListElem *nxt_ja_task;    /* JAT_Type */
+uint32_t job_get_smallest_enrolled_task_id(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    uint32_t ret = 0;
 
-   /*
-    * initialize ret
-    */
-   ocs::tom::ConstElement<ocs::tom::JAT> ja_task_jat = lFirst(ocs::tom::get<JB_ja_tasks>(job));
-   nxt_ja_task = lNext(ja_task_jat);
-   if (ja_task_jat != nullptr) {
-      ret = ocs::tom::get<JAT_task_number>(ja_task_jat);
-   }
-
-   /*
-    * try to find a smaller task id
-    */
-   while ((ja_task = nxt_ja_task)) {
-      nxt_ja_task = lNext(ja_task);
-
-      ret = std::min(ret, ocs::tom::get<JAT_task_number>(ja_task));
+   // initialize ret with the first task, then try to find a smaller task id
+   bool first = true;
+   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+      const uint32_t task_number = ocs::tom::get<JAT_task_number>(ja_task);
+      ret = first ? task_number : std::min(ret, task_number);
+      first = false;
    }
    return ret;
+}
+
+/**
+ * @brief job_get_smallest_enrolled_task_id() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ *
+ * @return as job_get_smallest_enrolled_task_id()
+ */
+uint32_t job_get_smallest_enrolled_task_id(const lListElem *job) {
+   return job_get_smallest_enrolled_task_id(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -1203,8 +1532,19 @@ uint32_t job_get_smallest_enrolled_task_id(const lListElem *job) {
  *
  * @return task id or 0
  */
-uint32_t job_get_biggest_unenrolled_task_id(const lListElem *job) {
+uint32_t job_get_biggest_unenrolled_task_id(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return job_get_extreme_unenrolled_task_id(job, false);
+}
+
+/**
+ * @brief job_get_biggest_unenrolled_task_id() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ *
+ * @return as job_get_biggest_unenrolled_task_id()
+ */
+uint32_t job_get_biggest_unenrolled_task_id(const lListElem *job) {
+   return job_get_biggest_unenrolled_task_id(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -1218,29 +1558,25 @@ uint32_t job_get_biggest_unenrolled_task_id(const lListElem *job) {
  *
  * @return task id or 0
  */
-uint32_t job_get_biggest_enrolled_task_id(const lListElem *job) {
-   const lListElem *ja_task;        /* JAT_Type */
-   const lListElem *nxt_ja_task;    /* JAT_Type */
+uint32_t job_get_biggest_enrolled_task_id(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    uint32_t ret = 0;
 
-   /*
-    * initialize ret
-    */
-   ocs::tom::ConstElement<ocs::tom::JAT> ja_task_jat = lLast(ocs::tom::get<JB_ja_tasks>(job));
-   nxt_ja_task = lPrev(ja_task_jat);
-   if (ja_task_jat != nullptr) {
-      ret = ocs::tom::get<JAT_task_number>(ja_task_jat);
-   }
-
-   /*
-    * try to find a smaller task id
-    */
-   while ((ja_task = nxt_ja_task)) {
-      nxt_ja_task = lPrev(ja_task);
-
+   // every task number is > 0, so the maximum does not depend on the direction of the walk
+   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
       ret = std::max(ret, ocs::tom::get<JAT_task_number>(ja_task));
    }
    return ret;
+}
+
+/**
+ * @brief job_get_biggest_enrolled_task_id() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ *
+ * @return as job_get_biggest_enrolled_task_id()
+ */
+uint32_t job_get_biggest_enrolled_task_id(const lListElem *job) {
+   return job_get_biggest_enrolled_task_id(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -1253,7 +1589,7 @@ uint32_t job_get_biggest_enrolled_task_id(const lListElem *job) {
  * of a new job (reading jobs from spool area). This may be done
  * with "force_registration".
  *
- * @param job_list the jobs already in the system
+ * @param job_list the jobs already in the system (JB_Type)
  * @param max_jobs maximum number of allowed jobs per user
  * @param force_registration force job registration
  *
@@ -1261,12 +1597,13 @@ uint32_t job_get_biggest_enrolled_task_id(const lListElem *job) {
  *
  * @see `suser_register_new_job()`
  */
-int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int force_registration) {
+int job_list_register_new_job(const ocs::tom::ConstList<ocs::tom::JB> job_list, const uint32_t max_jobs,
+                              const int force_registration) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
 
-   if (max_jobs > 0 && !force_registration && max_jobs <= lGetNumberOfElem(job_list)) {
+   if (max_jobs > 0 && !force_registration && max_jobs <= job_list.size()) {
       ret = 1;
    } else {
       ret = 0;
@@ -1274,6 +1611,18 @@ int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int forc
    DRETURN(ret);
 }
 
+/**
+ * @brief job_list_register_new_job() for an untyped caller
+ *
+ * @param job_list the jobs already in the system (JB_Type), checked
+ * @param max_jobs maximum number of allowed jobs per user
+ * @param force_registration force job registration
+ *
+ * @return as job_list_register_new_job()
+ */
+int job_list_register_new_job(const lList *job_list, const uint32_t max_jobs, const int force_registration) {
+   return job_list_register_new_job(ocs::tom::ConstList<ocs::tom::JB>(job_list), max_jobs, force_registration);
+}
 
 /**
  * @brief Initialize task id range lists
@@ -1290,12 +1639,10 @@ int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int forc
  *
  * @note MT-NOTE: job_initialize_id_lists() is MT safe
  */
-int job_initialize_id_lists(lListElem *job, lList **answer_list) {
+int job_initialize_id_lists(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-       /* RN_Type */
-
-   auto n_h_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(lCopyList("task_id_range", ocs::tom::get<JB_ja_structure>(job)));
+   auto n_h_list = ocs::tom::get<JB_ja_structure>(job).clone("task_id_range");
    if (n_h_list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
@@ -1308,6 +1655,18 @@ int job_initialize_id_lists(lListElem *job, lList **answer_list) {
       ocs::tom::set<JB_ja_a_h_ids>(job, nullptr);
    }
    DRETURN(0);
+}
+
+/**
+ * @brief job_initialize_id_lists() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param answer_list AN_Type list pointer
+ *
+ * @return as job_initialize_id_lists()
+ */
+int job_initialize_id_lists(lListElem *job, lList **answer_list) {
+   return job_initialize_id_lists(ocs::tom::Element<ocs::tom::JB>(job), answer_list);
 }
 
 /**
@@ -1337,14 +1696,15 @@ int job_initialize_id_lists(lListElem *job, lList **answer_list) {
  * @param unqualified_hostname the submit host without its domain
  * @param qualified_hostname the submit host including its domain
  */
-void job_initialize_env(lListElem *job, lList **answer_list,
-                        const lList *path_alias_list,
+void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+                        const ocs::tom::ConstList<ocs::tom::PA> path_alias_list,
                         const char *unqualified_hostname,
                         const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    dstring buffer = DSTRING_INIT;
 
+   // var_list_set_string() takes a raw in-out list
    lList *env_list = nullptr;
    ocs::tom::exchange<JB_env_list>(job, &env_list);
 
@@ -1362,7 +1722,7 @@ void job_initialize_env(lListElem *job, lList **answer_list,
 
    // Add TERM to the job environment.
    // If TERM is not set, it will be inherited from sge_execd's environment (unless execd_param INHERIT_ENV=FALSE).
-   uint32_t job_type = ocs::tom::get<JB_type>(job);
+   const uint32_t job_type = ocs::tom::get<JB_type>(job);
    if (JOB_TYPE_IS_QLOGIN(job_type) || JOB_TYPE_IS_QRLOGIN(job_type) || JOB_TYPE_IS_QRSH(job_type)) {
       const char *term = sge_getenv("TERM");
       if (term != nullptr) {
@@ -1394,6 +1754,21 @@ void job_initialize_env(lListElem *job, lList **answer_list,
 }
 
 /**
+ * @brief job_initialize_env() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param answer_list AN_Type list pointer
+ * @param path_alias_list PA_Type list, checked
+ * @param unqualified_hostname the submit host without its domain
+ * @param qualified_hostname the submit host including its domain
+ */
+void job_initialize_env(lListElem *job, lList **answer_list, const lList *path_alias_list,
+                        const char *unqualified_hostname, const char *qualified_hostname) {
+   job_initialize_env(ocs::tom::Element<ocs::tom::JB>(job), answer_list,
+                      ocs::tom::ConstList<ocs::tom::PA>(path_alias_list), unqualified_hostname, qualified_hostname);
+}
+
+/**
  * @brief Get value of certain job env variable
  *
  * Return the string value of the job environment "variable".
@@ -1409,12 +1784,23 @@ void job_initialize_env(lListElem *job, lList **answer_list,
  *
  * @see #job_initialize_env, #job_set_env_string
  */
-const char *job_get_env_string(const lListElem *job, const char *variable) {
+const char *job_get_env_string(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *variable) {
    DENTER(TOP_LAYER);
 
-   const char *ret = nullptr;
-   ret = var_list_get_string(ocs::tom::get<JB_env_list>(job), variable);
+   const char *ret = var_list_get_string(ocs::tom::get<JB_env_list>(job), variable);
    DRETURN(ret);
+}
+
+/**
+ * @brief job_get_env_string() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param variable environment variable name
+ *
+ * @return as job_get_env_string()
+ */
+const char *job_get_env_string(const lListElem *job, const char *variable) {
+   return job_get_env_string(ocs::tom::ConstElement<ocs::tom::JB>(job), variable);
 }
 
 /**
@@ -1451,10 +1837,13 @@ void job_set_env_string(lListElem *job, const char *variable, const char *value)
  * The function will try to correct errors within this lists. If
  * this is not possible an error will be returned in "answer_list".
  *
+ * The lists are addressed by a table of field numbers, so they are read
+ * through the raw lGetList()/lGetListRW() and only then wrapped.
+ *
  * @param job JB_Type element
  * @param answer_list AN_Type list
  */
-void job_check_correct_id_sublists(lListElem *job, lList **answer_list) {
+void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
    DENTER(TOP_LAYER);
    /*
     * Is 0 contained in one of the range lists
@@ -1472,9 +1861,9 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list) {
       int i = -1;
 
       while (field[++i] != -1) {
-         const lList *range_list = lGetList(job, field[i]);
+         const ocs::tom::List<ocs::tom::RN> range_list(lGetListRW(job, field[i]));
 
-         for_each_rw_lv(range, range_list) {
+         for (const auto range : range_list) {
             if (field[i] != JB_ja_structure)
                range_correct_end(range);
             if (range_is_id_within(range, 0)) {
@@ -1504,7 +1893,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list) {
       int i = -1;
 
       while (field[++i] != -1) {
-         const lList *range_list = lGetList(job, field[i]);
+         const ocs::tom::ConstList<ocs::tom::RN> range_list(lGetList(job, field[i]));
 
          if (!range_list_is_empty(range_list)) {
             has_x_ids = 1;
@@ -1522,6 +1911,16 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list) {
    }
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief job_check_correct_id_sublists() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param answer_list AN_Type list
+ */
+void job_check_correct_id_sublists(lListElem *job, lList **answer_list) {
+   job_check_correct_id_sublists(ocs::tom::Element<ocs::tom::JB>(job), answer_list);
 }
 
 /**
@@ -1574,7 +1973,8 @@ const char *job_get_id_string(uint32_t job_id, uint32_t ja_task_id,
  *
  * @return true or false
  */
-bool job_is_pe_referenced(const lListElem *job, const lListElem *pe) {
+bool job_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                          const ocs::tom::ConstElement<ocs::tom::PE> pe) {
    const char *ref_pe_name = ocs::tom::get<JB_pe>(job);
    bool ret = false;
 
@@ -1584,6 +1984,18 @@ bool job_is_pe_referenced(const lListElem *job, const lListElem *pe) {
       }
    }
    return ret;
+}
+
+/**
+ * @brief job_is_pe_referenced() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param pe PE_Type object, checked
+ *
+ * @return as job_is_pe_referenced()
+ */
+bool job_is_pe_referenced(const lListElem *job, const lListElem *pe) {
+   return job_is_pe_referenced(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::PE>(pe));
 }
 
 /**
@@ -1597,7 +2009,8 @@ bool job_is_pe_referenced(const lListElem *job, const lListElem *pe) {
  *
  * @return true or false
  */
-bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt) {
+bool job_is_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                            const ocs::tom::ConstElement<ocs::tom::CK> ckpt) {
    const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
    const char *ref_ckpt_name = ocs::tom::get<JB_checkpoint_name>(job);
    bool ret = false;
@@ -1608,6 +2021,18 @@ bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt) {
       }
    }
    return ret;
+}
+
+/**
+ * @brief job_is_ckpt_referenced() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param ckpt CK_Type object, checked
+ *
+ * @return as job_is_ckpt_referenced()
+ */
+bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt) {
+   return job_is_ckpt_referenced(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::CK>(ckpt));
 }
 
 /**
@@ -1701,18 +2126,28 @@ void job_get_state_string(char *str, uint32_t op) {
  *
  * @param job JB_Type element
  */
-void job_add_parent_id_to_context(lListElem *job) {
+void job_add_parent_id_to_context(const ocs::tom::Element<ocs::tom::JB> job) {
    const char *job_id_string = sge_getenv("JOB_ID");
-   if (job_id_string != nullptr && static_cast<const lListElem *>(ocs::tom::find_first_in<JB_context_change, CX_variable>(job, CONTEXT_PARENT)) == nullptr) {
+   if (job_id_string != nullptr && !ocs::tom::find_first_in<JB_context_change, CX_variable>(job, CONTEXT_PARENT)) {
+      // the free emplace_back() creates the list as before, it is stored only then
       lList *change = ocs::tom::get<JB_context_change>(job);
-      bool created = change == nullptr;
+      const bool created = change == nullptr;
       ocs::tom::emplace_back<CX_variable>(&change, "+");
-      ocs::tom::Element<ocs::tom::CX> parent = ocs::tom::emplace_back<CX_variable>(&change, CONTEXT_PARENT);
+      const auto parent = ocs::tom::emplace_back<CX_variable>(&change, CONTEXT_PARENT);
       ocs::tom::set<CX_value>(parent, job_id_string);
       if (created) {
          ocs::tom::set<JB_context_change>(job, change);
       }
    }
+}
+
+/**
+ * @brief job_add_parent_id_to_context() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ */
+void job_add_parent_id_to_context(lListElem *job) {
+   job_add_parent_id_to_context(ocs::tom::Element<ocs::tom::JB>(job));
 }
 
 /**
@@ -1736,8 +2171,8 @@ void job_add_parent_id_to_context(lListElem *job) {
  *       functions job_set_qsh_display and job_get_qsh_display would
  *       be usefull.
  */
-int job_check_qsh_display(const lListElem *job, lList **answer_list,
-                          bool output_warning) {
+int job_check_qsh_display(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
+                          const bool output_warning) {
    DENTER(TOP_LAYER);
 
    dstring id_dstring = DSTRING_INIT;
@@ -1745,7 +2180,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
    int ret = STATUS_OK;
 
    /* check for existence of DISPLAY */
-   if (ocs::tom::ConstElement<ocs::tom::VA> display_ep = ocs::tom::find_first<VA_variable>(ocs::tom::get<JB_env_list>(job), "DISPLAY"); display_ep == nullptr) {
+   if (const auto display_ep = ocs::tom::get<JB_env_list>(job).find_first<VA_variable>("DISPLAY"); !display_ep) {
       if (output_warning) {
          WARNING(MSG_JOB_NODISPLAY_S, id_str);
       } else {
@@ -1784,6 +2219,19 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
 }
 
 /**
+ * @brief job_check_qsh_display() for an untyped caller
+ *
+ * @param job the job to check (JB_Type), checked
+ * @param answer_list answer list to take error messages, if nullptr, no answer is passed back.
+ * @param output_warning output error messages to stderr?
+ *
+ * @return as job_check_qsh_display()
+ */
+int job_check_qsh_display(const lListElem *job, lList **answer_list, const bool output_warning) {
+   return job_check_qsh_display(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, output_warning);
+}
+
+/**
  * @brief Check the owner of a job
  *
  * Checks whether the user the request came from owns the job. An operator or
@@ -1791,20 +2239,20 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
  *
  * @param packet the request, which carries the requesting user
  * @param job_id the job number
- * @param master_job_list a ref to the master job list
+ * @param master_job_list the master job list (JB_Type)
  *
  * @return -1, if the job cannot be found 0, if the user is the job owner 1, if the user is not the job owner
  */
-int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *master_job_list) {
+int job_check_owner(const ocs::gdi::Packet *packet, const uint32_t job_id,
+                    const ocs::tom::ConstList<ocs::tom::JB> master_job_list) {
    DENTER(TOP_LAYER);
-
 
    if (manop_is_operator(packet)) {
       DRETURN(0);
    }
 
-   ocs::tom::ConstElement<ocs::tom::JB> job = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
-   if (job == nullptr) {
+   const auto job = master_job_list.find_first<JB_job_number>(job_id);
+   if (!job) {
       DRETURN(-1);
    }
 
@@ -1813,6 +2261,19 @@ int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *mast
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief job_check_owner() for an untyped caller
+ *
+ * @param packet the request, which carries the requesting user
+ * @param job_id the job number
+ * @param master_job_list the master job list (JB_Type), checked
+ *
+ * @return as job_check_owner()
+ */
+int job_check_owner(const ocs::gdi::Packet *packet, const uint32_t job_id, lList *master_job_list) {
+   return job_check_owner(packet, job_id, ocs::tom::ConstList<ocs::tom::JB>(master_job_list));
 }
 
 /**
@@ -1941,7 +2402,7 @@ bool job_parse_key(char *key, uint32_t *job_id, uint32_t *ja_task_id,
  *
  * @see #jobscript_parse_key
  */
-const char *jobscript_get_key(const lListElem *jep, dstring *buffer) {
+const char *jobscript_get_key(const ocs::tom::ConstElement<ocs::tom::JB> jep, dstring *buffer) {
    DENTER(TOP_LAYER);
 
    const char *ret = nullptr;
@@ -1952,6 +2413,18 @@ const char *jobscript_get_key(const lListElem *jep, dstring *buffer) {
                                 ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JB_exec_file>(jep));
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief jobscript_get_key() for an untyped caller
+ *
+ * @param jep the job whose id and script name make up the key (JB_Type), checked
+ * @param[out] buffer receives the key
+ *
+ * @return as jobscript_get_key()
+ */
+const char *jobscript_get_key(const lListElem *jep, dstring *buffer) {
+   return jobscript_get_key(ocs::tom::ConstElement<ocs::tom::JB>(jep), buffer);
 }
 
 
@@ -1984,18 +2457,22 @@ char *jobscript_parse_key(char *key, const char **exec_file) {
  *
  * Resolves hostnames in path lists.
  *
- * @param job the submited cull list
+ * The path list is named by a field number given at run time, so it is read
+ * through the raw lGetListRW() and only then wrapped.
+ *
+ * @param job the submited cull list (JB_Type)
  * @param answer_list AN_Type element
- * @param name a JB_Type (JB_stderr_path_list or JB_stout_path_list)
+ * @param name a JB_Type PN_Type list field (JB_stderr_path_list, JB_stdout_path_list, ...)
  *
  * @return error code (STATUS_OK, or ...)
  */
-int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
-                                   int name) {
+int job_resolve_host_for_path_list(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
+                                   const int name) {
    DENTER(TOP_LAYER);
    bool ret_error=false;
 
-   for_each_rw_lv(ep, lGetList(job, name)){
+   // the job may be a reduced request job from the network: wrapped unchecked, as the raw loop read it
+   for (const auto ep : ocs::tom::List<ocs::tom::PN>::from_typed(lGetListRW(job, name))) {
       int res = sge_resolve_host(ep, PN_host);
       DPRINTF("after sge_resolve_host() which returned %s\n", cl_get_error_text(res));
       if (res != CL_RETVAL_OK) {
@@ -2015,9 +2492,8 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
       /* ensure, that each hostname is only specified once */
       if( !ret_error ){
          const char *hostname = ocs::tom::get<PN_host>(ep);
-         const lListElem *temp;
 
-         for (temp= lPrev(ep); temp; temp =lPrev(temp)){
+         for (auto temp = ep.prev(); temp; temp = temp.prev()) {
             const char *temp_hostname = ocs::tom::get<PN_host>(temp);
 
             if(hostname == nullptr){
@@ -2050,6 +2526,19 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 }
 
 /**
+ * @brief job_resolve_host_for_path_list() for an untyped caller
+ *
+ * @param job the submited cull list (JB_Type), checked
+ * @param answer_list AN_Type element
+ * @param name a JB_Type PN_Type list field (JB_stderr_path_list, JB_stdout_path_list, ...)
+ *
+ * @return as job_resolve_host_for_path_list()
+ */
+int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, const int name) {
+   return job_resolve_host_for_path_list(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, name);
+}
+
+/**
  * @brief Returns the requested centry name
  *
  * Returns the requested centry name if it is requested by the give
@@ -2058,23 +2547,31 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
  * @param job JB_Type element
  * @param centry_name name
  *
- * @return CE_Type element
+ * @return CE_Type element, an empty handle if neither list holds it
  *
  * @note MT-NOTE: job_get_request() is MT safe
  */
-const lListElem *
-job_get_request(const lListElem *job, const char *centry_name) {
+ocs::tom::ConstElement<ocs::tom::CE> job_get_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                     const char *centry_name) {
    DENTER(TOP_LAYER);
 
-   const lListElem *ret;
-
-   const lList *hard_centry_list = job_get_hard_resource_list(job);
-   ret = ocs::tom::find_first<CE_name>(hard_centry_list, centry_name);
-   if (ret == nullptr) {
-      const lList *soft_centry_list = job_get_soft_resource_list(job);
-      ret = ocs::tom::find_first<CE_name>(soft_centry_list, centry_name);
+   auto ret = job_get_hard_resource_list(job).find_first<CE_name>(centry_name);
+   if (!ret) {
+      ret = job_get_soft_resource_list(job).find_first<CE_name>(centry_name);
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief job_get_request() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ * @param centry_name name
+ *
+ * @return CE_Type element, or nullptr
+ */
+const lListElem *job_get_request(const lListElem *job, const char *centry_name) {
+   return job_get_request(ocs::tom::ConstElement<ocs::tom::JB>(job), centry_name);
 }
 
 const lListElem *
@@ -2112,28 +2609,28 @@ job_get_hard_request(const lListElem *job, const char *name, bool is_master_task
    DRETURN(ret);
 }
 
-const lListElem *
 /**
  * @brief A job's hard request for one resource in one scope
  *
  * Unlike the overload taking `is_master_task`, this looks only in the scope
  * named and does not fall back to the global set.
  *
- * @param job the job to search
+ * @param job the job to search (JB_Type)
  * @param name the resource to look for
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request, or nullptr when that scope does not name the resource
+ * @return the request (CE_Type), an empty handle when that scope does not name the resource
  */
-job_get_hard_request(const lListElem *job, const char *name, uint32_t scope) {
+ocs::tom::ConstElement<ocs::tom::CE>
+job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *name, const uint32_t scope) {
    DENTER(TOP_LAYER);
 
-   const lListElem *ret = nullptr;
+   ocs::tom::ConstElement<ocs::tom::CE> ret = nullptr;
 
    // a request can be either global
-   const lList *request_list = job_get_hard_resource_list(job, scope);
-   if (request_list != nullptr) {
+   const auto request_list = job_get_hard_resource_list(job, scope);
+   if (request_list) {
       // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
-      ret = ocs::tom::find_first<CE_name>(request_list, name);
+      ret = request_list.find_first<CE_name>(name);
    }
 
    DRETURN(ret);
@@ -2186,36 +2683,38 @@ job_get_contribution(const lListElem *job, lList **answer_list, const char *name
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief How much of a consumable one scope of the job needs
  *
  * Like #job_get_contribution, but for an explicit scope.
  *
- * @param job the job to read
+ * The amount stays an out-parameter: it is also written when false is
+ * returned for a default request of 0.
+ *
+ * @param job the job to read (JB_Type)
  * @param[out] answer_list receives the message when the value cannot be parsed
  * @param name the consumable to ask about
  * @param[out] value receives the amount
- * @param complex_definition the resource's complex entry, for its default
+ * @param complex_definition the resource's complex entry (CE_Type), for its default
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @return true when a value was determined
  *
  * @note A default request of 0 is reported as failure, so the caller books
  *       nothing rather than booking zero.
  */
-job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const char *name, double *value,
-                              const lListElem *complex_definition, uint32_t scope) {
+bool
+job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, const char *name,
+                              double *value, const ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
+                              const uint32_t scope) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const lListElem *centry = nullptr;
    const char *value_string = nullptr;
    char error_str[256];
    bool is_default_request = false;
 
    // we only consider *hard* requests (consumables), there are no soft consumables
-   centry = job_get_hard_request(job, name, scope);
-   if (centry != nullptr) {
+   if (const auto centry = job_get_hard_request(job, name, scope); centry) {
       // CS-537: see job_get_contribution()
       *value = ocs::tom::get<CE_doubleval>(centry);
    } else {
@@ -2223,8 +2722,8 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
       // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
       value_string = ocs::tom::get<CE_defaultval>(complex_definition);
       is_default_request = true;
-      if (!(parse_ulong_val(value, nullptr, static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(complex_definition)), value_string,
-                            error_str, sizeof(error_str)-1))) {
+      const auto valtype = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(complex_definition));
+      if (!(parse_ulong_val(value, nullptr, valtype, value_string, error_str, sizeof(error_str)-1))) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
          ret = false;
@@ -2240,6 +2739,23 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
    DRETURN(ret);
 }
 
+/**
+ * @brief job_get_contribution_by_scope() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param[out] answer_list receives the message when the value cannot be parsed
+ * @param name the consumable to ask about
+ * @param[out] value receives the amount
+ * @param complex_definition the resource's complex entry (CE_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @return as job_get_contribution_by_scope()
+ */
+bool job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const char *name, double *value,
+                                   const lListElem *complex_definition, const uint32_t scope) {
+   return job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, name, value,
+                                        ocs::tom::ConstElement<ocs::tom::CE>(complex_definition), scope);
+}
+
 // adjust the slot count used for debiting of slave tasks
 // called when we just debited the master task
 // we need to reduce the slot count by one
@@ -2251,7 +2767,6 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
 //        ==> reason for the alleged bug CS-547 we will always have a slave task with the master task
 //            when job_is_first_task = false?
 // for JOB and HOST variables debit_slots was already +-1, so we will not book them for slave again
-void
 /**
  * @brief Take the master task's slot out of the slave slot count
  *
@@ -2260,14 +2775,15 @@ void
  * one lower - unless the parallel environment sets `job_is_first_task = false`,
  * in which case the master task got no slot of its own.
  *
- * @param pe the job's parallel environment; nullptr is treated as
+ * @param pe the job's parallel environment (PE_Type); an empty handle is treated as
  *           `job_is_first_task = true`
  * @param[in,out] slave_debit_slots the slot count to correct; its sign is kept,
  *                                  so it works for booking and unbooking alike
  */
-adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots) {
+void
+adjust_slave_task_debit_slots(const ocs::tom::ConstElement<ocs::tom::PE> pe, int &slave_debit_slots) {
    bool job_is_first_task = true;
-   if (pe != nullptr) {
+   if (pe) {
       job_is_first_task = ocs::tom::get<PE_job_is_first_task>(pe);
    }
 
@@ -2281,27 +2797,37 @@ adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots) {
 }
 
 /**
+ * @brief adjust_slave_task_debit_slots() for an untyped caller
+ *
+ * @param pe the job's parallel environment (PE_Type), checked; may be nullptr
+ * @param[in,out] slave_debit_slots the slot count to correct
+ */
+void adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots) {
+   adjust_slave_task_debit_slots(ocs::tom::ConstElement<ocs::tom::PE>(pe), slave_debit_slots);
+}
+
+/**
  * @brief Creates a string from the access lists and user
  *
  * @param category_str target string
  * @param owner job owner
  * @param group group owner
- * @param grp_list the owner's supplementary groups
- * @param acl_list a list of all access lists
+ * @param grp_list the owner's supplementary groups (ST_Type)
+ * @param acl_list a list of all access lists (US_Type)
  * @param option string option to put in infront of the generated string
  *
  * @return true, if everything was fine
  *
  * @note MT-NOTE: sge_unparse_acl_dstring() is MT safe
  */
-bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, const lList *grp_list,
-                             const lList *acl_list, const char *option) {
+bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group,
+                             const ocs::tom::ConstList<ocs::tom::ST> grp_list,
+                             const ocs::tom::ConstList<ocs::tom::US> acl_list, const char *option) {
    DENTER(TOP_LAYER);
 
    bool first = true;
-   const lListElem *elem = nullptr;
 
-   for_each_ep(elem, acl_list) {
+   for (const auto elem : acl_list) {
       if (ocs::tom::get<US_consider_with_categories>(elem) &&
           sge_contained_in_access_list(owner, group, grp_list, elem)) {
          if (first) {
@@ -2321,6 +2847,24 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
    DRETURN(true);
 }
 
+/**
+ * @brief sge_unparse_acl_dstring() for an untyped caller
+ *
+ * @param category_str target string
+ * @param owner job owner
+ * @param group group owner
+ * @param grp_list the owner's supplementary groups (ST_Type), checked
+ * @param acl_list a list of all access lists (US_Type), checked
+ * @param option string option to put in infront of the generated string
+ *
+ * @return as sge_unparse_acl_dstring()
+ */
+bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const char *group, const lList *grp_list,
+                             const lList *acl_list, const char *option) {
+   return sge_unparse_acl_dstring(category_str, owner, group, ocs::tom::ConstList<ocs::tom::ST>(grp_list),
+                                  ocs::tom::ConstList<ocs::tom::US>(acl_list), option);
+}
+
 
 /**
  * @brief Creates a string from a queue name list
@@ -2329,22 +2873,22 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
  * queues in a different order end up in the same category.
  *
  * @param category_str target string
- * @param queue_list the queue requests to render; nullptr appends nothing
+ * @param queue_list the queue requests to render (QR_Type), sorted in place; an empty handle appends nothing
  * @param option string option to put in infront of the generated string
  *
  * @return true, if everything was fine
  *
  * @note MT-NOTE: sge_unparse_queue_list_dstring() is MT safe
  */
-bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, const char *option) {
+bool sge_unparse_queue_list_dstring(dstring *category_str, const ocs::tom::List<ocs::tom::QR> queue_list,
+                                    const char *option) {
    DENTER(TOP_LAYER);
 
-   if (queue_list != nullptr) {
-      lPSortList(queue_list, "%I+", QR_name);
+   if (queue_list) {
+      queue_list.sort<ocs::tom::asc<QR_name>>();
 
       bool first = true;
-      const lListElem *sub_elem;
-      for_each_ep(sub_elem, queue_list) {
+      for (const auto sub_elem : queue_list) {
          if (first) {
             sge_dstring_append(category_str, option);
             sge_dstring_append_char(category_str, ' ');
@@ -2361,25 +2905,38 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, co
 }
 
 /**
+ * @brief sge_unparse_queue_list_dstring() for an untyped caller
+ *
+ * @param category_str target string
+ * @param queue_list the queue requests to render (QR_Type), checked; sorted in place
+ * @param option string option to put in infront of the generated string
+ *
+ * @return as sge_unparse_queue_list_dstring()
+ */
+bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, const char *option) {
+   return sge_unparse_queue_list_dstring(category_str, ocs::tom::List<ocs::tom::QR>(queue_list), option);
+}
+
+/**
  * @brief Creates a string from resource requests
  *
  * @param category_str target string
- * @param resource_list the resource requests to render; nullptr appends nothing
+ * @param resource_list the resource requests to render (CE_Type), sorted in place; an empty handle appends nothing
  * @param option string option to put in infront of the generated string
  *
  * @return true, if everything was fine
  *
  * @note MT-NOTE: sge_unparse_resource_list_dstring() is MT safe
  */
-bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list, const char *option) {
+bool sge_unparse_resource_list_dstring(dstring *category_str, const ocs::tom::List<ocs::tom::CE> resource_list,
+                                       const char *option) {
    DENTER(TOP_LAYER);
 
-   if (resource_list != nullptr) {
-      lPSortList(resource_list, "%I+", CE_name);
+   if (resource_list) {
+      resource_list.sort<ocs::tom::asc<CE_name>>();
 
        bool first = true;
-       const lListElem *sub_elem;
-       for_each_ep(sub_elem, resource_list) {
+       for (const auto sub_elem : resource_list) {
          if (first) {
             sge_dstring_append(category_str, option);
             sge_dstring_append(category_str, " ");
@@ -2415,6 +2972,19 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_li
    }
 
    DRETURN(true);
+}
+
+/**
+ * @brief sge_unparse_resource_list_dstring() for an untyped caller
+ *
+ * @param category_str target string
+ * @param resource_list the resource requests to render (CE_Type), checked; sorted in place
+ * @param option string option to put in infront of the generated string
+ *
+ * @return as sge_unparse_resource_list_dstring()
+ */
+bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list, const char *option) {
+   return sge_unparse_resource_list_dstring(category_str, ocs::tom::List<ocs::tom::CE>(resource_list), option);
 }
 
 /**
@@ -2537,8 +3107,8 @@ bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, co
    DRETURN(true);
 }
 
-static const lList *
-job_get_context_change(const lListElem *job);
+static ocs::tom::ConstList<ocs::tom::CX>
+job_get_context_change(ocs::tom::ConstElement<ocs::tom::JB> job);
 
 /**
  * @brief Verify a job object
@@ -2548,7 +3118,10 @@ job_get_context_change(const lListElem *job);
  * additional functions are provided, calling this function doing
  * general tests and doing additional verification themselves.
  *
- * @param job the job object to verify
+ * The path lists are walked through a table of field numbers, so they are
+ * read through the raw lGetList().
+ *
+ * @param job the job object to verify (JB_Type), may be an empty handle
  * @param answer_list answer list to pass back error messages
  * @param do_cull_verify do cull verification against the JB_Type descriptor.
  *
@@ -2562,12 +3135,13 @@ job_get_context_change(const lListElem *job);
  * @see `object_verify_cull()`, #job_verify_submitted_job, `job_verify_execd_job()`
  */
 bool
-job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
+job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, const bool do_cull_verify) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   if (job == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_NULLELEMENTPASSEDTO_S, "job_verify");
+   if (!job) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_NULLELEMENTPASSEDTO_S,
+                              "job_verify");
       DRETURN(false);
    }
 
@@ -2578,7 +3152,8 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
 
    if (const char *name = ocs::tom::get<JB_job_name>(job); name != nullptr) {
       if (strlen(name) >= MAX_VERIFY_STRING) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JOB_NAMETOOLONG_I, MAX_VERIFY_STRING);
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JOB_NAMETOOLONG_I,
+                                 MAX_VERIFY_STRING);
          DRETURN(false);
       }
    } else {
@@ -2598,21 +3173,21 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
       }
    }
 
-   if (ocs::tom::ConstList<ocs::tom::PA> path_aliases = ocs::tom::get<JB_path_aliases>(job); path_aliases != nullptr) {
+   if (const auto path_aliases = ocs::tom::get<JB_path_aliases>(job); path_aliases) {
       ret = path_alias_verify(path_aliases, answer_list);
       if (!ret) {
          DRETURN(false);
       }
    }
 
-   if (ocs::tom::ConstList<ocs::tom::VA> env_list = ocs::tom::get<JB_env_list>(job); env_list != nullptr) {
+   if (const auto env_list = ocs::tom::get<JB_env_list>(job); env_list) {
       ret = var_list_verify(env_list, answer_list);
       if (!ret) {
          DRETURN(false);
       }
    }
 
-   if (ocs::tom::ConstList<ocs::tom::VA> context_list = ocs::tom::get<JB_context>(job); context_list != nullptr) {
+   if (const auto context_list = ocs::tom::get<JB_context>(job); context_list) {
       ret = var_list_verify(context_list, answer_list);
       if (!ret) {
          DRETURN(false);
@@ -2620,7 +3195,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
    }
 
    // the names of the context instructions, markers included, must not be empty either
-   for_each_ep_lv(change_ep, job_get_context_change(job)) {
+   for (const auto change_ep : job_get_context_change(job)) {
       const char *variable = ocs::tom::get<CX_variable>(change_ep);
       if (variable == nullptr || variable[0] == '\0') {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,
@@ -2645,6 +3220,19 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
 }
 
 /**
+ * @brief job_verify() for an untyped caller
+ *
+ * @param job the job object to verify (JB_Type), checked; may be nullptr
+ * @param answer_list answer list to pass back error messages
+ * @param do_cull_verify do cull verification against the JB_Type descriptor.
+ *
+ * @return as job_verify()
+ */
+bool job_verify(const lListElem *job, lList **answer_list, const bool do_cull_verify) {
+   return job_verify(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, do_cull_verify);
+}
+
+/**
  * @brief Verify a just submitted job
  *
  * Verifies a just submitted job object.
@@ -2652,7 +3240,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
  * structure, and makes sure a number of job attributes are set
  * correctly.
  *
- * @param job the job to verify
+ * @param job the job to verify (JB_Type)
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false on error with error message in answer_list
@@ -2664,12 +3252,10 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
  *
  * @see #job_verify
  */
-bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
+bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   bool ret = true;
-
-   ret = job_verify(job, answer_list, true);
+   bool ret = job_verify(job, answer_list, true);
 
    /* JB_job_number must be 0 */
    if (ret) {
@@ -2967,19 +3553,34 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 }
 
 /**
+ * @brief job_verify_submitted_job() for an untyped caller
+ *
+ * The job comes unchecked out of a GDI request, so it is wrapped without the descriptor
+ * check: job_verify() rejects an element of another type itself, as before.
+ *
+ * @param job the job to verify (JB_Type expected)
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return as job_verify_submitted_job()
+ */
+bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
+   return job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB>::from_typed(job), answer_list);
+}
+
+/**
  * @brief Computes jobs wallclock limit
  *
  * Compute the jobs wallclock limit depending on requested h_rt, s_rt.
  * If no limit was requested the maximal ulong32 value is returned
  *
  * @param limit store for the value
- * @param jep jobs ep
+ * @param jep jobs ep (JB_Type)
  *
  * @return true on success false if no value was requested
  *
  * @note MT-NOTE: job_get_wallclock_limit() is not MT safe
  */
-bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
+bool job_get_wallclock_limit(uint64_t *limit, const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
    ocs::tom::ConstElement<ocs::tom::CE> ep;
    double d_ret = 0, d_tmp;
@@ -2987,9 +3588,10 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
    bool got_duration = false;
    char error_str[1024];
 
-   const lList *hard_resource_list = job_get_hard_resource_list(jep);
-   if ((ep=ocs::tom::find_first<CE_name>(hard_resource_list, SGE_ATTR_H_RT))) {
-      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str, sizeof(error_str)-1)==0) {
+   const auto hard_resource_list = job_get_hard_resource_list(jep);
+   if ((ep = hard_resource_list.find_first<CE_name>(SGE_ATTR_H_RT))) {
+      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str,
+                          sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
       }
@@ -2997,8 +3599,9 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
       got_duration = true;
    }
 
-   if ((ep=ocs::tom::find_first<CE_name>(hard_resource_list, SGE_ATTR_S_RT))) {
-      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str, sizeof(error_str)-1)==0) {
+   if ((ep = hard_resource_list.find_first<CE_name>(SGE_ATTR_S_RT))) {
+      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str,
+                          sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
       }
@@ -3025,6 +3628,18 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
 }
 
 /**
+ * @brief job_get_wallclock_limit() for an untyped caller
+ *
+ * @param limit store for the value
+ * @param jep jobs ep (JB_Type), checked
+ *
+ * @return as job_get_wallclock_limit()
+ */
+bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
+   return job_get_wallclock_limit(limit, ocs::tom::ConstElement<ocs::tom::JB>(jep));
+}
+
+/**
  * @brief Was "job" job submitted with -b y?
  *
  * This function returns true if "job" is a "binary" job
@@ -3037,8 +3652,19 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
  * @see #job_is_array, #job_is_binary, #job_is_tight_parallel
  */
 bool
-job_is_binary(const lListElem *job) {
+job_is_binary(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return (JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job)) ? true : false);
+}
+
+/**
+ * @brief job_is_binary() for an untyped caller
+ *
+ * @param job JB_Type element, checked
+ *
+ * @return as job_is_binary()
+ */
+bool job_is_binary(const lListElem *job) {
+   return job_is_binary(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -3049,7 +3675,7 @@ job_is_binary(const lListElem *job) {
  * @return always true
  */
 bool
-job_set_binary(lListElem *job, bool is_binary) {
+job_set_binary(const ocs::tom::Element<ocs::tom::JB> job, const bool is_binary) {
    bool ret = true;
    uint32_t type = ocs::tom::get<JB_type>(job);
 
@@ -3063,14 +3689,35 @@ job_set_binary(lListElem *job, bool is_binary) {
 }
 
 /**
+ * @brief job_set_binary() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param is_binary true to set #JOB_TYPE_BINARY, false to clear it
+ * @return as job_set_binary()
+ */
+bool job_set_binary(lListElem *job, const bool is_binary) {
+   return job_set_binary(ocs::tom::Element<ocs::tom::JB>(job), is_binary);
+}
+
+/**
  * @brief Was the job submitted with `qsub -noshell`?
  *
  * @param job the job to check
  * @return true when #JOB_TYPE_NO_SHELL is set
  */
 bool
-job_is_no_shell(const lListElem *job) {
+job_is_no_shell(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return (JOB_TYPE_IS_NO_SHELL(ocs::tom::get<JB_type>(job)) ? true : false);
+}
+
+/**
+ * @brief job_is_no_shell() for an untyped caller
+ *
+ * @param job the job to check (JB_Type), checked
+ * @return as job_is_no_shell()
+ */
+bool job_is_no_shell(const lListElem *job) {
+   return job_is_no_shell(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -3084,7 +3731,7 @@ job_is_no_shell(const lListElem *job) {
  *       do with #JOB_TYPE_BINARY despite the name used here.
  */
 bool
-job_set_no_shell(lListElem *job, bool is_binary) {
+job_set_no_shell(const ocs::tom::Element<ocs::tom::JB> job, const bool is_binary) {
    bool ret = true;
    uint32_t type = ocs::tom::get<JB_type>(job);
 
@@ -3095,6 +3742,17 @@ job_set_no_shell(lListElem *job, bool is_binary) {
    }
    ocs::tom::set<JB_type>(job, type);
    return ret;
+}
+
+/**
+ * @brief job_set_no_shell() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param is_no_shell true to set #JOB_TYPE_NO_SHELL, false to clear it
+ * @return as job_set_no_shell()
+ */
+bool job_set_no_shell(lListElem *job, const bool is_no_shell) {
+   return job_set_no_shell(ocs::tom::Element<ocs::tom::JB>(job), is_no_shell);
 }
 
 
@@ -3111,8 +3769,8 @@ job_set_no_shell(lListElem *job, bool is_binary) {
  * @return always true
  */
 bool
-job_set_owner_and_group(lListElem *job, uint32_t uid, uint32_t gid,
-                        const char *user, const char *group, int amount, ocs_grp_elem_t *grp_array) {
+job_set_owner_and_group(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t uid, const uint32_t gid,
+                        const char *user, const char *group, const int amount, ocs_grp_elem_t *grp_array) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -3124,6 +3782,23 @@ job_set_owner_and_group(lListElem *job, uint32_t uid, uint32_t gid,
    ocs::tom::set<JB_grp_list>(job, grp_list_array2list(amount, grp_array));
 
    DRETURN(ret);
+}
+
+/**
+ * @brief job_set_owner_and_group() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param uid the submitter's numeric user id
+ * @param gid the submitter's numeric primary group id
+ * @param user the submitter's user name
+ * @param group the submitter's primary group name
+ * @param amount how many entries `grp_array` has
+ * @param grp_array the submitter's supplementary groups
+ * @return as job_set_owner_and_group()
+ */
+bool job_set_owner_and_group(lListElem *job, const uint32_t uid, const uint32_t gid, const char *user,
+                             const char *group, const int amount, ocs_grp_elem_t *grp_array) {
+   return job_set_owner_and_group(ocs::tom::Element<ocs::tom::JB>(job), uid, gid, user, group, amount, grp_array);
 }
 
 /**
@@ -3143,22 +3818,22 @@ job_set_owner_and_group(lListElem *job, uint32_t uid, uint32_t gid,
  * `JB_context` is a `VA_Type` list with a unique name, so a variable given
  * again keeps its last value (CS-3058).
  *
- * @param change the request, a `CX_Type` list; an empty request clears the context
- * @param[in,out] job the job whose `JB_context` is changed
+ * @param change the request, a `CX_Type` list; an empty request or an empty handle clears the context
+ * @param[in,out] job the job whose `JB_context` is changed (JB_Type)
  */
-void set_context(const lList *change, lListElem *job) {
+void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom::Element<ocs::tom::JB> job) {
    // if the incoming list is empty, or it starts without a marker, the context is replaced
-   if (change == nullptr || lGetNumberOfElem(change) == 0) {
+   if (change.empty()) {
       ocs::tom::set<JB_context>(job, nullptr);
       return;
    }
-   const char *first = ocs::tom::get<CX_variable>(lFirst(change));
+   const char *first = ocs::tom::get<CX_variable>(change.front());
    if (first == nullptr || (*first != '+' && *first != '-' && *first != '=')) {
       ocs::tom::set<JB_context>(job, nullptr);
    }
 
    char mode = '+';
-   for_each_ep_lv(change_ep, change) {
+   for (const auto change_ep : change) {
       const char *name = ocs::tom::get<CX_variable>(change_ep);
       if (name == nullptr) {
          continue;
@@ -3176,14 +3851,15 @@ void set_context(const lList *change, lListElem *job) {
             break;
          default:
             if (mode == '+') {
-               lList *context = ocs::tom::get<JB_context>(job);
-               if (context == nullptr) {
-                  context = lCreateList("context_list", VA_Type);
-                  ocs::tom::set<JB_context>(job, context);
+               auto context = ocs::tom::get<JB_context>(job);
+               if (!context) {
+                  auto created = ocs::tom::ListPtr<ocs::tom::VA>::create("context_list");
+                  context = created.get();
+                  ocs::tom::set<JB_context>(job, std::move(created));
                }
-               ocs::tom::Element<ocs::tom::VA> var = ocs::tom::find_first_rw<VA_variable>(context, name);
-               if (var == nullptr) {
-                  var = ocs::tom::emplace_back<VA_variable>(&context, name);
+               auto var = context.find_first<VA_variable>(name);
+               if (!var) {
+                  var = context.emplace_back<VA_variable>(name);
                }
                ocs::tom::set<VA_value>(var, ocs::tom::get<CX_value>(change_ep));
             } else {
@@ -3196,20 +3872,44 @@ void set_context(const lList *change, lListElem *job) {
 }
 
 /**
+ * @brief set_context() for an untyped caller
+ *
+ * @param change the request, a `CX_Type` list, unchecked; nullptr clears the context
+ * @param[in,out] job the job whose `JB_context` is changed (JB_Type), unchecked: request data
+ */
+void set_context(const lList *change, lListElem *job) {
+   // request data from the network: wrapped unchecked, the old code set it without a check
+   set_context(ocs::tom::ConstList<ocs::tom::CX>::from_typed(change), ocs::tom::Element<ocs::tom::JB>::from_typed(job));
+}
+
+/**
  * @brief Append the instructions of one context switch to a context change request
  *
  * The parsers build one `VA_Type` list per `-ac`, `-sc` or `-dc` switch, its
  * marker first. The request concatenates them as `CX_Type` elements in the
  * order given, where markers and names repeat by design (CS-3058).
  *
+ * The request stays an untyped in-out reference: the callers pass the field
+ * of a job or a local list that is created here.
+ *
  * @param[in,out] change the `CX_Type` request, created if *change is nullptr
- * @param option_list the list of one switch, a `VA_Type` list; nullptr is accepted
+ * @param option_list the list of one switch, a `VA_Type` list; an empty handle is accepted
  */
-void ocs_context_change_add(lList **change, const lList *option_list) {
-   for_each_ep_lv(var, option_list) {
-      ocs::tom::Element<ocs::tom::CX> ep = ocs::tom::emplace_back<CX_variable>(change, ocs::tom::get<VA_variable>(var));
+void ocs_context_change_add(lList **change, const ocs::tom::ConstList<ocs::tom::VA> option_list) {
+   for (const auto var : option_list) {
+      const auto ep = ocs::tom::emplace_back<CX_variable>(change, ocs::tom::get<VA_variable>(var));
       ocs::tom::set<CX_value>(ep, ocs::tom::get<VA_value>(var));
    }
+}
+
+/**
+ * @brief ocs_context_change_add() for an untyped caller
+ *
+ * @param[in,out] change the `CX_Type` request, created if *change is nullptr
+ * @param option_list the list of one switch, a `VA_Type` list, checked; nullptr is accepted
+ */
+void ocs_context_change_add(lList **change, const lList *option_list) {
+   ocs_context_change_add(change, ocs::tom::ConstList<ocs::tom::VA>(option_list));
 }
 
 /**
@@ -3219,10 +3919,10 @@ void ocs_context_change_add(lList **change, const lList *option_list) {
  * `JB_context_change`; reading the field from it would abort.
  *
  * @param job the job (JB_Type), full or reduced
- * @return the `CX_Type` request, or nullptr if the job has none or does not contain the field
+ * @return the `CX_Type` request, an empty handle if the job has none or does not contain the field
  */
-static const lList *
-job_get_context_change(const lListElem *job) {
+static ocs::tom::ConstList<ocs::tom::CX>
+job_get_context_change(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    if (!ocs::tom::has<JB_context_change>(job)) {
       return nullptr;
    }
@@ -3238,19 +3938,27 @@ job_get_context_change(const lListElem *job) {
  * is `JB_context` itself (CS-3058).
  *
  * @param job the job (JB_Type), full or reduced
+ * @return a new `VA_Type` list, an empty handle if the context is empty
+ */
+ocs::tom::ListPtr<ocs::tom::VA> ocs_context_get_effective(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   auto tmp_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   if (ocs::tom::has<JB_context>(job) && ocs::tom::get<JB_context>(job)) {
+      ocs::tom::set<JB_context>(*tmp_job, ocs::tom::get<JB_context>(job).clone("context_list"));
+   }
+   if (const auto change = job_get_context_change(job); change) {
+      set_context(change, *tmp_job);
+   }
+   return (*tmp_job).exchange<JB_context>(nullptr);
+}
+
+/**
+ * @brief ocs_context_get_effective() for an untyped caller
+ *
+ * @param job the job (JB_Type), full or reduced, checked
  * @return a new `VA_Type` list the caller frees, or nullptr if the context is empty
  */
 lList *ocs_context_get_effective(const lListElem *job) {
-   auto tmp_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   if (ocs::tom::has<JB_context>(job) && static_cast<const lList *>(ocs::tom::get<JB_context>(job)) != nullptr) {
-      ocs::tom::set<JB_context>(tmp_job, lCopyList("context_list", ocs::tom::get<JB_context>(job)));
-   }
-   if (const lList *change = job_get_context_change(job); change != nullptr) {
-      set_context(change, *tmp_job);
-   }
-   lList *ret = nullptr;
-   ocs::tom::exchange<JB_context>(tmp_job, &ret);
-   return ret;
+   return ocs_context_get_effective(ocs::tom::ConstElement<ocs::tom::JB>(job)).release();
 }
 
 /**
@@ -3391,21 +4099,31 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
  *
  * @return true or false
  */
-bool job_is_requesting_consumable(const lListElem *jep, const char *resource_name) {
-   const lListElem *cep = nullptr;
-   uint32_t consumable;
-   const lList *request_list = job_get_hard_resource_list(jep);
+bool job_is_requesting_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const char *resource_name) {
+   const auto request_list = job_get_hard_resource_list(jep);
 
-   if (request_list != nullptr) {
-      cep = centry_list_locate(request_list, resource_name);
-      if (cep != nullptr) {
-         consumable = ocs::tom::get<CE_consumable>(cep);
+   if (request_list) {
+      const auto cep = centry_list_locate(request_list, resource_name);
+      if (cep) {
+         const uint32_t consumable = ocs::tom::get<CE_consumable>(cep);
          if (consumable == CONSUMABLE_JOB) {
             return true;
          }
       }
    }
    return false;
+}
+
+/**
+ * @brief job_is_requesting_consumable() for an untyped caller
+ *
+ * @param jep JB_Type element, checked
+ * @param resource_name Name of resource
+ *
+ * @return as job_is_requesting_consumable()
+ */
+bool job_is_requesting_consumable(const lListElem *jep, const char *resource_name) {
+   return job_is_requesting_consumable(ocs::tom::ConstElement<ocs::tom::JB>(jep), resource_name);
 }
 
 /**
@@ -3438,11 +4156,12 @@ bool job_parse_scope_string(const char *scope, char &scope_id) {
  *
  * A job may state different requests for its global, master and slave part.
  *
- * @param job the job to read; a reduced job without the attribute is handled
+ * @param job the job to read (JB_Type); a reduced job without the attribute is handled
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request set, or nullptr when the job has none for that scope
+ * @return the request set (JRS_Type), an empty handle when the job has none for that scope
  */
-const lListElem *job_get_request_set(const lListElem *job, uint32_t scope) {
+ocs::tom::ConstElement<ocs::tom::JRS> job_get_request_set(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                          const uint32_t scope) {
    // job might be reduced
    if (const int pos = lGetPosViaElem(job, JB_request_set_list, false); pos == NoName) {
       return nullptr;
@@ -3454,11 +4173,12 @@ const lListElem *job_get_request_set(const lListElem *job, uint32_t scope) {
 /**
  * @brief The request set of one scope, writable
  *
- * @param job the job to read; a reduced job without the attribute is handled
+ * @param job the job to read (JB_Type); a reduced job without the attribute is handled
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request set, or nullptr when the job has none for that scope
+ * @return the request set (JRS_Type), an empty handle when the job has none for that scope
  */
-lListElem *job_get_request_setRW(lListElem *job, uint32_t scope) {
+ocs::tom::Element<ocs::tom::JRS> job_get_request_setRW(const ocs::tom::Element<ocs::tom::JB> job,
+                                                       const uint32_t scope) {
    // job might be reduced
    if (const int pos = lGetPosViaElem(job, JB_request_set_list, false); pos == NoName) {
       return nullptr;
@@ -3468,15 +4188,27 @@ lListElem *job_get_request_setRW(lListElem *job, uint32_t scope) {
 }
 
 /**
+ * @brief job_get_request_setRW() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @return the request set (JRS_Type), or nullptr
+ */
+lListElem *job_get_request_setRW(lListElem *job, const uint32_t scope) {
+   return job_get_request_setRW(ocs::tom::Element<ocs::tom::JB>(job), scope);
+}
+
+/**
  * @brief The request set of one scope, created when it does not exist
  *
- * @param[in,out] job the job to read or extend
+ * @param[in,out] job the job to read or extend (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request set, never nullptr
+ * @return the request set (JRS_Type), never empty
  */
-lListElem *job_get_or_create_request_setRW(lListElem *job, uint32_t scope) {
-   lListElem *jrs = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, scope);
-   if (jrs == nullptr) {
+ocs::tom::Element<ocs::tom::JRS> job_get_or_create_request_setRW(const ocs::tom::Element<ocs::tom::JB> job,
+                                                                 const uint32_t scope) {
+   auto jrs = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, scope);
+   if (!jrs) {
       jrs = ocs::tom::emplace_back_in<JB_request_set_list, JRS_scope>(job, scope);
    }
 
@@ -3484,22 +4216,31 @@ lListElem *job_get_or_create_request_setRW(lListElem *job, uint32_t scope) {
 }
 
 /**
- * Remove duplicate resource requests from the job request set list.
+ * @brief job_get_or_create_request_setRW() for an untyped caller
  *
- * @param job - the job to work on
+ * @param[in,out] job the job to read or extend (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @return the request set (JRS_Type)
+ */
+lListElem *job_get_or_create_request_setRW(lListElem *job, const uint32_t scope) {
+   return job_get_or_create_request_setRW(ocs::tom::Element<ocs::tom::JB>(job), scope);
+}
+
+/**
+ * @brief Remove duplicate resource requests from the job request set list.
+ *
+ * @param job the job to work on (JB_Type)
  * @return true if the job has any resource requests, else false
  */
-bool job_request_set_remove_duplicates(lListElem *job) {
+bool job_request_set_remove_duplicates(const ocs::tom::Element<ocs::tom::JB> job) {
    bool requests_found = false;
 
-   for (ocs::tom::Element<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(job)) {
-      ocs::tom::List<ocs::tom::CE> lp = ocs::tom::get<JRS_hard_resource_list>(jrs);
-      if (lp != nullptr) {
+   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
+      if (const auto lp = ocs::tom::get<JRS_hard_resource_list>(jrs); lp) {
          requests_found = true;
          centry_list_remove_duplicates(lp);
       }
-      ocs::tom::List<ocs::tom::CE> lp_ce = ocs::tom::get<JRS_soft_resource_list>(jrs);
-      if (lp_ce != nullptr) {
+      if (const auto lp_ce = ocs::tom::get<JRS_soft_resource_list>(jrs); lp_ce) {
          requests_found = true;
          centry_list_remove_duplicates(lp_ce);
       }
@@ -3509,15 +4250,25 @@ bool job_request_set_remove_duplicates(lListElem *job) {
 }
 
 /**
+ * @brief job_request_set_remove_duplicates() for an untyped caller
+ *
+ * @param job the job to work on (JB_Type), checked
+ * @return as job_request_set_remove_duplicates()
+ */
+bool job_request_set_remove_duplicates(lListElem *job) {
+   return job_request_set_remove_duplicates(ocs::tom::Element<ocs::tom::JB>(job));
+}
+
+/**
  * @brief Does the job request a queue in any scope?
  *
- * @param job the job to check
+ * @param job the job to check (JB_Type)
  * @return true when any request set has a hard or soft queue list
  */
-bool job_request_set_has_queue_requests(const lListElem *job) {
+bool job_request_set_has_queue_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    bool ret = false;
-   for_each_rw_lv (jrs, ocs::tom::get<JB_request_set_list>(job)) {
-      if (static_cast<const lList *>(ocs::tom::get<JRS_hard_queue_list>(jrs)) != nullptr || static_cast<const lList *>(ocs::tom::get<JRS_soft_queue_list>(jrs)) != nullptr) {
+   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
+      if (ocs::tom::get<JRS_hard_queue_list>(jrs) || ocs::tom::get<JRS_soft_queue_list>(jrs)) {
          ret = true;
          break;
       }
@@ -3527,21 +4278,31 @@ bool job_request_set_has_queue_requests(const lListElem *job) {
 }
 
 /**
+ * @brief job_request_set_has_queue_requests() for an untyped caller
+ *
+ * @param job the job to check (JB_Type), checked
+ * @return as job_request_set_has_queue_requests()
+ */
+bool job_request_set_has_queue_requests(const lListElem *job) {
+   return job_request_set_has_queue_requests(ocs::tom::ConstElement<ocs::tom::JB>(job));
+}
+
+/**
  * @brief The largest hard request for one resource across all scopes
  *
- * @param job the job to search
+ * @param job the job to search (JB_Type)
  * @param request_name the resource to look for
- * @return the request with the highest value, or nullptr when none asks for it
+ * @return the request with the highest value (CE_Type), an empty handle when none asks for it
  */
-const lListElem *job_get_highest_hard_request(const lListElem *job, const char *request_name) {
-   const lListElem *ret = nullptr;
+ocs::tom::ConstElement<ocs::tom::CE> job_get_highest_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                                  const char *request_name) {
+   ocs::tom::ConstElement<ocs::tom::CE> ret = nullptr;
    double max_request = 0.0;
 
-   ocs::tom::ConstElement<ocs::tom::JRS> jrs;
-   for_each_ep (jrs, ocs::tom::get<JB_request_set_list>(job)) {
-      ocs::tom::ConstElement<ocs::tom::CE> request = ocs::tom::find_first_in<JRS_hard_resource_list, CE_name>(jrs, request_name);
-      if (request != nullptr) {
-         double request_value = ocs::tom::get<CE_doubleval>(request);
+   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
+      const auto request = ocs::tom::find_first_in<JRS_hard_resource_list, CE_name>(jrs, request_name);
+      if (request) {
+         const double request_value = ocs::tom::get<CE_doubleval>(request);
          if (request_value > max_request) {
             ret = request;
             max_request = request_value;
@@ -3558,56 +4319,100 @@ const lListElem *job_get_highest_hard_request(const lListElem *job, const char *
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list, or nullptr when the job has no such request set
+ * @return the list (CE_Type), an empty handle when the job has no such request set
  */
-const lList *job_get_resource_list(const lListElem *job, uint32_t scope, bool hard) {
-   const lList *ret = nullptr;
-   const lListElem *jrs = job_get_request_set(job, scope);
-   const int nm = hard ? JRS_hard_resource_list : JRS_soft_resource_list;
-   if (jrs != nullptr) {
-      ret = lGetList(jrs, nm);
+ocs::tom::ConstList<ocs::tom::CE> job_get_resource_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                        const uint32_t scope, const bool hard) {
+   ocs::tom::ConstList<ocs::tom::CE> ret = nullptr;
+   const auto jrs = job_get_request_set(job, scope);
+   if (jrs) {
+      ret = hard ? ocs::tom::get<JRS_hard_resource_list>(jrs) : ocs::tom::get<JRS_soft_resource_list>(jrs);
    }
    return ret;
 }
 
 /**
+ * @brief job_get_resource_list() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @param hard true for the hard list, false for the soft one
+ * @return the list (CE_Type), or nullptr
+ */
+const lList *job_get_resource_list(const lListElem *job, const uint32_t scope, const bool hard) {
+   return job_get_resource_list(ocs::tom::ConstElement<ocs::tom::JB>(job), scope, hard);
+}
+
+/**
  * @brief The global hard resource requests of a job
  *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
+ * @param job the job to read (JB_Type)
+ * @return the list (CE_Type), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_list
  */
-const lList *job_get_hard_resource_list(const lListElem *job) {
+ocs::tom::ConstList<ocs::tom::CE> job_get_hard_resource_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return job_get_resource_list(job, JRS_SCOPE_GLOBAL, true);
+}
+
+/**
+ * @brief job_get_hard_resource_list() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return the list (CE_Type), or nullptr
+ */
+const lList *job_get_hard_resource_list(const lListElem *job) {
+   return job_get_hard_resource_list(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
  * @brief The hard resource requests of one scope
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
+ * @return the list (CE_Type), an empty handle when the job has no such request set
  *
  * @see #job_get_resource_list
  */
-const lList *job_get_hard_resource_list(const lListElem *job, uint32_t scope) {
+ocs::tom::ConstList<ocs::tom::CE> job_get_hard_resource_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                             const uint32_t scope) {
    return job_get_resource_list(job, scope, true);
+}
+
+/**
+ * @brief job_get_hard_resource_list() of one scope for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @return the list (CE_Type), or nullptr
+ */
+const lList *job_get_hard_resource_list(const lListElem *job, const uint32_t scope) {
+   return job_get_hard_resource_list(ocs::tom::ConstElement<ocs::tom::JB>(job), scope);
 }
 
 /**
  * @brief The global soft resource requests of a job
  *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
+ * @param job the job to read (JB_Type)
+ * @return the list (CE_Type), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_list
  */
-const lList *job_get_soft_resource_list(const lListElem *job) {
+ocs::tom::ConstList<ocs::tom::CE> job_get_soft_resource_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return job_get_resource_list(job, JRS_SCOPE_GLOBAL, false);
+}
+
+/**
+ * @brief job_get_soft_resource_list() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return the list (CE_Type), or nullptr
+ */
+const lList *job_get_soft_resource_list(const lListElem *job) {
+   return job_get_soft_resource_list(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -3626,13 +4431,23 @@ const lList *job_get_soft_resource_list(const lListElem *job, uint32_t scope) {
 /**
  * @brief The global hard queue requests of a job
  *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
+ * @param job the job to read (JB_Type)
+ * @return the list (QR_Type), an empty handle when the job has no global request set
  *
  * @see #job_get_queue_list
  */
-const lList *job_get_hard_queue_list(const lListElem *job) {
+ocs::tom::ConstList<ocs::tom::QR> job_get_hard_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
+}
+
+/**
+ * @brief job_get_hard_queue_list() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return the list (QR_Type), or nullptr
+ */
+const lList *job_get_hard_queue_list(const lListElem *job) {
+   return job_get_hard_queue_list(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -3641,67 +4456,124 @@ const lList *job_get_hard_queue_list(const lListElem *job) {
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list, or nullptr when the job has no such request set
+ * @return the list (QR_Type), an empty handle when the job has no such request set
  */
-const lList *job_get_queue_list(const lListElem *job, uint32_t scope, bool hard) {
-   const lList *ret = nullptr;
-   const lListElem *jrs = job_get_request_set(job, scope);
-   const int nm = hard ? JRS_hard_queue_list : JRS_soft_queue_list;
+ocs::tom::ConstList<ocs::tom::QR> job_get_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                     const uint32_t scope, const bool hard) {
+   ocs::tom::ConstList<ocs::tom::QR> ret = nullptr;
+   const auto jrs = job_get_request_set(job, scope);
 
-   if (jrs != nullptr) {
-      ret = lGetList(jrs, nm);
+   if (jrs) {
+      ret = hard ? ocs::tom::get<JRS_hard_queue_list>(jrs) : ocs::tom::get<JRS_soft_queue_list>(jrs);
    }
    return ret;
 }
 
 /**
+ * @brief job_get_queue_list() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @param hard true for the hard list, false for the soft one
+ * @return the list (QR_Type), or nullptr
+ */
+const lList *job_get_queue_list(const lListElem *job, const uint32_t scope, const bool hard) {
+   return job_get_queue_list(ocs::tom::ConstElement<ocs::tom::JB>(job), scope, hard);
+}
+
+/**
  * @brief The hard queue requests of one scope
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
+ * @return the list (QR_Type), an empty handle when the job has no such request set
  *
  * @see #job_get_queue_list
  */
-const lList *job_get_hard_queue_list(const lListElem *job, uint32_t scope) {
+ocs::tom::ConstList<ocs::tom::QR> job_get_hard_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                          const uint32_t scope) {
    return job_get_queue_list(job, scope, true);
+}
+
+/**
+ * @brief job_get_hard_queue_list() of one scope for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @return the list (QR_Type), or nullptr
+ */
+const lList *job_get_hard_queue_list(const lListElem *job, const uint32_t scope) {
+   return job_get_hard_queue_list(ocs::tom::ConstElement<ocs::tom::JB>(job), scope);
 }
 
 /**
  * @brief The global soft queue requests of a job
  *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
+ * @param job the job to read (JB_Type)
+ * @return the list (QR_Type), an empty handle when the job has no global request set
  *
  * @see #job_get_queue_list
  */
-const lList *job_get_soft_queue_list(const lListElem *job) {
+ocs::tom::ConstList<ocs::tom::QR> job_get_soft_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return job_get_queue_list(job, JRS_SCOPE_GLOBAL, false);
 }
+
+/**
+ * @brief job_get_soft_queue_list() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return the list (QR_Type), or nullptr
+ */
+const lList *job_get_soft_queue_list(const lListElem *job) {
+   return job_get_soft_queue_list(ocs::tom::ConstElement<ocs::tom::JB>(job));
+}
+
 /**
  * @brief The soft queue requests of one scope
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list, or nullptr when the job has no such request set
+ * @return the list (QR_Type), an empty handle when the job has no such request set
  *
  * @see #job_get_queue_list
  */
-const lList *job_get_soft_queue_list(const lListElem *job, uint32_t scope) {
+ocs::tom::ConstList<ocs::tom::QR> job_get_soft_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                          const uint32_t scope) {
    return job_get_queue_list(job, scope, false);
+}
+
+/**
+ * @brief job_get_soft_queue_list() of one scope for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @return the list (QR_Type), or nullptr
+ */
+const lList *job_get_soft_queue_list(const lListElem *job, const uint32_t scope) {
+   return job_get_soft_queue_list(ocs::tom::ConstElement<ocs::tom::JB>(job), scope);
 }
 
 /**
  * @brief The hard queue requests of a job's master task
  *
- * @param job the job to read
- * @return the list, or nullptr when the job has no master request set
+ * @param job the job to read (JB_Type)
+ * @return the list (QR_Type), an empty handle when the job has no master request set
+ */
+ocs::tom::ConstList<ocs::tom::QR> job_get_master_hard_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   return job_get_queue_list(job, JRS_SCOPE_MASTER, true);
+}
+
+/**
+ * @brief job_get_master_hard_queue_list() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return the list (QR_Type), or nullptr
  */
 const lList *job_get_master_hard_queue_list(const lListElem *job) {
-   return job_get_queue_list(job, JRS_SCOPE_MASTER, true);
+   return job_get_master_hard_queue_list(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -3710,31 +4582,53 @@ const lList *job_get_master_hard_queue_list(const lListElem *job) {
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list, or nullptr when the job has no such request set
+ * @return the list (CE_Type), an empty handle when the job has no such request set
  */
-lList *job_get_resource_listRW(lListElem *job, uint32_t scope, bool hard) {
-   lList *ret = nullptr;
-   lListElem *jrs = job_get_request_setRW(job, scope);
-   const int nm = hard ? JRS_hard_resource_list : JRS_soft_resource_list;
-   if (jrs != nullptr) {
-      ret = lGetListRW(jrs, nm);
+ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t scope,
+                                                     const bool hard) {
+   ocs::tom::List<ocs::tom::CE> ret = nullptr;
+   const auto jrs = job_get_request_setRW(job, scope);
+   if (jrs) {
+      ret = hard ? ocs::tom::get<JRS_hard_resource_list>(jrs) : ocs::tom::get<JRS_soft_resource_list>(jrs);
    }
    return ret;
 }
 
 /**
+ * @brief job_get_resource_listRW() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @param hard true for the hard list, false for the soft one
+ * @return the list (CE_Type), or nullptr
+ */
+lList *job_get_resource_listRW(lListElem *job, const uint32_t scope, const bool hard) {
+   return job_get_resource_listRW(ocs::tom::Element<ocs::tom::JB>(job), scope, hard);
+}
+
+/**
  * @brief The global hard resource requests of a job
  *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
+ * @param job the job to read (JB_Type)
+ * @return the list (CE_Type), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_listRW
  */
-lList *job_get_hard_resource_listRW(lListElem *job) {
+ocs::tom::List<ocs::tom::CE> job_get_hard_resource_listRW(const ocs::tom::Element<ocs::tom::JB> job) {
    return job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, true);
+}
+
+/**
+ * @brief job_get_hard_resource_listRW() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return the list (CE_Type), or nullptr
+ */
+lList *job_get_hard_resource_listRW(lListElem *job) {
+   return job_get_hard_resource_listRW(ocs::tom::Element<ocs::tom::JB>(job));
 }
 
 /**
@@ -3753,14 +4647,25 @@ lList *job_get_hard_resource_listRW(lListElem *job, uint32_t scope) {
 /**
  * @brief The global soft resource requests of a job
  *
- * @param job the job to read
- * @return the list, or nullptr when the job has no global request set
+ * @param job the job to read (JB_Type)
+ * @return the list (CE_Type), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_listRW
  */
-lList *job_get_soft_resource_listRW(lListElem *job) {
+ocs::tom::List<ocs::tom::CE> job_get_soft_resource_listRW(const ocs::tom::Element<ocs::tom::JB> job) {
    return job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, false);
 }
+
+/**
+ * @brief job_get_soft_resource_listRW() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return the list (CE_Type), or nullptr
+ */
+lList *job_get_soft_resource_listRW(lListElem *job) {
+   return job_get_soft_resource_listRW(ocs::tom::Element<ocs::tom::JB>(job));
+}
+
 /**
  * @brief The soft resource requests of one scope
  *
@@ -3780,19 +4685,31 @@ lList *job_get_soft_resource_listRW(lListElem *job, uint32_t scope) {
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list, or nullptr when the job has no such request set
+ * @return the list (QR_Type), an empty handle when the job has no such request set
  */
-lList *job_get_queue_listRW(lListElem *job, uint32_t scope, bool hard) {
-   lList *ret = nullptr;
-   lListElem *jrs = job_get_request_setRW(job, scope);
-   const int nm = hard ? JRS_hard_queue_list : JRS_soft_queue_list;
-   if (jrs != nullptr) {
-      ret = lGetListRW(jrs, nm);
+ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t scope,
+                                                  const bool hard) {
+   ocs::tom::List<ocs::tom::QR> ret = nullptr;
+   const auto jrs = job_get_request_setRW(job, scope);
+   if (jrs) {
+      ret = hard ? ocs::tom::get<JRS_hard_queue_list>(jrs) : ocs::tom::get<JRS_soft_queue_list>(jrs);
    }
    return ret;
+}
+
+/**
+ * @brief job_get_queue_listRW() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @param hard true for the hard list, false for the soft one
+ * @return the list (QR_Type), or nullptr
+ */
+lList *job_get_queue_listRW(lListElem *job, const uint32_t scope, const bool hard) {
+   return job_get_queue_listRW(ocs::tom::Element<ocs::tom::JB>(job), scope, hard);
 }
 
 /**
@@ -3862,67 +4779,139 @@ lList *job_get_master_hard_queue_listRW(lListElem *job) {
  *
  * The request set is created when the job does not have it yet.
  *
- * @param[in,out] job the job to change
- * @param resource_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
  */
-void job_set_resource_list(lListElem *job, lList *resource_list, uint32_t scope, bool hard) {
-   lListElem *jrs = job_get_or_create_request_setRW(job, scope);
-   if (jrs != nullptr) {
-      int nm = hard ? JRS_hard_resource_list : JRS_soft_resource_list;
-      lSetList(jrs, nm, resource_list);
+void job_set_resource_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list,
+                           const uint32_t scope, const bool hard) {
+   // consumed on every path
+   auto list = std::move(resource_list);
+   const auto jrs = job_get_or_create_request_setRW(job, scope);
+   if (jrs) {
+      if (hard) {
+         ocs::tom::set<JRS_hard_resource_list>(jrs, std::move(list));
+      } else {
+         ocs::tom::set<JRS_soft_resource_list>(jrs, std::move(list));
+      }
    }
+}
+
+/**
+ * @brief job_set_resource_list() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @param hard true for the hard list, false for the soft one
+ */
+void job_set_resource_list(lListElem *job, lList *resource_list, const uint32_t scope, const bool hard) {
+   job_set_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                         ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list), scope,
+                         hard);
 }
 
 /**
  * @brief Replace the global hard resource requests of a job
  *
- * @param[in,out] job the job to change
- * @param resource_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
  *
  * @see #job_set_resource_list
  */
+void job_set_hard_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
+                                ocs::tom::ListPtr<ocs::tom::CE> &&resource_list) {
+   job_set_resource_list(job, std::move(resource_list), JRS_SCOPE_GLOBAL, true);
+}
+
+/**
+ * @brief job_set_hard_resource_list() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ */
 void job_set_hard_resource_list(lListElem *job, lList *resource_list) {
-   job_set_resource_list(job, resource_list, JRS_SCOPE_GLOBAL, true);
+   job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list));
 }
 
 /**
  * @brief Replace the hard resource requests of one scope
  *
- * @param[in,out] job the job to change
- * @param resource_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_resource_list
  */
-void job_set_hard_resource_list(lListElem *job, lList *resource_list, uint32_t scope) {
-   job_set_resource_list(job, resource_list, scope, true);
+void job_set_hard_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
+                                ocs::tom::ListPtr<ocs::tom::CE> &&resource_list, const uint32_t scope) {
+   job_set_resource_list(job, std::move(resource_list), scope, true);
+}
+
+/**
+ * @brief job_set_hard_resource_list() of one scope for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ */
+void job_set_hard_resource_list(lListElem *job, lList *resource_list, const uint32_t scope) {
+   job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list),
+                              scope);
 }
 
 /**
  * @brief Replace the global soft resource requests of a job
  *
- * @param[in,out] job the job to change
- * @param resource_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
  *
  * @see #job_set_resource_list
  */
+void job_set_soft_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
+                                ocs::tom::ListPtr<ocs::tom::CE> &&resource_list) {
+   job_set_resource_list(job, std::move(resource_list), JRS_SCOPE_GLOBAL, false);
+}
+
+/**
+ * @brief job_set_soft_resource_list() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ */
 void job_set_soft_resource_list(lListElem *job, lList *resource_list) {
-   job_set_resource_list(job, resource_list, JRS_SCOPE_GLOBAL, false);
+   job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list));
 }
 
 /**
  * @brief Replace the soft resource requests of one scope
  *
- * @param[in,out] job the job to change
- * @param resource_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_resource_list
  */
-void job_set_soft_resource_list(lListElem *job, lList *resource_list, uint32_t scope) {
-   job_set_resource_list(job, resource_list, scope, false);
+void job_set_soft_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
+                                ocs::tom::ListPtr<ocs::tom::CE> &&resource_list, const uint32_t scope) {
+   job_set_resource_list(job, std::move(resource_list), scope, false);
+}
+
+/**
+ * @brief job_set_soft_resource_list() of one scope for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param resource_list the new list (CE_Type), unchecked; ownership passes to the job
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ */
+void job_set_soft_resource_list(lListElem *job, lList *resource_list, const uint32_t scope) {
+   job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                              ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resource_list),
+                              scope);
 }
 
 /**
@@ -3930,41 +4919,85 @@ void job_set_soft_resource_list(lListElem *job, lList *resource_list, uint32_t s
  *
  * The request set is created when the job does not have it yet.
  *
- * @param[in,out] job the job to change
- * @param queue_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
  */
-void job_set_queue_list(lListElem *job, lList *queue_list, uint32_t scope, bool hard) {
-   lListElem *jrs = job_get_or_create_request_setRW(job, scope);
-   if (jrs != nullptr) {
-      int nm = hard ? JRS_hard_queue_list : JRS_soft_queue_list;
-      lSetList(jrs, nm, queue_list);
+void job_set_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
+                        const uint32_t scope, const bool hard) {
+   // consumed on every path
+   auto list = std::move(queue_list);
+   const auto jrs = job_get_or_create_request_setRW(job, scope);
+   if (jrs) {
+      if (hard) {
+         ocs::tom::set<JRS_hard_queue_list>(jrs, std::move(list));
+      } else {
+         ocs::tom::set<JRS_soft_queue_list>(jrs, std::move(list));
+      }
    }
 }
+
+/**
+ * @brief job_set_queue_list() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @param hard true for the hard list, false for the soft one
+ */
+void job_set_queue_list(lListElem *job, lList *queue_list, const uint32_t scope, const bool hard) {
+   job_set_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                      ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list), scope, hard);
+}
+
 /**
  * @brief Replace the global hard queue requests of a job
  *
- * @param[in,out] job the job to change
- * @param queue_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
  *
  * @see #job_set_queue_list
  */
+void job_set_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list) {
+   job_set_queue_list(job, std::move(queue_list), JRS_SCOPE_GLOBAL, true);
+}
+
+/**
+ * @brief job_set_hard_queue_list() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ */
 void job_set_hard_queue_list(lListElem *job, lList *queue_list) {
-   job_set_queue_list(job, queue_list, JRS_SCOPE_GLOBAL, true);
+   job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                           ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list));
 }
 
 /**
  * @brief Replace the hard queue requests of one scope
  *
- * @param[in,out] job the job to change
- * @param queue_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_queue_list
  */
-void job_set_hard_queue_list(lListElem *job, lList *queue_list, uint32_t scope) {
-   job_set_queue_list(job, queue_list, scope, true);
+void job_set_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
+                             const uint32_t scope) {
+   job_set_queue_list(job, std::move(queue_list), scope, true);
+}
+
+/**
+ * @brief job_set_hard_queue_list() of one scope for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ */
+void job_set_hard_queue_list(lListElem *job, lList *queue_list, const uint32_t scope) {
+   job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                           ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list), scope);
 }
 
 /**
@@ -3982,54 +5015,104 @@ void job_set_soft_queue_list(lListElem *job, lList *queue_list) {
 /**
  * @brief Replace the soft queue requests of one scope
  *
- * @param[in,out] job the job to change
- * @param queue_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_queue_list
  */
-void job_set_soft_queue_list(lListElem *job, lList *queue_list, uint32_t scope) {
-   job_set_queue_list(job, queue_list, scope, false);
+void job_set_soft_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
+                             const uint32_t scope) {
+   job_set_queue_list(job, std::move(queue_list), scope, false);
+}
+
+/**
+ * @brief job_set_soft_queue_list() of one scope for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ */
+void job_set_soft_queue_list(lListElem *job, lList *queue_list, const uint32_t scope) {
+   job_set_soft_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                           ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list), scope);
 }
 
 /**
  * @brief Replace the hard queue requests of a job's master task
  *
- * @param[in,out] job the job to change
- * @param queue_list the new list; ownership passes to the job
+ * @param[in,out] job the job to change (JB_Type)
+ * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
+ *
+ * @see #job_set_queue_list
+ */
+void job_set_master_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job,
+                                    ocs::tom::ListPtr<ocs::tom::QR> &&queue_list) {
+   job_set_queue_list(job, std::move(queue_list), JRS_SCOPE_MASTER, true);
+}
+
+/**
+ * @brief job_set_master_hard_queue_list() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), unchecked: request data
+ * @param queue_list the new list (QR_Type), unchecked; ownership passes to the job
  */
 void job_set_master_hard_queue_list(lListElem *job, lList *queue_list) {
-   job_set_queue_list(job, queue_list, JRS_SCOPE_MASTER, true);
+   job_set_master_hard_queue_list(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
+                                  ocs::tom::ListPtr<ocs::tom::QR>::from_typed(queue_list));
 }
 
 /**
  * @brief Set the allocation rule of one request set
  *
- * @param[in,out] job the job to change
+ * @param[in,out] job the job to change (JB_Type)
  * @param allocation_rule the rule to store
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  */
-void job_set_allocation_rule(lListElem *job, const char *allocation_rule, uint32_t scope) {
-   lListElem *jrs = job_get_or_create_request_setRW(job, scope);
-   if (jrs != nullptr) {
+void job_set_allocation_rule(const ocs::tom::Element<ocs::tom::JB> job, const char *allocation_rule,
+                             const uint32_t scope) {
+   const auto jrs = job_get_or_create_request_setRW(job, scope);
+   if (jrs) {
       ocs::tom::set<JRS_allocation_rule>(jrs, allocation_rule);
    }
 }
 
 /**
+ * @brief job_set_allocation_rule() for an untyped caller
+ *
+ * @param[in,out] job the job to change (JB_Type), checked
+ * @param allocation_rule the rule to store
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ */
+void job_set_allocation_rule(lListElem *job, const char *allocation_rule, const uint32_t scope) {
+   job_set_allocation_rule(ocs::tom::Element<ocs::tom::JB>(job), allocation_rule, scope);
+}
+
+/**
  * @brief The allocation rule of one request set
  *
- * @param job the job to read
+ * @param job the job to read (JB_Type)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @return the rule, or nullptr when the scope has none
  */
-const char *job_get_allocation_rule(const lListElem *job, uint32_t scope) {
+const char *job_get_allocation_rule(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t scope) {
    const char *ret = nullptr;
-   const lListElem *jrs = job_get_request_set(job, scope);
-   if (jrs != nullptr) {
+   const auto jrs = job_get_request_set(job, scope);
+   if (jrs) {
       ret = ocs::tom::get<JRS_allocation_rule>(jrs);
    }
    return ret;
+}
+
+/**
+ * @brief job_get_allocation_rule() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
+ * @return as job_get_allocation_rule()
+ */
+const char *job_get_allocation_rule(const lListElem *job, const uint32_t scope) {
+   return job_get_allocation_rule(ocs::tom::ConstElement<ocs::tom::JB>(job), scope);
 }
 
 static void
@@ -4238,8 +5321,16 @@ job_add_name_value_list_opt_to_command_line(const lListElem *job, dstring *dstr,
    return ret;
 }
 
+/**
+ * @brief Append the request lists of one request set to a command line
+ *
+ * The helpers take the list as a field number, so the request set goes in raw.
+ *
+ * @param scope_ep the request set (JRS_Type)
+ * @param[out] dstr the command line to append to
+ */
 static void
-job_add_resource_set_list_scope_to_command_line(const lListElem *scope_ep, dstring *dstr) {
+job_add_resource_set_list_scope_to_command_line(const ocs::tom::ConstElement<ocs::tom::JRS> scope_ep, dstring *dstr) {
    job_add_ce_list_opt_to_command_line(scope_ep, dstr, "-hard -l", JRS_hard_resource_list);
    job_add_ce_list_opt_to_command_line(scope_ep, dstr, "-soft -l", JRS_soft_resource_list);
    job_add_list_opt_to_command_line(scope_ep, dstr, "-hard -q", JRS_hard_queue_list, QR_name);
@@ -4317,29 +5408,34 @@ std::string get_scope_list_name(const uint32_t scope, const int nm, const bool w
 }
 
 
-const char *
 /**
  * @brief The name of the scope a request set belongs to
  *
- * @param scope_ep the request set element; nullptr yields `unknown`
+ * @param scope_ep the request set element (JRS_Type); an empty handle yields `unknown`
  * @return `global`, `master`, `slave`, or `unknown`
  */
-job_scope_name(const lListElem *scope_ep) {
+const char *
+job_scope_name(const ocs::tom::ConstElement<ocs::tom::JRS> scope_ep) {
    const char *ret = "unknown";
 
-   if (scope_ep != nullptr) {
+   if (scope_ep) {
       ret = job_scope_name(ocs::tom::get<JRS_scope>(scope_ep));
    }
 
    return ret;
 }
 
+/**
+ * @brief Append the request sets of a job to a command line
+ *
+ * @param job the job (JB_Type)
+ * @param[out] dstr the command line to append to
+ */
 static void
-job_add_resource_set_list_to_command_line(const lListElem *job, dstring *dstr) {
-   ocs::tom::ConstList<ocs::tom::JRS> request_set_list = ocs::tom::get<JB_request_set_list>(job);
-   if (request_set_list != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::JRS> scope_ep;
-      for_each_ep (scope_ep, request_set_list) {
+job_add_resource_set_list_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, dstring *dstr) {
+   const auto request_set_list = ocs::tom::get<JB_request_set_list>(job);
+   if (request_set_list) {
+      for (const auto scope_ep : request_set_list) {
          job_add_opt_to_comand_line(dstr, "-scope", job_scope_name(scope_ep));
          const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(scope_ep);
          if (allocation_rule != nullptr) {
@@ -4357,13 +5453,16 @@ job_add_resource_set_list_to_command_line(const lListElem *job, dstring *dstr) {
  * which can be used to submit an identical job (if no sge_request files and/or JSV are active).
  * The command line is stored in the given dstring.
  *
- * @param[in] job      job used as template for the command line
+ * The option helpers take the attribute as a field number, so the job goes
+ * into them raw.
+ *
+ * @param[in] job      job used as template for the command line (JB_Type)
  * @param[in] dstr     dstring which will contain the command line
  * @param[in] client   client name, this will become the first word in the command line
  * @return the command line as string
  */
 const char *
-job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *client) {
+job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, dstring *dstr, const char *client) {
    // the submit client name
    sge_dstring_copy_string(dstr, client);
 
@@ -4420,20 +5519,19 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
       sge_dstring_sprintf_append(dstr, " -m ");
       sge_dstring_append_mailopt(dstr, mailopt);
    }
-   ocs::tom::ConstList<ocs::tom::MR> mail_list = ocs::tom::get<JB_mail_list>(job);
-   if (mail_list != nullptr) {
+   if (const auto mail_list = ocs::tom::get<JB_mail_list>(job); mail_list) {
       sge_dstring_append_char(dstr, ' ');
       sge_dstring_append(dstr, "-M");
       sge_dstring_append_char(dstr, ' ');
-      ocs::tom::ConstElement<ocs::tom::MR> ep;
       bool first = true;
-      for_each_ep(ep, mail_list) {
+      for (const auto ep : mail_list) {
          if (first) {
             first = false;
          } else {
             sge_dstring_append_char(dstr, ',');
          }
-         sge_dstring_sprintf_append(dstr, "%s@%s", ocs::tom::get<MR_user>(ep), static_cast<const char *>(ocs::tom::get<MR_host>(ep)));
+         sge_dstring_sprintf_append(dstr, "%s@%s", ocs::tom::get<MR_user>(ep),
+                                    static_cast<const char *>(ocs::tom::get<MR_host>(ep)));
       }
    }
 
@@ -4472,19 +5570,18 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
       job_add_opt_to_comand_line(dstr, "-r", "yes");
    }
    // the context as the job will have it, also before the qmaster applied the instructions (CS-3058)
-   if (job_get_context_change(job) == nullptr) {
+   if (!job_get_context_change(job)) {
       job_add_name_value_list_opt_to_command_line(job, dstr, "-sc", JB_context, VA_variable, VA_value);
    } else {
       auto context_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-      ocs::tom::set<JB_context>(context_job, ocs_context_get_effective(job));
+      ocs::tom::set<JB_context>(*context_job, ocs_context_get_effective(job));
       job_add_name_value_list_opt_to_command_line(*context_job, dstr, "-sc", JB_context, VA_variable, VA_value);
    }
    job_add_host_str_list_opt_to_command_line(job, dstr, "-shell", JB_shell_list, PN_host, PN_path);
    // -sync is not part of the job - it is only client behaviour
    // -t option
    if (job_is_array(job)) {
-      uint32_t start, end, step;
-      job_get_submit_task_ids(job, &start, &end, &step);
+      const auto [start, end, step] = job_get_submit_task_ids(job);
       sge_dstring_sprintf_append(dstr, " -t " sge_u32 "-" sge_u32 ":" sge_u32, start, end, step);
    }
    job_add_ulong_opt_to_command_line(job, dstr, "-tc", JB_ja_task_concurrency, 0);
@@ -4498,8 +5595,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
 
    // command line to execute
    job_add_str_opt_to_command_line(job, dstr, nullptr, JB_script_file);
-   ocs::tom::ConstElement<ocs::tom::ST> ep;
-   for_each_ep (ep, ocs::tom::get<JB_job_args>(job)) {
+   for (const auto ep : ocs::tom::get<JB_job_args>(job)) {
       sge_dstring_append_char(dstr, ' ');
       job_add_str_to_command_line(dstr, ocs::tom::get<ST_name>(ep));
    }
@@ -4508,50 +5604,99 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
 }
 
 /**
+ * @brief job_get_effective_command_line() for an untyped caller
+ *
+ * @param[in] job      job used as template for the command line (JB_Type), checked
+ * @param[in] dstr     dstring which will contain the command line
+ * @param[in] client   client name, this will become the first word in the command line
+ * @return as job_get_effective_command_line()
+ */
+const char *job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *client) {
+   return job_get_effective_command_line(ocs::tom::ConstElement<ocs::tom::JB>(job), dstr, client);
+}
+
+/**
+ * @brief Store the effective command line in the job
+ *
  * Generates the effective command line from the job attributes
  * and stores it in the job attribute JB_submission_command_line.
  *
- * @param[in] job      job used as template for the command line
+ * @param[in] job      job used as template for the command line (JB_Type)
  * @param[in] client   client name, this will become the first word in the command line
  */
-void job_set_command_line(lListElem *job, const char *client) {
+void job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const char *client) {
    dstring dstr = DSTRING_INIT;
    ocs::tom::set<JB_submission_command_line>(job, job_get_effective_command_line(job, &dstr, client));
    sge_dstring_free(&dstr);
 }
 
 /**
+ * @brief job_set_command_line() for an untyped caller
+ *
+ * @param[in] job      job used as template for the command line (JB_Type), checked
+ * @param[in] client   client name, this will become the first word in the command line
+ */
+void job_set_command_line(lListElem *job, const char *client) {
+   job_set_command_line(ocs::tom::Element<ocs::tom::JB>(job), client);
+}
+
+/**
+ * @brief Store a given command line in the job
+ *
  * Formats the command line given as argument count and argument vector into one string
  * and stores it in the job attribute JB_submission_command_line.
  *
- * @param[in] job    we store the result here
+ * @param[in] job    we store the result here (JB_Type)
  * @param[in] argc   the argument count
  * @param[in] argv   the argument vector
  */
 void
-job_set_command_line(lListElem *job, int argc, const char *argv[]) {
+job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const int argc, const char *argv[]) {
    dstring dstr = DSTRING_INIT;
    ocs::tom::set<JB_submission_command_line>(job, sge_dstring_from_argv(&dstr, argc, argv, true, true));
    sge_dstring_free(&dstr);
 }
 
-/** @brief Sets the sync options for a job.
+/**
+ * @brief job_set_command_line() from an argument vector for an untyped caller
  *
- * @param job
- * @param sync_options
+ * @param[in] job    we store the result here (JB_Type), checked
+ * @param[in] argc   the argument count
+ * @param[in] argv   the argument vector
+ */
+void job_set_command_line(lListElem *job, const int argc, const char *argv[]) {
+   job_set_command_line(ocs::tom::Element<ocs::tom::JB>(job), argc, argv);
+}
+
+/**
+ * @brief Sets the sync options for a job.
+ *
+ * @param job the job to change (JB_Type)
+ * @param sync_options the `SYNC_*` value to store
  */
 void
-job_set_sync_options(lListElem *job, uint32_t sync_options) {
+job_set_sync_options(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t sync_options) {
    ocs::tom::set<JB_sync_options>(job, sync_options);
 }
 
-/** @brief get the letter combination that represents the sync options
+/**
+ * @brief job_set_sync_options() for an untyped caller
  *
- * @param job the job to read
+ * @param job the job to change (JB_Type), checked
+ * @param sync_options the `SYNC_*` value to store
+ */
+void job_set_sync_options(lListElem *job, const uint32_t sync_options) {
+   job_set_sync_options(ocs::tom::Element<ocs::tom::JB>(job), sync_options);
+}
+
+/**
+ * @brief get the letter combination that represents the sync options
+ *
+ * @param job the job to read (JB_Type)
  * @return the letter combination
  */
 std::string
-job_get_sync_options_string(const lListElem *job) {
+job_get_sync_options_string(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
    uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
@@ -4567,6 +5712,16 @@ job_get_sync_options_string(const lListElem *job) {
       ret += "x";
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief job_get_sync_options_string() for an untyped caller
+ *
+ * @param job the job to read (JB_Type), checked
+ * @return as job_get_sync_options_string()
+ */
+std::string job_get_sync_options_string(const lListElem *job) {
+   return job_get_sync_options_string(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /** @brief Checks if a job should be visible to the current user.
@@ -4611,10 +5766,10 @@ job_is_visible(const ocs::gdi::Packet *packet, const char *owner, const bool is_
  * `JB_nppri` is the priority mapped onto [0,1] over the whole storable range,
  * which is what the priority formula works with.
  *
- * @param[in,out] jep the job to change
+ * @param[in,out] jep the job to change (JB_Type)
  * @param priority the priority in its stored unsigned form, see #PRI_ITOU
  */
-void job_normalize_priority(lListElem *jep, uint32_t priority) {
+void job_normalize_priority(const ocs::tom::Element<ocs::tom::JB> jep, const uint32_t priority) {
    constexpr double min_priority = 0.0;
    constexpr double max_priority = 2048.0;
 
@@ -4622,12 +5777,26 @@ void job_normalize_priority(lListElem *jep, uint32_t priority) {
    ocs::tom::set<JB_nppri>(jep, sge_normalize_value(priority, min_priority, max_priority));
 }
 
-/** @brief Summarizes the slots of the given gdil list.
+/**
+ * @brief job_normalize_priority() for an untyped caller
+ *
+ * @param[in,out] jep the job to change (JB_Type), checked
+ * @param priority the priority in its stored unsigned form, see #PRI_ITOU
+ */
+void job_normalize_priority(lListElem *jep, const uint32_t priority) {
+   job_normalize_priority(ocs::tom::Element<ocs::tom::JB>(jep), priority);
+}
+
+/**
+ * @brief Summarizes the slots of the given gdil list.
  *
  * The function will return a new list with one entry for each host.
  * The slots of all entries for the same host will be accumulated.
  *
- * @param gdil_in the input list
+ * The signature stays untyped: the callers bind the result to a raw list they
+ * free themselves, also those that pass a typed list.
+ *
+ * @param gdil_in the input list (JG_Type), checked; may be nullptr
  * @return a new list with summarized entries. Caller is responsible for freeing the list.
  */
 lList *
@@ -4635,14 +5804,15 @@ gdil_make_host_unique(const lList *gdil_in) {
    DENTER(TOP_LAYER);
 
    // no input -> nothing to do
-   if (gdil_in == nullptr) {
+   const ocs::tom::ConstList<ocs::tom::JG> gdil_list(gdil_in);
+   if (!gdil_list) {
       DRETURN(nullptr);
    }
 
    // just one entry -> return a copy of the input
-   lList *gdil_out = lCopyList("gdil_summarize_hosts", gdil_in);
-   if (lGetNumberOfElem(gdil_out) == 1) {
-      DRETURN(gdil_out);
+   auto gdil_out = gdil_list.clone("gdil_summarize_hosts");
+   if (gdil_out->size() == 1) {
+      DRETURN(gdil_out.release());
    }
 
    // not required as long as only master host has a separate entry
@@ -4653,30 +5823,30 @@ gdil_make_host_unique(const lList *gdil_in) {
 #endif
 
    // first gdil that we will use to summarize the slots and the hostname
-   lListElem *first_gdil = lFirstRW(gdil_out);
+   auto first_gdil = gdil_out->front();
    const char *first_hostname = ocs::tom::get<JG_qhostname>(first_gdil);
 
    // iterate over the rest of the list and summarize the slots for entries with the same hostname
-   lListElem *next_gdil = lNextRW(first_gdil);
-   lListElem *gdil;
-   while ((gdil = next_gdil) != nullptr) {
-      next_gdil = lNextRW(gdil);
+   auto next_gdil = first_gdil.next();
+   while (next_gdil) {
+      const auto gdil = next_gdil;
+      next_gdil = gdil.next();
 
       // if the next gdil has a different hostname then it is the first gdil for this new hostname
       // otherwise we summarize the slots of the current gdil into the first gdil
-      if (const char *next_gdil_hostname = ocs::tom::get<JG_qhostname>(gdil); sge_hostcmp(first_hostname, next_gdil_hostname) != 0) {
+      if (const char *next_gdil_hostname = ocs::tom::get<JG_qhostname>(gdil);
+          sge_hostcmp(first_hostname, next_gdil_hostname) != 0) {
          first_gdil = gdil;
          first_hostname = next_gdil_hostname;
       } else {
          ocs::tom::add<JG_slots>(first_gdil, ocs::tom::get<JG_slots>(gdil));
-         lRemoveElem(gdil_out, &gdil);
+         gdil_out->erase(gdil);
       }
    }
 
-   DRETURN(gdil_out);
+   DRETURN(gdil_out.release());
 }
 
-uint32_t
 /**
  * @brief The state bits a task is displayed with
  *
@@ -4686,11 +5856,13 @@ uint32_t
  * one loses the running bit, and a finished one is shown as finished rather
  * than exiting.
  *
- * @param job the job the task belongs to
- * @param jatep the array task
+ * @param job the job the task belongs to (JB_Type)
+ * @param jatep the array task (JAT_Type)
  * @return the state bits to render, which are not stored anywhere
  */
-jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep) {
+uint32_t
+jatask_combine_state_and_status_for_output(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                           const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
 
    uint32_t status = ocs::tom::get<JAT_status>(jatep);
@@ -4738,6 +5910,18 @@ jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem
 }
 
 /**
+ * @brief jatask_combine_state_and_status_for_output() for an untyped caller
+ *
+ * @param job the job the task belongs to (JB_Type), checked
+ * @param jatep the array task (JAT_Type), checked
+ * @return as jatask_combine_state_and_status_for_output()
+ */
+uint32_t jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep) {
+   return jatask_combine_state_and_status_for_output(ocs::tom::ConstElement<ocs::tom::JB>(job),
+                                                     ocs::tom::ConstElement<ocs::tom::JAT>(jatep));
+}
+
+/**
  * @brief Parse when string for job alteration
  *
  * Parses a string to determine when a job alteration should occur.
@@ -4772,15 +5956,24 @@ bool job_parse_when_string(const char *input, qalter_when_t &when) {
  * applied immediately.
  * The job can be a reduced element as it is sent by the qalter command.
  *
- * @param job JB_Type element
+ * @param job JB_Type element, full or reduced
  * @return true if JB_when is set to QALTER_WHEN_NOW, false otherwise
  */
 bool
-job_is_when_now(const lListElem *job) {
+job_is_when_now(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    bool ret = false;
-   int pos = lGetPosViaElem(job, JB_when, SGE_NO_ABORT);
-   if (pos >= 0) {
-      ret = lGetPosUlong(job, pos) == QALTER_WHEN_NOW;
+   if (ocs::tom::has<JB_when>(job)) {
+      ret = ocs::tom::get<JB_when>(job) == QALTER_WHEN_NOW;
    }
    return ret;
+}
+
+/**
+ * @brief job_is_when_now() for an untyped caller
+ *
+ * @param job JB_Type element, full or reduced, checked
+ * @return as job_is_when_now()
+ */
+bool job_is_when_now(const lListElem *job) {
+   return job_is_when_now(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }

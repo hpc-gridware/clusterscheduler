@@ -148,7 +148,7 @@ void remove_immediate_job(const ocs::tom::List<ocs::tom::JB> job_list, const ocs
       for (uint32_t ja_task_id = ocs::tom::get<RN_min>(range);
            ja_task_id <= ocs::tom::get<RN_max>(range);
            ja_task_id += ocs::tom::get<RN_step>(range)) {
-         auto ja_task = ocs::tom::ConstElement<ocs::tom::JAT>(job_get_ja_task_template_pending(job, ja_task_id));
+         auto ja_task = job_get_ja_task_template_pending(job, ja_task_id);
 
          /* No need to remove the orders here because tasks in JB_ja_n_h_ids
           * haven't been scheduled, and hence don't have start orders to

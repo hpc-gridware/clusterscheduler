@@ -1449,7 +1449,7 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
       */
       DPRINTF("queue contained in jobs hard queue list?\n");
       // @todo CS-400 where is sge_select_queue() called?
-      auto qref_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job));
+      auto qref_list = job_get_hard_queue_list(job);
       if (qref_list != nullptr) {
          const char *qname = nullptr;
          const char *qinstance_name = nullptr;
@@ -1853,12 +1853,12 @@ static std::tuple<ocs::tom::ConstList<ocs::tom::QR>, ocs::tom::ConstList<ocs::to
                   ocs::tom::ConstList<ocs::tom::QR>>
 get_hard_queue_lists(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   auto global_hard_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL));
+   auto global_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
    ocs::tom::ConstList<ocs::tom::QR> master_hard_queue_list;
    ocs::tom::ConstList<ocs::tom::QR> slave_hard_queue_list;
    if (/* it is a pe job && */ !global_hard_queue_list) {
-      master_hard_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job, JRS_SCOPE_MASTER));
-      slave_hard_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job, JRS_SCOPE_SLAVE));
+      master_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
+      slave_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_SLAVE);
    }
    DRETURN(std::make_tuple(global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list));
 }
@@ -1875,10 +1875,10 @@ get_soft_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    ocs::tom::ConstList<ocs::tom::QR> soft_queue_list;
    if (job_get_hard_queue_list(job, JRS_SCOPE_MASTER) != nullptr) {
       // if we have master queue requests, then work on the soft slave queue requests
-      soft_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_soft_queue_list(job, JRS_SCOPE_SLAVE));
+      soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_SLAVE);
    } else {
       // if we have no master queue requests (or it is a sequential job), then work on the global soft queue requests
-      soft_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL));
+      soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL);
    }
    DRETURN(soft_queue_list);
 }
@@ -2205,7 +2205,7 @@ compute_soft_violations(const sge_assignment_t *a, const ocs::tom::ConstElement<
    unsigned int soft_violation = violation;
    uint64_t start_time = DISPATCH_TIME_NOW;
 
-   auto soft_requests = ocs::tom::List<ocs::tom::CE>(job_get_soft_resource_listRW(a->job));
+   auto soft_requests = job_get_soft_resource_listRW(a->job);
    clear_resource_tags(soft_requests, tag);
 
    uint32_t job_id = a->job_id;
@@ -2407,12 +2407,12 @@ bool is_requested(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *at
    DENTER(TOP_LAYER);
    bool ret = false;
 
-   auto global_request_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL));
+   auto global_request_list = job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
    if (is_requested(global_request_list, attr)) {
       ret = true;
    } else {
-      auto master_request_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER));
-      auto slave_request_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE));
+      auto master_request_list = job_get_hard_resource_list(job, JRS_SCOPE_MASTER);
+      auto slave_request_list = job_get_hard_resource_list(job, JRS_SCOPE_SLAVE);
       if (is_requested(master_request_list, attr) && is_requested(slave_request_list, attr)) {
          ret = true;
       }
@@ -3461,15 +3461,15 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
    auto cq = ocs::tom::find_first<CQ_name>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
-   auto hard_resource_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(a->job, JRS_SCOPE_GLOBAL));
+   auto hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_GLOBAL);
    if (cqueue_match_static_resource_list_rejected(a, cqname, cq, hard_resource_list, "global")) {
       // if global requests do not match, we can rule out the cluster queue
       DRETURN(DISPATCH_NEVER_CAT);
    }
    auto master_hard_resource_list =
-      ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(a->job, JRS_SCOPE_MASTER));
+      job_get_hard_resource_list(a->job, JRS_SCOPE_MASTER);
    auto slave_hard_resource_list =
-      ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(a->job, JRS_SCOPE_SLAVE));
+      job_get_hard_resource_list(a->job, JRS_SCOPE_SLAVE);
    if (cqueue_match_static_resource_list_rejected(a, cqname, cq, master_hard_resource_list, "master") &&
        cqueue_match_static_resource_list_rejected(a, cqname, cq, slave_hard_resource_list, "slave")) {
       // if both master and slave requests do not match, we cannot run any tasks in this cluster queue
@@ -3655,7 +3655,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       }
       if (!ocs::tom::find_first<CTI_name>(*unclear_host_list, eh_name)) {
          SCHED_PROF_INC(a->pi, seq_hstat);
-         if (qref_list_eh_rejected(ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(a->job)), eh_name,
+         if (qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name,
                                    a->hgrp_list)) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run,
                            a->job_id, SCHEDD_INFO_NOTINHARDQUEUELST_S, eh_name);
@@ -5172,7 +5172,7 @@ parallel_max_host_slots(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
             // that queues will not go into load alarm.
             // BUT: E.g. in case of a high request for the master and low (no) requests for the slaves this could
             // possibly prevent a job from starting!
-            lc = ocs::tom::ConstElement<ocs::tom::CE>(job_get_highest_hard_request(a->job, name));
+            lc = job_get_highest_hard_request(a->job, name);
             if (lc) {
                adj_value = ocs::tom::get<CE_stringval>(lc);
             } else { /* is default value */
@@ -5654,7 +5654,7 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations,
    char reason_buf[1024];
    dispatch_t result;
    uint64_t tmp_time = *start;
-   auto hard_requests = ocs::tom::List<ocs::tom::CE>(job_get_hard_resource_listRW(a->job));
+   auto hard_requests = job_get_hard_resource_listRW(a->job);
    auto config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
    auto actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
    auto qname = ocs::tom::get<QU_full_name>(qep);
@@ -5727,7 +5727,7 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations,
                      const ocs::tom::ConstElement<ocs::tom::EH> hep) {
    DENTER(TOP_LAYER);
 
-   auto hard_requests = ocs::tom::List<ocs::tom::CE>(job_get_hard_resource_listRW(a->job));
+   auto hard_requests = job_get_hard_resource_listRW(a->job);
    auto load_attr = ocs::tom::get<EH_load_list>(hep);
    auto config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
    auto actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
@@ -5815,7 +5815,7 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
    dstring reason; char reason_buf[1024];
    dispatch_t result = DISPATCH_NEVER_CAT;
    uint64_t tmp_time = *start;
-   auto hard_request = ocs::tom::List<ocs::tom::CE>(job_get_hard_resource_listRW(a->job));
+   auto hard_request = job_get_hard_resource_listRW(a->job);
    auto load_attr = ocs::tom::get<EH_load_list>(a->gep);
    auto config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
    auto actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);

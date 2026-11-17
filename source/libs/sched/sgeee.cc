@@ -2329,7 +2329,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                if (++task_cnt > std::min(max_pending_tasks_per_job, free_qslots+1)) {
                   break;
                }
-               const auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_get_ja_task_template_pending(job, id));
+               const auto ja_task = job_get_ja_task_template_pending(job, id);
                sge_set_job_refs(job, ja_task, jref, tref, lists, 1);
                if (jref->node) {
                   ocs::tom::set<STN_job_ref_count>(jref->node,

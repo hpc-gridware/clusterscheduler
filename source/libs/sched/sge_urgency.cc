@@ -181,7 +181,7 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
          rrc += contribution;
 
          /* contribution for all explicit requests */
-         for (const auto rr : ocs::tom::ConstList<ocs::tom::CE>::from_typed(job_get_hard_resource_list(jep))) {
+         for (const auto rr : job_get_hard_resource_list(jep)) {
             const char *name = ocs::tom::get<CE_name>(rr);
             const auto centry = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
             if (centry == nullptr) {
