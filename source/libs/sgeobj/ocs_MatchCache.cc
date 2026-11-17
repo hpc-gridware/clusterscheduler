@@ -167,19 +167,6 @@ ocs::MatchCache::lookup(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const ch
 }
 
 /**
- * @brief lookup() for an untyped caller
- *
- * @param hgroup the group to ask (HGRP_Type), checked; nullptr answers no
- * @param hostname the host in question, already resolved by the caller
- *
- * @return as lookup()
- */
-bool
-ocs::MatchCache::lookup(lListElem *hgroup, const char *hostname) {
-   return lookup(ocs::tom::Element<ocs::tom::HGRP>(hgroup), hostname);
-}
-
-/**
  * @brief Record that a matcher of this group has admitted this host
  *
  * Called only after the walk has answered yes. **Only positive results are
@@ -230,17 +217,6 @@ ocs::MatchCache::insert(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const ch
 }
 
 /**
- * @brief insert() for an untyped caller
- *
- * @param hgroup the group that admitted the host (HGRP_Type), checked; nullptr changes nothing
- * @param hostname the admitted host, already resolved by the caller
- */
-void
-ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
-   insert(ocs::tom::Element<ocs::tom::HGRP>(hgroup), hostname);
-}
-
-/**
  * @brief Take the matching cache out of a group that is about to be replaced
  *
  * Half of the move across an event merge. It is two halves rather than one call
@@ -268,18 +244,6 @@ ocs::MatchCache::detach(const ocs::tom::Element<ocs::tom::HGRP> hgroup) {
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
    DRETURN(hgroup.exchange<HGRP_match_cache>(nullptr));
-}
-
-/**
- * @brief detach() for an untyped caller
- *
- * @param hgroup the group the cache is taken from (HGRP_Type), checked; nullptr gives nullptr
- *
- * @return the cache, owned by the caller, or nullptr if the group carried none
- */
-lList *
-ocs::MatchCache::detach(lListElem *hgroup) {
-   return detach(ocs::tom::Element<ocs::tom::HGRP>(hgroup)).release();
 }
 
 /**
@@ -342,21 +306,6 @@ ocs::MatchCache::adopt(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom:
 }
 
 /**
- * @brief adopt() for an untyped caller
- *
- * @param hgroup the group that receives the cache (HGRP_Type), checked; with nullptr the cache is freed
- * @param[in,out] cache the detached cache (HM_Type); emptied, whatever the outcome
- */
-void
-ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
-   if (cache == nullptr) {
-      return;
-   }
-   adopt(ocs::tom::Element<ocs::tom::HGRP>(hgroup),
-         ocs::tom::ListPtr<ocs::tom::HM>::from_typed(std::exchange(*cache, nullptr)));
-}
-
-/**
  * @brief Throw away the matching cache of every host group
  *
  * A cache belongs to the group that was **asked**, not to the group whose
@@ -395,12 +344,3 @@ ocs::MatchCache::discard_all(const ocs::tom::List<ocs::tom::HGRP> master_hgroup_
    DRETURN_VOID;
 }
 
-/**
- * @brief discard_all() for an untyped caller
- *
- * @param master_hgroup_list the host groups of one data store (HGRP_Type), checked; may be nullptr
- */
-void
-ocs::MatchCache::discard_all(lList *master_hgroup_list) {
-   discard_all(ocs::tom::List<ocs::tom::HGRP>(master_hgroup_list));
-}

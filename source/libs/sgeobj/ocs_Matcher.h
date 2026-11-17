@@ -27,6 +27,11 @@
 
 #include "uti/sge_dstring.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+
 namespace ocs {
    /** @brief What a matcher means, as opposed to how it is recognised
     *
@@ -67,19 +72,21 @@ namespace ocs {
          MATCHER           ///< admitted by a matcher, without being named anywhere
       };
 
-      static bool prepare(const char *member, const lListElem *hgroup, bool introducing,
+      static bool prepare(const char *member, ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, bool introducing,
                           dstring *out, lList **answer_list);
 
-      static bool expand(const lList *member_list, const lList *candidates, lList **hosts,
-                         lList **answer_list);
+      static bool expand(ocs::tom::ConstList<ocs::tom::HR> member_list, ocs::tom::ConstList<ocs::tom::HR> candidates,
+                         ocs::tom::ListPtr<ocs::tom::HR> &hosts, lList **answer_list);
 
-      static bool admits(lListElem *hgroup, const char *hostname, const lList *master_hgroup_list);
+      static bool admits(ocs::tom::Element<ocs::tom::HGRP> hgroup, const char *hostname,
+                         ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
 
-      static bool cache_carries_over(const lListElem *before, const lListElem *after);
+      static bool cache_carries_over(ocs::tom::ConstElement<ocs::tom::HGRP> before,
+                                     ocs::tom::ConstElement<ocs::tom::HGRP> after);
 
-      static Route why(const lListElem *hgroup, const char *hostname,
-                       const lList *master_hgroup_list, dstring *group, dstring *detail);
+      static Route why(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname,
+                       ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *group, dstring *detail);
 
-      static bool report_ineffective(const lList *master_hgroup_list, lList **answer_list);
+      static bool report_ineffective(ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, lList **answer_list);
    };
 }

@@ -507,39 +507,6 @@ lListElem *href_list_locate(const lList *this_list, const char *name) {
 }
 
 /**
- * @brief Add the hosts the matchers of a member list capture
- *
- * Hands the owning handle to ocs::Matcher::expand(), which still takes an untyped
- * in-out list, and takes the list back afterwards, also when the call throws.
- *
- * @param member_list HR_Type list whose matchers are expanded
- * @param candidates HR_Type list of the hosts a matcher may capture, may be an empty handle
- * @param hosts in-out: HR_Type list receiving the captured hosts, created if needed
- * @param answer_list AN_Type list
- *
- * @return as ocs::Matcher::expand()
- */
-static bool
-href_list_expand_matchers(const ocs::tom::ConstList<ocs::tom::HR> member_list,
-                          const ocs::tom::ConstList<ocs::tom::HR> candidates, ocs::tom::ListPtr<ocs::tom::HR> &hosts,
-                          lList **answer_list) {
-   DENTER(HOSTREF_LAYER);
-
-   lList *raw_hosts = hosts.release();   // in-out of ocs::Matcher::expand(), which takes an untyped list
-   bool ret;
-
-   try {
-      ret = ocs::Matcher::expand(member_list, candidates, &raw_hosts, answer_list);
-   } catch (...) {
-      hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(raw_hosts);
-      throw;
-   }
-   hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(raw_hosts);
-
-   DRETURN(ret);
-}
-
-/**
  * @brief Find referenced hosts and groups
  *
  * Finds hosts and hostgroups, which are directy referenced
@@ -644,14 +611,14 @@ bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list
 
             /* N-W-3: what the matchers of that group capture is part of its hosts */
             if (used_hosts != nullptr && expand_matchers) {
-               ret &= href_list_expand_matchers(href_list2, candidates, *used_hosts, answer_list);
+               ret &= ocs::Matcher::expand(href_list2, candidates, *used_hosts, answer_list);
             }
          }
       }
 
       /* ... and likewise for the matchers of the list handed in */
       if (used_hosts != nullptr && expand_matchers) {
-         ret &= href_list_expand_matchers(this_list, candidates, *used_hosts, answer_list);
+         ret &= ocs::Matcher::expand(this_list, candidates, *used_hosts, answer_list);
       }
    }
    DRETURN(ret);

@@ -980,7 +980,8 @@ setup_qmaster() {
     * Reported at every start, because the state persists and a one-off message
     * would be lost in exactly the restart that caused it.
     */
-   ocs::Matcher::report_ineffective(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP), &answer_list);
+   const ocs::tom::ConstList<ocs::tom::HGRP> hgroups(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+   ocs::Matcher::report_ineffective(hgroups, &answer_list);
    answer_list_output(&answer_list);
 
    DPRINTF("userset_list------------------------------\n");

@@ -56,7 +56,7 @@
  * @return always false
  */
 bool
-ocs::Matcher::prepare(const char *member, const lListElem *hgroup, const bool introducing,
+ocs::Matcher::prepare(const char *member, const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const bool introducing,
                       dstring *out, lList **answer_list) {
    DENTER(TOP_LAYER);
 
@@ -72,15 +72,16 @@ ocs::Matcher::prepare(const char *member, const lListElem *hgroup, const bool in
  * through group references, so an empty contribution leaves the enumeration
  * exactly as it was before the feature existed.
  *
- * @param member_list the members to expand
- * @param candidates the hosts a matcher would be resolved against
- * @param[out] hosts receives nothing
+ * @param member_list the members to expand (HR_Type), may be an empty handle
+ * @param candidates the hosts a matcher would be resolved against (HR_Type), may be an empty handle
+ * @param[in,out] hosts receives nothing; left as it is
  * @param[out] answer_list receives nothing
  *
  * @return always true
  */
 bool
-ocs::Matcher::expand(const lList *member_list, const lList *candidates, lList **hosts,
+ocs::Matcher::expand(const ocs::tom::ConstList<ocs::tom::HR> member_list,
+                     const ocs::tom::ConstList<ocs::tom::HR> candidates, ocs::tom::ListPtr<ocs::tom::HR> &hosts,
                      lList **answer_list) {
    DENTER(TOP_LAYER);
    DRETURN(true);
@@ -99,7 +100,8 @@ ocs::Matcher::expand(const lList *member_list, const lList *candidates, lList **
  * @return always false
  */
 bool
-ocs::Matcher::admits(lListElem *hgroup, const char *hostname, const lList *master_hgroup_list) {
+ocs::Matcher::admits(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const char *hostname,
+                     const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
    DENTER(TOP_LAYER);
    DRETURN(false);
 }
@@ -118,7 +120,8 @@ ocs::Matcher::admits(lListElem *hgroup, const char *hostname, const lList *maste
  * @return always true
  */
 bool
-ocs::Matcher::cache_carries_over(const lListElem *before, const lListElem *after) {
+ocs::Matcher::cache_carries_over(const ocs::tom::ConstElement<ocs::tom::HGRP> before,
+                                 const ocs::tom::ConstElement<ocs::tom::HGRP> after) {
    DENTER(TOP_LAYER);
    DRETURN(true);
 }
@@ -138,8 +141,8 @@ ocs::Matcher::cache_carries_over(const lListElem *before, const lListElem *after
  * @return always Route::NOT_A_MEMBER
  */
 ocs::Matcher::Route
-ocs::Matcher::why(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list,
-                  dstring *group, dstring *detail) {
+ocs::Matcher::why(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname,
+                  const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *group, dstring *detail) {
    DENTER(TOP_LAYER);
    DRETURN(Route::NOT_A_MEMBER);
 }
@@ -152,7 +155,8 @@ ocs::Matcher::why(const lListElem *hgroup, const char *hostname, const lList *ma
  * @return always true
  */
 bool
-ocs::Matcher::report_ineffective(const lList *master_hgroup_list, lList **answer_list) {
+ocs::Matcher::report_ineffective(const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                                 lList **answer_list) {
    DENTER(TOP_LAYER);
    DRETURN(true);
 }

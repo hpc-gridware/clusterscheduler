@@ -1021,6 +1021,8 @@ test_generated_trees() {
       hgroup_list_update_caches(hgroup_list, &answer_list);
       lFreeList(&answer_list);
 
+      const ocs::tom::ConstList<ocs::tom::HGRP> groups(hgroup_list);
+
       for (int g = 0; g < GROUPS; g++) {
          snprintf(buffer, sizeof(buffer), "@g%d", g);
          ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::find_first_rw<HGRP_name>(hgroup_list, buffer);
@@ -1078,7 +1080,7 @@ test_generated_trees() {
 
          for (ocs::tom::ConstElement<ocs::tom::HR> candidate : ocs::tom::get<HGRP_host_list>(exec_group)) {
             const char *host = ocs::tom::get<HR_name>(candidate);
-            const bool admitted = ocs::Matcher::admits(hgroup, host, hgroup_list);
+            const bool admitted = ocs::Matcher::admits(hgroup, host, groups);
             const bool resolved = href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
             const bool is_named = href_list_locate(named, host) != nullptr;
 
@@ -1232,7 +1234,7 @@ test_match_cache() {
    {
       lList *before_list = nullptr;
       lList *after_list = nullptr;
-      lListElem *before = ocs::tom::emplace_back<HGRP_name>(&before_list, "@gpu_nodes");
+      ocs::tom::Element<ocs::tom::HGRP> before = ocs::tom::emplace_back<HGRP_name>(&before_list, "@gpu_nodes");
       ocs::tom::Element<ocs::tom::HGRP> after = ocs::tom::emplace_back<HGRP_name>(&after_list, "@gpu_nodes");
 
       ocs::MatchCache::insert(before, "gpu001");
@@ -1243,13 +1245,13 @@ test_match_cache() {
       ocs::tom::emplace_back<HR_name>(&resolved, "gpu002");
       ocs::tom::set<HGRP_cached_hosts>(after, resolved);
 
-      lList *cache = ocs::MatchCache::detach(before);
+      auto cache = ocs::MatchCache::detach(before);
       CHECK(108, "detaching takes the cache off the old element",
-            cache != nullptr && cache_size(before) == 0);
+            static_cast<bool>(cache) && cache_size(before) == 0);
 
-      ocs::MatchCache::adopt(after, &cache);
+      ocs::MatchCache::adopt(after, std::move(cache));
       CHECK(109, "the new element carries it, and the caller's handle is empty",
-            cache == nullptr && cache_holds(after, "gpu001"));
+            !cache && cache_holds(after, "gpu001"));
       CHECK(110, "an entry that has entered the resolved membership is dropped",
             !cache_holds(after, "gpu002") && cache_size(after) == 1);
 
@@ -1259,11 +1261,9 @@ test_match_cache() {
 
    // T111: nothing to carry, and nothing that has to be guarded against
    {
-      lList *empty = nullptr;
-
       CHECK(111, "detaching from nothing and adopting nothing are both harmless",
-            ocs::MatchCache::detach(nullptr) == nullptr &&
-            (ocs::MatchCache::adopt(nullptr, &empty), true));
+            !ocs::MatchCache::detach(nullptr) &&
+            (ocs::MatchCache::adopt(nullptr, ocs::tom::ListPtr<ocs::tom::HM>()), true));
    }
 
    // T112-T116: the matching cache is process-local derived state and must not
