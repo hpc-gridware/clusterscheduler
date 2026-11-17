@@ -52,7 +52,10 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -74,7 +77,12 @@ static bool sge_parse_qdel(lList **ppcmdline, lList **ppreflist, uint32_t *pforc
  */
 extern char **environ;
 
-/************************************************************************/
+/**
+ * @brief qdel: parse the command line and delete the jobs it names
+ * @param argc the number of arguments
+ * @param argv the arguments
+ * @return 0 when every deletion succeeded, 1 otherwise; the process ends with sge_exit()
+ */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qdel");
    /* lListElem *rep, *nxt_rep, *jep, *aep, *jrep, *idep; */
@@ -115,11 +123,13 @@ int main(int argc, char **argv) {
    DPRINTF("force     = " sge_u32"\n", force);
    
    if (user_list) {
-      if (lGetNumberOfElem(ref_list) == 0){
+      /* parse_multi_jobtaskslist() creates the list with ID_Type, so it is wrapped unchecked */
+      const auto refs = ocs::tom::List<ocs::tom::ID>::from_typed(ref_list);
+      if (refs.empty()) {
          ocs::tom::Element<ocs::tom::ID> id = ocs::tom::emplace_back<ID_str>(&ref_list, "0");
          ocs::tom::set<ID_user_list>(id, user_list);
       } else {
-         for_each_rw_lv(id, ref_list){
+         for (const auto id : refs) {
             ocs::tom::set<ID_user_list>(id, user_list);
          }
       }
@@ -174,9 +184,9 @@ int main(int argc, char **argv) {
          bool first_try = true;
          uint32_t MAX_DELETE_JOBS = 500;
          lList *part_ref_list = nullptr;
-         lList *cp_ref_list = lCopyList("", ref_list);
+         const auto cp_refs = ocs::tom::ConstList<ocs::tom::ID>::from_typed(ref_list).clone("");
 
-         for_each_rw_lv(idep, cp_ref_list) {
+         for (const auto idep : *cp_refs) {
             ocs::tom::set<ID_force>(idep, !no_forced_deletion);
          } 
 
@@ -191,28 +201,26 @@ int main(int argc, char **argv) {
             do_again = false;
 
             if (part_ref_list == nullptr) {
-               int i;
-               int max = std::min(lGetNumberOfElem(cp_ref_list), MAX_DELETE_JOBS);
-               lListElem *temp_ref = nullptr;
+               const auto max = std::min(cp_refs->size(), std::size_t{MAX_DELETE_JOBS});
 
                first_try = true;
 
-               part_ref_list = lCreateList("part_del_jobs", ID_Type);
-               for (i = 0; i < max; i++){
-                  const char* job = nullptr;
-                  temp_ref = lFirstRW(cp_ref_list);
-                  job = ocs::tom::get<ID_str>(temp_ref);
+               auto part_refs = ocs::tom::ListPtr<ocs::tom::ID>::create("part_del_jobs");
+               for (std::size_t i = 0; i < max; i++) {
+                  const auto temp_ref = cp_refs->front();
+                  const char *job = ocs::tom::get<ID_str>(temp_ref);
                   /* break if we got job ids first and hit a job name now */
                   if (!isdigit(job[0]) && (i > 0)) {
                      break;
                   }   
-                  temp_ref = lDechainElem(cp_ref_list, temp_ref);
-                  lAppendElem(part_ref_list, temp_ref);
+                  part_refs->push_back(cp_refs->extract(temp_ref));
                   /* break, if we got a job name by itself */
                   if (!isdigit(job[0])){
                      break;
                   }   
                }
+               /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+               part_ref_list = part_refs.release();
             }
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
                           ocs::gdi::SubCommand::NONE, &part_ref_list, nullptr, nullptr);
@@ -243,9 +251,7 @@ int main(int argc, char **argv) {
             lFreeList(&alp);
 
             first_try = false;
-         } while (do_again || (lGetNumberOfElem(cp_ref_list) > 0));
-
-         lFreeList(&cp_ref_list);
+         } while (do_again || !cp_refs->empty());
 
          if (delete_mode == 7) {
             /* 
@@ -283,18 +289,18 @@ error_exit:
    DRETURN(1);
 }
 
-/****
- **** sge_parse_cmdline_qdel (static)
- ****
- **** 'stage 1' parsing of qdel-options. parses options
- **** with their arguments and stores them in ppcmdline.
- ****/
-static bool sge_parse_cmdline_qdel(
-char **argv,
-char **envp,
-lList **ppcmdline,
-lList **alpp
-) {
+/**
+ * @brief 'Stage 1' parsing of the qdel options
+ *
+ * Parses the options with their arguments and stores them in @p ppcmdline.
+ *
+ * @param argv the arguments, without the program name
+ * @param envp the process environment
+ * @param ppcmdline receives the parsed options (`SPA_Type`)
+ * @param alpp receives the parse errors
+ * @return true on success, false on a parse error
+ */
+static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, lList **alpp) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -312,15 +318,15 @@ lList **alpp
 
       /* -u */
       if (!strcmp("-u", *sp)) {
-         lList *user_list = nullptr;
-         lListElem *ep_opt;
-
          sp++;
          if (*sp) {
-            str_list_parse_from_string(&user_list, *sp, ",");
+            lList *users_out = nullptr;
+            str_list_parse_from_string(&users_out, *sp, ",");
+            /* str_list_parse_from_string() creates the list with ST_Type, so it is taken over unchecked */
+            auto user_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users_out);
 
-            ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lListT>(ep_opt, user_list);
+            lListElem *ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
+            ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(user_list));
             sp++;
          }
          rp = sp;
@@ -328,9 +334,6 @@ lList **alpp
       }
 
       if (!strcmp("-t", *sp)) {
-         lList *task_id_range_list = nullptr;
-         lListElem *ep_opt;
-
          /* next field is path_name */
          sp++;
          if (*sp == nullptr) {
@@ -341,20 +344,22 @@ lList **alpp
 
          DPRINTF("\"-t %s\"\n", *sp);
 
-         range_list_parse_from_string(&task_id_range_list, alpp, *sp,
-                                      false, true, INF_NOT_ALLOWED);
-         if (!task_id_range_list) {
+         lList *ranges_out = nullptr;
+         range_list_parse_from_string(&ranges_out, alpp, *sp, false, true, INF_NOT_ALLOWED);
+         /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
+         auto task_id_ranges = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
+         if (!task_id_ranges) {
             goto error; 
          }
 
-         range_list_sort_uniq_compress(task_id_range_list, alpp, true);
-         if (lGetNumberOfElem(task_id_range_list) > 1) {
+         range_list_sort_uniq_compress(*task_id_ranges, alpp, true);
+         if (task_id_ranges->size() > 1) {
             answer_list_add(alpp, MSG_QCONF_ONLYONERANGE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             goto error;
          }
 
-         ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, task_id_range_list);
+         lListElem *ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_ranges));
 
          sp++;
          rp = sp;
@@ -363,13 +368,14 @@ lList **alpp
 
       /* job id's */
       if (*sp) {
-         lList *del_list = nullptr;
+         lList *del_out = nullptr;
          lListElem *ep = nullptr;
-         str_list_parse_from_string(&del_list, *sp, ",");
+         str_list_parse_from_string(&del_out, *sp, ",");
+         /* str_list_parse_from_string() creates the list with ST_Type, so it is taken over unchecked */
+         const auto del_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(del_out);
         
-         for_each_ep_lv(job, del_list) {
-            const char *job_name;
-            job_name = ocs::tom::get<ST_name>(job);
+         for (const auto job : *del_list) {
+            const char *job_name = ocs::tom::get<ST_name>(job);
             if(ep == nullptr) {
                ep = sge_add_arg(ppcmdline, 0, lListT, "jobs", nullptr);
             }
@@ -377,7 +383,6 @@ lList **alpp
          }  
          sp ++;
          rp = sp;
-         lFreeList(&del_list);
          continue;        
       }
 

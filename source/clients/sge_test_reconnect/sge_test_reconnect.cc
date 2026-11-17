@@ -61,6 +61,7 @@
 #include "sgeobj/cull/sge_id_ID_L.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -75,6 +76,12 @@ static void usage(const char *prog) {
    fprintf(stderr, "usage: %s <job_id> <client_host> <client_port>\n", prog);
 }
 
+/**
+ * @brief Send one reconnect request for a job to qmaster and print the answer
+ * @param argc the number of arguments
+ * @param argv the program name, the job id, the client host and the client port
+ * @return 0 if qmaster answered RECONNECT_OK, 1 otherwise
+ */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "sge_test_reconnect");
 
@@ -102,11 +109,13 @@ int main(int argc, char **argv) {
    char spec[1024];
    snprintf(spec, sizeof(spec), "%s:%s:%s", job_id_str, client_host, client_port_str);
 
-   lList *ref_list = nullptr;
-   ocs::tom::Element<ocs::tom::ID> idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
+   auto refs = ocs::tom::ListPtr<ocs::tom::ID>::create("reconnect ref");
+   const auto idep = refs->emplace_back<ID_str>(spec);
    ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
    ocs::tom::set<ID_force>(idep, 0);
 
+   /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+   lList *ref_list = refs.release();
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
                                    ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
 

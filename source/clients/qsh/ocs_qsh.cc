@@ -111,8 +111,13 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_jsv.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
@@ -306,7 +311,7 @@ static void forward_signal(int sig) {
  * @param port reference to port number; set to the bound port on success
  * @param port_range RN_Type list of port ranges, or nullptr for OS-assigned port
  *
- * @return socket file descriptor, or 0 if listen() failed ***************************************************************************
+ * @return socket file descriptor, or 0 if listen() failed
  */
 static int open_qrsh_socket(int *port, const lList *port_range) {
    DENTER(TOP_LAYER);
@@ -314,7 +319,9 @@ static int open_qrsh_socket(int *port, const lList *port_range) {
    struct sockaddr_in server;
    socklen_t length;
    int sock = -1;
-   bool use_range = (port_range != nullptr && lGetNumberOfElem(port_range) > 0);
+   /* range_list_parse_from_string() creates the list with RN_Type, so it is wrapped unchecked */
+   const auto port_ranges = ocs::tom::ConstList<ocs::tom::RN>::from_typed(port_range);
+   bool use_range = (port_ranges != nullptr && !port_ranges.empty());
 
    if (!use_range) {
       // OS-assigned ephemeral port
@@ -344,7 +351,7 @@ static int open_qrsh_socket(int *port, const lList *port_range) {
       // SO_REUSEADDR lets us bind to a port still in TIME_WAIT from a prior qrsh
       // run; without it, rapid test repetition or back-to-back jobs can exhaust
       // the configured range.
-      for (const lListElem *rep = lFirst(port_range); rep && sock == -1; rep = lNext(rep)) {
+      for (auto rep = port_ranges.front(); rep && sock == -1; rep = rep.next()) {
          uint32_t min  = ocs::tom::get<RN_min>(rep);
          uint32_t max  = ocs::tom::get<RN_max>(rep);
          uint32_t step = ocs::tom::get<RN_step>(rep);
@@ -853,7 +860,6 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
  *
  *       MT-NOTE
  *       get_client_name is thread safe
- *       ***************************************************************************
  */
 static const char *
 get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
@@ -861,11 +867,6 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
 
    /* this is what we return */
    const char *client_name  = nullptr;
-
-   /* config lists and entries to retrieve client_name from qmaster */
-   lList     *conf_list       = nullptr;
-   lListElem *global          = nullptr;
-   lListElem *local           = nullptr;
 
    /* session type and config entry name */
    const char *session_type;
@@ -909,23 +910,25 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
       config_name  = "qlogin_command";
    }
 
-   /* get configuration from qmaster */
-   if (ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local) ||
-      merge_configuration(nullptr, progid, cell_root, global, local, &conf_list)) {
+   /* get configuration from qmaster; the configuration objects come as CONF_Type and the
+    * merged list as CF_Type, so they are taken over unchecked */
+   lListElem *global_out = nullptr;
+   lListElem *local_out = nullptr;
+   lList *conf_out = nullptr;
+   const bool failed = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global_out, &local_out) ||
+                       merge_configuration(nullptr, progid, cell_root, global_out, local_out, &conf_out);
+   const auto global = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(global_out);
+   const auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_out);
+   const auto conf_list = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(conf_out);
+   if (failed) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
-      lFreeList(&conf_list);
-      lFreeElem(&global);
-      lFreeElem(&local);
       DRETURN(nullptr);
    }
 
    /* search for config entry */
-   ocs::tom::ConstElement<ocs::tom::CF> qlogin_cmd_elem = ocs::tom::find_first<CF_name>(conf_list, config_name);
+   ocs::tom::ConstElement<ocs::tom::CF> qlogin_cmd_elem = conf_list->find_first<CF_name>(config_name);
    if (qlogin_cmd_elem == nullptr) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
-      lFreeList(&conf_list);
-      lFreeElem(&global);
-      lFreeElem(&local);
       DRETURN(nullptr);
    }
 
@@ -962,11 +965,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
       g_new_interactive_job_support = true;
    }
 
-   lFreeList(&conf_list);
-   lFreeElem(&global);
-   lFreeElem(&local);
-
-   return client_name;
+   DRETURN(client_name);
 }
 
 /**
@@ -980,10 +979,12 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
  * @param is_qlogin are we treating a qlogin call
  * @param is_rsh are we treating a qrsh call
  * @param is_rlogin are we treating a qrsh call without commands (-> rlogin)
+ * @return none
  */
 static void set_job_info(lListElem *job, const char *name, int is_qlogin,
                          int is_rsh, int is_rlogin) {
-   lList *stdout_stderr_path = nullptr;
+   DENTER(TOP_LAYER);
+
    uint32_t jb_now = ocs::tom::get<JB_type>(job);
    const char *job_name  = ocs::tom::get<JB_job_name>(job);
 
@@ -1016,10 +1017,14 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
    ocs::tom::set<JB_type>(job, jb_now);
    ocs::tom::set<JB_job_name>(job, job_name);
 
-   cull_parse_path_list(&stdout_stderr_path, "/dev/null");
-   ocs::tom::set<JB_stdout_path_list>(job, lCopyList("stdout_path_list", stdout_stderr_path));
-   ocs::tom::set<JB_stderr_path_list>(job, lCopyList("stderr_path_list", stdout_stderr_path));
-   lFreeList(&stdout_stderr_path);
+   lList *paths_out = nullptr;
+   cull_parse_path_list(&paths_out, "/dev/null");
+   /* cull_parse_path_list() creates the list with PN_Type, so it is taken over unchecked */
+   const auto stdout_stderr_path = ocs::tom::ListPtr<ocs::tom::PN>::from_typed(paths_out);
+   ocs::tom::set<JB_stdout_path_list>(job, stdout_stderr_path->clone("stdout_path_list"));
+   ocs::tom::set<JB_stderr_path_list>(job, stdout_stderr_path->clone("stderr_path_list"));
+
+   DRETURN_VOID;
 }
 
 /**
@@ -1041,15 +1046,17 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
  *      mechanism, e.g. passing each argument as a line over file (not possible)
  *      or a socket connection.
  *
- *      ***************************************************************************
+ *
+ * @return none
  */
 static void set_command_to_env(lList *envlp, lList *opts_qrsh) {
+   DENTER(TOP_LAYER);
+
    dstring buffer = DSTRING_INIT;
 
    if (opts_qrsh) {
-      const lListElem *ep;
-
-      ep = lFirst(opts_qrsh);
+      /* opts_qrsh is created with the descriptor of the SPA_Type command line, so it is wrapped unchecked */
+      auto ep = ocs::tom::ConstList<ocs::tom::SPA>::from_typed(opts_qrsh).front();
       if (ep) {
          char delimiter[2];
          const char *help = nullptr;
@@ -1058,7 +1065,7 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh) {
          if (help != nullptr) {
             sge_dstring_copy_string(&buffer, help);
          }
-         while((ep = lNext(ep)) != nullptr) {
+         while ((ep = ep.next()) != nullptr) {
             const char *arg = ocs::tom::get<SPA_argval_lStringT>(ep);
             sge_dstring_append(&buffer, delimiter);
             if (arg != nullptr) {
@@ -1076,6 +1083,8 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh) {
 
    var_list_set_string(&envlp, "QRSH_COMMAND", sge_dstring_get_string(&buffer));
    sge_dstring_free(&buffer);
+
+   DRETURN_VOID;
 }
 
 /**
@@ -1226,6 +1235,12 @@ void block_notification_signals() {
  *      RECONNECT_REQUEST_MSG / RECONNECT_ACCEPT_MSG, and resumes the PTY bridge.
  *
  * On any failure before run_ijs_server, returns non-zero so the caller can sge_exit.
+ *
+ * @param job_id_str the job to reconnect to, as given on the command line
+ * @param communication_framework the commlib framework (TCP or TLS) for the IJS server
+ * @param qualified_hostname the name of this host
+ * @param username the user running qrsh
+ * @return the exit status of the remote session, or non-zero when the reconnect failed
  */
 static int do_qrsh_reconnect(const char *job_id_str,
                              cl_framework_t communication_framework,
@@ -1236,34 +1251,35 @@ static int do_qrsh_reconnect(const char *job_id_str,
    // Build port_range_list from cluster config (same as the normal startup path).
    char *port_range_str = mconf_get_port_range();
    lList *alp_pr = nullptr;
-   lList *port_range_list = nullptr;
+   lList *ranges_out = nullptr;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
-      range_list_parse_from_string(&port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+      range_list_parse_from_string(&ranges_out, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
       lFreeList(&alp_pr);
    }
    sge_free(&port_range_str);
+   /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
+   auto port_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
 
    set_builtin_ijs_signals_and_handlers();
 
    COMM_HANDLE *comm_handle = nullptr;
    DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
    int rc = start_ijs_server(communication_framework, qualified_hostname, username,
-                             port_range_list, &comm_handle, &err_msg);
+                             *port_range_list, &comm_handle, &err_msg);
    if (rc != 0 || comm_handle == nullptr) {
       ERROR("qrsh -reconnect: failed to start IJS commlib server: %s",
             sge_dstring_get_string(&err_msg));
-      lFreeList(&port_range_list);
       DRETURN(1);
    }
    int my_port = comm_handle->service_port;
-   lFreeList(&port_range_list);
+   port_range_list.reset();
 
    // GDI TRIGGER request encoding: <job_id>:<my_host>:<my_port> in ID_str.
    char spec[1024];
    snprintf(spec, sizeof(spec), "%s:%s:%d", job_id_str, qualified_hostname, my_port);
 
-   lList *ref_list = nullptr;
-   ocs::tom::Element<ocs::tom::ID> idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
+   auto refs = ocs::tom::ListPtr<ocs::tom::ID>::create("reconnect ref");
+   const auto idep = refs->emplace_back<ID_str>(spec);
    ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
    ocs::tom::set<ID_force>(idep, 0);
 
@@ -1288,6 +1304,8 @@ static int do_qrsh_reconnect(const char *job_id_str,
    }
 #endif
 
+   /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+   lList *ref_list = refs.release();
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
                                           ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
 
@@ -1339,6 +1357,15 @@ static int do_qrsh_reconnect(const char *job_id_str,
    DRETURN(rc != 0 ? rc : exit_status);
 }
 
+/**
+ * @brief Entry point of qsh, qrsh and qlogin
+ *
+ * The program name decides which of the three interactive clients runs.
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments
+ * @return the exit status of the client or of the remote command
+ */
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qsh");
 
@@ -1765,12 +1792,14 @@ int main(int argc, const char **argv) {
    // fetch IJS escape character (default '~', '\0' = disabled via ijs_escape_char=none)
    char ijs_escape_char = mconf_get_ijs_escape_char();
    lList *alp_pr = nullptr;
-   lList *port_range_list = nullptr;
+   lList *ranges_out = nullptr;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
-      range_list_parse_from_string(&port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+      range_list_parse_from_string(&ranges_out, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
       lFreeList(&alp_pr);
    }
    sge_free(&port_range_str);
+   /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
+   auto port_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
 
    if (!g_new_interactive_job_support) {
       /*
@@ -1781,7 +1810,7 @@ int main(int argc, const char **argv) {
       int my_port = 0;
       lList *envlp = nullptr;
 
-      sock = open_qrsh_socket(&my_port, port_range_list);
+      sock = open_qrsh_socket(&my_port, *port_range_list);
       snprintf(buffer, sizeof(buffer), "%s:%d", qualified_hostname, my_port);
 
       if ((envlp = ocs::tom::get<JB_env_list>(job)) == nullptr) {
@@ -1799,7 +1828,8 @@ int main(int argc, const char **argv) {
       set_builtin_ijs_signals_and_handlers();
 
       /* then start the commlib server */
-      ret = start_ijs_server(communication_framework, qualified_hostname, username, port_range_list, &comm_handle, &err_msg);
+      ret = start_ijs_server(communication_framework, qualified_hostname, username, *port_range_list,
+                             &comm_handle, &err_msg);
       if (ret != 0) {
          if (ret == 1) {
             ERROR(MSG_QSH_CREATINGCOMMLIBSERVER_S, sge_dstring_get_string(&err_msg));
@@ -1816,7 +1846,7 @@ int main(int argc, const char **argv) {
       // They will be used in sge_qexecve().
       write_builtin_ijs_connection_data_to_job_object(qualified_hostname, comm_handle, job, opts_qrsh);
    }
-   lFreeList(&port_range_list);
+   port_range_list.reset();
 
    /*
    ** if environment QRSH_WRAPPER is set, pass it through environment

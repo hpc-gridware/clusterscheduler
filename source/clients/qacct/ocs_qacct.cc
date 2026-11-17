@@ -72,8 +72,13 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/tom/ocs_tom_QAJ.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Sort.h"
 
 #include "comm/commlib.h"
 
@@ -154,7 +159,7 @@ typedef struct {
 static void qacct_usage(FILE *err_fp);
 static void print_full(int length, const char* string);
 static void print_full_ulong(int length, uint32_t value);
-static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data );
+static void calc_column_sizes(ocs::tom::ConstElement<ocs::tom::QAJ> ep, sge_qacct_columns *column_size_data);
 static void showjob(sge_rusage_type *dusage);
 static bool get_qacct_lists(lList **alpp,
                             lList **ppcomplex, lList **ppqeues, lList **ppexechosts,
@@ -163,23 +168,15 @@ static void free_qacct_lists(lList **ppcomplex, lList **ppqeues, lList **ppexech
 static int sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_options *options,
                            std::string &acct_file_line);
 
-/*
-** NAME
-**   main
-** PARAMETER
-**
-** RETURN
-**    0     - ok
-**   -1     - invalid command line
-**   < -1   - errors
-** EXTERNAL
-**   fp
-**   path
-**   me
-**   prognames
-** DESCRIPTION
-**   main routine for qacct SGE client
-*/
+/**
+ * @brief Main routine of the qacct client
+ *
+ * Uses the globals fp, path, me and prognames.
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments
+ * @return 0 if ok, -1 on an invalid command line, < -1 on other errors
+ */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qacct");
 
@@ -203,8 +200,8 @@ int main(int argc, char **argv) {
    lList *exechost_list = nullptr;
    lList *hgrp_list = nullptr;
    lList *queueref_list = nullptr;
-   lList *sorted_list = nullptr;
-   lSortOrder *sort_order = nullptr;
+   ocs::tom::ListPtr<ocs::tom::QAJ> sorted_list;
+   ocs::tom::SortOrder<ocs::tom::QAJ> sort_order;
    int is_path_setup = 0;
    uint32_t line = 0;
    const char *acct_file = nullptr;
@@ -345,27 +342,27 @@ int main(int argc, char **argv) {
             qacct_usage(stderr);
             DRETURN(1);
          } else {
-            lList* task_id_range_list = nullptr;
+            lList *ranges_out = nullptr;
             lList* answer = nullptr;
 
             ii++;
-            range_list_parse_from_string(&task_id_range_list, &answer,
-                                         argv[ii], false, true, INF_NOT_ALLOWED);
-            if (task_id_range_list == nullptr) {
+            range_list_parse_from_string(&ranges_out, &answer, argv[ii], false, true, INF_NOT_ALLOWED);
+            /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
+            const auto task_id_ranges = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
+            if (task_id_ranges == nullptr) {
                lFreeList(&answer);
                fprintf(stderr, MSG_HISTORY_INVALIDLISTOFTASKIDRANGES_S , argv[ii]);
                fprintf(stderr, "\n");
                qacct_usage(stderr);
                DRETURN(1);
             }
-            options.taskstart = ocs::tom::get<RN_min>(lFirst(task_id_range_list));
-            options.taskend = ocs::tom::get<RN_max>(lFirst(task_id_range_list));
-            options.taskstep = ocs::tom::get<RN_step>(lFirst(task_id_range_list));
+            const auto first_range = task_id_ranges->front();
+            options.taskstart = ocs::tom::get<RN_min>(first_range);
+            options.taskend = ocs::tom::get<RN_max>(first_range);
+            options.taskstep = ocs::tom::get<RN_step>(first_range);
             if (options.taskstep == 0) {
                options.taskstep = 1;
             }
-
-            lFreeList(&task_id_range_list);
          }
       }
       /*
@@ -606,7 +603,8 @@ int main(int argc, char **argv) {
       bool has_hostname = false;
       bool has_domain = true;
 
-      for_each_ep_lv(qref_pattern, queueref_list) {
+      /* emplace_back<QR_name>() creates the list with QR_Type, so it is wrapped unchecked */
+      for (const auto qref_pattern : ocs::tom::ConstList<ocs::tom::QR>::from_typed(queueref_list)) {
          name = ocs::tom::get<QR_name>(qref_pattern);
          cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain);
@@ -621,7 +619,7 @@ int main(int argc, char **argv) {
          from the qmaster, but we have to work on the user input and generate the
          same data structure, that we would have gotten with the qmaster functions*/
       if (!has_domain) {
-         for_each_ep_lv(qref_pattern, queueref_list) {
+         for (const auto qref_pattern : ocs::tom::ConstList<ocs::tom::QR>::from_typed(queueref_list)) {
             dstring qi_name = DSTRING_INIT;
             const char *tmp_str = nullptr;
             name = ocs::tom::get<QR_name>(qref_pattern);
@@ -715,19 +713,13 @@ int main(int argc, char **argv) {
 
    if (options.hostflag || options.queueflag || options.groupflag || options.ownerflag || options.projectflag ||
        options.departmentflag || options.granted_peflag || options.slotsflag || options.arflag) {
-      sorted_list = lCreateList("sorted_list", QAJ_Type);
-      sort_order = lParseSortOrderVarArg(QAJ_Type, "%I+ %I+ %I+ %I+ %I+ %I+ %I+ %I+ %I+",
-                                         QAJ_host,
-                                         QAJ_queue,
-                                         QAJ_group,
-                                         QAJ_owner,
-                                         QAJ_project,
-                                         QAJ_department,
-                                         QAJ_granted_pe,
-                                         QAJ_slots,
-                                         QAJ_arid);
+      sorted_list = ocs::tom::ListPtr<ocs::tom::QAJ>::create("sorted_list");
+      sort_order = ocs::tom::sort_order<ocs::tom::asc<QAJ_host>, ocs::tom::asc<QAJ_queue>, ocs::tom::asc<QAJ_group>,
+                                        ocs::tom::asc<QAJ_owner>, ocs::tom::asc<QAJ_project>,
+                                        ocs::tom::asc<QAJ_department>, ocs::tom::asc<QAJ_granted_pe>,
+                                        ocs::tom::asc<QAJ_slots>, ocs::tom::asc<QAJ_arid>>();
       summary_view = true;
-      if (sorted_list == nullptr || sort_order == nullptr) {
+      if (!sorted_list || !sort_order) {
          ERROR(SFNMAX, MSG_HISTORY_NOTENOUGTHMEMORYTOCREATELIST);
          goto QACCT_EXIT;
       }
@@ -798,7 +790,7 @@ int main(int argc, char **argv) {
       ** collect information for sorted output and sums
       */
       if (summary_view) {
-         lListElem *ep = lFirstRW(sorted_list);
+         auto ep = sorted_list->front();
 
          /*
          ** find either the correct place to insert the next element
@@ -815,7 +807,7 @@ int main(int argc, char **argv) {
                 (options.groupflag && (sge_strnullcmp(ocs::tom::get<QAJ_group>(ep) , dusage.group))) ||
                 (options.arflag && (ocs::tom::get<QAJ_arid>(ep) != dusage.ar))
                 )){
-             ep = lNextRW(ep);
+             ep = ep.next();
          }
          /*
          ** is this now the element that we want
@@ -843,9 +835,7 @@ int main(int argc, char **argv) {
             ocs::tom::add<QAJ_io>(ep, dusage.io);
             ocs::tom::add<QAJ_iow>(ep, dusage.iow);
          } else {
-            lListElem *new_ep;
-
-            new_ep = lCreateElem(QAJ_Type);
+            auto new_ep = ocs::tom::ElementPtr<ocs::tom::QAJ>::create();
 
             if (options.hostflag && dusage.hostname)
                ocs::tom::set<QAJ_host>(new_ep, dusage.hostname);
@@ -874,7 +864,7 @@ int main(int argc, char **argv) {
             ocs::tom::set<QAJ_io>(new_ep,  dusage.io);
             ocs::tom::set<QAJ_iow>(new_ep, dusage.iow);
 
-            lInsertSorted(sort_order, new_ep, sorted_list);
+            sorted_list->insert_sorted(sort_order, std::move(new_ep));
          }
       } /* endif sortflags */
    } /* end while sge_read_rusage */
@@ -945,9 +935,9 @@ int main(int argc, char **argv) {
       column_sizes.granted_pe = strlen(options.granted_pe) + 1;
    }
 
-   calc_column_sizes(lFirst(sorted_list), &column_sizes);
+   calc_column_sizes(sorted_list->front(), &column_sizes);
    {
-      const lListElem *ep = nullptr;
+      ocs::tom::ConstElement<ocs::tom::QAJ> ep;
       int dashcnt = 0;
       char title_array[500];
 
@@ -1004,7 +994,7 @@ int main(int argc, char **argv) {
       printf("\n");
 
       if (summary_view) {
-         ep = lFirst(sorted_list);
+         ep = sorted_list->front();
       }
 
       while (totals.ru_wallclock) {
@@ -1100,7 +1090,7 @@ int main(int argc, char **argv) {
                    ocs::tom::get<QAJ_io>(ep),
                    ocs::tom::get<QAJ_iow>(ep));
 
-            ep = lNext(ep);
+            ep = ep.next();
             if (ep == nullptr) {
                break;
             }
@@ -1118,8 +1108,8 @@ int main(int argc, char **argv) {
       } /* end while */
    } /* end block */
 
-   lFreeList(&sorted_list);
-   lFreeSortOrder(&sort_order);
+   sorted_list.reset();
+   sort_order = ocs::tom::SortOrder<ocs::tom::QAJ>();
 
    /*
    ** problem: other clients evaluate some status here
@@ -1134,8 +1124,8 @@ QACCT_EXIT:
    ret = 1;
 QACCT_EXIT_BUT_NO_ERROR:
    lFreeList(&(dusage.other_usage));
-   lFreeList(&sorted_list);
-   lFreeSortOrder(&sort_order);
+   sorted_list.reset();
+   sort_order = ocs::tom::SortOrder<ocs::tom::QAJ>();
    sge_free(&(options.group));
    sge_free(&(options.host));
    free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
@@ -1169,10 +1159,16 @@ static void print_full(int full_length, const char* string) {
    DRETURN_VOID;
 }
 
-static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data) {
+/**
+ * @brief Widen the columns of the summary view to the values of the summary elements
+ * @param ep the first summary element; it and the ones after it are measured, an empty handle measures nothing
+ * @param column_size_data the column widths, raised where a value is wider
+ * @return none
+ */
+static void calc_column_sizes(const ocs::tom::ConstElement<ocs::tom::QAJ> ep, sge_qacct_columns *column_size_data) {
    DENTER(TOP_LAYER);
 
-   const lListElem* lep = nullptr;
+   ocs::tom::ConstElement<ocs::tom::QAJ> lep;
    if (column_size_data == nullptr) {
       DPRINTF("no column size data!\n");
       DRETURN_VOID;
@@ -1293,7 +1289,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             column_size_data->arid = tmp_length + 1;
          }
 
-         lep = lNext(lep);
+         lep = lep.next();
       }
    } else {
      DPRINTF("got nullptr list\n");
@@ -1453,8 +1449,11 @@ format_custom_usage(double value, char (&buffer)[64]) {
 /** @brief Print one accounting record in full, the `qacct -j` output
  *
  * @param dusage one line of the accounting file, already parsed
+ * @return none
  */
 static void showjob(sge_rusage_type *dusage) {
+   DENTER(TOP_LAYER);
+
    DSTRING_STATIC(dstr_buffer, 100);
    dstring *pdstr_buffer = &dstr_buffer;
 
@@ -1552,7 +1551,8 @@ static void showjob(sge_rusage_type *dusage) {
 
       // print the custom usage values (reporting_params usage_patterns) which are not
       // already printed as standard attribute. CS-849: a string value is printed as it is.
-      for_each_ep_lv(ep, dusage->other_usage) {
+      // the record parser builds the custom usage with UA_Type, so it is wrapped unchecked
+      for (const auto ep : ocs::tom::ConstList<ocs::tom::UA>::from_typed(dusage->other_usage)) {
          const char *name = ocs::tom::get<UA_name>(ep);
          if (!is_showjob_standard_name(name)) {
             const char *svalue = ocs::tom::get<UA_svalue>(ep);
@@ -1564,6 +1564,8 @@ static void showjob(sge_rusage_type *dusage) {
    }
 
    sge_dstring_free(pdstr_buffer);
+
+   DRETURN_VOID;
 }
 
 /*
@@ -1745,6 +1747,15 @@ sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_o
    DRETURN(ret);
 }
 
+/**
+ * @brief Whether the queue instance of an accounting record matches one of the -q patterns
+ *
+ * Called for every record read, so it carries no DENTER.
+ *
+ * @param d the accounting record
+ * @param queue_name_list the queue instance patterns (`QR_Type`)
+ * @return true if a pattern matches
+ */
 static bool matches_queue_name_list(sge_rusage_type *d, const lList *queue_name_list) {
    bool ret = false;
 
@@ -1752,7 +1763,8 @@ static bool matches_queue_name_list(sge_rusage_type *d, const lList *queue_name_
    const char *qinstance;
    qinstance = sge_dstring_sprintf(&dstr, "%s@%s", d->qname, d->hostname);
 
-   for_each_ep_lv(ep, queue_name_list) {
+   /* emplace_back<QR_name>() and qref_list_resolve() create the list with QR_Type, so it is wrapped unchecked */
+   for (const auto ep : ocs::tom::ConstList<ocs::tom::QR>::from_typed(queue_name_list)) {
       if (fnmatch(ocs::tom::get<QR_name>(ep), qinstance, 0) == 0) {
          ret = true;
          break;

@@ -38,5 +38,14 @@
  */
 
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "tom/ocs_Element.h"
 
-bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar);
+/** @brief Build an advance reservation from the parsed `qrsub` command line
+ *
+ * @param pcmdline the parsed options (`SPA_Type`)
+ * @param alpp used to return error messages
+ * @param ar the advance reservation the options are written into
+ * @return true on success; false with `alpp` filled otherwise
+ */
+bool sge_parse_qrsub(lList *pcmdline, lList **alpp, ocs::tom::Element<ocs::tom::AR> ar);

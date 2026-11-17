@@ -579,10 +579,12 @@ bool get_user_home(dstring *home_dir, const char *user, lList **answer_list) {
    const passwd *pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
    if (pwd == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR, MSG_USER_INVALIDNAMEX_S, user);
+      sge_free(&buffer);
       DRETURN(false);
    }
    if (pwd->pw_dir == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EDISK, ANSWER_QUALITY_ERROR, MSG_USER_NOHOMEDIRFORUSERX_S, user);
+      sge_free(&buffer);
       DRETURN(false);
    }
 

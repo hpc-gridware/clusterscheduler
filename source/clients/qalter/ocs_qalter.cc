@@ -56,7 +56,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -264,7 +266,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    DENTER(TOP_LAYER); 
 
    lListElem *ep  = nullptr;
-   lListElem *job = nullptr;
    lListElem *rep = nullptr;
    uint32_t jobid;
    int i;
@@ -290,7 +291,8 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          that are selected for modification by the options 
    */
    /* we need this job to parse our options in */
-   job = lCreateElem(JB_Type);
+   const auto job_owner = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   const auto job = job_owner.get();   // freed with job_owner on every return
    if (job == nullptr) {
       answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
@@ -316,7 +318,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       lRemoveElem(cmdline, &ep);
       answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
                               SFNMAX, MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
-      lFreeElem(&job);
       DRETURN(answer);
    }
 
@@ -494,7 +495,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          if (!getcwd(tmp_str, sizeof(tmp_str))) {
             answer_list_add(&answer, MSG_ANSWER_GETCWDFAILED,
                             STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            lFreeElem(&job);
             DRETURN(answer);
          }
 
@@ -502,7 +502,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             if (getcwd(tmp_str2, sizeof(tmp_str2)) == nullptr) {
                answer_list_add(&answer, MSG_ANSWER_GETCWDFAILED,
                                STATUS_EDISK, ANSWER_QUALITY_ERROR);
-               lFreeElem(&job);
                DRETURN(answer);
             }
 
@@ -511,7 +510,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
                answer_list_add_sprintf(&answer, STATUS_EDISK, ANSWER_QUALITY_ERROR,
                                        MSG_FILE_CHDIR_SS, tmp_str, sge_strerror(errno, &ds));
                sge_dstring_free(&ds);
-               lFreeElem(&job);
                DRETURN(answer);
             }
 
@@ -570,13 +568,14 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
 
    /* STR_PSEUDO_JOBID */
    if (ocs::tom::find_first<SPA_switch_val>(cmdline, STR_PSEUDO_JOBID)) {
-      lList *jid_list = nullptr;
-      if (!parse_multi_jobtaskslist(&cmdline, STR_PSEUDO_JOBID, &answer, &jid_list, true, 0)) {
-         lFreeList(&jid_list);
-         lFreeElem(&job);
+      lList *jids_out = nullptr;
+      const bool parsed = parse_multi_jobtaskslist(&cmdline, STR_PSEUDO_JOBID, &answer, &jids_out, true, 0);
+      /* parse_multi_jobtaskslist() creates the list with ID_Type, so it is taken over unchecked */
+      auto jid_list = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(jids_out);
+      if (!parsed) {
          DRETURN(answer);
       }                                                 
-      ocs::tom::set<JB_job_identifier_list>(job, jid_list);
+      ocs::tom::set<JB_job_identifier_list>(job, std::move(jid_list));
    } 
 
    if (me_who != QRESUB) {
@@ -873,7 +872,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    if (job_field[1] == NoName) {
       answer_list_add(&answer, MSG_JOB_NOJOBATTRIBUTESELECTED, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      lFreeElem(&job);
       DRETURN(answer);
    }
 
@@ -892,7 +890,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    if (!(what = lIntVector2What(JB_Type, job_field))) {
       answer_list_add(&answer, MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR, 
                         STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      lFreeElem(&job);
       DRETURN(answer);
    }
 
@@ -901,7 +898,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    if (rdp == nullptr) {
       answer_list_add(&answer, MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      lFreeElem(&job);
       DRETURN(answer);
    }
 
@@ -917,13 +913,13 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    }
 
    /* get next job id from cmd line */
-   for_each_rw(ep, static_cast<const lList *>(ocs::tom::get<JB_job_identifier_list>(job))) {
+   for (const auto jid : ocs::tom::get<JB_job_identifier_list>(job)) {
       lList *task_list = nullptr;
       lListElem *task;
       // built once and never released, so every use only takes a reference
       static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
 
-      jobid = atol(ocs::tom::get<ID_str>(ep));
+      jobid = atol(ocs::tom::get<ID_str>(jid));
 /*
       if ((all_or_jidlist == NOTINIT) && !strcmp(lGetString(ep, ID_str), "all")) {
          all_or_jidlist = ALL;
@@ -936,18 +932,16 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          (*all_jobs) = 0; 
          DPRINTF("got job " sge_u32 " from parsing\n", jobid);
       } else {
-         if (!strcmp(ocs::tom::get<ID_str>(ep), "all") || (all_or_jidlist == ALL)) {
+         if (!strcmp(ocs::tom::get<ID_str>(jid), "all") || (all_or_jidlist == ALL)) {
             answer_list_add(&answer, MSG_ANSWER_ALLANDJOBIDSARENOTVALID, 
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            lFreeElem(&job);
             ocs_cull_descr_release(&rdp);
             DRETURN(answer);
-         } else if (!strcmp(ocs::tom::get<ID_str>(ep), "dummy")) {
+         } else if (!strcmp(ocs::tom::get<ID_str>(jid), "dummy")) {
             /* we will add a dummy-object to send parameters to qmaster */ 
          } else {
             answer_list_add(&answer, MSG_ANSWER_0ISNOTAVALIDJOBID,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            lFreeElem(&job);
             ocs_cull_descr_release(&rdp);
             DRETURN(answer);
          }
@@ -963,7 +957,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       else{
          char *name = nullptr;
          const char *job_name = ocs::tom::get<JB_job_name>(job);
-         int size = strlen(ocs::tom::get<ID_str>(ep));
+         int size = strlen(ocs::tom::get<ID_str>(jid));
          if (job_name) {
             size += strlen(job_name); 
          }   
@@ -971,7 +965,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
           
          name = sge_malloc(size);
          /* format: <delimiter>old_name<delimiter>new_name */
-         snprintf(name, size, "%s%s%s%s", JOB_NAME_DEL, ocs::tom::get<ID_str>(ep), JOB_NAME_DEL, job_name?job_name:"");
+         snprintf(name, size, "%s%s%s%s", JOB_NAME_DEL, ocs::tom::get<ID_str>(jid), JOB_NAME_DEL, job_name?job_name:"");
          rep = lAddElemStr(prequestlist, JB_job_name, name, rdp);
          sge_free(&name);
       }   
@@ -979,38 +973,35 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       if (!rep) {   
          answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                                  MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-         lFreeElem(&job);
          ocs_cull_descr_release(&rdp);
          DRETURN(answer);
       }
 
       /* build task list from ID_Type from JB_job_identifier */
       
-      if (is_hold_option && !ocs::tom::get<ID_ja_structure>(ep)) {
+      if (is_hold_option && !ocs::tom::get<ID_ja_structure>(jid)) {
          task = lAddElemUlong(&task_list, JAT_task_number, 0, task_descr);      
-         ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(ep));
-      } else if (ocs::tom::get<ID_ja_structure>(ep)) {
-         for (ocs::tom::ConstElement<ocs::tom::RN> range : ocs::tom::get<ID_ja_structure>(ep)) {
+         ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(jid));
+      } else if (ocs::tom::get<ID_ja_structure>(jid)) {
+         for (ocs::tom::ConstElement<ocs::tom::RN> range : ocs::tom::get<ID_ja_structure>(jid)) {
             uint32_t start = ocs::tom::get<RN_min>(range);
             uint32_t end = ocs::tom::get<RN_max>(range);
             uint32_t step = ocs::tom::get<RN_step>(range);
             for (;start<=end; start += step) {
                task = lAddElemUlong(&task_list, JAT_task_number, 
                                        start, task_descr);
-               ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(ep));
+               ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(jid));
             } 
          }
       }
       if ((!ocs::tom::has<JB_ja_tasks>(rep)) && (lGetNumberOfElem(task_list))){
          answer_list_add_sprintf(&answer, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  SFNMAX, MSG_OPTIONWORKSONLYONJOB);
-         lFreeElem(&job);
          ocs_cull_descr_release(&rdp);
          DRETURN(answer);
       }
       ocs::tom::set<JB_ja_tasks>(job, task_list);
-      ocs::tom::set<JB_ja_structure>(job, 
-               lCopyList("", ocs::tom::get<ID_ja_structure>(ep)));
+      ocs::tom::set<JB_ja_structure>(job, ocs::tom::get<ID_ja_structure>(jid).clone(""));
 
       /* fill in fields of the job */
       {
@@ -1102,7 +1093,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       }
    }
 
-   lFreeElem(&job);
    ocs_cull_descr_release(&rdp);
    DRETURN(answer);
 }

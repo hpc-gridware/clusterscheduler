@@ -51,8 +51,12 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -78,6 +82,12 @@ static bool answer_list_has_exit_code_error(lList **answer_list);
  */
 extern char **environ;
 
+/**
+ * @brief qmod: parse the command line and trigger the requested queue and job actions
+ * @param argc the number of arguments
+ * @param argv the arguments
+ * @return 0 when no answer reports an error, 1 otherwise; the process ends with sge_exit()
+ */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qmod");
    uint32_t force = 0;
@@ -127,7 +137,9 @@ int main(int argc, char **argv) {
       sge_exit(1);
    }
 
-   for_each_rw_lv(idep, ref_list) {
+   /* parse_multi_jobtaskslist() and id_list_build_from_str_list() create the list with ID_Type,
+    * so it is wrapped unchecked */
+   for (const auto idep : ocs::tom::List<ocs::tom::ID>::from_typed(ref_list)) {
       ocs::tom::set<ID_force>(idep, force);
    }
 
@@ -195,17 +207,17 @@ static bool answer_list_has_exit_code_error(lList **answer_list) {
 }
 
 
-/****
- **** sge_parse_cmdline_qmod (static)
- ****
- **** 'stage 1' parsing of qmod-options. Parses options
- **** with their arguments and stores them in ppcmdline.
- ****/
-static lList *sge_parse_cmdline_qmod(
-char **argv,
-char **envp,
-lList **ppcmdline
-) {
+/**
+ * @brief 'Stage 1' parsing of the qmod options
+ *
+ * Parses the options with their arguments and stores them in @p ppcmdline.
+ *
+ * @param argv the arguments, without the program name
+ * @param envp the process environment
+ * @param ppcmdline receives the parsed options (`SPA_Type`)
+ * @return the answer list with the parse errors, nullptr if there were none
+ */
+static lList *sge_parse_cmdline_qmod(char **argv, char **envp, lList **ppcmdline) {
    DENTER(TOP_LAYER);
 
 char **sp;
@@ -287,9 +299,6 @@ lList *alp = nullptr;
 
       /* -t */
       if (!strcmp("-t", *sp)) {
-         lList *task_id_range_list = nullptr;
-         lListElem *ep_opt;
-
          /* next field is path_name */
          sp++;
          if (*sp == nullptr) {
@@ -299,20 +308,22 @@ lList *alp = nullptr;
 
          DPRINTF("\"-t %s\"\n", *sp);
 
-         range_list_parse_from_string(&task_id_range_list, &alp, *sp,
-                                      false, true, INF_NOT_ALLOWED);
-         if (!task_id_range_list) {
+         lList *ranges_out = nullptr;
+         range_list_parse_from_string(&ranges_out, &alp, *sp, false, true, INF_NOT_ALLOWED);
+         /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
+         auto task_id_ranges = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
+         if (!task_id_ranges) {
             goto error;
          }
 
-         range_list_sort_uniq_compress(task_id_range_list, &alp, true);
-         if (lGetNumberOfElem(task_id_range_list) > 1) {
+         range_list_sort_uniq_compress(*task_id_ranges, &alp, true);
+         if (task_id_ranges->size() > 1) {
             answer_list_add(&alp, MSG_QCONF_ONLYONERANGE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             goto error;
          }
 
-         ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, task_id_range_list);
+         lListElem *ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_ranges));
 
          sp++;
          rp = sp;
@@ -345,13 +356,17 @@ error:
    DRETURN(alp);
 }
 
-/****
- **** sge_parse_qmod (static)
- ****
- **** 'stage 2' parsing of qmod-options. Gets the options from
- **** ppcmdline, sets the force and action flags and puts the
- **** queue/job-names/numbers in ppreflist.
- ****/
+/**
+ * @brief 'Stage 2' parsing of the qmod options
+ *
+ * Gets the options from @p ppcmdline, sets the force and action flags and puts
+ * the queue/job names/numbers in @p ppreflist.
+ *
+ * @param ppcmdline the parsed options (`SPA_Type`); the options served are removed
+ * @param ppreflist receives the queue and job references (`ID_Type`)
+ * @param pforce receives the -f flag
+ * @return the answer list with the errors, nullptr if there were none
+ */
 static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pforce) {
    DENTER(TOP_LAYER);
 
@@ -432,11 +447,13 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pfo
          if ((transitions[i] & QUEUE_DO_ACTION) == 0) {
             parse_multi_jobtaskslist(ppcmdline, options[i], &alp, ppreflist, true, transitions[i]);
          } else {
-            lList *queueList = nullptr;
-            if (parse_multi_stringlist( ppcmdline, options[i], &alp, &queueList, ST_Type, ST_name)){
-               id_list_build_from_str_list(ppreflist, &alp, queueList, transitions[i], *pforce);
+            lList *queues_out = nullptr;
+            const bool found = parse_multi_stringlist(ppcmdline, options[i], &alp, &queues_out, ST_Type, ST_name);
+            /* parse_multi_stringlist() creates the list with ST_Type, so it is taken over unchecked */
+            const auto queues = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(queues_out);
+            if (found) {
+               id_list_build_from_str_list(ppreflist, &alp, *queues, transitions[i], *pforce);
             }
-            lFreeList(&queueList);
          }
          i++;
       }

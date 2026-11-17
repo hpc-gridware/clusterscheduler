@@ -48,6 +48,9 @@
 
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -67,12 +70,18 @@
  */
 extern char **environ;
 
+/**
+ * @brief qrsub: parse the command line and request the advance reservation it describes
+ * @param argc the number of arguments
+ * @param argv the arguments
+ * @return 0 on success, 25 when qmaster asks to try again, 1 otherwise
+ */
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qrsub");
    lList *pcmdline = nullptr;
    lList *alp = nullptr;
    lList *ar_lp = nullptr;
-   lListElem *ar = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::AR> ar;
 
    /* Set up the program information name */
    sge_setup_sig_handlers(QRSUB);
@@ -130,9 +139,9 @@ int main(int argc, const char **argv) {
    /*
    ** stage 2 of command line parsing
    */
-   ar = lCreateElem(AR_Type);
+   ar = ocs::tom::ElementPtr<ocs::tom::AR>::create();
 
-   if (!sge_parse_qrsub(pcmdline, &alp, &ar)) {
+   if (!sge_parse_qrsub(pcmdline, &alp, ar.get())) {
       answer_list_output(&alp);
       lFreeList(&pcmdline);
       goto error_exit;
@@ -140,8 +149,12 @@ int main(int argc, const char **argv) {
 
    lFreeList(&pcmdline);
 
-   ar_lp = lCreateList(nullptr, AR_Type);
-   lAppendElem(ar_lp, ar);
+   {
+      auto ars = ocs::tom::ListPtr<ocs::tom::AR>::create(nullptr);
+      ars->push_back(std::move(ar));
+      /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+      ar_lp = ars.release();
+   }
 
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::AR_LIST, ocs::gdi::Command::ADD,
                  ocs::gdi::SubCommand::RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
