@@ -1447,18 +1447,15 @@ static uint32_t job_get_extreme_unenrolled_task_id(const ocs::tom::ConstElement<
                         : range_list_get_last_id(lGetList(job, lists[i]), nullptr);
    }
 
+   // all five lists the same way: the array dependency hold list (a_h) had its condition inverted,
+   // so its first or last id replaced the result instead of being compared with it (CS-3123)
    uint32_t ret = ids[0];
-   for (int i = 1; i < 4; i++) {
+   for (int i = 1; i < 5; i++) {
       if (ret > 0 && ids[i] > 0) {
          ret = find_min ? std::min(ret, ids[i]) : std::max(ret, ids[i]);
       } else if (ids[i] > 0) {
          ret = ids[i];
       }
-   }
-   if (ret == 0 && ids[4] > 0) {
-      ret = find_min ? std::min(ret, ids[4]) : std::max(ret, ids[4]);
-   } else if (ids[4] > 0) {
-      ret = ids[4];
    }
    return ret;
 }
