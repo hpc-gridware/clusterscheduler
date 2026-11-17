@@ -129,9 +129,13 @@ int main(int argc, char **argv) {
          ocs::tom::Element<ocs::tom::ID> id = ocs::tom::emplace_back<ID_str>(&ref_list, "0");
          ocs::tom::set<ID_user_list>(id, user_list);
       } else {
+         // every reference gets its own copy: the request list frees the sublist of each element, so
+         // one list shared by several elements was freed once per element (CS-3118)
+         const auto users = ocs::tom::ConstList<ocs::tom::ST>::from_typed(user_list);
          for (const auto id : refs) {
-            ocs::tom::set<ID_user_list>(id, user_list);
+            ocs::tom::set<ID_user_list>(id, users.clone(""));
          }
+         lFreeList(&user_list);
       }
    }
 
