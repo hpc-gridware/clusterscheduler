@@ -59,6 +59,7 @@ static int test_extensive_utilization();
 static int test_rsmap_utilization();
 static int test_rsmap_below();
 static int test_below_window_before_closed_period();
+static int test_binding_release();
 
 int main(int argc, char *argv[]) 
 {
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
    ret += test_rsmap_utilization();
    ret += test_rsmap_below();
    ret += test_below_window_before_closed_period();
+   ret += test_binding_release();
 
    if (ret != 0) {
       printf("\ntest failed!\n");
@@ -776,6 +778,129 @@ static int test_below_window_before_closed_period() {
       }
    }
 
+   lFreeElem(&cr);
+   return ret;
+}
+
+/**
+ * @brief Counts the cores a diagram entry holds as bound
+ *
+ * A used core is written in lower case in the topology string of RDE_binding_inuse.
+ *
+ * @param cr the slots entry (RUE_Type) of a host
+ * @param time the point in time
+ * @return the number of used cores at that time
+ */
+static int
+binding_used_cores(const lListElem *cr, u_long64 time) {
+   const lListElem *rde = rde_at_time(cr, time);
+   const char *binding = (rde != nullptr) ? lGetString(rde, RDE_binding_inuse) : nullptr;
+   int used = 0;
+
+   if (binding != nullptr) {
+      for (const char *c = binding; *c != '\0'; c++) {
+         if (*c == 'c') {
+            used++;
+         }
+      }
+   }
+   return used;
+}
+
+/**
+ * @brief Checks the number of bound cores at a point in time
+ *
+ * @param cr the slots entry (RUE_Type) of a host
+ * @param time the point in time
+ * @param expected the expected number of used cores
+ * @return 0 when the number matches, 1 otherwise
+ */
+static int
+check_binding(const lListElem *cr, u_long64 time, int expected) {
+   const lListElem *rde = rde_at_time(cr, time);
+   const char *binding = (rde != nullptr) ? lGetString(rde, RDE_binding_inuse) : nullptr;
+   int got = binding_used_cores(cr, time);
+
+   if (got != expected) {
+      printf("   FAIL: at " sge_u64 " expected %d bound cores, got %d (%s)\n",
+             time, expected, got, binding != nullptr ? binding : "NONE");
+      return 1;
+   }
+   printf("   ok: at " sge_u64 " %d bound cores (%s)\n", time, got, binding != nullptr ? binding : "NONE");
+   return 0;
+}
+
+/**
+ * @brief Creates a binding_to_use list with one topology string
+ *
+ * @param topology the internal topology string, used nodes in lower case
+ * @return the list (ST_Type), to be freed by the caller
+ */
+static lList *
+make_binding(const char *topology) {
+   lList *list = lCreateList("binding_to_use", ST_Type);
+   lAddElemStr(&list, ST_name, topology, ST_Type);
+   return list;
+}
+
+/**
+ * @brief Giving back a booking also gives back the cores bound with it
+ *
+ * The same call books and gives back, the second with a negated amount, e.g. when an advance
+ * reservation is deleted. The cores bound with the booking have to be free again afterwards,
+ * else every later request needing them is refused on that host.
+ */
+static int test_binding_release() {
+   int ret = 0;
+
+   printf("\n - test the release of bound cores - \n\n");
+
+   lListElem *cr = lCreateElem(RUE_Type);
+   lSetString(cr, RUE_name, "slots");
+
+   // two sockets with one core and two threads each: core 0 and core 1
+   lList *core0 = make_binding("(N(s(x(y(c(t)(t)))))(S(X(Y(C(T)(T))))))");
+   lList *core1 = make_binding("(N(S(X(Y(C(T)(T)))))(s(x(y(c(t)(t))))))");
+
+   printf("a reservation binding core 0, from 1000 for 200s\n");
+   utilization_add(cr, 1000, 200, 1, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core0, nullptr);
+   ret += check_binding(cr, 900, 0);
+   ret += check_binding(cr, 1000, 1);
+   ret += check_binding(cr, 1100, 1);
+   ret += check_binding(cr, 1200, 0);
+
+   printf("a reservation binding core 1, from 1100 for 200s\n");
+   utilization_add(cr, 1100, 200, 1, 101, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core1, nullptr);
+   ret += check_binding(cr, 1000, 1);
+   ret += check_binding(cr, 1100, 2);
+   ret += check_binding(cr, 1200, 1);
+   ret += check_binding(cr, 1300, 0);
+
+   printf("the first reservation is deleted\n");
+   utilization_add(cr, 1000, 200, -1, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core0, nullptr);
+   ret += check_binding(cr, 1000, 0);
+   ret += check_binding(cr, 1100, 1);
+   ret += check_binding(cr, 1200, 1);
+   ret += check_binding(cr, 1300, 0);
+   ret += check_binding(cr, 5000, 0);
+
+   printf("the second reservation is deleted\n");
+   utilization_add(cr, 1100, 200, -1, 101, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core1, nullptr);
+   ret += check_binding(cr, 1000, 0);
+   ret += check_binding(cr, 1100, 0);
+   ret += check_binding(cr, 1300, 0);
+   ret += check_binding(cr, 5000, 0);
+   if (lGetNumberOfElem(lGetList(cr, RUE_utilized)) != 0) {
+      printf("   FAIL: the diagram still has %d entries\n", lGetNumberOfElem(lGetList(cr, RUE_utilized)));
+      ret++;
+   }
+
+   lFreeList(&core0);
+   lFreeList(&core1);
    lFreeElem(&cr);
    return ret;
 }

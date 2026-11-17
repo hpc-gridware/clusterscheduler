@@ -637,9 +637,10 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
                               lGetNumberOfElem(rsmap_inuse) > 0);
 
    // The same call books and gives back, the second with a negated amount - an advance
-   // reservation being removed, a job being undebited. The instances follow the amount: they
-   // are taken from the start of the window and given back at its end, or the other way round.
-   const bool rsmap_taken = (utilization >= 0.0);
+   // reservation being removed, a job being undebited. The resource map instances and the
+   // bound cores follow the amount: they are taken from the start of the window and given
+   // back at its end, or the other way round.
+   const bool taken = (utilization >= 0.0);
 
    /* ensure the resource diagram is initialized */
    if (resource_diagram == nullptr) {
@@ -661,11 +662,11 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
             topo_binding_now.reset_topology(lGetString(start, RDE_binding_inuse));
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, true);
+                                                                binding_to_use_obj, taken);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(start, lGetList(start, RDE_resource_map_list), rsmap_inuse,
-         rsmap_taken);
+         taken);
       }
    } else {
       // no start element found, so we need to create one
@@ -689,10 +690,10 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
             topo_binding_now.reset_topology(binding_prev);
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, true);
+                                                                binding_to_use_obj, taken);
       }
       if (handle_rsmap) {
-         utilization_rsmap_set(start, rsmap_prev, rsmap_inuse, rsmap_taken);
+         utilization_rsmap_set(start, rsmap_prev, rsmap_inuse, taken);
       }
 
       // Insert the new element with our start time after the previous element that has an earlier start time
@@ -722,11 +723,11 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
             topo_binding_now.reset_topology(lGetString(thiz, RDE_binding_inuse));
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(thiz, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, true);
+                                                                binding_to_use_obj, taken);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(thiz, lGetList(thiz, RDE_resource_map_list), rsmap_inuse,
-         rsmap_taken);
+         taken);
       }
       prev = thiz;
       thiz = lNextRW(thiz);
@@ -746,10 +747,10 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
             topo_binding_now.reset_topology(binding_prev);
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(end, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, false);
+                                                                binding_to_use_obj, !taken);
       }
       if (handle_rsmap) {
-         utilization_rsmap_set(end, rsmap_prev_end, rsmap_inuse, !rsmap_taken);
+         utilization_rsmap_set(end, rsmap_prev_end, rsmap_inuse, !taken);
       }
 
       lInsertElem(resource_diagram, prev, end);
