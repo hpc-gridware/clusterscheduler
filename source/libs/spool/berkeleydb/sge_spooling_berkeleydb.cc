@@ -50,6 +50,7 @@
 
 #include <cstring>
 #include <ctime>
+#include <utility>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/config_file.h"
@@ -72,6 +73,14 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
@@ -488,9 +497,11 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                   const char *qinstance_table;
                   /* for all cluster queues: read queue instances */
                   qinstance_table = object_type_get_name(SGE_TYPE_QINSTANCE);
-                  for_each_rw_lv(queue, *list) {
+                  // the database holds cluster queues (CQ_Type) under this key, so the list is taken without a check
+                  for (const ocs::tom::Element<ocs::tom::CQ> queue : ocs::tom::List<ocs::tom::CQ>::from_typed(*list)) {
+                     // out-parameter of spool_berkeleydb_read_list()
                      lList *qinstance_list = nullptr;
-                     const char *qname = ocs::tom::get<CQ_name>(queue);
+                     const char *qname = queue.get<CQ_name>();
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%s/",
                                                qinstance_table,
@@ -499,8 +510,10 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                                                       BDB_CONFIG_DB,
                                                       &qinstance_list, QU_Type,
                                                       key);
-                     if (ret && qinstance_list != nullptr) {
-                        ocs::tom::set<CQ_qinstances>(queue, qinstance_list);
+                     // queue instances (QU_Type) under this key; a list left behind by a failed read is freed
+                     auto qinstances = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(qinstance_list);
+                     if (ret && qinstances) {
+                        queue.set<CQ_qinstances>(std::move(qinstances));
                      }
                   }
                }
@@ -515,30 +528,38 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                   const char *ja_task_table;
                   /* for all jobs: read ja_tasks */
                   ja_task_table = object_type_get_name(SGE_TYPE_JATASK);
-                  for_each_rw_lv(job, *list) {
-                     lList *task_list = nullptr;
-                     uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+                  // the database holds jobs (JB_Type), array tasks (JAT_Type) and parallel tasks (PET_Type) under
+                  // these keys, so the lists are taken without a check
+                  for (const ocs::tom::Element<ocs::tom::JB> job : ocs::tom::List<ocs::tom::JB>::from_typed(*list)) {
+                     // out-parameter of spool_berkeleydb_read_list()
+                     lList *task_list_raw = nullptr;
+                     const uint32_t job_id = job.get<JB_job_number>();
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".", ja_task_table, job_id);
-                     ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &task_list, JAT_Type, key);
+                     ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &task_list_raw, JAT_Type, key);
+                     auto task_list = ocs::tom::ListPtr<ocs::tom::JAT>::from_typed(task_list_raw);
                      /* reading ja_tasks succeeded */
                      if (ret) {
                         /* we actually found ja_tasks for this job */
-                        if (task_list != nullptr) {
+                        if (task_list) {
                            const char *pe_task_table;
 
-                           ocs::tom::set<JB_ja_tasks>(job, task_list);
+                           job.set<JB_ja_tasks>(std::move(task_list));
                            pe_task_table = object_type_get_name(SGE_TYPE_PETASK);
 
-                           for_each_rw_lv(ja_task, task_list) {
-                              lList *pe_task_list = nullptr;
-                              uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
-                              key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32 ".", pe_task_table, job_id, ja_task_id);
+                           for (const ocs::tom::Element<ocs::tom::JAT> ja_task : job.get<JB_ja_tasks>()) {
+                              // out-parameter of spool_berkeleydb_read_list()
+                              lList *pe_task_list_raw = nullptr;
+                              const uint32_t ja_task_id = ja_task.get<JAT_task_number>();
+                              key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32 ".",
+                                                        pe_task_table, job_id, ja_task_id);
 
-                              ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list, PET_Type, key);
+                              ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list_raw,
+                                                               PET_Type, key);
+                              auto pe_task_list = ocs::tom::ListPtr<ocs::tom::PET>::from_typed(pe_task_list_raw);
                               if (ret) {
-                                 if (pe_task_list != nullptr) {
-                                    ocs::tom::set<JAT_task_list>(ja_task, pe_task_list);
+                                 if (pe_task_list) {
+                                    ja_task.set<JAT_task_list>(std::move(pe_task_list));
                                  }
                               } else {
                                  break;
@@ -654,8 +675,9 @@ spool_berkeleydb_default_read_func(lList **answer_list,
                                                   db_key);
 
                if (str != nullptr) {
-                  ep = lCreateElem(STU_Type);
-                  ocs::tom::exchange<STU_name>(ep, &str);
+                  auto script = ocs::tom::ElementPtr<ocs::tom::STU>::create();
+                  ocs::tom::exchange<STU_name>(script.get(), &str);
+                  ep = script.release();
                } else {
                   ret = false;
                }
@@ -835,10 +857,10 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
       }
 
       // CS-1597: for exec hosts only static load values shall be spooled: a copy without the dynamic ones is written
-      lListElem *exechost_copy = nullptr;
+      ocs::tom::ElementPtr<ocs::tom::EH> exechost_copy;
       if (ret && object_type == SGE_TYPE_EXECHOST) {
-         exechost_copy = ocs_spool_exechost_static_copy(object);
-         object = exechost_copy;
+         exechost_copy = ocs_spool_exechost_static_copy(ocs::tom::ConstElement<ocs::tom::EH>(object));
+         object = exechost_copy.get();
       }
 
       if (ret) {
@@ -854,17 +876,19 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
 
                   job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
+                  // a parallel task is written as it is, without a check, as before; the array task and the job
+                  // writers take a sub-list out of the object, which checked its type already before
                   if (object_type == SGE_TYPE_PETASK) {
                      ret = spool_berkeleydb_write_pe_task(answer_list, info,
-                                                          object,
+                                                          ocs::tom::ConstElement<ocs::tom::PET>::from_typed(object),
                                                           job_id, ja_task_id,
                                                           pe_task_id);
                   } else if (object_type == SGE_TYPE_JATASK) {
                      ret = spool_berkeleydb_write_ja_task(answer_list, info,
-                                                          object,
+                                                          ocs::tom::ConstElement<ocs::tom::JAT>(object),
                                                           job_id, ja_task_id);
                   } else {
-                     ret = spool_berkeleydb_write_job(answer_list, info, object,
+                     ret = spool_berkeleydb_write_job(answer_list, info, ocs::tom::ConstElement<ocs::tom::JB>(object),
                                                       job_id, ja_task_id, only_job);
                   }
                   sge_free(&dup);
@@ -884,8 +908,8 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
                }
                break;
             case SGE_TYPE_CQUEUE:
-               ret = spool_berkeleydb_write_cqueue(answer_list, info,
-                                                   object, key);
+               ret = spool_berkeleydb_write_cqueue(answer_list, info, ocs::tom::ConstElement<ocs::tom::CQ>(object),
+                                                   key);
                break;
             default:
                {
@@ -908,7 +932,7 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
          }
       }
 
-      lFreeElem(&exechost_copy);
+      exechost_copy.reset();
 
       /* spooling is done, now end the transaction, if we have an own one */
       if (local_transaction) {

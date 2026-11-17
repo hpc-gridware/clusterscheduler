@@ -39,6 +39,7 @@
 #include <cstring>
 #include <strings.h>
 #include <cctype>
+#include <utility>
 
 #include "uti/sge.h"
 #include "uti/sge_log.h"
@@ -58,6 +59,11 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_Role.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
@@ -845,6 +851,19 @@ static int write_SC_queue_sort_method(const lListElem *ep, int nm,
    return 1;
 }
 
+/**
+ * @brief Read the value of a configuration entry, checked per entry name
+ *
+ * The field reader of CF_value. `gid_range` must be `none` or a range list
+ * whose ids are not below #GID_RANGE_NOT_ALLOWED_ID; most other entries take
+ * the first white space separated word, some take the rest of the line.
+ *
+ * @param ep the configuration entry (CF_Type) whose CF_name is set already
+ * @param nm the field to read, CF_value
+ * @param buf the text of the value
+ * @param alp receives messages for the caller
+ * @return 1 on success, 0 if the value is rejected
+ */
 static int read_CF_value(lListElem *ep, int nm, const char *buf,
                          lList **alp) {
    DENTER(TOP_LAYER);
@@ -859,31 +878,29 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
          if (!strcasecmp(value, NONE_STR)) {
             ocs::tom::set<CF_value>(ep, value);
          } else {
-            lList *rlp = nullptr;
-            
-            range_list_parse_from_string(&rlp, alp, value, 
+            // out-parameter of range_list_parse_from_string(), which gives a range list (RN_Type)
+            lList *rlp_raw = nullptr;
+
+            range_list_parse_from_string(&rlp_raw, alp, value,
                                          false, false, INF_NOT_ALLOWED);
-            if (rlp == nullptr) {
+            const auto rlp = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(rlp_raw);
+            if (!rlp) {
                WARNING(MSG_CONFIG_CONF_INCORRECTVALUEFORCONFIGATTRIB_SS, name, value);
    
                sge_free_saved_vars(context);
                sge_free(&buffer);
                DRETURN(0);
             } else {
-               for_each_ep_lv(rep, rlp) {
-                  uint32_t min;
-
-                  min = ocs::tom::get<RN_min>(rep);
+               for (const ocs::tom::ConstElement<ocs::tom::RN> rep : *rlp) {
+                  const uint32_t min = rep.get<RN_min>();
                   if (min < GID_RANGE_NOT_ALLOWED_ID) {
                      WARNING(MSG_CONFIG_CONF_GIDRANGELESSTHANNOTALLOWED_I, GID_RANGE_NOT_ALLOWED_ID);
    
                      sge_free_saved_vars(context);
                      sge_free(&buffer);
-                     lFreeList(&rlp);
                      DRETURN(0);
                   }                  
                }
-               lFreeList(&rlp);
                ocs::tom::set<CF_value>(ep, value);
             }
          }
@@ -1427,18 +1444,27 @@ static int write_CQ_mem_attr_list(const lListElem *ep, int nm,
    return 1;
 }
 
+/**
+ * @brief Read the host list of a cluster queue
+ *
+ * The field reader of CQ_hostlist. A list that starts with `none` leaves the
+ * field as it is. Without DENTER, as the other field readers.
+ *
+ * @param ep the cluster queue (CQ_Type)
+ * @param nm the field to read, CQ_hostlist
+ * @param buffer the text of the host list
+ * @param alp receives messages for the caller, unused here
+ * @return 1
+ */
 static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
                             lList **alp) {
-   lList *lp = nullptr;
    char delims[] = "\t \v\r,"; 
 
-   lString2List(buffer, &lp, HR_Type, HR_name, delims); 
+   auto lp = ocs::tom::ListPtr<ocs::tom::HR>::from_string<HR_name>(buffer, delims);
 
-   if (lp != nullptr) {
-      if (strcasecmp(NONE_STR, ocs::tom::get<HR_name>(lFirst(lp))) != 0) {
-         ocs::tom::set<CQ_hostlist>(ep, lp);
-      } else {
-         lFreeList(&lp);
+   if (lp) {
+      if (strcasecmp(NONE_STR, lp->front().get<HR_name>()) != 0) {
+         ocs::tom::set<CQ_hostlist>(ep, std::move(lp));
       }
    }
 

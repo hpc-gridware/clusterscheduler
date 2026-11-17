@@ -75,7 +75,9 @@
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
@@ -604,25 +606,35 @@ spool_default_validate_list_func(lList **answer_list,
  * object and back in after the write, which changed the order of its
  * EH_load_list and wrote through a const object.
  *
- * @param object the exec host object (`EH_Type`)
+ * @param object the exec host object
  * @return the copy, owned by the caller
  */
-lListElem *
-ocs_spool_exechost_static_copy(const lListElem *object) {
+ocs::tom::ElementPtr<ocs::tom::EH>
+ocs_spool_exechost_static_copy(const ocs::tom::ConstElement<ocs::tom::EH> object) {
    DENTER(TOP_LAYER);
 
-   lListElem *copy = lCopyElem(object);
-   if (ocs::tom::List<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(copy); load_list != nullptr) {
-      lListElem *load_value;
-      lListElem *next_load_value = lFirstRW(load_list);
-      while ((load_value = next_load_value) != nullptr) {
-         next_load_value = lNextRW(load_value);
-         if (!ocs::tom::get<HL_is_static>(load_value)) {
-            lRemoveElem(load_list, &load_value);
+   auto copy = object.clone();
+   if (const auto load_list = copy->get<EH_load_list>(); load_list) {
+      auto next_load_value = load_list.front();
+      while (const auto load_value = next_load_value) {
+         next_load_value = load_value.next();
+         if (!load_value.get<HL_is_static>()) {
+            load_list.erase(load_value);
          }
       }
    }
 
    DRETURN(copy);
+}
+
+/**
+ * @brief ocs_spool_exechost_static_copy() for an untyped caller
+ *
+ * @param object the exec host object (`EH_Type`), checked
+ * @return the copy, owned by the caller
+ */
+lListElem *
+ocs_spool_exechost_static_copy(const lListElem *object) {
+   return ocs_spool_exechost_static_copy(ocs::tom::ConstElement<ocs::tom::EH>(object)).release();
 }
 

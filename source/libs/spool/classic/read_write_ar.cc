@@ -23,6 +23,7 @@
  */
 
 #include <filesystem>
+#include <utility>
 
 #include "cull/cull_file.h"
 
@@ -30,6 +31,8 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
@@ -42,14 +45,18 @@ namespace ocs::spool::classic {
    /**
     * @brief Reads an advance reservation from a spool file
     *
+    * The file holds an advance reservation (AR_Type) as lWriteElemToDisk()
+    * wrote it, so it is taken without a check.
+    *
     * @param ar_id The ID of the advance reservation to read
-    * @return Pointer to the advance reservation list element, or nullptr if reading failed
+    * @return the advance reservation, or an empty handle if reading failed
     */
-   lListElem *ar_read_spool_file(uint32_t ar_id) {
+   ocs::tom::ElementPtr<ocs::tom::AR> ar_read_spool_file(const uint32_t ar_id) {
       DENTER(TOP_LAYER);
 
       std::string filename = std::to_string(ar_id);
-      lListElem *ar = lReadElemFromDisk(AR_DIR, filename.c_str(), AR_Type, SGE_OBJ_AR);
+      auto ar = ocs::tom::ElementPtr<ocs::tom::AR>::from_typed(lReadElemFromDisk(AR_DIR, filename.c_str(), AR_Type,
+                                                                                 SGE_OBJ_AR));
 
       DRETURN(ar);
    }
@@ -57,16 +64,16 @@ namespace ocs::spool::classic {
    /**
     * @brief Writes an advance reservation to a spool file
     *
-    * @param ar Pointer to the advance reservation list element to write
+    * @param ar the advance reservation to write, may be an empty handle
     * @return true if writing succeeded, false otherwise
     */
-   bool ar_write_spool_file(const lListElem *ar) {
+   bool ar_write_spool_file(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
       DENTER(TOP_LAYER);
 
-      bool ret = ar != nullptr;
+      bool ret = static_cast<bool>(ar);
 
       if (ret) {
-         std::string filename = std::to_string(ocs::tom::get<AR_id>(ar));
+         std::string filename = std::to_string(ar.get<AR_id>());
          if (lWriteElemToDisk(ar, AR_DIR, filename.c_str(), SGE_OBJ_AR) != 0) {
             ret = false;
          }
@@ -78,7 +85,11 @@ namespace ocs::spool::classic {
    /**
     * @brief Reads all advance reservations from disk and validates them
     *
-    * @param ar_list Pointer to the list pointer where advance reservations will be stored
+    * The list stays untyped: it is created through the pointer if it does not
+    * exist yet. The files hold advance reservations (AR_Type) as
+    * lWriteElemToDisk() wrote them, so they are taken without a check.
+    *
+    * @param ar_list Pointer to the list pointer where advance reservations will be stored (AR_Type)
     * @param list_name Name for the created list
     * @return true if all advance reservations were successfully read and validated, false otherwise
     */
@@ -88,7 +99,7 @@ namespace ocs::spool::classic {
       bool ret = true;
 
       if (*ar_list == nullptr) {
-         *ar_list = lCreateList(list_name, AR_Type);
+         *ar_list = ocs::tom::ListPtr<ocs::tom::AR>::create(list_name).release();
       }
       if (*ar_list == nullptr) {
          ret = false;
@@ -103,19 +114,21 @@ namespace ocs::spool::classic {
          const lList *master_userset_list = *DataStore::get_master_list(SGE_TYPE_USERSET);
          lList *answer_list = nullptr;
 
+         const auto ars = ocs::tom::List<ocs::tom::AR>(*ar_list);
+
          try {
             std::filesystem::directory_iterator iter{AR_DIR};
             for (const auto &entry : iter) {
-               lListElem *ar = lReadElemFromDisk(nullptr, entry.path().c_str(), AR_Type, SGE_OBJ_AR);
-               if (ar != nullptr) {
-                  if (ar_validate(ar, &answer_list, true, true, master_cqueue_list, master_hgroup_list,
+               auto ar = ocs::tom::ElementPtr<ocs::tom::AR>::from_typed(lReadElemFromDisk(nullptr, entry.path().c_str(),
+                                                                                          AR_Type, SGE_OBJ_AR));
+               if (ar) {
+                  if (ar_validate(ar.get(), &answer_list, true, true, master_cqueue_list, master_hgroup_list,
                                   master_centry_list, master_ckpt_list, master_pe_list, master_userset_list)) {
-                     lAppendElem(*ar_list, ar);
-                                  } else {
-                                     answer_list_output(&answer_list);
-                                     lFreeElem(&ar);
-                                     ret = false;
-                                  }
+                     ars.push_back(std::move(ar));
+                  } else {
+                     answer_list_output(&answer_list);
+                     ret = false;
+                  }
                } else {
                   ret = false;
                }

@@ -38,6 +38,11 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 #include "spool/berkeleydb/sge_bdb_types.h"
 #include <cinttypes>
 
@@ -85,21 +90,17 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
                               const char *key, const char *str);
                               
 bool
-spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
-                               const lListElem *object, 
-                               uint32_t job_id, uint32_t ja_task_id,
-                               const char *pe_task_id);
+spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::PET> object,
+                               uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id);
 bool
-spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
-                               const lListElem *object, 
+spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::JAT> object,
                                uint32_t job_id, uint32_t ja_task_id);
 bool
-spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
-                           const lListElem *object, 
+spool_berkeleydb_write_job(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::JB> object,
                            uint32_t job_id, uint32_t ja_task_id, bool only_job);
 bool
-spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info, 
-                              const lListElem *object, const char *key);
+spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::CQ> object,
+                              const char *key);
 
 bool
 spool_berkeleydb_delete_object(lList **answer_list, bdb_info info, 

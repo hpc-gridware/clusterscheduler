@@ -36,12 +36,16 @@
  * @brief The public interface of the spooling framework
  */
 
+#include <utility>
+
 #include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_SPC.h"
 #include "sgeobj/tom/ocs_tom_SPR.h"
 #include "sgeobj/tom/ocs_tom_SPT.h"
 #include "sgeobj/tom/ocs_tom_SPTR.h"
@@ -51,6 +55,7 @@
 #include "spool/msg_spoollib.h"
 #include "spool/sge_spooling.h"
 
+// process-lifetime list of the default contexts (SPC_Type); stays untyped, no owning handle for a static
 static lList *Default_Spool_Context_List;
 
 #pragma GCC diagnostic push
@@ -90,8 +95,9 @@ spool_create_context(lList **answer_list, const char *name) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_CONTEXTNEEDSNAME);
    } else {
-      ep = lCreateElem(SPC_Type);
-      ocs::tom::set<SPC_name>(ep, name);
+      auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::create();
+      context->set<SPC_name>(name);
+      ep = context.release();
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
@@ -128,7 +134,8 @@ spool_free_context(lList **answer_list, lListElem *context) {
                               __func__);
    } else {
       spool_shutdown_context(answer_list, context);
-      lFreeElem(&context);
+      // the caller hands the context over; the pointer returned afterwards is nullptr
+      ocs::tom::ElementPtr<ocs::tom::SPC>::from_typed(std::exchange(context, nullptr)).reset();
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
@@ -214,7 +221,7 @@ bool spool_startup_context(lList **answer_list, lListElem *context, bool check) 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
       ret = false;
-   } else if (lGetNumberOfElem(ocs::tom::get<SPC_types>(context)) == 0) {
+   } else if (ocs::tom::get<SPC_types>(context).empty()) {
       /* check consistency: the context has to contain types */
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
@@ -227,7 +234,7 @@ bool spool_startup_context(lList **answer_list, lListElem *context, bool check) 
       for (ocs::tom::ConstElement<ocs::tom::SPT> type : ocs::tom::get<SPC_types>(context)) {
          int default_rules = 0;
          
-         if (lGetNumberOfElem(ocs::tom::get<SPT_rules>(type)) == 0) {
+         if (ocs::tom::get<SPT_rules>(type).empty()) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_TYPECONTAINSNORULES_SS, 
@@ -266,7 +273,7 @@ bool spool_startup_context(lList **answer_list, lListElem *context, bool check) 
       }
     
       /* the context has to contain rules */
-      if (lGetNumberOfElem(ocs::tom::get<SPC_rules>(context)) == 0) {
+      if (ocs::tom::get<SPC_rules>(context).empty()) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_CONTEXTCONTAINSNORULES_S, 
@@ -532,7 +539,8 @@ void spool_set_default_context(lListElem *context) {
  */
 lListElem *
 spool_get_default_context() {
-   return lFirstRW(Default_Spool_Context_List);
+   // the list is created in spool_set_default_context() with SPC_Type
+   return ocs::tom::List<ocs::tom::SPC>::from_typed(Default_Spool_Context_List).front();
 }
 
 /**
@@ -601,42 +609,34 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
-   } else if (static_cast<const lListElem *>(ocs::tom::find_first<SPR_name>(ocs::tom::get<SPC_rules>(context), name)) 
-             != nullptr) {
+   } else if (ocs::tom::get<SPC_rules>(context).find_first<SPR_name>(name)) {
       /* check for duplicates */
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_RULEALREADYEXISTS_SS, 
                               name, ocs::tom::get<SPC_name>(context));
    } else {
-      lList *lp;
-
       /* create rule */
-      ep = lCreateElem(SPR_Type);
-      ocs::tom::set<SPR_name>(ep, name);
-      ocs::tom::set<SPR_url>(ep, url);
-      ocs::tom::set<SPR_option_func>(ep, (void *)option_func);
-      ocs::tom::set<SPR_startup_func>(ep, (void *)startup_func);
-      ocs::tom::set<SPR_shutdown_func>(ep, (void *)shutdown_func);
-      ocs::tom::set<SPR_maintenance_func>(ep, (void *)maintenance_func);
-      ocs::tom::set<SPR_trigger_func>(ep, (void *)trigger_func);
-      ocs::tom::set<SPR_transaction_func>(ep, (void *)transaction_func);
-      ocs::tom::set<SPR_list_func>(ep, (void *)list_func);
-      ocs::tom::set<SPR_read_func>(ep, (void *)read_func);
-      ocs::tom::set<SPR_read_keys_func>(ep, (void *)read_keys_func);
-      ocs::tom::set<SPR_write_func>(ep, (void *)write_func);
-      ocs::tom::set<SPR_delete_func>(ep, (void *)delete_func);
-      ocs::tom::set<SPR_validate_func>(ep, (void *)validate_func);
-      ocs::tom::set<SPR_validate_list_func>(ep, (void *)validate_list_func);
+      auto rule = ocs::tom::ElementPtr<ocs::tom::SPR>::create();
+      rule->set<SPR_name>(name);
+      rule->set<SPR_url>(url);
+      rule->set<SPR_option_func>((void *)option_func);
+      rule->set<SPR_startup_func>((void *)startup_func);
+      rule->set<SPR_shutdown_func>((void *)shutdown_func);
+      rule->set<SPR_maintenance_func>((void *)maintenance_func);
+      rule->set<SPR_trigger_func>((void *)trigger_func);
+      rule->set<SPR_transaction_func>((void *)transaction_func);
+      rule->set<SPR_list_func>((void *)list_func);
+      rule->set<SPR_read_func>((void *)read_func);
+      rule->set<SPR_read_keys_func>((void *)read_keys_func);
+      rule->set<SPR_write_func>((void *)write_func);
+      rule->set<SPR_delete_func>((void *)delete_func);
+      rule->set<SPR_validate_func>((void *)validate_func);
+      rule->set<SPR_validate_list_func>((void *)validate_list_func);
 
-      /* append rule to rule list */
-      lp = ocs::tom::get<SPC_rules>(context);
-      if (lp == nullptr) {
-         lp = lCreateList("spooling rules", SPR_Type);
-         ocs::tom::set<SPC_rules>(context, lp);
-      }
-
-      lAppendElem(lp, ep);
+      /* append rule to rule list; the context was already checked by the lookup above */
+      ep = ocs::tom::Element<ocs::tom::SPC>::from_typed(context).get_or_create<SPC_rules>("spooling rules")
+              .push_back(std::move(rule));
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
@@ -702,21 +702,14 @@ spool_context_create_type(lList **answer_list, lListElem *context,
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      lList *lp;
-
       /* create new type */
-      ep = lCreateElem(SPT_Type);
-      ocs::tom::set<SPT_type>(ep, object_type);
-      ocs::tom::set<SPT_name>(ep, object_type_get_name(object_type));
-    
-      /* append it to the types list of the context */
-      lp = ocs::tom::get<SPC_types>(context);
-      if (lp == nullptr) {
-         lp = lCreateList("spooling object types", SPT_Type);
-         ocs::tom::set<SPC_types>(context, lp);
-      }
+      auto type = ocs::tom::ElementPtr<ocs::tom::SPT>::create();
+      type->set<SPT_type>(object_type);
+      type->set<SPT_name>(object_type_get_name(object_type));
 
-      lAppendElem(lp, ep);
+      /* append it to the types list of the context */
+      ep = ocs::tom::Element<ocs::tom::SPC>(context).get_or_create<SPC_types>("spooling object types")
+              .push_back(std::move(type));
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
@@ -785,22 +778,15 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
                               MSG_SPOOL_TYPEALREADYHASDEFAULTRULE_S, 
                               ocs::tom::get<SPT_name>(spool_type));
    } else {
-      lList *lp;
-
-      /* create mapping object */
-      ep = lCreateElem(SPTR_Type);
-      ocs::tom::set<SPTR_is_default>(ep, is_default);
-      ocs::tom::set<SPTR_rule_name>(ep, ocs::tom::get<SPR_name>(rule));
-      ocs::tom::set<SPTR_rule>(ep, (void *)rule);
+      /* create mapping object; the rule is referenced through a Ref field and so stays untyped */
+      auto type_rule = ocs::tom::ElementPtr<ocs::tom::SPTR>::create();
+      type_rule->set<SPTR_is_default>(is_default);
+      type_rule->set<SPTR_rule_name>(ocs::tom::get<SPR_name>(rule));
+      type_rule->set<SPTR_rule>((void *)rule);
 
       /* append it to the list of mapping for this type */
-      lp = ocs::tom::get<SPT_rules>(spool_type);
-      if (lp == nullptr) {
-         lp = lCreateList("spooling object type rules", SPTR_Type);
-         ocs::tom::set<SPT_rules>(spool_type, lp);
-      }
-      
-      lAppendElem(lp, ep);
+      ep = ocs::tom::Element<ocs::tom::SPT>(spool_type).get_or_create<SPT_rules>("spooling object type rules")
+              .push_back(std::move(type_rule));
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
@@ -958,7 +944,6 @@ spool_read_object(lList **answer_list, const lListElem *context,
    DRETURN(result);
 }
 
-bool
 /**
  * @brief Read the keys the storage holds below a given key
  *
@@ -976,6 +961,7 @@ bool
  *          flatfile spool takes this path: an error message and a success
  *          return, with `list` left empty.
  */
+bool
 spool_read_keys(lList **answer_list, const lListElem *context,
                 lList **list, const char *key) {
    DENTER(TOP_LAYER);
@@ -992,7 +978,7 @@ spool_read_keys(lList **answer_list, const lListElem *context,
       ocs::tom::ConstList<ocs::tom::SPR> rules = ocs::tom::get<SPC_rules>(context);
 
       /* use the default rule to read object */
-      for_each_ep_lv(rule, rules) {
+      for (const ocs::tom::ConstElement<ocs::tom::SPR> rule : rules) {
 
          /* retrieve and execute the read callback */
          auto func = (spooling_read_keys_func)ocs::tom::get<SPR_read_keys_func>(rule);
@@ -1056,7 +1042,7 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
       } else {
          /* loop over all rules and call the writing callbacks */
          ocs::tom::ConstList<ocs::tom::SPTR> type_rules = ocs::tom::get<SPT_rules>(type);
-         if (type_rules == nullptr || lGetNumberOfElem(type_rules) == 0) {
+         if (type_rules.empty()) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NORULESFORTYPEINCONTEXT_SS,
@@ -1140,7 +1126,7 @@ bool spool_delete_object(lList **answer_list, const lListElem *context,
       } else {
          /* loop over all rules and call the deleting callbacks */
          ocs::tom::ConstList<ocs::tom::SPTR> type_rules = ocs::tom::get<SPT_rules>(type);
-         if (type_rules == nullptr || lGetNumberOfElem(type_rules) == 0) {
+         if (type_rules.empty()) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NORULESFORTYPEINCONTEXT_SS,

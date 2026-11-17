@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,6 +42,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/ocs_CEntry.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
 
@@ -48,24 +50,29 @@
 #include "sge_flatfile_obj_rsmap.h"
 
 /**
- * Return true if two RESL_properties lists carry identical characteristics —
- * same set of {CE_name, CE_stringval} pairs, order-independent. Empty (or
- * both nullptr) lists count as identical.
+ * @brief Whether two RESL_properties lists carry identical characteristics
+ *
+ * The same set of {CE_name, CE_stringval} pairs, order-independent. Empty (or
+ * both nullptr) lists count as identical. Without DENTER, as the other
+ * helpers of the field reader.
+ *
+ * @param a the one property list, may be an empty handle
+ * @param b the other property list, may be an empty handle
+ * @return true if both carry the same characteristics
  */
 static bool
-properties_equal(const lList *a, const lList *b) {
-   const int na = (a == nullptr) ? 0 : lGetNumberOfElem(a);
-   const int nb = (b == nullptr) ? 0 : lGetNumberOfElem(b);
+properties_equal(const ocs::tom::ConstList<ocs::tom::CE> a, const ocs::tom::ConstList<ocs::tom::CE> b) {
+   const std::size_t na = a.size();
+   const std::size_t nb = b.size();
    if (na != nb) return false;
    if (na == 0) return true;
 
-   const lListElem *ep;
-   for_each_ep (ep, a) {
-      const char *name = ocs::tom::get<CE_name>(ep);
-      ocs::tom::ConstElement<ocs::tom::CE> match = ocs::tom::find_first<CE_name>(b, name);
-      if (match == nullptr) return false;
-      const char *va = ocs::tom::get<CE_stringval>(ep);
-      const char *vb = ocs::tom::get<CE_stringval>(match);
+   for (const ocs::tom::ConstElement<ocs::tom::CE> ep : a) {
+      const char *name = ep.get<CE_name>();
+      const auto match = b.find_first<CE_name>(name);
+      if (!match) return false;
+      const char *va = ep.get<CE_stringval>();
+      const char *vb = match.get<CE_stringval>();
       if (va == nullptr || vb == nullptr) {
          if (va != vb) return false;  // one nullptr, one not
       } else if (strcmp(va, vb) != 0) {
@@ -87,53 +94,46 @@ properties_equal(const lList *a, const lList *b) {
  * bare-vs-annotated — is a syntax error, reported via `alpp` with the
  * enclosing `rsmap_name` for context.
  *
- * Ownership of `*properties` is transferred to the CE on success (either
- * attached to the RESL or, for a matching duplicate id, freed). On failure
- * the properties list is also freed. `*properties` is always nulled out
- * before return so the caller cannot double-free.
+ * The property list is consumed: it is attached to the RESL for a new id,
+ * and freed for a matching duplicate id and on failure. Without DENTER, as
+ * the other helpers of the field reader.
  *
- * @param centry      CE_Type element whose CE_resource_map_list is being built
+ * @param centry      the complex entry whose CE_resource_map_list is being built
  * @param id          the RSMAP id to add
- * @param properties  in/out list of CE_Type property elements to attach to
- *                    the RESL; may be nullptr, and *properties may be
- *                    nullptr (both mean "no properties")
+ * @param properties  the property list (CE_Type) to attach to the RESL; an
+ *                    empty handle means "no properties"; consumed
  * @param alpp        answer list for conflict messages
  * @param rsmap_name  the enclosing RSMAP complex name, used only for error text
  * @return            true on success (id added or matched); false on
  *                    duplicate-id characteristic conflict
  */
 static bool
-store_resl(lListElem *centry, const char *id, lList **properties,
+store_resl(const ocs::tom::Element<ocs::tom::CE> centry, const char *id, ocs::tom::ListPtr<ocs::tom::CE> &&properties,
            lList **alpp, const char *rsmap_name) {
-   lList *incoming = (properties != nullptr) ? *properties : nullptr;
-   ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(centry, id);
-   if (resl == nullptr) {
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id);
-      if (resl == nullptr) {
-         if (properties != nullptr) lFreeList(properties);
+   auto incoming = std::move(properties);
+   const auto resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(centry, id);
+   if (!resl) {
+      const auto added = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id);
+      if (!added) {
          return true;  // allocation failure is not this function's error to report
       }
-      ocs::tom::add<RESL_amount>(resl, 1);
-      if (incoming != nullptr) {
-         ocs::tom::set<RESL_properties>(resl, incoming);
-         *properties = nullptr;
+      added.add<RESL_amount>(1);
+      if (incoming) {
+         added.set<RESL_properties>(std::move(incoming));
       }
       return true;
    }
 
    // duplicate id: incoming characteristics (if any) must match stored ones
-   ocs::tom::ConstList<ocs::tom::CE> stored = ocs::tom::get<RESL_properties>(resl);
-   if (!properties_equal(stored, incoming)) {
+   if (!properties_equal(resl.get<RESL_properties>(), *incoming)) {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS,
                               rsmap_name, id);
-      if (properties != nullptr) lFreeList(properties);
       return false;
    }
 
-   ocs::tom::add<RESL_amount>(resl, 1);
-   if (properties != nullptr) lFreeList(properties);  // stored copy wins
-   return true;
+   resl.add<RESL_amount>(1);
+   return true;   // the stored copy wins, the incoming list is freed
 }
 
 /**
@@ -141,31 +141,26 @@ store_resl(lListElem *centry, const char *id, lList **properties,
  *    gpu0[device=/dev/nvidia0,memory=80G]
  * yields id="gpu0" and a CE_Type list with two elements carrying CE_name and
  * CE_stringval verbatim; typing and centry-list resolution happen later
- * during validation. Tokens without a '[' are stored as-is with
- * *properties_out = nullptr.
+ * during validation. Tokens without a '[' are stored as-is with an empty
+ * property list. Without DENTER, as the other helpers of the field reader.
  *
  * @param token             the raw id token grabbed from strtok, e.g.
  *                          "gpu0" or "gpu0[device=/dev/nvidia0,memory=80G]"
  * @param id_out            filled in with the id portion (before '[')
- * @param properties_out    out: newly-allocated CE_Type list holding
- *                          {CE_name, CE_stringval} pairs, or nullptr if the
- *                          token has no characteristics block
  * @param alpp              answer list for parse-error messages
  * @param rsmap_name        the enclosing RSMAP complex name, used only for
  *                          error text
- * @return                  true on success (possibly with no characteristics),
- *                          false on syntax error (answer_list is populated)
+ * @return                  on success the property list holding
+ *                          {CE_name, CE_stringval} pairs, an empty handle if
+ *                          the token has no characteristics block; nullopt on
+ *                          a syntax error (answer_list is populated)
  */
-static bool
-parse_id_characteristics(const char *token, std::string &id_out,
-                         lList **properties_out, lList **alpp,
-                         const char *rsmap_name) {
-   *properties_out = nullptr;
-
+static std::optional<ocs::tom::ListPtr<ocs::tom::CE>>
+parse_id_characteristics(const char *token, std::string &id_out, lList **alpp, const char *rsmap_name) {
    const char *bracket = strchr(token, RSMAP_CHARACTERISTICS_OPEN);
    if (bracket == nullptr) {
       id_out.assign(token);
-      return true;
+      return ocs::tom::ListPtr<ocs::tom::CE>();
    }
 
    // CS-1338: per-instance characteristics are a GCS-only feature. This is the
@@ -179,7 +174,7 @@ parse_id_characteristics(const char *token, std::string &id_out,
       answer_list_add_sprintf(alpp, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_CHARACTERISTIC_NOT_AVAILABLE_SS,
                               rsmap_name, id_only.c_str());
-      return false;
+      return std::nullopt;
    }
 #endif
 
@@ -188,14 +183,14 @@ parse_id_characteristics(const char *token, std::string &id_out,
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_CHARACTERISTIC_UNCLOSED_SS,
                               rsmap_name, token);
-      return false;
+      return std::nullopt;
    }
 
    id_out.assign(token, bracket - token);
    const size_t chars_len = token_len - (bracket - token) - 2;
    std::string chars_buf(bracket + 1, chars_len);
 
-   lList *props = nullptr;
+   ocs::tom::ListPtr<ocs::tom::CE> props;
    struct saved_vars_s *ctx = nullptr;
    for (char *ctok = sge_strtok_r(&chars_buf[0], RSMAP_CHARACTERISTIC_SEPARATOR_STR, &ctx);
         ctok != nullptr;
@@ -205,25 +200,23 @@ parse_id_characteristics(const char *token, std::string &id_out,
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_CHARACTERISTIC_NO_EQ_SSS,
                                  rsmap_name, id_out.c_str(), ctok);
-         lFreeList(&props);
          sge_free_saved_vars(ctx);
-         return false;
+         return std::nullopt;
       }
       *eq = '\0';
       const char *name = ctok;
       const char *value = eq + 1;
-      if (props == nullptr) {
-         props = lCreateList("properties", CE_Type);
+      if (!props) {
+         props = ocs::tom::ListPtr<ocs::tom::CE>::create("properties");
       }
       auto cep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-      ocs::tom::set<CE_name>(cep, name);
-      ocs::tom::set<CE_stringval>(cep, value);
-      lAppendElem(props, std::move(cep));
+      cep->set<CE_name>(name);
+      cep->set<CE_stringval>(value);
+      props->push_back(std::move(cep));
    }
    sge_free_saved_vars(ctx);
 
-   *properties_out = props;
-   return true;
+   return std::optional<ocs::tom::ListPtr<ocs::tom::CE>>(std::move(props));
 }
 
 /**
@@ -264,7 +257,9 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
     * between id-specs (outside brackets) and removes the line-continuation
     * residue (inside brackets) before the strtok-based tokenizer runs.
     */
-   const char *rsmap_name = ocs::tom::get<CE_name>(ep);
+   // the field reader of CE_stringval gets a complex entry; its type is checked here, as the first read did
+   const auto centry = ocs::tom::Element<ocs::tom::CE>(ep);
+   const char *rsmap_name = centry.get<CE_name>();
    std::string cleaned;
    cleaned.reserve(strlen(buf));
    {
@@ -307,18 +302,18 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
                // bare range
                for (; range_start <= range_end; range_start += range_step) {
                   std::string id_str{std::to_string(range_start)};
-                  store_resl(ep, id_str.c_str(), nullptr, alpp, rsmap_name);
+                  store_resl(centry, id_str.c_str(), ocs::tom::ListPtr<ocs::tom::CE>(), alpp, rsmap_name);
                   num_ids++;
                }
             } else {
                // individual id, possibly with characteristics
                std::string id_str;
-               lList *properties = nullptr;
-               if (!parse_id_characteristics(token, id_str, &properties, alpp,
-                                             rsmap_name)) {
+               auto parsed = parse_id_characteristics(token, id_str, alpp, rsmap_name);
+               if (!parsed) {
                   ret = 0;
                   break;
                }
+               auto properties = std::move(*parsed);
                // Reject characteristics attached to a range which covers more than one id,
                // like "1-3[foo=bar]": the block would have to belong to all three instances
                // and there is no sense in which it does.
@@ -336,7 +331,6 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
                      answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                              MSG_RSMAP_CHARACTERISTIC_ON_RANGE_SS,
                                              rsmap_name, token);
-                     lFreeList(&properties);
                      ret = 0;
                      break;
                   }
@@ -345,7 +339,7 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
                   // and not two. A bare "0" expands to itself and is unaffected.
                   id_str = std::to_string(range_start);
                }
-               if (!store_resl(ep, id_str.c_str(), &properties, alpp, rsmap_name)) {
+               if (!store_resl(centry, id_str.c_str(), std::move(properties), alpp, rsmap_name)) {
                   ret = 0;
                   break;
                }
@@ -361,7 +355,7 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
             ret = 0;
          }
          if (ret == 0) {
-            ocs::tom::set<CE_resource_map_list>(ep, nullptr);
+            centry.set<CE_resource_map_list>(nullptr);
          }
       }
    }
@@ -414,19 +408,22 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
 
    std::string str_out{};
 
+   // the field writer of CE_stringval gets a complex entry; its type is checked here, as the first read did
+   const auto centry = ocs::tom::ConstElement<ocs::tom::CE>(ep);
+
    // add the value of the complex_value to the output buffer
-   const char *str_value = ocs::tom::get<CE_stringval>(ep);
+   const char *str_value = centry.get<CE_stringval>();
    if (str_value != nullptr) {
       str_out += str_value;
    } else {
       // should never happen - but you never know...
-      double dbl_value = ocs::tom::get<CE_doubleval>(ep);
+      double dbl_value = centry.get<CE_doubleval>();
       str_out += std::to_string(dbl_value);
    }
    sge_dstring_append(buffer, str_out.c_str());
    str_out.clear();
 
-   if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ep)) == ocs::CEntry::Type::RSMAP) {
+   if (static_cast<ocs::CEntry::Type>(centry.get<CE_valtype>()) == ocs::CEntry::Type::RSMAP) {
       /*
        * fill in the IDs from the CE_resource_map_list
        * we can have individual ids or a range or a combination of both
@@ -446,18 +443,18 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
        * by CE_name (same convention as centry_list_sort) before emission; the
        * stored CULL order is not modified.
        */
-      ocs::tom::ConstList<ocs::tom::RESL> resource_map = ocs::tom::get<CE_resource_map_list>(ep);
-      if (resource_map != nullptr && lGetNumberOfElem(resource_map) > 0) {
+      const auto resource_map = centry.get<CE_resource_map_list>();
+      if (!resource_map.empty()) {
          long range_start = -1, range_last = -1, range_current;
          // How often the identifiers of the range being built occur. A range is written once
          // per occurrence, so it can only hold identifiers which occur equally often.
          uint32_t range_amount = 0;
 
-         for (ocs::tom::ConstElement<ocs::tom::RESL> resource : resource_map) {
-            str_value = ocs::tom::get<RESL_value>(resource);
-            const uint32_t amount = ocs::tom::get<RESL_amount>(resource);
-            ocs::tom::ConstList<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(resource);
-            const bool has_props = (props != nullptr && lGetNumberOfElem(props) > 0);
+         for (const ocs::tom::ConstElement<ocs::tom::RESL> resource : resource_map) {
+            str_value = resource.get<RESL_value>();
+            const uint32_t amount = resource.get<RESL_amount>();
+            const auto props = resource.get<RESL_properties>();
+            const bool has_props = !props.empty();
 
             if (has_props) {
                // flush any pending range before emitting a characteristic-bearing id
@@ -467,11 +464,10 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
 
                // build "id[k1=v1;k2=v2;...]" with characteristics sorted asc by CE_name
                std::vector<std::pair<std::string, std::string>> pairs;
-               pairs.reserve(lGetNumberOfElem(props));
-               ocs::tom::ConstElement<ocs::tom::CE> prop;
-               for_each_ep (prop, props) {
-                  const char *pname = ocs::tom::get<CE_name>(prop);
-                  const char *pval = ocs::tom::get<CE_stringval>(prop);
+               pairs.reserve(props.size());
+               for (const ocs::tom::ConstElement<ocs::tom::CE> prop : props) {
+                  const char *pname = prop.get<CE_name>();
+                  const char *pval = prop.get<CE_stringval>();
                   pairs.emplace_back(pname != nullptr ? pname : "",
                                      pval != nullptr ? pval : "");
                }

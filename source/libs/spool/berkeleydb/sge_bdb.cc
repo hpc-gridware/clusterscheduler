@@ -72,7 +72,11 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 
 #include "spool/ocs_spool_duplicates.h"
 #include "spool/berkeleydb/msg_spoollib_berkeleydb.h"
@@ -1019,7 +1023,11 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
-/** @brief Write one parallel task of an array task
+/**
+ * @brief Write one parallel task of an array task
+ *
+ * Without DENTER: called for every parallel task written.
+ *
  * @param answer_list to return error messages
  * @param info the handle
  * @param object the task to write
@@ -1029,8 +1037,8 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
  * @return true on success, else false
  */
 bool spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
-                                    const lListElem *object,
-                                    uint32_t job_id, uint32_t ja_task_id,
+                                    const ocs::tom::ConstElement<ocs::tom::PET> object,
+                                    const uint32_t job_id, const uint32_t ja_task_id,
                                     const char *pe_task_id) {
    bool ret = true;
    dstring dbkey_dstring;
@@ -1050,7 +1058,14 @@ bool spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
    return ret;
 }
 
-/** @brief Write one array task, without its parallel tasks
+/**
+ * @brief Write one array task, without its parallel tasks
+ *
+ * The parallel task list is taken out of the array task for the write and
+ * put back afterwards, so the object is unchanged when the function returns.
+ *
+ * Without DENTER: called for every array task written.
+ *
  * @param answer_list to return error messages
  * @param info the handle
  * @param object the array task to write
@@ -1059,13 +1074,13 @@ bool spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
  * @return true on success, else false
  */
 bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
-                                    const lListElem *object,
-                                    uint32_t job_id, uint32_t ja_task_id) {
+                                    const ocs::tom::ConstElement<ocs::tom::JAT> object,
+                                    const uint32_t job_id, const uint32_t ja_task_id) {
    bool ret = true;
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-   lList *tmp_list = nullptr;
+   const auto ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(const_cast<lListElem *>(object.raw()));
 
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
@@ -1074,10 +1089,12 @@ bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
                                object_type_get_name(SGE_TYPE_JATASK),
                                job_id, ja_task_id);
 
-   ocs::tom::exchange<JAT_task_list>((lListElem *)object, &tmp_list);
+   // the free form keeps the soft path of before for an empty handle; the slot holds the list while it is out
+   lList *tmp_list = nullptr;
+   ocs::tom::exchange<JAT_task_list>(ja_task, &tmp_list);
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_JOB_DB,
                                        object, dbkey);
-   ocs::tom::exchange<JAT_task_list>((lListElem *)object, &tmp_list);
+   ocs::tom::exchange<JAT_task_list>(ja_task, &tmp_list);
 
    return ret;
 }
@@ -1090,6 +1107,8 @@ bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
  * own - which is what makes updating one running task cheap instead of
  * rewriting a job with thousands of them.
  *
+ * Without DENTER: called for every job written.
+ *
  * @param answer_list to return error messages
  * @param info the handle
  * @param object the job to write
@@ -1099,13 +1118,13 @@ bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
  * @return true on success, else false
  */
 bool spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
-                                const lListElem *object,
-                                uint32_t job_id, uint32_t ja_task_id, bool only_job) {
+                                const ocs::tom::ConstElement<ocs::tom::JB> object,
+                                const uint32_t job_id, const uint32_t ja_task_id, const bool only_job) {
    bool ret = true;
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-   lList *tmp_list = nullptr;
+   const auto job = ocs::tom::Element<ocs::tom::JB>::from_typed(const_cast<lListElem *>(object.raw()));
 
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
@@ -1114,16 +1133,18 @@ bool spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
                                object_type_get_name(SGE_TYPE_JOB), 
                                job_id);
 
-   ocs::tom::exchange<JB_ja_tasks>((lListElem *)object, &tmp_list);
-   
+   // the free form keeps the soft path of before for an empty handle; the slot holds the list while it is out
+   lList *tmp_list = nullptr;
+   ocs::tom::exchange<JB_ja_tasks>(job, &tmp_list);
+
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_JOB_DB,
                                        object, dbkey);
 
-   ocs::tom::exchange<JB_ja_tasks>((lListElem *)object, &tmp_list);
+   ocs::tom::exchange<JB_ja_tasks>(job, &tmp_list);
 
    if (ret && !only_job) {
-      const lListElem *ja_task = ocs::tom::find_first<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(object), ja_task_id);
-      if (ja_task != nullptr) {
+      const auto ja_task = object.get<JB_ja_tasks>().find_first<JAT_task_number>(ja_task_id);
+      if (ja_task) {
          ret = spool_berkeleydb_write_ja_task(answer_list, info, ja_task, job_id, ja_task_id);
       }
    }
@@ -1144,12 +1165,12 @@ bool spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
  * @return true on success, else false
  */
 bool spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
-                                   const lListElem *object, const char *key) {
+                                   const ocs::tom::ConstElement<ocs::tom::CQ> object, const char *key) {
    bool ret = true;
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-   lList *tmp_list = nullptr;
+   const auto cqueue = ocs::tom::Element<ocs::tom::CQ>::from_typed(const_cast<lListElem *>(object.raw()));
 
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
@@ -1158,12 +1179,14 @@ bool spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
                                object_type_get_name(SGE_TYPE_CQUEUE), 
                                key);
 
-   ocs::tom::exchange<CQ_qinstances>((lListElem *)object, &tmp_list);
-   
+   // the free form keeps the soft path of before for an empty handle; the slot holds the list while it is out
+   lList *tmp_list = nullptr;
+   ocs::tom::exchange<CQ_qinstances>(cqueue, &tmp_list);
+
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_CONFIG_DB,
                                        object, dbkey);
 
-   ocs::tom::exchange<CQ_qinstances>((lListElem *)object, &tmp_list);
+   ocs::tom::exchange<CQ_qinstances>(cqueue, &tmp_list);
 
    return ret;
 }

@@ -43,6 +43,10 @@
 
 #include "sgeobj/sge_object.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+
 /** @defgroup spool_utilities Spooling utilities
  * @brief Which attributes of an object are spooled, and under what name
  *
@@ -121,7 +125,7 @@ spool_default_validate_list_func(lList **answer_list,
                           const lListElem *type, const lListElem *rule,
                           const sge_object_type object_type);
 
-lListElem *
-ocs_spool_exechost_static_copy(const lListElem *object);
+ocs::tom::ElementPtr<ocs::tom::EH> ocs_spool_exechost_static_copy(ocs::tom::ConstElement<ocs::tom::EH> object);
+OCS_TRANSITIONAL lListElem *ocs_spool_exechost_static_copy(const lListElem *object);
 
 /** @} */

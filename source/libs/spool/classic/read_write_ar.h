@@ -25,8 +25,11 @@
 
 #include "uti/sge_spool.h"
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+
 namespace ocs::spool::classic {
-   lListElem *ar_read_spool_file(uint32_t ar_id);
-   bool ar_write_spool_file(const lListElem *ar);
+   ocs::tom::ElementPtr<ocs::tom::AR> ar_read_spool_file(uint32_t ar_id);
+   bool ar_write_spool_file(ocs::tom::ConstElement<ocs::tom::AR> ar);
    bool ar_list_read_from_disk(lList **ar_list, const char *list_name);
 }

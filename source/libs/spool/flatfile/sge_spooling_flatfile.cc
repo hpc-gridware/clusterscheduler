@@ -61,6 +61,14 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 
 #include "uti/sge.h"
 
@@ -619,7 +627,6 @@ bool spool_classic_default_list_func(lList **answer_list,
 
          /* if we have a directory (= multiple files) to parse */
          if (ret && directory != nullptr) {
-            lList *direntries;
             char abs_dir_buf[SGE_PATH_MAX];
             dstring abs_dir_dstring;
             const char *abs_dir;
@@ -628,11 +635,11 @@ bool spool_classic_default_list_func(lList **answer_list,
             abs_dir = sge_dstring_sprintf(&abs_dir_dstring, "%s/%s", url,
                                           directory);
 
-            direntries = sge_get_dirents(abs_dir);
+            const auto direntries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(abs_dir));
 
             dstring spool_key = DSTRING_INIT;
-            for_each_ep_lv(direntry, direntries) {
-               const char *key = ocs::tom::get<ST_name>(direntry);
+            for (const ocs::tom::ConstElement<ocs::tom::ST> direntry : *direntries) {
+               const char *key = direntry.get<ST_name>();
 
                if (key[0] != '.') {
                   sge_dstring_sprintf(&spool_key, "%s/%s", directory, key);
@@ -641,7 +648,6 @@ bool spool_classic_default_list_func(lList **answer_list,
                }
             }
             sge_dstring_free(&spool_key);
-            lFreeList(&direntries);
          }
       }
 
@@ -657,26 +663,27 @@ bool spool_classic_default_list_func(lList **answer_list,
                dstring dir = DSTRING_INIT;
 
                dstring spool_key = DSTRING_INIT;
-               for_each_rw_lv(queue, *list) {
-                  lList *direntries;
-                  lList *qinstance_list = lCreateList("", QU_Type);
+               // the list just read holds cluster queues (CQ_Type), so it is taken without a check
+               for (const ocs::tom::Element<ocs::tom::CQ> queue : ocs::tom::List<ocs::tom::CQ>::from_typed(*list)) {
+                  // read_validate_object() appends through a raw list pointer; the list goes to the queue below
+                  lList *qinstance_list = ocs::tom::ListPtr<ocs::tom::QU>::create("").release();
                   ocs::spool::DuplicateFilter qinstance_filter(QU_Type, object_type_get_name(SGE_TYPE_QINSTANCE));
 
-                  sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, ocs::tom::get<CQ_name>(queue));
-                  direntries = sge_get_dirents(sge_dstring_get_string(&dir));
-                  for_each_rw_lv(direntry, direntries) {
-                     const char *directory = ocs::tom::get<ST_name>(direntry);
+                  sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, queue.get<CQ_name>());
+                  const auto direntries =
+                          ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(sge_dstring_get_string(&dir)));
+                  for (const ocs::tom::ConstElement<ocs::tom::ST> direntry : *direntries) {
+                     const char *directory = direntry.get<ST_name>();
                      if (directory[0] != '.') {
-                        sge_dstring_sprintf(&key, "%s/%s", ocs::tom::get<CQ_name>(queue), directory);
+                        sge_dstring_sprintf(&key, "%s/%s", queue.get<CQ_name>(), directory);
                         sge_dstring_sprintf(&spool_key, "%s/%s", QINSTANCES_DIR, sge_dstring_get_string(&key));
                         read_validate_object(answer_list, type, rule, sge_dstring_get_string(&key), NoName,
                                            SGE_TYPE_QINSTANCE, &qinstance_list, qinstance_filter,
                                            sge_dstring_get_string(&spool_key));
                      }
                   }
-                  lFreeList(&direntries);
 
-                  ocs::tom::set<CQ_qinstances>(queue, qinstance_list);
+                  queue.set<CQ_qinstances>(ocs::tom::ListPtr<ocs::tom::QU>::from_typed(qinstance_list));
                }
                sge_dstring_free(&spool_key);
                sge_dstring_free(&dir);
@@ -815,7 +822,7 @@ spool_classic_default_read_func(lList **answer_list,
          filename  = key;
          break;
       case SGE_TYPE_AR:
-         ep = ocs::spool::classic::ar_read_spool_file(SGE_STRTOU_LONG32(key));
+         ep = ocs::spool::classic::ar_read_spool_file(SGE_STRTOU_LONG32(key)).release();
          break;
       case SGE_TYPE_CENTRY:
          directory = CENTRY_DIR;
@@ -830,8 +837,9 @@ spool_classic_default_read_func(lList **answer_list,
                int len;
                char *str = sge_file2string(exec_file, &len);
                if (str != nullptr) {
-                  ep = lCreateElem(STU_Type);
-                  ocs::tom::exchange<STU_name>(ep, &str);
+                  auto script = ocs::tom::ElementPtr<ocs::tom::STU>::create();
+                  ocs::tom::exchange<STU_name>(script.get(), &str);
+                  ep = script.release();
                }
             }
             sge_free(&dup);
@@ -1021,7 +1029,8 @@ bool spool_classic_default_write_func(lList **answer_list,
             char *dup = strdup(key);
             bool only_job;
             int flags = SPOOL_DEFAULT;
-            const lListElem *job;
+            // the job writer takes the task list out of the job while it writes, so it needs a mutable job
+            ocs::tom::Element<ocs::tom::JB> job;
 
             job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
@@ -1029,7 +1038,7 @@ bool spool_classic_default_write_func(lList **answer_list,
                     pe_task_id != nullptr ? pe_task_id : "<null>");
 
             if (object_type == SGE_TYPE_JOB) {
-               job = (lListElem *)object;
+               job = ocs::tom::Element<ocs::tom::JB>(const_cast<lListElem *>(object));
 
                /* we only want to spool the job object */
                if (only_job) {
@@ -1039,7 +1048,8 @@ bool spool_classic_default_write_func(lList **answer_list,
                /* job_write_spool_file takes a job, even if we only want
                 * to spool a ja_task or pe_task
                 */
-               job = ocs::tom::find_first<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id);
+               job = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true))
+                        .find_first<JB_job_number>(job_id);
 
                /* additional flags for job_write_spool_file
                 * to avoid spooling too many files
@@ -1051,7 +1061,7 @@ bool spool_classic_default_write_func(lList **answer_list,
                }
             }
 
-            if (job_write_spool_file((lListElem *)job, ja_task_id, pe_task_id, (sge_spool_flags_t)flags) != 0) {
+            if (job_write_spool_file(job, ja_task_id, pe_task_id, (sge_spool_flags_t)flags) != 0) {
                ret = false;
             }
 
@@ -1068,7 +1078,7 @@ bool spool_classic_default_write_func(lList **answer_list,
          filename  = key;
          break;
       case SGE_TYPE_AR:
-         ocs::spool::classic::ar_write_spool_file(object);
+         ocs::spool::classic::ar_write_spool_file(ocs::tom::ConstElement<ocs::tom::AR>(object));
          break;
       case SGE_TYPE_CENTRY:
          directory = CENTRY_DIR;
@@ -1084,10 +1094,10 @@ bool spool_classic_default_write_func(lList **answer_list,
    }
 
    // CS-1597: for exec hosts only static load values shall be spooled: a copy without the dynamic ones is written
-   lListElem *exechost_copy = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::EH> exechost_copy;
    if (object_type == SGE_TYPE_EXECHOST) {
-      exechost_copy = ocs_spool_exechost_static_copy(object);
-      object = exechost_copy;
+      exechost_copy = ocs_spool_exechost_static_copy(ocs::tom::ConstElement<ocs::tom::EH>(object));
+      object = exechost_copy.get();
    }
 
    /* Defence-in-depth: the key becomes a single filesystem path component below;
@@ -1137,8 +1147,6 @@ bool spool_classic_default_write_func(lList **answer_list,
       sge_free(&tmpfilepath);
       sge_dstring_free(&filepath_buffer);
    }
-
-   lFreeElem(&exechost_copy);
 
    sge_dstring_free(&tmp);
 
