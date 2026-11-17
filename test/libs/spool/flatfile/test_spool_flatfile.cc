@@ -3054,6 +3054,8 @@ static int SPOOL_key_safe_test() {
       {"12345.7",                     true},   // job-style key
       {"cqueue/host",                 true},   // queue-instance key: '/' is a valid separator
       {"q_issue1760/v01701.fritz.box",true},   // realistic queue-instance key (CS-2364 regression)
+      {"JOBSCRIPT:123.job_scripts/123", true}, // job script key as jobscript_get_key() builds it
+      {"123.1 1.host",                true},   // PE task key
       {"../../tmp/x",                 false},
       {"/etc/passwd",                 false},   // absolute path
       {"..",                          false},

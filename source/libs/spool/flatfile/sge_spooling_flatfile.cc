@@ -1202,7 +1202,8 @@ bool spool_classic_default_write_func(lList **answer_list,
  *
  * Deletes an object in the flatfile spooling.
  * In most cases, the correspondent spool file is deleted, in some cases
- * (e.g. jobs), a special remove function is called.
+ * (e.g. jobs), a special remove function is called. An object key that is not
+ * a safe relative spool path is refused (CS-2364).
  *
  * @param answer_list to return error messages
  * @param type object type description
@@ -1228,8 +1229,9 @@ bool spool_classic_default_delete_func(lList **answer_list,
 
    /* Defence-in-depth: key is used to build the unlink path; reject an unsafe
     * key (e.g. an unvalidated host name like "../../tmp/x") so a delete cannot
-    * escape the spool directory (CS-2364, CWE-22). No legitimate object key
-    * contains '/' or starts with '.'. */
+    * escape the spool directory (CS-2364, CWE-22). Keys may contain '/' as a
+    * separator ("<cqueue>/<host>"), but no component may be empty or start
+    * with '.'. */
    if (!spool_flatfile_key_is_safe(key)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_SPOOL_UNSAFE_KEY_S, key != nullptr ? key : "");
