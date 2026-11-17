@@ -512,7 +512,12 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                                                       key);
                      // queue instances (QU_Type) under this key; a list left behind by a failed read is freed
                      auto qinstances = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(qinstance_list);
-                     if (ret && qinstances) {
+                     if (!ret) {
+                        // stop at the first failure as the job loop does: a later success overwrote ret
+                        // and qmaster started with a cluster queue missing its queue instances (CS-3121)
+                        break;
+                     }
+                     if (qinstances) {
                         queue.set<CQ_qinstances>(std::move(qinstances));
                      }
                   }
