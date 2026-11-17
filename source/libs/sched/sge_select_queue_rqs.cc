@@ -115,7 +115,8 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
    dstring reason = DSTRING_INIT;
 
    if (implicit_slots_request == nullptr) {
-      implicit_slots_request = ocs::tom::Element<ocs::tom::CE>::from_typed(lCreateElem(CE_Type));
+      implicit_slots_request =
+         ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
       ocs::tom::set<CE_name>(implicit_slots_request, SGE_ATTR_SLOTS);
       // slots is an INT; the type has to be set like on any other request, both
       // because it is true and because a CE_valtype of 0 is what marks a request

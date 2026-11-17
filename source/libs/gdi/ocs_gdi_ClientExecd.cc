@@ -36,6 +36,8 @@
  * @brief GDI calls specific to the execution daemon
  */
 
+#include <tuple>
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_profiling.h"
@@ -76,11 +78,11 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
    DPRINTF("qualified hostname: %s\n", qualified_hostname);
 
    uint32_t progid = component_get_component_id();
-   // out-parameters of gdi_get_configuration(), which frees and refills them on every try
-   lListElem *local_raw = nullptr;
-   lListElem *global_raw = nullptr;
+   // the configurations received, replaced on every try
+   ocs::tom::ElementPtr<ocs::tom::CONF> global;
+   ocs::tom::ElementPtr<ocs::tom::CONF> local;
    int ret;
-   while ((ret = gdi_get_configuration(qualified_hostname, &global_raw, &local_raw))) {
+   while ((std::tie(ret, global, local) = gdi_get_configuration(qualified_hostname, true), ret != 0)) {
       if (ret == -6 || ret == -7) {
          /* confict: endpoint not unique or no permission to get config */
          DRETURN(-1);
@@ -114,10 +116,6 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
       }
    }
 
-   // the configurations received (CONF_Type), owned here from now on
-   auto global = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(global_raw);
-   auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_raw);
-
    const char *cell_root = bootstrap_get_cell_root();
    ret = merge_configuration(nullptr, progid, cell_root, *global, *local).first;
    if (ret) {
@@ -139,6 +137,7 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
       ocs::tom::set<CONF_entries>(local, nullptr);
       confs->push_back(std::move(local));
    }
+   // the list goes to a process-lifetime global of the execd, which is untyped
    *conf_list = confs.release();
    DRETURN(0);
 }
@@ -157,19 +156,12 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
 int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
    DENTER(GDI_LAYER);
 
-   // out-parameters of gdi_get_configuration()
-   lListElem *global_raw = nullptr;
-   lListElem *local_raw = nullptr;
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
    uint32_t progid = component_get_component_id();
-   int ret;
 
    DPRINTF("qualified hostname: %s\n", qualified_hostname);
-   ret = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global_raw, &local_raw);
-   // the configurations received (CONF_Type), owned here from now on
-   auto global = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(global_raw);
-   auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_raw);
+   auto [ret, global, local] = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, true);
    if (ret) {
       ERROR(MSG_CONF_NOREADCONF_IS, ret, qualified_hostname);
       DRETURN(-1);
@@ -197,6 +189,7 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
       ocs::tom::set<CONF_entries>(local, nullptr);
       confs->push_back(std::move(local));
    }
+   // the list goes to a process-lifetime global of the execd, which is untyped
    *conf_list = confs.release();
 
    DRETURN(0);
@@ -209,17 +202,19 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
  *
  * Send a list of reports.
  *
- * @param rlp REP_Type list
+ * @param rlp the reports
  * @param rhost Hostname
  * @param commproc Component name
  * @param id Component id
  * @param synchron true or false
  *
- * @return error state 0 - OK -1 - Unexpected error -2 - No memory -3 - Format error other - see sge_send_any_request()
+ * @return error state 0 - OK -1 - Unexpected error -2 - No memory -3 - Format error other - see
+ *         sge_send_any_request()
  *
  * @note MT-NOTE: report_list_send() is not MT safe (assumptions)
  */
-int ocs::gdi::ClientExecd::report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron) {
+int ocs::gdi::ClientExecd::report_list_send(const ocs::tom::ConstList<ocs::tom::REP> rlp, const char *rhost,
+                                            const char *commproc, const int id, const int synchron) {
    DENTER(TOP_LAYER);
 
    sge_pack_buffer pb;

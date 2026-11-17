@@ -90,8 +90,10 @@
 
 static ocs::tom::ListPtr<ocs::tom::VA> var_list_parse_from_environment(char **envp);
 static int sge_parse_checkpoint_interval(const char *time_str);
-static int set_yn_option (lList **opts, uint32_t opt, const char *arg, const char *value, lList **alpp);
-static int ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, const char *value, lList **alpp);
+static int set_yn_option(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_t opt, const char *arg, const char *value,
+                         lList **alpp);
+static int ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_t opt, const char *arg,
+                                 const char *value, lList **alpp);
 
 
 /** @brief Turn an argument vector into a list of options
@@ -103,7 +105,7 @@ static int ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, co
  * @param prog_number the client being parsed for, which decides the option set
  * @param arg_list the arguments, not including `argv[0]`
  * @param envp the environment, for the options that read one
- * @param pcmdline receives the parsed options (`SPA_Type`)
+ * @param pcmdline the option list the parsed options are appended to; created if it is empty
  * @param flags any of
  *              - `FLG_USE_PSEUDOS`: the first non-switch token is the job script, what follows are job
  *                arguments; the tokens are marked as "script" or "jobarg" in `SPA_switch_val`. Without it a
@@ -120,24 +122,19 @@ static int ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, co
  *
  * @note MT-NOTE: cull_parse_cmdline() is MT safe
  */
-lList *cull_parse_cmdline(
-        uint32_t prog_number,
-        const char **arg_list,
-        char **envp,
-        lList **pcmdline,
-        uint32_t flags
-) {
+lList *cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp,
+                          ocs::tom::ListPtr<ocs::tom::SPA> &pcmdline, const uint32_t flags) {
    DENTER(TOP_LAYER);
 
    const char **sp;
    lList *answer = nullptr;
    char str[MAX_STRING_SIZE];
-   lListElem *ep_opt;
+   ocs::tom::Element<ocs::tom::SPA> ep_opt;
    int i_ret;
    uint32_t is_qalter = flags & FLG_QALTER;
    bool is_hold_option = false;
 
-   if (!arg_list || !pcmdline) {
+   if (!arg_list) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(answer);
@@ -290,10 +287,8 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-ac %s\"\n", *sp);
-         lList *variables_out = nullptr;
-         i_ret = var_list_parse_from_string(&variables_out, *sp, 0);
-         /* var_list_parse_from_string() creates the list with VA_Type, so it is taken over unchecked */
-         auto variable_list = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(variables_out);
+         ocs::tom::ListPtr<ocs::tom::VA> variable_list;
+         i_ret = var_list_parse_from_string(variable_list, *sp, 0);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                      MSG_ANSWER_WRONGCONTEXTLISTFORMATAC_S , *sp);
@@ -357,7 +352,8 @@ lList *cull_parse_cmdline(
             ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
             ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingStrategy::PACKED);
          } else {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
             DRETURN(answer);
          }
 
@@ -391,7 +387,8 @@ lList *cull_parse_cmdline(
             ep_opt = sge_add_arg(pcmdline, binstance_OPT, lIntT, *(sp - 1), *sp);
             ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingInstance::PE);
          } else {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BINSTANCE_INVALID_S, *sp);
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_BINSTANCE_INVALID_S, *sp);
             DRETURN(answer);
          }
 
@@ -694,12 +691,14 @@ lList *cull_parse_cmdline(
       /* -ectx */
       if (!strcmp("-ectx", *sp)) {
          if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
-            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
 
          sp++;
          if (!*sp) {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-ectx");
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-ectx");
             DRETURN(answer);
          }
 
@@ -715,7 +714,8 @@ lList *cull_parse_cmdline(
       /* -fmt */
       if (!strcmp("-fmt", *sp)) {
           if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
-            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
 
          sp++;
@@ -832,10 +832,8 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-dc %s\"\n", *sp);
-         lList *variables_out = nullptr;
-         i_ret = var_list_parse_from_string(&variables_out, *sp, 0);
-         /* var_list_parse_from_string() creates the list with VA_Type, so it is taken over unchecked */
-         auto variable_list = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(variables_out);
+         ocs::tom::ListPtr<ocs::tom::VA> variable_list;
+         i_ret = var_list_parse_from_string(variable_list, *sp, 0);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                      MSG_PARSE_WRONGCONTEXTLISTFORMATDC_S, *sp);
@@ -865,7 +863,8 @@ lList *cull_parse_cmdline(
          /* next field is the department name */
          sp++;
          if (!*sp) {
-             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-dept");
+             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                     MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-dept");
              DRETURN(answer);
          }
 
@@ -1233,7 +1232,6 @@ lList *cull_parse_cmdline(
          dstring type = DSTRING_INIT;
          dstring user = DSTRING_INIT;
          dstring path = DSTRING_INIT;
-         lList *path_list = nullptr;
          bool success;
 
          /* next field is path_name */
@@ -1253,11 +1251,12 @@ lList *cull_parse_cmdline(
          sge_dstring_free(&user);
          sge_dstring_free(&path);
          if (success) {
-            lListElem *elem = ocs::tom::emplace_back<PN_path>(&path_list, *sp);
+            auto path_list = ocs::tom::ListPtr<ocs::tom::PN>::create("");
+            const auto elem = path_list->emplace_back<PN_path>(*sp);
 
-            if (elem != nullptr) {
+            if (elem) {
                ep_opt = sge_add_arg(pcmdline, jsv_OPT, lListT, *(sp - 1), *sp);
-               ocs::tom::set<SPA_argval_lListT>(ep_opt, path_list);
+               ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(path_list));
             } else {
                answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                        SFNMAX, MSG_SGETEXT_NOMEM);
@@ -1637,10 +1636,8 @@ DTRACE;
              DRETURN(answer);
          }
 
-         lList *pe_ranges_out = nullptr;
-         range_list_parse_from_string(&pe_ranges_out, &answer, *sp, false, false, INF_ALLOWED);
-         /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-         auto pe_range = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(pe_ranges_out);
+         ocs::tom::ListPtr<ocs::tom::RN> pe_range;
+         range_list_parse_from_string(pe_range, &answer, *sp, false, false, INF_ALLOWED);
 
          if (!pe_range) {
             sge_dstring_free(&d_arg);
@@ -1770,10 +1767,8 @@ DTRACE;
          }
 
          DPRINTF("\"-sc %s\"\n", *sp);
-         lList *variables_out = nullptr;
-         i_ret = var_list_parse_from_string(&variables_out, *sp, 0);
-         /* var_list_parse_from_string() creates the list with VA_Type, so it is taken over unchecked */
-         auto variable_list = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(variables_out);
+         ocs::tom::ListPtr<ocs::tom::VA> variable_list;
+         i_ret = var_list_parse_from_string(variable_list, *sp, 0);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                           MSG_PARSE_WRONGCONTEXTLISTFORMATSCX_S, *sp );
@@ -1862,11 +1857,13 @@ DTRACE;
 
       if (!strcmp("-sync", *sp)) {
          if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
-            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
          sp++;
          if(!*sp) {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-sync");
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-sync");
             DRETURN(answer);
          }
          
@@ -1887,7 +1884,8 @@ DTRACE;
          /* next field is path_name */
          sp++;
          if (!*sp) {
-             answer_list_add(&answer, MSG_PARSE_SOPTIONMUSTHAVEPATHNAMEARGUMENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+             answer_list_add(&answer, MSG_PARSE_SOPTIONMUSTHAVEPATHNAMEARGUMENT,
+                             STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
              DRETURN(answer);
          }
 
@@ -1915,16 +1913,15 @@ DTRACE;
          /* next field is path_name */
          sp++;
          if (!*sp) {
-             answer_list_add(&answer, MSG_PARSE_TOPTIONMUSTHAVEALISTOFTASKIDRANGES, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+             answer_list_add(&answer, MSG_PARSE_TOPTIONMUSTHAVEALISTOFTASKIDRANGES,
+                             STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
              DRETURN(answer);
          }
 
          DPRINTF("\"-t %s\"\n", *sp);
 
-         lList *task_id_ranges_out = nullptr;
-         range_list_parse_from_string(&task_id_ranges_out, &answer, *sp, false, true, INF_NOT_ALLOWED);
-         /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-         auto task_id_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(task_id_ranges_out);
+         ocs::tom::ListPtr<ocs::tom::RN> task_id_range_list;
+         range_list_parse_from_string(task_id_range_list, &answer, *sp, false, true, INF_NOT_ALLOWED);
          if (!task_id_range_list) {
             DRETURN(answer);
          }
@@ -1979,8 +1976,6 @@ DTRACE;
 /*-----------------------------------------------------------------------------*/
       /* "-u" */
       if (!strcmp("-u", *sp)) {
-         lList *user_list = nullptr;
-
          /* next field is user_list */
          sp++;
          if (!*sp) {
@@ -1995,19 +1990,21 @@ DTRACE;
             int rule[] = {ARA_name, 0};
             char **dest = nullptr;
             char *tmp;
+            // cull_parse_string_list() works on any descriptor and has no typed form
+            lList *user_list = nullptr;
 
             tmp = sge_strdup(nullptr, *sp);
             dest = string_list(tmp, ",", nullptr);
             cull_parse_string_list(dest, "user_list", ARA_Type, rule, &user_list);
             sge_free(&tmp);
             sge_free(&dest);
+            ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
+            ocs::tom::set<SPA_argval_lListT>(ep_opt, user_list);
          } else {
-            // the list is ARA_Type for qrsub and ST_Type otherwise, so it stays untyped here
-            user_list = str_list_parse_from_string(*sp, ",").release();
+            auto user_list = str_list_parse_from_string(*sp, ",");
+            ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
+            ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(user_list));
          }
-
-         ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, user_list);  
          sp++;
 
          continue;
@@ -2031,16 +2028,15 @@ DTRACE;
          /* next field is variable_list */
          sp++;
          if (!*sp) {
-             answer_list_add(&answer, MSG_PARSE_VOPTMUSTHAVEVARIABLELISTARGUMENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+             answer_list_add(&answer, MSG_PARSE_VOPTMUSTHAVEVARIABLELISTARGUMENT,
+                             STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
              DRETURN(answer);
          }
 
          DPRINTF("\"-v %s\"\n", *sp);
 
-         lList *variables_out = nullptr;
-         i_ret = var_list_parse_from_string(&variables_out, *sp, 1);
-         /* var_list_parse_from_string() creates the list with VA_Type, so it is taken over unchecked */
-         auto variable_list = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(variables_out);
+         ocs::tom::ListPtr<ocs::tom::VA> variable_list;
+         i_ret = var_list_parse_from_string(variable_list, *sp, 1);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                   MSG_PARSE_WRONGVARIABLELISTFORMATVORENVIRONMENTVARIABLENOTSET_S, *sp );
@@ -2164,7 +2160,6 @@ DTRACE;
       /* reentrancy is built upon here */
 
       if (!strcmp("-@", *sp)) {
-         lList *alp;
          int do_exit = 0;
 
          sp++;
@@ -2176,7 +2171,7 @@ DTRACE;
 
          DPRINTF("\"-@ %s\"\n", *sp);
 
-         alp = parse_script_file(prog_number, *sp, "", pcmdline, envp, FLG_USE_NO_PSEUDOS); /* MT-NOTE: !!!! */
+         lList *alp = parse_script_file(prog_number, *sp, "", pcmdline, envp, FLG_USE_NO_PSEUDOS); /* MT-NOTE: !!!! */
          if (answer_list_has_error(&alp)) {
             do_exit = 1;
          }
@@ -2321,7 +2316,8 @@ DTRACE;
          if ((flags & FLG_USE_PSEUDOS)) {
             sp++;
             if (!*sp) {
-               answer_list_add(&answer, MSG_PARSE_OPTIONMUSTBEFOLLOWEDBYJOBARGUMENTS, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+               answer_list_add(&answer, MSG_PARSE_OPTIONMUSTBEFOLLOWEDBYJOBARGUMENTS,
+                               STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
                DRETURN(answer);
             }
             for (; *sp; sp++) {
@@ -2393,6 +2389,31 @@ DTRACE;
    }
 
    DRETURN(answer);
+}
+
+/**
+ * @brief cull_parse_cmdline() for an untyped caller
+ *
+ * @param prog_number the client being parsed for, which decides the option set
+ * @param arg_list the arguments, not including `argv[0]`
+ * @param envp the environment, for the options that read one
+ * @param pcmdline the option list (`SPA_Type`) the parsed options are appended to; created if it is nullptr
+ * @param flags see the typed form
+ *
+ * @return `nullptr` when everything was fine, otherwise an answer list, see the typed form
+ */
+lList *cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp, lList **pcmdline,
+                          const uint32_t flags) {
+   if (pcmdline == nullptr) {
+      lList *answer = nullptr;
+      answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      return answer;
+   }
+   // the callers hand in their option list, which is created by the option parsers with SPA_Type
+   auto cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(*pcmdline);
+   lList *answer = cull_parse_cmdline(prog_number, arg_list, envp, cmdline, flags);
+   *pcmdline = cmdline.release();
+   return answer;
 }
 
 /***************************************************************************/
@@ -2480,9 +2501,9 @@ static ocs::tom::ListPtr<ocs::tom::VA> var_list_parse_from_environment(char **en
  *
  * @note MT-NOTES: set_yn_option() is MT safe
  */
-static int set_yn_option(lList **opts, uint32_t opt, const char *arg, const char *value,
-                         lList **alpp) {
-   lListElem *ep_opt = nullptr;
+static int set_yn_option(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t opt, const char *arg,
+                         const char *value, lList **alpp) {
+   ocs::tom::Element<ocs::tom::SPA> ep_opt;
    
    if ((strcasecmp("y", value) == 0) || (strcasecmp("yes", value) == 0)) {
       ep_opt = sge_add_arg(opts, opt, lIntT, arg, value);
@@ -2523,7 +2544,8 @@ static int set_yn_option(lList **opts, uint32_t opt, const char *arg, const char
  * @return STATUS_OK if success, STATUS_ERROR1 otherwise
  */
 static int
-ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, const char *value, lList **alpp) {
+ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t opt, const char *arg, const char *value,
+                      lList **alpp) {
    DENTER(TOP_LAYER);
    uint32_t sync_bits = SYNC_UNINITIALIZED;
 
@@ -2565,8 +2587,7 @@ ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, const char *v
    }
 
    // transport bits via opts list
-   lListElem *ep_opt = nullptr;
-   ep_opt = sge_add_arg(opts, opt, lUlongT, arg, value);
+   auto ep_opt = sge_add_arg(opts, opt, lUlongT, arg, value);
    ocs::tom::set<SPA_argval_lUlongT>(ep_opt, sync_bits);
 
    DRETURN(STATUS_OK);
@@ -2619,15 +2640,4 @@ char *reroot_path(const ocs::tom::ConstElement<ocs::tom::JB> pjob, const char *p
    }
 
    DRETURN(strdup(tmp_str));
-}
-
-/**
- * @brief reroot_path() for an untyped caller
- * @param pjob the job (`JB_Type`)
- * @param path the path to rewrite
- * @param alpp used to return error messages
- * @return the rewritten path, see the typed form
- */
-char *reroot_path(const lListElem *pjob, const char *path, lList **alpp) {
-   return reroot_path(ocs::tom::ConstElement<ocs::tom::JB>(pjob), path, alpp);
 }

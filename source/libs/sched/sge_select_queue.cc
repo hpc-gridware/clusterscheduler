@@ -1594,7 +1594,8 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
                  int slots, const uint32_t layer, const double lc_factor, const uint32_t tag, uint64_t *start_time,
                  const char *object_name) {
    DENTER(TOP_LAYER);
-   static lListElem *implicit_slots_request = nullptr;
+   // created once and kept for the life of the process
+   static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
    uint64_t latest_time = DISPATCH_TIME_NOW;
    uint64_t tmp_start;
    dispatch_t ret;
@@ -1606,7 +1607,8 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
 
    /* ensure availability of implicit slot request */
    if (!implicit_slots_request) {
-      implicit_slots_request = lCreateElem(CE_Type);
+      implicit_slots_request =
+         ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
       ocs::tom::set<CE_name>(implicit_slots_request, SGE_ATTR_SLOTS);
       // slots is an INT; the type has to be set like on any other request, both
       // because it is true and because a CE_valtype of 0 is what marks a request
@@ -1619,7 +1621,7 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
    /* match number of free slots */
    if (slots != -1) {
       tmp_start = *start_time;
-      ret = ri_time_by_slots(a, ocs::tom::ConstElement<ocs::tom::CE>(implicit_slots_request), load_attr, config_attr,
+      ret = ri_time_by_slots(a, implicit_slots_request, load_attr, config_attr,
                              actual_attr, host, queue, reason, allow_non_requestable, slots, layer, lc_factor,
                              &tmp_start, object_name, binding_inuse);
 
@@ -5948,8 +5950,9 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
    char reason_buf[1024];
    dispatch_t result;
    int total = ocs::tom::get<PE_slots>(a->pe);
-   static lListElem *implicit_slots_request = nullptr;
-   static lList *implicit_total_list = nullptr;
+   // created once and kept for the life of the process
+   static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
+   static ocs::tom::List<ocs::tom::CE> implicit_total_list;
    ocs::tom::Element<ocs::tom::CE> tep = nullptr;
    char strbuf[100];
    dstring slots_as_str;
@@ -5962,7 +5965,8 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
 
    // @todo CS-482 we should have the implicit slots request once, e.g. in the assignment structure
    if (implicit_slots_request == nullptr) {
-      implicit_slots_request = lCreateElem(CE_Type);
+      implicit_slots_request =
+         ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
       ocs::tom::set<CE_name>(implicit_slots_request, SGE_ATTR_SLOTS);
       // slots is an INT; the type has to be set like on any other request, both
       // because it is true and because a CE_valtype of 0 is what marks a request
@@ -5974,10 +5978,13 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
 
    // @todo CS-482 PE slots should be stored in a PE_consumable_config_list
    if (!implicit_total_list) {
-      tep = ocs::tom::emplace_back<CE_name>(&implicit_total_list, SGE_ATTR_SLOTS);
+      // created as the free emplace_back() creates a missing list
+      implicit_total_list =
+         ocs::tom::List<ocs::tom::CE>::from_typed(ocs::tom::ListPtr<ocs::tom::CE>::create("").release());
+      tep = implicit_total_list.emplace_back<CE_name>(SGE_ATTR_SLOTS);
    }
 
-   if (!tep && !(tep = ocs::tom::find_first_rw<CE_name>(implicit_total_list, SGE_ATTR_SLOTS))) {
+   if (!tep && !(tep = implicit_total_list.find_first<CE_name>(SGE_ATTR_SLOTS))) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -5989,8 +5996,8 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
 
    ocs::TopologyString binding_inuse;
    if (ri_slots_by_time(a, slots, ocs::tom::get<PE_resource_utilization>(a->pe),
-                        ocs::tom::ConstElement<ocs::tom::CE>(implicit_slots_request), nullptr,
-                        ocs::tom::ConstList<ocs::tom::CE>(implicit_total_list), nullptr, nullptr, nullptr,
+                        implicit_slots_request, nullptr,
+                        implicit_total_list, nullptr, nullptr, nullptr,
                         0, 0, &reason, true, true, a->pe_name, binding_inuse) != DISPATCH_OK) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
@@ -6973,9 +6980,11 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
    // if slots is defined on host level then check how much is available
    if (tep) {
       // @todo CS-482 not thread safe
-      static lListElem *implicit_slots_request = nullptr;
+      // created once and kept for the life of the process
+      static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
       if (!implicit_slots_request) {
-         implicit_slots_request = lCreateElem(CE_Type);
+         implicit_slots_request =
+            ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
          ocs::tom::set<CE_name>(implicit_slots_request, SGE_ATTR_SLOTS);
          // slots is an INT; the type has to be set like on any other request, both
          // because it is true and because a CE_valtype of 0 is what marks a request
@@ -6985,7 +6994,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
          ocs::tom::set<CE_doubleval>(implicit_slots_request, 1);
       }
 
-      result = ri_slots_by_time(a, &available, rue_list, ocs::tom::ConstElement<ocs::tom::CE>(implicit_slots_request),
+      result = ri_slots_by_time(a, &available, rue_list, implicit_slots_request,
                                 load_attr, total_list, nullptr, host, queue, layer, lc_factor,
                                 &reason, allow_non_requestable, false, object_name, binding_inuse);
       if (result != DISPATCH_OK) {

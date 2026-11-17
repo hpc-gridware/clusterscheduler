@@ -56,23 +56,58 @@
 
 #include "sched/sge_sharetree_printing.h"
 
+#include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
+
 #include "msg_smon.h"
 
+/**
+ * @brief Free the lists fetched from qmaster
+ *
+ * @param sharetree the share tree
+ * @param users the users
+ * @param projects the projects
+ * @param usersets the usersets
+ * @param config the scheduler configuration
+ * @return 0
+ */
 static int
-free_lists(lList **sharetree, lList **users, lList **projects, lList **usersets, lList **config) {
-   lFreeList(sharetree);
-   lFreeList(users);
-   lFreeList(projects);
-   lFreeList(usersets);
-   lFreeList(config);
+free_lists(ocs::tom::ListPtr<ocs::tom::STN> &sharetree, ocs::tom::ListPtr<ocs::tom::UU> &users,
+           ocs::tom::ListPtr<ocs::tom::PR> &projects, ocs::tom::ListPtr<ocs::tom::US> &usersets,
+           ocs::tom::ListPtr<ocs::tom::SC> &config) {
+   DENTER(TOP_LAYER);
+   sharetree.reset();
+   users.reset();
+   projects.reset();
+   usersets.reset();
+   config.reset();
 
-   return 0;
+   DRETURN(0);
 }
 
+/**
+ * @brief Fetch the share tree and the objects it refers to from qmaster with one multi GDI request
+ *
+ * Exits the process with 2 if there is no share tree and with 3 if a request failed.
+ *
+ * @param[out] sharetree receives the share tree
+ * @param[out] users receives the users
+ * @param[out] projects receives the projects
+ * @param[out] usersets receives the usersets
+ * @param[out] config receives the scheduler configuration
+ * @return 0
+ */
 static int
-setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets, lList **config) {
+setup_lists(ocs::tom::ListPtr<ocs::tom::STN> &sharetree, ocs::tom::ListPtr<ocs::tom::UU> &users,
+            ocs::tom::ListPtr<ocs::tom::PR> &projects, ocs::tom::ListPtr<ocs::tom::US> &usersets,
+            ocs::tom::ListPtr<ocs::tom::SC> &config) {
+   DENTER(TOP_LAYER);
    lList *alp = nullptr;               /* answer list for individual gdi_multi */
-   lEnumeration *what;
    ocs::gdi::Request gdi_multi{};
    int sharetree_id = 0;
    int sched_conf_id = 0;
@@ -82,32 +117,32 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    bool error;
 
    /* get share tree */
-   what = lWhat("%T(ALL)", STN_Type);
-   sharetree_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-   lFreeWhat(&what);
+   sharetree_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET,
+                                    ocs::gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::STN>(),
+                                    ocs::tom::what_all<ocs::tom::STN>());
    error = answer_list_output(&alp);
 
    /* get config list */
    if (!error) {
-      what = lWhat("%T(ALL)", SC_Type);
-      sched_conf_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::SC_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+      sched_conf_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::SC_LIST,
+                                        ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr,
+                                        ocs::tom::Where<ocs::tom::SC>(), ocs::tom::what_all<ocs::tom::SC>());
       error = answer_list_output(&alp);
    }
 
    /* get user list */
    if (!error) {
-      what = lWhat("%T(ALL)", UU_Type);
-      user_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::UU_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+      user_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::UU_LIST, ocs::gdi::Command::GET,
+                                  ocs::gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::UU>(),
+                                  ocs::tom::what_all<ocs::tom::UU>());
       error = answer_list_output(&alp);
    }
 
    /* get project list */
    if (!error) {
-      what = lWhat("%T(ALL)", PR_Type);
-      project_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::PR_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+      project_id = gdi_multi.request(&alp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::PR_LIST, ocs::gdi::Command::GET,
+                                     ocs::gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::PR>(),
+                                     ocs::tom::what_all<ocs::tom::PR>());
       error = answer_list_output(&alp);
    }
 
@@ -116,10 +151,10 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
     * send gdi multi request to qmaster
     */
    if (!error) {
-      what = lWhat("%T(ALL)", US_Type);
-      userset_id = gdi_multi.request(&alp, ocs::gdi::Mode::SEND, ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
+      userset_id = gdi_multi.request(&alp, ocs::gdi::Mode::SEND, ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET,
+                                     ocs::gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::US>(),
+                                     ocs::tom::what_all<ocs::tom::US>());
       gdi_multi.wait();
-      lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
 
@@ -129,33 +164,38 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
    }
 
    /* extract the sharetree lists */
-   gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::STN_LIST, sharetree_id, sharetree);
+   gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::STN_LIST,
+                          sharetree_id, sharetree);
    error = answer_list_output(&alp);
 
    /* if we have no sharetree, output message and exit */
    if (!error) {
-      if (!*sharetree || lFirst(*sharetree) == nullptr) {
+      if (sharetree->empty()) {
          fprintf(stderr, "%s\n", MSG_SGESHAREMON_NOSHARETREE);
-         lFreeList(sharetree);
+         sharetree.reset();
          exit(2);
       }
    }
 
    /* extract sched_conf, users, projects, usersets */
    if (!error) {
-      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::SC_LIST, sched_conf_id, config);
+      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::SC_LIST,
+                             sched_conf_id, config);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::UU_LIST, user_id, users);
+      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::UU_LIST,
+                             user_id, users);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::PR_LIST, project_id, projects);
+      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::PR_LIST,
+                             project_id, projects);
       error = answer_list_output(&alp);
    }
    if (!error) {
-      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::US_LIST, userset_id, usersets);
+      gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::US_LIST,
+                             userset_id, usersets);
       error = answer_list_output(&alp);
    }
 
@@ -165,7 +205,7 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
       exit(3);
    }
 
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -225,11 +265,11 @@ FCLOSE_ERROR:
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "share_mon");
 
-   lList *sharetree = nullptr;
-   lList *users = nullptr;
-   lList *projects = nullptr;
-   lList *usersets = nullptr;
-   lList *config = nullptr;
+   ocs::tom::ListPtr<ocs::tom::STN> sharetree;
+   ocs::tom::ListPtr<ocs::tom::UU> users;
+   ocs::tom::ListPtr<ocs::tom::PR> projects;
+   ocs::tom::ListPtr<ocs::tom::US> usersets;
+   ocs::tom::ListPtr<ocs::tom::SC> config;
 
    int interval=15;
    int err=0;
@@ -344,11 +384,11 @@ int main(int argc, char **argv) {
    }
 
    while (count == -1 || count-- > 0) {
-      setup_lists(&sharetree, &users, &projects, &usersets, &config);
+      setup_lists(sharetree, users, projects, usersets, config);
 
-      sconf_set_config(&config, nullptr);
+      sconf_set_config(config, nullptr);
 
-      sge_sharetree_print(&output_dstring, nullptr, sharetree, users, projects, usersets, group_nodes, decay_usage,
+      sge_sharetree_print(&output_dstring, nullptr, *sharetree, *users, *projects, *usersets, group_nodes, decay_usage,
                           names,
                           &format);
 
@@ -361,7 +401,7 @@ int main(int argc, char **argv) {
              sge_dstring_strlen(&output_dstring), 1, outfile);
       outfile = close_output(outfile);
 
-      free_lists(&sharetree, &users, &projects, &usersets, &config);
+      free_lists(sharetree, users, projects, usersets, config);
       sge_dstring_clear(&output_dstring);
 
       if (count) {

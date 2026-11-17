@@ -158,7 +158,7 @@ int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
  * @param units the unit to report it in, or nullptr
  * @return 0 on success
  */
-int sge_add_double2load_report(lList **lpp, const char *name, double value,
+int sge_add_double2load_report(ocs::tom::ListPtr<ocs::tom::LR> &lpp, const char *name, const double value,
                                const char *host, const char *units) {
    DENTER(BASIS_LAYER);
 
@@ -182,7 +182,7 @@ int sge_add_double2load_report(lList **lpp, const char *name, double value,
  * @param host the host it belongs to
  * @return 0 on success
  */
-int sge_add_int2load_report(lList **lpp, const char *name, int value,
+int sge_add_int2load_report(ocs::tom::ListPtr<ocs::tom::LR> &lpp, const char *name, const int value,
                             const char *host) {
    DENTER(BASIS_LAYER);
 
@@ -201,38 +201,59 @@ int sge_add_int2load_report(lList **lpp, const char *name, int value,
 
 */
 /** @brief Add one string load value to a report
- * @param[in,out] lpp the report being assembled
+ * @param[in,out] lpp the report being assembled; created if it is empty
  * @param name the load value's name
  * @param value its value
  * @param host the host it belongs to
- * @return 0 on success
+ * @return 0 on success, -1 if an argument is nullptr
  */
-int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host) {
+int sge_add_str2load_report(ocs::tom::ListPtr<ocs::tom::LR> &lpp, const char *name, const char *value,
+                            const char *host) {
+   DENTER(BASIS_LAYER);
+
+   if (name == nullptr || value == nullptr || host == nullptr) {
+      DRETURN(-1);
+   }
+   if (!lpp) {
+      // created as the free emplace_back() creates a missing list
+      lpp = ocs::tom::ListPtr<ocs::tom::LR>::create("");
+   }
+
+   DRETURN(sge_add_str2load_report(*lpp, name, value, host));
+}
+
+/** @brief Add one string load value to an existing report
+ * @param lp the report being assembled
+ * @param name the load value's name
+ * @param value its value
+ * @param host the host it belongs to
+ * @return 0 on success, -1 if an argument is nullptr or the report is an empty handle
+ */
+int sge_add_str2load_report(const ocs::tom::List<ocs::tom::LR> lp, const char *name, const char *value,
+                            const char *host) {
    DENTER(BASIS_LAYER);
 
    ocs::tom::Element<ocs::tom::LR> ep = nullptr;
    const void *iterator = nullptr;
 
-   if (lpp == nullptr || name == nullptr || value == nullptr || host == nullptr) {
+   if (!lp || name == nullptr || value == nullptr || host == nullptr) {
       DRETURN(-1);
    }
 
-   if (*lpp != nullptr) {
-      ocs::tom::Element<ocs::tom::LR> search_ep = ocs::tom::find_first_rw<LR_host>(*lpp, host, &iterator);
+   ocs::tom::Element<ocs::tom::LR> search_ep = ocs::tom::find_first_rw<LR_host>(lp, host, &iterator);
 
-      while (search_ep != nullptr) {
-         DPRINTF("---> %s\n", ocs::tom::get<LR_name>(search_ep));
-         if (strcmp(ocs::tom::get<LR_name>(search_ep), name) == 0) {
-            ep = search_ep;
-            break;
-         }
-         search_ep = ocs::tom::find_next_rw<LR_host>(*lpp, host, &iterator);
+   while (search_ep != nullptr) {
+      DPRINTF("---> %s\n", ocs::tom::get<LR_name>(search_ep));
+      if (strcmp(ocs::tom::get<LR_name>(search_ep), name) == 0) {
+         ep = search_ep;
+         break;
       }
+      search_ep = ocs::tom::find_next_rw<LR_host>(lp, host, &iterator);
    }
    
    if (ep == nullptr) {
       DPRINTF("adding new load variable %s for host %s\n", name, host);
-      ep = ocs::tom::emplace_back<LR_name>(lpp, name);
+      ep = lp.emplace_back<LR_name>(name);
       ocs::tom::set<LR_host>(ep, host);
       ocs::tom::set<LR_global>(ep, (uint32_t)(strcmp(host, SGE_GLOBAL_NAME) == 0 ? 1 : 0));
       ocs::tom::set<LR_is_static>(ep, sge_is_static_load_value(name));

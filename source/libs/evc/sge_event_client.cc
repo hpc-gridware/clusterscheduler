@@ -1166,12 +1166,11 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      // sge_gdi() replaces the request list with the response, so it is handed over raw
-      lList *lp_raw = registration.release();
+      // sge_gdi() replaces the request list with the response, the registered client (EV_Type); freed on every
+      // way out of this block
       alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::ADD,
-                    ocs::gdi::SubCommand::RETURN_NEW_VERSION, &lp_raw, nullptr, nullptr);
-      // the response holds the registered client (EV_Type); freed on every way out of this block
-      const auto lp = ocs::tom::ListPtr<ocs::tom::EV>::from_typed(lp_raw);
+                                      ocs::gdi::SubCommand::RETURN_NEW_VERSION, registration);
+      const auto lp = std::move(registration);
 
       aep = lFirst(alp);
 
@@ -2067,12 +2066,9 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      // sge_gdi() replaces the request list with the response, so it is handed over raw
-      lList *lp_raw = request.release();
+      // a MOD is not answered with objects; the request is freed at the end of the block
       alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE,
-                                      &lp_raw, nullptr, nullptr);
-      // the response is not read; the handle frees it at the end of the block
-      const auto response = ocs::tom::ListPtr<ocs::tom::EV>::from_typed(lp_raw);
+                                      request);
 
       if (ocs::tom::get<AN_status>(lFirst(alp)) == STATUS_OK) {
          lFreeList(&alp);
@@ -2142,20 +2138,16 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
       if (!ocs::tom::get<EV_changed>(sge_evc->ec)) {
          ocs::tom::set<EV_subscribed>(ec, nullptr);
       }
-      // request() takes the list by reference and may replace or consume it, so it is handed over raw
-      lList *lp = request.release();
 
       /*
        * TODO: extend ocs::gdi::Client::sge_gdi_ctx_class_t to support ocs::gdi::Client::sge_gdi_multi()
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
+      // the request takes the list over
       commit_id = gdi_multi->request(&alp, ocs::gdi::Mode::SEND, ocs::gdi::Target::EV_LIST,
-                                     ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE,
-                                     &lp, nullptr, nullptr, false);
+                                     ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, std::move(request));
       gdi_multi->wait();
-      // what request() left in the list is not read; the handle frees it at the end of the block
-      const auto response = ocs::tom::ListPtr<ocs::tom::EV>::from_typed(lp);
 
       if (alp != nullptr) {
          answer_list_handle_request_answer_list(&alp, stderr);
@@ -2736,7 +2728,9 @@ ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
 
    // the report (REP_Type) the event master built; its event list is runtime typed
    const auto report = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
-   int num_events = lGetNumberOfElem(ocs::tom::get<REP_list>(report));
+   // the event list of an event report holds events (ET_Type)
+   const auto report_events = ocs::tom::ConstList<ocs::tom::ET>::from_typed(ocs::tom::get<REP_list>(report));
+   int num_events = static_cast<int>(report_events.size());
    if (num_events > 0) {
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
       if (evco->new_events != nullptr) {

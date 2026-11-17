@@ -689,12 +689,10 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
          target_ids = std::move(n_h_ids);
          if (task_instances < max_aj_conc_instances) {
             uint32_t allowed_instances = max_aj_conc_instances - task_instances;
-            // range_list_move_first_n_ids() works on raw lists, it may create the one and free the other
-            lList *excluded = target_ids.release();
-            lList *allowed = nullptr;
-            range_list_move_first_n_ids(&excluded, nullptr, &allowed, allowed_instances);
-            target_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(excluded);
-            n_h_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(allowed);
+            // range_list_move_first_n_ids() may create the one list and free the other
+            ocs::tom::ListPtr<ocs::tom::RN> allowed;
+            range_list_move_first_n_ids(target_ids, nullptr, allowed, allowed_instances);
+            n_h_ids = std::move(allowed);
          }
          target_for_ids = SPLIT_PENDING_EXCLUDED_INSTANCES;
       }

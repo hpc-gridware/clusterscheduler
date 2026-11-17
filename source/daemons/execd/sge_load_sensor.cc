@@ -437,11 +437,9 @@ static int read_ls() {
             DPRINTF("format error in line: \"%100s\"\n", input);
             ERROR(MSG_LS_FORMAT_ERROR_SS, ocs::tom::get<LS_command>(ls_elem), input);
          } else {
-            {
-               // sge_add_str2load_report() takes the list through an lList **
-               lList *tmp_list = ocs::tom::get<LS_incomplete>(ls_elem);
-               sge_add_str2load_report(&tmp_list, name, value, host);
-            }
+            // after "end" and before the next "begin" there is no incomplete report: the value is dropped, as it
+            // was before when it went into a list created on the fly and lost
+            sge_add_str2load_report(ocs::tom::get<LS_incomplete>(ls_elem), name, value, host);
          }
       }
    }
@@ -785,11 +783,12 @@ int sge_ls_stop_if_pid(const pid_t pid) {
  *
  * @param qualified_hostname this host, as the cluster knows it
  * @param binary_path where to find the load sensor binaries
- * @param[in,out] lpp last complete list of load values determined by the started loadsensors
+ * @param[in,out] lpp the load report the last complete load values of the started loadsensors are added to;
+ *        created if it is empty
  *
  * @return OK
  */
-int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **lpp) {
+int sge_ls_get(const char *qualified_hostname, const char *binary_path, ocs::tom::ListPtr<ocs::tom::LR> &lpp) {
    DENTER(TOP_LAYER);
    char* load_sensor = nullptr;
 

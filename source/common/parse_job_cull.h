@@ -37,6 +37,13 @@
  * @brief Interface of the command line to job object conversion
  */
 
+#include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+
 /*
 ** flags for parse_script_file
 */
@@ -54,6 +61,14 @@
  */
 extern const char *default_prefix;
 
-lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root, const char *unqualified_hostname,
-                                const char *qualified_hostname, lList *cmdline, lListElem **pjob, uint32_t *sync_options);
-lList *parse_script_file(uint32_t prog_number, const char *script_file, const char *directive_prefix, lList **option_list_ref, char **envp, uint32_t flags);
+lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root,
+                                const char *unqualified_hostname, const char *qualified_hostname,
+                                ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ElementPtr<ocs::tom::JB> &pjob,
+                                uint32_t *sync_options);
+OCS_TRANSITIONAL lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root,
+                                                 const char *unqualified_hostname, const char *qualified_hostname,
+                                                 lList *cmdline, lListElem **pjob, uint32_t *sync_options);
+lList *parse_script_file(uint32_t prog_number, const char *script_file, const char *directive_prefix,
+                         ocs::tom::ListPtr<ocs::tom::SPA> &option_list_ref, char **envp, uint32_t flags);
+OCS_TRANSITIONAL lList *parse_script_file(uint32_t prog_number, const char *script_file, const char *directive_prefix,
+                                          lList **option_list_ref, char **envp, uint32_t flags);

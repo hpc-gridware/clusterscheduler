@@ -53,6 +53,7 @@
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
 #include "sgeobj/tom/ocs_tom_PERM.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 
@@ -90,29 +91,17 @@ ocs::gdi::Client::sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
    DRETURN(alp);
 }
 
-/*
-** NAME
-**   gdi_tsm   - trigger scheduler monitoring
-** PARAMETER
-**   schedd_name   - scheduler name  - ignored!
-**   cell          - ignored!
-** RETURN
-**   answer list
-** EXTERNAL
-**
-** DESCRIPTION
-**
-** NOTES
-**    MT-NOTE: gdi_tsm() is MT safe (assumptions)
-*/
 /**
- * @brief Trigger a scheduling run
+ * @brief Trigger a scheduling run (scheduler monitoring)
  * @return the answer list; the caller owns it
+ *
+ * @note MT-NOTE: gdi_tsm() is MT safe (assumptions)
  */
 lList *ocs::gdi::Client::gdi_tsm() {
    DENTER(GDI_LAYER);
+   ocs::tom::ListPtr<ocs::tom::SC> no_data;
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::TRIGGER,
-                        ocs::gdi::SubCommand::NONE, nullptr, nullptr, nullptr);
+                                          ocs::gdi::SubCommand::NONE, no_data);
    DRETURN(alp);
 }
 
@@ -173,28 +162,31 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
    }
 
    if ((action_flag & EXECD_KILL) || (action_flag & JOB_KILL)) {
-      lList *hlp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::ID> hosts;
       if (id_list != nullptr) {
          /*
          ** we have to convert the EH_Type to ID_Type
          ** It would be better to change the call to use ID_Type!
+         ** For these actions the caller hands in host names (EH_Type); the checked handle refuses another
+         ** type, as reading EH_name from its elements did
          */
-         for_each_ep_lv(hep, id_list) {
-            ocs::tom::Element<ocs::tom::ID> hlep = ocs::tom::emplace_back<ID_str>(&hlp, ocs::tom::get<EH_name>(hep));
+         for (const auto hep : ocs::tom::ConstList<ocs::tom::EH>(id_list)) {
+            if (!hosts) {
+               // created as the free emplace_back() creates a missing list
+               hosts = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+            }
+            const auto hlep = hosts->emplace_back<ID_str>(static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
             ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
          }
       } else {
-         auto hosts = ocs::tom::ListPtr<ocs::tom::ID>::create("kill all hosts");
+         hosts = ocs::tom::ListPtr<ocs::tom::ID>::create("kill all hosts");
          auto hlep = ocs::tom::ElementPtr<ocs::tom::ID>::create();
          ocs::tom::set<ID_str>(hlep, nullptr);
          ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
          hosts->push_back(std::move(hlep));
-         /* sge_gdi() replaces the request list with the response, so it is handed over raw */
-         hlp = hosts.release();
       }
-      lList *tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, &hlp, nullptr, nullptr);
+      lList *tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, hosts);
       lAddList(alp, &tmpalp);
-      lFreeList(&hlp);
    }
 
    if (id_list_created) {
@@ -220,11 +212,9 @@ ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *i
    DENTER(TOP_LAYER);
 
    // fetch permissions for current user and host from qmaster
-   lList *permission_list_raw = nullptr;
-   lList *alp = sge_gdi(Target::DUMMY_LIST, Command::PERMCHECK,
-                        SubCommand::NONE, &permission_list_raw, nullptr, nullptr);
    // the response holds the permissions (PERM_Type)
-   const auto permission_list = ocs::tom::ListPtr<ocs::tom::PERM>::from_typed(permission_list_raw);
+   ocs::tom::ListPtr<ocs::tom::PERM> permission_list;
+   lList *alp = sge_gdi(Target::DUMMY_LIST, Command::PERMCHECK, SubCommand::NONE, permission_list);
    if (!permission_list || permission_list->size() != 1) {
       answer_list_append_list(alpp, &alp);
       DRETURN(false);
@@ -265,32 +255,26 @@ ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *i
  * This function was introduced to make execution hosts independent
  * of being able to mount the local_conf directory.
  *
- * The out-parameters stay untyped: the callers in the daemons hand them on raw.
- *
  * @param config_name name of the local configuration or "global"; the name is resolved before the action
- * @param[out] gepp receives the global configuration (CONF_Type); an element it points to is freed first
- * @param[out] lepp receives the host local one (CONF_Type), or nullptr when there is none; an element it
- *             points to is freed first; may be nullptr if the global configuration is requested
- * @return 0 on success, -1 nullptr pointer received, -2 error resolving host, -3 invalid nullptr pointer
- *         received for the local configuration, -4 request to qmaster failed, -5 there is no global
- *         configuration, -6 endpoint not unique, -7 no permission to get the configuration, -8 access denied
- *         error on commlib layer
+ * @param with_local whether the caller takes a host local configuration; without it only "global" may be
+ *        requested
+ * @return a tuple of
+ *         - 0 on success, -1 nullptr pointer received, -2 error resolving host, -3 a local configuration was
+ *           requested without @p with_local, -4 request to qmaster failed, -5 there is no global
+ *           configuration, -6 endpoint not unique, -7 no permission to get the configuration, -8 access
+ *           denied error on commlib layer
+ *         - the global configuration, an empty handle on an error
+ *         - the host local one, an empty handle when there is none or only "global" was requested
  */
-int
-ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp) {
+std::tuple<int, ocs::tom::ElementPtr<ocs::tom::CONF>, ocs::tom::ElementPtr<ocs::tom::CONF>>
+ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with_local) {
    DENTER(GDI_LAYER);
    static int already_logged = 0;
+   ocs::tom::ElementPtr<ocs::tom::CONF> global_conf;
+   ocs::tom::ElementPtr<ocs::tom::CONF> local_conf;
 
-   if (config_name == nullptr || gepp == nullptr) {
-      DRETURN(-1);
-   }
-
-   /* free elements referenced in gepp and lepp - we will overwrite them */
-   if (*gepp != nullptr) {
-      lFreeElem(gepp);
-   }
-   if (lepp != nullptr && *lepp) {
-      lFreeElem(lepp);
+   if (config_name == nullptr) {
+      DRETURN(std::make_tuple(-1, std::move(global_conf), std::move(local_conf)));
    }
 
    /* resolve hostname, unless the global config is requested */
@@ -306,42 +290,39 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
          DPRINTF("get_configuration: error %d resolving host %s: %s\n", ret, config_name, cl_get_error_text(ret));
          hep.reset();
          ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, config_name);
-         DRETURN(-2);
+         DRETURN(std::make_tuple(-2, std::move(global_conf), std::move(local_conf)));
       }
       DPRINTF("get_configuration: unique for %s: %s\n", config_name,
               static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
 
       const uint32_t me = component_get_component_id();
       if (sge_get_com_error_flag(me, ocs::gdi::SGE_COM_ACCESS_DENIED, false)) {
-         DRETURN(-8);
+         DRETURN(std::make_tuple(-8, std::move(global_conf), std::move(local_conf)));
       }
       if (sge_get_com_error_flag(me, ocs::gdi::SGE_COM_ENDPOINT_NOT_UNIQUE, false)) {
-         DRETURN(-6);
+         DRETURN(std::make_tuple(-6, std::move(global_conf), std::move(local_conf)));
       }
    }
 
-   if (is_global_requested == 0 && !lepp) {
+   if (is_global_requested == 0 && !with_local) {
       ERROR(SFNMAX, MSG_NULLPOINTER);
-      DRETURN(-3);
+      DRETURN(std::make_tuple(-3, std::move(global_conf), std::move(local_conf)));
    }
 
    /* query configuration from sge_qmaster via gdi request */
-   lCondition *where;
+   ocs::tom::Where<ocs::tom::CONF> where;
    if (is_global_requested != 0) {
-      where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
+      where = ocs::tom::field<CONF_name>().equals_nocase(SGE_GLOBAL_NAME);
       DPRINTF("requesting global\n");
    } else {
-      where = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name,
-                     static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
+      where = ocs::tom::field<CONF_name>().equals_nocase(SGE_GLOBAL_NAME) ||
+              ocs::tom::field<CONF_name>().same_host(static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
       DPRINTF("requesting global and %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
    }
-   lEnumeration *what = lWhat("%T(ALL)", CONF_Type);
-   lList *lp_raw = nullptr;
-   lList *alp = sge_gdi(Target::CONF_LIST, Command::GET, SubCommand::NONE, &lp_raw, where, what);
+   const auto what = ocs::tom::what_all<ocs::tom::CONF>();
    // the response holds the configurations (CONF_Type)
-   const auto lp = ocs::tom::ListPtr<ocs::tom::CONF>::from_typed(lp_raw);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
+   ocs::tom::ListPtr<ocs::tom::CONF> lp;
+   lList *alp = sge_gdi(Target::CONF_LIST, Command::GET, SubCommand::NONE, lp, where, what);
 
    /* in case the gdi request failed: error handling & return */
    if (const uint32_t status = ocs::tom::get<AN_status>(lFirst(alp)); status != STATUS_OK) {
@@ -351,7 +332,8 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
       }
 
       lFreeList(&alp);
-      DRETURN((status != STATUS_EDENIED2HOST) ? -4 : -7);
+      DRETURN(std::make_tuple((status != STATUS_EDENIED2HOST) ? -4 : -7, std::move(global_conf),
+                              std::move(local_conf)));
    }
    lFreeList(&alp);
 
@@ -364,9 +346,9 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
    const auto global = lp->find_first<CONF_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
    if (!global) {
       ERROR(SFNMAX, MSG_CONF_NOGLOBAL);
-      DRETURN(-5);
+      DRETURN(std::make_tuple(-5, std::move(global_conf), std::move(local_conf)));
    }
-   *gepp = lp->extract(global).release();
+   global_conf = lp->extract(global);
 
    /* if we requested the local configuration but there is none,
     * print a warning
@@ -375,16 +357,47 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
       const char *hostname = ocs::tom::get<EH_name>(hep);
       const auto local = lp->find_first<CONF_name>(ocs::tom::Host(hostname));
       if (!local) {
-         if (*gepp) {
+         if (global_conf) {
             INFO(MSG_CONF_NOLOCAL_S, hostname);
          }
          already_logged = 0;
-         DRETURN(0);
+         DRETURN(std::make_tuple(0, std::move(global_conf), std::move(local_conf)));
       }
-      *lepp = lp->extract(local).release();
+      local_conf = lp->extract(local);
    }
 
    already_logged = 0;
-   DRETURN(0);
+   DRETURN(std::make_tuple(0, std::move(global_conf), std::move(local_conf)));
+}
+
+/**
+ * @brief gdi_get_configuration() for an untyped caller
+ *
+ * @param config_name name of the local configuration or "global"
+ * @param[out] gepp receives the global configuration (CONF_Type); an element it points to is freed first
+ * @param[out] lepp receives the host local one (CONF_Type), or nullptr when there is none; an element it
+ *             points to is freed first; may be nullptr if the global configuration is requested
+ * @return as the typed form, -3 for a local configuration requested with @p lepp nullptr
+ */
+int
+ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp) {
+   if (config_name == nullptr || gepp == nullptr) {
+      return -1;
+   }
+
+   /* free elements referenced in gepp and lepp - we will overwrite them */
+   if (*gepp != nullptr) {
+      lFreeElem(gepp);
+   }
+   if (lepp != nullptr && *lepp) {
+      lFreeElem(lepp);
+   }
+
+   auto [ret, global_conf, local_conf] = gdi_get_configuration(config_name, lepp != nullptr);
+   *gepp = global_conf.release();
+   if (lepp != nullptr) {
+      *lepp = local_conf.release();
+   }
+   return ret;
 }
 

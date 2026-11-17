@@ -111,12 +111,12 @@ execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send);
 static int 
 execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send);
 static int 
-sge_get_loadavg(const char *qualified_hostname, lList **lpp);
+sge_get_loadavg(const char *qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp);
 
-static void sge_get_topology(const char *qualified_hostname, lList **lpp);
-static void sge_get_sockets(const char *qualified_hostname, lList **lpp);
-static void sge_get_cores(const char *qualified_hostname, lList **lpp);
-static void sge_get_hwthreads(const char *qualified_hostname, lList **lpp);
+static void sge_get_topology(const char *qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp);
+static void sge_get_sockets(const char *qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp);
+static void sge_get_cores(const char *qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp);
+static void sge_get_hwthreads(const char *qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp);
 
 /** @brief What the execution daemon reports to qmaster, and how
  *
@@ -502,8 +502,7 @@ ocs::tom::ListPtr<ocs::tom::LR>
 sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
    DENTER(TOP_LAYER);
 
-   // stays raw while it is built: the functions filling it create it through an `lList **`
-   lList *lp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::LR> lp;
    int nprocs = 1;
    double load;
    const void *iterator = nullptr;
@@ -520,21 +519,21 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
 
    /* build up internal report list */
    sge_switch2start_user();
-   sge_get_loadavg(qualified_hostname, &lp);
+   sge_get_loadavg(qualified_hostname, lp);
    sge_switch2admin_user();
 
    /* report topology reporting */
-   sge_get_topology(qualified_hostname, &lp);
-   sge_get_sockets(qualified_hostname, &lp);
-   sge_get_cores(qualified_hostname, &lp);
-   sge_get_hwthreads(qualified_hostname, &lp);
+   sge_get_topology(qualified_hostname, lp);
+   sge_get_sockets(qualified_hostname, lp);
+   sge_get_cores(qualified_hostname, lp);
+   sge_get_hwthreads(qualified_hostname, lp);
 
    /* get load report from external load sensor */
-   sge_ls_get(qualified_hostname, binary_path, &lp);
+   sge_ls_get(qualified_hostname, binary_path, lp);
 
    /* make derived load values */
    /* retrieve num procs first - we need it for all other derived load values */
-   ocs::tom::ConstElement<ocs::tom::LR> ep = ocs::tom::find_first<LR_name>(lp, LOAD_ATTR_NUM_PROC, &iterator);
+   ocs::tom::ConstElement<ocs::tom::LR> ep = ocs::tom::find_first<LR_name>(*lp, LOAD_ATTR_NUM_PROC, &iterator);
    while (ep != nullptr) {
       const char *value = ocs::tom::get<LR_value>(ep);
 
@@ -544,11 +543,11 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
          }
          break;
       }   
-      ep = ocs::tom::find_next<LR_name>(lp, LOAD_ATTR_NUM_PROC, &iterator);
+      ep = ocs::tom::find_next<LR_name>(*lp, LOAD_ATTR_NUM_PROC, &iterator);
    }
 
    /* now make the derived load values */
-   ocs::tom::ConstElement<ocs::tom::LR> ep_lr = ocs::tom::find_first<LR_host>(lp, qualified_hostname, &iterator);
+   ocs::tom::ConstElement<ocs::tom::LR> ep_lr = ocs::tom::find_first<LR_host>(*lp, qualified_hostname, &iterator);
    while (ep_lr != nullptr) {
       const char *name = ocs::tom::get<LR_name>(ep_lr);
       const char *value = ocs::tom::get<LR_value>(ep_lr);
@@ -556,36 +555,35 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
       if (strcmp(name, LOAD_ATTR_LOAD_AVG) == 0) {
          if (value != nullptr) {
             load = strtod(value, nullptr);
-            sge_add_double2load_report(&lp, LOAD_ATTR_NP_LOAD_AVG, (load/nprocs), qualified_hostname, nullptr);
+            sge_add_double2load_report(lp, LOAD_ATTR_NP_LOAD_AVG, (load/nprocs), qualified_hostname, nullptr);
          }
       } else if (strcmp(name, LOAD_ATTR_LOAD_SHORT) == 0) {
          if (value != nullptr) {
             load = strtod(value, nullptr);
-            sge_add_double2load_report(&lp, LOAD_ATTR_NP_LOAD_SHORT, (load/nprocs), 
+            sge_add_double2load_report(lp, LOAD_ATTR_NP_LOAD_SHORT, (load/nprocs), 
                                           qualified_hostname, nullptr);
          }
       } else if (strcmp(name, LOAD_ATTR_LOAD_MEDIUM) == 0) {
          if (value != nullptr) {
             load = strtod(value, nullptr);
-            sge_add_double2load_report(&lp, LOAD_ATTR_NP_LOAD_MEDIUM, (load/nprocs), 
+            sge_add_double2load_report(lp, LOAD_ATTR_NP_LOAD_MEDIUM, (load/nprocs), 
                                           qualified_hostname, nullptr);
          }
       } else if (strcmp(name, LOAD_ATTR_LOAD_LONG) == 0) {
          if (value != nullptr) {
             load = strtod(value, nullptr);
-            sge_add_double2load_report(&lp, LOAD_ATTR_NP_LOAD_LONG, (load/nprocs), 
+            sge_add_double2load_report(lp, LOAD_ATTR_NP_LOAD_LONG, (load/nprocs), 
                                           qualified_hostname, nullptr);
          }
       }
 
-      ep_lr = ocs::tom::find_next<LR_host>(lp, qualified_hostname, &iterator);
+      ep_lr = ocs::tom::find_next<LR_host>(*lp, qualified_hostname, &iterator);
    }
 
    /* qmaster expects a list sorted by host */
-   auto report = ocs::tom::ListPtr<ocs::tom::LR>::from_typed(lp);
-   report->sort<ocs::tom::asc<LR_host>>();
+   lp->sort<ocs::tom::asc<LR_host>>();
 
-   DRETURN(report);
+   DRETURN(lp);
 }
 
 /**
@@ -601,7 +599,7 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
  *
  * @note MT-NOTE: sge_get_sockets() is MT safe
  */
-static void sge_get_sockets(const char* qualified_hostname, lList **lpp) {
+static void sge_get_sockets(const char* qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp) {
    DENTER(TOP_LAYER);
    int sockets = get_execd_amount_of_sockets();
    sge_add_int2load_report(lpp, LOAD_ATTR_SOCKETS, sockets, qualified_hostname);
@@ -618,7 +616,7 @@ static void sge_get_sockets(const char* qualified_hostname, lList **lpp) {
  *
  * @note MT-NOTE: sge_get_cores() is MT safe
  */
-static void sge_get_cores(const char* qualified_hostname, lList **lpp) {
+static void sge_get_cores(const char* qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp) {
    DENTER(TOP_LAYER);
    int cores = get_execd_amount_of_cores();
    sge_add_int2load_report(lpp, LOAD_ATTR_CORES, cores, qualified_hostname);
@@ -639,20 +637,29 @@ static void sge_get_cores(const char* qualified_hostname, lList **lpp) {
  */
 
 static void
-sge_get_hwthreads(const char* qualified_hostname, lList **lpp) {
+sge_get_hwthreads(const char* qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp) {
    DENTER(TOP_LAYER);
    int hwthreads = get_execd_amount_of_threads();
    sge_add_int2load_report(lpp, LOAD_ATTR_THREADS, hwthreads, qualified_hostname);
    DRETURN_VOID;
 }
 
-static void sge_get_topology(const char* qualified_hostname, lList **lpp) {
+/**
+ * @brief Appends the topology string of this host to the given list of load values
+ *
+ * Nothing is added if HWLOC is disabled or the topology cannot be determined.
+ *
+ * @param qualified_hostname name of the host
+ * @param lpp list with load values; created if it is empty
+ */
+static void sge_get_topology(const char* qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp) {
+   DENTER(TOP_LAYER);
    std::string topology;
    bool ret = false;
 
    // do not report topology if HWLOC is disabled
    if (!mconf_get_enable_hwloc()) {
-      return;
+      DRETURN_VOID;
    }
 
    // get topology string
@@ -664,9 +671,18 @@ static void sge_get_topology(const char* qualified_hostname, lList **lpp) {
    if (ret) {
       sge_add_str2load_report(lpp, LOAD_ATTR_TOPOLOGY, topology.c_str(), qualified_hostname);
    }
+   DRETURN_VOID;
 }
 
-static int sge_get_loadavg(const char *qualified_hostname, lList **lpp) {
+/**
+ * @brief Appends the load averages, the architecture, the number of processors and the memory values of this
+ *        host to the given list of load values
+ *
+ * @param qualified_hostname name of the host
+ * @param lpp list with load values; created if it is empty
+ * @return 0, 1 if the memory values cannot be read
+ */
+static int sge_get_loadavg(const char *qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp) {
    DENTER(TOP_LAYER);
 
    double avg[3];
@@ -731,7 +747,8 @@ static int sge_get_loadavg(const char *qualified_hostname, lList **lpp) {
    sge_add_double2load_report(lpp, LOAD_ATTR_VIRTUAL_TOTAL,   mem_info.mem_total + mem_info.swap_total,
    qualified_hostname, "M");
 
-   sge_add_double2load_report(lpp, LOAD_ATTR_MEM_USED,        mem_info.mem_total - mem_info.mem_free, qualified_hostname, "M");
+   sge_add_double2load_report(lpp, LOAD_ATTR_MEM_USED,        mem_info.mem_total - mem_info.mem_free,
+   qualified_hostname, "M");
    sge_add_double2load_report(lpp, LOAD_ATTR_SWAP_USED,       mem_info.swap_total - mem_info.swap_free,
    qualified_hostname, "M");
    sge_add_double2load_report(lpp, LOAD_ATTR_VIRTUAL_USED,    (mem_info.mem_total + mem_info.swap_total)- 

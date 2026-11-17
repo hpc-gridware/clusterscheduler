@@ -38,7 +38,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/tom/ocs_tom_MA.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/sge_gdi_data.h"
@@ -308,15 +310,19 @@ bool ocs::gdi::Packet::execute_external(lList **answer_list) {
     Task *task = tasks[0];
 
     if (task->target == Target::JB_LIST && (task->command == Command::ADD || task->command == Command::COPY)) {
-       lListElem *job, *next_job;
+       // the data of a job submission are the jobs (JB_Type) the client built
+       const auto jobs = ocs::tom::List<ocs::tom::JB>::from_typed(task->data_list);
+       auto next_job = jobs.back();
+       while (ret && next_job) {
+          const auto job = next_job;
+          next_job = job.next();
 
-       next_job = lLastRW(task->data_list);
-       while (ret && ((job = next_job) != nullptr)) {
-          next_job = lNextRW(job);
-
-          lDechainElem(task->data_list, job);
-          ret &= jsv_do_verify(JSV_CONTEXT_CLIENT, &job, answer_list, false);
-          lInsertElem(task->data_list, nullptr, job);
+          auto verified = jobs.extract(job);
+          ret &= jsv_do_verify(JSV_CONTEXT_CLIENT, verified, answer_list, false);
+          // lInsertElem() refused a null element, as the verification may leave one
+          if (verified) {
+             jobs.push_front(std::move(verified));
+          }
        }
     }
 

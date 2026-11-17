@@ -40,7 +40,9 @@
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_security.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 
 
-int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, lList **alpp);
+int set_sec_cred(const char *sge_root, const char *mastername, ocs::tom::Element<ocs::tom::JB> job, lList **alpp);

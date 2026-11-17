@@ -2074,7 +2074,9 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
                update_func(ec_id, nullptr, report_list, update_func_arg);
                ret = CL_RETVAL_OK;
             } else {
-               ret = ocs::gdi::ClientExecd::report_list_send(report_list, host, commproc, commid, 0);
+               // the report list (REP_Type) the event master thread built; no checked constructor on this path
+               ret = ocs::gdi::ClientExecd::report_list_send(ocs::tom::ConstList<ocs::tom::REP>::from_typed(report_list),
+                                                             host, commproc, commid, 0);
                MONITOR_MESSAGES_OUT(monitor);
             }
 

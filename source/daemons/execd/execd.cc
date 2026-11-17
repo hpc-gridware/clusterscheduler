@@ -123,8 +123,9 @@ char execd_spool_dir[SGE_PATH_MAX];   ///< Where the daemon spools; see the comm
 
 static void execd_exit_func(int i);
 static void parse_cmdline_execd(char **argv);
-static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
-static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_execd(lList **ppcmdline, lList **ppreflist, uint32_t *help);
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv,
+                                                               ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline);
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_execd(ocs::tom::List<ocs::tom::SPA> ppcmdline, uint32_t *help);
 
 static uint64_t last_qmaster_registration_time = 0;
 /** @brief When this daemon last registered with qmaster
@@ -479,7 +480,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
 
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
-   // filled through an lList ** by gdi_is_alive() and sge_gdi()
+   // the answer list, filled through an lList ** by gdi_is_alive() and returned by sge_gdi()
    lList *alp_raw = nullptr;
 
    /*
@@ -495,8 +496,6 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp_raw) == CL_RETVAL_OK) {
       auto hlp = ocs::tom::ListPtr<ocs::tom::EH>::create("exechost starting");
       hlp->push_back(ocs::tom::ElementPtr<ocs::tom::EH>::create());
-      // sge_gdi() takes the list through an lList **
-      lList *hlp_raw = hlp.release();
 
       /* register at qmaster */
       DPRINTF("*****  Register at qmaster   *****\n");
@@ -505,16 +504,15 @@ int sge_execd_register_at_qmaster(bool is_restart) {
           * This is a regular startup.
           */
          alp_raw = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
-                                             ocs::gdi::SubCommand::NONE, &hlp_raw, nullptr, nullptr);
+                                             ocs::gdi::SubCommand::NONE, hlp);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
          alp_raw = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
-                                             ocs::gdi::SubCommand::EXECD_RESTART, &hlp_raw, nullptr, nullptr);
+                                             ocs::gdi::SubCommand::EXECD_RESTART, hlp);
       }
-      hlp = ocs::tom::ListPtr<ocs::tom::EH>(hlp_raw);
       hlp.reset();
    } else {
       DPRINTF("*****  Register at qmaster - qmaster not alive!  *****\n");
@@ -554,11 +552,10 @@ int sge_execd_register_at_qmaster(bool is_restart) {
  */
 static void parse_cmdline_execd(char **argv) {
    DENTER(TOP_LAYER);
-   // the parsing functions fill and consume these lists through an lList **
-   lList *ref_list = nullptr, *pcmdline = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    uint32_t help = 0;
 
-   auto alp = sge_parse_cmdline_execd(argv+1, &pcmdline);
+   auto alp = sge_parse_cmdline_execd(argv+1, pcmdline);
    if(alp) {
       /*
       ** high level parsing error! show answer list
@@ -567,14 +564,13 @@ static void parse_cmdline_execd(char **argv) {
          fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
       alp.reset();
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       /* TODO: replace with alpp and DRETURN */
       sge_exit(1);
    }
 
-   alp = sge_parse_execd(&pcmdline, &ref_list, &help);
-   lFreeList(&pcmdline);
-   lFreeList(&ref_list);
+   alp = sge_parse_execd(*pcmdline, &help);
+   pcmdline.reset();
 
    if(alp) {
       /*
@@ -604,10 +600,11 @@ static void parse_cmdline_execd(char **argv) {
  * @brief Parse the command line options of sge_execd into a list of options
  *
  * @param argv the command line arguments, without the name of the program
- * @param[out] ppcmdline receives the options found (`SPA_Type`)
+ * @param[out] ppcmdline receives the options found
  * @return the owning handle on the answer list of an invalid argument, empty if all arguments are valid
  */
-static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv, lList **ppcmdline) {
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv,
+                                                               ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -643,13 +640,12 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv, lLis
 /**
  * @brief Evaluate the parsed command line options of sge_execd
  *
- * @param ppcmdline the options (`SPA_Type`); an option evaluated is removed
- * @param ppreflist unused
+ * @param ppcmdline the options; an option evaluated is removed
  * @param[out] help set if -help was given
  * @return the owning handle on the answer list of an error, empty if there is none
  */
-static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_execd(lList **ppcmdline, lList **ppreflist,
-                                                       uint32_t *help) {
+static ocs::tom::ListPtr<ocs::tom::AN>
+sge_parse_execd(const ocs::tom::List<ocs::tom::SPA> ppcmdline, uint32_t *help) {
    DENTER(TOP_LAYER);
 
    // filled through an lList ** by the parsing functions
@@ -659,7 +655,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_execd(lList **ppcmdline, lList 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
    */
-   while(!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
+   while (!ppcmdline.empty()) {
       /* -help */
       if(parse_flag(ppcmdline, "-help", &alp, help)) {
          usageshowed = 1;
@@ -668,7 +664,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_execd(lList **ppcmdline, lList 
       }
    }
 
-   if(!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
+   if (!ppcmdline.empty()) {
       if(!usageshowed) {
          sge_usage(EXECD, stderr);
       }

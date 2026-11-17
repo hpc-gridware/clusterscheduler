@@ -588,8 +588,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    struct passwd *pw;
    SGE_STRUCT_STAT buf;
    int used_slots, pe_slots = 0, host_slots = 0, nhosts = 0;
-   // process-lifetime object, freed and refilled for every master task: stays raw
-   static lList *processor_set = nullptr;
+   // process-lifetime object, freed and refilled for every master task
+   static ocs::tom::ListPtr<ocs::tom::RN> processor_set;
    const char *cp;
    char *shell;
    const char *cwd = nullptr;
@@ -627,7 +627,9 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    DSTRING_STATIC(dstr_fname, SGE_PATH_MAX);
    const char *str_fname;
    DSTRING_STATIC(dstr_script_file, SGE_PATH_MAX);
-   const char *str_script_file = ""; // @todo initialization shouldn't be necessary, but compiler seems to find a path in which str_script_file is not initialized!
+   // @todo initialization shouldn't be necessary, but compiler seems to find a path in which str_script_file is
+   //       not initialized!
+   const char *str_script_file = "";
 
    char mail_str[1024];
    const char *shepherd_name;
@@ -635,8 +637,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    ocs::tom::Element<ocs::tom::QU> master_q;
    ocs::tom::ConstElement<ocs::tom::CK> ep;
    ocs::tom::ConstElement<ocs::tom::VA> env;
-   // owned, but a raw out parameter of the var_list functions
-   lList *environmentList = nullptr;
+   ocs::tom::ListPtr<ocs::tom::VA> environmentList;
    const char *arch = sge_get_arch();
    const char *sge_root = bootstrap_get_sge_root();
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -689,7 +690,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       pe_task_id = ocs::tom::get<PET_id>(petep);
    }
 
-   DPRINTF("job: " sge_u32 " jatask: " sge_u32 " petask: %s\n", job_id, ja_task_id, pe_task_id != nullptr ? pe_task_id : "none");
+   DPRINTF("job: " sge_u32 " jatask: " sge_u32 " petask: %s\n", job_id, ja_task_id,
+           pe_task_id != nullptr ? pe_task_id : "none");
 
    master_q = responsible_queue(jep, jatep, petep);
    SGE_ASSERT((master_q));
@@ -733,7 +735,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    }
 
    /* increment used slots */
-   DPRINTF("%s: used slots increased from %d to %d\n", ocs::tom::get<QU_full_name>(master_q), used_slots, used_slots + 1);
+   DPRINTF("%s: used slots increased from %d to %d\n", ocs::tom::get<QU_full_name>(master_q), used_slots,
+           used_slots + 1);
    qinstance_set_slots_used(master_q, used_slots + 1);
 
    nhosts = get_nhosts(gdil);
@@ -769,7 +772,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    if (petep == nullptr) {
       DSTRING_STATIC(dstr_hostfilename, SGE_PATH_MAX);
       const char *str_hostfilename;
-      lFreeList(&processor_set);
+      processor_set.reset();
 
       str_hostfilename = sge_dstring_sprintf(&dstr_hostfilename, "%s/%s/%s", execd_spool_dir, active_dir_buffer,
                                              PE_HOSTFILE);
@@ -814,12 +817,13 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          const char *hostname = ocs::tom::get<JG_qhostname>(gdil_ep);
          const char *qname = ocs::tom::get<JG_qname>(gdil_ep);
 
-         fprintf(fp, "%s %d %s %s\n", hostname, slots, qname, ids_str.empty() ? (q_set ? q_set : "<nullptr>") : ids_str.c_str());
+         fprintf(fp, "%s %d %s %s\n", hostname, slots, qname,
+                 ids_str.empty() ? (q_set ? q_set : "<nullptr>") : ids_str.c_str());
 
          if (!sge_hostcmp(ocs::tom::get<QU_qhostname>(master_q), ocs::tom::get<JG_qhostname>(gdil_ep))) {
             host_slots += slots;
             if (q_set && strcasecmp(q_set, "UNDEFINED")) {
-               range_list_parse_from_string(&processor_set, &alp, q_set, false, false, INF_ALLOWED);
+               range_list_parse_from_string(processor_set, &alp, q_set, false, false, INF_ALLOWED);
                /* TODO: should we not print the answerlist in case of an error? */
                lFreeList(&alp);
             }
@@ -841,11 +845,11 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
 
 
    /* write environment of job */
-   var_list_copy_env_vars_and_value(&environmentList, ocs::tom::get<JB_env_list>(jep));
+   var_list_copy_env_vars_and_value(environmentList, ocs::tom::get<JB_env_list>(jep));
 
    /* write environment of petask */
    if (petep != nullptr) {
-      var_list_copy_env_vars_and_value(&environmentList,
+      var_list_copy_env_vars_and_value(environmentList,
                                        ocs::tom::get<PET_environment>(petep));
    }
 
@@ -853,12 +857,12 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       ocs::tom::ConstElement<ocs::tom::VA> user_path;
       dstring buffer = DSTRING_INIT;
 
-      if ((user_path = ocs::tom::ConstList<ocs::tom::VA>(environmentList).find_first<VA_variable>("PATH"))) {
+      if ((user_path = environmentList->find_first<VA_variable>("PATH"))) {
          sge_dstring_sprintf(&buffer, "%s:%s", tmpdir, ocs::tom::get<VA_value>(user_path));
       } else {
          sge_dstring_sprintf(&buffer, "%s:%s", tmpdir, SGE_DEFAULT_PATH);
       }
-      var_list_set_string(&environmentList, "PATH", sge_dstring_get_string(&buffer));
+      var_list_set_string(environmentList, "PATH", sge_dstring_get_string(&buffer));
       sge_dstring_free(&buffer);
    }
 
@@ -881,7 +885,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                                cwd, qualified_hostname,
                                &cwd_out);
       cwd = sge_dstring_get_string(&cwd_out);
-      var_list_set_string(&environmentList, "PWD", cwd);
+      var_list_set_string(environmentList, "PWD", cwd);
    } else {
       /* 4.) if cwd not set in job: take users home dir
        *     copy the string as we want to free the pw buffer later
@@ -892,22 +896,22 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    {
       const char *reqname = petep == nullptr ? ocs::tom::get<JB_job_name>(jep) : ocs::tom::get<PET_name>(petep);
       if (reqname != nullptr) {
-         var_list_set_string(&environmentList, "REQNAME", reqname);
+         var_list_set_string(environmentList, "REQNAME", reqname);
       }
    }
 
-   var_list_set_string(&environmentList, VAR_PREFIX "CELL", default_cell);
+   var_list_set_string(environmentList, VAR_PREFIX "CELL", default_cell);
 
-   var_list_set_string(&environmentList, "HOME", pw->pw_dir);
-   var_list_set_string(&environmentList, "SHELL", pw->pw_shell);
-   var_list_set_string(&environmentList, "USER", pw->pw_name);
-   var_list_set_string(&environmentList, "LOGNAME", pw->pw_name);
+   var_list_set_string(environmentList, "HOME", pw->pw_dir);
+   var_list_set_string(environmentList, "SHELL", pw->pw_shell);
+   var_list_set_string(environmentList, "USER", pw->pw_name);
+   var_list_set_string(environmentList, "LOGNAME", pw->pw_name);
 
    /* do not access pw->* from here on! */
    sge_free(&pw_buffer);
 
    if (sge_binding_environment != nullptr) {
-      var_list_set_string(&environmentList, "SGE_BINDING", sge_binding_environment);
+      var_list_set_string(environmentList, "SGE_BINDING", sge_binding_environment);
       sge_free(&sge_binding_environment);
    }
 
@@ -915,9 +919,9 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    // environment of the master task which a qrsh -inherit -V passes on, and would keep it where
    // it was granted no resource of that name. The __SGE_PREFIX__ forms are turned into SGE_*
    // further down, the first one even replacing what execd sets here.
-   var_list_remove_prefix_vars(&environmentList, "SGE_HGR_");
-   var_list_remove_prefix_vars(&environmentList, VAR_PREFIX "HGR_");
-   var_list_remove_prefix_vars(&environmentList, VAR_PREFIX_NR "HGR_");
+   var_list_remove_prefix_vars(*environmentList, "SGE_HGR_");
+   var_list_remove_prefix_vars(*environmentList, VAR_PREFIX "HGR_");
+   var_list_remove_prefix_vars(*environmentList, VAR_PREFIX_NR "HGR_");
 
    /* new RSMAP resource map consumable feature */
    {
@@ -944,7 +948,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                id_buffer = std::to_string(ocs::tom::get<GRU_amount>(gr));
             }
 
-            var_list_set_string(&environmentList,
+            var_list_set_string(environmentList,
                                 str_hgr.c_str(),
                                 id_buffer.c_str());
          }
@@ -1014,7 +1018,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          job_name = sge_basename(str_script_file, PATH_SEPARATOR_CHAR);
       }
 
-      var_list_set_string(&environmentList, "JOB_NAME", job_name);
+      var_list_set_string(environmentList, "JOB_NAME", job_name);
    }
 
    {
@@ -1025,7 +1029,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          const char *old_qrsh_command_s = nullptr;
          dstring old_qrsh_command = DSTRING_INIT;
 
-         old_qrsh_command_s = var_list_get_string(environmentList, var_name);
+         old_qrsh_command_s = var_list_get_string(*environmentList, var_name);
          if (old_qrsh_command_s != nullptr) {
             char delim[2];
             const char *buffer;
@@ -1048,100 +1052,101 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                }
                token = sge_strtok(nullptr, delim);
             }
-            var_list_set_string(&environmentList, var_name, sge_dstring_get_string(&new_qrsh_command));
+            var_list_set_string(environmentList, var_name, sge_dstring_get_string(&new_qrsh_command));
             sge_dstring_free(&new_qrsh_command);
          }
          sge_dstring_free(&old_qrsh_command);
       } else {
          const char *sfile;
 
-         sfile = var_list_get_string(environmentList, var_name);
+         sfile = var_list_get_string(*environmentList, var_name);
          if (sfile != nullptr) {
             dstring dstr_script_file_out = DSTRING_INIT;
 
             path_alias_list_get_path(ocs::tom::get<JB_path_aliases>(jep), nullptr,
                                      sfile, qualified_hostname,
                                      &dstr_script_file_out);
-            var_list_set_string(&environmentList, var_name, sge_dstring_get_string(&dstr_script_file_out));
+            var_list_set_string(environmentList, var_name, sge_dstring_get_string(&dstr_script_file_out));
             sge_dstring_free(&dstr_script_file_out);
          }
       }
    }
 
-   var_list_set_string(&environmentList, "JOB_SCRIPT", str_script_file);
+   var_list_set_string(environmentList, "JOB_SCRIPT", str_script_file);
    str_fname = sge_dstring_sprintf(&dstr_fname, "%s/%s", binary_path, arch);
-   var_list_set_string(&environmentList, "SGE_BINARY_PATH", str_fname);
+   var_list_set_string(environmentList, "SGE_BINARY_PATH", str_fname);
 
    /* JG: TODO (ENV): do we need REQNAME and REQUEST? */
-   var_list_set_string(&environmentList, "REQUEST",
+   var_list_set_string(environmentList, "REQUEST",
                        petep == nullptr ? ocs::tom::get<JB_job_name>(jep) : ocs::tom::get<PET_name>(petep));
-   var_list_set_string(&environmentList, "HOSTNAME", ocs::tom::get<QU_qhostname>(master_q));
-   var_list_set_string(&environmentList, "QUEUE", ocs::tom::get<QU_qname>(master_q));
+   var_list_set_string(environmentList, "HOSTNAME", ocs::tom::get<QU_qhostname>(master_q));
+   var_list_set_string(environmentList, "QUEUE", ocs::tom::get<QU_qname>(master_q));
 
-   var_list_set_uint32t(&environmentList, "JOB_ID", job_id);
+   var_list_set_uint32t(environmentList, "JOB_ID", job_id);
 
    if (job_is_array(jep)) {
       uint32_t start, end, step;
 
       job_get_submit_task_ids(jep, &start, &end, &step);
 
-      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_ID", ja_task_id);
-      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_FIRST", start);
-      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_LAST", end);
-      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_STEPSIZE", step);
+      var_list_set_uint32t(environmentList, VAR_PREFIX "TASK_ID", ja_task_id);
+      var_list_set_uint32t(environmentList, VAR_PREFIX "TASK_FIRST", start);
+      var_list_set_uint32t(environmentList, VAR_PREFIX "TASK_LAST", end);
+      var_list_set_uint32t(environmentList, VAR_PREFIX "TASK_STEPSIZE", step);
    } else {
       const char *udef = "undefined";
 
-      var_list_set_string(&environmentList, VAR_PREFIX "TASK_ID", udef);
-      var_list_set_string(&environmentList, VAR_PREFIX "TASK_FIRST", udef);
-      var_list_set_string(&environmentList, VAR_PREFIX "TASK_LAST", udef);
-      var_list_set_string(&environmentList, VAR_PREFIX "TASK_STEPSIZE", udef);
+      var_list_set_string(environmentList, VAR_PREFIX "TASK_ID", udef);
+      var_list_set_string(environmentList, VAR_PREFIX "TASK_FIRST", udef);
+      var_list_set_string(environmentList, VAR_PREFIX "TASK_LAST", udef);
+      var_list_set_string(environmentList, VAR_PREFIX "TASK_STEPSIZE", udef);
    }
 
    if (pe_task_id != nullptr) {
-      var_list_set_string(&environmentList, VAR_PREFIX "PE_TASK_ID", pe_task_id);
+      var_list_set_string(environmentList, VAR_PREFIX "PE_TASK_ID", pe_task_id);
    }
 
-   var_list_set_string(&environmentList, "ENVIRONMENT", "BATCH");
-   var_list_set_string(&environmentList, "ARC", arch);
+   var_list_set_string(environmentList, "ENVIRONMENT", "BATCH");
+   var_list_set_string(environmentList, "ARC", arch);
 
-   var_list_set_string(&environmentList, VAR_PREFIX "ARCH", arch);
+   var_list_set_string(environmentList, VAR_PREFIX "ARCH", arch);
 
    if ((cp = getenv("TZ")) && strlen(cp))
-      var_list_set_string(&environmentList, "TZ", cp);
+      var_list_set_string(environmentList, "TZ", cp);
 
    if ((cp = getenv("SGE_QMASTER_PORT")) && strlen(cp))
-      var_list_set_string(&environmentList, "SGE_QMASTER_PORT", cp);
+      var_list_set_string(environmentList, "SGE_QMASTER_PORT", cp);
 
    if ((cp = getenv("SGE_EXECD_PORT")) && strlen(cp))
-      var_list_set_string(&environmentList, "SGE_EXECD_PORT", cp);
+      var_list_set_string(environmentList, "SGE_EXECD_PORT", cp);
 
-   var_list_set_string(&environmentList, VAR_PREFIX "ROOT", sge_root);
+   var_list_set_string(environmentList, VAR_PREFIX "ROOT", sge_root);
 
-   var_list_set_int(&environmentList, "NQUEUES",
+   var_list_set_int(environmentList, "NQUEUES",
                     static_cast<int>(gdil.size()));
-   var_list_set_int(&environmentList, "NSLOTS", pe_slots);
-   var_list_set_int(&environmentList, "NHOSTS", nhosts);
+   var_list_set_int(environmentList, "NSLOTS", pe_slots);
+   var_list_set_int(environmentList, "NHOSTS", nhosts);
 
-   var_list_set_int(&environmentList, "RESTARTED", (int) ocs::tom::get<JAT_job_restarted>(jatep));
+   var_list_set_int(environmentList, "RESTARTED", (int) ocs::tom::get<JAT_job_restarted>(jatep));
 
-   var_list_set_string(&environmentList, "TMPDIR", tmpdir);
-   var_list_set_string(&environmentList, "TMP", tmpdir);
+   var_list_set_string(environmentList, "TMPDIR", tmpdir);
+   var_list_set_string(environmentList, "TMP", tmpdir);
 
-   var_list_set_string(&environmentList, VAR_PREFIX "ACCOUNT", (ocs::tom::get<JB_account>(jep) ?
+   var_list_set_string(environmentList, VAR_PREFIX "ACCOUNT", (ocs::tom::get<JB_account>(jep) ?
                                                                 ocs::tom::get<JB_account>(jep) : DEFAULT_ACCOUNT));
 
    // binding specific environment
 #if defined(OCS_HWLOC)
    if (binding_to_use_is_initialized) {
-      var_list_set_string(&environmentList, "SGE_BINDING_INSTANCE", ocs::BindingInstance::to_string(binding_instance).c_str());
-      var_list_set_string(&environmentList, "SGE_BINDING_TOPOLOGY",
+      var_list_set_string(environmentList, "SGE_BINDING_INSTANCE",
+                          ocs::BindingInstance::to_string(binding_instance).c_str());
+      var_list_set_string(environmentList, "SGE_BINDING_TOPOLOGY",
          binding_to_use.is_empty() ? NONE_STR : binding_to_use.to_product_topology_string().c_str());
    }
    if (binding_cpuset_is_initialized) {
       char *cpuset_str = NULL;
       hwloc_bitmap_asprintf(&cpuset_str, cpuset);
-      var_list_set_string(&environmentList, "SGE_BINDING_CPUSET", cpuset_str);
+      var_list_set_string(environmentList, "SGE_BINDING_CPUSET", cpuset_str);
       sge_free(&cpuset_str);
    }
 #endif
@@ -1156,7 +1161,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    if (shell_path[0] == 0) {
       strcpy(shell_path, ocs::tom::get<QU_shell>(master_q));
    }
-   var_list_set_string(&environmentList, "SHELL", shell_path);
+   var_list_set_string(environmentList, "SHELL", shell_path);
 
    /* forward name of pe to job */
    if (ocs::tom::get<JAT_granted_pe>(jatep) != nullptr) {
@@ -1164,11 +1169,11 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       const char *str_buffer;
       ocs::tom::ConstElement<ocs::tom::PE> pe;
 
-      var_list_set_string(&environmentList, "PE", ocs::tom::get<JAT_granted_pe>(jatep));
+      var_list_set_string(environmentList, "PE", ocs::tom::get<JAT_granted_pe>(jatep));
       /* forward PE_HOSTFILE only to master task */
       if (petep == nullptr) {
          str_buffer = sge_dstring_sprintf(&dstr_buffer, "%s/%s/%s", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
-         var_list_set_string(&environmentList, "PE_HOSTFILE", str_buffer);
+         var_list_set_string(environmentList, "PE_HOSTFILE", str_buffer);
       }
       // for tightly integrated parallel jobs, also set the rsh_command SGE_RSH_COMMAND
       // it will be read by qrsh -inherit in the job script
@@ -1176,7 +1181,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       if (pe != nullptr && ocs::tom::get<PE_control_slaves>(pe)) {
          const char *mconf_string = mconf_get_rsh_command();
          if (mconf_string != nullptr && sge_strnullcasecmp(mconf_string, "none") != 0) {
-            var_list_set_string(&environmentList, "SGE_RSH_COMMAND", mconf_string);
+            var_list_set_string(environmentList, "SGE_RSH_COMMAND", mconf_string);
          } else {
             char default_buffer[SGE_PATH_MAX];
             dstring default_dstring;
@@ -1184,7 +1189,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
             // @todo CS-1262 there is no utilbin/arch/rsh any more
             sge_dstring_init(&default_dstring, default_buffer, SGE_PATH_MAX);
             sge_dstring_sprintf(&default_dstring, "%s/utilbin/%s/rsh", sge_root, arch);
-            var_list_set_string(&environmentList, "SGE_RSH_COMMAND", sge_dstring_get_string(&default_dstring));
+            var_list_set_string(environmentList, "SGE_RSH_COMMAND", sge_dstring_get_string(&default_dstring));
          }
          sge_free(&mconf_string);
 
@@ -1192,14 +1197,14 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          if (mconf_get_notify_kill_type() == 0) {
             mconf_string = mconf_get_notify_kill();
             if (mconf_string != nullptr) {
-               var_list_set_string(&environmentList, "SGE_NOTIFY_KILL_SIGNAL", mconf_string);
+               var_list_set_string(environmentList, "SGE_NOTIFY_KILL_SIGNAL", mconf_string);
                sge_free(&mconf_string);
             }
          }
          if (mconf_get_notify_susp_type() == 0) {
             mconf_string = mconf_get_notify_susp();
             if (mconf_string != nullptr) {
-               var_list_set_string(&environmentList, "SGE_NOTIFY_SUSP_SIGNAL", mconf_string);
+               var_list_set_string(environmentList, "SGE_NOTIFY_SUSP_SIGNAL", mconf_string);
                sge_free(&mconf_string);
             }
          }
@@ -1208,9 +1213,9 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
 
    /* forward name of ckpt env to job */
    if ((ep = ocs::tom::get<JB_checkpoint_object>(jep))) {
-      var_list_set_string(&environmentList, VAR_PREFIX "CKPT_ENV", ocs::tom::get<CK_name>(ep));
+      var_list_set_string(environmentList, VAR_PREFIX "CKPT_ENV", ocs::tom::get<CK_name>(ep));
       if (ocs::tom::get<CK_ckpt_dir>(ep))
-         var_list_set_string(&environmentList, VAR_PREFIX "CKPT_DIR", ocs::tom::get<CK_ckpt_dir>(ep));
+         var_list_set_string(environmentList, VAR_PREFIX "CKPT_DIR", ocs::tom::get<CK_ckpt_dir>(ep));
    }
 
    {
@@ -1218,7 +1223,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       const char *str_buffer;
 
       str_buffer = sge_dstring_sprintf(&dstr_buffer, "%s/%s", execd_spool_dir, active_dir_buffer);
-      var_list_set_string(&environmentList, VAR_PREFIX "JOB_SPOOL_DIR", str_buffer);
+      var_list_set_string(environmentList, VAR_PREFIX "JOB_SPOOL_DIR", str_buffer);
    }
 
 #ifdef OCS_WITH_SYSTEMD
@@ -1230,7 +1235,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       DSTRING_STATIC(scope_error_dstr, MAX_STRING_SIZE);
       if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope,
                                                      &scope_error_dstr)) {
-         var_list_set_string(&environmentList, VAR_PREFIX "JOB_SCOPE", systemd_scope.c_str());
+         var_list_set_string(environmentList, VAR_PREFIX "JOB_SCOPE", systemd_scope.c_str());
       }
    }
 #endif
@@ -1259,23 +1264,23 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          const char *lib_path = sge_getenv(lib_path_env);
 
          if (lib_path != nullptr) {
-            var_list_set_string(&environmentList, lib_path_env, lib_path);
+            var_list_set_string(environmentList, lib_path_env, lib_path);
          }
       }
-      var_list_set_sharedlib_path(&environmentList);
+      var_list_set_sharedlib_path(environmentList);
    }
 
    /* set final of variables whose value shall be replaced */
-   var_list_copy_prefix_vars(&environmentList, environmentList,
+   var_list_copy_prefix_vars(environmentList, *environmentList,
                              VAR_PREFIX, "SGE_");
 
    /* set final of variables whose value shall not be replaced */
-   var_list_copy_prefix_vars_undef(&environmentList, environmentList,
+   var_list_copy_prefix_vars_undef(environmentList, *environmentList,
                                    VAR_PREFIX_NR, "SGE_");
-   var_list_remove_prefix_vars(&environmentList, VAR_PREFIX);
-   var_list_remove_prefix_vars(&environmentList, VAR_PREFIX_NR);
+   var_list_remove_prefix_vars(*environmentList, VAR_PREFIX);
+   var_list_remove_prefix_vars(*environmentList, VAR_PREFIX_NR);
 
-   var_list_dump_to_file(environmentList, fp);
+   var_list_dump_to_file(*environmentList, fp);
 
 
    FCLOSE(fp);
@@ -1286,7 +1291,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    str_fname = sge_dstring_sprintf(&dstr_fname, "%s/config", active_dir_buffer);
    fp = fopen(str_fname, "w");
    if (!fp) {
-      lFreeList(&environmentList);
+      environmentList.reset();
       snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, str_fname, strerror(errno));
       DRETURN(-2);
    }
@@ -1302,7 +1307,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
 
 #if defined(LINUX)
    if (!sup_groups_in_proc()) {
-      lFreeList(&environmentList);
+      environmentList.reset();
       snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOSGID);
       FCLOSE(fp);
       DRETURN(-2);
@@ -1326,20 +1331,19 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    // And when we enabled killing by add_grp_id, we also need to set it.
    if (ocs::execd::execd_use_pdc_for_usage_collection() || mconf_get_enable_addgrp_kill()) {
       // parse range and create list
-      // raw out parameters of range_list_parse_from_string(), owned by the handles below
-      lList *rlp_raw = nullptr;
+      ocs::tom::ListPtr<ocs::tom::RN> rlp;
+      // the answer list, filled through an lList ** by range_list_parse_from_string()
       lList *alp_raw = nullptr;
       gid_t temp_id;
       char *gid_range = mconf_get_gid_range();
       DPRINTF("gid_range = %s\n", gid_range);
-      range_list_parse_from_string(&rlp_raw, &alp_raw, gid_range,
+      range_list_parse_from_string(rlp, &alp_raw, gid_range,
                                    0, 0, INF_NOT_ALLOWED);
       sge_free(&gid_range);
-      const ocs::tom::ListPtr<ocs::tom::RN> rlp(rlp_raw);
       const ocs::tom::ListPtr<ocs::tom::AN> alp(alp_raw);
       if (!rlp) {
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
-         lFreeList(&environmentList);
+         environmentList.reset();
          FCLOSE(fp);
          DRETURN(-2);
       }
@@ -1351,7 +1355,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          last_addgrpid = get_next_addgrpid(*rlp, last_addgrpid);
          if (temp_id == last_addgrpid) {
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
-            lFreeList(&environmentList);
+            environmentList.reset();
             FCLOSE(fp);
             DRETURN(-1);
          }
@@ -1498,7 +1502,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       if (!(ocs::tom::get<JB_checkpoint_attr>(jep) & CHECKPOINT_AT_MINIMUM_INTERVAL)) {
          interval = 0;
       } else {
-         parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, ocs::tom::get<QU_min_cpu_interval>(master_q), nullptr, 0);
+         parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, ocs::tom::get<QU_min_cpu_interval>(master_q),
+                         nullptr, 0);
          interval = MAX(interval, ocs::tom::get<JB_checkpoint_interval>(jep));
       }
       fprintf(fp, "ckpt_interval=%d\n", (int) interval);
@@ -1833,7 +1838,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    // Write processor set
    {
       dstring range_string = DSTRING_INIT;
-      range_list_print_to_string(processor_set, &range_string, true, false, false);
+      range_list_print_to_string(*processor_set, &range_string, true, false, false);
       fprintf(fp, "processors=%s\n", sge_dstring_get_string(&range_string));
       sge_dstring_free(&range_string);
    }
@@ -1913,7 +1918,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          } else {
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOXTERM);
             FCLOSE(fp);
-            lFreeList(&environmentList);
+            environmentList.reset();
             sge_dstring_free(&core_binding_strategy_string);
             DRETURN(-2);
             /*
@@ -1985,7 +1990,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                snprintf(err_str, err_length, SFNMAX, error_string);
             }
             lFreeList(&answer_list);
-            lFreeList(&environmentList);
+            environmentList.reset();
             FCLOSE(fp);
             sge_dstring_free(&core_binding_strategy_string);
             DRETURN(-1);
@@ -2056,7 +2061,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          fprintf(fp, "master_host=%s\n", masterhost);
          fprintf(fp, "commd_port=-1\n");  /* commd_port not used for GE > 6.0 */
 
-         if ((elem = ocs::tom::ConstList<ocs::tom::VA>(environmentList).find_first<VA_variable>("QRSH_PORT"))) {
+         if ((elem = environmentList->find_first<VA_variable>("QRSH_PORT"))) {
             fprintf(fp, "qrsh_control_port=%s\n", ocs::tom::get<VA_value>(elem));
          }
 
@@ -2132,7 +2137,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    fprintf(fp, "ignore_fqdn=%d\n", ocs::Bootstrap::get_ignore_fqdn());
    fprintf(fp, "default_domain=%s\n", ocs::Bootstrap::get_default_domain());
 
-   lFreeList(&environmentList);
+   environmentList.reset();
    FCLOSE(fp);
 
    sge_dstring_free(&core_binding_strategy_string);

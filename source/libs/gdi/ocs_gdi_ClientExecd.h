@@ -38,6 +38,8 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -49,6 +51,7 @@ namespace ocs::gdi {
 
       static int gdi_wait_for_conf(lList **conf_list);
 
-      static int report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron);
+      static int report_list_send(ocs::tom::ConstList<ocs::tom::REP> rlp, const char *rhost, const char *commproc,
+                                  int id, int synchron);
    };
 }

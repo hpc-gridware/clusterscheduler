@@ -41,6 +41,7 @@
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 
@@ -58,7 +59,6 @@
 ocs::MirrorDataStore::MirrorDataStore(const DataStore::Id data_store_id, const sge_locktype_t lock_type) :
         cond_var(PTHREAD_COND_INITIALIZER),
         triggered(false),
-        new_events(nullptr),
         lock_type(lock_type),
         did_handle_initial_events(false),
         do_try_lock(false),
@@ -71,7 +71,6 @@ ocs::MirrorDataStore::MirrorDataStore(const DataStore::Id data_store_id, const s
 ocs::MirrorDataStore::~MirrorDataStore() {
    pthread_mutex_destroy(&mutex);
    pthread_cond_destroy(&cond_var);
-   lFreeList(&new_events);
 }
 
 /**
@@ -140,13 +139,18 @@ ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] uint32_t ec_id, 
    sge_mutex_lock(mirror_thread->mutex_name.c_str(), __func__, __LINE__, &mirror_thread->mutex);
 
    // move the events from control of event master to the event mirror thread
-   lListElem *new_event_obj = lFirstRW(event_list);
-   if (mirror_thread->new_events != nullptr) {
-      lList *events = nullptr;
-      ocs::tom::exchange<REP_list>(new_event_obj, &events);
-      lAddList(mirror_thread->new_events, &events);
+   // the event master hands over one report (REP_Type) whose event list holds events (ET_Type); no checked
+   // constructor on this path
+   const auto new_event_obj = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
+   lList *events_raw = nullptr;
+   ocs::tom::exchange<REP_list>(new_event_obj, &events_raw);
+   auto events = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(events_raw);
+   if (mirror_thread->new_events) {
+      // lAddList() refused a list of another layout softly, splice() throws - not reachable, the event master
+      // always builds full ET lists
+      mirror_thread->new_events->splice(std::move(events));
    } else {
-      ocs::tom::exchange<REP_list>(new_event_obj, &mirror_thread->new_events);
+      mirror_thread->new_events = std::move(events);
    }
 
    // wakeup the mirror
@@ -222,8 +226,8 @@ ocs::MirrorDataStore::wait_for_event(lList **event_list) {
 
       // fetch the new events
       if (triggered) {
-         *event_list = new_events;
-         new_events = nullptr;
+         // the out-parameter of the virtual wait_for_event() is raw
+         *event_list = new_events.release();
          triggered = false;
          do_ack = true;
       }

@@ -43,6 +43,8 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_LR.h"
 #include "sgeobj/sge_daemonize.h"
 
 /** @brief Fills in one kind of report and says when it is next due
@@ -62,6 +64,9 @@ int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
 
 void sge_limit_report_times(uint64_t latest, report_source *report_sources);
 
-int sge_add_double2load_report(lList **lpp, const char *name, double value, const char *host, const char *units);
-int sge_add_int2load_report(lList **lpp, const char *name, int value, const char *host);
-int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host);
+int sge_add_double2load_report(ocs::tom::ListPtr<ocs::tom::LR> &lpp, const char *name, double value, const char *host,
+                               const char *units);
+int sge_add_int2load_report(ocs::tom::ListPtr<ocs::tom::LR> &lpp, const char *name, int value, const char *host);
+int sge_add_str2load_report(ocs::tom::ListPtr<ocs::tom::LR> &lpp, const char *name, const char *value,
+                            const char *host);
+int sge_add_str2load_report(ocs::tom::List<ocs::tom::LR> lp, const char *name, const char *value, const char *host);

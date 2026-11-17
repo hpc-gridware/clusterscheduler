@@ -43,6 +43,9 @@
 
 #include <sys/time.h>
 
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_LR.h"
+
 /** @brief Name of the built-in idle-time load sensor */
 #define IDLE_LOADSENSOR_NAME "qidle"
 /** @brief Name of the built-in GNU load sensor */
@@ -57,7 +60,7 @@ enum {
    LS_BROKEN_PIPE                 ///< ls has exited or select <= 0
 };
 
-int sge_ls_get(const char* qualified_hostname, const char *binary_path, lList **lpp);
+int sge_ls_get(const char* qualified_hostname, const char *binary_path, ocs::tom::ListPtr<ocs::tom::LR> &lpp);
 
 void sge_ls_stop(int);
 

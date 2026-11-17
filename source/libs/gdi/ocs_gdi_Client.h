@@ -37,7 +37,14 @@
  * @brief The client side entry points of the GDI
  */
 
+#include <tuple>
+
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -59,10 +66,73 @@ namespace ocs::gdi {
     */
    class Client : public ClientBase {
    public:
-      static lList *sge_gdi(Target target, Command cmd, SubCommand, lList **lpp, lCondition *cp, lEnumeration *enp);
+      OCS_TRANSITIONAL static lList *sge_gdi(Target target, Command cmd, SubCommand, lList **lpp, lCondition *cp,
+                                             lEnumeration *enp);
+
+      template <ocs::tom::ObjectType T>
+      static lList *sge_gdi(Target target, Command cmd, SubCommand sub_cmd, ocs::tom::ListPtr<T> &data,
+                            const ocs::tom::Where<T> &where, const ocs::tom::What<T> &what);
+
+      template <ocs::tom::ObjectType T>
+      static lList *sge_gdi(Target target, Command cmd, SubCommand sub_cmd, ocs::tom::ListPtr<T> &data);
+
       static lList *gdi_tsm();
       static lList *gdi_kill(lList *id_list, uint32_t action_flag);
-      static bool sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator, bool *is_admin_host, bool *is_submit_host);
-      static int gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp);
+      static bool sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator, bool *is_admin_host,
+                                         bool *is_submit_host);
+      static std::tuple<int, ocs::tom::ElementPtr<ocs::tom::CONF>, ocs::tom::ElementPtr<ocs::tom::CONF>>
+      gdi_get_configuration(const char *config_name, bool with_local);
+      OCS_TRANSITIONAL static int gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp);
    };
+
+   /**
+    * @brief Send a single-task GDI request and wait for the answer, with typed data, condition and selection
+    *
+    * The request list stays with @p data and is copied for sending. When the
+    * command answers with objects (see #get_response_from_master()), @p data
+    * holds the answer afterwards and the request list is freed; otherwise it is
+    * left as it was.
+    *
+    * @tparam T the object type of the target
+    * @param target which object list to act on
+    * @param cmd what to do
+    * @param sub_cmd modifiers refining @p cmd
+    * @param data the objects to send, an empty handle for none; receives the ones read back
+    * @param where which objects to act on, an empty condition for all
+    * @param what which fields to transfer, an empty selection for all
+    * @return the answer list; the caller owns it
+    */
+   template <ocs::tom::ObjectType T>
+   lList *Client::sge_gdi(const Target target, const Command cmd, const SubCommand sub_cmd,
+                          ocs::tom::ListPtr<T> &data, const ocs::tom::Where<T> &where,
+                          const ocs::tom::What<T> &what) {
+      lList *const request = data.get();
+      lList *lp = request;
+      // the request copies the condition and the selection, it does not change them
+      lList *alp = sge_gdi(target, cmd, sub_cmd, &lp, const_cast<lCondition *>(where.get()),
+                           const_cast<lEnumeration *>(what.get()));
+      if (lp != request) {
+         // the answer of a task is a list of the target's type (reduced by the selection) that qmaster packed;
+         // it is unpacked with the descriptor it travelled with, so it is taken over unchecked
+         data = ocs::tom::ListPtr<T>::from_typed(lp);
+      }
+      return alp;
+   }
+
+   /**
+    * @brief Send a single-task GDI request without condition and selection and wait for the answer
+    *
+    * @tparam T the object type of the target
+    * @param target which object list to act on
+    * @param cmd what to do
+    * @param sub_cmd modifiers refining @p cmd
+    * @param data the objects to send, an empty handle for none; receives the ones read back, see the form with
+    *        a condition
+    * @return the answer list; the caller owns it
+    */
+   template <ocs::tom::ObjectType T>
+   lList *Client::sge_gdi(const Target target, const Command cmd, const SubCommand sub_cmd,
+                          ocs::tom::ListPtr<T> &data) {
+      return sge_gdi(target, cmd, sub_cmd, data, ocs::tom::Where<T>(), ocs::tom::What<T>());
+   }
 }

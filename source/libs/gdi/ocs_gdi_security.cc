@@ -53,12 +53,14 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_stdlib.h"
 #include "uti/sge_uidgid.h"
 
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "ocs_gdi_security.h"
 #include "msg_gdilib.h"
@@ -91,7 +93,8 @@
  *
  * @note MT-NOTE: set_sec_cred() is MT safe (major assumptions!)
  */
-int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, lList **alpp) {
+int set_sec_cred(const char *sge_root, const char *mastername, const ocs::tom::Element<ocs::tom::JB> job,
+                 lList **alpp) {
    DENTER(TOP_LAYER);
 
    pid_t command_pid;
@@ -121,6 +124,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
       ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
       
       ocs::tom::set<JB_tgt>(job, str);
+      sge_free(&str);
    }
       
    DRETURN(ret);

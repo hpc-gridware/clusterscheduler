@@ -34,6 +34,8 @@
 
 #include <cinttypes>
 #include "evc/sge_event_client.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
 
 #include "ocs_thread_mirror.h"
 
@@ -55,7 +57,7 @@ namespace ocs {
       static constexpr long REGISTRATION_RETRY_S = 1;
       pthread_cond_t cond_var;                     ///< used to wait for new events and to wake up this thread
       volatile bool triggered;                     ///< true if new events are pending that need to get processed
-      lList *new_events;                           ///< new events that need to get processed
+      ocs::tom::ListPtr<ocs::tom::ET> new_events;  ///< new events that need to get processed
       sge_locktype_t lock_type;                    ///< lock type used to secure the DS
       volatile bool did_handle_initial_events;     ///< true if the initial events have been handled and other threads can access the DS
       bool do_try_lock;                            ///< true if we should try to get the lock without waiting

@@ -40,8 +40,10 @@
 #include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 
 /*
  * defines for SPA_occurrence
@@ -78,7 +80,9 @@
 #define SGE_HOME_DIRECTORY "$$HOME$$"   ///< marks a `-wd` that was originally a `-cwd`, so it can still be resolved relative to the home directory
 #endif
 
-lList *cull_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp, lList **pcmdline, uint32_t flags);
+lList *cull_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp,
+                          ocs::tom::ListPtr<ocs::tom::SPA> &pcmdline, uint32_t flags);
+OCS_TRANSITIONAL lList *cull_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp, lList **pcmdline,
+                                           uint32_t flags);
 
 char *reroot_path(ocs::tom::ConstElement<ocs::tom::JB> pjob, const char *path, lList **alpp);
-OCS_TRANSITIONAL char *reroot_path(const lListElem *pjob, const char *path, lList **alpp);

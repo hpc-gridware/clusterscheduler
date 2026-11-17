@@ -59,6 +59,7 @@
 #include "sgeobj/sge_resource_quota.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Sort.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
@@ -287,7 +288,6 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                 const ocs::tom::ConstList<ocs::tom::CE> load_adjustments, int *sort_hostlist) {
    DENTER(TOP_LAYER);
 
-   lSortOrder *so = nullptr;
    const char *hnm = nullptr;
    const char *load_formula = nullptr;
    uint64_t load_adjustment_decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
@@ -295,7 +295,7 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
    double old_sort_value, new_sort_value;
 
-   so = lParseSortOrderVarArg(lGetListDescr(host_list), "%I+", EH_sort_value);
+   const auto so = ocs::tom::sort_order<ocs::tom::asc<EH_sort_value>>();
 
    const auto global = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(host_list, "global"));
    bool do_per_global_host_booking = true;
@@ -339,11 +339,13 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
          DPRINTF("Increasing sort value of Host %s from %f to %f\n", hnm, old_sort_value, new_sort_value);
       }
 
-      lResortElem(so, hep, host_list);
+      // lResortElem() did nothing for a host that is not in the list
+      if (hep) {
+         host_list.resort(so, hep);
+      }
    }
 
    sge_free(&load_formula);
-   lFreeSortOrder(&so);
 
    DRETURN(0);
 }
