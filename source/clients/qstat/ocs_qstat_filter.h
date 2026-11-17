@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <string>
+
 #include "sgeobj/sge_daemonize.h"
 
 typedef struct qstat_env_str qstat_env_t;
@@ -158,15 +160,18 @@ int qstat_cqueue_summary(qstat_env_t* qstat_env, cqueue_summary_handler_t *handl
 typedef struct queue_summary_str queue_summary_t;
 
 struct queue_summary_str {
-   
-   const char* queue_type;
+   // Owning storage: queue_type/arch/state used to be const char* aliasing
+   // stack locals of handle_queue(), a latent use-after-scope if the summary
+   // ever outlived that frame (CS-2366). An empty string means "absent".
+   // load_avg_str points at the qstat environment and stays const char*.
+   std::string queue_type;
    
    u_long32    used_slots;
    u_long32    resv_slots;
    u_long32    total_slots;
    
-   const char* arch;
-   const char* state;
+   std::string arch;
+   std::string state;
    
    const char* load_avg_str;
    bool has_load_value;

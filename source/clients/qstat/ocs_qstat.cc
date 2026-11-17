@@ -1677,13 +1677,21 @@ static int job_stdout_binding_finished(job_handler_t* handler, lList **alpp)
    DRETURN(0);
 }
 
+/**
+ * @brief Print the summary line of a queue instance to stdout.
+ *
+ * @param handler qstat handler carrying the stdout context
+ * @param qname   full name of the queue instance
+ * @param summary data of the queue instance
+ * @param alpp    answer list, unused
+ * @return 0
+ */
 static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp)
 {
    DENTER(TOP_LAYER);
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    qstat_env_t *qstat_env = handler->qstat_env;
    int sge_ext = qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED;
-   char to_print[80];
    dstring queue_output = DSTRING_INIT;
    bool hide_data = false;
 
@@ -1738,7 +1746,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    if (hide_data) {
       sge_dstring_sprintf_append(&queue_output, "%-5s ", "*");
    } else {
-      sge_dstring_sprintf_append(&queue_output, "%-5.5s ", summary->queue_type);
+      sge_dstring_sprintf_append(&queue_output, "%-5.5s ", summary->queue_type.c_str());
    }
 
    /* number of used/total slots */
@@ -1771,19 +1779,22 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
 
    /* arch */
    dstring arch = DSTRING_INIT;
-   if (summary->arch != nullptr) {
+   if (!summary->arch.empty()) {
       if (hide_data) {
          sge_dstring_sprintf_append(&arch, "%s ", "*");
       } else {
-         sge_dstring_sprintf_append(&arch, "%s ", summary->arch);
+         sge_dstring_sprintf_append(&arch, "%s ", summary->arch.c_str());
       }
    } else {
-      snprintf(to_print, sizeof(to_print), "-NA- ");
+      // the placeholder belongs into the column; it used to be written into
+      // to_print, leaving the column a nullptr for "%s"
+      sge_dstring_append(&arch, "-NA- ");
    }
    sge_dstring_sprintf_append(&queue_output, "%-13.13s ", sge_dstring_get_string(&arch));
    sge_dstring_free(&arch);
 
-   sge_dstring_sprintf_append(&queue_output, "%s\n", summary->state ? summary->state : "NA");
+   // an empty state is a normal queue and prints an empty column
+   sge_dstring_sprintf_append(&queue_output, "%s\n", summary->state.c_str());
 
    printf("%s", sge_dstring_get_string(&queue_output));
    sge_dstring_free(&queue_output);

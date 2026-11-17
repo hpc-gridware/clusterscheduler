@@ -1024,6 +1024,15 @@ static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, 
    DRETURN(0);
 }
 
+/**
+ * @brief Add the summary of a queue instance to the XML output.
+ *
+ * @param handler qstat handler carrying the XML context
+ * @param qname   full name of the queue instance
+ * @param summary data of the queue instance
+ * @param alpp    answer list, unused
+ * @return 0
+ */
 static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp) {
    DENTER(TOP_LAYER);
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
@@ -1051,7 +1060,7 @@ static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, 
    attribute_list = lGetListRW(xml_elem, XMLE_List);
    
    xml_append_Attr_S(attribute_list, "name", qname);        
-   xml_append_Attr_S(attribute_list, "qtype", summary->queue_type); 
+   xml_append_Attr_S(attribute_list, "qtype", summary->queue_type.c_str());
 
    /* number of used/free slots */
    xml_append_Attr_U(attribute_list, "slots_used", summary->used_slots);
@@ -1064,11 +1073,11 @@ static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, 
    }
    
    /* arch */
-   if(summary->arch) {
-      xml_append_Attr_S(attribute_list, "arch", summary->arch);
+   if (!summary->arch.empty()) {
+      xml_append_Attr_S(attribute_list, "arch", summary->arch.c_str());
    }
 
-   xml_append_Attr_S(attribute_list, "state", summary->state);
+   xml_append_Attr_S(attribute_list, "state", summary->state.c_str());
 
    DRETURN(0);
 }

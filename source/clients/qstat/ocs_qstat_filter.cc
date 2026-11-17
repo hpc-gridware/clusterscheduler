@@ -31,6 +31,8 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+#include <string>
+#include <type_traits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -1359,6 +1361,15 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
 
 /* ------------------- Queue Handler ---------------------------------------- */
 
+/**
+ * @brief Collect the data of one queue instance and hand it to the handler.
+ *
+ * @param q         the queue instance
+ * @param qstat_env qstat environment
+ * @param handler   output handler (plain, XML)
+ * @param alpp      answer list for errors
+ * @return 0 on success, the handler's error code otherwise
+ */
 static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp) {
    DENTER(TOP_LAYER);
 
@@ -1368,12 +1379,17 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    const char *queue_name = nullptr;
    u_long32 interval;
 
-   queue_summary_t summary;
+   queue_summary_t summary{};
+   // These fields must own their storage: they used to be const char* aliasing
+   // stack locals below (a latent use-after-scope). Pin that a revert to a
+   // non-owning type fails to compile (CS-2366).
+   static_assert(std::is_same_v<decltype(summary.queue_type), std::string> &&
+                 std::is_same_v<decltype(summary.arch), std::string> &&
+                 std::is_same_v<decltype(summary.state), std::string>,
+                 "queue_summary_t queue_type/arch/state must own their storage");
    DSTRING_STATIC(type_string, 32);
    DSTRING_STATIC(state_string, 32);
    int ret = 0;
-
-   memset(&summary, 0, sizeof(queue_summary_t));
 
    *load_alarm_reason = 0;
    *suspend_alarm_reason = 0;
@@ -1415,7 +1431,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    }
 
    qinstance_print_qtype_to_dstring(q, &type_string, true);
-   summary.queue_type = sge_dstring_get_string(&type_string);
+   summary.queue_type = sge_dstring_get_string(&type_string);   // std::string copies
 
    summary.resv_slots = qinstance_slots_reserved_now(q);
    summary.used_slots = qinstance_slots_used(q);
@@ -1424,9 +1440,9 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    /* arch */
    if (!sge_get_string_qattr(arch_string, sizeof(arch_string)-1, LOAD_ATTR_ARCH, 
        q, qstat_env->exechost_list, qstat_env->centry_list)) {
-      summary.arch = arch_string;
+      summary.arch = arch_string;   // std::string copies; no longer aliases the stack array
    } else {
-      summary.arch = nullptr;
+      summary.arch.clear();         // absent -> empty (was nullptr)
    }
    qinstance_state_append_to_dstring(q, &state_string);
    summary.state = sge_dstring_get_string(&state_string);
