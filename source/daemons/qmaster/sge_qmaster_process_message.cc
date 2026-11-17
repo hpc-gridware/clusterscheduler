@@ -497,6 +497,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
          answer_list_add(&(packet->tasks[0]->answer_list), SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
+         local_ret = false;   // CS-3128: a refused sender must not have its request executed
       }
    }
 
