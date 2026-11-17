@@ -92,7 +92,7 @@ namespace ocs {
 #pragma region Marshaling
 
    protected:
-      void set_bundle(const lList *bundle) override;
+      void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle) override;
 
    public:
       [[nodiscard]] lList *get_bundle() override;

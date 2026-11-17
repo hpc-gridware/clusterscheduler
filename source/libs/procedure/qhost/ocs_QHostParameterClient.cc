@@ -61,17 +61,17 @@ extern char **environ;
  *
  * The parser appends to the list it is given and creates it if there is none.
  *
- * @param switch_list the switches (`SPA_Type`); the one handled is removed from it
+ * @param switch_list the switches; the one handled is removed from it
  * @param opt the switch, e.g. `-u`
  * @param answer_list receives error messages
  * @param list the list the names are appended to
  * @return true when the switch was found
  */
 static bool
-parse_multi_stringlist_into(lList **switch_list, const char *opt, lList **answer_list,
+parse_multi_stringlist_into(const ocs::tom::List<ocs::tom::SPA> switch_list, const char *opt, lList **answer_list,
                             ocs::tom::ListPtr<ocs::tom::ST> &list) {
    DENTER(TOP_LAYER);
-   const bool found = parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*switch_list), opt, answer_list,
+   const bool found = parse_multi_stringlist<ST_name>(switch_list, opt, answer_list,
                                                       list);
    DRETURN(found);
 }
@@ -104,14 +104,16 @@ ocs::QHostParameterClient::show_usage(FILE *fp) {
 }
 
 
+/** @brief Collect the switches of a default file
+ * @param cmdline receives the switches, created with the first one
+ * @param answer_list receives error messages
+ * @param file the file; a missing one is no error
+ * @return true when the file is missing or every word in it was a known switch
+ */
 bool
-ocs::QHostParameterClient::parse_cmdline_from_file(lList **cmdline, lList **answer_list, const char *file) {
+ocs::QHostParameterClient::parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **answer_list,
+                                                   const char *file) {
    DENTER(TOP_LAYER);
-
-   // check input parameter
-   if (cmdline == nullptr) {
-      DRETURN(false);
-   }
 
    // check if file exists - this is no error if it does not exist, because the file is optional
    if (!sge_is_file(file)) {
@@ -122,7 +124,8 @@ ocs::QHostParameterClient::parse_cmdline_from_file(lList **cmdline, lList **answ
    int file_as_string_length;
    char *file_as_string = sge_file2string(file, &file_as_string_length);
    if (file_as_string == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S,
+                              file);
       DRETURN(false);
    }
 
@@ -134,8 +137,16 @@ ocs::QHostParameterClient::parse_cmdline_from_file(lList **cmdline, lList **answ
    DRETURN(ret);
 }
 
+/** @brief Collect the switches of a command line
+ * @param argv the arguments, without the program name
+ * @param env the environment, not used
+ * @param switch_list receives the switches, created with the first one
+ * @param answer_list receives error messages
+ * @return true when every argument was a known switch
+ */
 bool
-ocs::QHostParameterClient::parse_cmdline_and_env(char **argv, [[maybe_unused]] char **env, lList **switch_list, lList **answer_list) {
+ocs::QHostParameterClient::parse_cmdline_and_env(char **argv, [[maybe_unused]] char **env,
+                                                 ocs::tom::ListPtr<ocs::tom::SPA> &switch_list, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -183,19 +194,20 @@ ocs::QHostParameterClient::parse_cmdline_and_env(char **argv, [[maybe_unused]] c
 
       /* oops */
       show_usage(stderr);
-      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_INVALIDOPTIONARGUMENTX_S, *sp);
+      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
+                              *sp);
       DRETURN(false);
    }
    DRETURN(true);
 }
 
 /** @brief Interpret the parsed switches
- * @param ppcmdline the switches (`SPA_Type`); the ones handled are removed from it
+ * @param ppcmdline the switches; the ones handled are removed from it
  * @param alpp receives error messages
  * @return 1 when the switches are usable, 2 after `-help`, 0 on an error
  */
 int
-ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
+ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA> ppcmdline, lList **alpp) {
    DENTER(TOP_LAYER);
    uint32_t helpflag;
    bool usageshowed = false;
@@ -203,7 +215,7 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
    char * argstr = nullptr;
    int ret = 1;
 
-   while (!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
+   while (!ppcmdline.empty()) {
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          usageshowed = true;
          show_usage(stdout);
@@ -246,8 +258,7 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
          continue;
       }
       while (parse_string(ppcmdline, "-l", alpp, &argstr)) {
-         resource_match_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
-            centry_list_parse_from_string(resource_match_list_.release(), argstr, false));
+         resource_match_list_ = centry_list_parse_from_string(std::move(resource_match_list_), argstr, false);
          sge_free(&argstr);
          continue;
       }
@@ -319,33 +330,29 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
 bool ocs::QHostParameterClient::parse_parameters(lList **alpp, char **argv, char **envp) {
    DENTER(TOP_LAYER);
 
-   lList *switches_default_files = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> file_switches;
 
    // find cluster wide qhost file and parse it
    dstring file = DSTRING_INIT;
    const char *cell_root = bootstrap_get_cell_root();
    get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QHOST_FILE);
-   parse_cmdline_from_file(&switches_default_files, alpp, sge_dstring_get_string(&file));
+   parse_cmdline_from_file(file_switches, alpp, sge_dstring_get_string(&file));
 
    // find user specific qhost file and parse it
    const char *username = component_get_username();
    if (get_user_home_file_path(&file, SGE_HOME_DEF_QHOST_FILE, username, alpp)) {
-      parse_cmdline_from_file(&switches_default_files, alpp, sge_dstring_get_string(&file));
+      parse_cmdline_from_file(file_switches, alpp, sge_dstring_get_string(&file));
    }
    sge_dstring_free(&file);
 
-   lList *switches_cmd_line = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> cmdline_switches;
 
    // parse the command line
-   if (!parse_cmdline_and_env(++argv, environ, &switches_cmd_line, alpp)) {
+   if (!parse_cmdline_and_env(++argv, environ, cmdline_switches, alpp)) {
       answer_list_output(alpp);
-      lFreeList(&switches_cmd_line);
+      cmdline_switches.reset();
       sge_exit(1);
    }
-
-   // the parser hands over the switches it built
-   auto file_switches = ocs::tom::ListPtr<ocs::tom::SPA>(switches_default_files);
-   auto cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>(switches_cmd_line);
 
    // find duplicates in file and commandline and remove them
    for (const auto switch_cmd : *cmdline_switches) {
@@ -365,9 +372,7 @@ bool ocs::QHostParameterClient::parse_parameters(lList **alpp, char **argv, char
    }
 
    // parse the commandline; the parser takes the handled switches out of the list
-   lList *switches = cmdline_switches.release();
-   int is_ok = parse_switch_list(&switches, alpp);
-   cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(switches);
+   int is_ok = parse_switch_list(*cmdline_switches, alpp);
    cmdline_switches.reset();
    if (is_ok == 0) {
       answer_list_output(alpp);

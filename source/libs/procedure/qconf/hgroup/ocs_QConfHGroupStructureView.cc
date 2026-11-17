@@ -132,15 +132,13 @@ ocs::QConfHGroupStructureView::show_resolved(std::ostream &os, const ocs::tom::C
    DENTER(TOP_LAYER);
 
    lList *answer_list = nullptr;   // as in show_object(): a view has none to report into
-   lList *host_out = nullptr;
-   lList *hgroup_out = nullptr;
-   lList *matcher_out = nullptr;
+   ocs::tom::ListPtr<ocs::tom::HR> sub_host_list;
+   ocs::tom::ListPtr<ocs::tom::HR> sub_hgroup_list;
+   ocs::tom::ListPtr<ocs::tom::HR> sub_matcher_list;
    dstring string = DSTRING_INIT;
 
-   hgroup_find_all_references(hgroup, &answer_list, hgroup_list, &host_out, &hgroup_out, &matcher_out);
-   const auto sub_host_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(host_out);
-   const auto sub_hgroup_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(hgroup_out);
-   const auto sub_matcher_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(matcher_out);
+   hgroup_find_all_references(hgroup, &answer_list, hgroup_list, &sub_host_list, &sub_hgroup_list,
+                              &sub_matcher_list);
    href_list_make_uniq(*sub_host_list, &answer_list);
    href_list_append_to_dstring(*sub_host_list, &string);
    if (sge_dstring_get_string(&string) != nullptr) {

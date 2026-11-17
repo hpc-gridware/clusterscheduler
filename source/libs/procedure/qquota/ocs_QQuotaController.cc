@@ -332,7 +332,7 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                        const auto hgroup_list = model.get_hgroup_list();
                                        if (const auto hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host);
                                            hgroup != nullptr) {
-                                          lList *host_list = nullptr;
+                                          ocs::tom::ListPtr<ocs::tom::HR> host_list;
                                           hgroup_find_all_references(hgroup, nullptr, hgroup_list, &host_list,
                                                                      nullptr);
 
@@ -352,12 +352,9 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                            * A null list needs no case of its own; the lookup answers
                                            * "not a member" for it.
                                            */
-                                          if (static_cast<const lListElem *>(
-                                                 ocs::tom::find_first<HR_name>(host_list, host)) == nullptr) {
-                                             lFreeList(&host_list);
+                                          if (!host_list->find_first<HR_name>(ocs::tom::Host(host))) {
                                              continue;
                                           }
-                                          lFreeList(&host_list);
                                        }
                                     } else {
                                        if ((strcmp(host, "-") != 0) && (strcmp(qquota_filter.host, "*") != 0) &&

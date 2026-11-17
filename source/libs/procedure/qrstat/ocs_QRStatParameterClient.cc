@@ -76,28 +76,28 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList *
 
 /** @brief Interpret the parsed switches
  * @param answer_list receives error messages
- * @param cmdline the switches (`SPA_Type`); the ones handled are removed from it
+ * @param cmdline the switches; the ones handled are removed from it
  * @return true when the switches are usable
  */
 bool
-ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdline) {
+ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, const ocs::tom::List<ocs::tom::SPA> cmdline) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
    is_summary_ = true;
-   while (!ocs::tom::ConstList<ocs::tom::SPA>(*cmdline).empty()) {
+   while (!cmdline.empty()) {
       uint32_t value;
       char *argstr = nullptr;
 
       /* -help */
-      if (opt_list_has_X(*cmdline, "-help")) {
+      if (opt_list_has_X(cmdline, "-help")) {
          sge_usage(QRSTAT, stdout);
          sge_exit(0);
       }
 
       /* -u */
-      while (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-u", answer_list, user_list_)) {
+      while (parse_multi_stringlist<ST_name>(cmdline, "-u", answer_list, user_list_)) {
       }
 
       /* -explain */
@@ -105,7 +105,7 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
          is_explain_ = (value > 0) ? true : false;
       }
 
-      if (parse_string_arg(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-ectx", answer_list, &argstr)) {
+      if (parse_string_arg(cmdline, "-ectx", answer_list, &argstr)) {
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -121,7 +121,7 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
          continue;
       }
 
-      if (parse_string_arg(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-fmt", answer_list, &argstr)) {
+      if (parse_string_arg(cmdline, "-fmt", answer_list, &argstr)) {
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {
@@ -146,12 +146,12 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
 
       /* -ar */
       // a later -ar replaces the ids of an earlier one
-      while (auto ar_ids = parse_u_longlist(ocs::tom::List<ocs::tom::SPA>(*cmdline), "-ar", answer_list)) {
+      while (auto ar_ids = parse_u_longlist(cmdline, "-ar", answer_list)) {
          ar_id_list_ = std::move(*ar_ids);
          is_summary_ = false;
       }
 
-      if (!ocs::tom::ConstList<ocs::tom::SPA>(*cmdline).empty()) {
+      if (!cmdline.empty()) {
          sge_usage(QRSTAT, stdout);
          answer_list_add(answer_list, MSG_PARSE_TOOMANYOPTIONS, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -212,7 +212,8 @@ ocs::QRStatParameterClient::parse_parameters(lList **answer_list, const char **a
    }
 
    // initialize (must be done before `goto error_exit`)
-   if (!sge_parse_qrstat(answer_list, &pcmdline)) {
+   // the switch list is the out-parameter of the parsers above, which have no typed form; it is SPA_Type
+   if (!sge_parse_qrstat(answer_list, ocs::tom::List<ocs::tom::SPA>::from_typed(pcmdline))) {
       lFreeList(&pcmdline);
       DRETURN(false);
    }

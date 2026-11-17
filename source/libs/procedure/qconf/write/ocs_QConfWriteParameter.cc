@@ -63,20 +63,20 @@ lList *
 ocs::QConfWriteParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
-   lList *bundle = ProcedureParameter::get_bundle();
+   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
 
-   add_parameter_bundle(bundle, OBJECT_SET, items_->clone("").release());
+   add_parameter_bundle(*bundle, OBJECT_SET, items_->clone(""));
 
    auto mode_list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
    mode_list->emplace_back<ULNG_value>(mode_);
-   add_parameter_bundle(bundle, WRITE_MODE, mode_list.release());
+   add_parameter_bundle(*bundle, WRITE_MODE, std::move(mode_list));
 
    /* sent only when there is a selection, so a request that writes everything
     * looks exactly as it did before this existed */
    if (!select_.empty()) {
       auto select_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
       select_list->emplace_back<ST_name>(select_.c_str());
-      add_parameter_bundle(bundle, OBJECT_SELECT, select_list.release());
+      add_parameter_bundle(*bundle, OBJECT_SELECT, std::move(select_list));
    }
 
    /* likewise only when the request names what it writes, which is the one
@@ -84,10 +84,10 @@ ocs::QConfWriteParameter::get_bundle() {
    if (!name_.empty()) {
       auto name_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
       name_list->emplace_back<ST_name>(name_.c_str());
-      add_parameter_bundle(bundle, OBJECT_NAME, name_list.release());
+      add_parameter_bundle(*bundle, OBJECT_NAME, std::move(name_list));
    }
 
-   DRETURN(bundle);
+   DRETURN(bundle.release());
 }
 
 /** @brief Read the items and the batch policy back out of the request bundle
@@ -108,26 +108,26 @@ ocs::QConfWriteParameter::get_bundle() {
  * @return none
  */
 void
-ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
+ocs::QConfWriteParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    ProcedureParameter::set_bundle(bundle);
 
-   const auto set_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), OBJECT_SET);
+   const auto set_param = ocs::tom::find_first_rw<SPP_name>(bundle, OBJECT_SET);
    if (set_param != nullptr) {
       lList *value_list = nullptr;
       ocs::tom::exchange<SPP_value_list>(set_param, &value_list);
       items_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(value_list);
    }
 
-   const auto mode_param = ocs::tom::find_first<SPP_name>(bundle, WRITE_MODE);
+   const auto mode_param = bundle.find_first<SPP_name>(WRITE_MODE);
    if (mode_param != nullptr) {
       const auto value_list = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
             ocs::tom::get<SPP_value_list>(mode_param));
       mode_ = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(value_list.front()));
    }
 
-   const auto select_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_SELECT);
+   const auto select_param = bundle.find_first<SPP_name>(OBJECT_SELECT);
    if (select_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
             ocs::tom::get<SPP_value_list>(select_param)).front();
@@ -135,7 +135,7 @@ ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
       select_ = (names != nullptr) ? names : "";
    }
 
-   const auto name_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_NAME);
+   const auto name_param = bundle.find_first<SPP_name>(OBJECT_NAME);
    if (name_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
             ocs::tom::get<SPP_value_list>(name_param)).front();

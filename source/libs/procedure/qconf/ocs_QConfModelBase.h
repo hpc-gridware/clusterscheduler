@@ -197,7 +197,7 @@ namespace ocs {
        * @return the root node, or an empty handle when no tree was fetched
        */
       [[nodiscard]] ocs::tom::Element<ocs::tom::STN> get_sharetree_root() const {
-         return ocs::tom::Element<ocs::tom::STN>(lFirstRW(object_list_));
+         return ocs::tom::List<ocs::tom::STN>(object_list_).front();
       }
 
       /** @brief The descriptor of the object type

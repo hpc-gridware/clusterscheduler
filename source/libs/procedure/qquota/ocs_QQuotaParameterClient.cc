@@ -50,18 +50,17 @@
  *
  * The parser appends to the list it is given and creates it if there is none.
  *
- * @param switch_list the switches (`SPA_Type`); the one handled is removed from it
+ * @param switch_list the switches; the one handled is removed from it
  * @param opt the switch, e.g. `-u`
  * @param answer_list receives error messages
  * @param list the list the names are appended to
  * @return true when the switch was found
  */
 static bool
-parse_multi_stringlist_into(lList **switch_list, const char *opt, lList **answer_list,
+parse_multi_stringlist_into(const ocs::tom::List<ocs::tom::SPA> switch_list, const char *opt, lList **answer_list,
                             ocs::tom::ListPtr<ocs::tom::ST> &list) {
    DENTER(TOP_LAYER);
-   const bool found = parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*switch_list), opt, answer_list,
-                                                      list);
+   const bool found = parse_multi_stringlist<ST_name>(switch_list, opt, answer_list, list);
    DRETURN(found);
 }
 
@@ -104,8 +103,15 @@ ocs::QQuotaParameterClient::show_usage(FILE *fp) {
    DRETURN(true);
 }
 
+/** @brief Collect the switches of a command line
+ * @param argv the arguments, the program name first
+ * @param switch_list receives the switches, created with the first one
+ * @param answer_list receives error messages
+ * @return true when every argument was a known switch
+ */
 bool
-ocs::QQuotaParameterClient::parse_cmdline_and_env(char *argv[], lList **switch_list, lList **answer_list) {
+ocs::QQuotaParameterClient::parse_cmdline_and_env(char *argv[], ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
+                                                  lList **answer_list) {
    DENTER(TOP_LAYER);
 
    if (argv == nullptr) {
@@ -165,13 +171,17 @@ ocs::QQuotaParameterClient::parse_cmdline_and_env(char *argv[], lList **switch_l
    DRETURN(true);
 }
 
+/** @brief Collect the switches of a default file
+ * @param file the file; a missing one is no error
+ * @param switch_list receives the switches, created with the first one
+ * @param answer_list receives error messages
+ * @return true when the file is missing or every word in it was a known switch
+ */
 bool
-ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, lList **switch_list, lList **answer_list) {
+ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
+                                                    lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   if (switch_list == nullptr) {
-      DRETURN(false);
-   }
    if (!sge_is_file(file)) {
       // This is no error
       DRETURN(true);
@@ -191,12 +201,12 @@ ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, lList **sw
 }
 
 /** @brief Interpret the parsed switches
- * @param switch_list the switches (`SPA_Type`); the ones handled are removed from it
+ * @param switch_list the switches; the ones handled are removed from it
  * @param answer_list receives error messages
  * @return true when the switches are usable
  */
 bool
-ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answer_list) {
+ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA> switch_list, lList **answer_list) {
    DENTER(TOP_LAYER);
    uint32_t helpflag = 0;
    char *argstr = nullptr;
@@ -206,7 +216,7 @@ ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answe
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
    */
-   while (!ocs::tom::ConstList<ocs::tom::SPA>(*switch_list).empty()) {
+   while (!switch_list.empty()) {
       if (parse_flag(switch_list, "-help", answer_list, &helpflag)) {
          show_usage(stdout);
          sge_exit(0);
@@ -224,8 +234,7 @@ ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answe
       }
 
       if (parse_string(switch_list, "-l", answer_list, &argstr)) {
-         resource_match_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
-            centry_list_parse_from_string(resource_match_list_.release(), argstr, false));
+         resource_match_list_ = centry_list_parse_from_string(std::move(resource_match_list_), argstr, false);
          sge_free(&argstr);
          continue;
       }
@@ -280,7 +289,7 @@ ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answe
       }
    }
 
-   if (!ocs::tom::ConstList<ocs::tom::SPA>(*switch_list).empty()) {
+   if (!switch_list.empty()) {
       show_usage(stderr);
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX,
                               MSG_PARSE_TOOMANYOPTIONS);
@@ -298,7 +307,7 @@ ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answe
  */
 bool ocs::QQuotaParameterClient::parse_parameters(lList **answer_list, char **argv, char **envp) {
    DENTER(TOP_LAYER);
-   lList *pcmdline = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
 
    dstring file = DSTRING_INIT;
    const char *user = component_get_username();
@@ -306,33 +315,28 @@ bool ocs::QQuotaParameterClient::parse_parameters(lList **answer_list, char **ar
 
    /* arguments from SGE_ROOT/common/sge_qquota file */
    get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QQUOTA_FILE);
-   if (!parse_cmdline_from_file(sge_dstring_get_string(&file), &pcmdline, answer_list)) {
+   if (!parse_cmdline_from_file(sge_dstring_get_string(&file), pcmdline, answer_list)) {
       sge_dstring_free(&file);
-      lFreeList(&pcmdline);
       DRETURN(false);
    }
 
    /* arguments from $HOME/.qquota file */
    get_user_home_file_path(&file, SGE_HOME_DEF_QQUOTA_FILE, user, answer_list);
-   if (!parse_cmdline_from_file(sge_dstring_get_string(&file), &pcmdline, answer_list)) {
+   if (!parse_cmdline_from_file(sge_dstring_get_string(&file), pcmdline, answer_list)) {
       sge_dstring_free(&file);
-      lFreeList(&pcmdline);
       DRETURN(false);
    }
 
    sge_dstring_free(&file);
 
-   if (!parse_cmdline_and_env(argv, &pcmdline, answer_list)) {
-      lFreeList(&pcmdline);
+   if (!parse_cmdline_and_env(argv, pcmdline, answer_list)) {
       DRETURN(false);
    }
 
-   if (!parse_switch_list(&pcmdline, answer_list)) {
-      lFreeList(&pcmdline);
+   if (!parse_switch_list(*pcmdline, answer_list)) {
       DRETURN(false);
    }
 
-   // the handled switches were removed, but the list itself is still there
-   lFreeList(&pcmdline);
+   // the handled switches were removed, but the list itself is still there; the handle frees it
    DRETURN(true);
 }

@@ -78,10 +78,10 @@ lList *
 ocs::QConfActionParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
-   lList *bundle = ProcedureParameter::get_bundle();
-   add_parameter_bundle(bundle, ACTION_ARGS, args_->clone("").release());
+   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   add_parameter_bundle(*bundle, ACTION_ARGS, args_->clone(""));
 
-   DRETURN(bundle);
+   DRETURN(bundle.release());
 }
 
 /** @brief Read the arguments back out of the request bundle
@@ -97,12 +97,12 @@ ocs::QConfActionParameter::get_bundle() {
  * @return none
  */
 void
-ocs::QConfActionParameter::set_bundle(const lList *bundle) {
+ocs::QConfActionParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    ProcedureParameter::set_bundle(bundle);
 
-   const auto args_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), ACTION_ARGS);
+   const auto args_param = ocs::tom::find_first_rw<SPP_name>(bundle, ACTION_ARGS);
    if (args_param != nullptr) {
       lList *value_list = nullptr;
       ocs::tom::exchange<SPP_value_list>(args_param, &value_list);

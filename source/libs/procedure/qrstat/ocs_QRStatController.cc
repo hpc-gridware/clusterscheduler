@@ -220,7 +220,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             int fields[] = {QR_name, 0 };
             const char *delis[] = {" ", ",", ""};
             uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer),
-                           static_cast<const lList *>(ocs::tom::get<AR_master_queue_list>(ar)), fields, delis,
+                           ocs::tom::get<AR_master_queue_list>(ar), fields, delis,
                            FLG_NO_DELIS_STRINGS);
             view.report_ar_node_string(out_, "master hard queue_list", tmp_buffer);
          }

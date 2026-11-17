@@ -143,8 +143,15 @@ int ocs::QStatParameterClient::qstat_usage(FILE *fp, char *what) {
    return 1;
 }
 
+/** @brief First stage of the option parsing: collect the switches of a command line
+ * @param ppcmdline receives the switches, created with the first one
+ * @param answer_list receives error messages
+ * @param argv the arguments, without the program name
+ * @return true when every argument was a known switch
+ */
 bool
-ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list, char **argv) {
+ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline,
+                                                                lList **answer_list, char **argv) {
    DENTER(TOP_LAYER);
    bool ret = true;
    char **sp;
@@ -258,11 +265,11 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(lList **ppcmdlin
  * Takes the options out of the switch list, sets the display flags and puts
  * the queue, resource, user and job arguments into the member lists.
  *
- * @param ppcmdline the switches (`SPA_Type`); the ones handled are removed from it
+ * @param ppcmdline the switches; the ones handled are removed from it
  * @return the answer list with the parsing errors, or nullptr when there were none
  */
 lList *
-ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
+ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> ppcmdline) {
    DENTER(TOP_LAYER);
    stringT str;
    lList *alp = nullptr;
@@ -276,7 +283,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
       ppcmdline list.
    */
 
-   while (!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
+   while (!ppcmdline.empty()) {
       if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
          usageshowed = qstat_usage(stdout, nullptr);
          sge_exit(0);
@@ -430,32 +437,30 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
 
       while (parse_string(ppcmdline, "-l", &alp, &argstr)) {
          // frees the list it is handed and gives nullptr when the text cannot be parsed
-         resource_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
-            centry_list_parse_from_string(resource_list_.release(), argstr, false));
+         resource_list_ = centry_list_parse_from_string(std::move(resource_list_), argstr, false);
          need_queues_ = true;
          sge_free(&argstr);
       }
 
       // the parser appends to the lists
-      const auto cmdline = ocs::tom::List<ocs::tom::SPA>(*ppcmdline);
-      while (parse_multi_stringlist<ST_name>(cmdline, "-u", &alp, user_list_)) {
+      while (parse_multi_stringlist<ST_name>(ppcmdline, "-u", &alp, user_list_)) {
          ;
       }
 
-      while (parse_multi_stringlist<ST_name>(cmdline, "-U", &alp, queue_user_list_)) {
+      while (parse_multi_stringlist<ST_name>(ppcmdline, "-U", &alp, queue_user_list_)) {
          need_queues_ = true;
       }
 
-      while (parse_multi_stringlist<ST_name>(cmdline, "-pe", &alp, pe_ref_list_)) {
+      while (parse_multi_stringlist<ST_name>(ppcmdline, "-pe", &alp, pe_ref_list_)) {
          need_queues_ = true;
       }
 
-      while (parse_multi_stringlist<QR_name>(cmdline, "-q", &alp, queue_ref_list_)) {
+      while (parse_multi_stringlist<QR_name>(ppcmdline, "-q", &alp, queue_ref_list_)) {
          need_queues_ = true;
       }
 
       ocs::tom::ListPtr<ocs::tom::ST> plstringopt;
-      while (parse_multi_stringlist<ST_name>(cmdline, "-g", &alp, plstringopt)) {
+      while (parse_multi_stringlist<ST_name>(ppcmdline, "-g", &alp, plstringopt)) {
          group_opt_ |= parse_group_options(*plstringopt, &alp);
 
          // -g c is here misused to switch to a different output mode.
@@ -480,7 +485,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
          break;
    }
 
-   if (!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
+   if (!ppcmdline.empty()) {
      snprintf(str, sizeof(str), "%s\n", MSG_PARSE_TOOMANYOPTIONS);
      if (!usageshowed) {
         qstat_usage(stderr, nullptr);
@@ -492,12 +497,16 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline) {
    DRETURN(alp);
 }
 
+/** @brief First stage of the option parsing: collect the switches of a default file
+ * @param switch_list receives the switches, created with the first one
+ * @param answer_list receives error messages
+ * @param file the file; a missing or unreadable one is no error
+ * @return true when the file is missing or every word in it was a known switch
+ */
 bool
-ocs::QStatParameterClient::switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, const char *file) {
+ocs::QStatParameterClient::switch_list_qstat_parse_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
+                                                             lList **answer_list, const char *file) {
    DENTER(TOP_LAYER);
-   if (switch_list == nullptr) {
-      DRETURN(false);
-   }
    int file_as_string_length;
    char *file_as_string = sge_file2string(file, &file_as_string_length);
    if (file_as_string == nullptr) {
@@ -521,9 +530,8 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_file(lList **switch_list
 bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **argv, char **envp) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr;
-   lList *pfile = nullptr;
-   lList *pcmdline = nullptr;
-   lList *ref_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> file_switches;
+   ocs::tom::ListPtr<ocs::tom::SPA> cmdline_switches;
 
    const char *username = component_get_username();
    const char *cell_root = bootstrap_get_cell_root();
@@ -546,19 +554,15 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
 
    // get options from the global and user specific files
    if (get_root_file_path(&file, cell_root, common_file)) {
-      switch_list_qstat_parse_from_file(&pfile, &alp, sge_dstring_get_string(&file));
+      switch_list_qstat_parse_from_file(file_switches, &alp, sge_dstring_get_string(&file));
    }
    if (get_user_home_file_path(&file, home_file, username, &alp)) {
-      switch_list_qstat_parse_from_file(&pfile, &alp, sge_dstring_get_string(&file));
+      switch_list_qstat_parse_from_file(file_switches, &alp, sge_dstring_get_string(&file));
    }
    sge_dstring_free(&file);
 
    // get options from the command line
-   switch_list_qstat_parse_from_cmdline(&pcmdline, &alp, argv);
-
-   // the parser hands over the switches it built
-   auto file_switches = ocs::tom::ListPtr<ocs::tom::SPA>(pfile);
-   auto cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>(pcmdline);
+   switch_list_qstat_parse_from_cmdline(cmdline_switches, &alp, argv);
 
    // remove duplicate options
    for (const auto ep_1 : *cmdline_switches) {
@@ -598,9 +602,7 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
    }
 
    // handle all switches; the parser takes the handled ones out of the list
-   lList *switches = cmdline_switches.release();
-   alp = sge_parse_qstat(&switches);
-   cmdline_switches = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(switches);
+   alp = sge_parse_qstat(*cmdline_switches);
    if (alp != nullptr) {
       /*
       ** low level parsing error! show answer list
@@ -610,7 +612,6 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       }
       lFreeList(&alp);
       cmdline_switches.reset();
-      lFreeList(&ref_list);
       sge_exit(1);
    }
 

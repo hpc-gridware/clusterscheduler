@@ -169,7 +169,7 @@ namespace ocs {
       ProcedureModel() = default;
 
       virtual ~ProcedureModel() {
-         lFreeList(&procedure_response);
+         ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(procedure_response).reset();
       };
 #pragma endregion
    };

@@ -25,6 +25,8 @@
 
 #include "ocs_QStatParameter.h"
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "tom/ocs_List.h"
 
 namespace ocs {
    /** @brief The `qstat` parameters as the client builds them, from argv and the environment
@@ -39,10 +41,12 @@ namespace ocs {
 #pragma region Parsing
 
    private:
-      lList *sge_parse_qstat(lList **ppcmdline);
-      bool switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, const char *file);
+      lList *sge_parse_qstat(ocs::tom::List<ocs::tom::SPA> ppcmdline);
+      bool switch_list_qstat_parse_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &switch_list, lList **answer_list,
+                                             const char *file);
       int qstat_usage(FILE *fp, char *what);
-      bool switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list, char **argv);
+      bool switch_list_qstat_parse_from_cmdline(ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline, lList **answer_list,
+                                                char **argv);
 
    public:
       bool parse_parameters(lList **answer_list, char **argv, char **envp);

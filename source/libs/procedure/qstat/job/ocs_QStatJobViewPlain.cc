@@ -954,21 +954,19 @@ void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const ocs::tom::C
    if (ocs::tom::has<JB_env_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::VA> env_list = ocs::tom::get<JB_env_list>(job)) {
          // the variables with VAR_PREFIX are not shown: they are split off a copy, since the job is the caller's
-         lList *list = lCopyList(nullptr, env_list);
-         lList *do_not_print = nullptr;
-         var_list_split_prefix_vars(&list, &do_not_print, VAR_PREFIX);
+         const auto list = env_list.clone();
+         ocs::tom::ListPtr<ocs::tom::VA> do_not_print;
+         var_list_split_prefix_vars(*list, do_not_print, VAR_PREFIX);
 
-         if (lGetNumberOfElem(list) == 0) {
+         if (list->empty()) {
             os << std::format("{:<{}} {}", ocs::ascii_width("env_list:"), left_width, "NONE") << "\n";
          } else {
             std::ostringstream ss_list;
             delis[0] = "=";
             constexpr int fields[] = {VA_variable, VA_value, 0};
-            uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS | FLG_NO_VALUE_AS_EMPTY);
+            uni_print_list(ss_list, *list, fields, delis, FLG_NO_DELIS_STRINGS | FLG_NO_VALUE_AS_EMPTY);
             os << std::format("{:<{}} {}", ocs::ascii_width("env_list:"), left_width, ss_list.str()) << "\n";
          }
-         lFreeList(&do_not_print);
-         lFreeList(&list);
       }
    }
    DRETURN_VOID;

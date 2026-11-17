@@ -146,7 +146,8 @@ namespace ocs {
        */
       explicit QConfWriteParameter(lList *bundle, gdi::Packet *packet)
          : ProcedureParameter("", packet) {
-         QConfWriteParameter::set_bundle(bundle);
+         // the request data is structure-checked in qmaster's listener (CS-3125)
+         QConfWriteParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
       }
 
       ~QConfWriteParameter() override = default;
@@ -235,6 +236,6 @@ namespace ocs {
 
       lList *get_bundle() override;
 
-      void set_bundle(const lList *bundle) override;
+      void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle) override;
    };
 }

@@ -218,15 +218,15 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const ocs::tom::ConstList
 uint32_t ocs::QStatJobViewBase::count_pending_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    uint32_t pending = 0;
-   const int range_fields[] = {
-      JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids
+   // the ids of one hold list, nothing if the (reduced) job does not hold it
+   const auto hold_ids = [job]<auto F>() -> uint32_t {
+      return ocs::tom::has<F>(job) ? range_list_get_number_of_ids(ocs::tom::get<F>(job)) : 0;
    };
-
-   for (const int field : range_fields) {
-      if (lGetPosViaElem(job, field, SGE_NO_ABORT) >= 0) {
-         pending += range_list_get_number_of_ids(lGetList(job, field));
-      }
-   }
+   pending += hold_ids.template operator()<JB_ja_n_h_ids>();
+   pending += hold_ids.template operator()<JB_ja_u_h_ids>();
+   pending += hold_ids.template operator()<JB_ja_s_h_ids>();
+   pending += hold_ids.template operator()<JB_ja_o_h_ids>();
+   pending += hold_ids.template operator()<JB_ja_a_h_ids>();
 
    if (ocs::tom::has<JB_ja_tasks>(job)) {
       for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
@@ -246,8 +246,7 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const ocs::tom::ConstElement
 void ocs::QStatJobViewBase::accumulate_usage(const ocs::tom::ConstElement<ocs::tom::JAT> task, Usage &usage) {
    DENTER(TOP_LAYER);
    usage.have_mem_details =
-      static_cast<const lListElem *>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(task, USAGE_ATTR_PSS)) !=
-      nullptr;
+      static_cast<bool>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(task, USAGE_ATTR_PSS));
 
    /* display online job usage separately for each array job but summarized over all pe_tasks */
    // adds one value of a scaled usage list to a total; an attribute the list does not hold adds nothing

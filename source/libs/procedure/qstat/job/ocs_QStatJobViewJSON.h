@@ -49,25 +49,33 @@ namespace ocs {
       bool first_task{true};            ///< Whether no task of the current job has been written yet
       bool first_task_attribute{true};  ///< Whether no attribute of the current task has been written yet
 
-      void report_X_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int nm, const char *name);
-      void report_X_boolean(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int nm, const char *name);
-      void report_X_uint32(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int nm, const char *name);
-      void report_X_string(std::ostream &os, const lListElem *job, int nm, const char *name);
-      void report_X_ISO_8601_timestamp(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int nm,
-                                       const char *name);
-      void report_X_task_ISO_8601_timestamp(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JAT> task, int nm,
+      template <auto F>
+      void report_X_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
+      template <auto F>
+      void report_X_boolean(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
+      template <auto F>
+      void report_X_uint32(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
+      template <auto F>
+      void report_X_string(std::ostream &os, ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> elem,
+                           const char *name);
+      template <auto F>
+      void report_X_ISO_8601_timestamp(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
+      template <auto F>
+      void report_X_task_ISO_8601_timestamp(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JAT> task,
                                             const char *name);
-      void report_X_resource_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JRS> jrs, int nm,
-                                  const char *name);
-      void report_X_queue_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JRS> jrs, int nm, const char *name);
+      template <auto F>
+      void report_X_resource_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JRS> jrs, const char *name);
+      template <auto F>
+      void report_X_queue_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JRS> jrs, const char *name);
       void report_X_string_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int list_nm, int value_nm,
                                 const char *name);
-      void report_X_uint32_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int list_nm, int value_nm,
-                                const char *name);
-      void report_X_env_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int nm, const char *name);
-      void report_X_task_str_uint32_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JAT> task, int nm,
-                                         const char *name, int str_nm, const char *str_name, int uint32_nm,
-                                         const char *uint32_name);
+      template <auto LF, auto VF>
+      void report_X_uint32_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
+      template <auto F>
+      void report_X_env_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
+      template <auto F, auto SF, auto UF>
+      void report_X_task_str_uint32_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JAT> task, const char *name,
+                                         const char *str_name, const char *uint32_name);
    public:
       /** @brief Build the JSON view
        * @param parameter the call's parameters

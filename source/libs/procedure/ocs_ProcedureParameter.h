@@ -28,7 +28,13 @@
 
 #include "cull/cull.h"
 #include "gdi/ocs_gdi_Packet.h"
+#include "tom/ocs_FreeAccess.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "uti/sge_log.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 
 namespace ocs {
@@ -216,7 +222,11 @@ namespace ocs {
 
    protected:
 
-      virtual void set_bundle(const lList *bundle);
+      /** @brief Populate this object from a received parameter bundle
+       * @param bundle the received bundle
+       * @return none
+       */
+      virtual void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle);
 
       /** @brief The text of a bundle value, with the wire format's empty string rule applied
        *
@@ -235,9 +245,79 @@ namespace ocs {
       }
 
    public:
+      /** @brief Serialise this object into a parameter bundle (SPP_Type) for GDI transport
+       *
+       * Untyped by contract: qmaster's response path takes the bundle as a raw list.
+       *
+       * @return the bundle, which the caller owns
+       */
       [[nodiscard]] virtual lList *get_bundle();
 
-      static void add_parameter_bundle(lList *bundle, const std::string &name, lList *parameter);
+      /** @brief Add one named entry to a bundle
+       *
+       * The value list of an entry is of any type (CULL_ANY_SUBTYPE), so the type of
+       * the list handed in is the caller's.
+       *
+       * @tparam T the object type of the value list
+       * @param bundle the bundle to add to
+       * @param name the entry's name, one of the constants above
+       * @param parameter the entry's value, taken over by the bundle; may be empty
+       * @return none
+       */
+      template <ocs::tom::ObjectType T>
+      static void add_parameter_bundle(const ocs::tom::List<ocs::tom::SPP> bundle, const std::string &name,
+                                       ocs::tom::ListPtr<T> &&parameter) {
+         auto value = std::move(parameter);
+         SGE_ASSERT(bundle);
+         const auto bundle_elem = bundle.emplace_back<SPP_name>(name.c_str());
+         ocs::tom::set<SPP_value_list>(bundle_elem, std::move(value));
+      }
+
+      OCS_TRANSITIONAL static void add_parameter_bundle(ocs::tom::List<ocs::tom::SPP> bundle,
+                                                        const std::string &name, lList *parameter);
+
+      /** @brief A value list holding one number, as a bundle entry carries it
+       * @param value the number
+       * @return the list, named as the free emplace_back() named it
+       */
+      [[nodiscard]] static ocs::tom::ListPtr<ocs::tom::ULNG> ulong_value_list(uint32_t value);
+
+      /** @brief A value list holding one text, as a bundle entry carries it
+       * @param value the text; nullptr gives no list, as the free emplace_back() did
+       * @return the list, or an empty handle for nullptr
+       */
+      [[nodiscard]] static ocs::tom::ListPtr<ocs::tom::ST> string_value_list(const char *value);
+
+      /** @brief The value list of a bundle entry, read only
+       *
+       * The value list of an entry is of any type (CULL_ANY_SUBTYPE): the caller names
+       * the type the sender put in, and the list is wrapped without the descriptor check.
+       *
+       * @tparam T the object type of the value list
+       * @param entry the bundle entry, not empty
+       * @return the value list, empty if the entry holds none
+       */
+      template <ocs::tom::ObjectType T>
+      [[nodiscard]] static ocs::tom::ConstList<T> value_list(const ocs::tom::ConstElement<ocs::tom::SPP> entry) {
+         return ocs::tom::ConstList<T>::from_typed(ocs::tom::get<SPP_value_list>(entry));
+      }
+
+      /** @brief Move the value list out of a bundle entry
+       *
+       * The list is taken over rather than copied: it is the request's payload and
+       * the bundle is freed right after the parameters are built. It is wrapped
+       * without the descriptor check, as value_list() does.
+       *
+       * @tparam T the object type of the value list
+       * @param entry the bundle entry, or an empty handle, which takes the soft path
+       * @return the value list, an empty handle if the entry holds none
+       */
+      template <ocs::tom::ObjectType T>
+      [[nodiscard]] static ocs::tom::ListPtr<T> take_value_list(const ocs::tom::Element<ocs::tom::SPP> entry) {
+         lList *taken = nullptr;   // the out-parameter of exchange(), which has no typed form
+         ocs::tom::exchange<SPP_value_list>(entry, &taken);
+         return ocs::tom::ListPtr<T>::from_typed(taken);
+      }
 
       static std::string get_procedure_from_bundle(const lList *parameter_bundle);
 

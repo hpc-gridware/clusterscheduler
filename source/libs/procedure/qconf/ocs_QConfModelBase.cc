@@ -72,6 +72,35 @@
 #include "msg_clients_common.h"
 #include "msg_qconf.h"
 
+
+/** @brief The names the arguments of an operation hold, in one list for all of them
+ *
+ * A name given twice is skipped across the arguments, as lString2List() skips it
+ * within one - lString2List() into one list did both before.
+ *
+ * @tparam F the string field the names go into
+ * @param op the operation, carrying the arguments
+ * @param list_name the name of the list
+ * @return the names, an empty list when there are none
+ */
+template <auto F>
+static ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type>
+ocs_qconf_arg_names(const qconf_op &op, const char *list_name) {
+   DENTER(TOP_LAYER);
+   using T = typename ocs::tom::FieldTraits<F>::Type;
+   auto names = ocs::tom::ListPtr<T>::create(list_name);
+   for (size_t i = 0; i < op.arg_count(); i++) {
+      const auto part = ocs::tom::ListPtr<T>::template from_string<F>(op.arg(i), ", ");
+      for (const auto elem : *part) {
+         const char *name = ocs::tom::get<F>(elem);
+         if (!names->template find_first<F>(name)) {
+            names->template emplace_back<F>(name);
+         }
+      }
+   }
+   DRETURN(names);
+}
+
 /** @brief Which object type each read switch reports on
  *
  * Group B of the option inventory: the name lists. One row per switch, so that
@@ -299,11 +328,7 @@ ocs::QConfModelBase::get_names_where(const lDescr *descr, const int key_nm, cons
 
    /* one list for all arguments, so that a name given twice is skipped across
     * them as lString2List() skips it within one */
-   lList *names = nullptr;
-   for (size_t i = 0; i < op.arg_count(); i++) {
-      lString2List(op.arg(i), &names, ST_Type, ST_name, ", ");
-   }
-   const auto name_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(names);
+   const auto name_list = ocs_qconf_arg_names<ST_name>(op, "");
 
    lCondition *where = nullptr;
    for (const auto name_elem : *name_list) {
@@ -929,7 +954,8 @@ ocs::QConfModelBase::make_sharetree_snapshot(lList **answer_list, QConfParameter
       DRETURN(false);
    }
 
-   const auto root = ocs::tom::Element<ocs::tom::STN>(lFirstRW(object_list_));
+   // the read fetched the share tree, so the list is of nodes; the checked handle says so
+   const auto root = ocs::tom::List<ocs::tom::STN>(object_list_).front();
    if (root == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               "%s", MSG_TREE_NOSHARETREE);
@@ -1118,10 +1144,11 @@ ocs::QConfModelBase::make_sick_snapshot(lList **answer_list) {
     * it every queue's host list is empty - since CS-2677 it lives in the queue's
     * own "@@<queue>" host group - and cqueue_sick() then reports every attribute
     * overridden for a host as unused, which is the whole of its output. */
-   cqueue_list_fill_hostlist(object_list_, *hgroup_list_);
+   const auto cqueues = ocs::tom::List<ocs::tom::CQ>(object_list_);
+   cqueue_list_fill_hostlist(cqueues, *hgroup_list_);
 
    dstring ds = DSTRING_INIT;
-   for (const auto cqueue : ocs::tom::List<ocs::tom::CQ>(object_list_)) {
+   for (const auto cqueue : cqueues) {
       cqueue_sick(cqueue, answer_list, *hgroup_list_, &ds);
    }
    const char *text = sge_dstring_get_string(&ds);
@@ -1182,11 +1209,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
 
    /* one list for all arguments, so that a reference given twice is skipped
     * across them as lString2List() skips it within one */
-   lList *qref_patterns = ocs::tom::ListPtr<ocs::tom::QR>::create("qref_pattern_list").release();
-   for (size_t i = 0; i < parameter.get_operation().arg_count(); i++) {
-      lString2List(parameter.get_operation().arg(i), &qref_patterns, QR_Type, QR_name, ", ");
-   }
-   qref_pattern_list_ = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(qref_patterns);
+   qref_pattern_list_ = ocs_qconf_arg_names<QR_name>(parameter.get_operation(), "qref_pattern_list");
 
    /* "-sq" without an argument prints a queue template, not every queue, so
     * there is nothing to fetch and nothing to filter. The template is built
@@ -1264,14 +1287,17 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
       DRETURN(false);
    }
 
+   // the read fetched cluster queues, so the list is of them; the checked handle says so
+   const auto cqueues = ocs::tom::List<ocs::tom::CQ>(object_list_);
+
    /* CS-2677: join the host lists back on, from the groups fetched above */
-   cqueue_list_fill_hostlist(object_list_, *hgroup_list_);
+   cqueue_list_fill_hostlist(cqueues, *hgroup_list_);
 
    /* The typed JSON values are resolved here rather than in the view, which is
     * where the descriptor table's prepare hook resolves them too, and it saves
     * the view a const_cast on the model's list. Nothing to do for plain output,
     * where centry_list_ was never fetched. */
-   for (const auto cqueue : ocs::tom::List<ocs::tom::CQ>(object_list_)) {
+   for (const auto cqueue : cqueues) {
       cqueue_json_type_complex_overrides(cqueue, *centry_list_);
    }
 
@@ -1297,10 +1323,8 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
        * away, and splitting is pure string work on a handful of references */
       (void) cqueue_name_split(name, &cqueue_name, &host_domain, &has_hostname, &has_domain);
 
-      lList *qref_out = nullptr;
-      cqueue_list_find_all_matching_references(object_list_, nullptr,
-                                               sge_dstring_get_string(&cqueue_name), &qref_out);
-      const auto qref_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(qref_out);
+      const auto qref_list = cqueue_list_find_all_matching_references(cqueues, nullptr,
+                                                                      sge_dstring_get_string(&cqueue_name));
 
       CQueueOutput group;
       if (has_domain || has_hostname) {
@@ -1310,12 +1334,11 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
       }
 
       if (has_domain) {
-         lList *href_out = nullptr;
+         ocs::tom::ListPtr<ocs::tom::HR> href_list;
          hgroup_list_find_matching_and_resolve(*hgroup_list_, nullptr,
-                                               sge_dstring_get_string(&host_domain), &href_out);
-         const auto href_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(href_out);
+                                               sge_dstring_get_string(&host_domain), &href_list);
          for (const auto qref : *qref_list) {
-            const auto cqueue = ocs::tom::find_first<CQ_name>(object_list_, ocs::tom::get<QR_name>(qref));
+            const auto cqueue = cqueues.find_first<CQ_name>(ocs::tom::get<QR_name>(qref));
             if (cqueue == nullptr) {
                continue;
             }
@@ -1334,7 +1357,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
          const char *h_pattern = sge_dstring_get_string(&host_domain);
          const bool is_expr = is_expression(h_pattern);
          for (const auto qref : *qref_list) {
-            const auto cqueue = ocs::tom::find_first<CQ_name>(object_list_, ocs::tom::get<QR_name>(qref));
+            const auto cqueue = cqueues.find_first<CQ_name>(ocs::tom::get<QR_name>(qref));
             if (cqueue == nullptr) {
                continue;
             }
@@ -1351,7 +1374,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
          }
       } else {
          for (const auto qref : *qref_list) {
-            const auto cqueue = ocs::tom::find_first<CQ_name>(object_list_, ocs::tom::get<QR_name>(qref));
+            const auto cqueue = cqueues.find_first<CQ_name>(ocs::tom::get<QR_name>(qref));
             if (cqueue != nullptr) {
                group.cqueues->push_back(cqueue.clone());
             }
@@ -1667,11 +1690,7 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
           !parameter.get_for_export() &&
           (desc_->read.not_found_noun != nullptr ||
            (parameter.get_for_edit() && desc_->read.create_template != nullptr))) {
-         lList *names = nullptr;
-         for (size_t i = 0; i < parameter.get_operation().arg_count(); i++) {
-            lString2List(parameter.get_operation().arg(i), &names, ST_Type, ST_name, ", ");
-         }
-         const auto wanted = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(names);
+         const auto wanted = ocs_qconf_arg_names<ST_name>(parameter.get_operation(), "");
          bool all_found = true;
          bool template_refused = false;
          for (const auto name_elem : *wanted) {

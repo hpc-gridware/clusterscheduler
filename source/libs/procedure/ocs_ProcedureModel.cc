@@ -38,6 +38,10 @@
 #include "ocs_ProcedureParameter.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
+#include "tom/ocs_List.h"
 #include "tom/ocs_Element.h"
 
 /** @brief Send the procedure request to qmaster and store the response.
@@ -85,13 +89,15 @@ ocs::ProcedureModel::get_reduction() const {
     * zero, so a reading of zero alone cannot tell "qmaster said nothing was
     * reduced" from "the entry never arrived" - and the second would mean the
     * channel is broken while looking exactly like the healthy case. */
-   ocs::tom::ConstElement<ocs::tom::SPP> entry = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::REDUCTION);
+   const auto entry = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::REDUCTION);
    if (entry == nullptr) {
       DPRINTF("no reduction entry in the response\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
    }
-   const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(entry));
-   if (value == nullptr) {
+   // the value list is of any type (CULL_ANY_SUBTYPE); the checked handle throws on another type, as the
+   // getter on the raw element did
+   const auto value = ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(entry)).front();
+   if (!value) {
       DPRINTF("reduction entry present but empty\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
    }
@@ -119,9 +125,10 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
       DRETURN(false);
    }
 
-   const lListElem *applied_value = lFirst(ocs::tom::get<SPP_value_list>(applied_entry));
-   const lListElem *failed_value = lFirst(ocs::tom::get<SPP_value_list>(failed_entry));
-   if (applied_value == nullptr || failed_value == nullptr) {
+   const auto applied_value =
+           ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(applied_entry)).front();
+   const auto failed_value = ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(failed_entry)).front();
+   if (!applied_value || !failed_value) {
       DPRINTF("write result present but empty\n");
       DRETURN(false);
    }
@@ -136,10 +143,11 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
    if (elements != nullptr) {
       ocs::tom::ConstElement<ocs::tom::SPP> elements_entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                                     ProcedureParameter::WRITE_ELEMENTS);
-      const lListElem *elements_value = (elements_entry != nullptr)
-                                        ? lFirst(ocs::tom::get<SPP_value_list>(elements_entry))
-                                        : nullptr;
-      if (elements_value != nullptr) {
+      const auto elements_value =
+              elements_entry
+              ? ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(elements_entry)).front()
+              : nullptr;
+      if (elements_value) {
          *elements = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(elements_value));
       }
    }
@@ -164,10 +172,10 @@ ocs::ProcedureModel::get_export_objects(const lList **objects) const {
 
    /* An empty export is stored by CULL as no list at all, so the null check
     * comes before the count - lGetNumberOfElem() flags a null list as an error
-    * of its own. */
-   *objects = ocs::tom::get<SPP_value_list>(entry);
-   DPRINTF("export entry holds %d object(s)\n",
-           (*objects != nullptr) ? lGetNumberOfElem(*objects) : 0);
+    * of its own. The handle is only counted here, so it is not checked; the caller checks it. */
+   const auto exported = ocs::tom::ConstList<ocs::tom::VA>::from_typed(ocs::tom::get<SPP_value_list>(entry));
+   *objects = exported;
+   DPRINTF("export entry holds %d object(s)\n", static_cast<int>(exported.size()));
    DRETURN(true);
 }
 
@@ -184,11 +192,11 @@ ocs::ProcedureModel::get_export_objects(const lList **objects) const {
 const char *
 ocs::ProcedureModel::get_output_text() const {
    DENTER(TOP_LAYER);
-   ocs::tom::ConstElement<ocs::tom::SPP> response_elem = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::RESPONSE);
+   const auto response_elem = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::RESPONSE);
    if (!response_elem) {
       DRETURN("");
    }
-   const lListElem *output_elem = lFirst(ocs::tom::get<SPP_value_list>(response_elem));
+   const auto output_elem = ocs::tom::ConstList<ocs::tom::ST>(ocs::tom::get<SPP_value_list>(response_elem)).front();
    if (!output_elem) {
       DRETURN("");
    }

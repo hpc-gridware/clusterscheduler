@@ -25,6 +25,8 @@
 
 #include "ocs_QQuotaParameter.h"
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "tom/ocs_List.h"
 
 namespace ocs {
    /** @brief The `qquota` parameters as the client builds them, from argv and the environment
@@ -37,9 +39,10 @@ namespace ocs {
    class QQuotaParameterClient : public QQuotaParameter {
 
       bool show_usage(FILE *fp);
-      bool parse_cmdline_and_env(char **argv, lList **switch_list, lList **answer_list);
-      bool parse_cmdline_from_file(const char *file, lList **switch_list, lList **answer_list);
-      bool parse_switch_list(lList **switch_list, lList **answer_list);
+      bool parse_cmdline_and_env(char **argv, ocs::tom::ListPtr<ocs::tom::SPA> &switch_list, lList **answer_list);
+      bool parse_cmdline_from_file(const char *file, ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
+                                   lList **answer_list);
+      bool parse_switch_list(ocs::tom::List<ocs::tom::SPA> switch_list, lList **answer_list);
    public:
       /** @brief Build empty client side parameters
        * @param procedure_name the command being run

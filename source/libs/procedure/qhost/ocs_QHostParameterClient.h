@@ -23,6 +23,9 @@
  * @brief Client side parameters of `qhost`: parsed from argv and the environment
  */
 
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "tom/ocs_List.h"
+
 #include "ocs_QHostParameter.h"
 
 namespace ocs {
@@ -39,9 +42,10 @@ namespace ocs {
 
    private:
       static bool show_usage(FILE *fp);
-      bool parse_cmdline_and_env(char **argv, char **env, lList **switch_list, lList **answer_list);
-      bool parse_cmdline_from_file(lList **cmdline, lList **answer_list, const char *file);
-      int parse_switch_list(lList **cmdline, lList **answer_list);
+      bool parse_cmdline_and_env(char **argv, char **env, ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
+                                 lList **answer_list);
+      bool parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **answer_list, const char *file);
+      int parse_switch_list(ocs::tom::List<ocs::tom::SPA> cmdline, lList **answer_list);
 
    public:
       bool parse_parameters(lList **answer_list, char **argv, char **envp);

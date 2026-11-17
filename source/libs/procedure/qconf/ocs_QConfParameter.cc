@@ -72,7 +72,9 @@ ocs::QConfParameter::QConfParameter(const lList *bundle, gdi::Packet *packet)
    : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
-   QConfParameter::set_bundle(bundle);
+   // the request data is structure-checked in qmaster's listener (CS-3125), and the procedure name was read
+   // out of it already
+   QConfParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
 
    DRETURN_VOID;
 }
@@ -91,13 +93,13 @@ ocs::QConfParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
    // procedure name, output format (-fmt), environment
-   lList *bundle = ProcedureParameter::get_bundle();
+   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
 
    // the switch that was typed, which for the prefix matched ones carries its
    // suffix (-ke, -kej) and is therefore not the same as the table's name
    auto operation_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
    operation_list->emplace_back<ST_name>(operation_.token.c_str());
-   add_parameter_bundle(bundle, OPERATION, operation_list.release());
+   add_parameter_bundle(*bundle, OPERATION, std::move(operation_list));
 
    // its arguments, in order; no list at all when there are none
    ocs::tom::ListPtr<ocs::tom::ST> args_list;
@@ -107,7 +109,7 @@ ocs::QConfParameter::get_bundle() {
       }
       args_list->emplace_back<ST_name>(arg.c_str());
    }
-   add_parameter_bundle(bundle, OPERATION_ARGS, args_list.release());
+   add_parameter_bundle(*bundle, OPERATION_ARGS, std::move(args_list));
 
    // -cb, -dry, -f, -strict and the client's SGE_SINGLE_LINE and MORE_INFO
    uint32_t flags = 0;
@@ -121,14 +123,14 @@ ocs::QConfParameter::get_bundle() {
    flags |= for_export_ ? FLAG_FOR_EXPORT : 0;
    auto flags_list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
    flags_list->emplace_back<ULNG_value>(flags);
-   add_parameter_bundle(bundle, INVOCATION_FLAGS, flags_list.release());
+   add_parameter_bundle(*bundle, INVOCATION_FLAGS, std::move(flags_list));
 
    // -fmtval
    auto value_format_list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
    value_format_list->emplace_back<ULNG_value>(static_cast<uint32_t>(value_format_));
-   add_parameter_bundle(bundle, VALUE_FORMAT, value_format_list.release());
+   add_parameter_bundle(*bundle, VALUE_FORMAT, std::move(value_format_list));
 
-   DRETURN(bundle);
+   DRETURN(bundle.release());
 }
 
 /**
@@ -143,7 +145,7 @@ ocs::QConfParameter::get_bundle() {
  * @return none
  */
 void
-ocs::QConfParameter::set_bundle(const lList *bundle) {
+ocs::QConfParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    // procedure name, output format, environment
@@ -151,7 +153,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
 
    operation_ = qconf_op{};
 
-   const auto operation_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION);
+   const auto operation_param = bundle.find_first<SPP_name>(OPERATION);
    if (operation_param != nullptr) {
       const auto token = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
             ocs::tom::get<SPP_value_list>(operation_param)).front();
@@ -160,7 +162,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   const auto args_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION_ARGS);
+   const auto args_param = bundle.find_first<SPP_name>(OPERATION_ARGS);
    if (args_param != nullptr) {
       for (const auto arg : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPP_value_list>(args_param))) {
          /* an argument that was empty in the client arrives as a null pointer,
@@ -169,7 +171,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   const auto flags_param = ocs::tom::find_first<SPP_name>(bundle, INVOCATION_FLAGS);
+   const auto flags_param = bundle.find_first<SPP_name>(INVOCATION_FLAGS);
    if (flags_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
             ocs::tom::get<SPP_value_list>(flags_param)).front();
@@ -186,7 +188,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   const auto value_format_param = ocs::tom::find_first<SPP_name>(bundle, VALUE_FORMAT);
+   const auto value_format_param = bundle.find_first<SPP_name>(VALUE_FORMAT);
    if (value_format_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
             ocs::tom::get<SPP_value_list>(value_format_param)).front();

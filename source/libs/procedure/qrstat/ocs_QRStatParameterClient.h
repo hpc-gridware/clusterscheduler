@@ -25,6 +25,9 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "tom/ocs_List.h"
+
 #include "ocs_QRStatParameter.h"
 
 namespace ocs {
@@ -38,7 +41,7 @@ namespace ocs {
    class QRStatParameterClient : public QRStatParameter {
 
       bool sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp);
-      bool sge_parse_qrstat(lList **answer_list, lList **cmdline);
+      bool sge_parse_qrstat(lList **answer_list, ocs::tom::List<ocs::tom::SPA> cmdline);
 
    public:
 
