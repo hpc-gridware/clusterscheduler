@@ -617,6 +617,8 @@ static void* commlib_to_pty(void *t_conf)
        */
       thread_testcancel(t_conf);
       if (g_raised_event > 0) {
+         // a message received together with the event is not processed any more, but freed
+         comm_free_message(&recv_mess, &err_msg);
          do_exit = 1;
          continue;
       }
@@ -1071,8 +1073,11 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
     */
    cl_thread_join(thread_pty_to_commlib);
    cl_thread_join(thread_commlib_to_pty);
+   // both threads were already removed from the thread list above, so they are freed here
    cl_thread_cleanup(thread_pty_to_commlib);
    cl_thread_cleanup(thread_commlib_to_pty);
+   sge_free(&thread_pty_to_commlib);
+   sge_free(&thread_commlib_to_pty);
 
    // Rollback workaround for CS-982
    cl_com_ignore_timeouts(false);
@@ -1133,23 +1138,25 @@ int close_parent_loop(int exit_status)
          memset(&recv_mess, 0, sizeof(recv_message_t));
          ret = comm_recv_message(g_comm_handle, &recv_mess, &err_msg);
          count++;
+         bool done = true;
          if (recv_mess.type == UNREGISTER_RESPONSE_CTRL_MSG) {
             shepherd_trace("Received UNREGISTER_RESPONSE_CTRL_MSG");
-            comm_free_message(&recv_mess, &err_msg);
-            break;
          } else if (ret == COMM_NO_MESSAGE_AVAILABLE) {
             /* trace this only every 10 loops (default: 1 loop = 1 s) */
             if (count%10 == 0) {
                shepherd_trace("still waiting for UNREGISTER_RESPONSE_CTRL_MSG");
             }
+            done = false;
          } else if (ret == COMM_CONNECTION_NOT_FOUND) {
             shepherd_trace("client disconnected - break");
-            break;
          } else {
             shepherd_trace("No connection or problem while waiting for message: %d", ret);
+         }
+         // free the message in every case, also another message received instead of the response
+         comm_free_message(&recv_mess, &err_msg);
+         if (done) {
             break;
          }
-         comm_free_message(&recv_mess, &err_msg);
       }
    }
    /* Now we are completely logged of from the server and can shut down */

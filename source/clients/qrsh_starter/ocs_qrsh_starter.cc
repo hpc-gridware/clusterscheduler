@@ -987,6 +987,8 @@ int main(int argc, char *argv[])
 
    /* start job */
    exitCode = startJob(command, wrapper, noshell);
+   sge_free(&command);
+   sge_free(&wrapper);
 
    /* write exit code and exit */
    return writeExitCode(EXIT_SUCCESS, exitCode);

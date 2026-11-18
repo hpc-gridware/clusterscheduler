@@ -109,6 +109,24 @@ int thread_join(THREAD_HANDLE *thread)
    return cl_thread_join(thread);
 }
 
+/**
+ * @brief Removes a joined thread from the thread list and frees it.
+ *
+ * Only a thread list without threads can be freed with thread_cleanup_lib(). A thread that
+ * already ended and was joined with thread_join() is removed with this function, which does
+ * not join it a second time.
+ *
+ * @param thread_lib_handle the thread list the thread was created in
+ * @param thread            address of the thread, set to nullptr
+ * @return CL_RETVAL_OK on success, a commlib error code otherwise
+ */
+int thread_delete_joined(THREAD_LIB_HANDLE *thread_lib_handle, THREAD_HANDLE **thread)
+{
+   int ret = cl_thread_list_delete_thread_without_join(thread_lib_handle, *thread);
+   *thread = nullptr;
+   return ret;
+}
+
 
 int thread_testcancel(void *t_conf)
 {
