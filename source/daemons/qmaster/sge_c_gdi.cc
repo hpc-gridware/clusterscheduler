@@ -696,10 +696,16 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          task->data_list = requests.release();
       }
    } else if (task->target == ocs::gdi::Target::JB_LIST) {
-      // the request data is structure checked by the listener (CS-3125): a JB_LIST add carries JB_Type
-      const auto jobs = ocs::tom::List<ocs::tom::JB>(task->data_list);
       const bool return_new_version =
               (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
+      /* With RETURN_NEW_VERSION sge_gdi_add_job() appends a copy of every added job to task->data_list, which
+       * goes back to the client. The requests are taken out of task->data_list before the loop, so that the
+       * copies are neither walked by the loop as further submissions nor mixed with the requests (CS-3161),
+       * and freed after it - as the event client branch above does. */
+      // the request data is structure checked by the listener (CS-3125): a JB_LIST add carries JB_Type
+      auto requests = ocs::tom::ListPtr<ocs::tom::JB>(return_new_version ? std::exchange(task->data_list, nullptr)
+                                                                         : nullptr);
+      const auto jobs = return_new_version ? requests.get() : ocs::tom::List<ocs::tom::JB>(task->data_list);
 
       auto ep = jobs.front();
       while (ep) { /* is thread save. the global lock is used, when needed */
