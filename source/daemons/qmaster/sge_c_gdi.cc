@@ -718,8 +718,8 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
               (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
       /* With RETURN_NEW_VERSION sge_gdi_add_job() appends a copy of every added job to task->data_list, which
        * goes back to the client. The requests are taken out of task->data_list before the loop, so that the
-       * copies are neither walked by the loop as further submissions nor mixed with the requests (CS-3161),
-       * and freed after it - as the event client branch above does. */
+       * copies are neither walked by the loop as further submissions nor mixed with the requests (CS-3161);
+       * after it the requests not taken over go back in front of the copies, the others are freed. */
       // the request data is structure checked by the listener (CS-3125): a JB_LIST add carries JB_Type
       auto requests = ocs::tom::ListPtr<ocs::tom::JB>(return_new_version ? std::exchange(task->data_list, nullptr)
                                                                          : nullptr);
@@ -745,6 +745,17 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
             jobs.push_front(std::move(job));
          }
          ep = next;
+      }
+
+      /* The requests sge_gdi_add_job() did not take over - a job only verified (qsub -w v|p) or a rejected one -
+       * go back to the client in front of the copies of the added jobs, as before CS-3161: qsub -w v reads
+       * its job from the response. */
+      if (return_new_version && requests && !requests->empty()) {
+         if (task->data_list != nullptr) {
+            // sge_gdi_add_job() appended copies of the added jobs (JB_Type)
+            requests->splice(ocs::tom::ListPtr<ocs::tom::JB>::from_typed(std::exchange(task->data_list, nullptr)));
+         }
+         task->data_list = requests.release();
       }
    } else if (task->target == ocs::gdi::Target::SC_LIST) {
       // the request data is structure checked by the listener (CS-3125): an SC_LIST add carries SC_Type
