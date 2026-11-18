@@ -598,7 +598,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       /* With SGE_GDI_RETURN_NEW_VERSION sge_gdi_add_job() appends a copy of every added job to task->data_list,
        * which goes back to the client. The requests are taken out of task->data_list before the loop, so that
        * the copies are neither walked by the loop as further submissions nor mixed with the requests
-       * (CS-3161), and freed after it. */
+       * (CS-3161); after it the requests not taken over go back in front of the copies, the others are freed. */
       lList *requests = task->data_list;
       if (return_new_version) {
          task->data_list = nullptr;
@@ -621,8 +621,18 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          lInsertElem(requests, nullptr, ep);
       }
 
+      /* The requests sge_gdi_add_job() did not take over - a job only verified (qsub -w v|p) or a rejected one -
+       * go back to the client in front of the copies of the added jobs, as before CS-3161: qsub -w v reads
+       * its job from the response. */
       if (return_new_version) {
-         lFreeList(&requests);
+         if (lGetNumberOfElem(requests) > 0) {
+            if (task->data_list != nullptr) {
+               lAddList(requests, &(task->data_list));
+            }
+            task->data_list = requests;
+         } else {
+            lFreeList(&requests);
+         }
       }
    } else if (task->target == ocs::gdi::Target::SGE_SC_LIST) {
       lListElem *next;
