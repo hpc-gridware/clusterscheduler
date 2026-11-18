@@ -1064,7 +1064,7 @@ centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attribut
  */
 void centry_list_remove_duplicates(const ocs::tom::List<ocs::tom::CE> this_list) {
    DENTER(TOP_LAYER);
-   cull_compress_definition_list(this_list, CE_name, CE_stringval, 0);
+   ocs::tom::keep_last<CE_name>(this_list);
    DRETURN_VOID;
 }
 

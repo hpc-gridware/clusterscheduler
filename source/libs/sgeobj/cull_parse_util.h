@@ -54,6 +54,7 @@
 #include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/sge_object.h"
 
 /// Is this CULL type one whose value is printed as a number?
 #define L_IS_NUM_TYPE(x) ((x == lDoubleT) || (x == lUlongT) || (x == lLongT)  || (x == lIntT))
@@ -67,24 +68,11 @@
 #define FLG_NO_VALUE_AS_EMPTY 4 ///< print an unset value as nothing rather than as `NONE`
 /** @} */
 
-/**
- * @name Flags for parse_list_simple
- *
- * What to do when the option already has a value in the target object.
- * @{
- */
-#define FLG_LIST_APPEND   1 ///< append the parsed entries to the existing ones, a repeated key merged by #ocs_object_list_add_unique
-#define FLG_LIST_REPLACE  2 ///< replace the existing list with the parsed one
-#define FLG_LIST_MERGE    4 ///< merge by key; a parsed entry overrides one of the same name
-#define FLG_LIST_MERGE_DOUBLE_KEY    8 ///< like #FLG_LIST_MERGE, but the key is a name/value pair
-/** @} */
-
 void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job,
                          uint32_t scope, int hard_field, int soft_field);
 
 int cull_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
 
-int cull_merge_definition_list(lList **lpp_old, lList *lp_new, int nm_var, int nm_value);
 
 int cull_compress_definition_list(lList *lp_new, int nm_var, int nm_value, int double_keys);
 
@@ -93,50 +81,101 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
 int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);
 int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);
 
-int
-parse_list_simpler(lList *lp, lList **destlist, const char *option, int nm_var, int nm_value, uint32_t flags);
+namespace ocs::detail {
+   /**
+    * @brief Take the next occurrence of a switch out of the command line with its list argument
+    * @tparam Sub the object type of the switch's list
+    * @param cmdline the parsed option list to consume from
+    * @param option the switch to look for
+    * @param[out] list receives the switch's list, an empty handle if the switch has none
+    * @return true if an occurrence was found and taken out
+    */
+   template <ocs::tom::ObjectType Sub>
+   bool take_list_option(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
+                         ocs::tom::ListPtr<Sub> &list) {
+      const auto ep = cmdline.find_first<SPA_switch_val>(option);
+      if (!ep) {
+         return false;
+      }
+      lList *lp = nullptr;
+      ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
+      // the option parser builds the switch's list with the sub-type of the field it is meant for
+      list = ocs::tom::ListPtr<Sub>::from_typed(lp);
+      cmdline.erase(ep);
+      return true;
+   }
+}
 
 /**
- * @brief Parse a switch's list argument into an attribute of an object
+ * @brief Parse a switch's list argument into a list attribute, appending to what it holds
  *
- * Every occurrence of the switch is taken out of the command line, and its
- * list is combined with the value the attribute holds so far, as @p flags says.
+ * Every occurrence of the switch is taken out of the command line, and its entries
+ * are appended to the attribute; a repeated key is merged by ocs_object_list_add_unique().
  *
- * @tparam F the list field the list is stored in, of the object type of @p job
+ * @tparam F the list field the entries are stored in, of the object type of @p job
  * @param cmdline the parsed option list to consume from
  * @param option the switch to look for
  * @param[in,out] job the object the list is stored in, a job or an advance reservation
- * @param nm_var the attribute holding an entry's name, passed on to the descriptor generic merge
- * @param nm_value the attribute holding its value, passed on to the descriptor generic merge
- * @param flags one of the `FLG_LIST_*` values, deciding what happens to an
- *              existing value
- * @return 0 on success
  */
 template <auto F>
    requires (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::List && ocs::tom::FieldTraits<F>::has_sub)
-int parse_list_simple(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
-                      const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> job, const int nm_var,
-                      const int nm_value, const uint32_t flags) {
+void parse_list_append(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
+                       const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> job) {
    DENTER(TOP_LAYER);
+   using Sub = typename ocs::tom::FieldTraits<F>::Sub;
 
-   // the merge helpers below are descriptor generic and work on the raw list
+   // ocs_object_list_add_unique() is key generic and works on the raw lists
    lList *destlist = ocs::tom::get<F>(job).clone("job_sublist").release();
-
-   ocs::tom::Element<ocs::tom::SPA> ep;
-   while ((ep = cmdline.find_first<SPA_switch_val>(option)) != nullptr) {
+   ocs::tom::ListPtr<Sub> list;
+   while (ocs::detail::take_list_option(cmdline, option, list)) {
       DPRINTF("OPTION: %s\n", option);
-      lList *lp = nullptr;
-      ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
-
-      parse_list_simpler(lp, &destlist, option, nm_var, nm_value, flags);
-
-      cmdline.erase(ep);
+      if (list) {
+         // merged without ever holding a key twice (N-H-18)
+         lList *lp = list.release();
+         ocs_object_list_add_unique(&destlist, &lp);
+      }
    }
+   ocs::tom::set<F>(job, ocs::tom::ListPtr<Sub>::from_typed(destlist));
+   DRETURN_VOID;
+}
 
-   // the entries come from the option parser, which builds the list of the field's sub-type
-   ocs::tom::set<F>(job, ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Sub>::from_typed(destlist));
+/**
+ * @brief Parse a switch's list argument into a list attribute, merging by key
+ *
+ * Every occurrence of the switch is taken out of the command line; its entries are
+ * merged into the attribute by @p Key: an entry whose key the attribute holds sets the
+ * value of @p Value there, a new key is appended (ocs::tom::merge_by_key()).
+ *
+ * @tparam F the list field the entries are stored in, of the object type of @p job
+ * @tparam Key the key field of the list's entries
+ * @tparam Value the value field of the list's entries
+ * @param cmdline the parsed option list to consume from
+ * @param option the switch to look for
+ * @param[in,out] job the object the list is stored in, a job or an advance reservation
+ */
+template <auto F, auto Key, auto Value>
+   requires (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::List && ocs::tom::FieldTraits<F>::has_sub)
+void parse_list_merge(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
+                      const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> job) {
+   DENTER(TOP_LAYER);
+   using Sub = typename ocs::tom::FieldTraits<F>::Sub;
 
-   DRETURN(0);
+   auto destlist = ocs::tom::get<F>(job).clone("job_sublist");
+   ocs::tom::ListPtr<Sub> list;
+   while (ocs::detail::take_list_option(cmdline, option, list)) {
+      DPRINTF("OPTION: %s\n", option);
+      if (!list) {
+         continue;
+      }
+      if (!destlist) {
+         destlist = std::move(list);
+      } else {
+         ocs::tom::merge_by_key<Key, Value>(destlist.get(), list);
+         list.reset();
+      }
+   }
+   ocs::tom::set<F>(job, std::move(destlist));
+   DRETURN_VOID;
 }
 
 std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char *path_str);

@@ -51,6 +51,7 @@
 #include <cstdio>
 #include <cstring>
 #include <functional>
+#include <initializer_list>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -1133,6 +1134,65 @@ void test_owning() {
    lFreeList(&jobs);
 }
 
+/**
+ * @brief Build a variable list from name/value pairs
+ * @param pairs the pairs, a nullptr name for an entry without a name
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::VA>
+make_vars(std::initializer_list<std::pair<const char *, const char *>> pairs) {
+   auto vars = ocs::tom::ListPtr<ocs::tom::VA>::create("vars");
+   for (const auto &[name, value] : pairs) {
+      auto var = ocs::tom::ElementPtr<ocs::tom::VA>::create();
+      ocs::tom::set<VA_variable>(var, name);
+      ocs::tom::set<VA_value>(var, value);
+      vars->push_back(std::move(var));
+   }
+   return vars;
+}
+
+/**
+ * @brief The values of a variable list, in order, joined by ','
+ * @param vars the list
+ * @return the values
+ */
+static std::string
+values_of(const ocs::tom::ConstList<ocs::tom::VA> vars) {
+   std::string out;
+   for (const auto var : vars) {
+      out += out.empty() ? "" : ",";
+      const char *value = ocs::tom::get<VA_value>(var);
+      out += value != nullptr ? value : "-";
+   }
+   return out;
+}
+
+/**
+ * @brief OPS-FREE-17: keep_last<Key> and merge_by_key<Key, Value> do what the definition list helpers did
+ * @return nothing; CHECK records the results
+ */
+static void
+test_keyed_merge() {
+   // the lists hold a repeated key on purpose, as input for the merge; a debug build refuses that already at
+   // the append (N-H-18), so the check is suspended here
+   const ocs::tom::UniqueCheckSuspension suspension;
+
+   // the later of two equal keys wins, the order of the rest stays; a nullptr name is never a repetition
+   auto vars = make_vars({{"A", "1"}, {"B", "2"}, {"A", "3"}, {nullptr, "4"}, {nullptr, "5"}, {"B", "6"}});
+   ocs::tom::keep_last<VA_variable>(*vars);
+   CHECK(36, "keep_last keeps the last element of each key in place and every element without a name",
+         values_of(vars) == "3,4,5,6");
+
+   // a known key takes the new value, a new key is appended - also one appended by the same merge;
+   // two nullptr names are the same key
+   auto dst = make_vars({{"A", "1"}, {"B", "2"}});
+   const auto src = make_vars({{"B", "20"}, {"C", "30"}, {"C", "31"}, {nullptr, "40"}, {nullptr, "41"}});
+   ocs::tom::merge_by_key<VA_variable, VA_value>(*dst, src);
+   const bool src_kept = values_of(src) == "20,30,31,40,41";
+   CHECK(37, "merge_by_key sets the value of a known key and appends a copy of a new one, the source stays",
+         values_of(dst) == "1,20,31,41" && src_kept);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
    return ocs::module_test::run(argc, argv, {
@@ -1191,5 +1251,10 @@ int main(int argc, char *argv[]) {
         "copy_if_present of a value, a nullptr string, a list and from an empty source"},
        "the same results as on the handle; a moved handle is empty, a refused one keeps its element",
        {{"OPS-02", "covers"}}, {29, 30, 31, 32, 33, 34, 35}, test_owning},
+      {"OPS-FREE-17", "keyed merge", "keep_last<Key> and merge_by_key<Key, Value> do what "
+       "cull_compress_definition_list() and cull_merge_definition_list() did",
+       {"a variable list with repeated and missing names, merged and compressed"},
+       "the last element of a key wins in place, a known key takes the new value, a new one is appended",
+       {{"OPS-02", "covers"}}, {36, 37}, test_keyed_merge},
    });
 }

@@ -48,6 +48,7 @@
  */
 
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 #include <utility>
 
@@ -1502,6 +1503,92 @@ namespace ocs::tom {
          set<F>(dst, get<F>(src));
       }
       return true;
+   }
+
+   namespace detail {
+      /**
+       * @brief Compare a key field of two elements of one type
+       * @tparam Key the key field, a number, string or host field
+       * @param a the one element
+       * @param b the other element
+       * @param null_matches whether two string or host keys that are both nullptr are equal
+       * @return true if the keys are equal
+       */
+      template <auto Key, ObjectType T>
+      bool same_key(const ConstElement<T> &a, const ConstElement<T> &b, const bool null_matches) {
+         if constexpr (FieldTraits<Key>::type == FieldType::String || FieldTraits<Key>::type == FieldType::Host) {
+            const char *const x = get<Key>(a);
+            const char *const y = get<Key>(b);
+            if (x == nullptr || y == nullptr) {
+               return null_matches && x == y;
+            }
+            return std::strcmp(x, y) == 0;
+         } else {
+            return get<Key>(a) == get<Key>(b);
+         }
+      }
+   } // namespace detail
+
+   /**
+    * @brief Keep only the last element of each key, as a user writing an option twice expects
+    *
+    * Walks the list front to back and removes every earlier element with the key of the
+    * current one, so the order of the elements that stay is kept. A string or host key that
+    * is nullptr is never a repetition. This is what `cull_compress_definition_list()` did.
+    *
+    * @tparam Key the key field, a number, string or host field of the list's type
+    * @tparam T the object type, deduced from the list
+    * @param lp the list, or an empty handle
+    */
+   template <auto Key, ObjectType T>
+      requires TypedField<decltype(Key)> && (FieldTraits<Key>::type != FieldType::List &&
+                                             FieldTraits<Key>::type != FieldType::Object &&
+                                             FieldTraits<Key>::type != FieldType::Ref)
+   void keep_last(const List<T> &lp) {
+      for (auto one = lp.front(); one; one = one.next()) {
+         for (auto other = lp.front(); other && other.raw() != one.raw();) {
+            const auto next = other.next();
+            if (detail::same_key<Key>(ConstElement<T>(one), ConstElement<T>(other), false)) {
+               lp.erase(other);
+            }
+            other = next;
+         }
+      }
+   }
+
+   /**
+    * @brief Merge a list into another by key: a known key takes the new value, a new key is appended
+    *
+    * For each element of @p src the first element of @p dst with the same key gets the
+    * value of @p Value; an element whose key @p dst does not hold is appended as a copy.
+    * Two string or host keys that are both nullptr are equal. This is what
+    * `cull_merge_definition_list()` did.
+    *
+    * @tparam Key the key field, a number, string or host field of the lists' type
+    * @tparam Value the value field, a number, string or host field of the lists' type
+    * @tparam T the object type, deduced from the destination
+    * @param dst the list merged into; not an empty handle
+    * @param src the list merged from, may be an empty handle; an owning handle converts to it
+    */
+   template <auto Key, auto Value, ObjectType T>
+      requires TypedField<decltype(Key)> && TypedField<decltype(Value)> &&
+               (FieldTraits<Value>::type != FieldType::List && FieldTraits<Value>::type != FieldType::Object &&
+                FieldTraits<Value>::type != FieldType::Ref)
+   void merge_by_key(const List<T> &dst, const std::type_identity_t<ConstList<T>> &src) {
+      for (const auto src_ep : src) {
+         Element<T> found;
+         for (const auto dst_ep : dst) {
+            if (detail::same_key<Key>(src_ep, ConstElement<T>(dst_ep), true)) {
+               found = dst_ep;
+               break;
+            }
+         }
+         if (found) {
+            set<Value>(found, get<Value>(src_ep));
+         } else {
+            dst.push_back(src_ep.clone());
+         }
+      }
    }
 
 } // namespace ocs::tom

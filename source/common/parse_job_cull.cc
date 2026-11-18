@@ -506,7 +506,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    ** a little redesign of cull would be nice
    ** see parse_list_simple
    */
-   parse_list_simple<JB_stderr_path_list>(cmdline, "-e", *pjob, PN_host, PN_path, FLG_LIST_MERGE);
+   parse_list_merge<JB_stderr_path_list, PN_host, PN_path>(cmdline, "-e", *pjob);
 
    /* -h */
    while ((ep = cmdline.find_first<SPA_switch_val>("-h"))) {
@@ -570,7 +570,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
       cmdline.erase(ep);
    }
 
-   parse_list_simple<JB_job_identifier_list>(cmdline, "-jid", *pjob, 0, 0, FLG_LIST_APPEND);
+   parse_list_append<JB_job_identifier_list>(cmdline, "-jid", *pjob);
 
    parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
    parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
@@ -592,7 +592,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
       cmdline.erase(ep);
    }
 
-   parse_list_simple<JB_mail_list>(cmdline, "-M", *pjob, MR_host, MR_user, FLG_LIST_MERGE);
+   parse_list_merge<JB_mail_list, MR_host, MR_user>(cmdline, "-M", *pjob);
 
 #ifndef USE_CLIENT_QALTER
    if (!ocs::tom::get<JB_mail_list>(*pjob)) {   
@@ -631,8 +631,8 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    ** job element pointer the field name the option list and the option
    ** name and the field is filled
    */
-   parse_list_simple<JB_stdout_path_list>(cmdline, "-o", *pjob, PN_host, PN_path, FLG_LIST_MERGE);
-   parse_list_simple<JB_stdin_path_list>(cmdline, "-i", *pjob, PN_host, PN_path, FLG_LIST_MERGE);
+   parse_list_merge<JB_stdout_path_list, PN_host, PN_path>(cmdline, "-o", *pjob);
+   parse_list_merge<JB_stdin_path_list, PN_host, PN_path>(cmdline, "-i", *pjob);
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-p"))) {
       int pri = ocs::tom::get<SPA_argval_lIntT>(ep);
@@ -700,14 +700,14 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
       cmdline.erase(ep);
    }
 
-   parse_list_simple<JB_shell_list>(cmdline, "-S", *pjob, PN_host, PN_path, FLG_LIST_MERGE);
+   parse_list_merge<JB_shell_list, PN_host, PN_path>(cmdline, "-S", *pjob);
 
    /* -terse option, not needed in job struct */
    while ((ep = cmdline.find_first<SPA_switch_val>("-terse"))) {
       cmdline.erase(ep);
    }
 
-   parse_list_simple<JB_user_list>(cmdline, "-u", *pjob, 0, 0, FLG_LIST_APPEND);
+   parse_list_append<JB_user_list>(cmdline, "-u", *pjob);
 
    /*
    ** to be processed in original order, set -V equal to -v
@@ -715,8 +715,8 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    while ((ep = cmdline.find_first<SPA_switch_val>("-V"))) {
       ocs::tom::set<SPA_switch_val>(ep, "-v");
    }
-   parse_list_simple<JB_env_list>(cmdline, "-v", *pjob, VA_variable, VA_value, FLG_LIST_MERGE);
-   cull_compress_definition_list(ocs::tom::get<JB_env_list>(*pjob), VA_variable, VA_value, 0);
+   parse_list_merge<JB_env_list, VA_variable, VA_value>(cmdline, "-v", *pjob);
+   ocs::tom::keep_last<VA_variable>(ocs::tom::get<JB_env_list>(*pjob));
 
    /* context switches are sensitive to order */
    ep = cmdline.front();

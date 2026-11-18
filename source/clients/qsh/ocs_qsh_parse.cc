@@ -483,7 +483,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       cmdline.erase(ep);
    }
 
-   parse_list_simple<JB_mail_list>(cmdline, "-M", job, MR_host, MR_user, FLG_LIST_MERGE);
+   parse_list_merge<JB_mail_list, MR_host, MR_user>(cmdline, "-M", job);
 
    if (!ocs::tom::get<JB_mail_list>(job)) {
       const auto mail_ep = ocs::tom::emplace_back_in<JB_mail_list, MR_user>(job, username);
@@ -562,7 +562,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       cmdline.erase(ep);
    }
 
-   parse_list_simple<JB_shell_list>(cmdline, "-S", job, PN_host, PN_path, FLG_LIST_MERGE);
+   parse_list_merge<JB_shell_list, PN_host, PN_path>(cmdline, "-S", job);
 
    /* context switches are sensitive to order */
    ep = cmdline.front();
@@ -602,7 +602,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
    while ((ep = cmdline.find_first<SPA_switch_val>("-V"))) {
       ocs::tom::set<SPA_switch_val>(ep, "-v");
    }
-   parse_list_simple<JB_env_list>(cmdline, "-v", job, VA_variable, VA_value, FLG_LIST_MERGE);
+   parse_list_merge<JB_env_list, VA_variable, VA_value>(cmdline, "-v", job);
 
    /* -w e is default for interactive jobs */
    /* JG: changed default behaviour: skip verify to be consistant to qsub */
@@ -669,8 +669,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
 
       cmdline.erase(ep);
    }
-   // cull_compress_definition_list() works on any definition list and has no typed form
-   cull_compress_definition_list(ocs::tom::get<JB_env_list>(job), VA_variable, VA_value, 0);
+   ocs::tom::keep_last<VA_variable>(ocs::tom::get<JB_env_list>(job));
 
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-verify"))) {
