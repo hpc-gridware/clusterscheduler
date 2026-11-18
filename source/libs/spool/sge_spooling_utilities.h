@@ -37,13 +37,18 @@
  * @brief Deciding which attributes of an object get spooled, and how
  */
 
+#include <cstddef>
+#include <cstdint>
+
 #include "uti/sge_dstring.h"
 
 #include "cull/cull.h"
 
 #include "sgeobj/sge_object.h"
+#include "sgeobj/ocs_CEntry.h"
 
 #include "tom/ocs_Element.h"
+#include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/sge_answer.h"
@@ -89,7 +94,75 @@ extern const spool_instr_t spool_user_instr;        ///< Users and projects: #CU
 extern const spool_instr_t spool_userprj_subinstr;  ///< Sublists of a user or project - it names *itself* as its own `sub_instr`, so nesting to any depth uses the same selection
 /** @} */
 
-struct ocs_spool_field_ops;
+/**
+ * @brief The value of a field that is neither a list nor an object nor a reference
+ *
+ * The member named by the field's type is the valid one; a string and a host name are both held in `str`. A value
+ * read by #ocs_spool_field_ops::get points into the element, a value given to #ocs_spool_field_ops::set is copied.
+ */
+union ocs_spool_value {
+   std::uint32_t u32;   ///< FieldType::Uint32
+   std::uint64_t u64;   ///< FieldType::Uint64
+   std::int32_t i32;    ///< FieldType::Int32
+   std::int64_t i64;    ///< FieldType::Int64
+   double dbl;          ///< FieldType::Double
+   bool b;              ///< FieldType::Bool
+   const char *str;     ///< FieldType::String and FieldType::Host, nullptr if unset
+};
+
+/**
+ * @brief How a walker renders and parses the value of a field that is neither a list nor an object
+ *
+ * A property of the field, fixed at compile time in its #ocs_spool_field_ops. The flatfile walkers know
+ * #ocs_spool_render::plain and #ocs_spool_render::by_name only (#ocs_spool_field_ops::flat); the JSON walkers
+ * know every kind (#ocs_spool_field_ops::json).
+ */
+enum class ocs_spool_render : std::uint8_t {
+   plain,         ///< the default conversion of the field's type
+   by_name,       ///< object_append_field_to_dstring() / object_parse_field_from_string() render it symbolically
+   datetime,      ///< an absolute gmt64 time stamp, an ISO date-time in JSON
+   bitfield,      ///< a bit field, an array of the names of the set bits in JSON (#ocs_spool_field_ops::names)
+   enumeration,   ///< an enumeration, the name of the value in JSON (#ocs_spool_field_ops::names)
+   avalue,        ///< a string holding a value of a complex type (#ocs_spool_field_ops::avalue_type)
+   number         ///< a string that holds a number, a native number in JSON
+};
+
+/**
+ * @brief The typed code of one field, as the run-time walkers call it
+ *
+ * One constant per field (#ocs_spool_ops), shared by every row of every table naming the field; a row built from a
+ * descriptor or a field number at run time takes the same constant from ocs_spool_field_ops_of(). The element
+ * arrives untyped because the walkers are shared by all object types; a walker calls an operation only for an
+ * element that holds the field, and field numbers are unique across the types, so the operations take the element
+ * into a handle of the field's type, which checks it. The type independent work - formatting a value, converting a
+ * JSON value - is done once by the walkers on the #ocs_spool_value an operation reads or writes.
+ */
+struct ocs_spool_field_ops {
+   ocs::tom::FieldType type;   ///< the field's type, from the field table of the object model
+   /// the descriptor of the sub-type of a list or object field, nullptr if it has none
+   const lDescr *sub_descr;
+   /// the value of a field that is neither a list nor an object nor a reference, nullptr for those
+   ocs_spool_value (*get)(const lListElem *ep);
+   /// stores the value of a field that is neither a list nor an object nor a reference, nullptr for those
+   void (*set)(lListElem *ep, ocs_spool_value value);
+   /// the list of a list field, nullptr for other fields
+   const lList *(*get_list)(const lListElem *ep);
+   /// stores a list for a list field, taking it over; nullptr for other fields
+   void (*set_list)(lListElem *ep, lList *list);
+   /// the element of an object field, nullptr for other fields
+   const lListElem *(*get_object)(const lListElem *ep);
+   /// stores an element for an object field, taking it over; nullptr for other fields
+   void (*set_object)(lListElem *ep, lListElem *object);
+   /// how the flatfile walkers render the value: #ocs_spool_render::plain or #ocs_spool_render::by_name
+   ocs_spool_render flat;
+   /// how the JSON walkers render the value
+   ocs_spool_render json;
+   /// the names of the bits of a JSON bitfield or of the values of a JSON enumeration, nullptr terminated;
+   /// nullptr for other fields
+   const char *const *names;
+   /// the complex type of a JSON #ocs_spool_render::avalue field, ocs::CEntry::Type::NONE for other fields
+   ocs::CEntry::Type avalue_type;
+};
 
 /** @brief One attribute to spool, as the backends see it
  *
@@ -98,7 +171,9 @@ struct ocs_spool_field_ops;
  * so that #spool_free_spooling_fields can release exactly those.
  *
  * The flatfile field tables are typed (spool/flatfile/ocs_spool_fields.h); the
- * arrays generated from them carry the typed code of each field in `ops`.
+ * arrays generated from them carry the typed code of each field in `ops`. An
+ * array built at run time takes the same code from ocs_spool_field_ops_of() or
+ * ocs_spool_type_ops_of(), so every entry but the terminating one has `ops`.
  */
 typedef struct spooling_field {
    int nm;                    ///< The cull attribute number, `NoName` in the terminating entry
@@ -112,9 +187,22 @@ typedef struct spooling_field {
    int (*read_func) (lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
    int (*write_func) (const lListElem *ep, int nm, dstring *buffer,
                       ocs::tom::ListPtr<ocs::tom::AN> *alp);   ///< Backend hook rendering this attribute into `buffer`
-   /// The typed code of the field, from a typed field table; nullptr for an entry built from a descriptor
+   /// The typed code of the field, nullptr only in the terminating entry
    const ocs_spool_field_ops *ops;
 } spooling_field;
+
+/** @brief The typed spooling code of the fields of one object type, see ocs_spool_type_ops_of() */
+struct ocs_spool_type_ops {
+   int base;                                ///< the number of the type's first field
+   std::size_t size;                        ///< the number of the type's fields
+   const ocs_spool_field_ops *const *ops;   ///< the code of field `base + i` at index `i`
+};
+
+const ocs_spool_type_ops *
+ocs_spool_type_ops_of(const lDescr *descr);
+
+const ocs_spool_field_ops *
+ocs_spool_field_ops_of(int nm);
 
 spooling_field *
 spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,

@@ -40,12 +40,9 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_object.h"           /* object_get_type/_name, object_get_subtype */
+#include "sgeobj/sge_object.h"           /* object_get_type_name, the symbolic value renderer/parser */
 #include "sgeobj/sge_attr.h"             /* HOSTREF_DEFAULT ("@/") */
 #include "sgeobj/sge_centry.h"           /* CE_Type / CE_* for complex-value typing */
-#include "sgeobj/sge_qinstance_type.h"   /* queue_types[] for qtype <-> name list */
-#include "sgeobj/sge_userset.h"          /* userset_types[] for US_type <-> name list */
-#include "sgeobj/sge_sharetree.h"        /* STN_type / STT_USER / STT_PROJECT (enum names) */
 #include "sgeobj/sge_ulong.h"            /* double_print_to_dstring (compact time/mem) */
 #include "uti/sge_time.h"                /* sge_ctime64 / sge_gmt32_to_gmt64 (ISO date-time) */
 #include <ctime>                         /* struct tm, mktime (ISO date-time parse) */
@@ -59,6 +56,7 @@
 #include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "spool/sge_spooling_utilities.h"
+#include "spool/flatfile/ocs_spool_fields.h"
 
 #include "msg_common.h"                  /* MSG_NULLELEMENTPASSEDTO_S (SGE_CHECK_POINTER_FALSE) */
 
@@ -161,39 +159,41 @@ spool_json_write_envelope(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
 }
 
 /**
- * @brief Write one scalar field value (no key) typed from the CULL field type.
+ * @brief Write one scalar field value (no key) typed from the field's type.
+ *
+ * The value is read through the row's typed code; a list, an object or a reference
+ * field has no scalar value and is written as null.
  *
  * @param writer  pretty-printer to emit into
  * @param object  element holding the field
- * @param pos     position of the field in the element's descriptor
- * @param type    CULL field type (lDoubleT, lUlongT, lStringT, ...)
+ * @param field   the row of the field
  */
 static void
 spool_json_write_scalar_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *object, int pos, int type) {
-   switch (type) {
-      case lDoubleT:  writer.Double(lGetPosDouble(object, pos)); break;
-      case lUlongT:   writer.Uint64(lGetPosUlong(object, pos)); break;
-      case lUlong64T: writer.Uint64(lGetPosUlong64(object, pos)); break;
-      case lLongT:    writer.Int64(lGetPosLong(object, pos)); break;
-      case lIntT:     writer.Int(lGetPosInt(object, pos)); break;
-      case lBoolT:    writer.Bool(lGetPosBool(object, pos)); break;
-      case lStringT: {
-         const char *s = lGetPosString(object, pos);
-         /* unset string -> empty string. null, "" and the "NONE" sentinel all mean
+                              const lListElem *object, const spooling_field &field) {
+   if (field.ops->get == nullptr) {
+      writer.Null();
+      return;
+   }
+   const ocs_spool_value value = field.ops->get(object);
+   switch (field.ops->type) {
+      case ocs::tom::FieldType::Double: writer.Double(value.dbl); break;
+      case ocs::tom::FieldType::Uint32: writer.Uint64(value.u32); break;
+      case ocs::tom::FieldType::Uint64: writer.Uint64(value.u64); break;
+      case ocs::tom::FieldType::Int64:  writer.Int64(value.i64); break;
+      case ocs::tom::FieldType::Int32:  writer.Int(value.i32); break;
+      case ocs::tom::FieldType::Bool:   writer.Bool(value.b); break;
+      default: {
+         /* a string or a host name, the only other fields with a get operation.
+            unset string -> empty string. null, "" and the "NONE" sentinel all mean
             unset, so they render uniformly as "" instead of leaking the internal "NONE"
             token into JSON. The reader maps "" back to the "NONE" sentinel string (not
             C-null), mirroring the flatfile reader, so a required field whose unset value
             is "NONE" (e.g. a ckpt interface's command fields) round-trips correctly. */
+         const char *s = value.str;
          writer.String((s == nullptr || sge_strnullcasecmp(s, NONE_STR) == 0) ? "" : s);
          break;
       }
-      case lHostT: {
-         const char *s = lGetPosHost(object, pos);
-         writer.String((s == nullptr || sge_strnullcasecmp(s, NONE_STR) == 0) ? "" : s);
-         break;
-      }
-      default: writer.Null(); break;
    }
 }
 
@@ -311,35 +311,9 @@ spool_json_is_ce_list(const lList *list) {
 }
 
 /**
- * @brief Test whether a field is rendered as a symbolic enum token.
- *
- * These are fields whose CULL value is an enum/bitfield that the flatfile (and qstat)
- * render as a symbolic token rather than a raw number - exactly the scalar
- * special-cases of object_append_field_to_dstring() / object_parse_field_from_string()
- * in sgeobj/sge_object.cc. For JSON we emit the same human-readable token (CE_valtype
- * 1 -> "INT", CE_relop 5 -> "<=", CE_requestable -> "YES", ...) and parse it back
- * symbolically on read, so the JSON form matches the ASCII form and round-trips.
- *
- * @param nm  CULL field id
- * @return true if the field is rendered/parsed as a symbolic token
- */
-static bool
-spool_json_nm_is_symbolic(int nm) {
-   switch (nm) {
-      case CE_valtype:
-      case CE_relop:
-      case CE_requestable:
-      case CE_consumable:
-         return true;
-      default:
-         return false;
-   }
-}
-
-/**
  * @brief Write a field as its symbolic string token.
  *
- * See spool_json_nm_is_symbolic() for the set of symbolic fields.
+ * Used for the fields of the JSON kind ocs_spool_render::by_name (#ocs_spool_field_ops::json).
  *
  * @param writer  pretty-printer to emit into
  * @param object  element holding the field
@@ -355,30 +329,6 @@ spool_json_write_symbolic_value(rapidjson::PrettyWriter<rapidjson::StringBuffer>
 }
 
 /**
- * @brief Test whether a string-stored field is semantically always a number.
- *
- * These are fields that CULL stores as a string but that are semantically always a
- * (finite) number - e.g. CE_urgency_weight, which the scheduler always parses as a
- * double. For JSON we emit a native number. The reader's lStringT path coerces the
- * number back to its decimal string, so no special read handling is needed.
- *
- * @param nm  CULL field id
- * @return true if the field should be emitted as a native JSON number
- */
-static bool
-spool_json_nm_is_number(int nm) {
-   switch (nm) {
-      case CE_urgency_weight:    /* always a finite double */
-      case ASTR_value:           /* cqueue string override (e.g. priority) -> number if numeric */
-      case PE_allocation_rule:   /* "$pe_slots"/... (string) or a fixed slot count (number) */
-      case PE_urgency_slots:     /* "min"/"max"/"avg" (string) or a slot count (number) */
-         return true;
-      default:
-         return false;
-   }
-}
-
-/**
  * @brief Write a string-stored numeric field as a native JSON number.
  *
  * Integral values are written as an integer, others as a double. A null, empty, or
@@ -386,13 +336,10 @@ spool_json_nm_is_number(int nm) {
  * (e.g. "INFINITY") -> the raw string.
  *
  * @param writer  pretty-printer to emit into
- * @param object  element holding the field
- * @param nm      CULL field id (a string field that is semantically numeric)
+ * @param s       the value of the string field that is semantically numeric
  */
 static void
-spool_json_write_number_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *object, int nm) {
-   const char *s = lGetString(object, nm);
+spool_json_write_number_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer, const char *s) {
    if (s == nullptr || *s == '\0' || sge_strnullcasecmp(s, NONE_STR) == 0) {
       writer.String("");
       return;
@@ -405,28 +352,6 @@ spool_json_write_number_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
       writer.Double(d);
    } else {
       writer.String(s);   /* INFINITY and other non-numeric tokens kept verbatim */
-   }
-}
-
-/**
- * @brief Complex type used to type a string-stored, semantically numeric override value.
- *
- * ATIME/AINTER values are times (-> seconds), AMEM values are memory (-> bytes). Other
- * value fields are not numerically typed here.
- *
- * @param nm  CULL field id of a cqueue override value attribute
- * @return the complex entry type (TIME/MEM), or NONE if not numerically typed
- */
-static ocs::CEntry::Type
-spool_json_avalue_ctype(int nm) {
-   switch (nm) {
-      case ATIME_value:
-      case AINTER_value:
-         return ocs::CEntry::Type::TIME;
-      case AMEM_value:
-         return ocs::CEntry::Type::MEM;
-      default:
-         return ocs::CEntry::Type::NONE;
    }
 }
 
@@ -457,29 +382,6 @@ spool_json_write_avalue(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer
 }
 
 /**
- * @brief Name table for a bitfield field rendered as an array of set bit names.
- *
- * Bitfield fields are rendered in JSON as an array of the set bit names (bit i ->
- * names[i], e.g. qtype -> ["BATCH","INTERACTIVE"], userset type -> ["ACL","DEPT"])
- * instead of a raw bitmask number.
- *
- * @param nm  CULL field id
- * @return the bit-name table for the field, or nullptr if not a bitfield
- */
-static const char *const *
-spool_json_bitfield_names(int nm) {
-   switch (nm) {
-      case QU_qtype:
-      case AQTLIST_value:
-         return queue_types;
-      case US_type:
-         return userset_types;
-      default:
-         return nullptr;
-   }
-}
-
-/**
  * @brief Write a bitfield value as a JSON array of the set bit names.
  *
  * @param writer  pretty-printer to emit into
@@ -498,37 +400,6 @@ spool_json_write_bitfield_array(rapidjson::PrettyWriter<rapidjson::StringBuffer>
       bitmask <<= 1;
    }
    writer.EndArray();
-}
-
-/* sharetree node type STN_type (STT_USER=0, STT_PROJECT=1); the table is indexed by the
- * enum value, so the order must match the STT_* constants in sgeobj/sge_sharetree.h. */
-static const char *const sharetree_node_types[] = { "USER", "PROJECT", nullptr };
-
-/* scheduler queue sort method SC_queue_sort_method (QSM_LOAD=0, QSM_SEQNUM=1); the table
- * is indexed by the enum value and matches the tokens of write_SC_queue_sort_method. */
-static const char *const sched_queue_sort_methods[] = { "load", "seqno", nullptr };
-
-/**
- * @brief Name table for a single-valued enum field rendered as a symbolic token.
- *
- * Unlike a bitfield (an array of set-bit names), this is a plain enum whose value is an
- * index into the table (e.g. STN_type 0 -> "USER", 1 -> "PROJECT"). The flatfile (ASCII)
- * writer renders these via per-field write functions; JSON bypasses those, so the
- * mapping is mirrored here to keep the symbolic form (and round-trip) consistent.
- *
- * @param nm  CULL field id
- * @return the value-name table for the field, or nullptr if not such an enum
- */
-static const char *const *
-spool_json_enum_names(int nm) {
-   switch (nm) {
-      case STN_type:
-         return sharetree_node_types;
-      case SC_queue_sort_method:
-         return sched_queue_sort_methods;
-      default:
-         return nullptr;
-   }
 }
 
 /**
@@ -572,25 +443,6 @@ spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names) 
       }
    }
    return spool_json_value_to_ulong(v);   /* numeric form (or unmatched string) */
-}
-
-/**
- * @brief Test whether a field is an absolute timestamp rendered as an ISO date-time.
- *
- * Absolute-timestamp fields (gmt64 microseconds since epoch) are rendered as a local
- * ISO date-time string ("2026-06-13T14:30:13"); 0/unset -> "".
- *
- * @param nm  CULL field id
- * @return true if the field is a date-time field
- */
-static bool
-spool_json_nm_is_datetime(int nm) {
-   switch (nm) {
-      case UU_delete_time:
-         return true;
-      default:
-         return false;
-   }
 }
 
 /**
@@ -646,37 +498,47 @@ spool_json_datetime_from_string(const char *s) {
 /**
  * @brief Write the scalar value of a field, dispatching on its typing.
  *
- * Routes through the date-time, bitfield, symbolic, complex-typed, numeric, and plain
- * scalar branches (in that precedence); a field absent from the descriptor -> null.
+ * Routes on the JSON rendering kind of the field (#ocs_spool_field_ops::json) to the
+ * date-time, bitfield, enum, symbolic, complex-typed, numeric, or plain scalar branch;
+ * a field absent from the descriptor -> null. The value is read through the row's
+ * typed code; the kinds are bound to the field types at compile time (date-time,
+ * bitfield, enum are numbers, complex-typed and numeric are strings), so the member of
+ * the value a branch reads is the one the field's type names.
  *
  * @param writer  pretty-printer to emit into
  * @param ep      element holding the field
- * @param nm      CULL field id to write
+ * @param field   the row of the field to write
  */
 static void
 spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *ep, int nm) {
-   const lDescr *d = lGetElemDescr(ep);
-   const int pos = lGetPosInDescr(d, nm);
-   const ocs::CEntry::Type avtype = spool_json_avalue_ctype(nm);
-   const char *const *bitnames = spool_json_bitfield_names(nm);
-   const char *const *enumnames = spool_json_enum_names(nm);
-   if (pos < 0) {
+                              const lListElem *ep, const spooling_field &field) {
+   if (lGetPosInDescr(lGetElemDescr(ep), field.nm) < 0) {
       writer.Null();
-   } else if (spool_json_nm_is_datetime(nm)) {
-      spool_json_write_datetime(writer, lGetPosUlong64(ep, pos));
-   } else if (bitnames != nullptr) {
-      spool_json_write_bitfield_array(writer, lGetPosUlong(ep, pos), bitnames);
-   } else if (enumnames != nullptr) {
-      spool_json_write_enum_value(writer, lGetPosUlong(ep, pos), enumnames);
-   } else if (spool_json_nm_is_symbolic(nm)) {
-      spool_json_write_symbolic_value(writer, ep, nm);
-   } else if (avtype != ocs::CEntry::Type::NONE) {
-      spool_json_write_avalue(writer, lGetPosString(ep, pos), avtype);
-   } else if (spool_json_nm_is_number(nm)) {
-      spool_json_write_number_value(writer, ep, nm);
-   } else {
-      spool_json_write_scalar_value(writer, ep, pos, lGetPosType(d, pos));
+      return;
+   }
+   const ocs_spool_field_ops &ops = *field.ops;
+   switch (ops.json) {
+      case ocs_spool_render::datetime:
+         spool_json_write_datetime(writer, ops.get(ep).u64);
+         break;
+      case ocs_spool_render::bitfield:
+         spool_json_write_bitfield_array(writer, ops.get(ep).u32, ops.names);
+         break;
+      case ocs_spool_render::enumeration:
+         spool_json_write_enum_value(writer, ops.get(ep).u32, ops.names);
+         break;
+      case ocs_spool_render::by_name:
+         spool_json_write_symbolic_value(writer, ep, field.nm);
+         break;
+      case ocs_spool_render::avalue:
+         spool_json_write_avalue(writer, ops.get(ep).str, ops.avalue_type);
+         break;
+      case ocs_spool_render::number:
+         spool_json_write_number_value(writer, ops.get(ep).str);
+         break;
+      case ocs_spool_render::plain:
+         spool_json_write_scalar_value(writer, ep, field);
+         break;
    }
 }
 
@@ -688,22 +550,20 @@ spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  *
  * @param writer  pretty-printer to emit into
  * @param ep      the positional element
- * @param nm      CULL field id of the element's name field
+ * @param field   the row of the element's name field
  */
 static void
 spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                 const lListElem *ep, int nm) {
-   const lDescr *d = lGetElemDescr(ep);
-   const int pos = lGetPosInDescr(d, nm);
-   if (pos >= 0 && lGetPosType(d, pos) == lHostT) {
-      const char *h = lGetPosHost(ep, pos);
+                                 const lListElem *ep, const spooling_field &field) {
+   if (field.ops->type == ocs::tom::FieldType::Host && lGetPosInDescr(lGetElemDescr(ep), field.nm) >= 0) {
+      const char *h = field.ops->get(ep).str;
       if (h != nullptr && strcmp(h, HOSTREF_DEFAULT) == 0) {
          writer.String(SPOOL_JSON_DEFAULT_HREF);
       } else {
          writer.String((h != nullptr && *h != '\0') ? h : "");
       }
    } else {
-      spool_json_write_field_scalar(writer, ep, nm);
+      spool_json_write_field_scalar(writer, ep, field);
    }
 }
 
@@ -716,6 +576,9 @@ spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer
  * { "name": <field0>, "value": <field1> } objects. The value (field1) may itself be a
  * list (e.g. the cqueue load_thresholds value is a complex list) -> it is rendered as
  * a nested array (empty -> []) rather than null.
+ *
+ * The list's elements are of the sub-type of the list field the rows belong to, known
+ * here only as the rows' descriptor; the fields are read through the rows' typed code.
  *
  * @param answer_list  for returning errors
  * @param list         the positional sublist
@@ -736,20 +599,20 @@ spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
    const lListElem *ep;
    for_each_ep(ep, list) {
       if (nfields <= 1) {
-         spool_json_write_positional_name(writer, ep, fields[0].nm);
+         spool_json_write_positional_name(writer, ep, fields[0]);
       } else {
          writer.StartObject();
          writer.Key("name");
-         spool_json_write_positional_name(writer, ep, fields[0].nm);
+         spool_json_write_positional_name(writer, ep, fields[0]);
          writer.Key("value");
-         const lDescr *d = lGetElemDescr(ep);
-         const int vpos = lGetPosInDescr(d, fields[1].nm);
-         if (vpos >= 0 && lGetPosType(d, vpos) == lListT) {
-            if (!spool_json_write_list_value(answer_list, lGetPosList(ep, vpos), fields[1].sub_fields, writer)) {
+         if (fields[1].ops->type == ocs::tom::FieldType::List &&
+             lGetPosInDescr(lGetElemDescr(ep), fields[1].nm) >= 0) {
+            if (!spool_json_write_list_value(answer_list, fields[1].ops->get_list(ep), fields[1].sub_fields,
+                                             writer)) {
                return false;
             }
          } else {
-            spool_json_write_field_scalar(writer, ep, fields[1].nm);
+            spool_json_write_field_scalar(writer, ep, fields[1]);
          }
          writer.EndObject();
       }
@@ -1036,67 +899,68 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
    const lDescr *descr = lGetElemDescr(object);
 
    for (int i = 0; fields[i].nm != NoName; i++) {
-      const int nm = fields[i].nm;
-      const char *name = fields[i].name;
+      const spooling_field &field = fields[i];
+      const int nm = field.nm;
+      const char *name = field.name;
 
       /* JSON needs a key. A top-level unnamed name=value sublist (the config entries,
          CONF_entries) is flattened: each "<name>": <value> becomes a member of the
          object, mirroring the flat "parameter value" config format. Other unnamed
          (structural) fields are skipped. */
       if (name == nullptr) {
-         const int fpos = lGetPosInDescr(descr, nm);
-         const spooling_field *sf = fields[i].sub_fields;
-         if (fpos >= 0 && lGetPosType(descr, fpos) == lListT && sf != nullptr &&
+         const spooling_field *sf = field.sub_fields;
+         if (lGetPosInDescr(descr, nm) >= 0 && field.ops->type == ocs::tom::FieldType::List && sf != nullptr &&
              sf[0].nm != NoName && sf[0].name == nullptr && sf[1].nm != NoName) {
-            const lList *sub = lGetPosList(object, fpos);
+            const lList *sub = field.ops->get_list(object);
             const lListElem *e;
             for_each_ep(e, sub) {
-               const char *key = lGetString(e, sf[0].nm);
+               const char *key = sf[0].ops->get(e).str;
                if (key == nullptr) {
                   continue;
                }
                writer.Key(key);
+               const char *value = sf[1].ops->get(e).str;
                /* config list params render as arrays (grounded in the config loader's
                 * parsing); everything else is a scalar string */
                switch (config_param_list_type(key)) {
                   case CONF_PARAM_VALUE_LIST:
-                     spool_json_write_config_value_list(writer, lGetString(e, sf[1].nm));
+                     spool_json_write_config_value_list(writer, value);
                      break;
                   case CONF_PARAM_NAMEVALUE_LIST:
-                     spool_json_write_config_namevalue_list(writer, lGetString(e, sf[1].nm));
+                     spool_json_write_config_namevalue_list(writer, value);
                      break;
                   default:
                      /* scalar: typed by value (bool) or by the known INT/TIME type;
                       * "NONE"/empty -> ""; otherwise a string */
-                     spool_json_write_config_value(writer, lGetString(e, sf[1].nm),
-                                                   config_param_value_type(key));
+                     spool_json_write_config_value(writer, value, config_param_value_type(key));
                      break;
                }
             }
          }
          continue;
       }
-      const int pos = lGetPosInDescr(descr, nm);
-      if (pos < 0) {
+      if (lGetPosInDescr(descr, nm) < 0) {
          continue;
       }
 
-      const int type = lGetPosType(descr, pos);
-      if (type == lListT) {
+      const ocs::tom::FieldType type = field.ops->type;
+      if (type == ocs::tom::FieldType::List) {
          writer.Key(name);
-         if (!spool_json_write_list_value(answer_list, lGetPosList(object, pos), fields[i].sub_fields, writer)) {
+         if (!spool_json_write_list_value(answer_list, field.ops->get_list(object), field.sub_fields, writer)) {
             DRETURN(false);
          }
-      } else if (type == lObjectT && fields[i].sub_fields != nullptr) {
+      } else if (type == ocs::tom::FieldType::Object && field.sub_fields != nullptr) {
          /* a sub-object (e.g. an RQS filter) -> nested JSON object built from its
             sub_fields. An unset (null) sub-object is still emitted as its full empty
             structure (rendered from a transient default element) so the JSON always
             shows the complete syntax, e.g. { "expand": false, "scope": [], "xscope":
             [] }. The reader maps empty arrays to null lists, so this round-trips to
-            "no filter" (the matcher treats a null scope as "match all"). */
+            "no filter" (the matcher treats a null scope as "match all"). The sub-type
+            is known here only as the row's descriptor, so the transient element is
+            created from it. */
          writer.Key(name);
-         const lListElem *real = lGetPosObject(object, pos);
-         const lDescr *sub_descr = object_get_subtype(fields[i].nm);
+         const lListElem *real = field.ops->get_object(object);
+         const lDescr *sub_descr = field.ops->sub_descr;
          lListElem *tmp = nullptr;
          const lListElem *sub_obj = real;
          if (sub_obj == nullptr && sub_descr != nullptr) {
@@ -1105,7 +969,7 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
          }
          bool ok = true;
          if (sub_obj != nullptr) {
-            ok = spool_json_write_object_braced(answer_list, sub_obj, writer, fields[i].sub_fields);
+            ok = spool_json_write_object_braced(answer_list, sub_obj, writer, field.sub_fields);
          } else {
             writer.Null();
          }
@@ -1114,23 +978,27 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
             DRETURN(false);
          }
       } else {
+         /* the JSON kinds of the field are bound to its type at compile time (date-time,
+            bitfield, enum are numbers, numeric is a string) and the perm list is a
+            string, so the member of the value a branch reads is the one the field's type
+            names; a complex-typed value (ocs_spool_render::avalue) is written as a plain
+            scalar here, as it always was */
          writer.Key(name);
-         const char *const *bitnames = spool_json_bitfield_names(nm);
-         const char *const *enumnames = spool_json_enum_names(nm);
-         if (spool_json_nm_is_datetime(nm)) {
-            spool_json_write_datetime(writer, lGetPosUlong64(object, pos));
-         } else if (bitnames != nullptr) {
-            spool_json_write_bitfield_array(writer, lGetPosUlong(object, pos), bitnames);
-         } else if (enumnames != nullptr) {
-            spool_json_write_enum_value(writer, lGetPosUlong(object, pos), enumnames);
+         const ocs_spool_field_ops &ops = *field.ops;
+         if (ops.json == ocs_spool_render::datetime) {
+            spool_json_write_datetime(writer, ops.get(object).u64);
+         } else if (ops.json == ocs_spool_render::bitfield) {
+            spool_json_write_bitfield_array(writer, ops.get(object).u32, ops.names);
+         } else if (ops.json == ocs_spool_render::enumeration) {
+            spool_json_write_enum_value(writer, ops.get(object).u32, ops.names);
          } else if (spool_json_nm_is_perm_list(nm)) {
-            spool_json_write_perm_list(writer, lGetPosString(object, pos));
-         } else if (spool_json_nm_is_symbolic(nm)) {
+            spool_json_write_perm_list(writer, ops.get(object).str);
+         } else if (ops.json == ocs_spool_render::by_name) {
             spool_json_write_symbolic_value(writer, object, nm);
-         } else if (spool_json_nm_is_number(nm)) {
-            spool_json_write_number_value(writer, object, nm);
+         } else if (ops.json == ocs_spool_render::number) {
+            spool_json_write_number_value(writer, ops.get(object).str);
          } else {
-            spool_json_write_scalar_value(writer, object, pos, type);
+            spool_json_write_scalar_value(writer, object, field);
          }
       }
    }
@@ -1449,14 +1317,16 @@ bool spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       writer.Key("names");
    }
    writer.StartArray();
+   // the name is a string or a host name field; a key of another type has no name to show
+   const ocs_spool_field_ops *ops = ocs_spool_field_ops_of(keynm);
+   const bool named = ops != nullptr &&
+                      (ops->type == ocs::tom::FieldType::String || ops->type == ocs::tom::FieldType::Host);
    const lListElem *ep;
    for_each_ep(ep, list) {
-      const lDescr *d = lGetElemDescr(ep);
-      const int pos = lGetPosInDescr(d, keynm);
-      if (pos < 0) {
+      if (!named || lGetPosInDescr(lGetElemDescr(ep), keynm) < 0) {
          continue;
       }
-      const char *s = (lGetPosType(d, pos) == lHostT) ? lGetPosHost(ep, pos) : lGetPosString(ep, pos);
+      const char *s = ops->get(ep).str;
       if (s != nullptr && s[0] != '#') {   /* skip comment lines, as the ASCII shower does */
          writer.String(s);
       }
@@ -1555,52 +1425,75 @@ spool_json_string_or_unset(const rapidjson::Value &v, dstring *out) {
 }
 
 /**
- * @brief Set a field (pos/type) of an element from a JSON value, coercing per CULL type.
+ * @brief Set a field of an element from a JSON value, coercing per field type.
  *
- * The inverse of spool_json_write_scalar_value (raw set, bypassing read_func, to mirror
- * the writer which bypassed write_func).
+ * The inverse of spool_json_write_scalar_value (bypassing read_func, to mirror the
+ * writer which bypassed write_func). The value is stored through the row's typed
+ * code; a list, an object or a reference field is left as it is.
  *
- * @param ep    element to populate
- * @param pos   position of the field in the descriptor
- * @param type  CULL field type
- * @param v     the JSON value
+ * @param ep     element to populate, holding the field
+ * @param field  the row of the field
+ * @param v      the JSON value
  */
 static void
-spool_json_set_field(lListElem *ep, int pos, int type, const rapidjson::Value &v) {
+spool_json_set_field(lListElem *ep, const spooling_field &field, const rapidjson::Value &v) {
+   if (field.ops->set == nullptr) {
+      return;
+   }
    dstring s = DSTRING_INIT;
-   switch (type) {
-      case lDoubleT:
-         lSetPosDouble(ep, pos, v.IsNumber() ? v.GetDouble()
-                                : (v.IsString() ? strtod(v.GetString(), nullptr) : 0.0));
+   ocs_spool_value value{};
+   switch (field.ops->type) {
+      case ocs::tom::FieldType::Double:
+         value.dbl = v.IsNumber() ? v.GetDouble() : (v.IsString() ? strtod(v.GetString(), nullptr) : 0.0);
          break;
-      case lUlongT:
-         lSetPosUlong(ep, pos, spool_json_value_to_ulong(v));
+      case ocs::tom::FieldType::Uint32:
+         value.u32 = spool_json_value_to_ulong(v);
          break;
-      case lUlong64T:
-         lSetPosUlong64(ep, pos, v.IsUint64() ? v.GetUint64()
-                                 : static_cast<lUlong64>(spool_json_value_to_ulong(v)));
+      case ocs::tom::FieldType::Uint64:
+         value.u64 = v.IsUint64() ? v.GetUint64() : static_cast<lUlong64>(spool_json_value_to_ulong(v));
          break;
-      case lLongT:
-         lSetPosLong(ep, pos, v.IsInt64() ? v.GetInt64()
-                              : static_cast<lLong>(spool_json_value_to_ulong(v)));
+      case ocs::tom::FieldType::Int64:
+         value.i64 = v.IsInt64() ? v.GetInt64() : static_cast<lLong>(spool_json_value_to_ulong(v));
          break;
-      case lIntT:
-         lSetPosInt(ep, pos, v.IsInt() ? v.GetInt()
-                             : static_cast<int>(spool_json_value_to_ulong(v)));
+      case ocs::tom::FieldType::Int32:
+         value.i32 = v.IsInt() ? v.GetInt() : static_cast<int>(spool_json_value_to_ulong(v));
          break;
-      case lBoolT:
-         lSetPosBool(ep, pos, spool_json_value_to_bool(v));
-         break;
-      case lStringT:
-         lSetPosString(ep, pos, spool_json_string_or_unset(v, &s));
-         break;
-      case lHostT:
-         lSetPosHost(ep, pos, spool_json_string_or_unset(v, &s));
+      case ocs::tom::FieldType::Bool:
+         value.b = spool_json_value_to_bool(v);
          break;
       default:
+         // a string or a host name, the only other fields with a set operation
+         value.str = spool_json_string_or_unset(v, &s);
          break;
    }
+   field.ops->set(ep, value);
    sge_dstring_free(&s);
+}
+
+/**
+ * @brief Store a string or host name value through a row's typed code
+ * @param ep     element to populate, holding the field
+ * @param field  the row of a string or host name field
+ * @param s      the value, copied; nullptr for unset
+ */
+static void
+spool_json_set_string(lListElem *ep, const spooling_field &field, const char *s) {
+   ocs_spool_value value{};
+   value.str = s;
+   field.ops->set(ep, value);
+}
+
+/**
+ * @brief Store a 32 bit unsigned value through a row's typed code
+ * @param ep     element to populate, holding the field
+ * @param field  the row of an unsigned 32 bit field
+ * @param u      the value
+ */
+static void
+spool_json_set_u32(lListElem *ep, const spooling_field &field, const uint32_t u) {
+   ocs_spool_value value{};
+   value.u32 = u;
+   field.ops->set(ep, value);
 }
 
 /**
@@ -1640,17 +1533,17 @@ spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *nam
  * Maps the JSON "default" token back to HOSTREF_DEFAULT ("@/") for a host-reference
  * field (the inverse of spool_json_write_positional_name).
  *
- * @param ep    element to populate
- * @param pos   position of the name field in the descriptor
- * @param type  CULL field type of the name field
- * @param v     the JSON value
+ * @param ep     element to populate, holding the field
+ * @param field  the row of the name field
+ * @param v      the JSON value
  */
 static void
-spool_json_set_positional_name(lListElem *ep, int pos, int type, const rapidjson::Value &v) {
-   if (type == lHostT && v.IsString() && strcmp(v.GetString(), SPOOL_JSON_DEFAULT_HREF) == 0) {
-      lSetPosHost(ep, pos, HOSTREF_DEFAULT);
+spool_json_set_positional_name(lListElem *ep, const spooling_field &field, const rapidjson::Value &v) {
+   if (field.ops->type == ocs::tom::FieldType::Host && v.IsString() &&
+       strcmp(v.GetString(), SPOOL_JSON_DEFAULT_HREF) == 0) {
+      spool_json_set_string(ep, field, HOSTREF_DEFAULT);
    } else {
-      spool_json_set_field(ep, pos, type, v);
+      spool_json_set_field(ep, field, v);
    }
 }
 
@@ -1666,15 +1559,20 @@ static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
  * {name,value}; named fields (incl. CE) -> array of objects keyed by name. An empty
  * array is read as a null (unset) list, mirroring the ASCII reader.
  *
- * @param nm      CULL field id of the sublist attribute
- * @param fields  spooling fields describing the sublist elements
- * @param arr     the JSON array
+ * The sub-type of the list field is known here only as the descriptor the row's typed
+ * code names, so the list and its elements are created from it; the elements' fields
+ * are stored through the typed code of the sub-rows.
+ *
+ * @param field        the row of the list field, whose sub-rows describe the elements
+ * @param answer_list  for returning errors
+ * @param arr          the JSON array
  * @return the populated list, or nullptr for an empty/unreadable array
  */
 static lList *
-spool_json_read_sublist(int nm, const spooling_field *fields, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const rapidjson::Value &arr) {
-   const lDescr *sub_descr = object_get_subtype(nm);
+   const lDescr *sub_descr = field.ops->sub_descr;
+   const spooling_field *fields = field.sub_fields;
    if (sub_descr == nullptr || fields == nullptr || !arr.IsArray() || arr.Size() == 0) {
       /* an empty array is read as a null (unset) list, mirroring the ASCII reader;
        * this also makes an empty RQS filter scope behave as "match all" (the matcher
@@ -1694,30 +1592,25 @@ spool_json_read_sublist(int nm, const spooling_field *fields, ocs::tom::ListPtr<
       lListElem *sub = lCreateElem(sub_descr);
 
       if (positional && nfields <= 1) {
-         const int p0 = lGetPosInDescr(sub_descr, fields[0].nm);
-         if (p0 >= 0) {
-            spool_json_set_positional_name(sub, p0, lGetPosType(sub_descr, p0), el);
+         if (lGetPosInDescr(sub_descr, fields[0].nm) >= 0) {
+            spool_json_set_positional_name(sub, fields[0], el);
          }
       } else if (positional && el.IsObject()) {
          const auto mn = el.FindMember("name");
          const auto mv = el.FindMember("value");
-         const int p0 = lGetPosInDescr(sub_descr, fields[0].nm);
-         const int p1 = lGetPosInDescr(sub_descr, fields[1].nm);
-         if (p0 >= 0 && mn != el.MemberEnd()) {
-            spool_json_set_positional_name(sub, p0, lGetPosType(sub_descr, p0), mn->value);
+         if (lGetPosInDescr(sub_descr, fields[0].nm) >= 0 && mn != el.MemberEnd()) {
+            spool_json_set_positional_name(sub, fields[0], mn->value);
          }
-         if (p1 >= 0 && mv != el.MemberEnd()) {
-            const int vtype = lGetPosType(sub_descr, p1);
-            const char *const *bitnames = spool_json_bitfield_names(fields[1].nm);
-            if (bitnames != nullptr) {
+         if (lGetPosInDescr(sub_descr, fields[1].nm) >= 0 && mv != el.MemberEnd()) {
+            if (fields[1].ops->json == ocs_spool_render::bitfield) {
                /* bitfield value is a name array -> bitmask */
-               lSetPosUlong(sub, p1, spool_json_bitfield_from_array(mv->value, bitnames));
-            } else if (vtype == lListT) {
+               spool_json_set_u32(sub, fields[1], spool_json_bitfield_from_array(mv->value, fields[1].ops->names));
+            } else if (fields[1].ops->type == ocs::tom::FieldType::List) {
                /* the value is itself a list (e.g. the cqueue threshold value is a
                 * complex list) -> read it as a nested sublist */
-               lSetPosList(sub, p1, spool_json_read_sublist(fields[1].nm, fields[1].sub_fields, answer_list, mv->value));
+               fields[1].ops->set_list(sub, spool_json_read_sublist(fields[1], answer_list, mv->value));
             } else {
-               spool_json_set_field(sub, p1, vtype, mv->value);
+               spool_json_set_field(sub, fields[1], mv->value);
             }
          }
       } else if (el.IsObject()) {
@@ -1736,7 +1629,8 @@ spool_json_read_sublist(int nm, const spooling_field *fields, ocs::tom::ListPtr<
  * The inverse of the writer's flatten (e.g. CONF_entries). The $schema/$id envelope and
  * any member already consumed by a named field are excluded; list-valued params are
  * re-joined to their stored string form; the value is set through the field's read_func
- * (read_CF_value, which validates) when present.
+ * (read_CF_value, which validates) when present. The name and the value are string
+ * fields, stored through the typed code of the sub-rows.
  *
  * @param ep          element to populate
  * @param descr       descriptor of @p ep
@@ -1744,21 +1638,20 @@ spool_json_read_sublist(int nm, const spooling_field *fields, ocs::tom::ListPtr<
  * @param flatten     the unnamed name=value sublist field to fill
  * @param fields_out  if non-null, receives the flattened field id
  * @param obj         the JSON object
+ * @param answer_list receives the message of a value the field's read_func rejects
+ * @return false if a value was rejected (the sublist is not stored then), true otherwise
  */
-static void
+static bool
 spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field *fields,
                         const spooling_field *flatten, int fields_out[],
-                        const rapidjson::Value &obj) {
-   const int fpos = lGetPosInDescr(descr, flatten->nm);
-   const lDescr *sub_descr = object_get_subtype(flatten->nm);
-   if (fpos < 0 || sub_descr == nullptr) {
-      return;
+                        const rapidjson::Value &obj, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   const lDescr *sub_descr = flatten->ops->sub_descr;
+   if (lGetPosInDescr(descr, flatten->nm) < 0 || sub_descr == nullptr) {
+      return true;
    }
    const spooling_field *sf = flatten->sub_fields;
-   const int kpos = lGetPosInDescr(sub_descr, sf[0].nm);
-   const int vpos = lGetPosInDescr(sub_descr, sf[1].nm);
-   if (kpos < 0 || vpos < 0) {
-      return;
+   if (lGetPosInDescr(sub_descr, sf[0].nm) < 0 || lGetPosInDescr(sub_descr, sf[1].nm) < 0) {
+      return true;
    }
    lList *cf_list = lCreateList("entries", sub_descr);
    for (auto m = obj.MemberBegin(); m != obj.MemberEnd(); ++m) {
@@ -1777,7 +1670,7 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
          continue;
       }
       lListElem *cf = lCreateElem(sub_descr);
-      lSetPosString(cf, kpos, key);
+      spool_json_set_string(cf, sf[0], key);
       dstring vb = DSTRING_INIT;
       const char *vstr;
       if (m->value.IsArray()) {
@@ -1815,18 +1708,23 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
       if (vstr == nullptr || *vstr == '\0') {
          vstr = NONE_STR;
       }
-      if (sf[1].read_func != nullptr) {
-         sf[1].read_func(cf, sf[1].nm, vstr, nullptr);
-      } else {
-         lSetPosString(cf, vpos, vstr);
+      // a value the read_func rejects ends the read, as the flatfile reader does
+      const bool accepted = sf[1].read_func == nullptr || sf[1].read_func(cf, sf[1].nm, vstr, answer_list) != 0;
+      if (accepted && sf[1].read_func == nullptr) {
+         spool_json_set_string(cf, sf[1], vstr);
       }
       sge_dstring_free(&vb);
       lAppendElem(cf_list, cf);
+      if (!accepted) {
+         lFreeList(&cf_list);
+         return false;
+      }
    }
-   lSetPosList(ep, fpos, cf_list);
+   flatten->ops->set_list(ep, cf_list);
    if (fields_out != nullptr) {
       add_nm_to_set(fields_out, flatten->nm);
    }
+   return true;
 }
 
 /**
@@ -1834,7 +1732,9 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
  *
  * Walks the spooling fields, looking each up by name (the inverse of
  * spool_json_write_object_members); a trailing flatten field is un-flattened after the
- * named pass.
+ * named pass. The fields are stored through the rows' typed code; the branches by field
+ * number name fields that are numbers (date-time, bitfield, enum) or strings (perm list),
+ * so the member of the value they store is the one the field's type names.
  *
  * @param ep          element to populate
  * @param descr       descriptor of @p ep
@@ -1850,21 +1750,20 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const rapidjson::Value &obj) {
    const spooling_field *flatten = nullptr;
    for (int i = 0; fields[i].nm != NoName; i++) {
-      const int nm = fields[i].nm;
-      const char *name = fields[i].name;
+      const spooling_field &field = fields[i];
+      const int nm = field.nm;
+      const char *name = field.name;
       if (name == nullptr) {
          /* a top-level unnamed name=value sublist (config entries) is un-flattened
             after the named pass by gathering the remaining members */
-         const int fpos = lGetPosInDescr(descr, nm);
-         const spooling_field *sf = fields[i].sub_fields;
-         if (fpos >= 0 && lGetPosType(descr, fpos) == lListT && sf != nullptr &&
+         const spooling_field *sf = field.sub_fields;
+         if (lGetPosInDescr(descr, nm) >= 0 && field.ops->type == ocs::tom::FieldType::List && sf != nullptr &&
              sf[0].nm != NoName && sf[0].name == nullptr && sf[1].nm != NoName) {
-            flatten = &fields[i];
+            flatten = &field;
          }
          continue;
       }
-      const int pos = lGetPosInDescr(descr, nm);
-      if (pos < 0) {
+      if (lGetPosInDescr(descr, nm) < 0) {
          continue;
       }
       const auto m = obj.FindMember(name);
@@ -1875,55 +1774,58 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
          add_nm_to_set(fields_out, nm);
       }
 
-      const int type = lGetPosType(descr, pos);
-      if (type == lListT) {
-         lSetPosList(ep, pos, spool_json_read_sublist(nm, fields[i].sub_fields, answer_list, m->value));
-      } else if (type == lObjectT && fields[i].sub_fields != nullptr) {
+      const ocs::tom::FieldType type = field.ops->type;
+      if (type == ocs::tom::FieldType::List) {
+         field.ops->set_list(ep, spool_json_read_sublist(field, answer_list, m->value));
+      } else if (type == ocs::tom::FieldType::Object && field.sub_fields != nullptr) {
          /* nested JSON object (e.g. an RQS filter) -> sub-object; null / non-object
-          * leaves the field unset, so an absent filter round-trips to null */
-         const lDescr *sub_descr = object_get_subtype(fields[i].nm);
+          * leaves the field unset, so an absent filter round-trips to null. The
+          * sub-type is known here only as the descriptor the row's typed code names. */
+         const lDescr *sub_descr = field.ops->sub_descr;
          if (m->value.IsObject() && sub_descr != nullptr) {
             lListElem *sub = lCreateElem(sub_descr);
-            if (!spool_json_populate_members(sub, sub_descr, fields[i].sub_fields, nullptr, answer_list, m->value)) {
+            if (!spool_json_populate_members(sub, sub_descr, field.sub_fields, nullptr, answer_list, m->value)) {
                lFreeElem(&sub);
                return false;
             }
-            lSetPosObject(ep, pos, sub);
+            field.ops->set_object(ep, sub);
          }
-      } else if (spool_json_nm_is_datetime(nm)) {
+      } else if (field.ops->json == ocs_spool_render::datetime) {
          /* ISO date-time string -> gmt64 timestamp */
          dstring s = DSTRING_INIT;
-         lSetPosUlong64(ep, pos, spool_json_datetime_from_string(spool_json_value_to_string(m->value, &s)));
+         ocs_spool_value value{};
+         value.u64 = spool_json_datetime_from_string(spool_json_value_to_string(m->value, &s));
+         field.ops->set(ep, value);
          sge_dstring_free(&s);
-      } else if (spool_json_bitfield_names(nm) != nullptr) {
+      } else if (field.ops->json == ocs_spool_render::bitfield) {
          /* bit-name array -> bitfield */
-         lSetPosUlong(ep, pos, spool_json_bitfield_from_array(m->value, spool_json_bitfield_names(nm)));
-      } else if (spool_json_enum_names(nm) != nullptr) {
+         spool_json_set_u32(ep, field, spool_json_bitfield_from_array(m->value, field.ops->names));
+      } else if (field.ops->json == ocs_spool_render::enumeration) {
          /* symbolic enum token ("USER"/"PROJECT") or raw number -> enum value */
-         lSetPosUlong(ep, pos, spool_json_enum_from_value(m->value, spool_json_enum_names(nm)));
+         spool_json_set_u32(ep, field, spool_json_enum_from_value(m->value, field.ops->names));
       } else if (spool_json_nm_is_perm_list(nm)) {
          /* array of rule objects -> comma/colon-joined perm_list string; a non-array
           * value is rejected rather than silently wiping the rule set to NONE */
          dstring s = DSTRING_INIT;
          const bool ok = spool_json_perm_list_from_array(m->value, &s, answer_list);
          if (ok) {
-            lSetPosString(ep, pos, sge_dstring_get_string(&s));
+            spool_json_set_string(ep, field, sge_dstring_get_string(&s));
          }
          sge_dstring_free(&s);
          if (!ok) {
             return false;
          }
-      } else if (spool_json_nm_is_symbolic(nm)) {
+      } else if (field.ops->json == ocs_spool_render::by_name) {
          /* symbolic enum token ("INT", "<=", "YES", ...) -> enum value */
          dstring s = DSTRING_INIT;
          object_parse_field_from_string(ep, nullptr, nm, spool_json_value_to_string(m->value, &s));
          sge_dstring_free(&s);
       } else {
-         spool_json_set_field(ep, pos, type, m->value);
+         spool_json_set_field(ep, field, m->value);
       }
    }
-   if (flatten != nullptr) {
-      spool_json_read_flatten(ep, descr, fields, flatten, fields_out, obj);
+   if (flatten != nullptr && !spool_json_read_flatten(ep, descr, fields, flatten, fields_out, obj, answer_list)) {
+      return false;
    }
    return true;
 }

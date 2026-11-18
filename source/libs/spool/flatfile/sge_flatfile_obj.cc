@@ -748,9 +748,10 @@ spooling_field *ocs_spool_select_rows(const spooling_field *view, const unsigned
  * @param width the width of the name column
  * @param name the name in the text
  * @param sub_fields the field list of a sublist, or nullptr
+ * @param ops the typed code of the field, nullptr for the terminating entry
  */
 static void create_spooling_field(spooling_field *field, const int nm, const int width, const char *name,
-                                  spooling_field *sub_fields) {
+                                  spooling_field *sub_fields, const ocs_spool_field_ops *ops) {
    if (field != nullptr) {
       field->nm = nm;
       field->width = width;
@@ -761,7 +762,7 @@ static void create_spooling_field(spooling_field *field, const int nm, const int
       field->clientdata = nullptr;
       field->read_func = nullptr;
       field->write_func = nullptr;
-      field->ops = nullptr;
+      field->ops = ops;
    }
 }
 
@@ -803,7 +804,8 @@ spooling_field *sge_build_STN_field_list(const bool spool, const bool recurse) {
  * JSON writer/reader descend the real CULL tree directly. STN_id and STN_version are
  * omitted (the nested form needs no id bookkeeping; ids are re-assigned via
  * id_sharetree() after a read). A typed table cannot name itself as its sub-table,
- * so this list is still built at run time and has no typed ops.
+ * so this list is still built at run time; its rows carry the typed code of their
+ * fields like the rows of a typed table.
  *
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
@@ -812,12 +814,12 @@ spooling_field *sge_build_STN_json_field_list() {
    auto *fields = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * 5));
    int count = 0;
 
-   create_spooling_field(&fields[count++], STN_name, 0, "name", nullptr);
-   create_spooling_field(&fields[count++], STN_type, 0, "type", nullptr);
-   create_spooling_field(&fields[count++], STN_shares, 0, "shares", nullptr);
+   create_spooling_field(&fields[count++], STN_name, 0, "name", nullptr, &ocs_spool_ops<STN_name>);
+   create_spooling_field(&fields[count++], STN_type, 0, "type", nullptr, &ocs_spool_ops<STN_type>);
+   create_spooling_field(&fields[count++], STN_shares, 0, "shares", nullptr, &ocs_spool_ops<STN_shares>);
    /* childnodes recurses with this very field list -> a nested tree of full child nodes */
-   create_spooling_field(&fields[count++], STN_children, 0, "childnodes", fields);
-   create_spooling_field(&fields[count++], NoName, 0, nullptr, nullptr);
+   create_spooling_field(&fields[count++], STN_children, 0, "childnodes", fields, &ocs_spool_ops<STN_children>);
+   create_spooling_field(&fields[count++], NoName, 0, nullptr, nullptr, nullptr);
 
    return fields;
 }

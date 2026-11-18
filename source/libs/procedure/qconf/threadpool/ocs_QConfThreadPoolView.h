@@ -32,6 +32,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "spool/flatfile/ocs_spool_fields.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -71,9 +72,9 @@ namespace ocs {
          if (output_format_ == ProcedureParameter::OutputFormat::JSON) {
             /* CS-2313a: an array of { pool, size } objects */
             static spooling_field st_fields[] = {
-               { ST_name, 0, "pool", false, nullptr, false, nullptr, nullptr, nullptr },
-               { ST_id,   0, "size", false, nullptr, false, nullptr, nullptr, nullptr },
-               { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr }
+               { ST_name, 0, "pool", false, nullptr, false, nullptr, nullptr, nullptr, &ocs_spool_ops<ST_name> },
+               { ST_id,   0, "size", false, nullptr, false, nullptr, nullptr, nullptr, &ocs_spool_ops<ST_id> },
+               { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr, nullptr }
             };
             ocs::tom::ListPtr<ocs::tom::AN> alp;
             dstring out = DSTRING_INIT;

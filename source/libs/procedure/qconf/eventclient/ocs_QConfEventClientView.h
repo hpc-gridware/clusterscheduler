@@ -32,6 +32,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_EV.h"
+#include "spool/flatfile/ocs_spool_fields.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -75,10 +76,10 @@ namespace ocs {
             /* CS-2313a: an array of { id, name, host } objects; an empty list
              * still yields the enveloped empty array */
             static spooling_field ev_fields[] = {
-               { EV_id,   0, "id",   false, nullptr, false, nullptr, nullptr, nullptr },
-               { EV_name, 0, "name", false, nullptr, false, nullptr, nullptr, nullptr },
-               { EV_host, 0, "host", false, nullptr, false, nullptr, nullptr, nullptr },
-               { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr }
+               { EV_id,   0, "id",   false, nullptr, false, nullptr, nullptr, nullptr, &ocs_spool_ops<EV_id> },
+               { EV_name, 0, "name", false, nullptr, false, nullptr, nullptr, nullptr, &ocs_spool_ops<EV_name> },
+               { EV_host, 0, "host", false, nullptr, false, nullptr, nullptr, nullptr, &ocs_spool_ops<EV_host> },
+               { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr, nullptr }
             };
             ocs::tom::ListPtr<ocs::tom::AN> alp;
             dstring out = DSTRING_INIT;

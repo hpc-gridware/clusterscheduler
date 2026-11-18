@@ -152,9 +152,10 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * For each attribute the function checks if the attribute information
  * fulfils the selection given in `instr` (e.g. attribute property
  * CULL_SPOOL).
- * If `instr` contains an in struction for sublists, the function will
- * try to figure out the CULL object definition for the sublists
- * (by calling object_get_subtype) and call itself recursively.
+ * If `instr` contains an instruction for sublists, the function will
+ * take the CULL object definition of the sublists from the typed code of
+ * the list field (the sub-type object_get_subtype() names) and call itself
+ * recursively. Every entry carries the typed code of its field in `ops`.
  *
  * @param answer_list answer list to report errors
  * @param descr object type to analyze
@@ -186,7 +187,10 @@ spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lD
  *
  * Takes the fields that have a value in the descriptor and match the
  * selection of the instructions, in descriptor order, and recurses into
- * sub-lists with the sub-instructions.
+ * sub-lists with the sub-instructions. The object type is looked up once per
+ * descriptor; every entry gets the typed code of its field from it, the same
+ * code the typed field tables carry, so the walkers treat it like a row of a
+ * typed table.
  *
  * @param answer_list receives error messages
  * @param descr the object type, checked by the caller
@@ -205,6 +209,15 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
    /* we don't check descr and instr, as we know they are ok
     * (it's a static function)
     */
+
+   /* the typed code of the type's fields; every descriptor is derived from the
+    * model, so the lookup fails only for a descriptor made up by hand */
+   const ocs_spool_type_ops *type_ops = ocs_spool_type_ops_of(descr);
+   if (type_ops == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_UNKNOWNOBJECTTYPEFOR_SS,
+                              lNm2Str(descr[0].nm), __func__);
+      DRETURN(nullptr);
+   }
 
    /* count fields to spool */
    size = 0;
@@ -255,6 +268,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
          DPRINTF("field " SFQ " will be spooled\n", lNm2Str(descr[f.pos].nm));
 
          fields[j].nm = descr[f.pos].nm;
+         fields[j].ops = type_ops->ops[descr[f.pos].nm - type_ops->base];
 
          if (instr->copy_field_names) {
             const char *name;
@@ -271,7 +285,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
             fields[j].free_name = true;
          }
 
-         if (mt_get_type(descr[f.pos].mt) == lListT) {
+         if (fields[j].ops->type == ocs::tom::FieldType::List) {
             const lDescr *sub_descr;
 
             if (instr->sub_instr == nullptr) {
@@ -283,7 +297,8 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
                DRETURN(nullptr);
             }
 
-            sub_descr = object_get_subtype(descr[f.pos].nm);
+            // the model's sub-type, the one object_get_subtype() names (test_tom_traits checks that)
+            sub_descr = fields[j].ops->sub_descr;
             if (sub_descr == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,

@@ -673,49 +673,42 @@ _spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lD
 
 static spooling_field *get_recursion_field_list (const spool_flatfile_instr *instr);
 
-/* The type dependent parts of the walkers below. A row generated from a typed
- * field table carries the typed code of its field (ocs_spool_fields.h); a row
- * built from a descriptor - spool_get_fields_to_spool(), the recursion list of
- * the share tree and the JSON share tree list - has none and is handled by
- * field number, as before. These are called per field, so they have no
- * DENTER, as the field callbacks have none. */
+/* The type dependent parts of the walkers below. Every row carries the typed
+ * code of its field (ocs_spool_fields.h): a row generated from a typed field
+ * table at compile time, a row built at run time - spool_get_fields_to_spool(),
+ * the recursion row of the share tree - from ocs_spool_field_ops_of(). These
+ * are called per field, so they have no DENTER, as the field callbacks have
+ * none. */
 
 /**
  * @brief Whether the field of a row is a list
  * @param field the row
- * @param descr the descriptor of the element the row is applied to
- * @param pos the position of the row's field in @p descr
  * @return true for a list field
  */
 static bool
-ocs_spool_row_is_list(const spooling_field &field, const lDescr *descr, const int pos) {
-   if (field.ops != nullptr) {
-      return field.ops->type == ocs::tom::FieldType::List;
-   }
-   return mt_get_type(descr[pos].mt) == lListT;
+ocs_spool_row_is_list(const spooling_field &field) {
+   return field.ops->type == ocs::tom::FieldType::List;
 }
 
 /**
  * @brief Whether the field of a row is an unsigned 32 bit number
  * @param field the row
- * @param descr the descriptor of the element the row is applied to
- * @param pos the position of the row's field in @p descr
  * @return true for an unsigned 32 bit field
  */
 static bool
-ocs_spool_row_is_uint32(const spooling_field &field, const lDescr *descr, const int pos) {
-   if (field.ops != nullptr) {
-      return field.ops->type == ocs::tom::FieldType::Uint32;
-   }
-   return mt_get_type(descr[pos].mt) == lUlongT;
+ocs_spool_row_is_uint32(const spooling_field &field) {
+   return field.ops->type == ocs::tom::FieldType::Uint32;
 }
 
 /**
  * @brief Append the value of a row's field that is no list
  *
- * A typed row formats the value by the field's type; a row without typed code,
- * a list field and an element that lacks the field go through
- * object_append_field_to_dstring(), which writes the old message for the last.
+ * A number, a bool, a string or a host name is read through the row's typed
+ * code and formatted here as object_append_field_to_dstring() formats it
+ * without quotes. A field with a rendering of its own
+ * (#ocs_spool_field_ops::flat is ocs_spool_render::by_name), a list, an object
+ * or a reference field, and an element that lacks the field go through object_append_field_to_dstring(),
+ * which writes the old message for the last.
  *
  * @param field the row
  * @param object the element
@@ -726,11 +719,29 @@ ocs_spool_row_is_uint32(const spooling_field &field, const lDescr *descr, const 
 static const char *
 ocs_spool_row_append(const spooling_field &field, const lListElem *object,
                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
-   if (field.ops != nullptr && field.ops->append != nullptr &&
-       lGetPosInDescr(lGetElemDescr(object), field.nm) >= 0) {
-      return field.ops->append(object, answer_list, buffer);
+   if (field.ops->get == nullptr || field.ops->flat == ocs_spool_render::by_name ||
+       lGetPosInDescr(lGetElemDescr(object), field.nm) < 0) {
+      return object_append_field_to_dstring(object, answer_list, buffer, field.nm, '\0');
    }
-   return object_append_field_to_dstring(object, answer_list, buffer, field.nm, '\0');
+
+   const ocs_spool_value value = field.ops->get(object);
+   switch (field.ops->type) {
+      case ocs::tom::FieldType::Uint32:
+         return sge_dstring_sprintf_append(buffer, sge_u32, value.u32);
+      case ocs::tom::FieldType::Uint64:
+         return sge_dstring_sprintf_append(buffer, sge_u64, value.u64);
+      case ocs::tom::FieldType::Int32:
+         return sge_dstring_sprintf_append(buffer, "%d", value.i32);
+      case ocs::tom::FieldType::Int64:
+         return sge_dstring_sprintf_append(buffer, "%ld", static_cast<long>(value.i64));
+      case ocs::tom::FieldType::Double:
+         return sge_dstring_sprintf_append(buffer, "%lf", value.dbl);
+      case ocs::tom::FieldType::Bool:
+         return sge_dstring_append(buffer, value.b ? TRUE_STR : FALSE_STR);
+      default:
+         // a string or a host name, the only other fields with a get operation
+         return sge_dstring_append(buffer, value.str != nullptr ? value.str : NONE_STR);
+   }
 }
 
 /**
@@ -741,10 +752,7 @@ ocs_spool_row_append(const spooling_field &field, const lListElem *object,
  */
 static const lList *
 ocs_spool_row_get_list(const spooling_field &field, const lListElem *object) {
-   if (field.ops != nullptr && field.ops->get_list != nullptr) {
-      return field.ops->get_list(object);
-   }
-   return lGetList(object, field.nm);
+   return field.ops->get_list(object);
 }
 
 /**
@@ -754,26 +762,18 @@ ocs_spool_row_get_list(const spooling_field &field, const lListElem *object) {
  */
 static const lDescr *
 ocs_spool_row_sub_descr(const spooling_field &field) {
-   if (field.ops != nullptr) {
-      return field.ops->sub_descr;
-   }
-   return object_get_subtype(field.nm);
+   return field.ops->sub_descr;
 }
 
 /**
  * @brief Store a list read for a row's list field
- * @param field the row, of a list field with a sub-type
+ * @param field the row, of a list field
  * @param object the element, holding the field
- * @param pos the position of the field in the element's descriptor
  * @param list the list, of the field's sub-type, or nullptr; taken over
  */
 static void
-ocs_spool_row_set_list(const spooling_field &field, lListElem *object, const int pos, lList *list) {
-   if (field.ops != nullptr && field.ops->set_list != nullptr) {
-      field.ops->set_list(object, list);
-   } else {
-      lSetPosList(object, pos, list);
-   }
+ocs_spool_row_set_list(const spooling_field &field, lListElem *object, lList *list) {
+   field.ops->set_list(object, list);
 }
 
 /**
@@ -1608,7 +1608,7 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
              && !show_empty_fields) {
             continue;
          }
-      } else if (ocs_spool_row_is_list(fields[i], descr, pos)) {
+      } else if (ocs_spool_row_is_list(fields[i])) {
          const spool_flatfile_instr *sub_instr = nullptr;
          const bool recurse_field = (instr->recursion_info.recursion_field
                                        == nm) ? true : false;
@@ -2287,7 +2287,7 @@ FF_DEBUG(lNm2Str(nm));
          }
       }
 
-      is_list = ocs_spool_row_is_list(fields[field_index], descr, pos);
+      is_list = ocs_spool_row_is_list(fields[field_index]);
 
       /* now read the data */
       if (!is_list || (fields[field_index].read_func != nullptr)) {
@@ -2370,7 +2370,7 @@ FF_DEBUG("detected end_token");
          
          if (fields[field_index].read_func == nullptr) {
                         
-            if (ocs_spool_row_is_uint32(fields[field_index], descr, pos)) {
+            if (ocs_spool_row_is_uint32(fields[field_index])) {
                char *end_ptr = nullptr;
                double dbl_value;
                
@@ -2461,7 +2461,7 @@ FF_DEBUG("empty list");
                                                 new_end_token, parse_values,
                                                 fields[field_index].name);
             
-               ocs_spool_row_set_list(fields[field_index], *object, pos, list);
+               ocs_spool_row_set_list(fields[field_index], *object, list);
                
                if (instr->recursion_info.recursion_field == nm) {
                   lListElem *rep = root;
@@ -2891,14 +2891,26 @@ FF_DEBUG("after parsing list");
    DRETURN(list);
 }
 
+/**
+ * @brief The rows a recursive list is written with: the id field of each element only
+ *
+ * The id field is known only at run time, from the layout; its row takes the
+ * typed code of the field from ocs_spool_field_ops_of(), as every row has it.
+ *
+ * @param instr the layout, whose #recursion_info::id_field names the id field, a field of the object model
+ * @return the id row and the terminating row, to be freed with sge_free()
+ */
 static spooling_field *get_recursion_field_list(const spool_flatfile_instr *instr) {
+   DENTER(FLATFILE_LAYER);
+
    /* Only 2 entries in a recursion field list */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field) * 2);
-   memset(fields, 0, sizeof(spooling_field)*2);
+   auto *fields = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * 2));
+   memset(fields, 0, sizeof(spooling_field) * 2);
    fields[0].nm = instr->recursion_info.id_field;
+   fields[0].ops = ocs_spool_field_ops_of(instr->recursion_info.id_field);
    fields[1].nm = NoName;
-   
-   return fields;
+
+   DRETURN(fields);
 }
 
 /**
