@@ -35,12 +35,11 @@
 /** @file
  * @brief Verifying one cluster queue attribute each
  *
- * Every function here is a `verify_function` entry of
- * `cqueue_attribute_array`; qmaster calls the one belonging to an attribute
- * before it accepts a changed cluster queue. They all share a signature so the
- * table can hold them, which means several of them ignore the `master_list`
- * argument. The entry to verify and the master list are of a type that
- * differs per attribute, so the table passes them untyped.
+ * Every function here is the `verify` member of an entry of
+ * #ocs_cqueue_attributes; qmaster calls the one belonging to an attribute
+ * before it accepts a changed cluster queue. Each takes the entry of the
+ * attribute list typed as that attribute's type, and the master list it checks
+ * against, if any, typed as well; the table entry names the master list's type.
  *
  * @see sge_cqueue_verify.h
  */
@@ -87,8 +86,8 @@
 /**
  * @brief Verify that the calendar a queue refers to exists
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
@@ -98,12 +97,13 @@
  */
 bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            lListElem *attr_elem, const lList *master_calendar_list) {
+                            const ocs::tom::ConstElement<ocs::tom::ASTR> attr_elem,
+                            const ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *name = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (name != nullptr && strcasecmp("none", name)) {
@@ -121,8 +121,8 @@ bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
 /**
  * @brief Verify that every checkpointing environment a queue refers to exists
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
@@ -132,16 +132,17 @@ bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  */
 bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                             lListElem *attr_elem, const lList *master_ckpt_list) {
+                             const ocs::tom::ConstElement<ocs::tom::ASTRLIST> attr_elem,
+                             const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       ocs::tom::ConstList<ocs::tom::ST> ckpt_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (ckpt_list != nullptr) {
-         if (!ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK>(master_ckpt_list), answer_list, ckpt_list)) {
+         if (!ckpt_list_do_all_exist(master_ckpt_list, answer_list, ckpt_list)) {
             ret = false;
          }
       }
@@ -152,8 +153,8 @@ bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
 /**
  * @brief Verify that every resource in the complex values is defined and its value fits its type
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
@@ -163,11 +164,12 @@ bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  */
 bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                          lListElem *attr_elem, const lList *master_centry_list) {
+                                          const ocs::tom::ConstElement<ocs::tom::ACELIST> attr_elem,
+                                          const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    // early exit if there is nothing to do
-   if (!cqueue || attr_elem == nullptr) {
+   if (!cqueue || !attr_elem) {
       DRETURN(true);
    }
 
@@ -183,7 +185,7 @@ bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom:
    }
 
    // check that all centries in the consumable list exist in the master centry list
-   if (!centry_list_do_all_exists(ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), answer_list, centry_list)) {
+   if (!centry_list_do_all_exists(master_centry_list, answer_list, centry_list)) {
       DRETURN(false);
    }
    DRETURN(true);
@@ -192,23 +194,22 @@ bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom:
 /**
  * @brief Verify that the initial state is one of the accepted words
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_list unused
  * @return true when the value is acceptable
  */
 bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                 lListElem *attr_elem, const lList *master_list) {
+                                 const ocs::tom::ConstElement<ocs::tom::ASTR> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *names[] = {"default", "enabled", "disabled", nullptr};
       const char *name = ocs::tom::get<ASTR_value>(attr_elem);
       bool found = false;
@@ -233,8 +234,8 @@ bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cque
 /**
  * @brief Verify that every parallel environment a queue refers to exists
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
@@ -244,16 +245,17 @@ bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cque
  */
 bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                           lListElem *attr_elem, const lList *master_pe_list) {
+                           const ocs::tom::ConstElement<ocs::tom::ASTRLIST> attr_elem,
+                           const ocs::tom::ConstList<ocs::tom::PE> master_pe_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       ocs::tom::ConstList<ocs::tom::ST> pe_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (pe_list != nullptr) {
-         if (!pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE>(master_pe_list), answer_list, pe_list, true)) {
+         if (!pe_list_do_all_exist(master_pe_list, answer_list, pe_list, true)) {
             ret = false;
          }
       }
@@ -264,23 +266,22 @@ bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
 /**
  * @brief Verify that the priority is within the range a nice value allows
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_list unused
  * @return true when the value is acceptable
  */
 bool cqueue_verify_priority(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            lListElem *attr_elem, const lList *master_list) {
+                            const ocs::tom::ConstElement<ocs::tom::ASTR> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *priority_string = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (priority_string != nullptr) {
@@ -301,23 +302,22 @@ bool cqueue_verify_priority(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
 /**
  * @brief Verify that the processor set specification is well formed
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_list unused
  * @return true when the value is acceptable
  */
 bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                              lListElem *attr_elem, const lList *master_list) {
+                              const ocs::tom::ConstElement<ocs::tom::ASTR> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *processors_string = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (processors_string != nullptr) {
@@ -335,8 +335,8 @@ bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
 /**
  * @brief Verify that every project a queue refers to exists
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
@@ -346,17 +346,17 @@ bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  */
 bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                lListElem *attr_elem, const lList *master_project_list) {
+                                const ocs::tom::ConstElement<ocs::tom::APRJLIST> attr_elem,
+                                const ocs::tom::ConstList<ocs::tom::PR> master_project_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       ocs::tom::ConstList<ocs::tom::PR> project_list = ocs::tom::get<APRJLIST_value>(attr_elem);
 
       if (project_list != nullptr) {
-         // the master list is a raw parameter, fixed by the verify_function table
-         if (!prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR>(master_project_list), answer_list,
+         if (!prj_list_do_all_exist(master_project_list, answer_list,
                                     project_list)) {
             ret = false;
          }
@@ -368,23 +368,22 @@ bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
 /**
  * @brief Verify that the shell start mode is one of the accepted words
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_list unused
  * @return true when the value is acceptable
  */
 bool cqueue_verify_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                    lListElem *attr_elem, const lList *master_list) {
+                                    const ocs::tom::ConstElement<ocs::tom::ASTR> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *names[] = {
          "unix_behavior", "posix_compliant", "script_from_stdin",
          nullptr
@@ -411,17 +410,17 @@ bool cqueue_verify_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::CQ> c
 /**
  * @brief Verify that the login shell is given as an absolute path
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_list unused
  * @return true when the value is acceptable
  */
 bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
-                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *attr_elem, const lList *master_list) {
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                         const ocs::tom::ConstElement<ocs::tom::ASTR> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
@@ -445,8 +444,8 @@ bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
 /**
  * @brief Verify that every subordinate relation names an existing cluster queue
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
@@ -456,15 +455,15 @@ bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  */
 bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                    lListElem *attr_elem, const lList *master_cqueue_list) {
+                                    const ocs::tom::ConstElement<ocs::tom::ASOLIST> attr_elem,
+                                    const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
       const auto so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
-      const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list(master_cqueue_list);
 
       for (const auto so : so_list) {
          const char *so_name = ocs::tom::get<SO_name>(so);
@@ -476,7 +475,7 @@ bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> c
             /*
              * Check if cqueue exists
              */
-            const auto lcqueue = cqueue_list_locate(cqueue_list, so_name);
+            const auto lcqueue = cqueue_list_locate(master_cqueue_list, so_name);
             if (lcqueue) {
                /*
                 * Success
@@ -502,8 +501,8 @@ bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> c
 /**
  * @brief Verify that every userset a queue refers to exists
  *
- * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
- * calls it for the attribute before accepting a changed cluster queue.
+ * The `verify` member of the attribute's entry of #ocs_cqueue_attributes;
+ * qmaster calls it for the attribute before accepting a changed cluster queue.
  *
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
@@ -513,17 +512,18 @@ bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> c
  */
 bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                             lListElem *attr_elem, const lList *master_userset_list) {
+                             const ocs::tom::ConstElement<ocs::tom::AUSRLIST> attr_elem,
+                             const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       ocs::tom::ConstList<ocs::tom::US> user_list = ocs::tom::get<AUSRLIST_value>(attr_elem);
 
       if (user_list != nullptr) {
          if (userset_list_validate_acl_list(user_list, answer_list,
-                                            ocs::tom::ConstList<ocs::tom::US>(master_userset_list)) ==
+                                            master_userset_list) ==
              STATUS_EUNKNOWN) {
             ret = false;
          }
@@ -543,7 +543,6 @@ bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  * @param cqueue The queue to verify.
  * @param answer_list answer list to report errors
  * @param attr_elem the attribute to verify
- * @param master_list unused
  *
  * @return true on success, false on error
  *
@@ -551,12 +550,12 @@ bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  */
 bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                             lListElem *attr_elem, const lList *master_list) {
+                             const ocs::tom::ConstElement<ocs::tom::AULNG> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       uint32_t slots = ocs::tom::get<AULNG_value>(attr_elem);
 
       if (slots > OCS_MAX_SLOTS) {
@@ -579,7 +578,6 @@ bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  * @param cqueue The queue to verify.
  * @param answer_list answer list to report errors
  * @param attr_elem the attribute to verify (AMEM_Type)
- * @param master_list unused
  *
  * @return true on success, false on error
  *
@@ -587,15 +585,15 @@ bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  */
 bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                lListElem *attr_elem, const lList *master_list) {
+                                const ocs::tom::ConstElement<ocs::tom::AMEM> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *memory_string = ocs::tom::get<AMEM_value>(attr_elem);
 
-      const auto copy = ocs::tom::ConstElement<ocs::tom::AMEM>(attr_elem).clone();
+      const auto copy = attr_elem.clone();
       // the field is passed by number to the generic parser, which takes the untyped element
       if (!object_parse_field_from_string(*copy, answer_list, AMEM_value, memory_string)) {
          ret = false;
@@ -613,7 +611,6 @@ bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
  * @param cqueue The queue to verify.
  * @param answer_list answer list to report errors
  * @param attr_elem the attribute to verify
- * @param master_list unused
  *
  * @return true on success, false on error
  *
@@ -621,12 +618,12 @@ bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
  */
 bool cqueue_verify_time_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                              lListElem *attr_elem, const lList *master_list) {
+                              const ocs::tom::ConstElement<ocs::tom::ATIME> attr_elem) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
-   if (cqueue && attr_elem != nullptr) {
+   if (cqueue && attr_elem) {
       const char *time_string = ocs::tom::get<ATIME_value>(attr_elem);
 
       if (time_string == nullptr || !strcasecmp(time_string, "none")) {

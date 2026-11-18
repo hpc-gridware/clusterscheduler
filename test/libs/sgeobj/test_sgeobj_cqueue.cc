@@ -37,6 +37,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_cqueue_verify.h"
+#include "sgeobj/ocs_cqueue_attributes.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_str.h"
@@ -90,16 +91,16 @@ make_template_queue(const char *name) {
 /**
  * @brief Count the attribute lists of a cluster queue that are still set
  * @param cqueue the queue
- * @return the number of entries of cqueue_attribute_array whose list is not nullptr
+ * @return the number of entries of ocs_cqueue_attributes whose list is not nullptr
  */
 static int
 count_attribute_lists(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue) {
    int set = 0;
-   for (int index = 0; cqueue_attribute_array[index].name != nullptr; index++) {
-      if (lGetList(cqueue, cqueue_attribute_array[index].cqueue_attr) != nullptr) {
+   ocs_for_each_cqueue_attr([cqueue, &set](const auto &attr) {
+      if (ocs::tom::get<ocs_cqueue_attr_t<decltype(attr)>::cqueue_field>(cqueue)) {
          set++;
       }
-   }
+   });
    return set;
 }
 
@@ -155,16 +156,16 @@ test_slots_limit() {
 
    auto cqueue = ocs::tom::ElementPtr<ocs::tom::CQ>::create();
    ocs::tom::set<CQ_name>(cqueue, "all.q");
-   lListElem *attr = lCreateElem(AULNG_Type);
+   auto attr = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lSetUlong(attr, AULNG_value, OCS_MAX_SLOTS);
-   CHECK(9, "a queue with OCS_MAX_SLOTS slots is accepted", cqueue_verify_job_slots(*cqueue, &alp, attr, nullptr));
-   lSetUlong(attr, AULNG_value, OCS_MAX_SLOTS + 1);
-   CHECK(10, "a queue with more slots is refused", !cqueue_verify_job_slots(*cqueue, &alp, attr, nullptr));
+   ocs::tom::set<AULNG_value>(attr, OCS_MAX_SLOTS);
+   CHECK(9, "a queue with OCS_MAX_SLOTS slots is accepted", cqueue_verify_job_slots(*cqueue, &alp, *attr));
+   ocs::tom::set<AULNG_value>(attr, OCS_MAX_SLOTS + 1);
+   CHECK(10, "a queue with more slots is refused", !cqueue_verify_job_slots(*cqueue, &alp, *attr));
    CHECK(11, "the refusal is an error", answer_list_has_error(&alp));
    alp.reset();
-   lFreeElem(&attr);
+   attr.reset();
 
    CHECK(12, "a PE with OCS_MAX_SLOTS slots is accepted", pe_validate_slots(&alp, OCS_MAX_SLOTS, false) == STATUS_OK);
    CHECK(13, "a PE with more slots is refused", pe_validate_slots(&alp, OCS_MAX_SLOTS + 1, false) != STATUS_OK);

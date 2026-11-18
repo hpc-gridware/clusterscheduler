@@ -40,6 +40,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <type_traits>
 
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -58,6 +59,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/ocs_cqueue_attributes.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_subordinate.h"
@@ -126,425 +128,222 @@ qinstance_change_state_on_calender_(ocs::tom::Element<ocs::tom::QU> qi_elem, uin
  * match and disagree, the instance becomes *ambiguous* rather than picking
  * one - that is what @p is_ambiguous reports.
  *
+ * The fields are those of one entry of #ocs_cqueue_attributes; the attributes
+ * that do more than copy the value are handled by their own branch, compiled
+ * for that entry only.
+ *
+ * @tparam CqF the cluster queue field the value comes from (CQ_Type)
+ * @tparam QuF the queue instance field being set (QU_Type)
  * @param this_elem the queue instance (`QU_Type`)
  * @param answer_list receives messages for the caller
  * @param cqueue the cluster queue the value comes from
- * @param attribute_name the queue instance field being set
- * @param cqueue_attibute_name the cluster queue field it comes from
- * @param sub_host_name the field holding the host name in the configured list
- * @param sub_value_name the field holding the value in that list
- * @param subsub_key the key field of a sublist value
  * @param[out] matching_host_or_group receives what the value was matched by
  * @param[out] matching_group receives the host group, when it was one
  * @param[out] is_ambiguous receives whether two groups disagreed
- * @param[out] has_changed_conf_attr receives whether a configuration attribute changed
- * @param[out] has_changed_state_attr receives whether a state attribute changed
+ * @param[out] has_changed_conf_attr set to true if the configuration attribute changed
  * @param initial_modify whether the queue instance is being created
- * @param[out] need_reinitialize receives whether the instance has to be rebuilt
+ * @param[out] need_reinitialize set to true if the instance has to be rebuilt; may be nullptr
  * @param monitor for monitoring qmaster threads
  * @param master_hgroup_list the host groups, to resolve `@group`
  * @param master_cqueue_list the cluster queues
  * @param gdi_session the session the change belongs to
  * @return true on success
  */
-bool
+template <auto CqF, auto QuF>
+static bool
 qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                           const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
-                           const int attribute_name, const int cqueue_attibute_name, const int sub_host_name,
-                           const int sub_value_name, const int subsub_key, const char **matching_host_or_group,
+                           const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, const char **matching_host_or_group,
                            const char **matching_group, bool *is_ambiguous, bool *has_changed_conf_attr,
-                           bool *has_changed_state_attr, const bool initial_modify, bool *need_reinitialize,
-                           monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                           const bool initial_modify, bool *need_reinitialize, monitoring_t *monitor,
+                           const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                            const ocs::tom::List<ocs::tom::CQ> master_cqueue_list, const uint64_t gdi_session) {
-#if 0 /* EB: DEBUG: enable debugging for qinstance_modify_attribute() */
-#define QINSTANCE_MODIFY_DEBUG
-#endif
-#ifdef QINSTANCE_MODIFY_DEBUG
-   DENTER(TOP_LAYER);
-#else
    DENTER(BASIS_LAYER);
-#endif
 
+   using A = typename ocs::tom::FieldTraits<CqF>::Sub;
+   using V = typename ocs_attr_traits<A>::value_type;
    bool ret = true;
-   const ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR));
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
 
-   if (this_elem != nullptr && cqueue != nullptr &&
-       attribute_name != NoName && cqueue_attibute_name != NoName) {
+   if (this_elem && cqueue) {
       const char *hostname = ocs::tom::get<QU_qhostname>(this_elem);
-      // the attribute is known only at run time (cqueue_attribute_array), so the access stays generic
-      const lList *attr_list = lGetList(cqueue, cqueue_attibute_name);
-      const lDescr *descr = lGetElemDescr(this_elem);
-      int pos = lGetPosInDescr(descr, attribute_name);
-      int type = lGetPosType(descr, pos);
-      bool value_found = true;
+      const auto lookup = ocs_attr_list_find(ocs::tom::get<CqF>(cqueue), answer_list, hostname,
+                                             matching_host_or_group, matching_group, is_ambiguous,
+                                             master_hgroup_list);
+      // the value of the entry read last; a lookup that read none leaves the empty value
+      V new_value{};
+      if (lookup.entry) {
+         new_value = ocs::tom::get<ocs_attr_traits<A>::value>(lookup.entry);
+      }
 
-      switch (cqueue_attibute_name) {
-         case CQ_calendar: {
-            const char *old_value = lGetString(this_elem, attribute_name);
-            const char *new_value;
+      if constexpr (CqF == CQ_calendar) {
+         const char *old_value = ocs::tom::get<QuF>(this_elem);
 
-            str_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                     matching_group, is_ambiguous, master_hgroup_list);
-            if (old_value == nullptr || new_value == nullptr || strcmp(old_value, new_value)) {
-               const ocs::tom::ConstElement<ocs::tom::CAL> calendar =
-                       ocs::tom::find_first<CAL_name>(master_calendar_list, new_value);
+         if (old_value == nullptr || new_value == nullptr || strcmp(old_value, new_value)) {
+            const ocs::tom::ConstList<ocs::tom::AR>
+               master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+            const ocs::tom::ConstList<ocs::tom::CAL>
+               master_calendar_list(*ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR));
+            const ocs::tom::ConstElement<ocs::tom::CAL> calendar =
+                    ocs::tom::find_first<CAL_name>(master_calendar_list, new_value);
 
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
-                        lNm2Str(attribute_name),
-                        old_value ? old_value : "<null>",
-                        new_value ? new_value : "<null>"));
-#endif
-               /* check if the modification is possible or if
-                * an existing AR would be violated by the modification
-                */
-               if (!initial_modify &&
-                   sge_ar_list_conflicts_with_calendar(answer_list, ocs::tom::get<QU_full_name>(this_elem),
-                                                       calendar, master_ar_list)) {
-                  ret = false;
-                  break;
-               }
-
+            /* check if the modification is possible or if
+             * an existing AR would be violated by the modification
+             */
+            if (!initial_modify &&
+                sge_ar_list_conflicts_with_calendar(answer_list, ocs::tom::get<QU_full_name>(this_elem),
+                                                    calendar, master_ar_list)) {
+               ret = false;
+            } else {
                if (calendar != nullptr) {
                   qinstance_change_state_on_calendar(this_elem, calendar, monitor, gdi_session);
                } else {
                   sge_qmaster_qinstance_state_set_cal_disabled(this_elem, false, gdi_session);
-                  sge_qmaster_qinstance_state_set_cal_suspended(this_elem, false,gdi_session);
+                  sge_qmaster_qinstance_state_set_cal_suspended(this_elem, false, gdi_session);
                   ocs::tom::set<QU_state_changes>(this_elem, nullptr);
                }
-               lSetString(this_elem, attribute_name, new_value);
+               ocs::tom::set<QuF>(this_elem, new_value);
                *has_changed_conf_attr = true;
             }
          }
-            break;
-         case CQ_qtype: {
-            uint32_t old_value = lGetUlong(this_elem, attribute_name);
-            uint32_t new_value;
+      } else if constexpr (CqF == CQ_job_slots) {
+         const uint32_t old_value = ocs::tom::get<QuF>(this_elem);
 
-            qtlist_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                        matching_group, is_ambiguous, master_hgroup_list);
-            if (old_value != new_value) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
-                        lNm2Str(attribute_name), old_value, new_value));
-#endif
-               lSetUlong(this_elem, attribute_name, new_value);
+         if (old_value != new_value) {
+            uint32_t slots_reserved = qinstance_slots_reserved(this_elem);
+            DPRINTF("reserved slots %d\n", slots_reserved);
+            if (!initial_modify && new_value < slots_reserved) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_QINSTANCE_SLOTSRESERVED_USS, slots_reserved,
+                                       ocs::tom::get<QU_qname>(this_elem), hostname);
+               ret = false;
+            } else {
+               ocs::tom::set<QuF>(this_elem, new_value);
                *has_changed_conf_attr = true;
-            }
-         }
-            break;
-         case CQ_s_fsize:
-         case CQ_h_fsize:
-         case CQ_s_data:
-         case CQ_h_data:
-         case CQ_s_stack:
-         case CQ_h_stack:
-         case CQ_s_core:
-         case CQ_h_core:
-         case CQ_s_rss:
-         case CQ_h_rss:
-         case CQ_s_vmem:
-         case CQ_h_vmem: {
-            const char *old_value = lGetString(this_elem, attribute_name);
-            const char *new_value = nullptr;
-
-            mem_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                     matching_group, is_ambiguous, master_hgroup_list);
-            if (old_value == nullptr || new_value == nullptr ||
-                strcmp(old_value, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
-                        lNm2Str(attribute_name),
-                        old_value ? old_value : "<null>",
-                        new_value ? new_value : "<null>"));
-#endif
-               lSetString(this_elem, attribute_name, new_value);
-               *has_changed_conf_attr = true;
-            }
-         }
-            break;
-         case CQ_s_rt:
-         case CQ_h_rt:
-         case CQ_s_cpu:
-         case CQ_h_cpu: {
-            const char *old_value = lGetString(this_elem, attribute_name);
-            const char *new_value = nullptr;
-
-            time_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                      matching_group, is_ambiguous, master_hgroup_list);
-
-            if (old_value == nullptr || new_value == nullptr ||
-                strcmp(old_value, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
-                        lNm2Str(attribute_name),
-                        old_value ? old_value : "<null>",
-                        new_value ? new_value : "<null>"));
-#endif
-               lSetString(this_elem, attribute_name, new_value);
-               *has_changed_conf_attr = true;
-            }
-         }
-            break;
-         case CQ_suspend_interval:
-         case CQ_min_cpu_interval:
-         case CQ_notify: {
-            const char *old_value = lGetString(this_elem, attribute_name);
-            const char *new_value = nullptr;
-
-            inter_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                       matching_group, is_ambiguous, master_hgroup_list);
-            if (old_value == nullptr || new_value == nullptr ||
-                strcmp(old_value, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
-                        lNm2Str(attribute_name),
-                        old_value ? old_value : "<null>",
-                        new_value ? new_value : "<null>"));
-#endif
-               if (attribute_name == QU_suspend_interval &&
-                   new_value != nullptr) {
-                  uint32_t interval;
-
-                  parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME,
-                                  new_value, nullptr, 0);
-                  if (interval == 0) {
-                     /*
-                      * Suspend Threshold state will be reset later
-                      */
-                     ocs::tom::set<QU_gdi_do_later>(this_elem, GDI_DO_LATER);
-                  }
+               if (need_reinitialize != nullptr) {
+                  *need_reinitialize = true;
                }
-
-               lSetString(this_elem, attribute_name, new_value);
-               *has_changed_conf_attr = true;
             }
          }
-            break;
-         case CQ_ckpt_list:
-         case CQ_pe_list: {
-            const lList *old_value = lGetList(this_elem, attribute_name);
-            lList *new_value = nullptr;
+      } else if constexpr (CqF == CQ_ckpt_list || CqF == CQ_pe_list) {
+         const auto old_value = ocs::tom::get<QuF>(this_elem);
 
-            strlist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
-                                         matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
-#endif
-               /*
-                * check if the modification is possible or if
-                * an existing AR violates that modification
-                */
-               if (cqueue_attibute_name == CQ_ckpt_list &&
-                   ar_list_has_reservation_due_to_ckpt(master_ar_list, answer_list,
-                                                       ocs::tom::get<QU_full_name>(this_elem),
-                                                       ocs::tom::ConstList<ocs::tom::ST>(new_value))) {
-                  ret = false;
-                  break;
-               } else if (!initial_modify && cqueue_attibute_name == CQ_pe_list &&
+         if (object_list_has_differences(old_value, answer_list, new_value)) {
+            const ocs::tom::ConstList<ocs::tom::AR>
+               master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+
+            /*
+             * check if the modification is possible or if
+             * an existing AR violates that modification
+             */
+            bool conflict;
+            if constexpr (CqF == CQ_ckpt_list) {
+               conflict = ar_list_has_reservation_due_to_ckpt(master_ar_list, answer_list,
+                                                              ocs::tom::get<QU_full_name>(this_elem), new_value);
+            } else {
+               conflict = !initial_modify &&
                           ar_list_has_reservation_due_to_pe(master_ar_list, answer_list,
-                                                            ocs::tom::get<QU_full_name>(this_elem),
-                                                            ocs::tom::ConstList<ocs::tom::ST>(new_value))) {
-                  ret = false;
-                  break;
+                                                            ocs::tom::get<QU_full_name>(this_elem), new_value);
+            }
+            if (conflict) {
+               ret = false;
+            } else {
+               ocs::tom::set<QuF>(this_elem, new_value.clone(""));
+               *has_changed_conf_attr = true;
+            }
+         }
+      } else if constexpr (CqF == CQ_consumable_config_list) {
+         const auto old_value = ocs::tom::get<QuF>(this_elem);
+         const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+         const ocs::tom::ConstList<ocs::tom::CE>
+            master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+         // the list of the cluster queue is completed in place, as it always was: the request data is filled in,
+         // and an implicit slots entry is added for the comparison and removed again
+         ocs::tom::List<ocs::tom::CE> value_list =
+            ocs::tom::List<ocs::tom::CE>::from_typed(const_cast<lList *>(new_value.raw()));
+         ocs::tom::ListPtr<ocs::tom::CE> created_value;
+
+         if (centry_list_fill_request(value_list, answer_list, master_centry_list, true, true, false) == 0) {
+            ocs::tom::Element<ocs::tom::CE> slots_ce = nullptr;
+
+            /* implicit slots entry */
+            if (!value_list.find_first<CE_name>(SGE_ATTR_SLOTS)) {
+               const auto slots_lookup = ocs_attr_list_find(ocs::tom::get<CQ_job_slots>(cqueue), answer_list,
+                                                            hostname, matching_host_or_group, matching_group,
+                                                            is_ambiguous, master_hgroup_list);
+               uint32_t slots_value = 0;
+               dstring buffer = DSTRING_INIT;
+
+               if (slots_lookup.entry) {
+                  slots_value = ocs::tom::get<AULNG_value>(slots_lookup.entry);
                }
+               sge_dstring_sprintf(&buffer, sge_u32, slots_value);
 
-               lSetList(this_elem, attribute_name, lCopyList("", new_value));
-               *has_changed_conf_attr = true;
+               if (!value_list) {
+                  created_value = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+                  value_list = *created_value;
+               }
+               slots_ce = value_list.emplace_back<CE_name>(SGE_ATTR_SLOTS);
+               ocs::tom::set<CE_doubleval>(slots_ce, slots_value);
+               ocs::tom::set<CE_stringval>(slots_ce, sge_dstring_get_string(&buffer));
+               sge_dstring_free(&buffer);
             }
-         }
-            break;
-         case CQ_owner_list:
-         case CQ_acl:
-         case CQ_xacl: {
-            const lList *old_value = lGetList(this_elem, attribute_name);
-            lList *new_value = nullptr;
 
-            usrlist_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                         matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
-#endif
-               lSetList(this_elem, attribute_name, lCopyList("", new_value));
-               *has_changed_conf_attr = true;
-            }
-         }
-            break;
-         case CQ_projects:
-         case CQ_xprojects: {
-            const lList *old_value = lGetList(this_elem, attribute_name);
-            lList *new_value = nullptr;
-
-            prjlist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
-                                         matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
-#endif
-               lSetList(this_elem, attribute_name, lCopyList("", new_value));
-               *has_changed_conf_attr = true;
-            }
-         }
-            break;
-         case CQ_job_slots: {
-            uint32_t old_value = lGetUlong(this_elem, attribute_name);
-            uint32_t new_value;
-
-            ulng_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                      matching_group, is_ambiguous, master_hgroup_list);
-            if (old_value != new_value) {
-               uint32_t slots_reserved = qinstance_slots_reserved(this_elem);
-               DPRINTF("reserved slots %d\n", slots_reserved);
-               if (!initial_modify && new_value < slots_reserved) {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                          MSG_QINSTANCE_SLOTSRESERVED_USS, slots_reserved,
-                                          ocs::tom::get<QU_qname>(this_elem), hostname);
-                  ret &= false;
+            if (object_list_has_differences(old_value, answer_list, value_list)) {
+               if (!initial_modify &&
+                   ar_list_has_reservation_due_to_qinstance_complex_attr(master_ar_list, answer_list,
+                                                                         this_elem, master_centry_list)) {
+                  ret = false;
                } else {
-#ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
-                          lNm2Str(attribute_name), old_value, new_value);
-#endif
-                  lSetUlong(this_elem, attribute_name, new_value);
-                  *has_changed_conf_attr = true;
                   if (need_reinitialize != nullptr) {
                      *need_reinitialize = true;
                   }
+
+                  ocs::tom::set<QuF>(this_elem, value_list.clone(""));
+                  *has_changed_conf_attr = true;
                }
             }
+            if (slots_ce) {
+               value_list.erase(slots_ce);
+            }
+         } else {
+            ret = false;
          }
-            break;
-         case CQ_consumable_config_list: {
-            const lList *old_value = lGetList(this_elem, attribute_name);
-            lList *new_value = nullptr;
-            bool created_new_value = false;
+         // a list created for the implicit slots entry is freed with created_value
+      } else if constexpr (CqF == CQ_subordinate_list) {
+         const auto old_value = ocs::tom::get<QuF>(this_elem);
 
-            celist_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                        matching_group, is_ambiguous, master_hgroup_list);
+         if (object_list_has_differences(old_value, answer_list, new_value)) {
+            ocs::tom::ListPtr<ocs::tom::SO> unsuspended_so;
+            ocs::tom::ListPtr<ocs::tom::SO> suspended_so;
+            bool valid_config = false;
 
-            if (centry_list_fill_request(ocs::tom::List<ocs::tom::CE>(new_value), answer_list, master_centry_list,
-                                         true, true, false) == 0) {
-               ocs::tom::Element<ocs::tom::CE> slots_ce = nullptr;
+            /*
+             * check slotwise subordinations
+             */
+            /*
+             * Check if there are loops in the slotwise subordination tree.
+             */
+            {
+               auto old_value_copy = old_value.clone("copy_old");
+               auto new_value_copy = new_value.clone("copy_new");
 
-               /* implicit slots entry */
-               if (ocs::tom::find_first<CE_name>(new_value, SGE_ATTR_SLOTS) == nullptr) {
-                  const ocs::tom::ConstList<ocs::tom::AULNG> cq_slots_attr = ocs::tom::get<CQ_job_slots>(cqueue);
-                  uint32_t slots_value;
-                  dstring buffer = DSTRING_INIT;
+               /*
+                * Find all queues that were slotwise subordinated before
+                * and are no longer subordinated now and trigger them.
+                */
+               old_value_copy.get().template remove_common<SO_name>(new_value_copy.get());
+               valid_config = check_new_slotwise_subordinate_tree(this_elem, new_value_copy.get(), answer_list);
+            }
 
-                  ulng_attr_list_find_value(cq_slots_attr, answer_list, hostname, &slots_value, matching_host_or_group,
-                                            matching_group, is_ambiguous, master_hgroup_list);
-                  sge_dstring_sprintf(&buffer, sge_u32, slots_value);
-
-                  if (new_value == nullptr) {
-                     created_new_value = true;
-                  }
-                  slots_ce = ocs::tom::emplace_back<CE_name>(&new_value, SGE_ATTR_SLOTS);
-                  ocs::tom::set<CE_doubleval>(slots_ce, slots_value);
-                  ocs::tom::set<CE_stringval>(slots_ce, sge_dstring_get_string(&buffer));
-                  sge_dstring_free(&buffer);
-               }
-
-               if (object_list_has_differences(old_value, answer_list, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
-#endif
-                  if (!initial_modify &&
-                      ar_list_has_reservation_due_to_qinstance_complex_attr(master_ar_list, answer_list,
-                                                                            this_elem, master_centry_list)) {
-                     ret = false;
-                  } else {
-                     if (need_reinitialize != nullptr) {
-                        *need_reinitialize = true;
-                     }
-
-                     lSetList(this_elem, attribute_name, lCopyList("", new_value));
-                     *has_changed_conf_attr = true;
-                  }
-               }
-               if (slots_ce) {
-                  ocs::tom::List<ocs::tom::CE>::from_typed(new_value).erase(slots_ce);
-               }
+            if (!valid_config) {
+               ret = false;
             } else {
-               ret &= false;
-            }
-            if (created_new_value) {
-               lFreeList(&new_value);
-            }
-         }
-            break;
-         case CQ_load_thresholds:
-         case CQ_suspend_thresholds: {
-            const lList *old_value = lGetList(this_elem, attribute_name);
-            lList *new_value = nullptr;
-
-            celist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
-                                        matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
-#endif
-               /*
-                * Suspend Threshold state will be reset later
-                */
-               if (attribute_name == QU_suspend_thresholds) {
-                  ocs::tom::set<QU_gdi_do_later>(this_elem, GDI_DO_LATER);
-               }
-
-               lSetList(this_elem, attribute_name, lCopyList("", new_value));
-               *has_changed_conf_attr = true;
-            }
-         }
-            break;
-         case CQ_subordinate_list: {
-            const lList *old_value = nullptr;          /* SO_Type list */
-            lList *new_value = nullptr;          /* SO_Type list */
-
-            old_value = lGetList(this_elem, attribute_name);
-            solist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
-                                        matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
-            if (object_list_has_differences(old_value, answer_list, new_value)) {
-               ocs::tom::ListPtr<ocs::tom::SO> unsuspended_so;
-               ocs::tom::ListPtr<ocs::tom::SO> suspended_so;
-               bool valid_config = false;
-
-               /*
-                * check slotwise subordinations
-                */
-               /*
-                * Check if there are loops in the slotwise subordination tree.
-                */
-               {
-                  auto old_value_copy = ocs::tom::ConstList<ocs::tom::SO>(old_value).clone("copy_old");
-                  auto new_value_copy = ocs::tom::ConstList<ocs::tom::SO>(new_value).clone("copy_new");
-
-                  /*
-                   * Find all queues that were slotwise subordinated before
-                   * and are no longer subordinated now and trigger them.
-                   */
-                  old_value_copy.get().remove_common<SO_name>(new_value_copy.get());
-                  valid_config = check_new_slotwise_subordinate_tree(this_elem, new_value_copy.get(), answer_list);
-               }
-
-               if (!valid_config) {
-                  ret = false;
-                  break;
-               }
-
                /*
                 * Detect queues that are no longer subordinated to this queue and
                 * trigger recalculation for them.
                 */
-               hostname = ocs::tom::get<QU_qhostname>(this_elem);
-               const ocs::tom::ConstElement<ocs::tom::SO> first_old_elem =
-                       ocs::tom::ConstList<ocs::tom::SO>(old_value).front();
-               const ocs::tom::ConstElement<ocs::tom::SO> first_new_elem =
-                       ocs::tom::ConstList<ocs::tom::SO>(new_value).front();
+               const ocs::tom::ConstElement<ocs::tom::SO> first_old_elem = old_value.front();
+               const ocs::tom::ConstElement<ocs::tom::SO> first_new_elem = new_value.front();
 
                if (first_old_elem != nullptr && ocs::tom::get<SO_slots_sum>(first_old_elem) > 0 &&
                    first_new_elem != nullptr && ocs::tom::get<SO_slots_sum>(first_new_elem) == 0) {
@@ -569,8 +368,7 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
                    * TODO: HP: Make sure these two lDiffListUlong() always
                    *           return the results we expect!
                    */
-                  if (do_slotwise_subordinate_lists_differ(ocs::tom::ConstList<ocs::tom::SO>(old_value),
-                                                           ocs::tom::ConstList<ocs::tom::SO>(new_value))) {
+                  if (do_slotwise_subordinate_lists_differ(old_value, new_value)) {
                      /*
                       * unsuspend all tasks in the whole subtree, new suspends will
                       * be calculated in cqueue_success().
@@ -582,9 +380,6 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
                /*
                 * check "classic" queuewise subordinations
                 */
-#ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF("Changed " SFQ "\n", lNm2Str(attribute_name));
-#endif
 
                /*
                 * Find list of subordinates that are suspended currently
@@ -599,7 +394,7 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
                /*
                 * Modify sublist
                 */
-               lSetList(this_elem, attribute_name, lCopyList("", new_value));
+               ocs::tom::set<QuF>(this_elem, new_value.clone(""));
                *has_changed_conf_attr = true;
 
                if (!initial_modify) {
@@ -618,87 +413,139 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
                   /*
                    * (Un)suspend subordinated queue instances
                    */
-                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, false, unsuspended_so.get(), monitor,
-                                                  gdi_session);
-                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, true, suspended_so.get(), monitor,
-                                                  gdi_session);
+                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, false, unsuspended_so.get(),
+                                                  monitor, gdi_session);
+                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, true, suspended_so.get(),
+                                                  monitor, gdi_session);
                }
             }
          }
-            break;
-         default:
-            value_found = false;
-            break;
-      }
+      } else if constexpr (std::is_same_v<V, const char *>) {
+         // the string, time, memory and interval attributes
+         const char *old_value = ocs::tom::get<QuF>(this_elem);
 
-      if (!value_found) {
-         switch (type) {
-            case lStringT: {
-               const char *old_value = lGetString(this_elem, attribute_name);
-               const char *new_value = nullptr;
+         if (old_value == nullptr || new_value == nullptr || strcmp(old_value, new_value)) {
+            if constexpr (QuF == QU_suspend_interval) {
+               if (new_value != nullptr) {
+                  uint32_t interval;
 
-               str_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                        matching_group, is_ambiguous, master_hgroup_list);
-               if (old_value == nullptr || new_value == nullptr ||
-                   strcmp(old_value, new_value)) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
-                           lNm2Str(attribute_name),
-                           old_value ? old_value : "<null>",
-                           new_value ? new_value : "<null>"));
-#endif
-                  lSetString(this_elem, attribute_name, new_value);
-                  *has_changed_conf_attr = true;
-               }
-            }
-               break;
-            case lUlongT: {
-               uint32_t old_value = lGetUlong(this_elem, attribute_name);
-               uint32_t new_value;
-
-               ulng_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                         matching_group, is_ambiguous, master_hgroup_list);
-               if (old_value != new_value) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n", lNm2Str(attribute_name), old_value, new_value));
-#endif
-                  lSetUlong(this_elem, attribute_name, new_value);
-                  *has_changed_conf_attr = true;
-                  if (attribute_name == QU_nsuspend &&
-                      new_value == 0) {
+                  parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, new_value, nullptr, 0);
+                  if (interval == 0) {
                      /*
                       * Suspend Threshold state will be reset later
                       */
-
                      ocs::tom::set<QU_gdi_do_later>(this_elem, GDI_DO_LATER);
                   }
                }
             }
-               break;
-            case lBoolT: {
-               bool old_value = lGetBool(this_elem, attribute_name) ? true : false;
-               bool new_value;
+            ocs::tom::set<QuF>(this_elem, new_value);
+            *has_changed_conf_attr = true;
+         }
+      } else if constexpr (std::is_same_v<V, uint32_t> || std::is_same_v<V, bool>) {
+         // the numbers, the queue type and the booleans
+         const V old_value = ocs::tom::get<QuF>(this_elem);
 
-               bool_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
-                                         matching_group, is_ambiguous, master_hgroup_list);
-               if (old_value != new_value) {
-#ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
-                           lNm2Str(attribute_name),
-                           (old_value ? "true" : "false"),
-                           (new_value ? "true" : "false")));
-#endif
-                  lSetBool(this_elem, attribute_name, new_value);
-                  *has_changed_conf_attr = true;
+         if (old_value != new_value) {
+            ocs::tom::set<QuF>(this_elem, new_value);
+            *has_changed_conf_attr = true;
+            if constexpr (QuF == QU_nsuspend) {
+               if (new_value == 0) {
+                  /*
+                   * Suspend Threshold state will be reset later
+                   */
+                  ocs::tom::set<QU_gdi_do_later>(this_elem, GDI_DO_LATER);
                }
             }
-               break;
-            default:
-               DPRINTF("unhandled attribute\n");
-               break;
+         }
+      } else {
+         // the user set, project and threshold lists
+         const auto old_value = ocs::tom::get<QuF>(this_elem);
+
+         if (object_list_has_differences(old_value, answer_list, new_value)) {
+            if constexpr (QuF == QU_suspend_thresholds) {
+               /*
+                * Suspend Threshold state will be reset later
+                */
+               ocs::tom::set<QU_gdi_do_later>(this_elem, GDI_DO_LATER);
+            }
+            ocs::tom::set<QuF>(this_elem, new_value.clone(""));
+            *has_changed_conf_attr = true;
          }
       }
    }
+   DRETURN(ret);
+}
+
+/** @brief Resolve the cluster queue attributes down to a queue instance
+ *
+ * Walks #ocs_cqueue_attributes and resolves every attribute the reduced
+ * element holds, or every attribute if @p all_attributes is set, with
+ * qinstance_modify_attribute().
+ *
+ * Creating an instance (@p is_create) resolves every attribute even after
+ * one failed. Modifying one stops at the first attribute that failed, and
+ * adds a message of type QI_AMBIGUOUS for each attribute that is ambiguous.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param answer_list receives messages for the caller
+ * @param cqueue the cluster queue the values come from
+ * @param reduced_elem the reduced element the client sent; it may be of another type (a host group from
+ *        hgroup_mod()), then it holds no cluster queue attribute; nullptr with @p all_attributes
+ * @param all_attributes resolve every attribute, not only those @p reduced_elem holds
+ * @param is_create whether the queue instance is being created, see above
+ * @param initial_modify whether the queue instance is new, so nothing can conflict with running jobs or
+ *        advance reservations
+ * @param[in,out] is_ambiguous set to true if an attribute is ambiguous, left as it is otherwise
+ * @param[in,out] has_changed_conf_attr set to true if a configuration attribute changed, left as it is otherwise
+ * @param[out] need_reinitialize set to true if the instance has to be rebuilt; may be nullptr
+ * @param monitor for monitoring qmaster threads
+ * @param master_hgroup_list the host groups, to resolve `@group`
+ * @param master_cqueue_list the cluster queues
+ * @param gdi_session the session the change belongs to
+ * @return true on success; on creation, whether the last attribute succeeded is not reported
+ */
+bool
+qinstance_modify_attributes(const ocs::tom::Element<ocs::tom::QU> this_elem,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, const lListElem *reduced_elem,
+                            const bool all_attributes, const bool is_create, const bool initial_modify,
+                            bool *is_ambiguous, bool *has_changed_conf_attr, bool *need_reinitialize,
+                            monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                            const ocs::tom::List<ocs::tom::CQ> master_cqueue_list, const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   bool ret = true;
+
+   ocs_for_each_cqueue_attr_while([&](const auto &attr) {
+      using E = ocs_cqueue_attr_t<decltype(attr)>;
+
+      // has() of the raw element is false for an element of another type
+      if (all_attributes || ocs::tom::has<E::cqueue_field>(reduced_elem)) {
+         const char *matching_host_or_group = nullptr;
+         const char *matching_group = nullptr;
+         bool tmp_is_ambiguous = false;
+
+         const bool attr_ret = qinstance_modify_attribute<E::cqueue_field, E::qinstance_field>(
+            this_elem, answer_list, cqueue, &matching_host_or_group, &matching_group, &tmp_is_ambiguous,
+            has_changed_conf_attr, initial_modify, need_reinitialize, monitor, master_hgroup_list,
+            master_cqueue_list, gdi_session);
+
+         if (!is_create) {
+            ret &= attr_ret;
+            if (tmp_is_ambiguous) {
+               /*
+                * Add a message which explains the reason for
+                * ambiguous state
+                */
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_HASAMBVAL_SSS, attr.name, matching_host_or_group,
+                        matching_group);
+               qinstance_message_add(this_elem, QI_AMBIGUOUS, SGE_EVENT);
+            }
+         }
+         *is_ambiguous |= tmp_is_ambiguous;
+      }
+      return ret;
+   });
    DRETURN(ret);
 }
 

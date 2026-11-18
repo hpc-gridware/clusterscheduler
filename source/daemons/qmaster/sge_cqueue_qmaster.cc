@@ -50,8 +50,12 @@
 
 #include "uti/ocs_Pattern.h"
 
+#include "comm/lists/cl_errors.h"
+#include "comm/cl_commlib.h"
+
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/ocs_cqueue_attributes.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
@@ -170,7 +174,6 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
    const ocs::tom::ConstList<ocs::tom::CE> centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
    const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
-   int index;
    auto ret = ocs::tom::ElementPtr<ocs::tom::QU>::create();
 
    /*
@@ -186,31 +189,10 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
     * Initialize configuration attributes from CQ
     */
    *is_ambiguous = false;
-   index = 0;
-   while (cqueue_attribute_array[index].cqueue_attr != NoName) {
-      bool tmp_is_ambiguous = false;
-      bool tmp_has_changed_conf_attr = false;
-      bool tmp_has_changed_state_attr = false;
-      const char *matching_host_or_group = nullptr;
-      const char *matching_group = nullptr;
-
-      qinstance_modify_attribute(*ret, answer_list, cqueue,
-                                 cqueue_attribute_array[index].qinstance_attr,
-                                 cqueue_attribute_array[index].cqueue_attr,
-                                 cqueue_attribute_array[index].href_attr,
-                                 cqueue_attribute_array[index].value_attr,
-                                 cqueue_attribute_array[index].primary_key_attr,
-                                 &matching_host_or_group,
-                                 &matching_group,
-                                 &tmp_is_ambiguous,
-                                 &tmp_has_changed_conf_attr,
-                                 &tmp_has_changed_state_attr,
-                                 true, nullptr, monitor, master_hgroup_list, master_cqueue_list, packet->gdi_session);
-
-      *is_ambiguous |= tmp_is_ambiguous;
-
-      index++;
-   }
+   bool has_changed_conf_attr = false;   // a new instance is written as a whole anyway
+   static_cast<void>(qinstance_modify_attributes(*ret, answer_list, cqueue, nullptr, true, true, true, is_ambiguous,
+                                                 &has_changed_conf_attr, nullptr, monitor, master_hgroup_list,
+                                                 master_cqueue_list, packet->gdi_session));
 
    qinstance_set_conf_slots_used(*ret);
    qinstance_debit_consumable(*ret, ocs::tom::ConstElement<ocs::tom::JB>(), ocs::tom::ConstElement<ocs::tom::PE>(),
@@ -343,21 +325,141 @@ cqueue_mark_qinstances(const ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::L
    DRETURN(ret);
 }
 
+/**
+ * @brief Modify one attribute list of a cluster queue as a request says
+ *
+ * The request's list says, per host or host group, what to do with the cluster queue's list. "sub_cmd" says
+ * how: with SGE_GDI_SET_ALL the entries the request does not name are removed first; a removal applies to
+ * entries the queue holds; otherwise an entry the queue lacks is created. A value that is a keyed list is
+ * modified key by key (attr_mod_sub_list()), any other value is replaced.
+ *
+ * @tparam CqF the attribute list field of the cluster queue
+ * @param this_elem the cluster queue to modify
+ * @param answer_list AN_Type list
+ * @param reduced_elem the reduced request element; does nothing if it lacks the attribute
+ * @param sub_cmd the GDI sub-command
+ * @param attribute_name_str the attribute's name, for the messages
+ * @param object_name_str the cluster queue's name, for the messages
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: cqueue_mod_sublist() is MT safe
+ */
+template <auto CqF>
+static bool
+cqueue_mod_sublist(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                   const ocs::tom::Element<ocs::tom::CQ> reduced_elem, const ocs::gdi::SubCommand sub_cmd,
+                   const char *attribute_name_str, const char *object_name_str) {
+   DENTER(TOP_LAYER);
+
+   using A = typename ocs::tom::FieldTraits<CqF>::Sub;
+   constexpr auto href_f = ocs_attr_traits<A>::href;
+   constexpr auto value_f = ocs_attr_traits<A>::value;
+   bool ret = true;
+
+   if (ocs::tom::has<CqF>(reduced_elem)) {
+      const auto mod_list = ocs::tom::get<CqF>(reduced_elem);
+      auto org_list = ocs::tom::get<CqF>(this_elem);
+
+      /* 
+       * Delete all configuration lists except the default-configuration
+       * if sub_command is SGE_GDI_SET_ALL
+       */
+      if ((sub_cmd & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
+         auto next_elem = org_list.front();
+         while (const auto elem = next_elem) {
+            const char *name = ocs::tom::get<href_f>(elem);
+
+            next_elem = elem.next();
+            if (!mod_list.template find_first<href_f>(ocs::tom::Host(name))) {
+               DPRINTF("Removing attribute list for " SFQ "\n", name);
+               org_list.erase(elem);
+            }
+         }
+      }
+
+      /*
+       * Do modifications for all given elements of 
+       * domain/host-configuration list
+       */
+      for (const auto mod_elem : mod_list) {
+         const char *name = ocs::tom::get<href_f>(mod_elem);
+         char resolved_name[CL_MAXHOSTNAMELEN + 1];
+
+         if (name == nullptr) {
+            ERROR(MSG_SGETEXT_INVALIDHOST_S, "");
+            answer_list_add(answer_list, SGE_EVENT,
+                            STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            ret = false;
+            break;
+         }
+         /* Don't try to resolve hostgroups */
+         if (name[0] != '@') {
+            int back = getuniquehostname(name, resolved_name, 0);
+
+            if (back == CL_RETVAL_OK) {
+               /* 
+                * This assignment is ok because preious name contained a const
+                * string from the mod_elem that we didn't need to free.  
+                * Now it will contain a string that's on the stack, 
+                * so we still don't have to free it. 
+                */
+               name = resolved_name;
+            } else {
+               /*
+                * Due to CR 6319231, IZ 1760 this is allowed
+                */
+            }
+         }
+
+         auto org_elem = org_list.template find_first<href_f>(ocs::tom::Host(name));
+
+         /*
+          * Create element if it does not exist
+          */
+         if (!org_elem && (sub_cmd & ocs::gdi::SubCommand::REMOVE) != ocs::gdi::SubCommand::REMOVE) {
+            if (!org_list) {
+               org_list = this_elem.template get_or_create<CqF>("");
+            }
+            auto new_elem = ocs::tom::ElementPtr<A>::create();
+            ocs::tom::set<href_f>(new_elem, name);
+            org_elem = org_list.push_back(std::move(new_elem));
+         }
+
+         /*
+          * Modify sublist according to subcommand
+          */
+         if (org_elem) {
+            if constexpr (OcsHostAttrKeyedList<A>) {
+               static_cast<void>(attr_mod_sub_list<value_f, ocs_attr_traits<A>::key>(
+                  answer_list, org_elem, mod_elem, sub_cmd, attribute_name_str, object_name_str));
+            } else {
+               // a number, a boolean or a string, which is copied
+               ocs::tom::set<value_f>(org_elem, ocs::tom::get<value_f>(mod_elem));
+            }
+         }
+      }
+   }
+
+   DRETURN(ret);
+}
+
 /** @brief Apply the attributes the client sent to a cluster queue
  *
- * The attribute table works with field numbers known only at run time, so the
- * presence check on the reduced element stays generic.
+ * The attributes are walked through #ocs_cqueue_attributes, as long as no
+ * attribute failed.
  *
  * @param cqueue the cluster queue
  * @param answer_list receives messages for the caller
  * @param reduced_elem the reduced element the client sent
- * @param command the command being executed
+ * @param command the command being executed, unused
  * @param sub_command what kind of modification this is
  * @return true on success
  */
 static bool
 cqueue_mod_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                      const ocs::tom::Element<ocs::tom::CQ> reduced_elem, const ocs::gdi::Command command,
+                      const ocs::tom::Element<ocs::tom::CQ> reduced_elem,
+                      [[maybe_unused]] const ocs::gdi::Command command,
                       const ocs::gdi::SubCommand sub_command) {
    DENTER(TOP_LAYER);
 
@@ -365,24 +467,12 @@ cqueue_mod_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::Li
 
    if (cqueue != nullptr && reduced_elem != nullptr) {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-      int index = 0;
 
-      while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
-         int pos = lGetPosViaElem(reduced_elem,
-                                  cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
-
-         if (pos >= 0) {
-            ret &= cqueue_mod_sublist(cqueue, answer_list, reduced_elem,
-                                      command, sub_command,
-                                      cqueue_attribute_array[index].cqueue_attr,
-                                      cqueue_attribute_array[index].href_attr,
-                                      cqueue_attribute_array[index].value_attr,
-                                      cqueue_attribute_array[index].primary_key_attr,
-                                      cqueue_attribute_array[index].name,
-                                      cqueue_name);
-         }
-         index++;
-      }
+      ret = ocs_for_each_cqueue_attr_while([&](const auto &attr) {
+         using E = ocs_cqueue_attr_t<decltype(attr)>;
+         return cqueue_mod_sublist<E::cqueue_field>(cqueue, answer_list, reduced_elem, sub_command, attr.name,
+                                                    cqueue_name);
+      });
    }
    DRETURN(ret);
 }
@@ -648,7 +738,6 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          bool will_be_ambiguous = false;
          bool state_changed = false;
          bool conf_changed = false;
-         int index = 0;
          bool need_reinitialize = false;
 
          /*
@@ -669,74 +758,32 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
           * and only if the qinstance won't be deleted afterward.
           */
 
-         while (ret && !is_del &&
-                cqueue_attribute_array[index].cqueue_attr != NoName) {
-            const char *matching_host_or_group = nullptr;
-            const char *matching_group = nullptr;
-
-            // the reduced element may be of another type (a host group from hgroup_mod()), and the
-            // attribute is a field number known only at run time: the lookup stays generic
-            int pos = lGetPosViaElem(reduced_elem,
-                                     cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
-
-
-            /*
-             * We try to find changes only for attributes which were 
-             * sent by the client. Only for those attributes 'pos' will
-             * be >= 0.
-             *
-             * There are two situations which make it absolutely necessary
-             * to have a look on ALL attributes:
-             *
-             * 1) refresh_all_values is true
-             *    The hostlist of "cqueue" changed. As a result it
-             *    might be possible that a value for an attribute is
-             *    now ambiguous. 
-             * 
-             * 2) is_ambiguous is true
-             *    The qinstance is currently in the ambiguous state.
-             *    It is not enough to test only modified attributes if
-             *    they are nonambigous. It is also necesssary to check
-             *    if all attributes which are not changed now are
-             *    nonambigous to clear the ambigous-state from qinstance. 
-             */
-            if (pos >= 0 || refresh_all_values || is_ambiguous) {
-               bool tmp_is_ambiguous = false;
-               bool tmp_has_changed_conf_attr = false;
-               bool tmp_has_changed_state_attr = false;
-
-               ret &= qinstance_modify_attribute(qinstance,
-                                                 answer_list, cqueue,
-                                                 cqueue_attribute_array[index].qinstance_attr,
-                                                 cqueue_attribute_array[index].cqueue_attr,
-                                                 cqueue_attribute_array[index].href_attr,
-                                                 cqueue_attribute_array[index].value_attr,
-                                                 cqueue_attribute_array[index].primary_key_attr,
-                                                 &matching_host_or_group,
-                                                 &matching_group,
-                                                 &tmp_is_ambiguous,
-                                                 &tmp_has_changed_conf_attr,
-                                                 &tmp_has_changed_state_attr,
-                                                 is_startup,
-                                                 &need_reinitialize,
-                                                 monitor, master_hgroup_list, master_cqueue_list, packet->gdi_session);
-
-               if (tmp_is_ambiguous) {
-                  /*
-                   * Add a message which explains the reason for
-                   * ambiguous state
-                   */
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_HASAMBVAL_SSS, cqueue_attribute_array[index].name,
-                           matching_host_or_group, matching_group);
-                  qinstance_message_add(qinstance, QI_AMBIGUOUS, SGE_EVENT);
-               }
-
-               will_be_ambiguous |= tmp_is_ambiguous;
-               state_changed |= tmp_has_changed_state_attr;
-               conf_changed |= tmp_has_changed_conf_attr;
-            }
-
-            index++;
+         /*
+          * We try to find changes only for attributes which were 
+          * sent by the client: those the reduced element holds. The
+          * reduced element may be of another type (a host group from
+          * hgroup_mod()); it holds none of them then.
+          *
+          * There are two situations which make it absolutely necessary
+          * to have a look on ALL attributes:
+          *
+          * 1) refresh_all_values is true
+          *    The hostlist of "cqueue" changed. As a result it
+          *    might be possible that a value for an attribute is
+          *    now ambiguous. 
+          * 
+          * 2) is_ambiguous is true
+          *    The qinstance is currently in the ambiguous state.
+          *    It is not enough to test only modified attributes if
+          *    they are nonambigous. It is also necesssary to check
+          *    if all attributes which are not changed now are
+          *    nonambigous to clear the ambigous-state from qinstance. 
+          */
+         if (ret && !is_del) {
+            ret &= qinstance_modify_attributes(qinstance, answer_list, cqueue, reduced_elem,
+                                               refresh_all_values || is_ambiguous, false, is_startup,
+                                               &will_be_ambiguous, &conf_changed, &need_reinitialize, monitor,
+                                               master_hgroup_list, master_cqueue_list, packet->gdi_session);
          }
 
          if (need_reinitialize) {

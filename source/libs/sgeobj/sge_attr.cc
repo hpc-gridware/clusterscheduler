@@ -36,375 +36,133 @@
  * @brief Per host attributes: one value per host or host group
  *
  * A cluster queue stores most of its attributes as a list of host specific
- * values. Every value type needs the same set of operations, which is why
- * they are emitted from one macro rather than written out.
+ * values. Every value type needs the same set of operations; they are written
+ * once as members of #ocs_attr_list_ops, whose fields come from
+ * #ocs_attr_traits, and instantiated at the end of this file for every
+ * attribute type.
  *
  * @see sge_attr.h
  */
 
-#include <math.h>
 #include <cstring>
-#include <sys/types.h>
 
 #include "uti/ocs_Pattern.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
-#include "comm/commlib.h"
-
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_FreeAccess.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
-#include <cinttypes>
 #include "msg_common.h"
 
 /// Debug layer the per host attribute traces are written to
 #define HOSTATTR_LAYER BASIS_LAYER
 
 /**
- * @brief Define the whole function family for one per host attribute type
+ * @brief Add a new entry to a per host attribute list
  *
- * Every attribute type needs the same set of functions - find, render,
- * parse - differing only in the value's C type and the CULL descriptor.
- * This emits them; #TEMPLATE_ATTR_PROTO declares the same set in
- * the header.
- */
-#define TEMPLATE_ATTR_IMPL(PREFIX, TYPE, INTERNAL_TYPE,                       \
-                           DESCRIPTOR, HREF_NM, VALUE_NM)                     \
-                                                                              \
-bool                                                                          \
-PREFIX##_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,         \
-                         const char *hostname, INTERNAL_TYPE *value,          \
-                         const char **mastching_host_or_group,                \
-                         const char **matching_group,                         \
-                         bool *is_ambiguous, const lList *master_hgroup_list)                                  \
-{                                                                             \
-   return attr_list_find_value(this_list, answer_list, hostname,              \
-                               value, mastching_host_or_group,                \
-                               matching_group, is_ambiguous,                  \
-                               DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list);                \
-}                                                                             \
-                                                                              \
-bool                                                                          \
-PREFIX##_list_find_value_href(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,    \
-                         const char *hostname, INTERNAL_TYPE *value,          \
-                         bool *found)                                         \
-{                                                                             \
-   return attr_list_find_value_href(this_list, answer_list, hostname,         \
-                               value, found, DESCRIPTOR, HREF_NM,             \
-                               VALUE_NM);                                     \
-}                                                                             \
-                                                                              \
-bool                                                                          \
-PREFIX##_list_append_to_dstring(const lList *this_list, dstring *string)      \
-{                                                                             \
-   return attr_list_append_to_dstring(this_list, string,                      \
-                                      DESCRIPTOR, HREF_NM, VALUE_NM);         \
-}                                                                             \
-                                                                              \
-bool                                                                          \
-PREFIX##_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,       \
-                                const char *string, int flags, const lList *master_hgroup_list)                \
-{                                                                             \
-   return attr_list_parse_from_string(this_list, answer_list, string,         \
-                                      flags, DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list);  \
-}
- 
-static lListElem *
-attr_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *href, void *value,
-            const lDescr *descriptor, int href_nm, int value_nm);
-
-static bool 
-attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **attr,
-              int flags, ocs::tom::ListPtr<ocs::tom::HR> *ambiguous_href_list,
-              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list);
-
-static bool
-attr_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                     const char *hostname, void *value_buffer, 
-                     const char **matching_host_or_group,
-                     const char **matching_group,
-                     bool *is_ambiguous, const lDescr *descriptor, 
-                     int href_nm, int value_nm, const lList *master_hgroup_list);
-
-static bool
-attr_list_find_value_href(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                     const char *hostname, void *value_buffer, 
-                     bool *found, const lDescr *descriptor, 
-                     int href_nm, int value_nm);
-
-static bool
-attr_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            const char *string, int flags,
-                            const lDescr *descriptor, int href_nm, 
-                            int value_nm, const lList *master_hgroup_list);
-
-static lListElem *
-attr_list_locate(const lList *this_list, const char *host_or_group, 
-                 int href_nm);
-
-/**
- * @brief Returns a new attribute element
+ * An entry for a reference the list holds already is an error, unless @p flags has #HOSTATTR_OVERWRITE: then
+ * the held entry takes the new value. Any other entry is appended. A list that is empty is created, and freed
+ * again if the entry could not be added.
  *
- * If an error occures "answer_list" will be filled with an error
- * message. "href" is the hostname or hgroupname of the new element.
- * "value" is a pointer to the new value for that attribute. "descriptor"
- * is the CULL descriptor wich will be used to create the new element.
- * "href_nm" is the CULL name of the field where the "href" name will
- * be stored and "value_nm" defines the value of the field which
- * will be filled with the "value".
+ * The old form could also reject a host group entry that makes a host's value ambiguous; its only caller never
+ * asked for that (it passed no list for the ambiguous hosts), so that part is gone and #HOSTATTR_ALLOW_AMBIGUITY
+ * makes no difference here.
  *
+ * @tparam A the attribute type
+ * @param this_list the attribute list
  * @param answer_list AN_Type list
- * @param href host oder hgroupname
- * @param value pointer to the attributes value
- * @param descriptor CULL descriptor
- * @param href_nm CULL field name host or hgroupname
- * @param value_nm CULL field name for the value
+ * @param attr the new entry; consumed on every path
+ * @param flags see above
+ * @return true on success
  *
- * @return new CULL element or nullptr in case on an error
- *
- * @note MT-NOTE: attr_create() is MT safe
+ * @note MT-NOTE: ocs_attr_list_add() is MT safe
  */
-static lListElem *
-attr_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *href, void *value,
-            const lDescr *descriptor, int href_nm, int value_nm) {
+template <OcsHostAttr A>
+static bool
+ocs_attr_list_add(ocs::tom::ListPtr<A> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                  ocs::tom::ElementPtr<A> attr, const int flags) {
    DENTER(HOSTATTR_LAYER);
 
-   lListElem *ret = nullptr;
-
-   if (href != nullptr) {
-      lListElem *new_attr = lCreateElem(descriptor);
-
-      if (new_attr != nullptr) {
-         lSetHost(new_attr, href_nm, href);
-         if (value != nullptr) {
-            object_set_any_type(new_attr, value_nm, value);
-         }
-         ret = new_attr;
-      } else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_NONEWATTRSETTING_S, href);
-         answer_list_add(answer_list, SGE_EVENT, 
-                         STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-      }
-   } else {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
-      answer_list_add(answer_list, SGE_EVENT, 
-                      STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Add a new attribute entry to a list
- *
- * "this_list" and "attr" must have the same "descriptor". "href_nm"
- * defines one cull field within "attr" which containes a hostname
- * or hgroup-name. "value_nm" containes the value of that concerned
- * attribute.
- * "answer_list" will be filled in case of an error.
- * "flags" can be used to influence the behaviour of this function
- * in case of duplicates or other ambiguities within the resulting
- * list.
- * "ambiguous_href_list" might be used as output parameter for this
- * function. Find more detailes in the description of the flags
- * parameter below.
- *
- * @param this_list attribute list
- * @param answer_list AN_Type list
- * @param attr attribute pointer
- * @param flags behaviour bitmask:
- *        - HOSTATTR_OVERWRITE: if there is already an element in "this_list"
- *          which has the same hostname or hgroup, then the value of this
- *          element will be overwritten. Without this flag a duplicate is an
- *          error.
- *        - HOSTATTR_ALLOW_AMBIGUITY: a resulting "this_list" that would give
- *          a certain host an ambiguous configuration is accepted. Otherwise
- *          it is rejected, and "ambiguous_href_list" is filled with the
- *          conflicting hostnames.
- * @param ambiguous_href_list in-out: HR_Type list receiving the ambiguous hosts, or nullptr
- * @param descriptor CULL descriptor
- * @param href_nm CULL field name
- * @param value_nm CULL value name
- * @param master_hgroup_list the host groups (`HGRP_Type`)
- *
- * @return error state true  - success false - error
- *
- * @note MT-NOTE: attr_list_add() is not MT safe
- */
-static bool
-attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **attr,
-              int flags, ocs::tom::ListPtr<ocs::tom::HR> *ambiguous_href_list,
-              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list) {
-   DENTER(HOSTATTR_LAYER);
+   constexpr auto href_f = ocs_attr_traits<A>::href;
    bool ret = false;
 
-   if (this_list != nullptr && attr != nullptr && *attr != nullptr) {
-      lListElem *attr_elem = nullptr;
-      const char *href = nullptr;
-      bool is_hgroup = false; 
+   if (attr) {
+      const ocs::tom::Host href = ocs::tom::get<href_f>(attr);
       bool created_list = false;
+      ocs::tom::Element<A> attr_elem;
 
-      href = lGetHost(*attr, href_nm);
-      is_hgroup = ocs::is_hgroup_name(href);
-
-      if (*this_list == nullptr) {
-         *this_list = lCreateList("", descriptor);
+      if (!this_list) {
+         this_list = ocs::tom::ListPtr<A>::create("");
          created_list = true;
       } else {
-         attr_elem = attr_list_locate(*this_list, href, href_nm);
+         attr_elem = this_list->template find_first<href_f>(href);
       }
 
-      /*
-       * HOSTREF_DEFAULT and host reference values can be added/changed
-       * Hostgroup entries already contained in the list might be changed.
-`      *
-       * New hostgroup references might cause a conflict. We have to
-       * make additional checks.
-       */
-      if (!strcmp(href, HOSTREF_DEFAULT) || 
-          !is_hgroup ||
-          (is_hgroup && attr_elem != nullptr)) {
-         const char *value = nullptr;
-
-         object_get_any_type(*attr, value_nm, &value);
-         if (attr_elem != nullptr) {
-            if (flags & HOSTATTR_OVERWRITE) {
-               object_set_any_type(attr_elem, value_nm, &value);
-               lFreeElem(attr);
-               *attr = attr_elem;
-               ret = true;
-            } else {
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_VALUEMULDEFINED_S, href);
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-            }
-         } else {
-            lAppendElem(*this_list, *attr);
+      if (attr_elem) {
+         if (flags & HOSTATTR_OVERWRITE) {
+            // a list value is copied, as the old untyped setter copied it
+            static_cast<void>(ocs::tom::copy_if_present<ocs_attr_traits<A>::value>(attr_elem, *attr));
             ret = true;
+         } else {
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_VALUEMULDEFINED_S, static_cast<const char *>(href));
+            answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
          }
       } else {
-         ocs::tom::ListPtr<ocs::tom::HR> href_list;
-         ocs::tom::ListPtr<ocs::tom::HR> host_list;
-         ocs::tom::ListPtr<ocs::tom::HR> new_host_list;
-         bool lret = true;
-       
-         /*
-          * Create list of ambiguous hosts only 
-          *  - if ambiguious entries are not allowed or
-          *  - if the the caller of this functions expects this
-          *    function to return it
-          */ 
-         if (!(flags & HOSTATTR_ALLOW_AMBIGUITY) && 
-             ambiguous_href_list != nullptr) {
-
-            /*
-             * Create host reference list of all used hostgroups
-             * (except HOSTREF_DEFAULT, and host entries)
-             */
-            if (lret) {
-               // the list is of the runtime type "descriptor", so its host reference is read through "href_nm"
-               for_each_rw(attr_elem, *this_list) {
-                  const char *href = lGetHost(attr_elem, href_nm);
-
-                  if (strcmp(href, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href)) {
-                     lret &= href_list_add(href_list, nullptr, href);
-                  }
-               }
-            }
-
-            /*
-             * Find all directly or indirectly referenced hosts for all 
-             * hostgroups
-             */
-            if (lret && href_list) {
-               const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list(master_hgroup_list);
-               ocs::tom::ListPtr<ocs::tom::HR> tmp_href_list;
-
-               lret &= href_list_find_all_references(href_list, nullptr, hgroup_list, &host_list, nullptr);
-               lret &= href_list_add(tmp_href_list, nullptr, href);
-               lret &= href_list_find_all_references(tmp_href_list, nullptr, hgroup_list, &new_host_list, nullptr);
-            }
-
-            /*
-             * Find all host references which already have a value attached.
-             * For all these hosts the new value in ambiguious.
-             */
-            if (lret && ambiguous_href_list != nullptr && host_list && new_host_list) {
-               lret = href_list_compare(new_host_list, nullptr, host_list,
-                                           nullptr, nullptr, ambiguous_href_list,
-                                           nullptr);
-            }
-         } 
-
-         if (ambiguous_href_list != nullptr &&
-               ambiguous_href_list->get().size() >= 1 &&
-               !(flags & HOSTATTR_ALLOW_AMBIGUITY)) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_RESULTAMBIGUOUS);
-            answer_list_add(answer_list, SGE_EVENT,
-                            STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-         } else {
-            lAppendElem(*this_list, *attr);
-            ret = true;
-         }
+         this_list->push_back(std::move(attr));
+         ret = true;
       }
 
       if (created_list && !ret) {
-         lFreeList(this_list);
+         this_list.reset();
       }
-   } 
+   }
    DRETURN(ret);
 }
 
 /**
  * @brief Find the value a per host attribute list gives a host
  *
- * A value for the host itself wins; otherwise the value of the one host group
- * that contains the host, and if no group does, the default value
- * (#HOSTREF_DEFAULT). Two groups that both contain the host make the setting
- * ambiguous.
+ * See ocs_attr_list_find(), which calls it.
  *
- * @param this_list the attribute list, of type "descriptor" (e.g. ASTR_Type)
+ * @tparam A the attribute type
+ * @param this_list the attribute list, may be an empty handle
  * @param[out] answer_list receives an error if there is no value at all
- * @param hostname the host
- * @param[out] value_buffer receives the value, in the C type of "value_nm"
+ * @param hostname the host, may be nullptr
  * @param[out] matching_host_or_group receives the host group the value comes from, if any
  * @param[out] matching_group receives the second host group if the setting is ambiguous
  * @param[out] is_ambiguous set to true if two host groups give the host a value; written only when the host
  *             has no value of its own
- * @param descriptor the descriptor of the list elements
- * @param href_nm the field holding an entry's host reference (e.g. ASTR_href)
- * @param value_nm the field holding its value (e.g. ASTR_value)
- * @param master_hroup_list the host groups (`HGRP_Type`)
- * @return true if a value was found
+ * @param master_hgroup_list the host groups
+ * @return the entry whose value was read last and whether a value was found
+ *
+ * @note MT-NOTE: ocs_attr_list_ops::find() is MT safe
  */
-static bool
-attr_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                     const char *hostname, void *value_buffer,
-                     const char **matching_host_or_group,
-                     const char **matching_group,
-                     bool *is_ambiguous, const lDescr *descriptor,
-                     int href_nm, int value_nm, const lList *master_hroup_list) {
+template <OcsHostAttr A>
+ocs_attr_lookup<A>
+ocs_attr_list_ops<A>::find(const ocs::tom::ConstList<A> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           const char *hostname, const char **matching_host_or_group, const char **matching_group,
+                           bool *is_ambiguous, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
    DENTER(HOSTATTR_LAYER);
 
-   bool ret = false;
+   constexpr auto href_f = ocs_attr_traits<A>::href;
+   ocs_attr_lookup<A> ret;
 
-   if (this_list != nullptr && hostname != nullptr) {
-      const lListElem *href = nullptr;
-   
+   if (this_list && hostname != nullptr) {
       /*
        * Try to find a value for the concerned host
-       */ 
-      href = attr_list_locate(this_list, hostname, href_nm);
-      if (href != nullptr) {
-         object_get_any_type(href, value_nm, value_buffer);
+       */
+      if (const auto own = this_list.template find_first<href_f>(ocs::tom::Host(hostname)); own) {
+         ret = {own, true};
          DPRINTF("Found value for host " SFQ "\n", hostname);
-         ret = true;
       } else {
          bool already_found = false;
 
@@ -416,153 +174,143 @@ attr_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *an
           * Exit the loop as soon as possible! This will be the case if
           * an ambiguous value for the concerned host will be found.
           */
-         const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list(master_hroup_list);
-         for_each_ep(href, this_list) {
-            const char *href_name = lGetHost(href, href_nm);
+         for (const auto entry : this_list) {
+            const char *href_name = ocs::tom::get<href_f>(entry);
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href_name)) {
                ocs::tom::ListPtr<ocs::tom::HR> tmp_href_list;
                ocs::tom::ListPtr<ocs::tom::HR> host_list;
 
                href_list_add(tmp_href_list, nullptr, href_name);
-               href_list_find_all_references(tmp_href_list, nullptr, hgroup_list, &host_list, nullptr);
-               const auto tmp_href = href_list_locate(host_list, hostname);
-               if (tmp_href != nullptr) {
+               href_list_find_all_references(tmp_href_list, nullptr, master_hgroup_list, &host_list, nullptr);
+               if (href_list_locate(host_list, hostname) != nullptr) {
                   if (!already_found) {
                      already_found = true;
-                     object_get_any_type(href, value_nm, value_buffer);
+                     ret = {entry, true};
                      *matching_host_or_group = href_name;
                      DPRINTF("Found value for domain " SFQ "\n", href_name);
-                     ret = true;
                   } else {
                      *is_ambiguous = true;
                      *matching_group = href_name;
                      DPRINTF("Found ambiguous value in domain " SFQ "\n", href_name);
-                     ret = false;
-                     break; /* leave for_each loop */
+                     ret.found = false;
+                     break;
                   }
                }
             }
          }
-         if (!ret) {
-            lListElem *tmp_href = nullptr;
-
+         if (!ret.found) {
             /*
              * Use the default value
              */
-            tmp_href = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm);
-            if (tmp_href != nullptr) {
+            if (const auto def = this_list.template find_first<href_f>(ocs::tom::Host(HOSTREF_DEFAULT)); def) {
                DPRINTF("Using default value\n");
-               object_get_any_type(tmp_href, value_nm, value_buffer);
-               ret = true;
+               ret = {def, true};
             } else {
                /*
                 * Should never happen.
                 */
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_NOCONFVALUE);
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_ERROR1, ANSWER_QUALITY_ERROR);            
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
             }
          }
       }
-      if (ret) {
+      if (ret.found) {
          DTRACE;
       }
    }
    DRETURN(ret);
 }
 
-/*
-descriptor        ASTR_Type
-href_nm           ASTR_href
-value_nm          ASTR_value
-*/
-static bool
-attr_list_find_value_href(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                          const char *hostname, void *value_buffer,
-                          bool *found, const lDescr *descriptor,
-                          int href_nm, int value_nm) {
+/**
+ * @brief Find the value a per host attribute list gives a host, without looking at host groups
+ *
+ * See ocs_attr_list_find_href(), which calls it.
+ *
+ * @tparam A the attribute type
+ * @param this_list the attribute list, may be an empty handle
+ * @param[out] answer_list receives an error if there is neither a value for the host nor a default value
+ * @param hostname the host, may be nullptr
+ * @param[out] found true if the host has a value of its own, false if the default value applies
+ * @return the entry whose value applies, empty if none
+ *
+ * @note MT-NOTE: ocs_attr_list_ops::find_href() is MT safe
+ */
+template <OcsHostAttr A>
+ocs::tom::ConstElement<A>
+ocs_attr_list_ops<A>::find_href(const ocs::tom::ConstList<A> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                const char *hostname, bool *found) {
    DENTER(HOSTATTR_LAYER);
 
-   bool ret = false;
+   constexpr auto href_f = ocs_attr_traits<A>::href;
+   ocs::tom::ConstElement<A> ret;
 
-   if (this_list != nullptr && hostname != nullptr) {
-      lListElem *href = nullptr;
-   
+   if (this_list && hostname != nullptr) {
       /*
        * Try to find a value for the concerned host
-       */ 
-      href = attr_list_locate(this_list, hostname, href_nm);
-      if (href != nullptr) {
-         object_get_any_type(href, value_nm, value_buffer);
+       */
+      ret = this_list.template find_first<href_f>(ocs::tom::Host(hostname));
+      if (ret) {
          *found = true;
          DTRACE;
-         ret = true;
       } else {
-         lListElem *tmp_href = nullptr;
-
          /*
           * Use the default value
           */
-         tmp_href = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm);
-         if (tmp_href != nullptr) {
-            object_get_any_type(tmp_href, value_nm, value_buffer);
+         ret = this_list.template find_first<href_f>(ocs::tom::Host(HOSTREF_DEFAULT));
+         if (ret) {
             *found = false;
             DTRACE;
-            ret = true;
          } else {
             /*
              * Should never happen.
              */
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_NOCONFVALUE);
-            answer_list_add(answer_list, SGE_EVENT,
-                            STATUS_ERROR1, ANSWER_QUALITY_ERROR);            
+            answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
          }
       }
    }
    DRETURN(ret);
 }
 
-/*
-descriptor        ASTR_Type
-href_nm           ASTR_href
-value_nm          ASTR_value
-*/
 /**
  * @brief Render a per host attribute list as an administrator writes it
  *
- * @param this_list the attribute list to render
+ * See ocs_attr_list_append_to_dstring(), which calls it. The value is rendered by the descriptor generic
+ * object_append_field_to_dstring(), which takes the value field by number.
+ *
+ * @tparam A the attribute type
+ * @param this_list the attribute list to render, may be an empty handle
  * @param[out] string receives the text, appended
- * @param descriptor the descriptor of the list elements
- * @param href_nm the attribute holding an entry's host reference
- * @param value_nm the attribute holding its value
- * @return the resulting text
+ * @return true
+ *
+ * @note MT-NOTE: ocs_attr_list_ops::append_to_dstring() is MT safe
  */
-bool attr_list_append_to_dstring(const lList *this_list, dstring *string,
-                                 const lDescr *descriptor, int href_nm, int value_nm) {
+template <OcsHostAttr A>
+bool
+ocs_attr_list_ops<A>::append_to_dstring(const ocs::tom::ConstList<A> this_list, dstring *string) {
    DENTER(HOSTATTR_LAYER);
 
+   constexpr auto href_f = ocs_attr_traits<A>::href;
+   constexpr auto value_f = ocs_attr_traits<A>::value;
    bool found_default = false;
    bool found_group = false;
    bool found_host = false;
-   const lListElem *attr = nullptr;
    dstring host_string = DSTRING_INIT;
 
-   if ((attr = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm)) != nullptr) {
+   if (const auto def = this_list.template find_first<href_f>(ocs::tom::Host(HOSTREF_DEFAULT)); def) {
       found_default = true;
-      object_append_field_to_dstring(attr, nullptr, string, value_nm, '\0');
+      object_append_field_to_dstring(def, nullptr, string, value_f, '\0');
    }
-   
-   for_each_ep(attr, this_list) {
-      const char *href;
 
-      href = lGetHost(attr, href_nm);
+   for (const auto attr : this_list) {
+      const char *href = ocs::tom::get<href_f>(attr);
 
       if (href == nullptr || (found_default && !strcmp(href, HOSTREF_DEFAULT))) {
          continue;
       } else {
          dstring *ds; /* will be reference to the corresponding dstring container */
-        
+
          if (ocs::is_hgroup_name(href)) {
             ds = string;
             if (found_group || found_default) {
@@ -580,8 +328,7 @@ bool attr_list_append_to_dstring(const lList *this_list, dstring *string,
          sge_dstring_append_char(ds, '[');
          sge_dstring_append(ds, href);
          sge_dstring_append_char(ds, '=');
-         object_append_field_to_dstring(attr, nullptr, ds, value_nm,
-                                        '\0');
+         object_append_field_to_dstring(attr, nullptr, ds, value_f, '\0');
          sge_dstring_append_char(ds, ']');
       }
    }
@@ -598,20 +345,29 @@ bool attr_list_append_to_dstring(const lList *this_list, dstring *string,
    DRETURN(true);
 }
 
-/*
-descriptor        ASTR_Type
-href_nm           ASTR_href
-value_nm          ASTR_value
-*/
-static bool
-attr_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            const char *string, int flags,
-                            const lDescr *descriptor, int href_nm,
-                            int value_nm, const lList *master_hgroup_list) {
+/**
+ * @brief Parse a per host attribute list as an administrator writes it
+ *
+ * See ocs_attr_list_parse_from_string(), which calls it. Each value is parsed by the descriptor generic
+ * object_parse_field_from_string(), which takes the value field by number.
+ *
+ * @tparam A the attribute type
+ * @param this_list the list the entries are added to; created if it is empty
+ * @param[out] answer_list receives the errors
+ * @param string the text, may be nullptr
+ * @param flags see ocs_attr_list_add()
+ * @return true on success
+ *
+ * @note MT-NOTE: ocs_attr_list_ops::parse_from_string() is MT safe
+ */
+template <OcsHostAttr A>
+bool
+ocs_attr_list_ops<A>::parse_from_string(ocs::tom::ListPtr<A> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                        const char *string, const int flags) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   if (this_list != nullptr && string != nullptr) {
+   if (string != nullptr) {
       struct saved_vars_s *strtok_context = nullptr;
       char *token = nullptr;
       char *next_token = nullptr;
@@ -742,27 +498,16 @@ attr_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *
              * element.
              */
             if (ret) {
-               lListElem *attr_elem = nullptr;
-     
-               attr_elem = attr_create(answer_list, href_name, nullptr,
-                                       descriptor, href_nm, value_nm);
-               if (attr_elem != nullptr) {
-                  ret &= object_parse_field_from_string(attr_elem, 
-                                                        answer_list,
-                                                        value_nm, value);
-                  if (ret) {
-                     ret &= attr_list_add(this_list, answer_list,
-                                          &attr_elem, flags, nullptr,
-                                          descriptor, href_nm, value_nm, master_hgroup_list);
-                  } else {
-                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_PARSINGERROR_S, value);
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-                  }
-                  if (!ret) {
-                     lFreeElem(&attr_elem);
-                  }
+               auto attr_elem = ocs::tom::ElementPtr<A>::create();
+
+               ocs::tom::set<ocs_attr_traits<A>::href>(attr_elem, href_name);
+               // the generic parser takes the value field by number
+               ret &= object_parse_field_from_string(*attr_elem, answer_list, ocs_attr_traits<A>::value, value);
+               if (ret) {
+                  ret &= ocs_attr_list_add(this_list, answer_list, std::move(attr_elem), flags);
                } else {
-                  ret = false;
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_PARSINGERROR_S, value);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                }
             }
          } else {
@@ -785,44 +530,16 @@ attr_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *
    DRETURN(ret);
 }
 
-/*
-href_nm           ASTR_href
-*/
-static lListElem *
-attr_list_locate(const lList *this_list, const char *host_or_group, int href_nm) {
-   DENTER(HOSTATTR_LAYER);
-
-   lListElem *ret = nullptr;
-
-   if (this_list != nullptr && host_or_group != nullptr) {
-      ret = lGetElemHostRW(this_list, href_nm, host_or_group);
-   }
-   DRETURN(ret);
-}
-
-TEMPLATE_ATTR_IMPL(str_attr, const char *, const char *, ASTR_Type, ASTR_href, ASTR_value) 
-
-TEMPLATE_ATTR_IMPL(ulng_attr, uint32_t, uint32_t, AULNG_Type, AULNG_href, AULNG_value)
-
-TEMPLATE_ATTR_IMPL(bool_attr, bool, bool, ABOOL_Type, ABOOL_href, ABOOL_value) 
-
-TEMPLATE_ATTR_IMPL(time_attr, const char *, const char *, ATIME_Type, ATIME_href, ATIME_value) 
-
-TEMPLATE_ATTR_IMPL(mem_attr, const char *, const char *, AMEM_Type, AMEM_href, AMEM_value) 
-
-TEMPLATE_ATTR_IMPL(inter_attr, const char *, const char *, AINTER_Type, AINTER_href, AINTER_value) 
-
-TEMPLATE_ATTR_IMPL(qtlist_attr, uint32_t, uint32_t, AQTLIST_Type, AQTLIST_href, AQTLIST_value)
-
-
-TEMPLATE_ATTR_IMPL(strlist_attr, const char *, lList *, ASTRLIST_Type, ASTRLIST_href, ASTRLIST_value) 
-
-TEMPLATE_ATTR_IMPL(usrlist_attr, const char *, lList *, AUSRLIST_Type, AUSRLIST_href, AUSRLIST_value) 
-
-TEMPLATE_ATTR_IMPL(prjlist_attr, const char *, lList *, APRJLIST_Type, APRJLIST_href, APRJLIST_value) 
-
-TEMPLATE_ATTR_IMPL(celist_attr, const char *, lList *, ACELIST_Type, ACELIST_href, ACELIST_value) 
-
-TEMPLATE_ATTR_IMPL(solist_attr, const char *, lList *, ASOLIST_Type, ASOLIST_href, ASOLIST_value) 
-
-
+// the operations for every attribute type, see #ocs_attr_list_ops
+template struct ocs_attr_list_ops<ocs::tom::ASTR>;
+template struct ocs_attr_list_ops<ocs::tom::AULNG>;
+template struct ocs_attr_list_ops<ocs::tom::ABOOL>;
+template struct ocs_attr_list_ops<ocs::tom::ATIME>;
+template struct ocs_attr_list_ops<ocs::tom::AMEM>;
+template struct ocs_attr_list_ops<ocs::tom::AINTER>;
+template struct ocs_attr_list_ops<ocs::tom::AQTLIST>;
+template struct ocs_attr_list_ops<ocs::tom::ASTRLIST>;
+template struct ocs_attr_list_ops<ocs::tom::AUSRLIST>;
+template struct ocs_attr_list_ops<ocs::tom::APRJLIST>;
+template struct ocs_attr_list_ops<ocs::tom::ACELIST>;
+template struct ocs_attr_list_ops<ocs::tom::ASOLIST>;

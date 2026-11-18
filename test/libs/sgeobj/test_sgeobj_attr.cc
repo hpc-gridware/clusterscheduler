@@ -96,8 +96,48 @@ static ocs::tom::ElementPtr<ocs::tom::HGRP> make_hgroup(const char *name,
    return hgroup_create(nullptr, name, std::move(href_list), true);
 }
 
+/**
+ * @brief ocs_attr_list_find() on a string attribute list, in the shape the scenarios check
+ * @param attrs the attribute list, may be an empty handle
+ * @param al receives the errors
+ * @param hostname the host, may be nullptr
+ * @param[out] value receives the value of the entry that was read, if any
+ * @param[out] match_hog see ocs_attr_list_find()
+ * @param[out] match_grp see ocs_attr_list_find()
+ * @param[out] ambiguous see ocs_attr_list_find()
+ * @param hgroups the host groups
+ * @return whether a value was found
+ */
+static bool find_str_value(const ocs::tom::ConstList<ocs::tom::ASTR> attrs, ocs::tom::ListPtr<ocs::tom::AN> *al,
+                           const char *hostname, const char **value, const char **match_hog, const char **match_grp,
+                           bool *ambiguous, const ocs::tom::ConstList<ocs::tom::HGRP> hgroups) {
+   const auto lookup = ocs_attr_list_find(attrs, al, hostname, match_hog, match_grp, ambiguous, hgroups);
+   if (lookup.entry) {
+      *value = ocs::tom::get<ASTR_value>(lookup.entry);
+   }
+   return lookup.found;
+}
+
+/**
+ * @brief ocs_attr_list_find_href() on a string attribute list, in the shape the scenarios check
+ * @param attrs the attribute list, may be an empty handle
+ * @param al receives the errors
+ * @param hostname the host
+ * @param[out] value receives the value of the entry found, if any
+ * @param[out] found see ocs_attr_list_find_href()
+ * @return whether an entry was found
+ */
+static bool find_str_value_href(const ocs::tom::ConstList<ocs::tom::ASTR> attrs, ocs::tom::ListPtr<ocs::tom::AN> *al,
+                                const char *hostname, const char **value, bool *found) {
+   const auto entry = ocs_attr_list_find_href(attrs, al, hostname, found);
+   if (entry) {
+      *value = ocs::tom::get<ASTR_value>(entry);
+   }
+   return static_cast<bool>(entry);
+}
+
 // ---------------------------------------------------------------------------
-// str_attr_list_find_value
+// ocs_attr_list_find
 //
 // Looks up the effective string attribute value for a given hostname.
 // Resolution proceeds in priority order:
@@ -120,10 +160,10 @@ static ocs::tom::ElementPtr<ocs::tom::HGRP> make_hgroup(const char *name,
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Scenarios of str_attr_list_find_value() [T01-T10]
+ * @brief Scenarios of ocs_attr_list_find() [T01-T10]
  */
-static void test_str_attr_list_find_value() {
-   printf("\n--- str_attr_list_find_value ---\n");
+static void test_ocs_attr_list_find() {
+   printf("\n--- ocs_attr_list_find ---\n");
 
    // Master hgroup topology shared by all tests in this section:
    //   @grpA     → {host1, host2}
@@ -154,9 +194,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "host1",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "host1",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(1, "direct match: returns true",   ok);
       CHECK(1, "direct match: correct value",  ok && strcmp(value, "direct") == 0);
       CHECK(1, "direct match: not ambiguous",  !ambiguous);
@@ -171,9 +211,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "unknownhost",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "unknownhost",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(2, "default fallback: returns true",    ok);
       CHECK(2, "default fallback: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(2, "default fallback: not ambiguous",   !ambiguous);
@@ -190,9 +230,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; match_hog = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "host2",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "host2",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(3, "hostgroup match: returns true",             ok);
       CHECK(3, "hostgroup match: correct value",            ok && strcmp(value, "group_value") == 0);
       CHECK(3, "hostgroup match: matching group is @grpA",  match_hog && strcmp(match_hog, "@grpA") == 0);
@@ -210,9 +250,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; match_hog = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "host5",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "host5",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(4, "nested group: returns true",                  ok);
       CHECK(4, "nested group: correct value from outer",      ok && strcmp(value, "outer_value") == 0);
       CHECK(4, "nested group: matching group is @grpOuter",   match_hog && strcmp(match_hog, "@grpOuter") == 0);
@@ -229,9 +269,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "host4",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "host4",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(5, "group-without-attr: returns true",    ok);
       CHECK(5, "group-without-attr: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(5, "group-without-attr: not ambiguous",   !ambiguous);
@@ -250,9 +290,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "host1",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "host1",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(6, "ambiguous+default: returns true (default used)",  ok);
       CHECK(6, "ambiguous+default: is_ambiguous flag is set",     ambiguous);
       CHECK(6, "ambiguous+default: value is the default",         ok && strcmp(value, "default") == 0);
@@ -269,9 +309,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr("@grpB", "value_b"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "host1",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "host1",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(7, "ambiguous+no-default: returns false",          !ok);
       CHECK(7, "ambiguous+no-default: is_ambiguous flag set",  ambiguous);
       al.reset(); 
@@ -288,9 +328,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, "host2",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, "host2",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(8, "direct overrides group: returns true",   ok);
       CHECK(8, "direct overrides group: correct value",  ok && strcmp(value, "direct_value") == 0);
       CHECK(8, "direct overrides group: not ambiguous",  !ambiguous);
@@ -302,9 +342,9 @@ static void test_str_attr_list_find_value() {
    // immediately without touching any output parameter.
    {
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(nullptr, &al, "host1",
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(nullptr, &al, "host1",
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(9, "null attr list: returns false",   !ok);
       al.reset();
    }
@@ -317,9 +357,9 @@ static void test_str_attr_list_find_value() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(*attrs, &al, nullptr,
-                                    &value, &match_hog, &match_grp,
-                                    &ambiguous, *hgroups);
+      ok = find_str_value(*attrs, &al, nullptr,
+                          &value, &match_hog, &match_grp,
+                          &ambiguous, *hgroups);
       CHECK(10, "null hostname: returns false",   !ok);
       al.reset(); 
    }
@@ -327,7 +367,7 @@ static void test_str_attr_list_find_value() {
 }
 
 // ---------------------------------------------------------------------------
-// str_attr_list_find_value_href
+// ocs_attr_list_find_href
 //
 // Simplified lookup variant that does NOT expand hostgroups. Only two entry
 // types are considered:
@@ -345,8 +385,8 @@ static void test_str_attr_list_find_value() {
 // Scenarios T11–T14
 // ---------------------------------------------------------------------------
 
-static void test_str_attr_list_find_value_href() {
-   printf("\n--- str_attr_list_find_value_href ---\n");
+static void test_ocs_attr_list_find_href() {
+   printf("\n--- ocs_attr_list_find_href ---\n");
 
    ocs::tom::ListPtr<ocs::tom::AN> al;
    const char *value = nullptr;
@@ -362,7 +402,7 @@ static void test_str_attr_list_find_value_href() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = false;
-      ok = str_attr_list_find_value_href(*attrs, &al, "host1", &value, &found);
+      ok = find_str_value_href(*attrs, &al, "host1", &value, &found);
       CHECK(11, "href/direct match: returns true",   ok);
       CHECK(11, "href/direct match: correct value",  ok && strcmp(value, "direct") == 0);
       CHECK(11, "href/direct match: found is true",  found);
@@ -378,7 +418,7 @@ static void test_str_attr_list_find_value_href() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = true;
-      ok = str_attr_list_find_value_href(*attrs, &al, "unknownhost", &value, &found);
+      ok = find_str_value_href(*attrs, &al, "unknownhost", &value, &found);
       CHECK(12, "href/default fallback: returns true",    ok);
       CHECK(12, "href/default fallback: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(12, "href/default fallback: found is false",  !found);
@@ -395,7 +435,7 @@ static void test_str_attr_list_find_value_href() {
       lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = true;
-      ok = str_attr_list_find_value_href(*attrs, &al, "host2", &value, &found);
+      ok = find_str_value_href(*attrs, &al, "host2", &value, &found);
       CHECK(13, "href/group ignored: returns true (default used)",  ok);
       CHECK(13, "href/group ignored: returns default not group",    ok && strcmp(value, "default") == 0);
       CHECK(13, "href/group ignored: found is false",               !found);
@@ -407,7 +447,7 @@ static void test_str_attr_list_find_value_href() {
    // any output parameter.
    {
       value = nullptr; found = false;
-      ok = str_attr_list_find_value_href(nullptr, &al, "host1", &value, &found);
+      ok = find_str_value_href(nullptr, &al, "host1", &value, &found);
       CHECK(14, "href/null attr list: returns false",  !ok);
       al.reset();
    }
@@ -418,8 +458,8 @@ static void test_str_attr_list_find_value_href() {
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
-   test_str_attr_list_find_value();
-   test_str_attr_list_find_value_href();
+   test_ocs_attr_list_find();
+   test_ocs_attr_list_find_href();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

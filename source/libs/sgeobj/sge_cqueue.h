@@ -74,32 +74,7 @@ enum {
    SGE_QI_TAG_MOD_ONLY_CONFIG = 8   ///< send mod event but skip spooling (no state value changed!)
 };
 
-/**
- * @brief One cluster queue attribute and how it maps onto a queue instance
- *
- * A cluster queue stores most attributes as a list of host specific values;
- * the queue instance derived for one host stores the single value that applies
- * to it. This describes both ends of that mapping for one attribute, plus how
- * a new value is validated.
- */
-typedef struct _list_attribute_struct {
-   int cqueue_attr;        ///< the attribute in the cluster queue, holding the list of values
-   int qinstance_attr;     ///< the attribute in the queue instance, holding the resolved value
-   int href_attr;          ///< the attribute of a list entry naming the host or host group
-   int value_attr;         ///< the attribute of a list entry holding the value
-   int primary_key_attr;   ///< the key attribute within a sublist, or `NoName`
-   const char *name;       ///< the attribute name an administrator writes
-   bool is_sgeee_attribute; ///< the attribute only exists in the ticket based policies
-   bool verify_client;     ///< the client verifies the value too, not only qmaster
-   /// validates a new value, or nullptr; called with the cluster queue, the answer list, one entry of the
-   /// attribute list and the master list the attribute refers to
-   /// (the entry and the master list are of a type that differs per attribute, so they stay untyped)
-   bool (*verify_function)(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                           lListElem *attr_elem, const lList *master_list);
-} list_attribute_struct;
-
-/// Every cluster queue attribute, terminated by an entry whose `name` is nullptr
-extern list_attribute_struct cqueue_attribute_array[];
+// the cluster queue attributes, their fields and verify functions: see sgeobj/ocs_cqueue_attributes.h
 
 bool
 cqueue_name_split(const char *name, dstring *cqueue_name, dstring *host_domain,

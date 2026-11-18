@@ -60,11 +60,6 @@ int attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                        ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> new_ep,
                        const char *attr_name, const char *variables[]);
 
-bool cqueue_mod_sublist(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *reduced_elem,
-                        ocs::gdi::Command command, ocs::gdi::SubCommand sub_command,
-                        int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
-                        const char *attribute_name_str, const char *object_name_str);
-
 template <auto F>
 int multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                         ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> lp1,

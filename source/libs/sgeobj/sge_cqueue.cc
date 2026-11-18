@@ -37,7 +37,7 @@
  *
  * An administrator configures a cluster queue; qmaster derives one queue
  * instance per host from it. Most attributes are therefore stored as a list of
- * host or host group specific values, and #cqueue_attribute_array is the table
+ * host or host group specific values, and #ocs_cqueue_attributes is the table
  * saying, for each attribute, where its list lives and where the resolved
  * value ends up in the instance.
  *
@@ -45,6 +45,8 @@
  */
 
 #include <cstring>
+#include <tuple>
+#include <type_traits>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
@@ -64,7 +66,7 @@
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_cqueue_verify.h"
+#include "sgeobj/ocs_cqueue_attributes.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_str.h"
@@ -110,74 +112,6 @@
 /// Debug layer the cluster queue traces are written to
 #define CQUEUE_LAYER TOP_LAYER
 
-/* *INDENT-OFF* */
-
-/// Every cluster queue attribute, terminated by an entry whose `cqueue_attr` is `NoName`
-list_attribute_struct cqueue_attribute_array[] = {
-   { CQ_seq_no,                  QU_seq_no,                 AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_SEQ_NO,            false,  false, nullptr},
-   { CQ_nsuspend,                QU_nsuspend,               AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_NSUSPEND,          false,  false, nullptr},
-   { CQ_job_slots,               QU_job_slots,              AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_SLOTS,             false,  false, cqueue_verify_job_slots},
-
-   { CQ_tmpdir,                  QU_tmpdir,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_TMPDIR,            false,  false, nullptr},
-   { CQ_shell,                   QU_shell,                  ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SHELL,             false,  true,  cqueue_verify_shell},
-   { CQ_calendar,                QU_calendar,               ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_CALENDAR,          false,  false, cqueue_verify_calendar},
-   { CQ_priority,                QU_priority,               ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PRIORITY,          false,  true,  cqueue_verify_priority},
-   { CQ_processors,              QU_processors,             ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PROCESSORS,        false,  true,  cqueue_verify_processors},
-   { CQ_prolog,                  QU_prolog,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PROLOG,            false,  false, nullptr},
-   { CQ_epilog,                  QU_epilog,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_EPILOG,            false,  false, nullptr},
-   { CQ_shell_start_mode,        QU_shell_start_mode,       ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SHELL_START_MODE,  false,  true,  cqueue_verify_shell_start_mode},
-   { CQ_starter_method,          QU_starter_method,         ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_STARTER_METHOD,    false,  false, nullptr},
-   { CQ_suspend_method,          QU_suspend_method,         ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SUSPEND_METHOD,    false,  false, nullptr},
-   { CQ_resume_method,           QU_resume_method,          ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_RESUME_METHOD,     false,  false, nullptr},
-   { CQ_terminate_method,        QU_terminate_method,       ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_TERMINATE_METHOD,  false,  false, nullptr},
-   { CQ_initial_state,           QU_initial_state,          ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_INITIAL_STATE,     false,  true,  cqueue_verify_initial_state},
-   
-   { CQ_rerun,                   QU_rerun,                  ABOOL_href,    ABOOL_value,      NoName,     SGE_ATTR_RERUN,             false,  false, nullptr},
-
-   { CQ_s_fsize,                 QU_s_fsize,                AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_S_FSIZE,           false,  false, cqueue_verify_memory_value},
-   { CQ_h_fsize,                 QU_h_fsize,                AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_H_FSIZE,           false,  false, cqueue_verify_memory_value},
-   { CQ_s_data,                  QU_s_data,                 AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_S_DATA,            false,  false, cqueue_verify_memory_value},
-   { CQ_h_data,                  QU_h_data,                 AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_H_DATA,            false,  false, cqueue_verify_memory_value},
-   { CQ_s_stack,                 QU_s_stack,                AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_S_STACK,           false,  false, cqueue_verify_memory_value},
-   { CQ_h_stack,                 QU_h_stack,                AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_H_STACK,           false,  false, cqueue_verify_memory_value},
-   { CQ_s_core,                  QU_s_core,                 AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_S_CORE,            false,  false, cqueue_verify_memory_value},
-   { CQ_h_core,                  QU_h_core,                 AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_H_CORE,            false,  false, cqueue_verify_memory_value},
-   { CQ_s_rss,                   QU_s_rss,                  AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_S_RSS,             false,  false, cqueue_verify_memory_value},
-   { CQ_h_rss,                   QU_h_rss,                  AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_H_RSS,             false,  false, cqueue_verify_memory_value},
-   { CQ_s_vmem,                  QU_s_vmem,                 AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_S_VMEM,            false,  false, cqueue_verify_memory_value},
-   { CQ_h_vmem,                  QU_h_vmem,                 AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_H_VMEM,            false,  false, cqueue_verify_memory_value},
-
-   { CQ_s_rt,                    QU_s_rt,                   ATIME_href,    ATIME_value,      NoName,     SGE_ATTR_S_RT,              false,  false, cqueue_verify_time_value},
-   { CQ_h_rt,                    QU_h_rt,                   ATIME_href,    ATIME_value,      NoName,     SGE_ATTR_H_RT,              false,  false, cqueue_verify_time_value},
-   { CQ_s_cpu,                   QU_s_cpu,                  ATIME_href,    ATIME_value,      NoName,     SGE_ATTR_S_CPU,             false,  false, cqueue_verify_time_value},
-   { CQ_h_cpu,                   QU_h_cpu,                  ATIME_href,    ATIME_value,      NoName,     SGE_ATTR_H_CPU,             false,  false, cqueue_verify_time_value},
-
-   { CQ_suspend_interval,        QU_suspend_interval,       AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_SUSPEND_INTERVAL,  false,  false, nullptr},
-   { CQ_min_cpu_interval,        QU_min_cpu_interval,       AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_MIN_CPU_INTERVAL,  false,  false, nullptr},
-   { CQ_notify,                  QU_notify,                 AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_NOTIFY,            false,  false, nullptr},
-
-   { CQ_qtype,                   QU_qtype,                  AQTLIST_href,  AQTLIST_value,    NoName,     SGE_ATTR_QTYPE,             false,  false, nullptr},
-
-   { CQ_ckpt_list,               QU_ckpt_list,              ASTRLIST_href, ASTRLIST_value,   ST_name,    SGE_ATTR_CKPT_LIST,         false,  false, cqueue_verify_ckpt_list},
-   { CQ_pe_list,                 QU_pe_list,                ASTRLIST_href, ASTRLIST_value,   ST_name,    SGE_ATTR_PE_LIST,           false,  false, cqueue_verify_pe_list},
- 
-   { CQ_owner_list,              QU_owner_list,             AUSRLIST_href, AUSRLIST_value,   US_name,    SGE_ATTR_OWNER_LIST,        false,  false, nullptr},
-   { CQ_acl,                     QU_acl,                    AUSRLIST_href, AUSRLIST_value,   US_name,    SGE_ATTR_USER_LISTS,        false,  false, cqueue_verify_user_list},
-   { CQ_xacl,                    QU_xacl,                   AUSRLIST_href, AUSRLIST_value,   US_name,    SGE_ATTR_XUSER_LISTS,       false,  false, cqueue_verify_user_list},
-
-   { CQ_projects,                QU_projects,               APRJLIST_href, APRJLIST_value,   PR_name,    SGE_ATTR_PROJECTS,          true,   false, cqueue_verify_project_list},
-   { CQ_xprojects,               QU_xprojects,              APRJLIST_href, APRJLIST_value,   PR_name,    SGE_ATTR_XPROJECTS,         true,   false, cqueue_verify_project_list},
-
-   { CQ_consumable_config_list,  QU_consumable_config_list, ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_COMPLEX_VALUES,    false,  false, cqueue_verify_consumable_config_list},
-   { CQ_load_thresholds,         QU_load_thresholds,        ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_LOAD_THRESHOLD,    false,  false, nullptr},
-   { CQ_suspend_thresholds,      QU_suspend_thresholds,     ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_SUSPEND_THRESHOLD, false,  false, nullptr},
-
-   { CQ_subordinate_list,        QU_subordinate_list,       ASOLIST_href,  ASOLIST_value,    SO_name,    SGE_ATTR_SUBORDINATE_LIST,  false,  false, cqueue_verify_subordinate_list},
-
-   { NoName,                     NoName,                    NoName,        NoName,           NoName,     nullptr,                       false,  false, nullptr}
-};
-
-/* *INDENT-ON* */
 
 /* EB: ADOC: add commets */
 
@@ -434,20 +368,12 @@ bool cqueue_is_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_e
          /*
           * ... or is it contained on one of the attribute lists
           */
-         if (!only_hostlist) {
-            int index = 0;
-
-            while (cqueue_attribute_array[index].cqueue_attr != NoName && !ret) {
-               // the attribute and its host field are given at run time, so the untyped access stays
-               const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
-               const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr,
-                                                         href_name);
-
-               if (attr_elem != nullptr) {
-                  ret = true;
-               }
-               index++;
-            }
+         if (!only_hostlist && !ret) {
+            ret = !ocs_for_each_cqueue_attr_while([this_elem, href_name](const auto &attr) {
+               using E = ocs_cqueue_attr_t<decltype(attr)>;
+               return !ocs::tom::get<E::cqueue_field>(this_elem).template find_first<E::href_field>(
+                  ocs::tom::Host(href_name));
+            });
          }
       }
    }
@@ -492,18 +418,11 @@ static bool cqueue_is_hgroup_referenced(const ocs::tom::ConstElement<ocs::tom::C
             /*
              * ... or is it contained on one of the attribute lists
              */
-            int index = 0;
-            while (cqueue_attribute_array[index].cqueue_attr != NoName) {
-               // the attribute and its host field are given at run time, so the untyped access stays
-               const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
-               const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr, name);
-
-               if (attr_elem != nullptr) {
-                  ret = true;
-                  break;
-               }
-               index++;
-            }
+            ret = !ocs_for_each_cqueue_attr_while([this_elem, name](const auto &attr) {
+               using E = ocs_cqueue_attr_t<decltype(attr)>;
+               return !ocs::tom::get<E::cqueue_field>(this_elem).template find_first<E::href_field>(
+                  ocs::tom::Host(name));
+            });
          }
       }
    }
@@ -742,6 +661,97 @@ ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstEle
 
 
 /**
+ * @brief Check the host references of one attribute list of a cluster queue
+ *
+ * The list needs a default entry and at most one entry per host or host group. Host names are resolved and
+ * replaced by the resolved name where that works; a host group must not be the group of a cluster queue and,
+ * in qmaster, must exist.
+ *
+ * @tparam A the attribute type of the list
+ * @param list the attribute list, may be an empty handle
+ * @param answer_list AN_Type list, receives the reason of a rejection
+ * @param attr_name the attribute's name, for the messages
+ * @param in_master true if this function is called in the master code
+ * @param master_hgroup_list the host groups
+ * @return true if the list is acceptable
+ */
+template <OcsHostAttr A>
+static bool
+ocs_cqueue_verify_hrefs(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        const char *attr_name, const bool in_master,
+                        const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
+   DENTER(CQUEUE_LAYER);
+
+   constexpr auto href_f = ocs_attr_traits<A>::href;
+   bool ret = true;
+
+   /*
+    * Configurations without default setting are rejected
+    */
+   if (!list.template find_first<href_f>(ocs::tom::Host(HOSTREF_DEFAULT))) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_NODEFVALUE_S, attr_name);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      ret = false;
+   }
+
+   /*
+    * Reject multiple settings for one domain/host
+    * Resolve all hostnames
+    * Verify host group names
+    */
+   if (ret) {
+      for (const auto elem : list) {
+         const char *hostname = ocs::tom::get<href_f>(elem);
+         const auto first_elem = list.template find_first<href_f>(ocs::tom::Host(hostname));
+
+         if (elem != first_elem) {
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_MULVALNOTALLOWED_S, hostname);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            ret = false;
+            break;
+         }
+         if (ocs::is_hgroup_name(hostname)) {
+            /*
+             * CS-2677, N-O-4: the host group of a cluster queue is
+             * that queue's host set and belongs to nobody else.
+             * Checked on both sides of GDI, and independently of
+             * whether the group exists -- the name is reserved, so a
+             * missing one is still not something to write.
+             */
+            if (hgroup_is_queue_group(hostname)) {
+               ERROR(MSG_HGRP_QUEUEGROUP_NOREF_S, hostname);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+               ret = false;
+               break;
+            }
+            if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
+               const auto hgroup = hgroup_list_locate(master_hgroup_list, hostname);
+
+               if (!hgroup) {
+                  ERROR(MSG_CQUEUE_INVALIDDOMSETTING_SS, attr_name, hostname);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                  ret = false;
+                  break;
+               }
+            }
+         } else {
+            char resolved_name[CL_MAXHOSTNAMELEN+1];
+            int back = getuniquehostname(hostname, resolved_name, 0);
+
+            if (back == CL_RETVAL_OK) {
+               ocs::tom::set<href_f>(elem, static_cast<const char *>(resolved_name));
+            } else {
+               /*
+                * Due to CR 6319231, IZ 1760 this is allowed
+                */
+            }
+         }
+      }
+   }
+   DRETURN(ret);
+}
+
+/**
  * @brief Check all cluster queue attributes
  *
  * Check all cluster queue settings (and correct them if possible).
@@ -750,10 +760,8 @@ ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstEle
  *    - resolve hostnames
  *    - test attribute values
  *
- * The attributes are walked through #cqueue_attribute_array, by field
- * numbers given at run time, and the native verify functions take the entry
- * and the master list untyped, as their type differs per attribute; those
- * parts stay untyped.
+ * The attributes are walked through #ocs_cqueue_attributes; the verify function of an entry gets the entries of
+ * the attribute list typed and the master list the entry names.
  *
  * @param cqueue CQ_Type object to be verified, may be an empty handle
  * @param answer_list AN_Type list
@@ -786,131 +794,34 @@ bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && reduced_elem) {
-      int index = 0;
+      // the master lists a verify function may check against, picked by the type its table entry names
+      const std::tuple master_lists{master_calendar_list, master_ckpt_list, master_pe_list, master_userset_list,
+                                    master_project_list, master_centry_list, master_cqueue_list};
 
-      while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
-         int pos = lGetPosViaElem(reduced_elem,
-                                  cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
+      ocs_for_each_cqueue_attr_while([&](const auto &attr) {
+         using E = ocs_cqueue_attr_t<decltype(attr)>;
+         using M = typename E::master_type;
 
-         if (pos >= 0) {
-            const lList *list = lGetList(cqueue, cqueue_attribute_array[index].cqueue_attr);
+         if (ocs::tom::has<E::cqueue_field>(reduced_elem)) {
+            const auto list = ocs::tom::get<E::cqueue_field>(cqueue);
 
-            /*
-             * Configurations without default setting are rejected
-             */
-            if (ret) {
-               const lListElem *elem = lGetElemHost(list, cqueue_attribute_array[index].href_attr, HOSTREF_DEFAULT);
+            ret = ocs_cqueue_verify_hrefs(list, answer_list, attr.name, in_master, master_hgroup_list);
 
-               if (elem == nullptr) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_NODEFVALUE_S, cqueue_attribute_array[index].name);
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-                  ret = false;
-               } 
-            }
-
-            /*
-             * Reject multiple settings for one domain/host
-             * Resolve all hostnames
-             * Verify host group names
-             */
-            if (ret) {
-               for_each_rw_lv(elem, list) {
-                  const char *hostname = nullptr;
-                  const void *iterator = nullptr;
-                  const lListElem *first_elem = nullptr;
-
-                  hostname = lGetHost(elem, cqueue_attribute_array[index].href_attr);
-                  first_elem = lGetElemHostFirst(list, cqueue_attribute_array[index].href_attr, hostname, &iterator);
-
-                  if (elem != first_elem) {
-                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_MULVALNOTALLOWED_S, hostname);
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-                     ret = false;
-                     break;
-                  }
-                  if (ocs::is_hgroup_name(hostname)) {
-                     /*
-                      * CS-2677, N-O-4: the host group of a cluster queue is
-                      * that queue's host set and belongs to nobody else.
-                      * Checked on both sides of GDI, and independently of
-                      * whether the group exists -- the name is reserved, so a
-                      * missing one is still not something to write.
-                      */
-                     if (hgroup_is_queue_group(hostname)) {
-                        ERROR(MSG_HGRP_QUEUEGROUP_NOREF_S, hostname);
-                        answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-                        ret = false;
-                        break;
-                     }
-                     if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
-                        const auto hgroup = hgroup_list_locate(master_hgroup_list, hostname);
-
-                        if (!hgroup) {
-                           ERROR(MSG_CQUEUE_INVALIDDOMSETTING_SS, cqueue_attribute_array[index].name, hostname);
-                           answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-                           ret = false;
-                           break;
-                        } 
-                     }
-                  } else {
-                     char resolved_name[CL_MAXHOSTNAMELEN+1];
-                     int back = getuniquehostname(hostname, resolved_name, 0);
-
-                     if (back == CL_RETVAL_OK) {
-                        lSetHost(elem, cqueue_attribute_array[index].href_attr, resolved_name);
-                     } else {
-                        /*
-                         * Due to CR 6319231, IZ 1760 this is allowed
-                         */
-                     }
-                  }
-               }
-            }
-      
             /*
              * Call native verify function if it is possible
              */
-            if (ret && 
-                cqueue_attribute_array[index].verify_function != nullptr &&
-                (cqueue_attribute_array[index].verify_client || in_master)) {
-               const lList *master_list;
-
-               switch(cqueue_attribute_array[index].cqueue_attr) {
-                  case CQ_calendar:
-                     master_list = master_calendar_list;
-                     break;
-                  case CQ_ckpt_list:
-                     master_list = master_ckpt_list;
-                     break;
-                  case CQ_pe_list:
-                     master_list = master_pe_list;
-                     break;
-                  case CQ_acl:
-                  case CQ_xacl:
-                     master_list = master_userset_list;
-                     break;
-                  case CQ_projects:
-                  case CQ_xprojects:
-                     master_list = master_project_list;
-                     break;
-                  case CQ_consumable_config_list:
-                     master_list = master_centry_list;
-                     break;
-                  case CQ_subordinate_list:
-                     master_list = master_cqueue_list;
-                     break;
-                  default:
-                     master_list = nullptr;
-               }
-
-               for_each_rw_lv(elem, list) {
-                  ret &= cqueue_attribute_array[index].verify_function(cqueue, answer_list, elem, master_list);
+            if (ret && attr.verify != nullptr && (attr.verify_client || in_master)) {
+               for (const auto elem : list) {
+                  if constexpr (std::is_void_v<M>) {
+                     ret &= attr.verify(cqueue, answer_list, elem);
+                  } else {
+                     ret &= attr.verify(cqueue, answer_list, elem, std::get<ocs::tom::ConstList<M>>(master_lists));
+                  }
                }
             }
          }
-         
-         index++;
-      }
+         return ret;
+      });
    }
    DRETURN(ret);
 }
@@ -959,13 +870,48 @@ cqueue_list_find_all_matching_references(const ocs::tom::ConstList<ocs::tom::CQ>
 
 
 /**
+ * @brief Move the values of one attribute of one queue request into another of the same cluster queue
+ *
+ * The values are keyed by their host or domain reference; a value for a reference the target already holds is
+ * a repeat and is dropped.
+ *
+ * @tparam CqF the attribute list field of the cluster queue
+ * @param target the request that is kept
+ * @param source the request whose values are moved; its attribute list is left empty
+ */
+template <auto CqF>
+static void
+ocs_cqueue_xattr_merge_attr(const ocs::tom::Element<ocs::tom::CQ> target,
+                            const ocs::tom::Element<ocs::tom::CQ> source) {
+   DENTER(CQUEUE_LAYER);
+
+   using A = typename ocs::tom::FieldTraits<CqF>::Sub;
+   constexpr auto href_f = ocs_attr_traits<A>::href;
+
+   const auto src = ocs::tom::get<CqF>(source);
+   if (!src || src.empty()) {
+      DRETURN_VOID;
+   }
+   const auto dst = ocs::tom::get<CqF>(target);
+   if (!dst) {
+      auto moved = source.template exchange<CqF>(ocs::tom::ListPtr<A>());
+      static_cast<void>(target.template exchange<CqF>(std::move(moved)));
+      DRETURN_VOID;
+   }
+   while (const auto value = src.front()) {
+      auto owned = src.extract(value);
+      if (!dst.template find_first<href_f>(ocs::tom::get<href_f>(owned))) {
+         dst.push_back(std::move(owned));
+      }
+   }
+   DRETURN_VOID;
+}
+
+/**
  * @brief Move the attribute values of one queue request into another of the same cluster queue
  *
  * The values of each attribute are keyed by their host or domain reference; a value for a reference the target
- * already holds is a repeat and is dropped.
- *
- * The attributes are walked through #cqueue_attribute_array: the field, the entry type of its list and the host
- * field are given at run time, so the access to the attribute lists stays untyped.
+ * already holds is a repeat and is dropped. The attributes are walked through #ocs_cqueue_attributes.
  *
  * @param target the request that is kept
  * @param source the request whose values are moved; its attribute lists are left empty
@@ -974,30 +920,44 @@ static void
 ocs_cqueue_xattr_merge(const ocs::tom::Element<ocs::tom::CQ> target, const ocs::tom::Element<ocs::tom::CQ> source) {
    DENTER(CQUEUE_LAYER);
 
-   for (int index = 0; cqueue_attribute_array[index].cqueue_attr != NoName; index++) {
-      const int attr = cqueue_attribute_array[index].cqueue_attr;
-      const int href = cqueue_attribute_array[index].href_attr;
-      lList *src = lGetListRW(source, attr);
-      if (src == nullptr || lGetNumberOfElem(src) == 0) {
-         continue;
-      }
-      lList *dst = lGetListRW(target, attr);
-      if (dst == nullptr) {
-         lList *moved = nullptr;
-         lXchgList(source, attr, &moved);
-         lSetList(target, attr, moved);
-         continue;
-      }
-      while (lListElem *value = lFirstRW(src)) {
-         lDechainElem(src, value);
-         if (lGetElemHost(dst, href, lGetHost(value, href)) != nullptr) {
-            lFreeElem(&value);
-         } else {
-            lAppendElem(dst, value);
-         }
+   ocs_for_each_cqueue_attr([target, source](const auto &attr) {
+      ocs_cqueue_xattr_merge_attr<ocs_cqueue_attr_t<decltype(attr)>::cqueue_field>(target, source);
+   });
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Give the values of one attribute of a queue request the host or domain the request names
+ *
+ * Every value must be a default entry; it gets @p host_domain as its reference.
+ *
+ * @tparam A the attribute type of the list
+ * @param list the attribute list of the request, may be an empty handle
+ * @param answer_list AN_Type, receives an error for every value that is not a default entry
+ * @param host_domain the host or host group the request names
+ * @return true if every value was a default entry
+ */
+template <OcsHostAttr A>
+static bool
+ocs_cqueue_xattr_set_href(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          const char *host_domain) {
+   DENTER(CQUEUE_LAYER);
+
+   constexpr auto href_f = ocs_attr_traits<A>::href;
+   bool ret = true;
+
+   for (const auto elem : list) {
+      const char *attr_hostname = ocs::tom::get<href_f>(elem);
+
+      if (strcmp(HOSTREF_DEFAULT, attr_hostname)) {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_CQUEUE_NONDEFNOTALLOWED);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = false;
+      } else {
+         ocs::tom::set<href_f>(elem, host_domain);
       }
    }
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
@@ -1013,8 +973,7 @@ ocs_cqueue_xattr_merge(const ocs::tom::Element<ocs::tom::CQ> target, const ocs::
  * rename never puts a name into the list a second time.
  *
  * The signature is the one of the `pre_gdi_function` of qconf's attribute table, so the list arrives untyped.
- * The attribute lists are reached through #cqueue_attribute_array, by field numbers given at run time; that part
- * stays untyped.
+ * The attribute lists are walked through #ocs_cqueue_attributes.
  *
  * @param this_list the requests, CQ_Type; checked, may be nullptr
  * @param answer_list AN_Type
@@ -1060,29 +1019,16 @@ bool cqueue_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *ans
              * Make sure that there is only a default entry
              * and change that default entry to be a QD/QI entry
              */
-            for (int index = 0; cqueue_attribute_array[index].cqueue_attr != NoName && ret; index++) {
-               // the attribute and its host field are given at run time, so the untyped access stays
-               int pos = lGetPosViaElem(*cqueue,
-                                  cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
+            const auto request = *cqueue;
+            const char *domain = sge_dstring_get_string(&host_domain);
 
-               if (pos >= 0) {
-                  lList *list = lGetPosList(*cqueue, pos);
+            ret = ocs_for_each_cqueue_attr_while([request, answer_list, domain](const auto &attr) {
+               using E = ocs_cqueue_attr_t<decltype(attr)>;
 
-                  for_each_rw_lv(elem, list) {
-                     const char *attr_hostname = lGetHost(elem, 
-                                       cqueue_attribute_array[index].href_attr);
-
-                     if (strcmp(HOSTREF_DEFAULT, attr_hostname)) {
-                        snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_CQUEUE_NONDEFNOTALLOWED);
-                        answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-                        ret = false;
-                     } else {
-                        lSetHost(elem, cqueue_attribute_array[index].href_attr,
-                                 sge_dstring_get_string(&host_domain));
-                     }
-                  }
-               }
-            }
+               // a request holds the attributes the administrator gave
+               return !ocs::tom::has<E::cqueue_field>(request) ||
+                      ocs_cqueue_xattr_set_href(ocs::tom::get<E::cqueue_field>(request), answer_list, domain);
+            });
          }
 
          if (const auto target = requests.find_first<CQ_name>(cqueue->get<CQ_name>()); target) {
@@ -1271,9 +1217,8 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
 /**
  * @brief Purge attributes from queue
  *
- * The attribute lists other than the host list are reached through
- * #cqueue_attribute_array, by field numbers given at run time; that part
- * stays untyped.
+ * The attribute lists other than the host list are walked through
+ * #ocs_cqueue_attributes.
  *
  * @param this_elem cqueue list element (CQ_Type), may be an empty handle
  * @param answer_list answer list
@@ -1290,7 +1235,6 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom
    DENTER(CQUEUE_LAYER);
 
    bool ret = false;
-   int index;
 
    if (this_elem) {
       for (const auto ep : attr_list) {
@@ -1314,26 +1258,28 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom
          }
          
          /* purge attributes */ 
-         index = 0;
-         while(cqueue_attribute_array[index].name != nullptr) {
+         ocs_for_each_cqueue_attr([this_elem, attr_name, hgroup_or_hostname, &ret](const auto &attr) {
+            using E = ocs_cqueue_attr_t<decltype(attr)>;
 
             /* Does the given attr_wildcard match with the actual attr_name */
-            if (!sge_eval_expression(ocs::CEntry::Type::STR, attr_name, cqueue_attribute_array[index].name, nullptr)) {
-               // the attribute and its host field are given at run time, so the untyped access stays.
-               // The list is taken out of the element and put back like the host list above:
-               // lDelElemHost() frees a list that becomes empty and resets only the pointer it was
-               // given, so a copy of the field pointer left the element pointing at freed memory (CS-3117).
-               lList *sublist = nullptr;
-               lXchgList(this_elem, cqueue_attribute_array[index].cqueue_attr, &sublist);
-               if (sublist != nullptr &&
-                   lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
-                  DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, cqueue_attribute_array[index].name);
+            if (!sge_eval_expression(ocs::CEntry::Type::STR, attr_name, attr.name, nullptr)) {
+               // The list is taken out of the element and put back like the host list above, so the element
+               // never points at a list freed on the way (CS-3117).
+               auto sublist = this_elem.template exchange<E::cqueue_field>(
+                  ocs::tom::ListPtr<typename E::attr_type>());
+               // a missing list or name is no deletion
+               if (sublist && hgroup_or_hostname != nullptr &&
+                   sublist->template erase<E::href_field>(ocs::tom::Host(hgroup_or_hostname)) == 1) {
+                  DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, attr.name);
                   ret = true;
+                  // a list emptied by the removal is dropped, as the old removal freed it
+                  if (sublist->empty()) {
+                     sublist.reset();
+                  }
                }
-               lXchgList(this_elem, cqueue_attribute_array[index].cqueue_attr, &sublist);
+               static_cast<void>(this_elem.template exchange<E::cqueue_field>(std::move(sublist)));
             }
-            index++;
-         }
+         });
       }
    }
 
@@ -1342,14 +1288,87 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom
 
 
 /**
+ * @brief Report the settings of one attribute list of a cluster queue that can never take effect
+ *
+ * A host group setting that does not cover a host of the queue's host list, and a host setting for a host
+ * that is not in it, are reported.
+ *
+ * @tparam A the attribute type of the list
+ * @param attr_list the attribute list, may be an empty handle
+ * @param attr_name the attribute's name, for the report
+ * @param cqueue_name the cluster queue's name, for the report
+ * @param used_hosts the hosts of the queue's host list, resolved
+ * @param answer_list receives error messages, may be nullptr
+ * @param master_hgroup_list the host groups
+ * @param[out] ds receives the human readable report, appended
+ */
+template <OcsHostAttr A>
+static void
+ocs_cqueue_sick_attr(const ocs::tom::ConstList<A> attr_list, const char *attr_name, const char *cqueue_name,
+                     const ocs::tom::ConstList<ocs::tom::HR> used_hosts, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                     const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *ds) {
+   DENTER(TOP_LAYER);
+
+   /*
+    * Test each attribute setting if it is really used in the
+    * current configuration
+    */
+   for (const auto attr : attr_list) {
+      const char *name = ocs::tom::get<ocs_attr_traits<A>::href>(attr);
+
+      if (ocs::is_hgroup_name(name)) {
+         if (strcmp(name, HOSTREF_DEFAULT)) {
+            ocs::tom::ListPtr<ocs::tom::HR> used_hgroup_hosts;
+            ocs::tom::ListPtr<ocs::tom::HR> used_hgroup_groups;
+            ocs::tom::ListPtr<ocs::tom::HR> add_hosts;
+            ocs::tom::ListPtr<ocs::tom::HR> equity_hosts;
+
+            const auto hgroup = hgroup_list_locate(master_hgroup_list, name);
+
+            /*
+             * hgroup specific setting:
+             *    make sure each host of hgroup is part of 
+             *    resolved list
+             */
+            hgroup_find_all_references(hgroup, answer_list, master_hgroup_list, &used_hgroup_hosts,
+                                       &used_hgroup_groups);
+            href_list_compare(*used_hgroup_hosts, answer_list, used_hosts, &add_hosts, nullptr, &equity_hosts,
+                              nullptr);
+
+            if (!add_hosts->empty()) {
+               DTRACE;
+               sge_dstring_sprintf_append(ds, MSG_CQUEUE_DEFOVERWRITTEN_SSSSS, attr_name, name, cqueue_name, name,
+                                          cqueue_name);
+               sge_dstring_append(ds, "\n");
+            }
+         } else {
+            DTRACE;
+         }
+      } else {
+         /*
+          * host specific setting:
+          *    make sure the host is contained in resolved list 
+          */ 
+         if (!href_list_has_member(used_hosts, name)) {
+            DTRACE;
+            sge_dstring_sprintf_append(ds, MSG_CQUEUE_UNUSEDATTRSETTING_SS, attr_name, name, cqueue_name);
+            sge_dstring_append(ds, "\n");
+         } else {
+            DTRACE;
+         }
+      }
+   }
+   DRETURN_VOID;
+}
+
+/**
  * @brief Report configuration settings that look wrong but are not errors
  *
  * Backs `qconf -sick`. Warns about attribute settings that can never take
  * effect and about host group settings that do not cover every host in the
  * queue's host list.
  *
- * The attribute lists are walked through #cqueue_attribute_array, by field
- * numbers given at run time; that part stays untyped.
+ * The attribute lists are walked through #ocs_cqueue_attributes.
  *
  * @param cqueue the cluster queue to inspect (CQ_Type)
  * @param[out] answer_list receives error messages
@@ -1373,7 +1392,6 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::Li
       ocs::tom::ListPtr<ocs::tom::HR> used_hosts;
       ocs::tom::ListPtr<ocs::tom::HR> used_groups;
       ocs::tom::ListPtr<ocs::tom::AN> *answer_list = nullptr;
-      int index;
       
       /*
        * resolve href list of cqueue
@@ -1382,77 +1400,11 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::Li
                                     master_hgroup_list, &used_hosts,
                                     &used_groups);
 
-      index = 0;
-      while (cqueue_attribute_array[index].cqueue_attr != NoName) {
-         /*
-          * Skip geee attributes in ge mode
-          */
-         // the attribute and its host field are given at run time, so the untyped access stays
-         const lList *attr_list = lGetList(cqueue, cqueue_attribute_array[index].cqueue_attr);
-         const lListElem *next_attr = lFirst(attr_list);
-         const lListElem *attr = nullptr;
-
-         /*
-          * Test each attribute setting if it is really used in the
-          * current configuration
-          */
-         while((attr = next_attr) != nullptr) {
-            const char *name = lGetHost(attr, cqueue_attribute_array[index].href_attr);
-
-            next_attr = lNext(attr);
-            if (ocs::is_hgroup_name(name)) {
-               if (strcmp(name, HOSTREF_DEFAULT)) {
-                  ocs::tom::ListPtr<ocs::tom::HR> used_hgroup_hosts;
-                  ocs::tom::ListPtr<ocs::tom::HR> used_hgroup_groups;
-                  ocs::tom::ListPtr<ocs::tom::HR> add_hosts;
-                  ocs::tom::ListPtr<ocs::tom::HR> equity_hosts;
-
-                  const auto hgroup = hgroup_list_locate(master_hgroup_list, name);
-
-                  /*
-                   * hgroup specific setting:
-                   *    make sure each host of hgroup is part of 
-                   *    resolved list
-                   */
-                  hgroup_find_all_references(hgroup, answer_list, 
-                                             master_hgroup_list, 
-                                             &used_hgroup_hosts,
-                                             &used_hgroup_groups);
-                  href_list_compare(*used_hgroup_hosts, answer_list,
-                                    *used_hosts, &add_hosts, nullptr,
-                                    &equity_hosts, nullptr);
-
-                  if (!add_hosts->empty()) {
-                     DTRACE;
-                     sge_dstring_sprintf_append(ds, 
-                             MSG_CQUEUE_DEFOVERWRITTEN_SSSSS,
-                             cqueue_attribute_array[index].name,
-                             name, cqueue_name, name, cqueue_name);
-                     sge_dstring_append(ds, "\n");
-                  }
-               } else {
-                  DTRACE;
-               }
-            } else {
-               /*
-                * host specific setting:
-                *    make sure the host is contained in resolved list 
-                */ 
-               if (!href_list_has_member(*used_hosts, name)) {
-                  DTRACE;
-                  sge_dstring_sprintf_append(ds, 
-                             MSG_CQUEUE_UNUSEDATTRSETTING_SS,
-                             cqueue_attribute_array[index].name,
-                             name, cqueue_name);
-                  sge_dstring_append(ds, "\n");
-               } else {
-                  DTRACE;
-               }
-            }
-         }
-            
-         index++;
-      }
+      const ocs::tom::ConstList<ocs::tom::HR> resolved_hosts = *used_hosts;
+      ocs_for_each_cqueue_attr([&](const auto &attr) {
+         ocs_cqueue_sick_attr(ocs::tom::get<ocs_cqueue_attr_t<decltype(attr)>::cqueue_field>(cqueue), attr.name,
+                              cqueue_name, resolved_hosts, answer_list, master_hgroup_list, ds);
+      });
    }
    
    DRETURN(ret);

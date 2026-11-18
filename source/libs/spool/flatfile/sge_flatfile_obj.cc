@@ -98,36 +98,10 @@ static int read_SC_queue_sort_method(lListElem *ep, int nm, const char *buffer, 
 static int write_SC_queue_sort_method(const lListElem *ep, int nm, dstring *buffer,
                                       ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static int read_CF_value(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_ulng_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_mem_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_time_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_prjlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
-                                      ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_solist_attr_list(const lListElem *ep, int nm, dstring *buffer,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_usrlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
-                                      ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_bool_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_strlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
-                                      ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_qtlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_str_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_inter_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_celist_attr_list(const lListElem *ep, int nm, dstring *buffer,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alp);
+template <OcsHostAttr A>
+static int read_CQ_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+template <OcsHostAttr A>
+static int write_CQ_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static int write_CQ_hostlist(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
@@ -461,54 +435,54 @@ spooling_field SC_fields[] = {
 spooling_field CQ_fields[] = {
    {  CQ_name,                   21, "qname",              false, nullptr,                false, nullptr,                                   nullptr,                      nullptr},
    {  CQ_hostlist,               21, "hostlist",           false, HR_sub_fields,       false, nullptr,                                   read_CQ_hostlist,          write_CQ_hostlist},
-   {  CQ_seq_no,                 21, "seq_no",             false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_ulng_attr_list,    write_CQ_ulng_attr_list},
-   {  CQ_load_thresholds,        21, "load_thresholds",    false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_celist_attr_list,  write_CQ_celist_attr_list},
-   {  CQ_suspend_thresholds,     21, "suspend_thresholds", false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_celist_attr_list,  write_CQ_celist_attr_list},
-   {  CQ_nsuspend,               21, "nsuspend",           false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_ulng_attr_list,    write_CQ_ulng_attr_list},
-   {  CQ_suspend_interval,       21, "suspend_interval",   false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_inter_attr_list,   write_CQ_inter_attr_list},
-   {  CQ_priority,               21, "priority",           false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_min_cpu_interval,       21, "min_cpu_interval",   false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_inter_attr_list,   write_CQ_inter_attr_list},
-   {  CQ_processors,             21, "processors",         false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_qtype,                  21, "qtype",              false, AQTLIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_qtlist_attr_list,  write_CQ_qtlist_attr_list},
-   {  CQ_ckpt_list,              21, "ckpt_list",          false, ASTRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_strlist_attr_list, write_CQ_strlist_attr_list},
-   {  CQ_pe_list,                21, "pe_list",            false, ASTRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_strlist_attr_list, write_CQ_strlist_attr_list},
-   {  CQ_rerun,                  21, "rerun",              false, ABOOL_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_bool_attr_list,    write_CQ_bool_attr_list},
-   {  CQ_job_slots,              21, "slots",              false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_ulng_attr_list,    write_CQ_ulng_attr_list},
-   {  CQ_tmpdir,                 21, "tmpdir",             false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_shell,                  21, "shell",              false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_prolog,                 21, "prolog",             false, ASTR_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_epilog,                 21, "epilog",             false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_shell_start_mode,       21, "shell_start_mode",   false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_starter_method,         21, "starter_method",    false,  ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_suspend_method,         21, "suspend_method",     false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_resume_method,          21, "resume_method",      false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_terminate_method,       21, "terminate_method",   false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_notify,                 21, "notify",             false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_inter_attr_list,   write_CQ_inter_attr_list},
-   {  CQ_owner_list,             21, "owner_list",         false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_usrlist_attr_list, write_CQ_usrlist_attr_list},
-   {  CQ_acl,                    21, "user_lists",         false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_usrlist_attr_list, write_CQ_usrlist_attr_list},
-   {  CQ_xacl,                   21, "xuser_lists",        false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_usrlist_attr_list, write_CQ_usrlist_attr_list},
-   {  CQ_subordinate_list,       21, "subordinate_list",   false, ASOLIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_solist_attr_list,  write_CQ_solist_attr_list},
-   {  CQ_consumable_config_list, 21, "complex_values",     false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_celist_attr_list,  write_CQ_celist_attr_list},
-   {  CQ_projects,               21, "projects",           false, APRJLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_prjlist_attr_list, write_CQ_prjlist_attr_list},
-   {  CQ_xprojects,              21, "xprojects",          false, APRJLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_prjlist_attr_list, write_CQ_prjlist_attr_list},
-   {  CQ_calendar,               21, "calendar",           false, ASTR_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_initial_state,          21, "initial_state",      false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_str_attr_list,     write_CQ_str_attr_list},
-   {  CQ_s_rt,                   21, "s_rt",               false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_time_attr_list,    write_CQ_time_attr_list},
-   {  CQ_h_rt,                   21, "h_rt",               false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_time_attr_list,    write_CQ_time_attr_list},
-   {  CQ_s_cpu,                  21, "s_cpu",              false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_time_attr_list,    write_CQ_time_attr_list},
-   {  CQ_h_cpu,                  21, "h_cpu",             false,  ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_time_attr_list,    write_CQ_time_attr_list},
-   {  CQ_s_fsize,                21, "s_fsize",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_h_fsize,                21, "h_fsize",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_s_data,                 21, "s_data",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_h_data,                 21, "h_data",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_s_stack,                21, "s_stack",            false, AMEM_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_h_stack,                21, "h_stack",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_s_core,                 21, "s_core",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_h_core,                 21, "h_core",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_s_rss,                  21, "s_rss",              false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_h_rss,                  21, "h_rss",              false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_s_vmem,                 21, "s_vmem",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
-   {  CQ_h_vmem,                 21, "h_vmem",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
+   {  CQ_seq_no,                 21, "seq_no",             false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AULNG>,    write_CQ_attr_list<ocs::tom::AULNG>},
+   {  CQ_load_thresholds,        21, "load_thresholds",    false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ACELIST>,  write_CQ_attr_list<ocs::tom::ACELIST>},
+   {  CQ_suspend_thresholds,     21, "suspend_thresholds", false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ACELIST>,  write_CQ_attr_list<ocs::tom::ACELIST>},
+   {  CQ_nsuspend,               21, "nsuspend",           false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AULNG>,    write_CQ_attr_list<ocs::tom::AULNG>},
+   {  CQ_suspend_interval,       21, "suspend_interval",   false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AINTER>,   write_CQ_attr_list<ocs::tom::AINTER>},
+   {  CQ_priority,               21, "priority",           false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_min_cpu_interval,       21, "min_cpu_interval",   false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AINTER>,   write_CQ_attr_list<ocs::tom::AINTER>},
+   {  CQ_processors,             21, "processors",         false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_qtype,                  21, "qtype",              false, AQTLIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AQTLIST>,  write_CQ_attr_list<ocs::tom::AQTLIST>},
+   {  CQ_ckpt_list,              21, "ckpt_list",          false, ASTRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTRLIST>, write_CQ_attr_list<ocs::tom::ASTRLIST>},
+   {  CQ_pe_list,                21, "pe_list",            false, ASTRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTRLIST>, write_CQ_attr_list<ocs::tom::ASTRLIST>},
+   {  CQ_rerun,                  21, "rerun",              false, ABOOL_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ABOOL>,    write_CQ_attr_list<ocs::tom::ABOOL>},
+   {  CQ_job_slots,              21, "slots",              false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AULNG>,    write_CQ_attr_list<ocs::tom::AULNG>},
+   {  CQ_tmpdir,                 21, "tmpdir",             false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_shell,                  21, "shell",              false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_prolog,                 21, "prolog",             false, ASTR_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_epilog,                 21, "epilog",             false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_shell_start_mode,       21, "shell_start_mode",   false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_starter_method,         21, "starter_method",    false,  ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_suspend_method,         21, "suspend_method",     false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_resume_method,          21, "resume_method",      false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_terminate_method,       21, "terminate_method",   false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_notify,                 21, "notify",             false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AINTER>,   write_CQ_attr_list<ocs::tom::AINTER>},
+   {  CQ_owner_list,             21, "owner_list",         false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AUSRLIST>, write_CQ_attr_list<ocs::tom::AUSRLIST>},
+   {  CQ_acl,                    21, "user_lists",         false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AUSRLIST>, write_CQ_attr_list<ocs::tom::AUSRLIST>},
+   {  CQ_xacl,                   21, "xuser_lists",        false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AUSRLIST>, write_CQ_attr_list<ocs::tom::AUSRLIST>},
+   {  CQ_subordinate_list,       21, "subordinate_list",   false, ASOLIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASOLIST>,  write_CQ_attr_list<ocs::tom::ASOLIST>},
+   {  CQ_consumable_config_list, 21, "complex_values",     false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ACELIST>,  write_CQ_attr_list<ocs::tom::ACELIST>},
+   {  CQ_projects,               21, "projects",           false, APRJLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::APRJLIST>, write_CQ_attr_list<ocs::tom::APRJLIST>},
+   {  CQ_xprojects,              21, "xprojects",          false, APRJLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::APRJLIST>, write_CQ_attr_list<ocs::tom::APRJLIST>},
+   {  CQ_calendar,               21, "calendar",           false, ASTR_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_initial_state,          21, "initial_state",      false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
+   {  CQ_s_rt,                   21, "s_rt",               false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
+   {  CQ_h_rt,                   21, "h_rt",               false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
+   {  CQ_s_cpu,                  21, "s_cpu",              false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
+   {  CQ_h_cpu,                  21, "h_cpu",             false,  ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
+   {  CQ_s_fsize,                21, "s_fsize",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_h_fsize,                21, "h_fsize",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_s_data,                 21, "s_data",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_h_data,                 21, "h_data",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_s_stack,                21, "s_stack",            false, AMEM_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_h_stack,                21, "h_stack",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_s_core,                 21, "s_core",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_h_core,                 21, "h_core",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_s_rss,                  21, "s_rss",              false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_h_rss,                  21, "h_rss",              false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_s_vmem,                 21, "s_vmem",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
+   {  CQ_h_vmem,                 21, "h_vmem",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
    {  NoName,                    21, nullptr,                 false, nullptr,                false, nullptr,                                   nullptr,                      nullptr}
 };
 
@@ -1189,304 +1163,55 @@ spooling_field *sge_build_QU_field_list(bool to_stdout, bool to_file) {
    return fields;
 }
 
-static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
+/**
+ * @brief Read a per host attribute list of a cluster queue; the field reader of every such field
+ *
+ * The signature is the one of the field readers of the spooling field table, so the element and the field
+ * arrive untyped; the table pairs each field with the reader of its attribute type.
+ *
+ * @tparam A the attribute type of the field's list
+ * @param ep the cluster queue (CQ_Type)
+ * @param nm the attribute list field
+ * @param buffer the text to parse
+ * @param alp receives the errors
+ * @return 1 if the list was read and set, 0 otherwise
+ */
+template <OcsHostAttr A>
+static int read_CQ_attr_list(lListElem *ep, const int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   ocs::tom::ListPtr<A> lp;
 
-   if (!ulng_attr_list_parse_from_string(&lp, alp, buffer,
-                                         HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
+   if (!ocs_attr_list_parse_from_string(lp, alp, buffer, HOSTATTR_ALLOW_AMBIGUITY)) {
       return 0;
    }
 
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
+   if (lp) {
+      // the field is given at run time by the spooling field table
+      lSetList(ep, nm, lp.release());
       return 1;
    }
 
    return 0;
 }
 
-static int write_CQ_ulng_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   ulng_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
-   
-   return 1;
-}
+/**
+ * @brief Write a per host attribute list of a cluster queue; the field writer of every such field
+ *
+ * The signature is the one of the field writers of the spooling field table, so the element and the field
+ * arrive untyped; the table pairs each field with the writer of its attribute type, which is why the list is
+ * taken into a handle without a check.
+ *
+ * @tparam A the attribute type of the field's list
+ * @param ep the cluster queue (CQ_Type)
+ * @param nm the attribute list field
+ * @param buffer receives the text, appended
+ * @param alp unused
+ * @return 1
+ */
+template <OcsHostAttr A>
+static int write_CQ_attr_list(const lListElem *ep, const int nm, dstring *buffer,
+                              [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   ocs_attr_list_append_to_dstring(ocs::tom::ConstList<A>::from_typed(lGetList(ep, nm)), buffer);
 
-static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-
-   if (!celist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-
-   return 0;
-}
-
-static int write_CQ_celist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   celist_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer,
-                                   ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!inter_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_inter_attr_list(const lListElem *ep, int nm,
-                                    dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   inter_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer,
-                                 ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!str_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_str_attr_list(const lListElem *ep, int nm,
-                                  dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   str_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!qtlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_qtlist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   qtlist_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!strlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_strlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   strlist_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer,
-                                  ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!bool_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_bool_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   bool_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!usrlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_usrlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   usrlist_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!solist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_solist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   const lList *lp = lGetList(ep, nm);
-   
-   solist_attr_list_append_to_dstring(lp, buffer);
-   
-   return 1;
-}
-
-static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!prjlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_prjlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   prjlist_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer,
-                                  ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!time_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_time_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   time_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
-   
-   return 1;
-}
-
-static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer,
-                                 ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   lList *lp = nullptr;
-   
-   if (!mem_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY, nullptr)) {
-      lFreeList(&lp);
-      return 0;
-   }
-   
-   if (lp != nullptr) {
-      lSetList(ep, nm, lp);
-      return 1;
-   }
-   
-   return 0;
-}
-
-static int write_CQ_mem_attr_list(const lListElem *ep, int nm,
-                                  dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   mem_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
-   
    return 1;
 }
 

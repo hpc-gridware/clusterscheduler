@@ -62,14 +62,12 @@ qinstance_change_state_on_calendar(ocs::tom::Element<ocs::tom::QU> this_elem,
                                    uint64_t gdi_session);
 
 bool
-qinstance_modify_attribute(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                           ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
-                           int attribute_name, int cqueue_attibute_name, int sub_host_name, int sub_value_name,
-                           int subsub_key, const char **matching_host_or_group, const char **matching_group,
-                           bool *is_ambiguous, bool *has_changed_conf_attr, bool *has_changed_state_attr,
-                           bool initial_modify, bool *need_reinitialize, monitoring_t *monitor,
-                           ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
-                           ocs::tom::List<ocs::tom::CQ> master_cqueue_list, uint64_t gdi_session);
+qinstance_modify_attributes(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            ocs::tom::ConstElement<ocs::tom::CQ> cqueue, const lListElem *reduced_elem,
+                            bool all_attributes, bool is_create, bool initial_modify, bool *is_ambiguous,
+                            bool *has_changed_conf_attr, bool *need_reinitialize, monitoring_t *monitor,
+                            ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                            ocs::tom::List<ocs::tom::CQ> master_cqueue_list, uint64_t gdi_session);
 
 bool
 qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,

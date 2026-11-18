@@ -68,9 +68,6 @@
 #include "msg_qmaster.h"
 #include "sge_utility_qmaster.h"
 
-/** @brief Debug layer the cluster queue helpers log under */
-#define CQUEUE_LAYER TOP_LAYER
-
 /**
  * @brief Modify the prolog/epilog/pe_start/pe_stop procedures
  *
@@ -217,9 +214,9 @@ ocs_sublist_answer(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Sublis
  *
  * The run-time form of the typed attr_mod_sub_list<ListF, SubKeyF>() and of ocs::tom::modify_sublist(), with
  * the same semantics and the same answers (ocs_sublist_answer()); see there. It stays for the callers whose
- * fields are not compile-time constants of the right types: cqueue_mod_sublist() takes them from the cluster
- * queue attribute table, and the advance reservation and resource quota set modifiers pass the object's own
- * name field as the key of their sub-lists (AR_name, RQS_name), which only matters for a keyed sub-command.
+ * fields are not compile-time constants of the right types: the advance reservation and resource quota set
+ * modifiers pass the object's own name field as the key of their sub-lists (AR_name, RQS_name), which only
+ * matters for a keyed sub-command.
  *
  * The key's type is taken from the request element: a key that is neither a string nor a host, or a field
  * the element lacks, counts as a missing key. A removal removes every element of the sublist that holds the
@@ -531,141 +528,6 @@ attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elem
 }
 
 
-
-/**
- * @brief Modify cqueues configuration sublist
- *
- * This function modifies a certain configuration sublist of "this_elem".
- * Possible errors will be reported in "answer_list". "reduced_elem"
- * will be used to identify the changes which have been done.
- * "sub_command" defines how these changes should be applied to
- * "this_elem". "sublist_value_name" is the sublist of "this_elem" which
- * should be modified whereas "subsub_key" defines the attribute
- * which containes the primary key of that sublist. "attribute_name_str"
- * is the name of the cqueue attribute which will be modified with
- * this operation. It will be used for error output. "object_name_str"
- * is the name of the cqueue which will be modified by this operation.
- *
- * @param this_elem CQ_Type
- * @param answer_list AN_Type
- * @param reduced_elem reduced CQ_Type element
- * @param sub_cmd GDI subcommand
- * @param attribute_name CULL attribute name (CQ_Type)
- * @param sublist_host_name CULL sublist attribute name depend on sublist of CQ_Type
- * @param sublist_value_name CULL sublist attribute name of that field which containes the value of the attribute
- *        to be modified
- * @param subsub_key CULL sublist attribute key
- * @param attribute_name_str string used for user output
- * @param object_name_str cqueue name
- * @param cmd the command being executed, unused
- *
- * @return error state true  - success false - error
- *
- * @note MT-NOTE: cqueue_mod_sublist() is MT safe
- */
-bool
-cqueue_mod_sublist(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *reduced_elem,
-                   [[maybe_unused]] ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
-                   int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
-                   const char *attribute_name_str, const char *object_name_str) {
-   DENTER(CQUEUE_LAYER);
-
-   bool ret = true;
-   int pos;
-
-   pos = lGetPosViaElem(reduced_elem, attribute_name, SGE_NO_ABORT);
-   if (pos >= 0) {
-      lList *mod_list = lGetPosList(reduced_elem, pos);
-      lList *org_list = lGetListRW(this_elem, attribute_name);
-
-      /* 
-       * Delete all configuration lists except the default-configuration
-       * if sub_command is SGE_GDI_SET_ALL
-       */
-      if ((sub_cmd & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
-         lListElem *elem, *next_elem;
-
-         next_elem = lFirstRW(org_list);
-         while ((elem = next_elem)) {
-            const char *name = lGetHost(elem, sublist_host_name);
-
-            next_elem = lNextRW(elem);
-            lListElem *mod_elem = lGetElemHostRW(mod_list, sublist_host_name, name);
-            if (mod_elem == nullptr) {
-               DPRINTF("Removing attribute list for " SFQ "\n", name);
-               lRemoveElem(org_list, &elem);
-            }
-         }
-      }
-
-      /*
-       * Do modifications for all given elements of 
-       * domain/host-configuration list
-       */
-      for_each_rw_lv(mod_elem, mod_list) {
-         const char *name = lGetHost(mod_elem, sublist_host_name);
-         char resolved_name[CL_MAXHOSTNAMELEN + 1];
-         lListElem *org_elem = nullptr;
-
-         if (name == nullptr) {
-            ERROR(MSG_SGETEXT_INVALIDHOST_S, "");
-            answer_list_add(answer_list, SGE_EVENT,
-                            STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            ret = false;
-            break;
-         }
-         /* Don't try to resolve hostgroups */
-         if (name[0] != '@') {
-            int back = getuniquehostname(name, resolved_name, 0);
-
-            if (back == CL_RETVAL_OK) {
-               /* 
-                * This assignment is ok because preious name contained a const
-                * string from the mod_elem that we didn't need to free.  
-                * Now it will contain a string that's on the stack, 
-                * so we still don't have to free it. 
-                */
-               name = resolved_name;
-            } else {
-               /*
-                * Due to CR 6319231, IZ 1760 this is allowed
-                */
-            }
-         }
-
-         org_elem = lGetElemHostRW(org_list, sublist_host_name, name);
-
-         /*
-          * Create element if it does not exist
-          */
-         if (org_elem == nullptr && (sub_cmd & ocs::gdi::SubCommand::REMOVE) != ocs::gdi::SubCommand::REMOVE) {
-            if (org_list == nullptr) {
-               org_list = lCreateList("", lGetElemDescr(mod_elem));
-               lSetList(this_elem, attribute_name, org_list);
-            }
-            // the element gets the layout of the list it goes into, which may exist already (CS-3112)
-            org_elem = lCreateElem(lGetListDescr(org_list));
-            lSetHost(org_elem, sublist_host_name, name);
-            lAppendElem(org_list, org_elem);
-         }
-
-         /*
-          * Modify sublist according to subcommand
-          */
-         if (org_elem != nullptr) {
-            if (subsub_key != NoName) {
-               // the fields come from the cluster queue attribute table at run time: the run-time form
-               attr_mod_sub_list(answer_list, org_elem, sublist_value_name, subsub_key, mod_elem, sub_cmd,
-                                 attribute_name_str, object_name_str);
-            } else {
-               object_replace_any_type(org_elem, sublist_value_name, mod_elem);
-            }
-         }
-      }
-   }
-
-   DRETURN(ret);
-}
 
 /**
  * @brief Reject a request that names the same key twice

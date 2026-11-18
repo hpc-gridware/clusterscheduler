@@ -32,6 +32,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/ocs_cqueue_attributes.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_object.h"
@@ -158,13 +159,12 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    /* What lost an entry: the queue name to address it, every attribute list that
     * is shorter than the stored one, and the host list when it is. */
    std::vector<int> fields{CQ_name};
-   for (int i = 0; cqueue_attribute_array[i].name != nullptr; i++) {
-      const int nm = cqueue_attribute_array[i].cqueue_attr;
-      // the attribute is given at run time by the attribute table
-      if (lGetNumberOfElem(lGetList(*copy, nm)) != lGetNumberOfElem(lGetList(stored, nm))) {
+   ocs_for_each_cqueue_attr([&copy, stored, &fields](const auto &attr) {
+      constexpr auto nm = ocs_cqueue_attr_t<decltype(attr)>::cqueue_field;
+      if (ocs::tom::get<nm>(copy).size() != ocs::tom::get<nm>(stored).size()) {
          fields.push_back(nm);
       }
-   }
+   });
    if (hostlist_wanted && static_cast<uint32_t>(ocs::tom::get<CQ_hostlist>(copy).size()) != hostlist_before) {
       fields.push_back(CQ_hostlist);
    }

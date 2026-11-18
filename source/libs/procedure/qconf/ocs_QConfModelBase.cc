@@ -30,6 +30,8 @@
 #include "uti/sge_dstring.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/ocs_cqueue_attributes.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_qinstance.h"
@@ -60,7 +62,9 @@
 #include <array>
 #include <cstring>
 #include <fnmatch.h>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "ocs_QConfModelBase.h"
 
@@ -714,6 +718,59 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
    DRETURN(true);
 }
 
+/**
+ * @brief Match the entries of one attribute list of a cluster queue for `-sobjl queue*` (CS-2819)
+ *
+ * Each entry's value is appended to one text for the whole attribute and the text is matched after each entry,
+ * see collect_cqueue_matches() for why (CS-2832). The value is rendered as the plain value the default entry of
+ * an attribute renders as, without the `[<host>=...]` brackets.
+ *
+ * @tparam A the attribute type of the list
+ * @param attribute_list the attribute list, may be an empty handle
+ * @param val the value pattern
+ * @param cqueue_name the cluster queue's name
+ * @param handle_cqueue name the queue for a match of its default entry
+ * @param handle_domain name `queue@@group` for a match of a host group entry
+ * @param handle_qinstance name `queue@host` for a match of a host entry
+ * @param[out] filtered_names receives the name of the match, if its kind was asked for
+ * @return true if an entry matched, whether or not its kind was asked for
+ */
+template <OcsHostAttr A>
+static bool
+sobjl_match_cqueue_attr(const ocs::tom::ConstList<A> attribute_list, const char *val, const char *cqueue_name,
+                        const bool handle_cqueue, const bool handle_domain, const bool handle_qinstance,
+                        std::vector<std::string> &filtered_names) {
+   DENTER(TOP_LAYER);
+
+   bool matched = false;
+   /* one dstring for the whole attribute, not one per entry - the
+    * accumulation this produces is the behaviour of CS-2832 */
+   dstring value = DSTRING_INIT;
+
+   for (const auto attribute : attribute_list) {
+      const char *host_hgroup = ocs::tom::get<ocs_attr_traits<A>::href>(attribute);
+      const bool is_cqueue = strcmp(host_hgroup, HOSTREF_DEFAULT) == 0;
+      const bool is_domain = !is_cqueue && ocs::is_hgroup_name(host_hgroup);
+      const bool is_qinstance = !is_domain && !is_cqueue;
+
+      /* the value alone, as a default entry renders; the generic renderer takes the field by number */
+      object_append_field_to_dstring(attribute, nullptr, &value, ocs_attr_traits<A>::value, '\0');
+
+      if (fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
+         if (handle_cqueue && is_cqueue) {
+            filtered_names.emplace_back(cqueue_name);
+         } else if ((handle_domain && is_domain) || (handle_qinstance && is_qinstance)) {
+            filtered_names.emplace_back(std::string{cqueue_name} + "@" + host_hgroup);
+         }
+         /* set even when nothing was written, see collect_cqueue_matches() */
+         matched = true;
+         break;
+      }
+   }
+   sge_dstring_free(&value);
+   DRETURN(matched);
+}
+
 /** @brief Name the queues, domains or instances `-sobjl queue*` matched (CS-2819)
  *
  * The three queue specifications share one pass over the cluster queues and differ
@@ -788,46 +845,15 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
          sge_dstring_free(&value);
       }
 
-      for (int index = 0; !already_handled && cqueue_attribute_array[index].cqueue_attr != NoName; index++) {
-         if (fnmatch(attr, cqueue_attribute_array[index].name, 0) != 0) {
-            continue;
-         }
-         /* one dstring for the whole attribute, not one per entry - the
-          * accumulation this produces is the behaviour of CS-2832 */
-         dstring value = DSTRING_INIT;
-         const lList *attribute_list = lGetList(cqueue, cqueue_attribute_array[index].cqueue_attr);
-
-         for_each_ep_lv(attribute, attribute_list) {
-            const lDescr *descr = lGetListDescr(attribute_list);
-            const char *host_hgroup = lGetHost(attribute, cqueue_attribute_array[index].href_attr);
-            const bool is_cqueue = strcmp(host_hgroup, HOSTREF_DEFAULT) == 0;
-            const bool is_domain = !is_cqueue && ocs::is_hgroup_name(host_hgroup);
-            const bool is_qinstance = !is_domain && !is_cqueue;
-
-            /* rendered through a one element copy whose host reference is the
-             * default, so the entry renders as a plain value without its
-             * "[<host>=...]" brackets */
-            lList *tmp_attribute_list = lCreateList("", descr);
-            lListElem *tmp_attribute = lCopyElem(attribute);
-            lAppendElem(tmp_attribute_list, tmp_attribute);
-            lSetHost(tmp_attribute, cqueue_attribute_array[index].href_attr, HOSTREF_DEFAULT);
-            attr_list_append_to_dstring(tmp_attribute_list, &value, descr,
-                                        cqueue_attribute_array[index].href_attr,
-                                        cqueue_attribute_array[index].value_attr);
-            lFreeList(&tmp_attribute_list);
-
-            if (fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
-               if (handle_cqueue && is_cqueue) {
-                  filtered_names_.emplace_back(cqueue_name);
-               } else if ((handle_domain && is_domain) || (handle_qinstance && is_qinstance)) {
-                  filtered_names_.emplace_back(std::string{cqueue_name} + "@" + host_hgroup);
-               }
-               /* set even when nothing was written, see the note above */
-               already_handled = true;
-               break;
+      if (!already_handled) {
+         ocs_for_each_cqueue_attr_while([&](const auto &entry) {
+            if (fnmatch(attr, entry.name, 0) == 0) {
+               already_handled = sobjl_match_cqueue_attr(
+                  ocs::tom::get<ocs_cqueue_attr_t<decltype(entry)>::cqueue_field>(cqueue), val, cqueue_name,
+                  handle_cqueue, handle_domain, handle_qinstance, filtered_names_);
             }
-         }
-         sge_dstring_free(&value);
+            return !already_handled;
+         });
       }
    }
 
