@@ -271,8 +271,10 @@ sge_qmaster_process_message(monitoring_t *monitor) {
  * @brief The descriptor of the objects a client sends for a target and command (CS-3125)
  *
  * Adding, modifying and copying send objects of the target's type; deleting
- * and triggering send ID elements or (the bridge's deletion) objects of that
- * type; procedures send parameter bundles. For any other command the type of
+ * sends ID elements for jobs and advance reservations and objects of the
+ * target's type otherwise; triggering sends ID elements for execution hosts,
+ * queues and jobs and ID elements or objects of the target's type otherwise;
+ * procedures send parameter bundles. For any other command the type of
  * the data is not fixed.
  *
  * @param task the request task
@@ -302,7 +304,17 @@ ocs_request_data_type(const ocs::gdi::Task *task, const lDescr *data_descr) {
       case ocs::gdi::Command::COPY:
          return object_type;
       case ocs::gdi::Command::DEL:
+         // jobs and advance reservations are deleted by ID elements, every other object by an element of
+         // its own type; the worker builds checked handles of exactly these types
+         return task->target == ocs::gdi::Target::JB_LIST || task->target == ocs::gdi::Target::AR_LIST
+                   ? ID_Type
+                   : object_type;
       case ocs::gdi::Command::TRIGGER:
+         // the worker triggers (execd shutdown, queue and job state changes) read ID elements only
+         if (task->target == ocs::gdi::Target::EH_LIST || task->target == ocs::gdi::Target::CQ_LIST ||
+             task->target == ocs::gdi::Target::JB_LIST) {
+            return ID_Type;
+         }
          return ocs::tom::same_type(data_descr, ID_Type) ? ID_Type : object_type;
       case ocs::gdi::Command::GET_PROCEDURE:
       case ocs::gdi::Command::MOD_PROCEDURE:
