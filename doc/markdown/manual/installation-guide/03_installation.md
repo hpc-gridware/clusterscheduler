@@ -85,7 +85,7 @@ Here are the steps required to complete the installation.
 
    The current directory
 
-      /home/ebablick/OCS/ocs1/inst
+      <install_dir>
 
    is owned by user
 
@@ -221,7 +221,7 @@ Here are the steps required to complete the installation.
     The qmaster spool directory is the place where the qmaster daemon stores
     the configuration and the state of the queuing system.
 
-    The admin user >ebablick< must have read/write access
+    The admin user >admin_user< must have read/write access
     to the qmaster spool directory.
 
     If you will install shadow master hosts or if you want to be able to start
@@ -333,7 +333,7 @@ Here are the steps required to complete the installation.
 
        <execd_spool_dir>
 
-    The pathname of the spool directory of the execution hosts. User >ebablick<
+    The pathname of the spool directory of the execution hosts. User >admin_user<
     must have the right to create this directory and to write into it.
 
     Default: [<install_dir>/<cell_name>/spool] >>
@@ -378,7 +378,7 @@ Here are the steps required to complete the installation.
 
 18. Systemd slice: If you are using a systemd based operating system, then the installer will create a toplevel systemd slice under which the xxQS_NAMExx services and the jobs will be run.
 It is recommended to specify a unique slice name to make sure that the slice does not collide with the setup of other clusters that you might run in parallel. The suggested default is `ocs` + the qmaster service port number, e.g. `ocs6444.slice`.
-The slice name is stored in `$SGE_ROOT/$SGE_CELL/default/slice_name`.
+The slice name is stored in `$SGE_ROOT/$SGE_CELL/common/slice_name`.
 This dialog will only be shown once during the installation of the first service running on a systemd based operating system, usually the master service.
 
     ```
@@ -683,6 +683,7 @@ Here are the steps required to complete the installation.
    This hostname is known at qmaster as an administrative host.
 
    Hit <RETURN> to continue >>
+   ```
 
 9. Specify the spooling directory for execution hosts
 
@@ -761,7 +762,7 @@ Here are the steps required to complete the installation.
 
 The automatic installation process is based on the manual installation process where the installer gets a configuration file with predefined answers to those questions that would normally be asked during an interactive installation. For an automatic installation the configuration file has to be prepared, and it has to be passed to the installation script as argument with the `-auto` option.
 
-The auto installation is also able to install services on remote hosts if either passwordless `ssh` or `rsh` access is configured for the root user on the master machine.
+The auto installation is also able to install services on remote hosts if passwordless `ssh` access is configured for the root user on the master machine.
 
 1. Login as root on the system where you intend to install a service.
 
@@ -794,14 +795,14 @@ The auto installation is also able to install services on remote hosts if either
    ./inst_sge -munge -m -auto $SGE_ROOT/my_template.conf
    ```
 
-4. If you have a list of hosts specified as EXEC_HOST_LIST parameter in the configuration file AND when you have passwordless `ssh` or `rsh` access to those hosts then you can install the execution service on those hosts remotely from the master machine.
+4. If you have a list of hosts specified as EXEC_HOST_LIST parameter in the configuration file AND when you have passwordless `ssh` access to those hosts then you can install the execution service on those hosts remotely from the master machine.
 
    ```
    cd $SGE_ROOT
    ./inst_sge -x -auto $SGE_ROOT/my_template.conf
    ```
 
-   If you have no passwordless `ssh` or `rsh` access to those hosts then you have to log in to each host and start the installation process manually for each host individually.
+   If you have no passwordless `ssh` access to those hosts then you have to log in to each host and start the installation process manually for each host individually.
 
 5. On shadow hosts install the shadow service
 

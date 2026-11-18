@@ -7,6 +7,8 @@ remote, shared, ACID-compliant relational database, making it the
 recommended choice for high-availability deployments and for sites
 that require durable, transactional spool storage.
 
+PostgreSQL spooling is available for Gridware Cluster Scheduler only.
+
 This chapter walks an administrator through:
 
 - when to choose PostgreSQL spooling over the other backends
@@ -29,9 +31,9 @@ Choose `postgres` over `classic` or `berkeleydb` when:
   itself is unchanged across backends; the spool store becomes the
   shared substrate that lets the new master take over without data
   loss.
-- **NFS for spooling is not viable**: Berkeley DB on NFSv4 is not a
-  supported configuration; classic on a shared filesystem has no
-  transactions and no ACID guarantees.
+- **NFS for spooling is not viable**: Berkeley DB spooling on a
+  shared filesystem requires NFSv4; classic on a shared filesystem
+  has no transactions and no ACID guarantees.
 - **Compliance or audit** requires the cluster's persistent state
   to live in a managed RDBMS with its own backup, replication, and
   access-control story.
@@ -48,6 +50,11 @@ itself: `sge_shadowd` still detects qmaster outages via heartbeat
 file, still negotiates the next master, and still re-starts qmaster
 on a shadow host. PostgreSQL spooling only changes where the
 persistent state lives.
+
+The heartbeat file is located in the qmaster spool directory
+(`qmaster_spool_dir` in the bootstrap file). In a setup with shadow
+master hosts, this directory must still be on a shared filesystem
+that the master host and all shadow master hosts can access.
 
 PostgreSQL spooling does NOT provide multi-master qmaster
 behavior — at any time exactly one qmaster instance is writing to
@@ -310,7 +317,7 @@ up the new password.
 ## spooling_params token reference
 
 `spooling_params` in the bootstrap file is a libpq conninfo
-string with xxQS_NAMExx-specific extensions. The full token set:
+string. The supported tokens:
 
 ### Standard libpq tokens
 
@@ -328,17 +335,6 @@ string with xxQS_NAMExx-specific extensions. The full token set:
   `keepalives_interval=<sec>`, `keepalives_count=<n>` — TCP
   keepalive controls; recommended on long-running qmaster
   connections to defeat middlebox idle-drops
-
-### xxQS_NAMExx-specific extensions
-
-These tokens are parsed and consumed by xxQS_NAMExx before the
-remaining conninfo string is passed to libpq:
-
-- `retry_max_seconds=<N>` — per-thread retry envelope for
-  transient connection failures. Range 5..300; default 30. The
-  `5` minimum prevents accidentally disabling the
-  broken-connection reconnect path; the `300` ceiling keeps the
-  envelope below the shadowd failover interval.
 
 ### Not supported
 
