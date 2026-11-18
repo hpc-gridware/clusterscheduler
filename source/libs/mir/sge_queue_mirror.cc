@@ -84,9 +84,8 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
    ocs::tom::ListPtr<ocs::tom::QU> qinstance_list;
 
    const char *name = ocs::tom::get<ET_strkey>(event);
-   // the master list stays untyped: the generic merge below replaces elements through the pointer
+   // the master list slot stays untyped: the generic merge below may create the list through it
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    // a cluster queue of the master list (CQ_Type)
    const auto cqueue = cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(*list), name);
 
@@ -98,7 +97,7 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
       qinstance_list = cqueue.exchange<CQ_qinstances>(std::move(qinstance_list));
    }
 
-   if (sge_mirror_update_master_list(list, list_descr, cqueue, name, action, event) == SGE_EM_OK) {
+   if (sge_mirror_update_master_list(list, cqueue, name, action, event) == SGE_EM_OK) {
       ret = (sge_callback_result)(ret & SGE_EMA_OK);
    } else {
       ret = (sge_callback_result)(ret & SGE_EMA_FAILURE);
@@ -154,7 +153,6 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
       const auto qinstances = ocs::tom::get<CQ_qinstances>(cqueue);
       // stays untyped: the generic merge below may create the list through the pointer
       lList *list = qinstances;
-      const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
 
       const auto qinstance = qinstance_list_locate(qinstances, hostname, nullptr);
       const char *key = nullptr;
@@ -182,7 +180,7 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
             DRETURN(ret);
          }
       }
-      if (sge_mirror_update_master_list(&list, list_descr, qinstance, key, action, event) == SGE_EM_OK) {
+      if (sge_mirror_update_master_list(&list, qinstance, key, action, event) == SGE_EM_OK) {
          ret = (sge_callback_result)(ret & SGE_EMA_OK);
       } else {
          ret = (sge_callback_result)(ret & SGE_EMA_FAILURE);

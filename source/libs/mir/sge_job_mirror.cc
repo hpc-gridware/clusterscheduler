@@ -42,6 +42,8 @@
  * @see sge_mirror.h
  */
 
+#include <utility>
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -50,6 +52,7 @@
 #include "sgeobj/tom/ocs_tom_CT.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 
@@ -143,9 +146,8 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   // the master list stays untyped: the generic merge below replaces elements through the pointer
+   // the master list slot stays untyped: the generic merge below may create the list through it
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
    const auto job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
 
@@ -181,9 +183,8 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
           *   object.
           */
 
-          // a job event carries jobs (JB_Type); taken without a check, as the untyped code did
-          const auto event_job =
-                  ocs::tom::List<ocs::tom::JB>::from_typed(ocs::tom::get<ET_new_version>(event)).front();
+          // a job event carries jobs (JB_Type)
+          const auto event_job = ocs_mirror_event_objects<ocs::tom::JB>(event).front();
           if (event_job) {
              // Preserve old ja_tasks list. Job update events will not contain them
              ja_tasks = job.exchange<JB_ja_tasks>(std::move(ja_tasks));
@@ -217,8 +218,8 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
       }
    }
 
-   if (sge_mirror_update_master_list(list, list_descr, job, job_get_id_string(job_id, 0, nullptr, &id_dstring),
-                                     action, event) != SGE_EM_OK) {
+   if (sge_mirror_update_master_list(list, job, job_get_id_string(job_id, 0, nullptr, &id_dstring), action,
+                                     event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
@@ -261,29 +262,16 @@ job_schedd_info_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const 
                                    const ocs::tom::Element<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
-   lList **list = nullptr;
-   const lDescr *list_descr = nullptr;
-
-   lList *data_list;
-   lListElem *ep = nullptr;
-   
-   list = ocs::DataStore::get_master_list_rw(type);
-   list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
-
-   /* We always update the whole list (consisting of one list element) */
-   lFreeList(list);
-
-   if((data_list = ocs::tom::get<ET_new_version>(event)) != nullptr) {
-      if((ep = lFirstRW(data_list)) != nullptr) {
-         ep = lDechainElem(data_list, ep);
-      }
+   // the event carries the whole list (one element) and the master list takes the event's list over; an event
+   // without schedd info leaves no list
+   auto info_list = ocs_mirror_exchange_event_objects<ocs::tom::SME>(event, ocs::tom::ListPtr<ocs::tom::SME>());
+   if (info_list && info_list->empty()) {
+      info_list.reset();
    }
 
-   /* if neccessary, create list and copy schedd info */
-   if(ep != nullptr) {
-      *list = lCreateList("job schedd info", list_descr);
-      lAppendElem(*list, ep);
-   }
+   // the data store slot (never nullptr) gets the new list; the old one is freed
+   lList **slot = ocs::DataStore::get_master_list_rw(type);
+   static_cast<void>(ocs::tom::ListPtr<ocs::tom::SME>(std::exchange(*slot, info_list.release())));
 
    DRETURN(SGE_EMA_OK);
 }

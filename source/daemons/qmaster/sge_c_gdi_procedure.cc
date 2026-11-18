@@ -1045,8 +1045,9 @@ namespace {
     *
     * The request must be addressed to that same list, so the permission checks
     * of the modify branch ask about the object the procedure really writes, and
-    * so get_gdi_object() hands the dispatch the row carrying its modifier,
-    * writer and on_success hooks.
+    * so get_gdi_object() hands the dispatch the row of that list, whose
+    * modifier, writer and on_success are bound at compile time by
+    * ocs_gdi_hooks in sge_c_gdi.cc.
     *
     * @param target the object list the procedure writes
     * @return its requirements

@@ -157,11 +157,10 @@ hgroup_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_objec
    // request, so the recomputation that follows an execution host movement stays
    // as cheap as it is today.
    //
-   // The master list is the host group list; the event carries host groups (HGRP_Type), so its list is taken
-   // without a check, as the untyped code did.
+   // The master list is the host group list; the event carries host groups (HGRP_Type).
    const auto before = (action == SGE_EMA_MOD || action == SGE_EMA_DEL)
                        ? ocs::tom::find_first_rw<HGRP_name>(*list, key) : ocs::tom::Element<ocs::tom::HGRP>();
-   const auto after = ocs::tom::List<ocs::tom::HGRP>::from_typed(ocs::tom::get<ET_new_version>(event)).front();
+   const auto after = ocs_mirror_event_objects<ocs::tom::HGRP>(event).front();
    const bool matchers_changed =
            action == SGE_EMA_MOD && before && !ocs::Matcher::cache_carries_over(before, after);
    const bool carry = action == SGE_EMA_MOD && before && !matchers_changed &&

@@ -189,13 +189,13 @@ ocs::MirrorDataStore::block_till_initial_events_handled() {
  *
  * MirrorDataStore::wakeup() can be used to wakeup a thread that is blocking in this call.
  *
- * The parameter stays untyped: the method is virtual and is overridden outside this library.
- *
- * @param event_list List of new events (ET_Type); untouched if no events arrived
+ * @return the new events (ET_Type); an empty handle if no events arrived
  */
-void
-ocs::MirrorDataStore::wait_for_event(lList **event_list) {
+ocs::tom::ListPtr<ocs::tom::ET>
+ocs::MirrorDataStore::wait_for_event() {
    DENTER(TOP_LAYER);
+
+   ocs::tom::ListPtr<ocs::tom::ET> event_list;
 
 #if 0
    int pthread_ret = 0;
@@ -228,8 +228,7 @@ ocs::MirrorDataStore::wait_for_event(lList **event_list) {
 
       // fetch the new events
       if (triggered) {
-         // the out-parameter of the virtual wait_for_event() is raw
-         *event_list = new_events.release();
+         event_list = std::move(new_events);
          triggered = false;
          do_ack = true;
       }
@@ -239,13 +238,13 @@ ocs::MirrorDataStore::wait_for_event(lList **event_list) {
 
    // acknowledge events
    if (do_ack) {
-      if (ocs::tom::find_first<ET_type>(*event_list, sgeE_ACK_TIMEOUT)) {
+      if (event_list && event_list->find_first<ET_type>(sgeE_ACK_TIMEOUT)) {
          evc->ec_mark4registration(evc);
       }
       evc->ec_ack(evc);
    }
 
-   DRETURN_VOID;
+   DRETURN(event_list);
 }
 
 /** @brief Lock the data store.
@@ -371,13 +370,10 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
    volatile bool do_qmaster_shutdown = false;
    while (true) {
-      // out-parameter of wait_for_event(), which is virtual and hands the events over raw
-      lList *event_list_raw = nullptr;
+      ocs::tom::ListPtr<ocs::tom::ET> event_list;
 
       // wait for new events
-      MONITOR_IDLE_TIME(wait_for_event(&event_list_raw), (&monitor), mconf_get_monitoring_options());
-      // the event master delivers ET_Type events
-      auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(event_list_raw);
+      MONITOR_IDLE_TIME(event_list = wait_for_event(), (&monitor), mconf_get_monitoring_options());
 
       // if we lost connection we have to register again
       if (evc->ec_need_new_registration(evc)) {

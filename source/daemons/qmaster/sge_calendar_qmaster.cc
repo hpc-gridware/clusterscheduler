@@ -105,7 +105,8 @@ calendar_initalize_timer(monitoring_t *monitor) {
 
 /** @brief Apply one attribute change to a calendar
  *
- * The gdi_object_t::modifier for calendars; see sge_c_gdi.h for the sequence it is called from.
+ * The modifier of calendars, bound in ocs_gdi_hooks<ocs::tom::CAL>; see ocs_gdi_add_mod() in
+ * sge_c_gdi.cc for the sequence it is called from.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -178,7 +179,7 @@ DRETURN(STATUS_EUNKNOWN);
 
 /** @brief Write a calendar to the spool
  *
- * The gdi_object_t::writer for calendars.
+ * The writer of calendars, bound in ocs_gdi_hooks<ocs::tom::CAL> (sge_c_gdi.cc).
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -387,7 +388,7 @@ calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
    DRETURN(0);
 }
 
-/** @brief calendar_update_queue_states() as the gdi_object_t::on_success of calendars
+/** @brief calendar_update_queue_states() as the on_success of calendars, bound in ocs_gdi_hooks<ocs::tom::CAL>
  *
  * @param packet the client request
  * @param task the GDI task being answered

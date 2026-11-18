@@ -74,7 +74,7 @@ namespace ocs {
       explicit MirrorDataStore(ocs::DataStore::Id data_store_id, sge_locktype_t lock_type);
       virtual ~MirrorDataStore();
 
-      virtual void wait_for_event(lList **event_list);
+      virtual ocs::tom::ListPtr<ocs::tom::ET> wait_for_event();
       virtual void wakeup();
       virtual void block_till_initial_events_handled();
 

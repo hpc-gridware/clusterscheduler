@@ -57,10 +57,13 @@
  */
 
 #include <pthread.h>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <type_traits>
+#include <utility>
 
 #include "uti/ocs_cond.h"
 #include "uti/sge_hostname.h"
@@ -83,6 +86,7 @@
 #include "gdi/ocs_gdi_ClientExecd.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_object_type.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
@@ -99,11 +103,15 @@
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_ListCore.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
 #include "sgeobj/tom/ocs_tom_EV.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
 #include "sgeobj/tom/ocs_tom_EVR.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "evm/ocs_event_master.h"
 #include "evm/sge_event_master.h"
@@ -188,7 +196,7 @@ typedef struct {
 /*
  *******************************************************************
  *
- * The next three array are important for lists, which can be
+ * The next two arrays are important for lists, which can be
  * subscribed by the event client and which contain a sub-list
  * that can be subscribed by itself again (such as the: job list
  * with the JAT_Task sub list, or the cluster queue list with the
@@ -200,14 +208,13 @@ typedef struct {
  *  Contains all events for the main list, which delivers also
  *  the sub-list.
  *
- * FIELD_LIST:
- *  Contains all attributes in the main list, which contain the
- *  sub-list in question.
- *
  * SOURCE_LIST:
  *  Contains the sub-scription events for the sub-list, which also
  *  contains the filter for the sub-list.
  *
+ * The attributes of the main list that contain the sub-list are
+ * fields known at compile time; list_select() names them per row
+ * (JB_ja_tasks and JB_ja_template, CQ_qinstances, JAT_task_list).
  *
  * This construct and its functions are limited to one sub-scribable
  * sub-list per main list. If multiple sub-lists can be subsribed, the
@@ -221,14 +228,14 @@ typedef struct {
  *
  * SEE ALSO:
  *     evm/sge_event_master/list_select()
- *     evm/sge_event_master/elem_select()
+ *     evm/sge_event_master/ocs_event_select_elem()
  *  and
  *     evm/sge_event_master/add_list_event
  *     evm/sge_event_master/add_event
  *
  ********************************************************************
  */
-/// Number of rows in #EVENT_LIST, #FIELD_LIST and #SOURCE_LIST
+/// Number of rows in #EVENT_LIST and #SOURCE_LIST
 #define LIST_MAX 3
 
 /**
@@ -238,8 +245,10 @@ typedef struct {
  * it. When that happens an event on the outer list has to carry or omit the
  * sublist depending on what else the client subscribed.
  *
- * One row per such list, each terminated by -1. Index-parallel to #FIELD_LIST
- * and #SOURCE_LIST: row *n* of all three describes the same list.
+ * One row per such list, each terminated by -1. Index-parallel to
+ * #SOURCE_LIST: row *n* of both describes the same list. Row 0 carries jobs
+ * (JB), row 1 cluster queues (CQ), row 2 array tasks (JAT); list_select()
+ * relies on that order.
  */
 const int EVENT_LIST[LIST_MAX][6] = {
    {sgeE_JOB_LIST, sgeE_JOB_ADD, sgeE_JOB_DEL, sgeE_JOB_MOD, -1},
@@ -248,23 +257,12 @@ const int EVENT_LIST[LIST_MAX][6] = {
 };
 
 /**
- * @brief The attributes holding the sublist, per row of #EVENT_LIST
- *
- * Index-parallel to #EVENT_LIST and #SOURCE_LIST.
- */
-const int FIELD_LIST[LIST_MAX][3] = {
-   {JB_ja_tasks, JB_ja_template, -1},
-   {CQ_qinstances, -1, -1},
-   {JAT_task_list, -1, -1}
-};
-
-/**
  * @brief The events that report a change *inside* the sublist, per row of #EVENT_LIST
  *
  * If a client subscribed one of these, it learns about sublist changes on its
  * own and the outer event may leave the sublist out.
  *
- * Index-parallel to #EVENT_LIST and #FIELD_LIST.
+ * Index-parallel to #EVENT_LIST.
  */
 const int SOURCE_LIST[LIST_MAX][3] = {
    {sgeE_JATASK_MOD, sgeE_JATASK_ADD, -1},
@@ -307,9 +305,9 @@ const int SOURCE_LIST[LIST_MAX][3] = {
  * derived data stores never pack, and would otherwise receive a copy of a value
  * that the receiving side discards in favour of its own.
  *
- * Every place that builds an event payload has to pass this. There are three,
- * all in this file: sge_add_event(), sge_add_list_event() and
- * total_update_event().
+ * Every place that builds an event payload has to pass this. There are two,
+ * both in this file: ocs_event_payload_clone(), which sge_add_event() and
+ * sge_add_list_event() copy their objects with, and total_update_event().
  */
 static constexpr bool SKIP_NO_TRANSFER = true;
 
@@ -418,37 +416,52 @@ event_master_control_t Event_Master_Control = {
 static int event_master_control_cond_init_ret = ocs::uti::condition_initialize(&Event_Master_Control.cond_var);
 
 static void       init_send_events();
-static void       flush_events(lListElem*, int);
-static void       total_update(lListElem*, uint64_t gdi_session);
+static void       flush_events(ocs::tom::Element<ocs::tom::EV> event_client, int interval);
+static void       total_update(ocs::tom::Element<ocs::tom::EV> event_client, uint64_t gdi_session);
 static ocs::DataStore::Id ev_total_update_enter_global();
 static void       ev_total_update_leave_global(ocs::DataStore::Id active_ds);
-static void       build_subscription(lListElem*);
+static void       build_subscription(ocs::tom::Element<ocs::tom::EV> event_el);
 static void       remove_event_client(ocs::tom::Element<ocs::tom::EV> client, bool lock_event_master);
-static void       check_send_new_subscribed_list(const subscription_t*,
-                                                 const subscription_t*, lListElem*,
-                                                 ev_event event);
-static int        eventclient_subscribed(const lListElem *, ev_event, const char*);
+static void       check_send_new_subscribed_list(const subscription_t *old_subscription,
+                                                 const subscription_t *new_subscription,
+                                                 ocs::tom::Element<ocs::tom::EV> event_client, ev_event event);
+static int        eventclient_subscribed(ocs::tom::ConstElement<ocs::tom::EV> event_client, ev_event event,
+                                         const char *session);
 static int        purge_event_list(ocs::tom::List<ocs::tom::ET> event_list, uint32_t event_number);
 
 static ocs::tom::ElementPtr<ocs::tom::ET> sge_create_event(uint32_t, uint64_t, ev_event, uint32_t, uint32_t,
                                                           const char*, const char*, lList*);
-static bool       add_list_event_for_client(uint32_t, uint64_t, ev_event, uint32_t, uint32_t, const char*, const char*, const char*, lList*, uint64_t);
-static void       add_list_event_direct(lListElem *event_client, lListElem *event, bool copy_event);
-static void       total_update_event(lListElem *event_client, ev_event type, bool new_subscription, uint64_t gdi_session);
-static bool       list_select(subscription_t*, int, lList**, lList*, const lCondition*, const lEnumeration*, const lDescr*, bool);
-static lListElem* elem_select(subscription_t*, lListElem*, const int[], const lCondition*, const lEnumeration*, const lDescr*, int);
+static bool       add_list_event_for_client(uint32_t, uint64_t, ev_event, uint32_t, uint32_t, const char*,
+                                            const char*, const char*, lList*, uint64_t);
+static void       add_list_event_direct(ocs::tom::Element<ocs::tom::EV> event_client,
+                                        ocs::tom::ElementPtr<ocs::tom::ET> &event, bool copy_event);
+static void       total_update_event(ocs::tom::Element<ocs::tom::EV> event_client, ev_event type,
+                                     bool new_subscription, uint64_t gdi_session);
+static bool       list_select(subscription_t *subscription, int type, lList **reduced_lp, lList *lp,
+                              const lCondition *selection, const lEnumeration *fields, const lDescr *descr,
+                              bool do_hash);
 static ocs::tom::Element<ocs::tom::EV> eventclient_list_locate_by_adress(const char*, const char*, uint32_t);
 static const lDescr* getDescriptorL(subscription_t*, const lList*, int);
 static ocs::tom::Element<ocs::tom::EV> get_event_client(uint32_t id);
 static uint32_t   allocate_new_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 static void       free_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
 
-static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock);
+static void blockEvents(ocs::tom::Element<ocs::tom::EV> event_client, ev_event ev_type, bool isBlock);
 
+/**
+ * @brief Free a thread's event transaction storage
+ *
+ * Registered as the destructor of #event_master_control_t::transaction_key.
+ * Trivial and called once per thread: no DENTER.
+ *
+ * @param transaction_store the thread's @ref event_master_transaction_t
+ */
 static void
 sge_event_master_destroy_transaction_store(void *transaction_store) {
-   event_master_transaction_t *t_store = (event_master_transaction_t *)transaction_store;
-   lFreeList(&(t_store->transaction_requests));
+   auto *t_store = static_cast<event_master_transaction_t *>(transaction_store);
+   // the thread local request list (EVR_Type) is freed with the handle
+   static_cast<void>(ocs::tom::ListPtr<ocs::tom::EVR>::from_typed(std::exchange(t_store->transaction_requests,
+                                                                                 nullptr)));
    sge_free(&t_store);
 }
 
@@ -493,10 +506,13 @@ void sge_cleanup_event_master_control(void *arg) {
       }
    }
 
-   // free data structures and pthread resources
-   lFreeList(&Event_Master_Control.clients);
-   lFreeList(&Event_Master_Control.client_ids);
-   lFreeList(&Event_Master_Control.requests);
+   // free data structures and pthread resources; the raw members of the event master are freed with the handles
+   static_cast<void>(ocs::tom::ListPtr<ocs::tom::EV>::from_typed(std::exchange(Event_Master_Control.clients,
+                                                                                nullptr)));
+   static_cast<void>(ocs::tom::ListPtr<ocs::tom::RN>::from_typed(std::exchange(Event_Master_Control.client_ids,
+                                                                                nullptr)));
+   static_cast<void>(ocs::tom::ListPtr<ocs::tom::EVR>::from_typed(std::exchange(Event_Master_Control.requests,
+                                                                                 nullptr)));
    pthread_cond_destroy(&Event_Master_Control.cond_var);
    pthread_mutex_destroy(&Event_Master_Control.cond_mutex);
    pthread_mutex_destroy(&Event_Master_Control.request_mutex);
@@ -507,7 +523,15 @@ void sge_cleanup_event_master_control(void *arg) {
    DRETURN_VOID;
 }
 
-static void sge_event_master_process_add_event_client(const lListElem *request, monitoring_t *monitor) {
+/**
+ * @brief Apply a registration request (not implemented, registrations do not go through the request queue)
+ *
+ * @param request the event master request (EVR_Type)
+ * @param monitor the monitoring of the calling thread
+ */
+static void
+sge_event_master_process_add_event_client([[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::EVR> request,
+                                          [[maybe_unused]] monitoring_t *monitor) {
    /* to be implemented later on - handling the internal event clients could become a little bit tricky */
 }
 
@@ -775,7 +799,7 @@ int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
  * @note MT-NOTE: sge_mod_event_client() is NOT MT safe.
  */
 static void
-sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *monitor) {
+sge_event_master_process_mod_event_client(const ocs::tom::Element<ocs::tom::EVR> request, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
@@ -991,8 +1015,9 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
       Event_Master_Control.max_event_clients = max;
       INFO(MSG_SET_MAXDYNEVENTCLIENT_U, max);
 
-      /* we have to rebuild the event client id range list */
-      lFreeList(&Event_Master_Control.client_ids);
+      /* we have to rebuild the event client id range list; the old one (RN_Type) is freed with the handle */
+      static_cast<void>(ocs::tom::ListPtr<ocs::tom::RN>::from_typed(std::exchange(Event_Master_Control.client_ids,
+                                                                                   nullptr)));
       // the id range list is a raw member of the event master; it is built in an owning handle while the
       // mutex is held and handed back to the member below
       ocs::tom::ListPtr<ocs::tom::RN> client_ids;
@@ -1236,35 +1261,129 @@ int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, ocs::tom:
 } /* sge_shutdown_dynamic_event_clients() */
 
 /**
- * @brief Add an object as event
+ * @brief Copy an object for an event payload
  *
- * Adds an object to the list of events to deliver. Called, if an event
- * occurs to that object, e.g. it was added to Cluster Scheduler, modified or
- * deleted.
- * Internally, a list with that single object is created and passed to
- * sge_add_list_event().
+ * The copy every event payload is built with: without hash tables and without the fields marked
+ * #CULL_NO_TRANSFER (#SKIP_NO_TRANSFER). The typed handles have no clone() with these two choices, so the copy
+ * of the list core is taken over; it has the type of the original.
  *
- * @param timestamp event creation time, 0 -> use current time
- * @param type the event id
- * @param intkey additional data
- * @param intkey2 additional data
- * @param strkey additional data
- * @param strkey2 additional data
- * @param session events session key
- * @param element the object to deliver as event
- * @param gdi_session the session the change belongs to, for read-after-write
- * @return true when the event was queued
+ * Hot path: no DENTER.
  *
- * @note MT-NOTE: sge_add_event() is NOT MT safe.
+ * @tparam T the object type
+ * @param element the object, not an empty handle
+ * @return the copy, owned by the caller
  */
-bool sge_add_event(uint64_t timestamp, ev_event type, uint32_t intkey, uint32_t intkey2, const char *strkey,
-                   const char *strkey2, const char *session, lListElem *element, uint64_t gdi_session) {
-   return sge_add_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2, strkey, strkey2, session, element, gdi_session);
+template <ocs::tom::ObjectType T>
+static ocs::tom::ElementPtr<T>
+ocs_event_payload_clone(const ocs::tom::ConstElement<T> element) {
+   return ocs::tom::ElementPtr<T>::from_typed(ocs::tom::copy_elem(element.raw(), false, SKIP_NO_TRANSFER));
 }
+
+/**
+ * @brief Copy an object for an event payload, leaving out the sub-list of one list field
+ *
+ * The sub-list is taken out of the object for the copy and put back afterwards, also when the copy fails, so
+ * the object is unchanged when the function returns. A modify event of a job, a cluster queue or an array task
+ * does not carry the sub-list its own events deliver.
+ *
+ * Hot path: no DENTER.
+ *
+ * @tparam F the list field left out
+ * @param element the object, not an empty handle; it must hold the field
+ * @return the copy, owned by the caller
+ */
+template <auto F>
+static ocs::tom::ElementPtr<typename ocs::tom::FieldTraits<F>::Type>
+ocs_event_payload_clone_without(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> element) {
+   using T = typename ocs::tom::FieldTraits<F>::Type;
+   using Sub = typename ocs::tom::FieldTraits<F>::Sub;
+
+   auto sub_list = element.template exchange<F>(ocs::tom::ListPtr<Sub>());
+   ocs::tom::ElementPtr<T> copy;
+   try {
+      copy = ocs_event_payload_clone<T>(element);
+   } catch (...) {
+      static_cast<void>(element.template exchange<F>(std::move(sub_list)));
+      throw;
+   }
+   static_cast<void>(element.template exchange<F>(std::move(sub_list)));
+   return copy;
+}
+
+/**
+ * @brief Copy an object for the payload of an event of a given type
+ *
+ * The modify events of jobs, cluster queues and array tasks leave out the sub-list that has events of its own
+ * (array tasks, queue instances, parallel tasks); every other event carries the whole object.
+ *
+ * Hot path: no DENTER.
+ *
+ * @tparam T the object type
+ * @param type the event type
+ * @param element the object, not an empty handle
+ * @return the copy, owned by the caller
+ */
+template <ocs::tom::ObjectType T>
+static ocs::tom::ElementPtr<T>
+ocs_event_payload_copy(const ev_event type, const ocs::tom::Element<T> element) {
+   if constexpr (std::is_same_v<T, ocs::tom::JB>) {
+      if (type == sgeE_JOB_MOD) {
+         return ocs_event_payload_clone_without<JB_ja_tasks>(element);
+      }
+   } else if constexpr (std::is_same_v<T, ocs::tom::CQ>) {
+      if (type == sgeE_CQUEUE_MOD) {
+         return ocs_event_payload_clone_without<CQ_qinstances>(element);
+      }
+   } else if constexpr (std::is_same_v<T, ocs::tom::JAT>) {
+      if (type == sgeE_JATASK_MOD) {
+         return ocs_event_payload_clone_without<JAT_task_list>(element);
+      }
+   }
+   return ocs_event_payload_clone<T>(element);
+}
+
 /**
  * @brief Add an event for a given object
  *
- * Add an event for a given event client.
+ * Add an event for a given event client, carrying a copy of the object.
+ *
+ * @tparam T the object type
+ * @param event_client_id event client id
+ * @param timestamp event creation time, 0 -> use current time
+ * @param type event id
+ * @param intkey 1st numeric key
+ * @param intkey2 2nd numeric key
+ * @param strkey 1st alphanumeric key
+ * @param strkey2 2nd alphanumeric key
+ * @param session event session
+ * @param element object to be delivered with the event, or an empty handle for an event without an object
+ * @param gdi_session the session the change belongs to, for read-after-write
+ * @return true when the event was queued
+ *
+ * @note MT-NOTE: sge_add_event_for_client() is MT safe
+ */
+template <ocs::tom::ObjectType T>
+bool sge_add_event_for_client(const uint32_t event_client_id, const uint64_t timestamp, const ev_event type,
+                              const uint32_t intkey, const uint32_t intkey2, const char *strkey, const char *strkey2,
+                              const char *session, const ocs::tom::Element<T> element, const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   ocs::tom::ListPtr<T> objects;
+   if (element) {
+      // the list takes the descriptor of the object, which may be a reduced one
+      objects = ocs::tom::ListPtr<T>::create("Events", lGetElemDescr(element), ocs::tom::Hashing::Off);
+      objects->push_back(ocs_event_payload_copy(type, element));
+   }
+
+   // the payload (ET_new_version) is typed by the event type only; the event takes it over
+   const bool ret = add_list_event_for_client(event_client_id, timestamp, type, intkey, intkey2, strkey, strkey2,
+                                              session, objects.release(), gdi_session);
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief Add an event without an object for a given event client
  *
  * @param event_client_id event client id
  * @param timestamp event creation time, 0 -> use current time
@@ -1274,50 +1393,20 @@ bool sge_add_event(uint64_t timestamp, ev_event type, uint32_t intkey, uint32_t 
  * @param strkey 1st alphanumeric key
  * @param strkey2 2nd alphanumeric key
  * @param session event session
- * @param element object to be delivered with the event
+ * @param element nullptr: the event carries no object
  * @param gdi_session the session the change belongs to, for read-after-write
  * @return true when the event was queued
  *
  * @note MT-NOTE: sge_add_event_for_client() is MT safe
  */
-bool sge_add_event_for_client(uint32_t event_client_id, uint64_t timestamp, ev_event type,
-                              uint32_t intkey, uint32_t intkey2,
-                              const char *strkey, const char *strkey2,
-                              const char *session, lListElem *element, uint64_t gdi_session) {
+bool sge_add_event_for_client(const uint32_t event_client_id, const uint64_t timestamp, const ev_event type,
+                              const uint32_t intkey, const uint32_t intkey2, const char *strkey, const char *strkey2,
+                              const char *session, [[maybe_unused]] const std::nullptr_t element,
+                              const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lList *lp = nullptr;
-   bool ret = false;
-
-   if (element != nullptr) {
-      lList *temp_sub_lp = nullptr;
-      int sub_list_elem = 0;
-
-      /* ignore the sublist in case of the following events. We have
-       * extra events to handle the sub-lists
-       */
-      if (type == sgeE_JOB_MOD) {
-         sub_list_elem = JB_ja_tasks;
-         lXchgList(element, sub_list_elem, &temp_sub_lp);
-      } else if (type == sgeE_CQUEUE_MOD) {
-         sub_list_elem = CQ_qinstances;
-         lXchgList(element, sub_list_elem, &temp_sub_lp);
-      } else if (type == sgeE_JATASK_MOD) {
-         sub_list_elem = JAT_task_list;
-         lXchgList(element, sub_list_elem, &temp_sub_lp);
-      }
-
-      lp = lCreateListHash("Events", lGetElemDescr(element), false);
-      lAppendElem(lp, lCopyElemHash(element, false, SKIP_NO_TRANSFER));
-
-      /* restore the original event object */
-      if (temp_sub_lp != nullptr) {
-         lXchgList(element, sub_list_elem, &temp_sub_lp);
-      }
-   }
-
-   ret = add_list_event_for_client(event_client_id, timestamp, type, intkey, intkey2,
-                                   strkey, strkey2, session, lp, gdi_session);
+   const bool ret = add_list_event_for_client(event_client_id, timestamp, type, intkey, intkey2, strkey, strkey2,
+                                              session, nullptr, gdi_session);
 
    DRETURN(ret);
 }
@@ -1326,8 +1415,9 @@ bool sge_add_event_for_client(uint32_t event_client_id, uint64_t timestamp, ev_e
  * @brief Add a list as event
  *
  * Adds a list of objects to the list of events to deliver, e.g. the
- * sgeE*_LIST events.
+ * sgeE*_LIST events. The event carries a copy of every object.
  *
+ * @tparam T the object type
  * @param timestamp event creation time, 0 -> use current time
  * @param type the event id
  * @param intkey additional data
@@ -1335,56 +1425,74 @@ bool sge_add_event_for_client(uint32_t event_client_id, uint64_t timestamp, ev_e
  * @param strkey additional data
  * @param strkey2 additional data
  * @param session events session key
- * @param list the list to deliver as event
+ * @param list the list to deliver as event, or an empty handle for an event without objects
  * @param gdi_session the session the change belongs to, for read-after-write
  *
  * @return true when the event was queued
  *
  * @note MT-NOTE: sge_add_list_event() is MT safe.
  */
-bool sge_add_list_event(uint64_t timestamp, ev_event type,
-                        uint32_t intkey, uint32_t intkey2,
-                        const char *strkey, const char *strkey2,
-                        const char *session, lList *list, uint64_t gdi_session) {
-   bool ret;
-   lList *lp = nullptr;
+template <ocs::tom::ObjectType T>
+bool sge_add_list_event(const uint64_t timestamp, const ev_event type, const uint32_t intkey, const uint32_t intkey2,
+                        const char *strkey, const char *strkey2, const char *session, const ocs::tom::List<T> list,
+                        const uint64_t gdi_session) {
+   ocs::tom::ListPtr<T> objects;
 
-   if (list != nullptr) {
-      lp = lCreateListHash("Events", lGetListDescr(list), false);
-      if (lp == nullptr) {
-         return false;
-      }
-      for_each_rw_lv(element, list) {
-         lList *temp_sub_lp = nullptr;
-         int sub_list_elem = 0;
-
-         /* ignore the sublist in case of the following events. We have
-          * extra events to handle the sub-lists
-          */
-         if (type == sgeE_JOB_MOD) {
-            sub_list_elem = JB_ja_tasks;
-            lXchgList(element, sub_list_elem, &temp_sub_lp);
-         } else if (type == sgeE_CQUEUE_MOD) {
-            sub_list_elem = CQ_qinstances;
-            lXchgList(element, sub_list_elem, &temp_sub_lp);
-         } else if (type == sgeE_JATASK_MOD) {
-            sub_list_elem = JAT_task_list;
-            lXchgList(element, sub_list_elem, &temp_sub_lp);
-         }
-
-         lAppendElem(lp, lCopyElemHash(element, false, SKIP_NO_TRANSFER));
-
-         /* restore the original event object */
-         if (temp_sub_lp != nullptr) {
-            lXchgList(element, sub_list_elem, &temp_sub_lp);
-         }
+   if (list) {
+      // the copy takes the descriptor of the list, which may be a reduced one
+      objects = ocs::tom::ListPtr<T>::create("Events", lGetListDescr(list), ocs::tom::Hashing::Off);
+      for (const auto element : list) {
+         objects->push_back(ocs_event_payload_copy(type, element));
       }
    }
 
-   ret = add_list_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2,
-                                   strkey, strkey2, session, lp, gdi_session);
-   return ret;
+   // the payload (ET_new_version) is typed by the event type only; the event takes it over
+   return add_list_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2, strkey, strkey2, session,
+                                    objects.release(), gdi_session);
 }
+
+/*
+ * The object types events carry. sge_add_event() and sge_add_event_for_client() are instantiated for every
+ * object type of ocs_object_types (sge_persistence_qmaster.cc dispatches over them) and for the job report of
+ * sgeE_JOB_FINISH; sge_add_list_event() for the usage lists of sgeE_JOB_USAGE and sgeE_JOB_FINAL_USAGE.
+ */
+
+/// Instantiate sge_add_event_for_client() for the object type T
+#define OCS_EVM_INSTANTIATE_ELEMENT_EVENT(T) \
+   template bool sge_add_event_for_client<ocs::tom::T>(uint32_t, uint64_t, ev_event, uint32_t, uint32_t, \
+                                                      const char *, const char *, const char *, \
+                                                      ocs::tom::Element<ocs::tom::T>, uint64_t)
+
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(AR);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(CAL);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(CE);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(CK);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(CONF);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(CQ);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(CT);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(EH);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(HGRP);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(JAT);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(JB);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(JR);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(PE);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(PET);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(PR);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(QU);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(RL);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(RQS);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(SC);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(SME);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(STN);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(STU);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(SU);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(US);
+OCS_EVM_INSTANTIATE_ELEMENT_EVENT(UU);
+
+#undef OCS_EVM_INSTANTIATE_ELEMENT_EVENT
+
+template bool sge_add_list_event<ocs::tom::UA>(uint64_t, ev_event, uint32_t, uint32_t, const char *, const char *,
+                                               const char *, ocs::tom::List<ocs::tom::UA>, uint64_t);
 
 /**
  * @brief Create an event
@@ -1506,14 +1614,21 @@ add_list_event_for_client_after_commit(ocs::tom::ElementPtr<ocs::tom::EVR> &&evr
  * sure that the client id is valid.  That is the responsibility of the
  * calling function.
  *
+ * The payload is the one place where an event's objects are handed over without their type: ET_new_version
+ * holds lists of every object type, and which one is given by the event type. The typed callers
+ * (sge_add_event_for_client(), sge_add_list_event(), total_update_event()) release their typed list into it.
+ *
  * @param event_client_id the id of the recipient
  * @param timestamp time stamp in gmt for the even; if 0 is passed, sge_add_list_event will insert the actual time
  * @param type the event id
- * @param intkey additional data
- * @param intkey2 additional data
- * @param strkey additional data
+ * @param int_key additional data
+ * @param int_key2 additional data
+ * @param str_key additional data
+ * @param str_key2 additional data
  * @param session events session key
- * @param list the list to deliver as event
+ * @param list the objects to deliver as event (ET_new_version), of the event type's object type, taken over;
+ *        nullptr for an event without objects
+ * @param gdi_session the session the change belongs to, for read-after-write
  *
  * @return Whether the event was added successfully.
  *
@@ -1571,7 +1686,7 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
  * @param monitor the monitoring of the calling thread
  */
 static void
-sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
+sge_event_master_process_send(const ocs::tom::Element<ocs::tom::EVR> request, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    ev_event type = sgeE_ALL_EVENTS;
    uint32_t ec_id = ocs::tom::get<EVR_event_client_id>(request);
@@ -1586,7 +1701,7 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
       while (const auto first = event_list.front()) {
          bool added = false;
          // freed at the end of the iteration, every client gets a copy
-         const auto event = event_list.extract(first);
+         auto event = event_list.extract(first);
          type = static_cast<ev_event>(ocs::tom::get<ET_type>(event));
 
          sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
@@ -1598,7 +1713,7 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
 
             if (eventclient_subscribed(event_client, type, session)) {
                added = true;
-               add_list_event_direct(event_client, event.get(), true);
+               add_list_event_direct(event_client, event, true);
                MONITOR_EDT_ADDED(monitor);
             }
          }
@@ -1625,7 +1740,7 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
             if (eventclient_subscribed(event_client, type, session)) {
                /* We can't free the event when we're done because it now belongs
                 * to send_events(). */
-               add_list_event_direct(event_client, event.release(), false);
+               add_list_event_direct(event_client, event, false);
                MONITOR_EDT_ADDED(monitor);
             } else {
                MONITOR_EDT_SKIP(monitor);
@@ -1682,7 +1797,7 @@ sge_handle_event_ack(const uint32_t event_client_id, const uint32_t event_number
  * @param monitor the monitoring of the calling thread
  */
 static void
-sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor) {
+sge_event_master_process_ack(const ocs::tom::ConstElement<ocs::tom::EVR> request, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    uint32_t event_client_id;
@@ -1799,8 +1914,11 @@ void
 sge_event_master_init() {
    DENTER(TOP_LAYER);
 
-   Event_Master_Control.clients = lCreateListHash("EV_Clients", EV_Type, true);
-   Event_Master_Control.requests = lCreateListHash("Event Master Requests", EVR_Type, false);
+   // process-lifetime members of the event master, freed in sge_cleanup_event_master_control()
+   Event_Master_Control.clients =
+      ocs::tom::ListPtr<ocs::tom::EV>::create("EV_Clients", ocs::tom::Hashing::On).release();
+   Event_Master_Control.requests =
+      ocs::tom::ListPtr<ocs::tom::EVR>::create("Event Master Requests", ocs::tom::Hashing::Off).release();
    pthread_key_create(&(Event_Master_Control.transaction_key), sge_event_master_destroy_transaction_store);
 
    init_send_events();
@@ -1951,7 +2069,8 @@ remove_event_client(const ocs::tom::Element<ocs::tom::EV> client, const bool loc
  *       MT-NOTE: After all events for all clients have been sent. This function
  *       MT-NOTE: will wait on the condition variable 'Event_Master_Control.cond_var'
  */
-void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor) {
+void sge_event_master_send_events(const ocs::tom::Element<ocs::tom::REP> report,
+                                  const ocs::tom::List<ocs::tom::REP> report_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    uint32_t timeout;
@@ -2073,6 +2192,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
       /* do we have to deliver events ? */
       if (now >= ocs::tom::get<EV_next_send_time>(event_client)) {
          if (!ocs::tom::get<EV_busy>(event_client) || do_remove) {
+            // REP_list carries lists of any type, so the events (ET_Type) move through a raw list
             lList *lp = nullptr;
 
             /* put only pointer in report - dont copy */
@@ -2083,9 +2203,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
                update_func(ec_id, nullptr, report_list, update_func_arg);
                ret = CL_RETVAL_OK;
             } else {
-               // the report list (REP_Type) the event master thread built; no checked constructor on this path
-               ret = ocs::gdi::ClientExecd::report_list_send(ocs::tom::ConstList<ocs::tom::REP>::from_typed(report_list),
-                                                             host, commproc, commid, 0);
+               ret = ocs::gdi::ClientExecd::report_list_send(report_list, host, commproc, commid, 0);
                MONITOR_MESSAGES_OUT(monitor);
             }
 
@@ -2136,14 +2254,23 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
    DRETURN_VOID;
 } /* send_events() */
 
+/**
+ * @brief Bring the next delivery to an event client forward
+ *
+ * The next delivery happens at the latest after @p interval seconds; if it is due now, the
+ * event master is woken up.
+ *
+ * @param event_client the event client (EV_Type), an element of the event client list
+ * @param interval the longest delay of the next delivery, in seconds
+ */
 static void
-flush_events(lListElem *event_client, int interval) {
+flush_events(const ocs::tom::Element<ocs::tom::EV> event_client, const int interval) {
    DENTER(TOP_LAYER);
 
    uint64_t next_send = 0;
    uint64_t now = sge_get_gmt64();
 
-   SGE_ASSERT(event_client != nullptr);
+   SGE_ASSERT(event_client);
 
    next_send = ocs::tom::get<EV_next_send_time>(event_client);
    next_send = std::min(next_send, now + sge_gmt32_to_gmt64(interval));
@@ -2227,6 +2354,7 @@ ev_total_update_leave_global(ocs::DataStore::Id active_ds) {
  * it should completely update it's database.
  *
  * @param event_client the event client to update
+ * @param gdi_session the session the total update belongs to
  *
  * @note MT-NOTE: total_update() is MT safe, IF the function is invoked with
  *       MT-NOTE: 'LOCK_EVENT_CLIENT_LST' locked! This is in accordance with
@@ -2240,7 +2368,7 @@ ev_total_update_leave_global(ocs::DataStore::Id active_ds) {
  *       MT-NOTE: acquired before it - see send_events().
  */
 static void
-total_update(lListElem *event_client, uint64_t gdi_session) {
+total_update(const ocs::tom::Element<ocs::tom::EV> event_client, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    // The lists read below are the ones of the data store this thread has active, and
@@ -2254,6 +2382,7 @@ total_update(lListElem *event_client, uint64_t gdi_session) {
    GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store,
                 Event_Master_Control.transaction_key);
    bool outer_transaction = t_store->is_transaction;
+   // the thread local storage holds the request list raw; it is parked here and put back below
    lList *outer_requests = nullptr;
    if (outer_transaction) {
       outer_requests = t_store->transaction_requests;
@@ -2287,7 +2416,8 @@ total_update(lListElem *event_client, uint64_t gdi_session) {
    sge_commit(gdi_session);
 
    if (outer_transaction) {
-      lFreeList(&(t_store->transaction_requests));
+      // the committed list of the total update (EVR_Type) is freed with the handle
+      static_cast<void>(ocs::tom::ListPtr<ocs::tom::EVR>::from_typed(t_store->transaction_requests));
       t_store->transaction_requests = outer_requests;
       t_store->is_transaction = true;
    }
@@ -2308,9 +2438,9 @@ total_update(lListElem *event_client, uint64_t gdi_session) {
  * CS-2340) — independent of any caller-side verification. Valid ids are
  * processed unchanged.
  *
- * @param event_el  the event-client element whose subscription is (re)built
+ * @param event_el the event-client element (EV_Type) whose subscription is (re)built
  */
-static void build_subscription(lListElem *event_el) {
+static void build_subscription(const ocs::tom::Element<ocs::tom::EV> event_el) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ConstList<ocs::tom::EVS> subscription = ocs::tom::get<EV_subscribed>(event_el);
@@ -2334,6 +2464,7 @@ static void build_subscription(lListElem *event_el) {
    }
 
    for (ocs::tom::ConstElement<ocs::tom::EVS> sub_el : subscription) {
+      // the where and what of the subscription are cull's own condition and enumeration elements, untyped
       const lListElem *temp = nullptr;
       uint32_t event = ocs::tom::get<EVS_id>(sub_el);
 
@@ -2393,7 +2524,7 @@ static void build_subscription(lListElem *event_el) {
 static void
 check_send_new_subscribed_list(const subscription_t *old_subscription,
                                const subscription_t *new_subscription,
-                               lListElem *event_client, ev_event event) {
+                               const ocs::tom::Element<ocs::tom::EV> event_client, const ev_event event) {
    if ((new_subscription[event].subscription == EV_SUBSCRIBED) &&
       (old_subscription[event].subscription == EV_NOT_SUBSCRIBED)) {
       total_update_event(event_client, event, true, ocs::SessionManager::GDI_SESSION_NONE);
@@ -2413,16 +2544,16 @@ check_send_new_subscribed_list(const subscription_t *old_subscription,
  *
  * @return 0 = not subscribed, 1 = subscribed
  */
-static int eventclient_subscribed(const lListElem *event_client, ev_event event,
+static int eventclient_subscribed(const ocs::tom::ConstElement<ocs::tom::EV> event_client, const ev_event event,
                                   const char *session) {
    DENTER(TOP_LAYER);
 
    const subscription_t *subscription = nullptr;
    const char *ec_session = nullptr;
 
-   SGE_ASSERT(event_client != nullptr);
+   SGE_ASSERT(event_client);
 
-   if (event_client == nullptr) {
+   if (!event_client) {
       DRETURN(0);
    }
 
@@ -2511,34 +2642,38 @@ static int purge_event_list(const ocs::tom::List<ocs::tom::ET> event_list, const
  *
  * Reduces the payload to what the client subscribed and numbers the event. Hot path.
  *
+ * The payload (ET_new_version) is typed only by the event type. It is reduced with the where and what of the
+ * client's subscription, which work on a descriptor, so it is handled as a raw list here; list_select() runs
+ * typed for the lists with a subscribable sub-list.
+ *
  * @param event_client the event client (EV_Type)
- * @param event the event (ET_Type); its payload is runtime typed
- * @param copy_event true to add a copy and leave @p event to the caller; false to take @p event over
+ * @param event the event (ET_Type), an element of no list
+ * @param copy_event true to add a copy and leave @p event to the caller; false to take @p event over, it is
+ *        empty afterwards
  */
-static void add_list_event_direct(lListElem *event_client, lListElem *event,
-                                  bool copy_event) {
+static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_client,
+                                  ocs::tom::ElementPtr<ocs::tom::ET> &event, const bool copy_event) {
    DENTER(TOP_LAYER);
 
+   // the payload, runtime typed (see above)
    lList *lp = nullptr;
    lList *clp = nullptr;
-   lListElem *ep = nullptr;
-   ev_event type = (ev_event)ocs::tom::get<ET_type>(event);
+   const auto type = static_cast<ev_event>(ocs::tom::get<ET_type>(event));
    subscription_t *subscription = nullptr;
    char buffer[1024];
    dstring buffer_wrapper;
-   uint32_t i = 0;
    const lCondition *selection = nullptr;
    const lEnumeration *fields = nullptr;
    const lDescr *descr = nullptr;
    bool internal_client = false;
 
-   SGE_ASSERT(event_client != nullptr);
+   SGE_ASSERT(event_client);
 
    if (ocs::tom::get<EV_state>(event_client) != EV_connected) {
       /* the event client is not connected anymore, so we are not
          adding new events to it*/
       if (!copy_event) {
-         lFreeElem(&event);
+         event.reset();
       }
       DRETURN_VOID;
    }
@@ -2591,7 +2726,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
             ocs::tom::exchange<ET_new_version>(event, &lp);
 
             if (!copy_event) {
-               lFreeElem(&event);
+               event.reset();
             }
 
             DPRINTF("Skipping event because it has no content for this client.\n");
@@ -2623,17 +2758,19 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    } /* if */
 
    /* If we're making a copy, copy the event and swap the orignial list
-    * back into the original event */
+    * back into the original event. The event holds no payload at this point,
+    * so the copy holds no list either. */
+   ocs::tom::ElementPtr<ocs::tom::ET> ep;
    if (copy_event) {
 #if 0
       DPRINTF("Copying event\n");
 #endif
-      ep = lCopyElemHash(event, false);
+      ep = event->clone();
 
       ocs::tom::exchange<ET_new_version>(event, &lp);
    } else {
       /* If we're not making a copy, reuse the original event. */
-      ep = event;
+      ep = std::move(event);
    }
 
    /* Swap the new list into the working event. */
@@ -2641,9 +2778,9 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 
    /* fill in event number and increment
       EV_next_number of event recipient */
-   i = ocs::tom::get<EV_next_number>(event_client);
-   ocs::tom::set<EV_next_number>(event_client, (i + 1));
-   ocs::tom::set<ET_number>(ep, i);
+   const uint32_t number = ocs::tom::get<EV_next_number>(event_client);
+   ocs::tom::set<EV_next_number>(event_client, number + 1);
+   ocs::tom::set<ET_number>(ep, number);
 
    /* build a new event list if not exists */
    ocs::tom::List<ocs::tom::ET> events = ocs::tom::get<EV_events>(event_client);
@@ -2654,11 +2791,10 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
       ocs::tom::set<EV_events>(event_client, std::move(new_events));
    }
 
-   /* chain in new event; ep is the event (ET_Type) or a copy of it, owned here */
-   events.push_back(ocs::tom::ElementPtr<ocs::tom::ET>::from_typed(ep));
+   /* chain in new event */
+   const auto added = events.push_back(std::move(ep));
 
-   DPRINTF("%d %s\n", ocs::tom::get<EV_id>(event_client),
-           event_text(ocs::tom::ConstElement<ocs::tom::ET>::from_typed(ep), &buffer_wrapper));
+   DPRINTF("%d %s\n", ocs::tom::get<EV_id>(event_client), event_text(added, &buffer_wrapper));
 
    /* check if event clients wants flushing */
    subscription = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
@@ -2681,104 +2817,111 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 }
 
 /**
+ * @brief The object type whose master list a total update event delivers
+ *
+ * @param type the list event
+ * @return the object type, or SGE_TYPE_ALL for an event that delivers no master list (sgeE_SCHED_CONF is built
+ *         from the scheduler configuration, every other event is no list event)
+ */
+static sge_object_type
+ocs_total_update_object_type(const ev_event type) {
+   switch (type) {
+      case sgeE_CALENDAR_LIST:
+         return SGE_TYPE_CALENDAR;
+      case sgeE_CKPT_LIST:
+         return SGE_TYPE_CKPT;
+      case sgeE_CENTRY_LIST:
+         return SGE_TYPE_CENTRY;
+      case sgeE_CONFIG_LIST:
+         return SGE_TYPE_CONFIG;
+      case sgeE_EXECHOST_LIST:
+         return SGE_TYPE_EXECHOST;
+      case sgeE_JOB_LIST:
+         return SGE_TYPE_JOB;
+      case sgeE_JOB_SCHEDD_INFO_LIST:
+         return SGE_TYPE_JOB_SCHEDD_INFO;
+      case sgeE_NEW_SHARETREE:
+         return SGE_TYPE_SHARETREE;
+      case sgeE_PE_LIST:
+         return SGE_TYPE_PE;
+      case sgeE_PROJECT_LIST:
+         return SGE_TYPE_PROJECT;
+      case sgeE_CQUEUE_LIST:
+         return SGE_TYPE_CQUEUE;
+      case sgeE_USER_LIST:
+         return SGE_TYPE_USER;
+      case sgeE_USERSET_LIST:
+         return SGE_TYPE_USERSET;
+      case sgeE_HGROUP_LIST:
+         return SGE_TYPE_HGROUP;
+      case sgeE_RQS_LIST:
+         return SGE_TYPE_RQS;
+      case sgeE_AR_LIST:
+         return SGE_TYPE_AR;
+      case sgeE_CATEGORY_LIST:
+         return SGE_TYPE_CATEGORY;
+      default:
+         return SGE_TYPE_ALL;
+   }
+}
+
+/**
  * @brief Create a total update event
  *
  * Creates an event delivering a certain list of objects for an event client.
  * For event clients that have subscribed a session list filtering can be done
  * here.
  *
+ * The object type of the list is known only at run time: the function dispatches on it once
+ * (ocs_with_object_type()) and copies the master list as a list of that type.
+ *
  * @param event_client event client to receive the list
  * @param type event describing the list to update
+ * @param new_subscription true if the client just subscribed the list; the subscription is not checked then
+ * @param gdi_session the session the total update belongs to (not used, the event has none)
  */
-static void total_update_event(lListElem *event_client, ev_event type, bool new_subscription, uint64_t gdi_session) {
+static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_client, const ev_event type,
+                               const bool new_subscription, [[maybe_unused]] const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const lList *lp = nullptr; /* lp should be set, if we have to make a copy */
-   lList *copy_lp = nullptr; /* copy_lp should be used for a copy of the org. list */
-   char buffer[1024];
-   dstring buffer_wrapper;
-   uint32_t id;
+   SGE_ASSERT(event_client);
 
-   SGE_ASSERT(event_client != nullptr);
-
-   sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
-   id = ocs::tom::get<EV_id>(event_client);
+   const uint32_t id = ocs::tom::get<EV_id>(event_client);
 
    /* This test bothers me.  Technically, the GDI thread should just drop the
     * event in the send queue and forget about it.  However, doing this test
     * here could prevent the queuing of events that will later be determined
     * to be useless. */
    if (new_subscription || eventclient_subscribed(event_client, type, nullptr)) {
-      switch (type) {
-         case sgeE_CALENDAR_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-            break;
-         case sgeE_CKPT_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
-            break;
-         case sgeE_CENTRY_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-            break;
-         case sgeE_CONFIG_LIST:
-            /* sge_get_configuration() returns a copy already, we do not need to make
-               one later */
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
-            break;
-         case sgeE_EXECHOST_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-            break;
-         case sgeE_JOB_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-            break;
-         case sgeE_JOB_SCHEDD_INFO_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_JOB_SCHEDD_INFO);
-            break;
-         case sgeE_NEW_SHARETREE:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-            break;
-         case sgeE_PE_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-            break;
-         case sgeE_PROJECT_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-            break;
-         case sgeE_CQUEUE_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-            break;
-         case sgeE_SCHED_CONF:
-            /* the only payload not built by the copy below, so a
-             * CULL_NO_TRANSFER field on SC_Type would need handling here */
-            copy_lp = sconf_get_config_list().release();
-            break;
-         case sgeE_USER_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-            break;
-         case sgeE_USERSET_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-            break;
-         case sgeE_HGROUP_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
-            break;
-         case sgeE_RQS_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-            break;
-         case sgeE_AR_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-            break;
-         case sgeE_CATEGORY_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-            break;
-         default:
+      // the payload (ET_new_version), typed by the event type only; the event takes it over
+      lList *payload = nullptr;
+
+      if (type == sgeE_SCHED_CONF) {
+         /* the only payload not built by the copy below, so a
+          * CULL_NO_TRANSFER field on SC_Type would need handling here */
+         payload = sconf_get_config_list().release();
+      } else {
+         const sge_object_type object_type = ocs_total_update_object_type(type);
+         const bool dispatched = ocs_with_object_type(object_type, [&payload](const auto &entry) {
+            using E = ocs_object_type_entry_t<decltype(entry)>;
+            using T = typename E::type;
+            // the master list of an object type holds objects of that type
+            const auto master_list = ocs::tom::ConstList<T>::from_typed(*ocs::DataStore::get_master_list(E::value));
+            if (master_list) {
+               // the typed handles have no clone() without the CULL_NO_TRANSFER fields, see
+               // ocs_event_payload_clone(); the copy keeps the name of the master list
+               payload = ocs::tom::copy_list(nullptr, master_list, false, SKIP_NO_TRANSFER);
+            }
+         });
+         if (!dispatched) {
             WARNING(MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type);
             DRETURN_VOID;
-      } /* switch */
-
-      if (lp != nullptr) {
-         copy_lp = lCopyListHash(lGetListName(lp), lp, false, SKIP_NO_TRANSFER);
+         }
       }
 
-      /* 'send_events()' will free the copy of 'lp' */
-      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, copy_lp, ocs::SessionManager::GDI_SESSION_NONE);
+      /* 'send_events()' will free the copy of the master list */
+      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, payload,
+                                ocs::SessionManager::GDI_SESSION_NONE);
    } /* if */
 
    DRETURN_VOID;
@@ -2786,29 +2929,197 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
 
 
 /**
+ * @brief The object type and the sub-type of the list fields holding a subscribable sub-list
+ *
+ * @tparam F the first list field
+ * @tparam Rest the other list fields, of the same object type and sub-type
+ */
+template <auto F, auto... Rest>
+struct OcsEventSubListFields {
+   using Type = typename ocs::tom::FieldTraits<F>::Type;   ///< the object type holding the fields
+   using Sub = typename ocs::tom::FieldTraits<F>::Sub;     ///< the type of the sub-list
+
+   static_assert((std::is_same_v<typename ocs::tom::FieldTraits<Rest>::Type, Type> && ...),
+                 "the sub-list fields are fields of one object type");
+   static_assert((std::is_same_v<typename ocs::tom::FieldTraits<Rest>::Sub, Sub> && ...),
+                 "the sub-list fields hold one sub-type");
+};
+
+/**
+ * @brief Makes a reduced copy of an element with reducing sublists
+ *
+ * The function will apply the given filters for the element. Before the element
+ * is reduced, the sub-lists of the fields @p F are removed from the element and
+ * reduced. The reduced sub-lists are added to the reduced element and the original
+ * element is restored. The sub-lists are only reduced, if the reduced element
+ * still contains their fields.
+ *
+ * The selections are cull's where and what of the subscription, which work on a descriptor, so the
+ * selection calls themselves stay raw; their results keep the types of the element and of @p F.
+ *
+ * @tparam F the list fields holding the subscribable sub-list, of one object type and one sub-type
+ * @param subscription subscription array
+ * @param element the element to reduce
+ * @param selection where filter
+ * @param fields what filter
+ * @param dp reduced descriptor
+ * @param sub_type the event type of the sub-list, whose subscription holds the sub-list filters
+ *
+ * @return the reduced element, or an empty handle if the element does not match or something went wrong
+ *
+ * @note MT-NOTE: works only on the variables -> thread save
+ */
+template <auto... F>
+static ocs::tom::ElementPtr<typename OcsEventSubListFields<F...>::Type>
+ocs_event_select_elem(subscription_t *subscription,
+                      const ocs::tom::Element<typename OcsEventSubListFields<F...>::Type> element,
+                      const lCondition *selection, const lEnumeration *fields, const lDescr *dp, const int sub_type) {
+   DENTER(TOP_LAYER);
+
+   using T = typename OcsEventSubListFields<F...>::Type;
+   using Sub = typename OcsEventSubListFields<F...>::Sub;
+
+   if (!element) {
+      DRETURN(nullptr);
+   }
+
+   if (sub_type <= sgeE_ALL_EVENTS || sub_type >= sgeE_EVENTSIZE) {
+      /* TODO: SG: add error message */
+      DPRINTF("wrong event sub type\n");
+      DRETURN(nullptr);
+   }
+
+   /* get the filters for the sub lists */
+   const lCondition *sub_selection = subscription[sub_type].where;
+   const lEnumeration *sub_fields = subscription[sub_type].what;
+
+   if (!sub_fields) {
+      DPRINTF("no sub filter specified\n");
+      // the selection keeps the type of the element
+      DRETURN(ocs::tom::ElementPtr<T>::from_typed(lSelectElemDPack(element, selection, dp, fields, false,
+                                                                   nullptr)));
+   }
+
+   /* remove the sub-lists from the main element */
+   std::array<ocs::tom::ListPtr<Sub>, sizeof...(F)> sub_lists;
+   std::size_t i = 0;
+   const auto take_out = [&]<auto G>() {
+      sub_lists[i++] = element.template exchange<G>(ocs::tom::ListPtr<Sub>());
+   };
+   (take_out.template operator()<F>(), ...);
+
+   /* get descriptor for reduced sub-lists */
+   const lDescr *sub_descr = nullptr;
+   for (const auto &sub_list : sub_lists) {
+      if (sub_list) {
+         sub_descr = getDescriptorL(subscription, sub_list.get(), sub_type);
+         break;
+      }
+   }
+
+   /* copy the main element; the copy and the selections keep the type of the element */
+   ocs::tom::ElementPtr<T> el;
+   if (!fields) {
+      /* there might be no filter for the main element, but for the sub-lists */
+      el = ocs::tom::ElementPtr<T>::from_typed(ocs::tom::copy_elem(element.raw(), false, false));
+   } else if (!dp) {
+      /* for some reason, we did not get a descriptor for the target element */
+      el = ocs::tom::ElementPtr<T>::from_typed(lSelectElemPack(element, selection, fields, false, nullptr));
+   } else {
+      el = ocs::tom::ElementPtr<T>::from_typed(lSelectElemDPack(element, selection, dp, fields, false, nullptr));
+   }
+
+   /* if we have a new reduced main element, copy the sub-lists, if they are still part of it */
+   if (el) {
+      i = 0;
+      const auto put_reduced = [&]<auto G>() {
+         if (sub_lists[i] && ocs::tom::has<G>(el)) {
+            // the selection keeps the type of the sub-list
+            ocs::tom::set<G>(el, ocs::tom::ListPtr<Sub>::from_typed(
+               lSelectDPack("", sub_lists[i].get(), sub_selection, sub_descr, sub_fields, false, nullptr)));
+         }
+         i++;
+      };
+      (put_reduced.template operator()<F>(), ...);
+   }
+
+   /* restore the old sub-lists */
+   i = 0;
+   const auto put_back = [&]<auto G>() {
+      static_cast<void>(element.template exchange<G>(std::move(sub_lists[i++])));
+   };
+   (put_back.template operator()<F>(), ...);
+
+   DRETURN(el);
+}
+
+/**
+ * @brief Reduce the objects of a list event whose objects hold a subscribable sub-list
+ *
+ * @tparam F the list fields holding the sub-list, see ocs_event_select_elem()
+ * @param subscription subscription array
+ * @param lp the event's objects, of the type of @p F (the event type says so)
+ * @param selection where filter
+ * @param fields what filter
+ * @param descr reduced descriptor
+ * @param do_hash create hash tables in the target list
+ * @param sub_type the event type of the sub-list
+ * @return the reduced list, owned by the caller; nullptr without a reduced descriptor
+ *
+ * Part of list_select() on the delivery path: no DENTER of its own.
+ */
+template <auto... F>
+static lList *
+ocs_event_select_list(subscription_t *subscription, lList *lp, const lCondition *selection,
+                      const lEnumeration *fields, const lDescr *descr, const bool do_hash, const int sub_type) {
+   using T = typename OcsEventSubListFields<F...>::Type;
+
+   if (descr == nullptr) {
+      // a list without a descriptor cannot hold the reduced objects; the old code built none either
+      return nullptr;
+   }
+
+   auto reduced = ocs::tom::ListPtr<T>::create("update", descr,
+                                               do_hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off);
+   // the events of the row carry objects of the type of the fields (EVENT_LIST); no check per event
+   for (const auto element : ocs::tom::List<T>::from_typed(lp)) {
+      if (auto reduced_el = ocs_event_select_elem<F...>(subscription, element, selection, fields, descr,
+                                                         sub_type)) {
+         reduced->push_back(std::move(reduced_el));
+      }
+   }
+
+   // the reduced list becomes the payload of the event (ET_new_version), typed by the event type only
+   return reduced.release();
+}
+
+/**
  * @brief Makes a reduced job list duplication
  *
- * Only works on job events. All others are ignored. The job events
- * need some special handling and this is done in this function. The
- * JAT_Type list can be subscribed by its self and it is also part
- * of the JB_Type. If a JAT_Type filter is set, this function also
- * filters the JAT_Type lists in the JB_Type lists.
+ * Only works on the events of lists with a subscribable sub-list (#EVENT_LIST).
+ * All others are ignored. These events need some special handling and this is
+ * done in this function. The JAT_Type list e.g. can be subscribed by its self
+ * and it is also part of the JB_Type. If a JAT_Type filter is set, this function
+ * also filters the JAT_Type lists in the JB_Type lists.
+ *
+ * The row of #EVENT_LIST gives the object type of the event's objects, so each
+ * row runs typed with its sub-list fields.
  *
  * @param subscription subscription array
  * @param type event type
- * @param reduced_lp target list (has to be an empty list)
- * @param lp source list (will be modified)
+ * @param reduced_lp target list, set if the event was handled
+ * @param lp source list (will be modified and restored)
  * @param selection where filter
  * @param fields what filter
  * @param descr reduced descriptor
  * @param do_hash create hash tables in the target list
  *
- * @return true, if it was a job event
+ * @return true, if the event was one of #EVENT_LIST with a sub-list filter
  */
-static bool list_select(subscription_t *subscription, int type,
+static bool list_select(subscription_t *subscription, const int type,
                         lList **reduced_lp, lList *lp,
                         const lCondition *selection, const lEnumeration *fields,
-                        const lDescr *descr, bool do_hash) {
+                        const lDescr *descr, const bool do_hash) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -2830,136 +3141,31 @@ static bool list_select(subscription_t *subscription, int type,
             }
 
             if (sub_type != -1) {
-               lListElem *reduced_el = nullptr;
-
                ret = true;
-               *reduced_lp = lCreateListHash("update", descr, do_hash);
-
-               for_each_rw_lv(element, lp) {
-                  reduced_el = elem_select(subscription, element,
-                               FIELD_LIST[entry_counter], selection,
-                               fields, descr, sub_type);
-
-                  lAppendElem(*reduced_lp, reduced_el);
+               switch (entry_counter) {
+                  case 0:
+                     *reduced_lp = ocs_event_select_list<JB_ja_tasks, JB_ja_template>(subscription, lp, selection,
+                                                                                       fields, descr, do_hash,
+                                                                                       sub_type);
+                     break;
+                  case 1:
+                     *reduced_lp = ocs_event_select_list<CQ_qinstances>(subscription, lp, selection, fields, descr,
+                                                                        do_hash, sub_type);
+                     break;
+                  default:
+                     *reduced_lp = ocs_event_select_list<JAT_task_list>(subscription, lp, selection, fields, descr,
+                                                                        do_hash, sub_type);
+                     break;
                }
             } else {
                DPRINTF("no sub type filter specified\n");
             }
-            goto end;
+            DRETURN(ret);
          } /* end if */
       } /* end while */
    } /* end for */
-end:
+
    DRETURN(ret);
-}
-
-/**
- * @brief Makes a reduced copy of an element with reducing sublists
- *
- * The function will apply the given filters for the element. Before the element
- * is reduced, all attribute sub lists named in "ids" will be removed from the list and
- * reduced. The reduced sub lists will be added the the reduced element and the original
- * element will be restored. The sub-lists will only be reduced, if the reduced element
- * still contains their attributes.
- *
- * @param subscription subscription array
- * @param element the element to reduce const int ids[]              - attribute with sublists to be reduced as well
- * @param selection where filter
- * @param fields what filter
- * @param descr reduced descriptor
- * @param sub_type list type of the sublists.
- *
- * @return the reduced element, or nullptr if something went wrong NOTE:
- *
- * @note MT-NOTE: works only on the variables -> thread save
- */
-static lListElem *elem_select(subscription_t *subscription, lListElem *element,
-                              const int ids[], const lCondition *selection,
-                              const lEnumeration *fields, const lDescr *dp, int sub_type) {
-   DENTER(TOP_LAYER);
-
-   const lCondition *sub_selection = nullptr;
-   const lEnumeration *sub_fields = nullptr;
-   const lDescr *sub_descr = nullptr;
-   lList **sub_list;
-   lListElem *el = nullptr;
-   int counter;
-
-   if (element == nullptr) {
-      DRETURN(nullptr);
-   }
-
-   if (sub_type <= sgeE_ALL_EVENTS || sub_type >= sgeE_EVENTSIZE) {
-      /* TODO: SG: add error message */
-      DPRINTF("wrong event sub type\n");
-      DRETURN(nullptr);
-   }
-
-   /* get the filters for the sub lists */
-   if (sub_type >= 0) {
-      sub_selection = subscription[sub_type].where;
-      sub_fields = subscription[sub_type].what;
-   }
-
-   if (sub_fields) { /* do we have a sub list filter, otherwise ... */
-      int ids_size = 0;
-
-      /* allocate memory to store the sub-lists, which should be handeled special */
-      while (ids[ids_size] != -1) {
-         ids_size++;
-      }
-      sub_list = (lList **)sge_malloc(ids_size * sizeof(lList*));
-      memset(sub_list, 0 , ids_size * sizeof(lList*));
-
-      /* remove the sub-lists from the main element */
-      for (counter = 0; counter < ids_size; counter ++) {
-         lXchgList(element, ids[counter], &(sub_list[counter]));
-      }
-
-      /* get descriptor for reduced sub-lists */
-      if (!sub_descr) {
-         for (counter = 0; counter < ids_size; counter ++) {
-            if (sub_list[counter]) {
-               sub_descr = getDescriptorL(subscription, sub_list[counter], sub_type);
-               break;
-            }
-         }
-      }
-
-      /* copy the main list */
-      if (!fields) {
-         /* there might be no filter for the main element, but for the sub-lists */
-         el = lCopyElemHash(element, false);
-      } else if (!dp) {
-         /* for some reason, we did not get a descriptor for the target element */
-         el = lSelectElemPack(element, selection, fields, false, nullptr);
-      } else {
-         el = lSelectElemDPack(element, selection, dp, fields, false, nullptr);
-      }
-
-      /* if we have a new reduced main element */
-      if (el) {
-         /* copy the sub-lists, if they are still part of the reduced main element */
-         for (counter = 0; counter < ids_size; counter ++) {
-            if (sub_list[counter] && (lGetPosViaElem(el, ids[counter], SGE_NO_ABORT) != -1)) {
-               lSetList(el, ids[counter],
-                        lSelectDPack("", sub_list[counter], sub_selection, sub_descr, sub_fields, false, nullptr));
-            }
-         }
-      }
-
-      /* restore the old sub_list */
-      for (counter = 0; counter < ids_size; counter ++) {
-         lXchgList(element, ids[counter], &(sub_list[counter]));
-      }
-
-      sge_free(&sub_list);
-   } else {
-      DPRINTF("no sub filter specified\n");
-      el = lSelectElemDPack(element, selection, dp, fields, false, nullptr);
-   }
-
-   DRETURN(el);
 }
 
 /**
@@ -3142,9 +3348,16 @@ sge_commit(uint64_t gdi_session) {
  * In case that global update events have to be send, this function
  * blocks all events for that list, or unblocks it.
  *
- * @note MT-NOTE: sge_commit is thread safe.
+ * Called per event on the delivery path: no DENTER.
+ *
+ * @param event_client the event client (EV_Type)
+ * @param ev_type the list event whose events are (un)blocked, or sgeE_ALL_EVENTS for every subscribed list
+ * @param isBlock true to block, false to unblock
+ *
+ * @note MT-NOTE: blockEvents() is thread safe, when the caller holds Event_Master_Control.mutex.
  */
-static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock) {
+static void blockEvents(const ocs::tom::Element<ocs::tom::EV> event_client, const ev_event ev_type,
+                        const bool isBlock) {
    subscription_t *sub_array = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
 
    if (sub_array != nullptr) {

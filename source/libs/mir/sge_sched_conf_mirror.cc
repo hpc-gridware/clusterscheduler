@@ -79,8 +79,8 @@ schedd_conf_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_un
    ocs::tom::ListPtr<ocs::tom::SC> list;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-   // the event carries the scheduler configuration (SC_Type); taken without a check, as the untyped code did
-   const auto data_list = ocs::tom::List<ocs::tom::SC>::from_typed(ocs::tom::get<ET_new_version>(event));
+   // the event carries the scheduler configuration (SC_Type)
+   const auto data_list = ocs_mirror_event_objects<ocs::tom::SC>(event);
 
    /* if neccessary, create list and copy schedd info */
    if (const auto ep = data_list.front(); ep) {

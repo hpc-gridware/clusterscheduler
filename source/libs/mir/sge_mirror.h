@@ -52,6 +52,10 @@
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_event.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "evc/sge_event_client.h"
 
@@ -140,14 +144,53 @@ sge_mirror_process_event_list(sge_evc_class_t *evc, ocs::tom::List<ocs::tom::ET>
 sge_mirror_error 
 sge_mirror_process_events(sge_evc_class_t *evc);
 
-sge_mirror_error 
-sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
-                              lListElem *ep, const char *key,
-                              sge_event_action action, ocs::tom::Element<ocs::tom::ET> event);
+template <ocs::tom::ObjectType T>
+sge_mirror_error
+sge_mirror_update_master_list(lList **list, ocs::tom::Element<T> ep, const char *key, sge_event_action action,
+                              ocs::tom::Element<ocs::tom::ET> event);
 
 sge_mirror_error
 ocs_mirror_update_master_list_by_type(sge_object_type type, sge_event_action action,
                                       ocs::tom::Element<ocs::tom::ET> event);
+
+/**
+ * @brief The objects an event carries (ET_new_version), as a list of the type the caller knows them to be of
+ *
+ * ET_new_version holds lists of every object type; which one is given by the event's object type. This is the
+ * one place where the mirror turns it into a typed list: every mirror callback serves one object type and
+ * calls it with that type. The list is checked: events are built by qmaster's worker threads from typed
+ * objects, so a list of another type is a programming error and throws.
+ *
+ * @tparam T the object type of the event
+ * @param event the event (ET_Type)
+ * @return the objects, an empty handle if the event carries none; the event still owns them
+ * @throw ocs::tom::FieldException with reason WrongType if the event carries objects of another type
+ */
+template <ocs::tom::ObjectType T>
+inline ocs::tom::List<T>
+ocs_mirror_event_objects(const ocs::tom::Element<ocs::tom::ET> event) {
+   return ocs::tom::List<T>(ocs::tom::get<ET_new_version>(event));
+}
+
+/**
+ * @brief Put a list into an event's objects (ET_new_version) and take out the one held
+ *
+ * The counterpart of ocs_mirror_event_objects() for the callbacks that move the event's list somewhere else;
+ * the list taken out is checked like there.
+ *
+ * @tparam T the object type of the event
+ * @param event the event (ET_Type)
+ * @param objects the list to put in, taken over; may be empty
+ * @return the list the event held, owned by the caller; empty if it held none
+ * @throw ocs::tom::FieldException with reason WrongType if the event held objects of another type
+ */
+template <ocs::tom::ObjectType T>
+inline ocs::tom::ListPtr<T>
+ocs_mirror_exchange_event_objects(const ocs::tom::Element<ocs::tom::ET> event, ocs::tom::ListPtr<T> &&objects) {
+   lList *lp = objects.release();
+   ocs::tom::exchange<ET_new_version>(event, &lp);
+   return ocs::tom::ListPtr<T>(lp);
+}
 
 /* Error Handling */
 const char *sge_mirror_strerror(sge_mirror_error num);

@@ -77,13 +77,15 @@ sge_event_master_cleanup_monitor(void *arg) {
 
 /** @brief Release the pending report list when the thread ends
  *
- * @param arg the address of the thread's report list (REP_Type), set to nullptr afterwards
+ * The handler empties the owning handle, so its destructor finds nothing left to free when the forced unwind
+ * of pthread_cancel() runs it afterwards; without such an unwind the handler alone frees the list.
+ *
+ * @param arg the address of the thread's report list handle, empty afterwards
  */
 static void
 sge_event_master_cleanup_report_list(void *arg) {
    DENTER(TOP_LAYER);
-   auto *list = static_cast<lList **>(arg);
-   ocs::tom::ListPtr<ocs::tom::REP>::from_typed(std::exchange(*list, nullptr)).reset();
+   static_cast<ocs::tom::ListPtr<ocs::tom::REP> *>(arg)->reset();
    DRETURN_VOID;
 }
 
@@ -166,12 +168,9 @@ sge_event_master_main(void *arg) {
    set_thread_name(pthread_self(), "Event Master Thread");
    conf_update_thread_profiling("Event Master Thread");
 
-   // The cancellation cleanup handler frees the list, so it stays a raw pointer the handler can reach: an owning
-   // handle would free it a second time when the forced unwind of pthread_cancel() runs the destructors.
-   lList *report_list =
-           ocs::tom::ListPtr<ocs::tom::REP>::create("report list", ocs::tom::Hashing::Off).release();
-   const auto report = ocs::tom::List<ocs::tom::REP>::from_typed(report_list)
-           .push_back(ocs::tom::ElementPtr<ocs::tom::REP>::create());
+   // freed by the cancellation cleanup handler, which empties the handle (see there)
+   auto report_list = ocs::tom::ListPtr<ocs::tom::REP>::create("report list", ocs::tom::Hashing::Off);
+   const auto report = report_list->push_back(ocs::tom::ElementPtr<ocs::tom::REP>::create());
    ocs::tom::set<REP_type>(report, NUM_REP_REPORT_EVENTS);
    ocs::tom::set<REP_host>(report, component_get_qualified_hostname());
 

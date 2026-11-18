@@ -46,6 +46,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_qinstance.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "tom/ocs_Element.h"
 
@@ -76,7 +77,8 @@ void qinstance_add_event(const ocs::tom::Element<ocs::tom::QU> this_elem, const 
  * @param type the event type, one of the `sgeE_CQUEUE_*` values
  * @param gdi_session the session the change belongs to, for read-after-write
  */
-void cqueue_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session) {
+void cqueue_add_event(const ocs::tom::Element<ocs::tom::CQ> this_elem, const ev_event type,
+                      const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    sge_add_event(0, type, 0, 0, ocs::tom::get<CQ_name>(this_elem), nullptr, nullptr, this_elem, gdi_session);
    DRETURN_VOID;

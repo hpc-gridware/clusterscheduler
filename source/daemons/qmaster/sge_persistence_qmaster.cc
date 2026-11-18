@@ -44,6 +44,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_SPC.h"
 
+#include "sgeobj/ocs_object_type.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_object.h"
@@ -518,7 +519,19 @@ sge_event_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t timestamp
    /* send event only, if spooling succeeded */
    if (ret) {
       if (send_event) {
-         sge_add_event(timestamp, event, intkey1, intkey2, strkey, strkey2, session, element, gdi_session);
+         // the object type is chosen per event above: dispatch on it once and send the element typed
+         const bool sent = ocs_with_object_type(object_type, [&](const auto &entry) {
+            using T = typename ocs_object_type_entry_t<decltype(entry)>::type;
+            // the element was picked by the event above (object, array task or parallel task) and is of the
+            // event's object type; no check, the event was sent unchecked before
+            sge_add_event(timestamp, event, intkey1, intkey2, strkey, strkey2, session,
+                          ocs::tom::Element<T>::from_typed(element), gdi_session);
+         });
+         if (!sent) {
+            // the events without an object type (acknowledge timeout, qmaster going down, scheduler
+            // monitoring, shutdown) carry no object
+            sge_add_event(timestamp, event, intkey1, intkey2, strkey, strkey2, session, nullptr, gdi_session);
+         }
       }
    }
 

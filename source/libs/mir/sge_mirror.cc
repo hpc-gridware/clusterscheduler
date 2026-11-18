@@ -1760,9 +1760,6 @@ ocs_mirror_update_master_list_by_key(lList **list, const sge_event_action action
       DRETURN(SGE_EM_NOT_INITIALIZED);
    }
 
-   // the event's list may carry a reduced descriptor (subscription with a field selection), which a new
-   // master list has to take over, so it is read from the event and not from the object type
-   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    const auto key = ocs_mirror_event_key<K>(event);
    sge_mirror_error ret;
 
@@ -1772,11 +1769,9 @@ ocs_mirror_update_master_list_by_key(lList **list, const sge_event_action action
          ep = ocs::tom::find_first_rw<K>(*list, key);
       }
       DSTRING_STATIC(dstr, 32);
-      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_u32, key), action,
-                                          event);
+      ret = sge_mirror_update_master_list(list, ep, sge_dstring_sprintf(&dstr, sge_u32, key), action, event);
    } else {
-      ret = sge_mirror_update_master_list(list, list_descr, ocs::tom::find_first_rw<K>(*list, key), key, action,
-                                          event);
+      ret = sge_mirror_update_master_list(list, ocs::tom::find_first_rw<K>(*list, key), key, action, event);
    }
 
    DRETURN(ret);
@@ -1851,9 +1846,13 @@ generic_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_obje
  * - SGE_EMA_MOD:  a given element is modified
  * - SGE_EMA_DEL:  a given element is deleted
  *
- * @param list mirrored list to manipulate
- * @param list_descr descriptor of mirrored list
- * @param ep element to manipulate or nullptr
+ * A list created for an ADD takes the descriptor of the event's objects, which is a reduced one for a
+ * subscription with a field selection.
+ *
+ * @tparam T the object type of the list and of the event's objects
+ * @param list mirrored list to manipulate; the slot of a master list of the data store or of a sub-list field,
+ *        raw because a new list is created through it
+ * @param ep element to manipulate or an empty handle
  * @param key key of an element to manipulate
  * @param action action to perform
  * @param event the event (ET_Type); on LIST its list is exchanged with the master list, on ADD and MOD its
@@ -1863,11 +1862,11 @@ generic_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_obje
  *
  * @see #ocs_mirror_update_master_list_by_type
  */
+template <ocs::tom::ObjectType T>
 sge_mirror_error
-sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem *ep, const char *key,
+sge_mirror_update_master_list(lList **list, const ocs::tom::Element<T> ep, const char *key,
                               const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
-   lList *data_list;
 
    switch (action) {
       case SGE_EMA_LIST:
@@ -1875,47 +1874,75 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
          ocs::tom::exchange<ET_new_version>(event, list);
          break;
 
-      case SGE_EMA_ADD:
+      case SGE_EMA_ADD: {
          /* check for duplicate */
-         if (ep != nullptr) {
+         if (ep) {
             ERROR("duplicate list element " SFQ "\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_DUPLICATE_KEY);
          }
-   
-         /* if neccessary, create list */
-         if (*list == nullptr) {
-            *list = lCreateList("", list_descr);
+
+         const auto objects = ocs_mirror_event_objects<T>(event);
+
+         /* if neccessary, create list; without objects the event has no descriptor and no list is created */
+         if (*list == nullptr && objects) {
+            *list = ocs::tom::ListPtr<T>::create("", lGetListDescr(objects)).release();
          }
 
          /* insert element */
-         data_list = ocs::tom::get<ET_new_version>(event);
-         lAppendElem(*list, lDechainElem(data_list, lFirstRW(data_list)));
+         if (const auto first = objects.front()) {
+            ocs::tom::List<T>::from_typed(*list).push_back(objects.extract(first));
+         }
          break;
+      }
 
       case SGE_EMA_DEL:
          /* check for existence */
-         if (ep == nullptr) {
+         if (!ep) {
             ERROR("element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
 
          /* remove element */
-         lRemoveElem(*list, &ep);
+         ocs::tom::List<T>::from_typed(*list).erase(ep);
          break;
 
-      case SGE_EMA_MOD:
+      case SGE_EMA_MOD: {
          /* check for existence */
-         if (ep == nullptr) {
+         if (!ep) {
             ERROR("element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
-         lRemoveElem(*list, &ep);
-         data_list = ocs::tom::get<ET_new_version>(event);
-         lAppendElem(*list, lDechainElem(data_list, lFirstRW(data_list)));
+         const auto master_list = ocs::tom::List<T>::from_typed(*list);
+         master_list.erase(ep);
+         const auto objects = ocs_mirror_event_objects<T>(event);
+         if (const auto first = objects.front()) {
+            master_list.push_back(objects.extract(first));
+         }
          break;
+      }
       default:
          DRETURN(SGE_EM_BAD_ARG);
    }
 
    DRETURN(SGE_EM_OK);
 }
+
+/*
+ * The mirror callbacks outside this file update the jobs, array tasks, parallel tasks, cluster queues and queue
+ * instances with sge_mirror_update_master_list(); the object types updated by key alone instantiate it above.
+ */
+template sge_mirror_error sge_mirror_update_master_list<ocs::tom::JB>(lList **, ocs::tom::Element<ocs::tom::JB>,
+                                                                      const char *, sge_event_action,
+                                                                      ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error sge_mirror_update_master_list<ocs::tom::JAT>(lList **, ocs::tom::Element<ocs::tom::JAT>,
+                                                                       const char *, sge_event_action,
+                                                                       ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error sge_mirror_update_master_list<ocs::tom::PET>(lList **, ocs::tom::Element<ocs::tom::PET>,
+                                                                       const char *, sge_event_action,
+                                                                       ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error sge_mirror_update_master_list<ocs::tom::CQ>(lList **, ocs::tom::Element<ocs::tom::CQ>,
+                                                                      const char *, sge_event_action,
+                                                                      ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error sge_mirror_update_master_list<ocs::tom::QU>(lList **, ocs::tom::Element<ocs::tom::QU>,
+                                                                      const char *, sge_event_action,
+                                                                      ocs::tom::Element<ocs::tom::ET>);

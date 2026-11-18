@@ -83,7 +83,8 @@ static void pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE> new_pe,
 
 /** @brief Apply one attribute change to a parallel environment
  *
- * The gdi_object_t::modifier for parallel environments; see sge_c_gdi.h for the sequence it is called from.
+ * The modifier of parallel environments, bound in ocs_gdi_hooks<ocs::tom::PE>; see ocs_gdi_add_mod() in
+ * sge_c_gdi.cc for the sequence it is called from.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -231,7 +232,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
 
 /** @brief Write a parallel environment to the spool
  *
- * The gdi_object_t::writer for parallel environments.
+ * The writer of parallel environments, bound in ocs_gdi_hooks<ocs::tom::PE> (sge_c_gdi.cc).
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -262,7 +263,7 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
 
 /** @brief Announce a parallel environment change once it is safely spooled
  *
- * The gdi_object_t::on_success for parallel environments.
+ * The on_success of parallel environments, bound in ocs_gdi_hooks<ocs::tom::PE> (sge_c_gdi.cc).
  *
  * @param packet the client request
  * @param task the GDI task being answered

@@ -40,9 +40,15 @@
  */
 
 #include <cinttypes>
+#include <cstddef>
 
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_EV.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_answer.h"
@@ -111,7 +117,8 @@ void sge_cleanup_event_master_control(void *arg);
 void sge_event_master_flush_requests(bool force = false);
 
 void sge_event_master_process_requests(monitoring_t *monitor);
-void sge_event_master_send_events(lListElem *report, lList *report_list, monitoring_t *monitor);
+void sge_event_master_send_events(ocs::tom::Element<ocs::tom::REP> report, ocs::tom::List<ocs::tom::REP> report_list,
+                                  monitoring_t *monitor);
 void sge_event_master_wait_next();
 
 int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *ev,
@@ -128,36 +135,77 @@ int sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t aClientID
 int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                        monitoring_t *monitor);
 
-bool sge_add_event(uint64_t timestamp,
-                   ev_event type,
-                   uint32_t intkey,
-                   uint32_t intkey2,
-                   const char *strkey,
-                   const char *strkey2, 
-                   const char *session,
-                   lListElem *element,
-                   uint64_t gdi_session);
-                          
-bool sge_add_event_for_client(uint32_t event_client_id,
-                              uint64_t timestamp,
-                              ev_event type,
-                              uint32_t intkey,
-                              uint32_t intkey2,
-                              const char *strkey,
-                              const char *strkey2,
-                              const char *session,
-                              lListElem *element,
-                              uint64_t gdi_session);
-                                    
-bool sge_add_list_event(uint64_t timestamp,
-                        ev_event type, 
-                        uint32_t intkey,
-                        uint32_t intkey2,
-                        const char *strkey, 
-                        const char *strkey2,
-                        const char *session,
-                        lList *list,
-                        uint64_t gdi_session);
+/*
+ * Adding events. The object an event carries is a copy of the one passed, in a list of the object's type
+ * (ET_new_version). The functions are templates on that type; they are instantiated in sge_event_master.cc for
+ * every object type of ocs_object_types and for the job report (JR) and the usage (UA), the types events carry.
+ */
+
+template <ocs::tom::ObjectType T>
+bool sge_add_event_for_client(uint32_t event_client_id, uint64_t timestamp, ev_event type, uint32_t intkey,
+                              uint32_t intkey2, const char *strkey, const char *strkey2, const char *session,
+                              ocs::tom::Element<T> element, uint64_t gdi_session);
+
+bool sge_add_event_for_client(uint32_t event_client_id, uint64_t timestamp, ev_event type, uint32_t intkey,
+                              uint32_t intkey2, const char *strkey, const char *strkey2, const char *session,
+                              std::nullptr_t element, uint64_t gdi_session);
+
+/**
+ * @brief Add an object as event for all event clients
+ *
+ * Adds an object to the list of events to deliver. Called, if an event
+ * occurs to that object, e.g. it was added to Cluster Scheduler, modified or
+ * deleted. Internally, a list with a copy of the object is created and
+ * queued as the event's payload.
+ *
+ * @tparam T the object type, deduced
+ * @param timestamp event creation time, 0 -> use current time
+ * @param type the event id
+ * @param intkey additional data
+ * @param intkey2 additional data
+ * @param strkey additional data
+ * @param strkey2 additional data
+ * @param session events session key
+ * @param element the object to deliver as event, or an empty handle for an event without an object
+ * @param gdi_session the session the change belongs to, for read-after-write
+ * @return true when the event was queued
+ *
+ * @note MT-NOTE: sge_add_event() is MT safe.
+ */
+template <ocs::tom::ObjectType T>
+inline bool sge_add_event(const uint64_t timestamp, const ev_event type, const uint32_t intkey,
+                          const uint32_t intkey2, const char *strkey, const char *strkey2, const char *session,
+                          const ocs::tom::Element<T> element, const uint64_t gdi_session) {
+   return sge_add_event_for_client<T>(EV_ID_ANY, timestamp, type, intkey, intkey2, strkey, strkey2, session,
+                                      element, gdi_session);
+}
+
+/**
+ * @brief Add an event without an object for all event clients
+ *
+ * @param timestamp event creation time, 0 -> use current time
+ * @param type the event id
+ * @param intkey additional data
+ * @param intkey2 additional data
+ * @param strkey additional data
+ * @param strkey2 additional data
+ * @param session events session key
+ * @param element nullptr: the event carries no object
+ * @param gdi_session the session the change belongs to, for read-after-write
+ * @return true when the event was queued
+ *
+ * @note MT-NOTE: sge_add_event() is MT safe.
+ */
+inline bool sge_add_event(const uint64_t timestamp, const ev_event type, const uint32_t intkey,
+                          const uint32_t intkey2, const char *strkey, const char *strkey2, const char *session,
+                          const std::nullptr_t element, const uint64_t gdi_session) {
+   return sge_add_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2, strkey, strkey2, session, element,
+                                   gdi_session);
+}
+
+template <ocs::tom::ObjectType T>
+bool sge_add_list_event(uint64_t timestamp, ev_event type, uint32_t intkey, uint32_t intkey2, const char *strkey,
+                        const char *strkey2, const char *session, ocs::tom::List<T> list, uint64_t gdi_session);
 
 bool sge_handle_event_ack(uint32_t event_client_id, uint32_t event_number);
 void sge_deliver_events_immediately(uint32_t aClientID);

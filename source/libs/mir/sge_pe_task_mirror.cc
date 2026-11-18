@@ -77,9 +77,6 @@ pe_task_update_master_list_usage([[maybe_unused]] const ocs::tom::List<ocs::tom:
                                  const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
-   // the event's list has no type of its own, so it goes through a raw list
-   lList *tmp = nullptr;
-
    const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
    const uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
    const char *pe_task_id = ocs::tom::get<ET_strkey>(event);
@@ -112,9 +109,10 @@ pe_task_update_master_list_usage([[maybe_unused]] const ocs::tom::List<ocs::tom:
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   ocs::tom::exchange<ET_new_version>(event, &tmp);
-   ocs::tom::exchange<PET_scaled_usage>(pe_task, &tmp);
-   ocs::tom::exchange<ET_new_version>(event, &tmp);
+   // a usage event carries the usage list (UA_Type); the old usage goes back into the event and is freed with it
+   auto usage = ocs_mirror_exchange_event_objects(event, ocs::tom::ListPtr<ocs::tom::UA>());
+   usage = pe_task.exchange<PET_scaled_usage>(std::move(usage));
+   static_cast<void>(ocs_mirror_exchange_event_objects(event, std::move(usage)));
    
    DRETURN(SGE_EMA_OK);
 }
@@ -178,7 +176,6 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
 
    // stays untyped: the generic merge below may create the list through the pointer
    lList *pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
-   const lDescr *pe_task_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
 
    if (action == SGE_EMA_MOD) {
       /* modify event for pe_task.
@@ -193,9 +190,8 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
       usage = pe_task.exchange<PET_scaled_usage>(std::move(usage));
    }
 
-   if (sge_mirror_update_master_list(&pe_task_list, pe_task_descr, pe_task,
-                                     job_get_id_string(job_id, ja_task_id,
-                                                       pe_task_id, &id_dstring),
+   if (sge_mirror_update_master_list(&pe_task_list, pe_task, job_get_id_string(job_id, ja_task_id, pe_task_id,
+                                                                                &id_dstring),
                                      action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
    }

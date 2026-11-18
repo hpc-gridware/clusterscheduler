@@ -39,10 +39,14 @@
  * @see sge_mirror.h
  */
 
+#include <utility>
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/sge_sharetree_mirror.h"
@@ -59,7 +63,7 @@
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the event (ET_Type); its share tree is taken over into the master list
+ * @param event the event (ET_Type); its share tree list is taken over into the master list
  * @param clientdata client data
  *
  * @return always SGE_EMA_OK
@@ -72,20 +76,16 @@ sharetree_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_ob
                              const ocs::tom::Element<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
-   lList **list = nullptr;
-   lList *src = nullptr;
-
-   /* remove old share tree */
-   list = ocs::DataStore::get_master_list_rw(type);
-   lFreeList(list);
-   
-
-   if ((src = ocs::tom::get<ET_new_version>(event))) {
-      
-      /* install new one */
-      *list = lCreateList("share tree", lGetElemDescr(lFirst(src)));
-      lAppendElem(*list, lDechainElem(src, lFirstRW(src)));
+   // the event carries the whole share tree (its root node) and the master list takes the event's list over;
+   // an event without a tree leaves no tree
+   auto tree = ocs_mirror_exchange_event_objects<ocs::tom::STN>(event, ocs::tom::ListPtr<ocs::tom::STN>());
+   if (tree && tree->empty()) {
+      tree.reset();
    }
+
+   // the data store slot of the share tree (never nullptr) gets the new tree; the old one is freed
+   lList **slot = ocs::DataStore::get_master_list_rw(type);
+   static_cast<void>(ocs::tom::ListPtr<ocs::tom::STN>(std::exchange(*slot, tree.release())));
 
    DRETURN(SGE_EMA_OK);
 }
