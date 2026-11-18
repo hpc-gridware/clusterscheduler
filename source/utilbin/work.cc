@@ -73,6 +73,7 @@ size_t malloc_mb = 0;   ///< Heap to allocate, in MB
 #endif
 int malloc_kb = 0;   ///< Heap to allocate, in KB
 int touch_mb = 0;   ///< Heap to allocate and write, so that it is resident, in MB
+char *volatile touched_memory = nullptr;   ///< Keeps the -touchM buffer observable, so it is really allocated
 
 /* io load profile */
 int in = -1;    ///< Descriptor to read from, -1 when no read load was asked for
@@ -348,6 +349,8 @@ int main(int argc, char *argv[]) {
       }
       // write every byte - only memory which was written is resident
       memset(tmp, 1, size);
+      // the buffer is never read: without this, an optimized build drops malloc() and memset() altogether
+      touched_memory = tmp;
       printf("got and wrote %d mb\n", touch_mb); fflush(stdout);
    }
 
