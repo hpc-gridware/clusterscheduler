@@ -133,7 +133,11 @@ static const char *result_category[] = {
    nullptr
 };
 
-static lList *test_create_access() {
+/**
+ * @brief Build the access lists of AccessList
+ * @return the access lists
+ */
+static ocs::tom::ListPtr<ocs::tom::US> test_create_access() {
    auto access_list = ocs::tom::ListPtr<ocs::tom::US>::create("access");
 
    if (access_list != nullptr) {
@@ -141,16 +145,19 @@ static lList *test_create_access() {
          char *access_cp = strdup(AccessList[i]);
          char *iter_dash = nullptr;
 
-         for (const char *access_str = strtok_r(access_cp, " ", &iter_dash); access_str; access_str = strtok_r(nullptr, " ", &iter_dash)) {
+         for (const char *access_str = strtok_r(access_cp, " ", &iter_dash); access_str;
+              access_str = strtok_r(nullptr, " ", &iter_dash)) {
             auto acc_elem = ocs::tom::ElementPtr<ocs::tom::US>::create();
             if (acc_elem != nullptr) {
-               lList *users = lCreateList("user", UE_Type);
+               auto users_ptr = ocs::tom::ListPtr<ocs::tom::UE>::create("user");
+               const ocs::tom::List<ocs::tom::UE> users = *users_ptr;
                ocs::tom::set<US_name>(acc_elem, access_str);
-               ocs::tom::set<US_entries>(acc_elem, users);
+               ocs::tom::set<US_entries>(acc_elem, std::move(users_ptr));
                ocs::tom::set<US_consider_with_categories>(acc_elem, true);
                lAppendElem(*access_list, std::move(acc_elem));
 
-               for (access_str = strtok_r(nullptr, " ", &iter_dash); access_str; access_str = strtok_r(nullptr, " ", &iter_dash)) {
+               for (access_str = strtok_r(nullptr, " ", &iter_dash); access_str;
+                    access_str = strtok_r(nullptr, " ", &iter_dash)) {
                   auto user = ocs::tom::ElementPtr<ocs::tom::UE>::create();
                   ocs::tom::set<UE_name>(user, access_str);
                   lAppendElem(users, std::move(user));
@@ -161,17 +168,26 @@ static lList *test_create_access() {
       }
    }
 
-   return access_list.release();
+   return access_list;
 }
 
-static lList *test_create_project(const char *project) {
-   lList *project_list = nullptr;
-   ocs::tom::Element<ocs::tom::PR> prj = ocs::tom::emplace_back<PR_name>(&project_list, project);
+/**
+ * @brief Build a project list holding one project
+ * @param project the project name
+ * @return the project list
+ */
+static ocs::tom::ListPtr<ocs::tom::PR> test_create_project(const char *project) {
+   auto project_list = ocs::tom::ListPtr<ocs::tom::PR>::create("projects");
+   ocs::tom::Element<ocs::tom::PR> prj = project_list->emplace_back<PR_name>(project);
    ocs::tom::set<PR_consider_with_categories>(prj, true);
    return project_list;
 }
 
-static lList *test_create_rqs() {
+/**
+ * @brief Build a resource quota set list with one rule limiting the user rqs_user
+ * @return the resource quota set list
+ */
+static ocs::tom::ListPtr<ocs::tom::RQS> test_create_rqs() {
    auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::create("my_rqs");
    auto rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
    ocs::tom::set<RQS_name>(rqs, "Test_Name1");
@@ -191,26 +207,33 @@ static lList *test_create_rqs() {
    lAppendElem(*rule_list, std::move(rule));
    ocs::tom::set<RQS_rule>(rqs, std::move(rule_list));
    lAppendElem(*rqs_list, std::move(rqs));
-   return rqs_list.release();
+   return rqs_list;
 }
 
-static lList *test_create_request(const char *requestStr, const int count) {
+/**
+ * @brief Build a resource request list from "name value" pairs
+ * @param requestStr the blank separated pairs
+ * @param count how often the pairs are repeated
+ * @return the request list
+ */
+static ocs::tom::ListPtr<ocs::tom::CE> test_create_request(const char *requestStr, const int count) {
    char *request_cp = nullptr;
-   lList *requests = lCreateList("requests", CE_Type);
+   auto requests = ocs::tom::ListPtr<ocs::tom::CE>::create("requests");
    if (requests != nullptr) {
       for (int i = 0; i < count; i++) {
          request_cp = strdup(requestStr);
          char *iter_dash = nullptr;
-         for (const char *request_str = strtok_r(request_cp, " ", &iter_dash); request_str; request_str = strtok_r(nullptr, " ", &iter_dash)) {
-            lListElem *request = lCreateElem(CE_Type);
+         for (const char *request_str = strtok_r(request_cp, " ", &iter_dash); request_str;
+              request_str = strtok_r(nullptr, " ", &iter_dash)) {
+            auto request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
             if (request != nullptr) {
                ocs::tom::set<CE_name>(request, request_str);
                ocs::tom::set<CE_stringval>(request, strtok_r(nullptr, " ", &iter_dash));
             } else {
-               lFreeList(&requests);
+               requests.reset();
                goto end;
             }
-            lAppendElem(requests, request);
+            lAppendElem(*requests, std::move(request));
          }
          sge_free(&request_cp);
          request_cp = nullptr;
@@ -221,22 +244,29 @@ end:
    return requests;
 }
 
-static lList *test_create_queue(const char *queueStr, const int count) {
+/**
+ * @brief Build a queue reference list from blank separated queue names
+ * @param queueStr the blank separated queue names
+ * @param count how often the names are repeated
+ * @return the queue reference list
+ */
+static ocs::tom::ListPtr<ocs::tom::QR> test_create_queue(const char *queueStr, const int count) {
    char *queue_cp = nullptr;
-   lList *queues = lCreateList("queues", QR_Type);
+   auto queues = ocs::tom::ListPtr<ocs::tom::QR>::create("queues");
    if (queues != nullptr) {
       for (int i = 0; i < count; i++) {
          queue_cp = strdup(queueStr);
          char *iter_dash = nullptr;
-         for (const char *queues_str = strtok_r(queue_cp, " ", &iter_dash); queues_str; queues_str = strtok_r(nullptr, " ", &iter_dash)) {
-            lListElem *queue = lCreateElem(QR_Type);
+         for (const char *queues_str = strtok_r(queue_cp, " ", &iter_dash); queues_str;
+              queues_str = strtok_r(nullptr, " ", &iter_dash)) {
+            auto queue = ocs::tom::ElementPtr<ocs::tom::QR>::create();
             if (queue != nullptr) {
                ocs::tom::set<QR_name>(queue, queues_str);
             } else {
-               lFreeList(&queues);
+               queues.reset();
                goto end;
             }
-            lAppendElem(queues, queue);
+            lAppendElem(*queues, std::move(queue));
          }
          sge_free(&queue_cp);
          queue_cp = nullptr;
@@ -247,17 +277,22 @@ end:
    return queues;
 }
 
-static void test_create_pe(const char *peStr, lListElem *job_elem) {
+/**
+ * @brief Give a job the parallel environment requests of "pe range" pairs
+ * @param peStr the blank separated pairs
+ * @param job_elem the job
+ */
+static void test_create_pe(const char *peStr, const ocs::tom::Element<ocs::tom::JB> job_elem) {
    char *pe_cp = strdup(peStr);
    char *iter_dash = nullptr;
 
    for (const char *pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str = strtok_r(nullptr, " ", &iter_dash)) {
       ocs::tom::set<JB_pe>(job_elem, pe_str);
       pe_str = strtok_r(nullptr, " ", &iter_dash);
-      lList *range = nullptr;
-      range_list_parse_from_string(&range, nullptr, pe_str, false, false, INF_ALLOWED);
+      ocs::tom::ListPtr<ocs::tom::RN> range;
+      range_list_parse_from_string(range, nullptr, pe_str, false, false, INF_ALLOWED);
       if (range != nullptr) {
-         ocs::tom::set<JB_pe_range>(job_elem, range);
+         ocs::tom::set<JB_pe_range>(job_elem, std::move(range));
       } else {
          ocs::tom::set<JB_pe>(job_elem, nullptr);
          printf("error generating pe object: %s\n", peStr);
@@ -266,7 +301,12 @@ static void test_create_pe(const char *peStr, lListElem *job_elem) {
    sge_free(&pe_cp);
 }
 
-static void test_create_groups(const char *groupStr, lListElem *job_elem) {
+/**
+ * @brief Give a job the blank separated supplementary groups
+ * @param groupStr the blank separated group names
+ * @param job_elem the job
+ */
+static void test_create_groups(const char *groupStr, const ocs::tom::Element<ocs::tom::JB> job_elem) {
    char *cp = strdup(groupStr);
    char *iter_dash = nullptr;
    for (const char *s = strtok_r(cp, " ", &iter_dash); s; s = strtok_r(nullptr, " ", &iter_dash)) {
@@ -275,8 +315,14 @@ static void test_create_groups(const char *groupStr, lListElem *job_elem) {
    sge_free(&cp);
 }
 
-static lListElem *test_create_job(const data_entry_t *test, const int count) {
-   lListElem *job = lCreateElem(JB_Type);
+/**
+ * @brief Build the job of a test entry
+ * @param test the test entry
+ * @param count how often the requests and queues are repeated
+ * @return the job, or an empty handle if a part of it could not be built
+ */
+static ocs::tom::ElementPtr<ocs::tom::JB> test_create_job(const data_entry_t *test, const int count) {
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    if (job != nullptr) {
       ocs::tom::set<JB_type>(job, test->type);
@@ -294,86 +340,91 @@ static lListElem *test_create_job(const data_entry_t *test, const int count) {
          ocs::tom::set<JB_checkpoint_name>(job, test->ckpt);
       }
       if (test->g_h_r != nullptr) {
-         if (lList *requests = test_create_request(test->g_h_r, count); requests != nullptr) {
-            job_set_hard_resource_list(job, requests);
+         if (auto requests = test_create_request(test->g_h_r, count); requests != nullptr) {
+            job_set_hard_resource_list(*job, std::move(requests));
          } else {
-            lFreeElem(&job);
+            job.reset();
             goto end;
          }
       }
       if (test->g_s_r != nullptr) {
-         if (lList *requests = test_create_request(test->g_s_r, count); requests != nullptr) {
-            job_set_soft_resource_list(job, requests);
+         if (auto requests = test_create_request(test->g_s_r, count); requests != nullptr) {
+            job_set_soft_resource_list(*job, std::move(requests));
          } else {
-            lFreeElem(&job);
+            job.reset();
             goto end;
          }
       }
       if (test->m_h_r != nullptr) {
-         if (lList *requests = test_create_request(test->m_h_r, count); requests != nullptr) {
-            job_set_resource_list(job, requests, JRS_SCOPE_MASTER, true);
+         if (auto requests = test_create_request(test->m_h_r, count); requests != nullptr) {
+            job_set_resource_list(*job, std::move(requests), JRS_SCOPE_MASTER, true);
          } else {
-            lFreeElem(&job);
+            job.reset();
             goto end;
          }
       }
       if (test->s_h_r != nullptr) {
-         if (lList *requests = test_create_request(test->s_h_r, count); requests != nullptr) {
-            job_set_resource_list(job, requests, JRS_SCOPE_SLAVE, true);
+         if (auto requests = test_create_request(test->s_h_r, count); requests != nullptr) {
+            job_set_resource_list(*job, std::move(requests), JRS_SCOPE_SLAVE, true);
          } else {
-            lFreeElem(&job);
+            job.reset();
             goto end;
          }
       }
       if (test->g_h_q != nullptr) {
-         if (lList *queues = test_create_queue(test->g_h_q, count); queues != nullptr) {
-            job_set_hard_queue_list(job, queues);
+         if (auto queues = test_create_queue(test->g_h_q, count); queues != nullptr) {
+            job_set_hard_queue_list(*job, std::move(queues));
          } else {
-            lFreeElem(&job);
+            job.reset();
             goto end;
          }
       }
       if (test->m_h_q != nullptr) {
-         if (lList *queues = test_create_queue(test->m_h_q, count); queues != nullptr) {
-            job_set_master_hard_queue_list(job, queues);
+         if (auto queues = test_create_queue(test->m_h_q, count); queues != nullptr) {
+            job_set_master_hard_queue_list(*job, std::move(queues));
          } else {
-            lFreeElem(&job);
+            job.reset();
             goto end;
          }
       }
       if (test->s_h_q != nullptr) {
-         if (lList *queues = test_create_queue(test->s_h_q, count); queues != nullptr) {
-            job_set_queue_list(job, queues, JRS_SCOPE_SLAVE, true);
+         if (auto queues = test_create_queue(test->s_h_q, count); queues != nullptr) {
+            job_set_queue_list(*job, std::move(queues), JRS_SCOPE_SLAVE, true);
          } else {
-            lFreeElem(&job);
+            job.reset();
             goto end;
          }
       }
       if (test->pe != nullptr) {
-         test_create_pe(test->pe, job);
+         test_create_pe(test->pe, *job);
       }
       if (test->groups != nullptr) {
-         test_create_groups(test->groups, job);
+         test_create_groups(test->groups, *job);
       }
    }
 end:
    return job;
 }
 
-// builds the category string for t and compares it against expected; returns true on match
+/**
+ * @brief Build the category string for a test entry and compare it against the expected one
+ * @param t the test entry
+ * @param expected the expected category string, or nullptr
+ * @return true on a match
+ */
 static bool run_test(const data_entry_t *t, const char *expected) {
-   lListElem *job_elem = test_create_job(t, 1);
+   auto job_elem = test_create_job(t, 1);
    if (job_elem == nullptr) {
       printf("failed to create job for test %d\n", t->test_nr);
       return false;
    }
 
-   lList *access_list  = (t->is_access_list == 1) ? test_create_access()          : nullptr;
-   lList *project_list = (t->project != nullptr)  ? test_create_project(t->project) : nullptr;
-   lList *rqs_list     = (t->rqs != nullptr)      ? test_create_rqs()              : nullptr;
+   auto access_list  = (t->is_access_list == 1) ? test_create_access() : ocs::tom::ListPtr<ocs::tom::US>();
+   auto project_list = (t->project != nullptr) ? test_create_project(t->project) : ocs::tom::ListPtr<ocs::tom::PR>();
+   auto rqs_list     = (t->rqs != nullptr) ? test_create_rqs() : ocs::tom::ListPtr<ocs::tom::RQS>();
 
    dstring category_str = DSTRING_INIT;
-   ocs::Category::build_string(&category_str, job_elem, access_list, project_list, rqs_list);
+   ocs::Category::build_string(&category_str, *job_elem, access_list, project_list, rqs_list);
 
    const char *got = sge_dstring_get_string(&category_str);
    bool ok = (expected != nullptr && got != nullptr && strcmp(expected, got) == 0)
@@ -385,22 +436,22 @@ static bool run_test(const data_entry_t *t, const char *expected) {
    }
 
    sge_dstring_free(&category_str);
-   lFreeElem(&job_elem);
-   lFreeList(&access_list);
-   lFreeList(&project_list);
-   lFreeList(&rqs_list);
    return ok;
 }
 
-// build a normalized category string for a single mem_free=<val> request
+/**
+ * @brief Build a normalized category string for a single mem_free=<val> request
+ * @param val the requested value
+ * @return the category string
+ */
 static std::string build_mem_cat(const char *val) {
    auto req = ocs::tom::ListPtr<ocs::tom::CE>::create("r");
-   lListElem *e = lCreateElem(CE_Type);
-   ocs::tom::set<CE_name>(e, "mem_free");
-   ocs::tom::set<CE_stringval>(e, val);
-   ocs::tom::set<CE_valtype>(e, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   ocs::tom::set<CE_consumable>(e, CONSUMABLE_NO);
-   lAppendElem(*req, e);
+   auto e_ptr = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ocs::tom::set<CE_name>(e_ptr, "mem_free");
+   ocs::tom::set<CE_stringval>(e_ptr, val);
+   ocs::tom::set<CE_valtype>(e_ptr, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ocs::tom::set<CE_consumable>(e_ptr, CONSUMABLE_NO);
+   const ocs::tom::Element<ocs::tom::CE> e = req->push_back(std::move(e_ptr));
    ocs::tom::ListPtr<ocs::tom::AN> al;
    centry_fill_and_check(e, &al, false, false);
    al.reset();

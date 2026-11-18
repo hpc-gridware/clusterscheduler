@@ -892,13 +892,13 @@ test_selections() {
    lFreeWhere(&none_match);
 
    // a condition survives the transfer
-   lListElem *packed = lWhereToElem(odd);
-   lCondition *unpacked = lWhereFromElem(packed);
+   auto packed = ocs_where_to_elem(odd);
+   lCondition *unpacked = ocs_where_from_elem(packed.get());
    const bool transfer = unpacked != nullptr && selected_keys(lp, unpacked) == "1,3";
-   lFreeElem(&packed);
+   packed.reset();
    lFreeWhere(&odd);
    CHECK(51, "lSelectDestroy keeps the matching elements and frees an emptied list; "
-             "lWhereToElem and lWhereFromElem keep a condition", keeps && emptied && transfer);
+             "ocs_where_to_elem and ocs_where_from_elem keep a condition", keeps && emptied && transfer);
 
    lFreeList(&sets);
    lFreeList(&lp);

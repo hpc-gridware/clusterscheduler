@@ -82,7 +82,13 @@ static bool feq(double a, double b) {
 // The test cluster resource: num_proc = 4 (double)
 // ---------------------------------------------------------------------------
 
-static void test_validate_valid(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *centry_list) {
+/**
+ * @brief Formulas validate_load_formula() accepts
+ * @param alpp the answer list, reset after each check
+ * @param centry_list the complexes a formula may name
+ */
+static void test_validate_valid(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    printf("\n--- validate_load_formula (valid) ---\n");
 
    // T01: bare attribute name is the simplest valid formula
@@ -126,7 +132,13 @@ static void test_validate_valid(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lLi
 // validate_load_formula — invalid formulas  [T10–T12]
 // ---------------------------------------------------------------------------
 
-static void test_validate_invalid(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *centry_list) {
+/**
+ * @brief Formulas validate_load_formula() refuses
+ * @param alpp the answer list, reset after each check
+ * @param centry_list the complexes a formula may name
+ */
+static void test_validate_invalid(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                  const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    printf("\n--- validate_load_formula (invalid) ---\n");
 
    // T10: formula starting with a numeric literal is rejected
@@ -152,44 +164,52 @@ static void test_validate_invalid(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const l
 // Test setup: num_proc = 4.0
 // ---------------------------------------------------------------------------
 
-static void test_scaled_mixed_load(lListElem *host, const lList *centry_list) {
+/**
+ * @brief scaled_mixed_load() evaluates a formula over the values of a host
+ * @param host the host carrying the complex values
+ * @param centry_list the complexes a formula may name
+ */
+static void test_scaled_mixed_load(const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                   const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    printf("\n--- scaled_mixed_load ---\n");
    double val;
+   const ocs::tom::ConstElement<ocs::tom::EH> no_global;
+   const ocs::tom::ConstList<ocs::tom::CE> no_adjustments;
 
    // T13: bare attribute reference evaluates to the attribute's value
-   val = scaled_mixed_load("num_proc", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("num_proc", no_global, host, centry_list, no_adjustments);
    CHECK(13, "num_proc → 4.0",         feq(val, 4.0));
 
    // T14: '$'-prefixed reference evaluates to the same value
-   val = scaled_mixed_load("$num_proc", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("$num_proc", no_global, host, centry_list, no_adjustments);
    CHECK(14, "$num_proc → 4.0",        feq(val, 4.0));
 
    // T15: multiply by 2 → 8.0
-   val = scaled_mixed_load("$num_proc*2", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("$num_proc*2", no_global, host, centry_list, no_adjustments);
    CHECK(15, "$num_proc*2 → 8.0",      feq(val, 8.0));
 
    // T16: multiply by 0.5 → 2.0
-   val = scaled_mixed_load("$num_proc*0.5", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("$num_proc*0.5", no_global, host, centry_list, no_adjustments);
    CHECK(16, "$num_proc*0.5 → 2.0",    feq(val, 2.0));
 
    // T17: multiply without '$' prefix — same result
-   val = scaled_mixed_load("num_proc*2", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("num_proc*2", no_global, host, centry_list, no_adjustments);
    CHECK(17, "num_proc*2 → 8.0",       feq(val, 8.0));
 
    // T18: add integer constant
-   val = scaled_mixed_load("num_proc+1", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("num_proc+1", no_global, host, centry_list, no_adjustments);
    CHECK(18, "num_proc+1 → 5.0",       feq(val, 5.0));
 
    // T19: subtract integer constant
-   val = scaled_mixed_load("$num_proc-2", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("$num_proc-2", no_global, host, centry_list, no_adjustments);
    CHECK(19, "$num_proc-2 → 2.0",      feq(val, 2.0));
 
    // T20: add fractional constant
-   val = scaled_mixed_load("$num_proc+0.1", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("$num_proc+0.1", no_global, host, centry_list, no_adjustments);
    CHECK(20, "$num_proc+0.1 → 4.1",    feq(val, 4.1));
 
    // T21: leading constant + attribute + fractional constant
-   val = scaled_mixed_load("1+$num_proc+0.1", nullptr, host, centry_list, nullptr);
+   val = scaled_mixed_load("1+$num_proc+0.1", no_global, host, centry_list, no_adjustments);
    CHECK(21, "1+$num_proc+0.1 → 5.1",  feq(val, 5.1));
 }
 

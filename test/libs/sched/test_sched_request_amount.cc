@@ -54,26 +54,42 @@ check(const char *id, const char *what, int got, int expected) {
 }
 
 /**
- * Build the request side of a match: what the job asked for. A real request always has both
- * fields consistent; the tests below vary them on purpose.
+ * @brief Build the request side of a match: what the job asked for
+ *
+ * A real request always has both fields consistent; the tests below vary them on purpose.
+ *
+ * @param name the complex name
+ * @param type its type
+ * @param stringval the requested value as a string
+ * @param doubleval the requested value as a number
+ * @return the request
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_request(const char *name, ocs::CEntry::Type type, const char *stringval, double doubleval) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
    ocs::tom::set<CE_stringval>(ep, stringval);
    ocs::tom::set<CE_doubleval>(ep, doubleval);
-   return ep.release();
+   return ep;
 }
 
 /**
- * Build the offer side of a match: what a host or queue provides. compare_complexes() takes the
- * name, the type and the relation operator from this element. Leaving both dominant fields at 0
- * makes the per job and the per slot comparison run against the same value, so with one slot the
- * outcome is simply the relation operator applied to request and offer.
+ * @brief Build the offer side of a match: what a host or queue provides
+ *
+ * compare_complexes() takes the name, the type and the relation operator from this element.
+ * Leaving both dominant fields at 0 makes the per job and the per slot comparison run against the
+ * same value, so with one slot the outcome is simply the relation operator applied to request and
+ * offer.
+ *
+ * @param name the complex name
+ * @param type its type
+ * @param relop the relation operator
+ * @param stringval the offered value as a string
+ * @param doubleval the offered value as a number
+ * @return the offer
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_offer(const char *name, ocs::CEntry::Type type, uint32_t relop, const char *stringval, double doubleval) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
@@ -82,113 +98,125 @@ make_offer(const char *name, ocs::CEntry::Type type, uint32_t relop, const char 
    ocs::tom::set<CE_stringval>(ep, stringval);
    ocs::tom::set<CE_doubleval>(ep, doubleval);
    ocs::tom::set<CE_pj_doubleval>(ep, doubleval);
-   return ep.release();
+   return ep;
 }
 
+/**
+ * @brief Match one request against one offer, for one slot
+ * @param request the request
+ * @param offer the offer
+ * @return the result of compare_complexes(): 1 on a match, 0 otherwise
+ */
 static int
-match(lListElem *request, lListElem *offer) {
+match(const ocs::tom::ConstElement<ocs::tom::CE> request, const ocs::tom::ConstElement<ocs::tom::CE> offer) {
    char availability_text[2048];
    return compare_complexes(1, request, offer, availability_text, false, false);
 }
 
+/**
+ * @brief A numeric request is compared by its CE_doubleval
+ */
 static void
 test_numeric_amount_comes_from_doubleval() {
-   lListElem *req, *off;
+   ocs::tom::ElementPtr<ocs::tom::CE> req, off;
 
    /* the ordinary cases, both fields agreeing */
    req = make_request("nc", ocs::CEntry::Type::INT, "4", 4.0);
    off = make_offer("nc", ocs::CEntry::Type::INT, CMPLXLE_OP, "8", 8.0);
-   check("T01", "request 4 of 8 matches", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T01", "request 4 of 8 matches", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    req = make_request("nc", ocs::CEntry::Type::INT, "16", 16.0);
    off = make_offer("nc", ocs::CEntry::Type::INT, CMPLXLE_OP, "8", 8.0);
-   check("T02", "request 16 of 8 does not match", match(req, off), 0);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T02", "request 16 of 8 does not match", match(*req, *off), 0);
+   req.reset();
+   off.reset();
 
    /* the discriminating case: the two fields disagree and CE_doubleval wins */
    req = make_request("nc", ocs::CEntry::Type::INT, "16", 4.0);
    off = make_offer("nc", ocs::CEntry::Type::INT, CMPLXLE_OP, "8", 8.0);
-   check("T03", "amount is read from CE_doubleval, not from CE_stringval", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T03", "amount is read from CE_doubleval, not from CE_stringval", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    /* an unparsable string used to be silently treated as a request for 0, which matched
       anything under <= and nothing under >=; the amount now decides */
    req = make_request("nc", ocs::CEntry::Type::INT, "not-a-number", 4.0);
    off = make_offer("nc", ocs::CEntry::Type::INT, CMPLXGE_OP, "2", 2.0);
-   check("T04", "an unparsable string is not silently read as a request for 0", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T04", "an unparsable string is not silently read as a request for 0", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    /* memory multipliers are applied once, when the request is built */
    req = make_request("mem", ocs::CEntry::Type::MEM, "2G", 2147483648.0);
    off = make_offer("mem", ocs::CEntry::Type::MEM, CMPLXLE_OP, "4G", 4294967296.0);
-   check("T05", "a memory request of 2G fits into 4G", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T05", "a memory request of 2G fits into 4G", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    req = make_request("mem", ocs::CEntry::Type::MEM, "8G", 8589934592.0);
    off = make_offer("mem", ocs::CEntry::Type::MEM, CMPLXLE_OP, "4G", 4294967296.0);
-   check("T06", "a memory request of 8G does not fit into 4G", match(req, off), 0);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T06", "a memory request of 8G does not fit into 4G", match(*req, *off), 0);
+   req.reset();
+   off.reset();
 
    /* the boundary is inclusive for <= */
    req = make_request("nc", ocs::CEntry::Type::INT, "8", 8.0);
    off = make_offer("nc", ocs::CEntry::Type::INT, CMPLXLE_OP, "8", 8.0);
-   check("T07", "request equal to the offer matches under <=", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T07", "request equal to the offer matches under <=", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    /* a boolean request travels as 1 or 0 in CE_doubleval */
    req = make_request("bo", ocs::CEntry::Type::BOOL, "true", 1.0);
    off = make_offer("bo", ocs::CEntry::Type::BOOL, CMPLXEQ_OP, "true", 1.0);
-   check("T08", "a boolean request matches an equal offer", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T08", "a boolean request matches an equal offer", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    req = make_request("bo", ocs::CEntry::Type::BOOL, "true", 1.0);
    off = make_offer("bo", ocs::CEntry::Type::BOOL, CMPLXEQ_OP, "false", 0.0);
-   check("T09", "a boolean request does not match an unequal offer", match(req, off), 0);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T09", "a boolean request does not match an unequal offer", match(*req, *off), 0);
+   req.reset();
+   off.reset();
 }
 
+/**
+ * @brief A string request is still compared by its CE_stringval
+ */
 static void
 test_string_types_still_use_the_string() {
-   lListElem *req, *off;
+   ocs::tom::ElementPtr<ocs::tom::CE> req, off;
 
    /* string types have no numeric form at all; CE_doubleval is meaningless for them and must
       not be consulted */
    req = make_request("ar", ocs::CEntry::Type::STR, "lx-amd64", 0.0);
    off = make_offer("ar", ocs::CEntry::Type::STR, CMPLXEQ_OP, "lx-amd64", 0.0);
-   check("T10", "a string request still matches on CE_stringval", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T10", "a string request still matches on CE_stringval", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    req = make_request("ar", ocs::CEntry::Type::STR, "lx-amd64", 0.0);
    off = make_offer("ar", ocs::CEntry::Type::STR, CMPLXEQ_OP, "sol-sparc", 0.0);
-   check("T11", "a string request does not match a different value", match(req, off), 0);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T11", "a string request does not match a different value", match(*req, *off), 0);
+   req.reset();
+   off.reset();
 
    /* for a RESTRING it is the request that carries the pattern and the offer that is matched
       against it - string_base_cmp() documents s1, the request, as the pattern. This is a
       property of the type and is unaffected by how the amount of a numeric request is obtained */
    req = make_request("ar", ocs::CEntry::Type::RESTR, "lx*", 0.0);
    off = make_offer("ar", ocs::CEntry::Type::RESTR, CMPLXEQ_OP, "lx-amd64", 0.0);
-   check("T12", "a RESTRING request is the pattern and matches the offer", match(req, off), 1);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T12", "a RESTRING request is the pattern and matches the offer", match(*req, *off), 1);
+   req.reset();
+   off.reset();
 
    req = make_request("ar", ocs::CEntry::Type::RESTR, "sol*", 0.0);
    off = make_offer("ar", ocs::CEntry::Type::RESTR, CMPLXEQ_OP, "lx-amd64", 0.0);
-   check("T13", "a RESTRING pattern that does not match the offer is rejected", match(req, off), 0);
-   lFreeElem(&req);
-   lFreeElem(&off);
+   check("T13", "a RESTRING pattern that does not match the offer is rejected", match(*req, *off), 0);
+   req.reset();
+   off.reset();
 }
 
 int

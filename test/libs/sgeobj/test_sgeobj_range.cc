@@ -67,13 +67,16 @@ static int s_fail = 0;
 // A freshly created (zeroed) element also produces (0, 0, 0).
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_get_all_ids() [T01-T03]
+ */
 static void test_range_get_all_ids() {
    printf("\n--- range_get_all_ids ---\n");
    uint32_t mn, mx, st;
 
    // T01: nullptr range — outputs are zeroed without crashing
    mn = 1; mx = 6; st = 2;
-   range_get_all_ids(nullptr, &mn, &mx, &st);
+   range_get_all_ids(ocs::tom::ConstElement<ocs::tom::RN>(), &mn, &mx, &st);
    CHECK(1, "nullptr → min=0 max=0 step=0", mn == 0 && mx == 0 && st == 0);
 
    // T02: freshly created (zeroed) element — also produces (0, 0, 0)
@@ -101,11 +104,14 @@ static void test_range_get_all_ids() {
 // nullptr input is a documented no-op.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_set_all_ids() [T04-T06]
+ */
 static void test_range_set_all_ids() {
    printf("\n--- range_set_all_ids ---\n");
 
    // T04: nullptr range — no crash, call is silently ignored
-   range_set_all_ids(nullptr, 1, 6, 2);
+   range_set_all_ids(ocs::tom::Element<ocs::tom::RN>(), 1, 6, 2);
    CHECK(4, "nullptr — no crash", true);
 
    // T05: normal range [1, 6, 2] round-trips correctly
@@ -258,24 +264,26 @@ static void test_range_correct_end() {
 // membership across all ranges in the list.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_insert_id() and range_list_is_id_within() [T20-T23]
+ */
 static void test_range_list_insert_and_query() {
    printf("\n--- range_list_insert_id / range_list_is_id_within ---\n");
-   lList *rl = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RN> rl;
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T20: list starts empty — id not found before insert
    CHECK(20, "empty list: id 5 not found", range_list_is_id_within(rl, 5) == false);
 
    // T21: insert id 5 — now found in the list
-   range_list_insert_id(&rl, &al, 5);
+   range_list_insert_id(rl, &al, 5);
    CHECK(21, "after insert 5: id 5 found", range_list_is_id_within(rl, 5) == true);
 
    // T22: insert id 7 — both 5 and 7 are found; 6 is not
-   range_list_insert_id(&rl, &al, 7);
+   range_list_insert_id(rl, &al, 7);
    CHECK(22, "after insert 7: id 7 found", range_list_is_id_within(rl, 7) == true);
    CHECK(23, "id 6 not in list (was not inserted)", range_list_is_id_within(rl, 6) == false);
 
-   lFreeList(&rl);
    al.reset();
 }
 
@@ -285,19 +293,21 @@ static void test_range_list_insert_and_query() {
 // range_list_is_empty() returns true for a nullptr or zero-element list.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_is_empty() [T24-T25]
+ */
 static void test_range_list_is_empty() {
    printf("\n--- range_list_is_empty ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T24: nullptr list — considered empty
-   CHECK(24, "nullptr list is empty", range_list_is_empty(nullptr) == true);
+   CHECK(24, "nullptr list is empty", range_list_is_empty(ocs::tom::ConstList<ocs::tom::RN>()) == true);
 
    // T25: list with one id — not empty
    {
-      lList *rl = nullptr;
-      range_list_insert_id(&rl, &al, 3);
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
+      range_list_insert_id(rl, &al, 3);
       CHECK(25, "list with id 3 is not empty", range_list_is_empty(rl) == false);
-      lFreeList(&rl);
    }
 
    al.reset();
@@ -310,15 +320,18 @@ static void test_range_list_is_empty() {
 // the last range element respectively.  For an empty list they return 0.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_get_first_id() and range_list_get_last_id() [T26-T27]
+ */
 static void test_range_list_first_last() {
    printf("\n--- range_list_get_first_id / range_list_get_last_id ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // build list: insert 1, 3, 5 → after compress these form a range [1-5:2]
-   lList *rl = nullptr;
-   range_list_insert_id(&rl, &al, 1);
-   range_list_insert_id(&rl, &al, 3);
-   range_list_insert_id(&rl, &al, 5);
+   ocs::tom::ListPtr<ocs::tom::RN> rl;
+   range_list_insert_id(rl, &al, 1);
+   range_list_insert_id(rl, &al, 3);
+   range_list_insert_id(rl, &al, 5);
 
    // T26: first id is 1
    CHECK(26, "first id is 1", range_list_get_first_id(rl, &al) == 1);
@@ -326,7 +339,6 @@ static void test_range_list_first_last() {
    // T27: last id is 5
    CHECK(27, "last id is 5", range_list_get_last_id(rl, &al) == 5);
 
-   lFreeList(&rl);
    al.reset();
 }
 
@@ -337,21 +349,23 @@ static void test_range_list_first_last() {
 // An empty or nullptr list returns 0.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_get_number_of_ids() [T28-T29]
+ */
 static void test_range_list_number_of_ids() {
    printf("\n--- range_list_get_number_of_ids ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T28: nullptr list — 0 ids
-   CHECK(28, "nullptr list → 0 ids", range_list_get_number_of_ids(nullptr) == 0);
+   CHECK(28, "nullptr list → 0 ids", range_list_get_number_of_ids(ocs::tom::ConstList<ocs::tom::RN>()) == 0);
 
    // T29: list with ids 1, 2, 3, 4, 5 inserted individually → 5 ids
    {
-      lList *rl = nullptr;
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
       for (uint32_t i = 1; i <= 5; i++) {
-         range_list_insert_id(&rl, &al, i);
+         range_list_insert_id(rl, &al, i);
       }
       CHECK(29, "5 inserted ids → count 5", range_list_get_number_of_ids(rl) == 5);
-      lFreeList(&rl);
    }
 
    al.reset();
@@ -364,27 +378,28 @@ static void test_range_list_number_of_ids() {
 // RN_Type list.  Returns true on success, false on error.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_parse_from_string() [T30-T33]
+ */
 static void test_range_list_parse_from_string() {
    printf("\n--- range_list_parse_from_string ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T30: simple single id "3" — parses to a one-element list containing id 3
    {
-      lList *rl = nullptr;
-      bool ok = range_list_parse_from_string(&rl, &al, "3", false, true, false);
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
+      bool ok = range_list_parse_from_string(rl, &al, "3", false, true, false);
       CHECK(30, "\"3\" parses successfully", ok == true);
       CHECK(31, "\"3\" → contains id 3", range_list_is_id_within(rl, 3) == true);
-      lFreeList(&rl);
       al.reset();
    }
 
    // T32: stepped range "1-5:2" — ids are 1, 3, 5 → 3 ids total
    {
-      lList *rl = nullptr;
-      bool ok = range_list_parse_from_string(&rl, &al, "1-5:2", false, true, false);
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
+      bool ok = range_list_parse_from_string(rl, &al, "1-5:2", false, true, false);
       CHECK(32, "\"1-5:2\" parses successfully", ok == true);
       CHECK(33, "\"1-5:2\" → 3 ids (1,3,5)", range_list_get_number_of_ids(rl) == 3);
-      lFreeList(&rl);
       al.reset();
    }
 }
@@ -417,43 +432,44 @@ static void test_range_is_id_within_extended() {
 //   - id in the middle → range is split into two separate elements
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_remove_id() [T35-T40]
+ */
 static void test_range_list_remove_id() {
    printf("\n--- range_list_remove_id ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T35: remove the only id from a list → list becomes nullptr (freed)
    {
-      lList *rl = nullptr;
-      range_list_insert_id(&rl, &al, 5);
-      range_list_remove_id(&rl, &al, 5);
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
+      range_list_insert_id(rl, &al, 5);
+      range_list_remove_id(rl, &al, 5);
       CHECK(35, "remove only id → list is nullptr", rl == nullptr);
    }
 
    // T36: remove start of a multi-id range → start advances by step
    {
-      lList *rl = nullptr;
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
       for (uint32_t i = 1; i <= 5; i++) {
-         range_list_insert_id(&rl, &al, i);
+         range_list_insert_id(rl, &al, i);
       }
       // list is 1-5:1; remove id 1 → 2-5:1
-      range_list_remove_id(&rl, &al, 1);
+      range_list_remove_id(rl, &al, 1);
       CHECK(36, "remove start: id 1 gone",  range_list_is_id_within(rl, 1) == false);
       CHECK(37, "remove start: id 2 still present", range_list_is_id_within(rl, 2) == true);
-      lFreeList(&rl);
    }
 
    // T37: remove id from middle of range → range splits; both sides remain
    {
-      lList *rl = nullptr;
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
       for (uint32_t i = 1; i <= 5; i++) {
-         range_list_insert_id(&rl, &al, i);
+         range_list_insert_id(rl, &al, i);
       }
       // list is 1-5:1; remove id 3 → {1,2} and {4,5}
-      range_list_remove_id(&rl, &al, 3);
+      range_list_remove_id(rl, &al, 3);
       CHECK(38, "remove middle: id 3 gone",         range_list_is_id_within(rl, 3) == false);
       CHECK(39, "remove middle: id 2 still present", range_list_is_id_within(rl, 2) == true);
       CHECK(40, "remove middle: id 4 still present", range_list_is_id_within(rl, 4) == true);
-      lFreeList(&rl);
    }
 
    al.reset();
@@ -467,15 +483,18 @@ static void test_range_list_remove_id() {
 // the list is in canonical (sorted, non-overlapping, compressed) form.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_sort_uniq_compress() [T41-T43]
+ */
 static void test_range_list_sort_uniq_compress() {
    printf("\n--- range_list_sort_uniq_compress ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // Build an unordered list: insert 5, 3, 1 individually
-   lList *rl = nullptr;
-   range_list_insert_id(&rl, &al, 5);
-   range_list_insert_id(&rl, &al, 3);
-   range_list_insert_id(&rl, &al, 1);
+   ocs::tom::ListPtr<ocs::tom::RN> rl;
+   range_list_insert_id(rl, &al, 5);
+   range_list_insert_id(rl, &al, 3);
+   range_list_insert_id(rl, &al, 1);
 
    range_list_sort_uniq_compress(rl, &al, true);
 
@@ -486,7 +505,6 @@ static void test_range_list_sort_uniq_compress() {
    // T42: total count is preserved (no ids lost or duplicated)
    CHECK(43, "after compress: 3 ids total", range_list_get_number_of_ids(rl) == 3);
 
-   lFreeList(&rl);
    al.reset();
 }
 
@@ -498,23 +516,25 @@ static void test_range_list_sort_uniq_compress() {
 // Returns 0 for a nullptr or empty list.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_get_average() [T44-T45]
+ */
 static void test_range_list_get_average() {
    printf("\n--- range_list_get_average ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T44: average of ids 1,2,3,4,5 → 3.0
    {
-      lList *rl = nullptr;
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
       for (uint32_t i = 1; i <= 5; i++) {
-         range_list_insert_id(&rl, &al, i);
+         range_list_insert_id(rl, &al, i);
       }
       double avg = range_list_get_average(rl, 0);
       CHECK(44, "average of 1-5 → 3.0", avg == 3.0);
-      lFreeList(&rl);
    }
 
    // T45: nullptr list → average is 0
-   CHECK(45, "nullptr list → average 0", range_list_get_average(nullptr, 0) == 0.0);
+   CHECK(45, "nullptr list → average 0", range_list_get_average(ocs::tom::ConstList<ocs::tom::RN>(), 0) == 0.0);
 
    al.reset();
 }
@@ -527,54 +547,59 @@ static void test_range_list_get_average() {
 // range_list_calculate_intersection_set()— ids present in both lists
 // ---------------------------------------------------------------------------
 
-static lList *make_range_list(std::initializer_list<uint32_t> ids) {
-   lList *rl = nullptr;
+/**
+ * @brief Builds a range list by inserting the given ids one by one.
+ * @param ids the ids to insert, in insertion order
+ * @return the range list owning the inserted ids
+ */
+static ocs::tom::ListPtr<ocs::tom::RN> make_range_list(std::initializer_list<uint32_t> ids) {
+   ocs::tom::ListPtr<ocs::tom::RN> rl;
    ocs::tom::ListPtr<ocs::tom::AN> al;
    for (uint32_t id : ids) {
-      range_list_insert_id(&rl, &al, id);
+      range_list_insert_id(rl, &al, id);
    }
    al.reset();
    return rl;
 }
 
+/**
+ * @brief Union, difference and intersection of range lists [T46-T54]
+ */
 static void test_set_operations() {
    printf("\n--- set operations ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // union: {1,2} ∪ {4,5} → {1,2,4,5}
    {
-      lList *a = make_range_list({1, 2});
-      lList *b = make_range_list({4, 5});
-      lList *u = nullptr;
-      range_list_calculate_union_set(&u, &al, a, b);
+      auto a = make_range_list({1, 2});
+      auto b = make_range_list({4, 5});
+      ocs::tom::ListPtr<ocs::tom::RN> u;
+      range_list_calculate_union_set(u, &al, a, b);
       CHECK(46, "union {1,2}+{4,5}: id 1 present", range_list_is_id_within(u, 1) == true);
       CHECK(47, "union {1,2}+{4,5}: id 4 present", range_list_is_id_within(u, 4) == true);
       CHECK(48, "union {1,2}+{4,5}: 4 ids total",  range_list_get_number_of_ids(u) == 4);
-      lFreeList(&a); lFreeList(&b); lFreeList(&u);
    }
 
    // difference: {1,2,3,4,5} − {2,4} → {1,3,5}
    {
-      lList *a = make_range_list({1, 2, 3, 4, 5});
-      lList *b = make_range_list({2, 4});
-      lList *d = nullptr;
-      range_list_calculate_difference_set(&d, &al, a, b);
+      auto a = make_range_list({1, 2, 3, 4, 5});
+      auto b = make_range_list({2, 4});
+      ocs::tom::ListPtr<ocs::tom::RN> d;
+      range_list_calculate_difference_set(d, &al, a, b);
       CHECK(49, "diff {1-5}-{2,4}: id 3 present", range_list_is_id_within(d, 3) == true);
       CHECK(50, "diff {1-5}-{2,4}: id 2 absent",  range_list_is_id_within(d, 2) == false);
       CHECK(51, "diff {1-5}-{2,4}: 3 ids total",  range_list_get_number_of_ids(d) == 3);
-      lFreeList(&a); lFreeList(&b); lFreeList(&d);
    }
 
    // intersection: {1,2,3} ∩ {2,3,4} → {2,3}
    {
-      lList *a = make_range_list({1, 2, 3});
-      lList *b = make_range_list({2, 3, 4});
-      lList *i = nullptr;
-      range_list_calculate_intersection_set(&i, &al, a, b);
+      auto a = make_range_list({1, 2, 3});
+      auto b = make_range_list({2, 3, 4});
+      ocs::tom::ListPtr<ocs::tom::RN> i;
+      range_list_calculate_intersection_set(i, &al, a, b);
       CHECK(52, "intersect {1-3}∩{2-4}: id 2 present", range_list_is_id_within(i, 2) == true);
       CHECK(53, "intersect {1-3}∩{2-4}: id 1 absent",  range_list_is_id_within(i, 1) == false);
       CHECK(54, "intersect {1-3}∩{2-4}: 2 ids total",  range_list_get_number_of_ids(i) == 2);
-      lFreeList(&a); lFreeList(&b); lFreeList(&i);
    }
 
    al.reset();
@@ -586,11 +611,14 @@ static void test_set_operations() {
 // List-level wrapper: returns true if any range in the list has start < id.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_containes_id_less_than() [T55-T56]
+ */
 static void test_range_list_containes_id_less_than() {
    printf("\n--- range_list_containes_id_less_than ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
-   lList *rl = make_range_list({3, 4, 5});
+   auto rl = make_range_list({3, 4, 5});
 
    // T55: list start (3) is less than id 5 → true
    CHECK(55, "list start 3 < id 5 → true",
@@ -600,7 +628,6 @@ static void test_range_list_containes_id_less_than() {
    CHECK(56, "list start 3 == id 3 → false",
          range_list_containes_id_less_than(rl, 3) == false);
 
-   lFreeList(&rl);
    al.reset();
 }
 
@@ -611,15 +638,18 @@ static void test_range_list_containes_id_less_than() {
 // is nullptr or empty.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_get_first_id() and range_list_get_last_id() on an empty list [T57-T58]
+ */
 static void test_range_list_first_last_nullptr() {
    printf("\n--- range_list_get_first_id / last — nullptr ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T57: nullptr list → first id is 0
-   CHECK(57, "nullptr list → first id 0", range_list_get_first_id(nullptr, &al) == 0);
+   CHECK(57, "nullptr list → first id 0", range_list_get_first_id(ocs::tom::ConstList<ocs::tom::RN>(), &al) == 0);
 
    // T58: nullptr list → last id is 0
-   CHECK(58, "nullptr list → last id 0", range_list_get_last_id(nullptr, &al) == 0);
+   CHECK(58, "nullptr list → last id 0", range_list_get_last_id(ocs::tom::ConstList<ocs::tom::RN>(), &al) == 0);
 
    al.reset();
 }
@@ -628,47 +658,49 @@ static void test_range_list_first_last_nullptr() {
 // range_list_parse_from_string — additional cases  [T59–T65]
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief range_list_parse_from_string(), additional cases [T59-T65]
+ */
 static void test_range_list_parse_extended() {
    printf("\n--- range_list_parse_from_string (extended) ---\n");
    ocs::tom::ListPtr<ocs::tom::AN> al;
 
    // T59: contiguous range "1-3" (no explicit step) → ids 1, 2, 3 → 3 ids
    {
-      lList *rl = nullptr;
-      bool ok = range_list_parse_from_string(&rl, &al, "1-3", false, true, false);
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
+      bool ok = range_list_parse_from_string(rl, &al, "1-3", false, true, false);
       CHECK(59, "\"1-3\" parses successfully", ok == true);
       CHECK(60, "\"1-3\" → 3 ids", range_list_get_number_of_ids(rl) == 3);
       CHECK(61, "\"1-3\" → id 2 present", range_list_is_id_within(rl, 2) == true);
-      lFreeList(&rl);
       al.reset();
    }
 
    // T62: a single unparseable token is treated as "undefined" (returns true, empty list)
    //      — documents current behavior; this mirrors the NONE sentinel convention
    {
-      lList *rl = nullptr;
-      bool ok = range_list_parse_from_string(&rl, &al, "abc", false, true, false);
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
+      bool ok = range_list_parse_from_string(rl, &al, "abc", false, true, false);
       CHECK(62, "single unparseable token treated as undefined → true", ok == true);
       CHECK(63, "undefined parse → list is empty", range_list_is_empty(rl));
-      lFreeList(&rl);
       al.reset();
    }
 
    // T64: valid first token followed by an invalid second token → parse fails
    //      (the second token may not be undefined after a valid first range)
    {
-      lList *rl = nullptr;
-      bool ok = range_list_parse_from_string(&rl, &al, "1,abc", false, true, false);
+      ocs::tom::ListPtr<ocs::tom::RN> rl;
+      bool ok = range_list_parse_from_string(rl, &al, "1,abc", false, true, false);
       // the list parsed before the error is freed, not left behind (CS-3066)
       CHECK(64, "valid then invalid token → parse fails and leaves no list", ok == false && rl == nullptr);
-      lFreeList(&rl);
       al.reset();
    }
 
-   // T65: a parse without a target list builds the list and frees it again (CS-3066)
+   // T65: a list the caller discards right after the parse is freed by its handle (CS-3066); the typed form
+   // always has a target, the former "no target list" case of the raw overload is gone with it
    {
-      bool ok = range_list_parse_from_string(nullptr, &al, "1-3,5", false, true, false);
-      CHECK(65, "parse without a target list succeeds; nothing is left behind under the address sanitizer",
+      ocs::tom::ListPtr<ocs::tom::RN> discarded;
+      bool ok = range_list_parse_from_string(discarded, &al, "1-3,5", false, true, false);
+      CHECK(65, "parse into a discarded list succeeds; nothing is left behind under the address sanitizer",
             ok == true && al == nullptr);
       al.reset();
    }

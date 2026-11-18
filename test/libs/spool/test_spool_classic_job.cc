@@ -86,10 +86,10 @@ make_array_job(const uint32_t job_id) {
    job->set<JB_job_number>(job_id);
    job->set<JB_job_name>("cs3120");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lList *structure = nullptr;
-   range_list_parse_from_string(&structure, &alp, "1-2", false, true, INF_NOT_ALLOWED);
+   ocs::tom::ListPtr<ocs::tom::RN> structure;
+   range_list_parse_from_string(structure, &alp, "1-2", false, true, INF_NOT_ALLOWED);
    alp.reset();
-   ocs::tom::set<JB_ja_structure>(*job, structure);
+   ocs::tom::set<JB_ja_structure>(*job, std::move(structure));
    auto tasks = ocs::tom::ListPtr<ocs::tom::JAT>::create("ja_tasks");
    for (uint32_t task_id = 1; task_id <= 2; task_id++) {
       auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();

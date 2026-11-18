@@ -278,73 +278,97 @@ static void teardown_bootstrap() {
    rmdir(s_sge_root);
 }
 
-/* Append a host group with the given members. Name validation off: these lists
- * are built by hand, not accepted from a client. */
-static lListElem *
-add_hgroup(lList **list, const char *name, std::initializer_list<const char *> members) {
-   lList *hrefs = nullptr;
+/**
+ * @brief Append a host group with the given members
+ *
+ * Name validation off: these lists are built by hand, not accepted from a client.
+ *
+ * @param list the host group list, created if empty
+ * @param name the group name
+ * @param members the member names
+ * @return the new element, or an empty handle if the group could not be created
+ */
+static ocs::tom::Element<ocs::tom::HGRP>
+add_hgroup(ocs::tom::ListPtr<ocs::tom::HGRP> &list, const char *name,
+           std::initializer_list<const char *> members) {
+   ocs::tom::ListPtr<ocs::tom::HR> hrefs;
 
    for (const char *m : members) {
-      href_list_add(&hrefs, nullptr, m);
+      href_list_add(hrefs, nullptr, m);
    }
 
-   /* hgroup_create() takes ownership of hrefs (lSetList, no copy) */
-   lListElem *hgroup = hgroup_create(nullptr, name, hrefs, false);
-   if (hgroup == nullptr) {
-      lFreeList(&hrefs);
+   /* hgroup_create() takes ownership of hrefs, also when it fails */
+   auto hgroup = hgroup_create(nullptr, name, std::move(hrefs), false);
+   if (!hgroup) {
       return nullptr;
    }
-   if (*list == nullptr) {
-      *list = lCreateList("hgroups", HGRP_Type);
+   if (!list) {
+      list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
    }
-   lAppendElem(*list, hgroup);
-   return hgroup;
+   return list->push_back(std::move(hgroup));
 }
 
-/* Does the cache equal a fresh walk, element by element and in order? The cache
- * must reproduce the walk exactly -- see the note on duplicates below. */
+/**
+ * @brief Does the cache equal a fresh walk, element by element and in order?
+ *
+ * The cache must reproduce the walk exactly -- see the note on duplicates below.
+ *
+ * @param hgroup the group whose cache is compared
+ * @param master_list the groups the walk resolves against
+ * @return true if the cache equals the walk
+ */
 static bool
-cache_equals_walk(const lListElem *hgroup, const lList *master_list) {
-   lList *walked = nullptr;
+cache_equals_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
+                  const ocs::tom::ConstList<ocs::tom::HGRP> master_list) {
+   ocs::tom::ListPtr<ocs::tom::HR> walked;
 
    if (!hgroup_find_all_references(hgroup, nullptr, master_list, &walked, nullptr)) {
-      lFreeList(&walked);
       return false;
    }
 
    ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
-   bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(walked);
+   bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(*walked);
    ocs::tom::ConstElement<ocs::tom::HR> c = lFirst(cached);
-   const lListElem *w = lFirst(walked);
+   ocs::tom::ConstElement<ocs::tom::HR> w = lFirst(walked);
 
    while (ok && c != nullptr && w != nullptr) {
       ok = (sge_hostcmp(ocs::tom::get<HR_name>(c), ocs::tom::get<HR_name>(w)) == 0);
       c = lNext(c);
       w = lNext(w);
    }
-   lFreeList(&walked);
    return ok;
 }
 
+/**
+ * @brief Does the cache of a group hold a host?
+ *
+ * @param master_list the groups
+ * @param group the group whose cache is asked
+ * @param host the host
+ * @return true if the group exists and its cache holds the host
+ */
 static bool
-cached_has(const lList *master_list, const char *group, const char *host) {
+cached_has(const ocs::tom::ConstList<ocs::tom::HGRP> master_list, const char *group, const char *host) {
    ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(master_list, group);
    return hgroup != nullptr && href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
 }
 
+/**
+ * @brief hgroup_update_cache() and hgroup_list_update_caches() fill and refresh the caches
+ */
 static void
 test_update_cache() {
    printf("\n--- hgroup_update_cache ---\n");
 
-   lList *master_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::HGRP> master_list;
 
    /* @leaf -> two hosts;  @mid -> @leaf;  @top -> @mid + a host of its own */
-   add_hgroup(&master_list, "@leaf", {"hosta", "hostb"});
-   add_hgroup(&master_list, "@mid", {"@leaf"});
-   add_hgroup(&master_list, "@top", {"@mid", "hostc"});
+   add_hgroup(master_list, "@leaf", {"hosta", "hostb"});
+   add_hgroup(master_list, "@mid", {"@leaf"});
+   add_hgroup(master_list, "@top", {"@mid", "hostc"});
 
    CHECK(26, "nothing is cached before the first update",
-         ocs::tom::get<HGRP_cache_version>(ocs::tom::find_first<HGRP_name>(master_list, "@leaf")) == 0);
+         ocs::tom::get<HGRP_cache_version>(ocs::tom::find_first<HGRP_name>(*master_list, "@leaf")) == 0);
 
    CHECK(27, "hgroup_list_update_caches succeeds",
          hgroup_list_update_caches(master_list, nullptr));
@@ -359,10 +383,9 @@ test_update_cache() {
          !cached_has(master_list, "@top", "@mid") && !cached_has(master_list, "@mid", "@leaf"));
 
    {
-      const lListElem *hgroup;
       bool all = true;
 
-      for_each_ep(hgroup, master_list) {
+      for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(master_list)) {
          all &= (ocs::tom::get<HGRP_cache_version>(hgroup) != 0) && cache_equals_walk(hgroup, master_list);
       }
       CHECK(32, "every cache equals a fresh walk and carries a version", all);
@@ -370,27 +393,26 @@ test_update_cache() {
 
    /* the nested case: change @leaf, and the containers must follow */
    {
-      ocs::tom::Element<ocs::tom::HGRP> leaf = ocs::tom::find_first_rw<HGRP_name>(master_list, "@leaf");
-      lList *new_hosts = nullptr;
+      ocs::tom::Element<ocs::tom::HGRP> leaf = ocs::tom::find_first_rw<HGRP_name>(*master_list, "@leaf");
+      ocs::tom::ListPtr<ocs::tom::HR> new_hosts;
 
-      href_list_add(&new_hosts, nullptr, "hosta");
-      href_list_add(&new_hosts, nullptr, "hostd");
-      ocs::tom::set<HGRP_host_list>(leaf, new_hosts);
+      href_list_add(new_hosts, nullptr, "hosta");
+      href_list_add(new_hosts, nullptr, "hostd");
+      ocs::tom::set<HGRP_host_list>(leaf, std::move(new_hosts));
 
       /* what the qmaster does in hgroup_success(): the group plus its referencees */
-      lList *referencees = nullptr;
+      ocs::tom::ListPtr<ocs::tom::HR> referencees;
       CHECK(33, "the referencees of @leaf are found transitively",
             hgroup_find_all_referencees(leaf, nullptr, master_list, &referencees) &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(referencees, "@mid")) != nullptr &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(referencees, "@top")) != nullptr);
+            static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(*referencees, "@mid")) != nullptr &&
+            static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(*referencees, "@top")) != nullptr);
 
       hgroup_update_cache(leaf, nullptr, master_list);
-      const lListElem *href;
-      for_each_ep(href, referencees) {
-         hgroup_update_cache(ocs::tom::find_first_rw<HGRP_name>(master_list, ocs::tom::get<HR_name>(href)),
+      for (const ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::ConstList<ocs::tom::HR>(referencees)) {
+         hgroup_update_cache(ocs::tom::find_first_rw<HGRP_name>(*master_list, ocs::tom::get<HR_name>(href)),
                              nullptr, master_list);
       }
-      lFreeList(&referencees);
+      referencees.reset();
 
       CHECK(34, "the removed host is gone from @top",
             !cached_has(master_list, "@top", "hostb"));
@@ -416,8 +438,8 @@ test_update_cache() {
     * written by hand can produce it, and it must not poison the cache.
     */
    {
-      lListElem *empty = add_hgroup(&master_list, "@empty", {});
-      lListElem *dangling = add_hgroup(&master_list, "@dangling", {"@does_not_exist"});
+      ocs::tom::Element<ocs::tom::HGRP> empty = add_hgroup(master_list, "@empty", {});
+      ocs::tom::Element<ocs::tom::HGRP> dangling = add_hgroup(master_list, "@dangling", {"@does_not_exist"});
 
       CHECK(37, "a group with no members caches successfully",
             hgroup_update_cache(empty, nullptr, master_list));
@@ -430,8 +452,6 @@ test_update_cache() {
             ocs::tom::get<HGRP_cache_version>(empty) != 0 &&
             ocs::tom::get<HGRP_cache_version>(dangling) != 0);
    }
-
-   lFreeList(&master_list);
 }
 
 
@@ -459,27 +479,25 @@ test_host_is_referenced_reserved() {
    /* one group at a time, so a passing case cannot be masked by another group */
    for (int i = 0; i < 3; i++) {
       const char *reserved[] = {ADMIN_HOSTGROUP, SUBMIT_HOSTGROUP, EXEC_HOSTGROUP};
-      lList *hgrp_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::HGRP> hgrp_list;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      add_hgroup(&hgrp_list, reserved[i], {"hosta"});
+      add_hgroup(hgrp_list, reserved[i], {"hosta"});
       bool referenced = host_is_referenced(*host, &answer_list, nullptr, hgrp_list);
 
       CHECK(41 + i, reserved[i], !referenced);
       answer_list.reset();
-      lFreeList(&hgrp_list);
    }
 
    /* the skip must not swallow real references */
    {
-      lList *hgrp_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::HGRP> hgrp_list;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      add_hgroup(&hgrp_list, "@userowned", {"hosta"});
+      add_hgroup(hgrp_list, "@userowned", {"hosta"});
       CHECK(44, "a user group still counts as a reference",
             host_is_referenced(*host, &answer_list, nullptr, hgrp_list));
       answer_list.reset();
-      lFreeList(&hgrp_list);
    }
 
    /* the deliberate boundary: reserved groups are skipped as GROUPS, not as a
@@ -487,15 +505,14 @@ test_host_is_referenced_reserved() {
     * user's own configuration naming this host, and they can edit it -- so it
     * counts, and there is no deadlock. */
    {
-      lList *hgrp_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::HGRP> hgrp_list;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      add_hgroup(&hgrp_list, ADMIN_HOSTGROUP, {"hosta"});
-      add_hgroup(&hgrp_list, "@wraps_admin", {ADMIN_HOSTGROUP});
+      add_hgroup(hgrp_list, ADMIN_HOSTGROUP, {"hosta"});
+      add_hgroup(hgrp_list, "@wraps_admin", {ADMIN_HOSTGROUP});
       CHECK(45, "a user group referencing a reserved group still counts",
             host_is_referenced(*host, &answer_list, nullptr, hgrp_list));
       answer_list.reset();
-      lFreeList(&hgrp_list);
    }
 
 }
@@ -642,17 +659,17 @@ test_member_classes() {
    // and through @exec_hosts that host would join the candidate set matchers
    // are resolved against.
    {
-      lList *before = nullptr;
-      lList *after = nullptr;
-      lList *add_hosts = nullptr;
-      lList *add_groups = nullptr;
+      auto before = ocs::tom::ListPtr<ocs::tom::HR>::create("before");
+      auto after = ocs::tom::ListPtr<ocs::tom::HR>::create("after");
+      ocs::tom::ListPtr<ocs::tom::HR> add_hosts;
+      ocs::tom::ListPtr<ocs::tom::HR> add_groups;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      ocs::tom::emplace_back<HR_name>(&before, "node001");
-      ocs::tom::emplace_back<HR_name>(&after, "node001");
-      ocs::tom::emplace_back<HR_name>(&after, "node002");
-      ocs::tom::emplace_back<HR_name>(&after, "@other");
-      ocs::tom::emplace_back<HR_name>(&after, "host:gpu*");
+      before->emplace_back<HR_name>(ocs::tom::Host("node001"));
+      after->emplace_back<HR_name>(ocs::tom::Host("node001"));
+      after->emplace_back<HR_name>(ocs::tom::Host("node002"));
+      after->emplace_back<HR_name>(ocs::tom::Host("@other"));
+      after->emplace_back<HR_name>(ocs::tom::Host("host:gpu*"));
 
       CHECK(78, "the difference of two member lists succeeds",
             href_list_compare(after, &answer_list, before, &add_hosts, &add_groups, nullptr, nullptr));
@@ -666,10 +683,6 @@ test_member_classes() {
             href_list_locate(add_groups, "host:gpu*") == nullptr);
 
       answer_list.reset();
-      lFreeList(&add_hosts);
-      lFreeList(&add_groups);
-      lFreeList(&before);
-      lFreeList(&after);
    }
 
    // Two members denoting the same set are collapsed, and the collapse is
@@ -679,45 +692,43 @@ test_member_classes() {
    // are suspended while the input is built.
    {
       const ocs::tom::UniqueCheckSuspension suspension;
-      lList *members = nullptr;
+      auto members = ocs::tom::ListPtr<ocs::tom::HR>::create("members");
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      ocs::tom::emplace_back<HR_name>(&members, "host:gpu*");
-      ocs::tom::emplace_back<HR_name>(&members, "node001");
-      ocs::tom::emplace_back<HR_name>(&members, "HOST:GPU*");
+      members->emplace_back<HR_name>(ocs::tom::Host("host:gpu*"));
+      members->emplace_back<HR_name>(ocs::tom::Host("node001"));
+      members->emplace_back<HR_name>(ocs::tom::Host("HOST:GPU*"));
 
       href_list_make_uniq(members, &answer_list);
 
       CHECK(83, "the duplicate matcher is gone, case notwithstanding",
-            lGetNumberOfElem(members) == 2);
+            lGetNumberOfElem(*members) == 2);
       CHECK(84, "the collapse is reported",
             answer_list->size() == 1);
       CHECK(85, "and the report cannot fail the client",
             ocs::tom::get<AN_status>(lFirst(answer_list)) == STATUS_OK);
 
       answer_list.reset();
-      lFreeList(&members);
    }
 
    // Two matchers that differ are two members. They would collide if the host
    // name normaliser truncated them at their first dot, as it does a host name.
    {
-      lList *members = nullptr;
+      auto members = ocs::tom::ListPtr<ocs::tom::HR>::create("members");
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      ocs::tom::emplace_back<HR_name>(&members, "host:gpu*.a.example.com");
-      ocs::tom::emplace_back<HR_name>(&members, "host:gpu*.b.example.com");
+      members->emplace_back<HR_name>(ocs::tom::Host("host:gpu*.a.example.com"));
+      members->emplace_back<HR_name>(ocs::tom::Host("host:gpu*.b.example.com"));
 
       href_list_make_uniq(members, &answer_list);
 
       CHECK(86, "two different matchers stay two members",
-            lGetNumberOfElem(members) == 2);
+            lGetNumberOfElem(*members) == 2);
       CHECK(87, "and each is found under its own name",
             href_list_locate(members, "host:gpu*.a.example.com") != nullptr &&
             href_list_locate(members, "host:gpu*.b.example.com") != nullptr);
 
       answer_list.reset();
-      lFreeList(&members);
    }
 
    // A host group member may be a matcher; the name of a host never may.
@@ -756,18 +767,27 @@ test_member_classes() {
  * @param members the member names, nullptr-terminated
  * @return the new element
  */
-static lListElem *
-add_group(lList **list, const char *name, const char *const *members) {
-   ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::emplace_back<HGRP_name>(list, name);
-   lList *member_list = nullptr;
+static ocs::tom::Element<ocs::tom::HGRP>
+add_group(ocs::tom::ListPtr<ocs::tom::HGRP> &list, const char *name, const char *const *members) {
+   if (!list) {
+      list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
+   }
+   ocs::tom::Element<ocs::tom::HGRP> hgroup = list->emplace_back<HGRP_name>(ocs::tom::Host(name));
+   ocs::tom::ListPtr<ocs::tom::HR> member_list;
 
    for (int i = 0; members[i] != nullptr; i++) {
-      ocs::tom::emplace_back<HR_name>(&member_list, members[i]);
+      if (!member_list) {
+         member_list = ocs::tom::ListPtr<ocs::tom::HR>::create("members");
+      }
+      member_list->emplace_back<HR_name>(ocs::tom::Host(members[i]));
    }
-   ocs::tom::set<HGRP_host_list>(hgroup, member_list);
+   ocs::tom::set<HGRP_host_list>(hgroup, std::move(member_list));
    return hgroup;
 }
 
+/**
+ * @brief The three-class walk and its third output
+ */
 static void
 test_walk_three_classes() {
    printf("\n--- the three-class walk ---\n");
@@ -776,14 +796,14 @@ test_walk_three_classes() {
    const char *const sub_members[] = {"login01", nullptr};
    const char *const top_members[] = {"host:gpu*", "node001", "@sub", nullptr};
 
-   lList *hgroup_list = nullptr;
-   add_group(&hgroup_list, EXEC_HOSTGROUP, exec_members);
-   add_group(&hgroup_list, "@sub", sub_members);
-   lListElem *top = add_group(&hgroup_list, "@top", top_members);
+   ocs::tom::ListPtr<ocs::tom::HGRP> hgroup_list;
+   add_group(hgroup_list, EXEC_HOSTGROUP, exec_members);
+   add_group(hgroup_list, "@sub", sub_members);
+   ocs::tom::Element<ocs::tom::HGRP> top = add_group(hgroup_list, "@top", top_members);
 
-   lList *hosts = nullptr;
-   lList *groups = nullptr;
-   lList *matchers = nullptr;
+   ocs::tom::ListPtr<ocs::tom::HR> hosts;
+   ocs::tom::ListPtr<ocs::tom::HR> groups;
+   ocs::tom::ListPtr<ocs::tom::HR> matchers;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    CHECK(90, "the walk succeeds",
@@ -792,7 +812,7 @@ test_walk_three_classes() {
    // T91-T92: the classes stay apart -- this is what keeps an execution host
    // from ever being created out of a pattern
    CHECK(91, "the matcher comes back separately",
-         lGetNumberOfElem(matchers) == 1 && href_list_locate(matchers, "host:gpu*") != nullptr);
+         lGetNumberOfElem(*matchers) == 1 && href_list_locate(matchers, "host:gpu*") != nullptr);
    CHECK(92, "and never as a host or a group",
          href_list_locate(hosts, "host:gpu*") == nullptr &&
          href_list_locate(groups, "host:gpu*") == nullptr);
@@ -818,7 +838,7 @@ test_walk_three_classes() {
    // happens to capture from becoming undeletable: a matcher names nothing, and
    // a host leaving the set it describes is what the set is for.
    {
-      lList *named = nullptr;
+      ocs::tom::ListPtr<ocs::tom::HR> named;
 
       hgroup_find_all_references(top, &answer_list, hgroup_list, &named, nullptr, nullptr, false);
       CHECK(95, "without expansion only the named hosts come back",
@@ -826,14 +846,9 @@ test_walk_three_classes() {
             href_list_locate(named, "login01") != nullptr &&
             href_list_locate(named, "gpu001") == nullptr &&
             href_list_locate(named, "gpu002") == nullptr);
-      lFreeList(&named);
    }
 
    answer_list.reset();
-   lFreeList(&hosts);
-   lFreeList(&groups);
-   lFreeList(&matchers);
-   lFreeList(&hgroup_list);
 }
 
 // ---------------------------------------------------------------------------
@@ -873,8 +888,9 @@ next_random(const unsigned int bound) {
  * @param depth guards against a cycle the generator should not produce
  */
 static void
-oracle_flatten(const lList *hgroup_list, const char *name, const lList *candidates,
-               lList **out, int depth) {
+oracle_flatten(const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char *name,
+               const ocs::tom::ConstList<ocs::tom::HR> candidates, ocs::tom::ListPtr<ocs::tom::HR> &out,
+               const int depth) {
    if (depth > 32) {
       return;
    }
@@ -892,7 +908,7 @@ oracle_flatten(const lList *hgroup_list, const char *name, const lList *candidat
             break;
          case ocs::MemberClass::MATCHER:
 #ifdef WITH_EXTENSIONS
-            for_each_ep_lv(candidate, candidates) {
+            for (const ocs::tom::ConstElement<ocs::tom::HR> candidate : candidates) {
                const char *host = ocs::tom::get<HR_name>(candidate);
 
                if (sge_hostmatch_pattern(ocs::matcher_payload(member_name), host) == 0) {
@@ -915,11 +931,11 @@ oracle_flatten(const lList *hgroup_list, const char *name, const lList *candidat
  * @return true if each holds exactly the names of the other
  */
 static bool
-same_host_set(const lList *a, const lList *b) {
+same_host_set(const ocs::tom::ConstList<ocs::tom::HR> a, const ocs::tom::ConstList<ocs::tom::HR> b) {
    if (lGetNumberOfElem(a) != lGetNumberOfElem(b)) {
       return false;
    }
-   for_each_ep_lv(href, a) {
+   for (const ocs::tom::ConstElement<ocs::tom::HR> href : a) {
       if (href_list_locate(b, ocs::tom::get<HR_name>(href)) == nullptr) {
          return false;
       }
@@ -936,14 +952,16 @@ same_host_set(const lList *a, const lList *b) {
  * @param what which path produced it
  */
 static void
-dump_mismatch(const lList *hgroup_list, const char *name, const lList *expected,
-              const lList *got, const char *what) {
+dump_mismatch(const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char *name,
+              const ocs::tom::ConstList<ocs::tom::HR> expected, const ocs::tom::ConstList<ocs::tom::HR> got,
+              const char *what) {
    printf("      mismatch in %s for %s\n", what, name);
-   for_each_ep_lv(hgroup, hgroup_list) {
+   for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : hgroup_list) {
       dstring members = DSTRING_INIT;
 
       href_list_append_to_dstring(ocs::tom::get<HGRP_host_list>(hgroup), &members);
-      printf("        %-14s = %s\n", static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)), sge_dstring_get_string(&members));
+      printf("        %-14s = %s\n", static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)),
+             sge_dstring_get_string(&members));
       sge_dstring_free(&members);
    }
    dstring a = DSTRING_INIT;
@@ -956,6 +974,9 @@ dump_mismatch(const lList *hgroup_list, const char *name, const lList *expected,
    sge_dstring_free(&b);
 }
 
+/**
+ * @brief Generated group trees against an independent oracle
+ */
 static void
 test_generated_trees() {
    printf("\n--- generated group trees ---\n");
@@ -971,20 +992,21 @@ test_generated_trees() {
    int unfindable = 0;
 
    for (int tree = 0; tree < TREES; tree++) {
-      lList *hgroup_list = nullptr;
-      lList *exec_members = nullptr;
+      auto hgroup_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
+      auto exec_members = ocs::tom::ListPtr<ocs::tom::HR>::create("exec_members");
       char buffer[64];
 
       for (int h = 0; h < CANDIDATES; h++) {
          snprintf(buffer, sizeof(buffer), "h%02d", h);
-         ocs::tom::emplace_back<HR_name>(&exec_members, buffer);
+         exec_members->emplace_back<HR_name>(ocs::tom::Host(buffer));
       }
-      ocs::tom::Element<ocs::tom::HGRP> exec_group = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, EXEC_HOSTGROUP);
-      ocs::tom::set<HGRP_host_list>(exec_group, exec_members);
+      ocs::tom::Element<ocs::tom::HGRP> exec_group =
+         hgroup_list->emplace_back<HGRP_name>(ocs::tom::Host(EXEC_HOSTGROUP));
+      ocs::tom::set<HGRP_host_list>(exec_group, std::move(exec_members));
 
       /* a group may only reference one already built, so no cycle can arise */
       for (int g = 0; g < GROUPS; g++) {
-         lList *members = nullptr;
+         auto members = ocs::tom::ListPtr<ocs::tom::HR>::create("members");
          const int count = 1 + next_random(4);
 
          for (int m = 0; m < count; m++) {
@@ -1008,13 +1030,13 @@ test_generated_trees() {
                   break;
             }
             // a host group holds a member once, as href_list_add() keeps it; a member drawn twice is skipped
-            if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(members, buffer)) == nullptr) {
-               ocs::tom::emplace_back<HR_name>(&members, buffer);
+            if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(*members, buffer)) == nullptr) {
+               members->emplace_back<HR_name>(ocs::tom::Host(buffer));
             }
          }
          snprintf(buffer, sizeof(buffer), "@g%d", g);
-         ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, buffer);
-         ocs::tom::set<HGRP_host_list>(hgroup, members);
+         ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list->emplace_back<HGRP_name>(ocs::tom::Host(buffer));
+         ocs::tom::set<HGRP_host_list>(hgroup, std::move(members));
       }
 
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -1025,11 +1047,11 @@ test_generated_trees() {
 
       for (int g = 0; g < GROUPS; g++) {
          snprintf(buffer, sizeof(buffer), "@g%d", g);
-         ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::find_first_rw<HGRP_name>(hgroup_list, buffer);
-         lList *expected = nullptr;
-         lList *walked = nullptr;
+         ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::find_first_rw<HGRP_name>(*hgroup_list, buffer);
+         ocs::tom::ListPtr<ocs::tom::HR> expected;
+         ocs::tom::ListPtr<ocs::tom::HR> walked;
 
-         oracle_flatten(hgroup_list, buffer, ocs::tom::get<HGRP_host_list>(exec_group), &expected, 0);
+         oracle_flatten(hgroup_list, buffer, ocs::tom::get<HGRP_host_list>(exec_group), expected, 0);
          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &walked, nullptr, nullptr);
 
          if (!same_host_set(ocs::tom::get<HGRP_cached_hosts>(hgroup), expected)) {
@@ -1075,7 +1097,7 @@ test_generated_trees() {
             }
          }
 
-         lList *named = nullptr;
+         ocs::tom::ListPtr<ocs::tom::HR> named;
          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &named, nullptr, nullptr, false);
 
          for (ocs::tom::ConstElement<ocs::tom::HR> candidate : ocs::tom::get<HGRP_host_list>(exec_group)) {
@@ -1091,12 +1113,7 @@ test_generated_trees() {
                invariant_breaks++;
             }
          }
-         lFreeList(&named);
-
-         lFreeList(&expected);
-         lFreeList(&walked);
       }
-      lFreeList(&hgroup_list);
    }
 
    CHECK(97, "every cache of every generated tree matches the oracle", cache_mismatches == 0);
@@ -1333,10 +1350,10 @@ test_why() {
    const char *const mid[] = {"@leaf", "node005", nullptr};
    const char *const top[] = {"node001", "@mid", "host:gpu*", nullptr};
 
-   lList *hgroup_list = nullptr;
-   add_group(&hgroup_list, "@leaf", leaf);
-   add_group(&hgroup_list, "@mid", mid);
-   lListElem *group = add_group(&hgroup_list, "@top", top);
+   ocs::tom::ListPtr<ocs::tom::HGRP> hgroup_list;
+   add_group(hgroup_list, "@leaf", leaf);
+   add_group(hgroup_list, "@mid", mid);
+   ocs::tom::Element<ocs::tom::HGRP> group = add_group(hgroup_list, "@top", top);
 
    dstring found_in = DSTRING_INIT;
    dstring detail = DSTRING_INIT;
@@ -1393,42 +1410,40 @@ test_why() {
    // answer, so that is what is reported.
    {
       const char *const both[] = {"gpu001", "host:gpu*", nullptr};
-      lList *list = nullptr;
-      lListElem *g = add_group(&list, "@both", both);
+      ocs::tom::ListPtr<ocs::tom::HGRP> list;
+      ocs::tom::Element<ocs::tom::HGRP> g = add_group(list, "@both", both);
 
       CHECK(123, "a host that is named and also matched is reported as named",
             hgroup_why(g, "gpu001", list, &found_in, &detail) ==
                     ocs::Matcher::Route::LITERAL);
-      lFreeList(&list);
    }
 
    // T124: the degenerate arguments
    CHECK(124, "a missing group or host has no route",
-         hgroup_why(nullptr, "node001", hgroup_list, &found_in, &detail) ==
+         hgroup_why(ocs::tom::ConstElement<ocs::tom::HGRP>(), "node001", hgroup_list, &found_in, &detail) ==
                  ocs::Matcher::Route::NOT_A_MEMBER &&
          hgroup_why(group, nullptr, hgroup_list, &found_in, &detail) ==
                  ocs::Matcher::Route::NOT_A_MEMBER);
 
    sge_dstring_free(&found_in);
    sge_dstring_free(&detail);
-   lFreeList(&hgroup_list);
+   hgroup_list.reset();
 
    // T125: a cycle terminates. Writing one is refused, so this is a guard - but
    // a diagnostic command must be able to return whatever it is handed.
    {
       const char *const a_members[] = {"@cycle_b", nullptr};
       const char *const b_members[] = {"@cycle_a", nullptr};
-      lList *cyclic = nullptr;
-      lListElem *a = add_group(&cyclic, "@cycle_a", a_members);
+      ocs::tom::ListPtr<ocs::tom::HGRP> cyclic;
+      ocs::tom::Element<ocs::tom::HGRP> a = add_group(cyclic, "@cycle_a", a_members);
       dstring g = DSTRING_INIT;
       dstring d = DSTRING_INIT;
 
-      add_group(&cyclic, "@cycle_b", b_members);
+      add_group(cyclic, "@cycle_b", b_members);
       CHECK(125, "a cycle terminates and finds no route",
             hgroup_why(a, "node001", cyclic, &g, &d) == ocs::Matcher::Route::NOT_A_MEMBER);
       sge_dstring_free(&g);
       sge_dstring_free(&d);
-      lFreeList(&cyclic);
    }
 }
 
@@ -1445,9 +1460,9 @@ test_split_members() {
    const char *const mixed[] = {"node001", "@other", "host:gpu*", "node002", nullptr};
    const char *const plain[] = {"node001", "@other", nullptr};
 
-   lList *list = nullptr;
-   lListElem *with = add_group(&list, "@with", mixed);
-   lListElem *without = add_group(&list, "@without", plain);
+   ocs::tom::ListPtr<ocs::tom::HGRP> list;
+   ocs::tom::Element<ocs::tom::HGRP> with = add_group(list, "@with", mixed);
+   ocs::tom::Element<ocs::tom::HGRP> without = add_group(list, "@without", plain);
 
    {
       const auto [has_matcher, hosts, groups, matchers] =
@@ -1471,8 +1486,6 @@ test_split_members() {
       CHECK(128, "a group with no matcher reports that the split adds nothing",
             !has_matcher && hosts->size() == 1 && groups->size() == 1);
    }
-
-   lFreeList(&list);
 }
 
 // ---------------------------------------------------------------------------
@@ -1495,6 +1508,9 @@ test_split_members() {
 //   @x    ->  a host
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief The referencee walk lists a group reachable by two paths once
+ */
 static void
 test_find_all_referencees() {
    printf("\n--- the referencee walk ---\n");
@@ -1503,12 +1519,12 @@ test_find_all_referencees() {
    const char *const a_members[] = {"@x", nullptr};
    const char *const top_members[] = {"@a", "@x", nullptr};
 
-   lList *hgroup_list = nullptr;
-   lListElem *x = add_group(&hgroup_list, "@x", x_members);
-   add_group(&hgroup_list, "@a", a_members);
-   add_group(&hgroup_list, "@top", top_members);
+   ocs::tom::ListPtr<ocs::tom::HGRP> hgroup_list;
+   ocs::tom::Element<ocs::tom::HGRP> x = add_group(hgroup_list, "@x", x_members);
+   add_group(hgroup_list, "@a", a_members);
+   add_group(hgroup_list, "@top", top_members);
 
-   lList *referencees = nullptr;
+   ocs::tom::ListPtr<ocs::tom::HR> referencees;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    CHECK(129, "the referencee walk succeeds",
@@ -1517,7 +1533,7 @@ test_find_all_referencees() {
    // T130: @top is reachable by two paths and must still appear once. Two
    // entries under one key is a state the list is not supposed to reach.
    CHECK(130, "a group reachable by two paths is listed once",
-         lGetNumberOfElem(referencees) == 2);
+         lGetNumberOfElem(*referencees) == 2);
 
    // T131: and every entry is findable through the key, which is a different
    // code path from walking the list -- href_list_locate() goes through the
@@ -1531,15 +1547,14 @@ test_find_all_referencees() {
    // not catch it. It is the deduplication that follows which used to drop the
    // key from the hash and leave the survivor in the list but unfindable, on the
    // list this function hands back for the cache refresh and the events.
-   lUniqHost(referencees, HR_name);
+   lUniqHost(*referencees, HR_name);
    CHECK(132, "after deduplication every referencee is still findable",
-         lGetNumberOfElem(referencees) == 2 &&
+         lGetNumberOfElem(*referencees) == 2 &&
          href_list_locate(referencees, "@a") != nullptr &&
          href_list_locate(referencees, "@top") != nullptr);
 
-   lFreeList(&referencees);
+   referencees.reset();
    answer_list.reset();
-   lFreeList(&hgroup_list);
 }
 
 // ---------------------------------------------------------------------------

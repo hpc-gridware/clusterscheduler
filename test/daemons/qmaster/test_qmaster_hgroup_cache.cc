@@ -84,52 +84,61 @@
 #define GRP_TOP  "@test_cs2451_top"    ///< contains #GRP_MID
 /** @} */
 
-/** @brief Fetch the whole host group list from the qmaster. */
-static lList *
+/**
+ * @brief Fetch the whole host group list from the qmaster
+ * @return the host group list
+ */
+static ocs::tom::ListPtr<ocs::tom::HGRP>
 fetch_hgroup_list() {
-   lList *lp = nullptr;
-   lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
+   ocs::tom::ListPtr<ocs::tom::HGRP> lp;
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-   lFreeWhat(&what);
+                                        ocs::gdi::SubCommand::NONE, lp, ocs::tom::Where<ocs::tom::HGRP>(),
+                                        ocs::tom::what_all<ocs::tom::HGRP>());
    alp.reset();
    return lp;
 }
 
-/** @brief Add or replace one host group. Returns true on success. */
+/**
+ * @brief Add or replace one host group
+ * @param cmd ADD or MOD
+ * @param name the group name
+ * @param members the member names
+ * @param num_members the number of members
+ * @return true on success
+ */
 static bool
 write_hgroup(ocs::gdi::Command cmd, const char *name, const char *const members[], int num_members) {
-   lList *lp = lCreateList("req", HGRP_Type);
-   ocs::tom::Element<ocs::tom::HGRP> ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
-   lList *hosts = lCreateList("hosts", HR_Type);
+   auto lp = ocs::tom::ListPtr<ocs::tom::HGRP>::create("req");
+   ocs::tom::Element<ocs::tom::HGRP> ep = lp->emplace_back<HGRP_name>(ocs::tom::Host(name));
+   auto hosts = ocs::tom::ListPtr<ocs::tom::HR>::create("hosts");
 
    for (int i = 0; i < num_members; i++) {
-      ocs::tom::emplace_back<HR_name>(&hosts, members[i]);
+      hosts->emplace_back<HR_name>(ocs::tom::Host(members[i]));
    }
-   ocs::tom::set<HGRP_host_list>(ep, hosts);
+   ocs::tom::set<HGRP_host_list>(ep, std::move(hosts));
 
-   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, cmd,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, cmd, ocs::gdi::SubCommand::NONE, lp);
    bool ok = !answer_list_has_error(&alp);
    if (!ok) {
       answer_list_output(&alp);
    }
    alp.reset();
-   lFreeList(&lp);
    return ok;
 }
 
-/** @brief Delete a host group, ignoring "does not exist". */
+/**
+ * @brief Delete a host group, ignoring "does not exist"
+ * @param name the group name
+ */
 static void
 drop_hgroup(const char *name) {
-   lList *lp = lCreateList("del", HGRP_Type);
-   ocs::tom::emplace_back<HGRP_name>(&lp, name);
+   auto lp = ocs::tom::ListPtr<ocs::tom::HGRP>::create("del");
+   lp->emplace_back<HGRP_name>(ocs::tom::Host(name));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+                                        ocs::gdi::SubCommand::NONE, lp);
    alp.reset();
-   lFreeList(&lp);
 }
 
 /**
@@ -146,25 +155,29 @@ drop_hgroup(const char *name) {
  * contains hostA, resolves to hostA TWICE -- today, without any cache involved.
  * A "cache must not contain duplicates" rule would fail on such a cluster and
  * blame the cache for the resolver's behaviour.
+ *
+ * @param hgroup the group
+ * @param master_hgroup_list the groups the walk resolves against
+ * @return true if the cache equals the walk
  */
 static bool
-cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
-   lList *walked = nullptr;
+cache_matches_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
+                   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
+   ocs::tom::ListPtr<ocs::tom::HR> walked;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    if (!hgroup_find_all_references(hgroup, &answer_list, master_hgroup_list, &walked, nullptr)) {
       answer_list_output(&answer_list);
-      lFreeList(&walked);
       return false;
    }
    answer_list.reset();
 
    ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
-   bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(walked);
+   bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(*walked);
 
    if (ok) {
       ocs::tom::ConstElement<ocs::tom::HR> c = lFirst(cached);
-      const lListElem *w = lFirst(walked);
+      ocs::tom::ConstElement<ocs::tom::HR> w = lFirst(walked);
 
       while (c != nullptr && w != nullptr) {
          if (sge_hostcmp(ocs::tom::get<HR_name>(c), ocs::tom::get<HR_name>(w)) != 0) {
@@ -177,15 +190,21 @@ cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
    }
    if (!ok) {
       printf("      cache/walk mismatch for %s: %d cached, %d walked\n",
-             static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)), lGetNumberOfElem(cached), lGetNumberOfElem(walked));
+             static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)), lGetNumberOfElem(cached),
+             lGetNumberOfElem(*walked));
    }
-   lFreeList(&walked);
    return ok;
 }
 
-/** @brief Is host a member of the group's cache? */
+/**
+ * @brief Is host a member of the group's cache?
+ * @param master_hgroup_list the groups
+ * @param name the group whose cache is asked
+ * @param host the host
+ * @return true if the group exists and its cache holds the host
+ */
 static bool
-cache_contains(const lList *master_hgroup_list, const char *name, const char *host) {
+cache_contains(const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, const char *name, const char *host) {
    ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(master_hgroup_list, name);
    return hgroup != nullptr && href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
 }
@@ -211,20 +230,17 @@ test_cache_content_and_invalidation() {
 
    /* ---- what the startup rebuild produced -------------------------------- */
    {
-      lList *hgroup_list = fetch_hgroup_list();
-      const lListElem *hgroup;
+      auto hgroup_list = fetch_hgroup_list();
       int checked = 0;
       bool all_versioned = true;
       bool all_match = true;
 
-      for_each_ep(hgroup, hgroup_list) {
-         ocs::tom::ConstElement<ocs::tom::HR> href;
-
+      for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list)) {
          all_versioned &= (ocs::tom::get<HGRP_cache_version>(hgroup) != 0);
          all_match &= cache_matches_walk(hgroup, hgroup_list);
          checked++;
 
-         for_each_ep(href, ocs::tom::get<HGRP_host_list>(hgroup)) {
+         for (const ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::get<HGRP_host_list>(hgroup)) {
             const char *h = ocs::tom::get<HR_name>(href);
 
             if (host_b[0] == '\0' && h[0] != '@' && strcmp(h, host_a) != 0) {
@@ -235,7 +251,7 @@ test_cache_content_and_invalidation() {
       CHECK(1, "the cluster has host groups to check", checked > 0);
       CHECK(2, "every group got a cache version at startup", all_versioned);
       CHECK(3, "every startup cache matches a fresh tree walk", all_match);
-      lFreeList(&hgroup_list);
+      hgroup_list.reset();
    }
 
    /* ---- a group created now gets a cache -------------------------------- */
@@ -247,14 +263,14 @@ test_cache_content_and_invalidation() {
       const char *leaf_members[] = {host_a};
       CHECK(4, "created " GRP_LEAF, write_hgroup(ocs::gdi::Command::ADD, GRP_LEAF, leaf_members, 1));
 
-      lList *hgroup_list = fetch_hgroup_list();
-      ocs::tom::ConstElement<ocs::tom::HGRP> leaf = ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_LEAF);
+      auto hgroup_list = fetch_hgroup_list();
+      ocs::tom::ConstElement<ocs::tom::HGRP> leaf = ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_LEAF);
 
       CHECK(5, GRP_LEAF " has a cache version after ADD",
             leaf != nullptr && ocs::tom::get<HGRP_cache_version>(leaf) != 0);
       CHECK(6, GRP_LEAF " caches its member",
             cache_contains(hgroup_list, GRP_LEAF, host_a));
-      lFreeList(&hgroup_list);
+      hgroup_list.reset();
    }
 
    /* ---- nesting: the cache of a container resolves through -------------- */
@@ -266,14 +282,14 @@ test_cache_content_and_invalidation() {
       CHECK(8, "created " GRP_TOP " containing " GRP_MID,
             write_hgroup(ocs::gdi::Command::ADD, GRP_TOP, top_members, 1));
 
-      lList *hgroup_list = fetch_hgroup_list();
+      auto hgroup_list = fetch_hgroup_list();
       CHECK(9, GRP_TOP " resolves two levels down to the leaf host",
             cache_contains(hgroup_list, GRP_TOP, host_a));
 
-      const lListElem *top = ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_TOP);
+      ocs::tom::ConstElement<ocs::tom::HGRP> top = ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_TOP);
       CHECK(10, GRP_TOP " caches no group references, only hosts",
             top != nullptr && cache_matches_walk(top, hgroup_list));
-      lFreeList(&hgroup_list);
+      hgroup_list.reset();
    }
 
    /* ---- the part the incremental path is easiest to get wrong ------------
@@ -287,25 +303,24 @@ test_cache_content_and_invalidation() {
       CHECK(11, "added a second host to " GRP_LEAF,
             write_hgroup(ocs::gdi::Command::MOD, GRP_LEAF, leaf_members, 2));
 
-      lList *hgroup_list = fetch_hgroup_list();
+      auto hgroup_list = fetch_hgroup_list();
       CHECK(12, "the new host reached the cache of the direct referencee " GRP_MID,
             cache_contains(hgroup_list, GRP_MID, host_b));
       CHECK(13, "the new host reached the cache of the transitive referencee " GRP_TOP,
             cache_contains(hgroup_list, GRP_TOP, host_b));
-      lFreeList(&hgroup_list);
+      hgroup_list.reset();
    }
 
    /* ---- and the whole list is still consistent afterwards ---------------- */
    {
-      lList *hgroup_list = fetch_hgroup_list();
-      const lListElem *hgroup;
+      auto hgroup_list = fetch_hgroup_list();
       bool all_match = true;
 
-      for_each_ep(hgroup, hgroup_list) {
+      for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list)) {
          all_match &= cache_matches_walk(hgroup, hgroup_list);
       }
       CHECK(14, "every cache still matches a fresh tree walk", all_match);
-      lFreeList(&hgroup_list);
+      hgroup_list.reset();
    }
 
    /* ---- cleanup: top down, a referenced group cannot be deleted ---------- */
@@ -313,12 +328,12 @@ test_cache_content_and_invalidation() {
    drop_hgroup(GRP_MID);
    drop_hgroup(GRP_LEAF);
    {
-      lList *hgroup_list = fetch_hgroup_list();
+      auto hgroup_list = fetch_hgroup_list();
       CHECK(15, "test host groups removed again",
-            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_LEAF)) == nullptr &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_MID)) == nullptr &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_TOP)) == nullptr);
-      lFreeList(&hgroup_list);
+            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_LEAF)) == nullptr &&
+            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_MID)) == nullptr &&
+            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_TOP)) == nullptr);
+      hgroup_list.reset();
    }
 }
 

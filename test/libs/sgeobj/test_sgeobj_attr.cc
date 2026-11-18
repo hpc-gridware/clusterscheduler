@@ -77,15 +77,23 @@ static lListElem *make_astr(const char *href, const char *value) {
    return ep.release();
 }
 
-// Create an HGRP_Type element whose host_list contains the given names.
-// Names beginning with '@' are treated as nested hostgroup references;
-// plain names are leaf hostnames.
-static lListElem *make_hgroup(const char *name, std::initializer_list<const char *> members) {
-   lList *href_list = nullptr;
+/**
+ * @brief Create an HGRP_Type element whose host_list contains the given names
+ *
+ * Names beginning with '@' are treated as nested hostgroup references;
+ * plain names are leaf hostnames.
+ *
+ * @param name the group name
+ * @param members the member names
+ * @return the new host group, or an empty handle if it could not be created
+ */
+static ocs::tom::ElementPtr<ocs::tom::HGRP> make_hgroup(const char *name,
+                                                        std::initializer_list<const char *> members) {
+   ocs::tom::ListPtr<ocs::tom::HR> href_list;
    for (const char *m : members) {
-      href_list_add(&href_list, nullptr, m);
+      href_list_add(href_list, nullptr, m);
    }
-   return hgroup_create(nullptr, name, href_list, true);
+   return hgroup_create(nullptr, name, std::move(href_list), true);
 }
 
 // ---------------------------------------------------------------------------
@@ -111,6 +119,9 @@ static lListElem *make_hgroup(const char *name, std::initializer_list<const char
 // Scenarios T01–T10
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Scenarios of str_attr_list_find_value() [T01-T10]
+ */
 static void test_str_attr_list_find_value() {
    printf("\n--- str_attr_list_find_value ---\n");
 
@@ -121,11 +132,11 @@ static void test_str_attr_list_find_value() {
    //   @grpOuter → {@grpInner}         nested: outer contains inner as a group
    //   @grpInner → {host5}
    auto hgroups = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
-   lAppendElem(*hgroups, make_hgroup("@grpA",     {"host1", "host2"}));
-   lAppendElem(*hgroups, make_hgroup("@grpB",     {"host1", "host3"}));
-   lAppendElem(*hgroups, make_hgroup("@grpC",     {"host4"}));
-   lAppendElem(*hgroups, make_hgroup("@grpInner", {"host5"}));
-   lAppendElem(*hgroups, make_hgroup("@grpOuter", {"@grpInner"}));
+   hgroups->push_back(make_hgroup("@grpA",     {"host1", "host2"}));
+   hgroups->push_back(make_hgroup("@grpB",     {"host1", "host3"}));
+   hgroups->push_back(make_hgroup("@grpC",     {"host4"}));
+   hgroups->push_back(make_hgroup("@grpInner", {"host5"}));
+   hgroups->push_back(make_hgroup("@grpOuter", {"@grpInner"}));
 
    ocs::tom::ListPtr<ocs::tom::AN> al;
    const char *value = nullptr;

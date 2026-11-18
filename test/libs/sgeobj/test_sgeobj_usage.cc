@@ -102,37 +102,64 @@ static int s_fail = 0;
 
 /* Helpers ----------------------------------------------------------------- */
 
-/* Build a single-attribute scaled-usage list with cpu=value. Used both as
- * JAT_scaled_usage_list on the ja_task we feed to sum_usage and as
- * UU_usage on the seeded user for decay tests. */
-static lList *
-make_usage_list(const char *list_name, const char *attr, double value) {
-   lList *l = lCreateList(list_name, UA_Type);
-   ocs::tom::Element<ocs::tom::UA> e = ocs::tom::emplace_back<UA_name>(&l, attr);
+/**
+ * @brief Build a single-attribute scaled-usage list with attr=value
+ *
+ * Used both as JAT_scaled_usage_list on the ja_task we feed to sum_usage and
+ * as UU_usage on the seeded user for decay tests.
+ *
+ * @param list_name the name of the list
+ * @param attr the usage attribute
+ * @param value its value
+ * @return the usage list
+ */
+static ocs::tom::ListPtr<ocs::tom::UA>
+make_usage_list(const char *list_name, const char *attr, const double value) {
+   auto l = ocs::tom::ListPtr<ocs::tom::UA>::create(list_name);
+   ocs::tom::Element<ocs::tom::UA> e = l->emplace_back<UA_name>(attr);
    ocs::tom::set<UA_value>(e, value);
    return l;
 }
 
-static lListElem *
+/**
+ * @brief Build a user object
+ * @param name the user name
+ * @return the user
+ */
+static ocs::tom::ElementPtr<ocs::tom::UU>
 make_user(const char *name) {
    auto u = ocs::tom::ElementPtr<ocs::tom::UU>::create();
    ocs::tom::set<UU_name>(u, name);
-   return u.release();
+   return u;
 }
 
-static lListElem *
+/**
+ * @brief Build a project object
+ * @param name the project name
+ * @return the project
+ */
+static ocs::tom::ElementPtr<ocs::tom::PR>
 make_project(const char *name) {
    auto p = ocs::tom::ElementPtr<ocs::tom::PR>::create();
    ocs::tom::set<PR_name>(p, name);
-   return p.release();
+   return p;
 }
 
-/* Build a 1-task job. JB_job_number is what sum_usage keys debited entries
- * by; ja_task carries the JAT_scaled_usage_list that becomes the finish
- * delta. */
-static lListElem *
-make_job(uint32_t job_number, const char *owner, const char *project,
-         double cpu) {
+/**
+ * @brief Build a 1-task job
+ *
+ * JB_job_number is what sum_usage keys debited entries by; ja_task carries the
+ * JAT_scaled_usage_list that becomes the finish delta.
+ *
+ * @param job_number the job number
+ * @param owner the job owner
+ * @param project the job project, or nullptr
+ * @param cpu the cpu usage of the task
+ * @return the job
+ */
+static ocs::tom::ElementPtr<ocs::tom::JB>
+make_job(const uint32_t job_number, const char *owner, const char *project,
+         const double cpu) {
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_job_number>(job, job_number);
    ocs::tom::set<JB_owner>(job, owner);
@@ -147,7 +174,7 @@ make_job(uint32_t job_number, const char *owner, const char *project,
    lAppendElem(*ja_tasks, std::move(ja_task));
    ocs::tom::set<JB_ja_tasks>(job, std::move(ja_tasks));
 
-   return job.release();
+   return job;
 }
 
 static double
@@ -163,24 +190,27 @@ get_usage_value(const lListElem *parent, int list_field, const char *attr) {
    return ocs::tom::get<UA_value>(e);
 }
 
-/* Test 1-4: sum_usage for a user-only job -------------------------------- */
-
+/**
+ * @brief sum_usage for a user-only job (checks 1-4)
+ * @param id the running check number, advanced by every CHECK
+ * @return nothing; CHECK records the results
+ */
 static void
 test_sum_usage_user_only(int *id) {
    printf("\n--- sum_usage: user-only job ---\n");
 
-   lListElem *user = make_user("u1");
-   lListElem *job = make_job(/*job_number=*/1, /*owner=*/"u1",
-                             /*project=*/nullptr, /*cpu=*/10.0);
-   lListElem *ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
+   auto user = make_user("u1");
+   auto job = make_job(/*job_number=*/1, /*owner=*/"u1",
+                       /*project=*/nullptr, /*cpu=*/10.0);
+   ocs::tom::Element<ocs::tom::JAT> ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
 
-   ocs::Usage::sum_usage(job, ja_task, user, /*project=*/nullptr,
-                         /*usage_weight_list=*/nullptr);
+   ocs::Usage::sum_usage(*job, ja_task, *user, /*project=*/ocs::tom::Element<ocs::tom::PR>(),
+                         /*usage_weight_list=*/ocs::tom::ConstList<ocs::tom::UA>());
 
    CHECK_NEAR((*id)++, "UU_usage cpu == 10 after first finish",
-              get_usage_value(user, UU_usage, "cpu"), 10.0, 1e-9);
+              get_usage_value(*user, UU_usage, "cpu"), 10.0, 1e-9);
    CHECK_NEAR((*id)++, "UU_long_term_usage cpu == 10",
-              get_usage_value(user, UU_long_term_usage, "cpu"), 10.0, 1e-9);
+              get_usage_value(*user, UU_long_term_usage, "cpu"), 10.0, 1e-9);
 
    /* CS-1239 sharetree routing invariant: user-only job does NOT populate
     * UU_project[*].UPP_usage. */
@@ -194,31 +224,31 @@ test_sum_usage_user_only(int *id) {
    const lListElem *upu = (debited != nullptr) ?
                           static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 1)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 1", upu != nullptr);
-
-   lFreeElem(&user);
-   lFreeElem(&job);
 }
 
-/* Test 5-9: sum_usage for a user+project job ----------------------------- */
-
+/**
+ * @brief sum_usage for a user+project job (checks 5-9)
+ * @param id the running check number, advanced by every CHECK
+ * @return nothing; CHECK records the results
+ */
 static void
 test_sum_usage_user_and_project(int *id) {
    printf("\n--- sum_usage: user+project job ---\n");
 
-   lListElem *user = make_user("u1");
-   lListElem *project = make_project("p1");
-   lListElem *job = make_job(/*job_number=*/2, /*owner=*/"u1",
-                             /*project=*/"p1", /*cpu=*/7.0);
-   lListElem *ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
+   auto user = make_user("u1");
+   auto project = make_project("p1");
+   auto job = make_job(/*job_number=*/2, /*owner=*/"u1",
+                       /*project=*/"p1", /*cpu=*/7.0);
+   ocs::tom::Element<ocs::tom::JAT> ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
 
-   ocs::Usage::sum_usage(job, ja_task, user, project,
-                         /*usage_weight_list=*/nullptr);
+   ocs::Usage::sum_usage(*job, ja_task, *user, *project,
+                         /*usage_weight_list=*/ocs::tom::ConstList<ocs::tom::UA>());
 
    /* PR_ side gets the full delta. */
    CHECK_NEAR((*id)++, "PR_usage cpu == 7 after first finish",
-              get_usage_value(project, PR_usage, "cpu"), 7.0, 1e-9);
+              get_usage_value(*project, PR_usage, "cpu"), 7.0, 1e-9);
    CHECK_NEAR((*id)++, "PR_long_term_usage cpu == 7",
-              get_usage_value(project, PR_long_term_usage, "cpu"), 7.0, 1e-9);
+              get_usage_value(*project, PR_long_term_usage, "cpu"), 7.0, 1e-9);
 
    /* CS-1239 sharetree routing: project-bound finish populates
     * UU_project[p1].UPP_usage, NOT UU_usage. */
@@ -234,7 +264,7 @@ test_sum_usage_user_and_project(int *id) {
    }
    CHECK((*id)++, "UU_usage stays empty for project-bound finish",
          static_cast<const lList *>(ocs::tom::get<UU_usage>(user)) == nullptr ||
-         get_usage_value(user, UU_usage, "cpu") <= 0.0);
+         get_usage_value(*user, UU_usage, "cpu") <= 0.0);
 
    /* Debited entry recorded on the user object (sum_usage routes debited
     * to UU_ when user is non-null). */
@@ -242,20 +272,19 @@ test_sum_usage_user_and_project(int *id) {
    const lListElem *upu = (debited != nullptr) ?
                           static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 2)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 2", upu != nullptr);
-
-   lFreeElem(&user);
-   lFreeElem(&project);
-   lFreeElem(&job);
 }
 
-/* Test 10-12: decay_userprj_usage over wallclock time -------------------- */
-
+/**
+ * @brief decay_userprj_usage over wallclock time (checks 10-12)
+ * @param id the running check number, advanced by every CHECK
+ * @return nothing; CHECK records the results
+ */
 static void
 test_decay_over_interval(int *id) {
    printf("\n--- decay_userprj_usage: halftime-based decay ---\n");
 
    /* Seed a user with cpu=100 stamped at t0. */
-   lListElem *user = make_user("u1");
+   auto user = make_user("u1");
    ocs::tom::set<UU_usage>(user, make_usage_list("usage", "cpu", 100.0));
 
    const uint64_t t0 = sge_get_gmt64();
@@ -267,28 +296,26 @@ test_decay_over_interval(int *id) {
 
    /* Advance time by exactly one halftime - cpu should halve. */
    const uint64_t t1 = t0 + sge_gmt32_to_gmt64(3600);
-   ocs::UserProject::decay_userprj_usage(user, /*is_user=*/true,
+   ocs::UserProject::decay_userprj_usage(*user,
                                          /*decay_list=*/nullptr,
                                          /*seqno=*/1, t1);
 
    /* 5% tolerance: the decay primitive uses an exponential-equivalent
     * approximation, not a closed-form halving. */
    CHECK_NEAR((*id)++, "UU_usage cpu ~= 50 after one halftime",
-              get_usage_value(user, UU_usage, "cpu"), 50.0, 2.5);
+              get_usage_value(*user, UU_usage, "cpu"), 50.0, 2.5);
 
    /* Same seqno again: idempotent, no further decay. */
-   const double after_first = get_usage_value(user, UU_usage, "cpu");
-   ocs::UserProject::decay_userprj_usage(user, true, nullptr, 1, t1);
+   const double after_first = get_usage_value(*user, UU_usage, "cpu");
+   ocs::UserProject::decay_userprj_usage(*user, nullptr, 1, t1);
    CHECK_NEAR((*id)++, "second call with same seqno is a no-op",
-              get_usage_value(user, UU_usage, "cpu"), after_first, 1e-9);
+              get_usage_value(*user, UU_usage, "cpu"), after_first, 1e-9);
 
    /* New seqno + another halftime: cpu should halve again (~25). */
    const uint64_t t2 = t1 + sge_gmt32_to_gmt64(3600);
-   ocs::UserProject::decay_userprj_usage(user, true, nullptr, /*seqno=*/2, t2);
+   ocs::UserProject::decay_userprj_usage(*user, nullptr, /*seqno=*/2, t2);
    CHECK_NEAR((*id)++, "UU_usage cpu ~= 25 after two halftimes",
-              get_usage_value(user, UU_usage, "cpu"), 25.0, 1.5);
-
-   lFreeElem(&user);
+              get_usage_value(*user, UU_usage, "cpu"), 25.0, 1.5);
 }
 
 /* main ------------------------------------------------------------------- */

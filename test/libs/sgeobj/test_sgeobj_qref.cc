@@ -153,25 +153,36 @@ static void teardown_bootstrap() {
  */
 #define EXCLUDES(href, host, list)   (qref_list_host_rejected((href), (host), (list)))
 
-/*
- * Appends a host group to list. Name validation is switched off on purpose:
- * since CS-2450 a name like "@gpustar*" can no longer be added through GDI,
- * but it can still arrive from a spool file written by an older version, and
- * that is exactly the configuration these scenarios are about.
+/**
+ * @brief Appends a host group to list
+ *
+ * Name validation is switched off on purpose: since CS-2450 a name like
+ * "@gpustar*" can no longer be added through GDI, but it can still arrive from
+ * a spool file written by an older version, and that is exactly the
+ * configuration these scenarios are about.
+ *
+ * @param list the host group list, created if empty
+ * @param name the group name
+ * @param m1 the first member, or nullptr
+ * @param m2 the second member, or nullptr
  */
-static void add_hgroup(lList **list, const char *name, const char *m1, const char *m2) {
-   lList *members = nullptr;
+static void add_hgroup(ocs::tom::ListPtr<ocs::tom::HGRP> &list, const char *name, const char *m1,
+                       const char *m2) {
+   ocs::tom::ListPtr<ocs::tom::HR> members;
 
    if (m1 != nullptr) {
-      href_list_add(&members, nullptr, m1);
+      href_list_add(members, nullptr, m1);
    }
    if (m2 != nullptr) {
-      href_list_add(&members, nullptr, m2);
+      href_list_add(members, nullptr, m2);
    }
-   if (*list == nullptr) {
-      *list = lCreateList("hgroup_list", HGRP_Type);
+   if (!list) {
+      list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroup_list");
    }
-   lAppendElem(*list, hgroup_create(nullptr, name, members, false));
+   auto hgroup = hgroup_create(nullptr, name, std::move(members), false);
+   if (hgroup) {
+      list->push_back(std::move(hgroup));
+   }
 }
 
 // ---------------------------------------------------------------------------
@@ -196,14 +207,17 @@ static void add_hgroup(lList **list, const char *name, const char *m1, const cha
 // Scenarios T12-T14 cover plain host references and unknown names.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief qref_list_host_rejected() over the CS-2450 fixture [T01-T14]
+ */
 static void test_qref_list_host_rejected() {
    printf("\n--- qref_list_host_rejected ---\n");
 
-   lList *hgroups = nullptr;
-   add_hgroup(&hgroups, "@gpustar*",    "v04706", nullptr);
-   add_hgroup(&hgroups, "@gpustar1",    "v04707", nullptr);
-   add_hgroup(&hgroups, "@cacheparent", "@gpustar*", nullptr);
-   add_hgroup(&hgroups, "@nested",      "@cacheparent", nullptr);
+   ocs::tom::ListPtr<ocs::tom::HGRP> hgroups;
+   add_hgroup(hgroups, "@gpustar*",    "v04706", nullptr);
+   add_hgroup(hgroups, "@gpustar1",    "v04707", nullptr);
+   add_hgroup(hgroups, "@cacheparent", "@gpustar*", nullptr);
+   add_hgroup(hgroups, "@nested",      "@cacheparent", nullptr);
 
    // T01: a host group covers its own member
    CHECK(1, "@gpustar* covers v04706", COVERS("@gpustar*", "v04706", hgroups));
@@ -252,8 +266,6 @@ static void test_qref_list_host_rejected() {
 
    // T14: a host group that does not exist covers nothing
    CHECK(14, "unknown @doesnotexist excludes v04706", EXCLUDES("@doesnotexist", "v04706", hgroups));
-
-   lFreeList(&hgroups);
 }
 
 
@@ -275,13 +287,20 @@ static void test_qref_list_host_rejected() {
 // that reason, but this is where it gets proven for the cached path.
 // ---------------------------------------------------------------------------
 
-static void build_fixture(lList **hgroups) {
+/**
+ * @brief Builds the CS-2450 host group fixture
+ * @param hgroups the host group list the groups are appended to, created if empty
+ */
+static void build_fixture(ocs::tom::ListPtr<ocs::tom::HGRP> &hgroups) {
    add_hgroup(hgroups, "@gpustar*",    "v04706", nullptr);
    add_hgroup(hgroups, "@gpustar1",    "v04707", nullptr);
    add_hgroup(hgroups, "@cacheparent", "@gpustar*", nullptr);
    add_hgroup(hgroups, "@nested",      "@cacheparent", nullptr);
 }
 
+/**
+ * @brief The cache answers exactly what the walk answers [T15-T31]
+ */
 static void test_qref_cache_agrees_with_walk() {
    printf("\n--- cached vs uncached agreement ---\n");
 
@@ -294,26 +313,25 @@ static void test_qref_cache_agrees_with_walk() {
    };
    const int num_pairs = sizeof(pairs) / sizeof(pairs[0]);
 
-   lList *walked = nullptr;
-   lList *cached = nullptr;
-   build_fixture(&walked);
-   build_fixture(&cached);
+   ocs::tom::ListPtr<ocs::tom::HGRP> walked;
+   ocs::tom::ListPtr<ocs::tom::HGRP> cached;
+   build_fixture(walked);
+   build_fixture(cached);
 
    hgroup_list_update_caches(cached, nullptr);
 
    /* Without this the whole comparison could pass with no cache anywhere -- two
     * runs of the same walk always agree. */
    {
-      const lListElem *hgroup;
-      bool all = (lGetNumberOfElem(cached) > 0);
+      bool all = (lGetNumberOfElem(*cached) > 0);
 
-      for_each_ep(hgroup, cached) {
+      for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(cached)) {
          all &= hgroup_has_host_cache(hgroup);
       }
       CHECK(15, "the cached fixture really carries caches", all);
 
       bool none = true;
-      for_each_ep(hgroup, walked) {
+      for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(walked)) {
          none &= !hgroup_has_host_cache(hgroup);
       }
       CHECK(16, "the uncached fixture really carries none", none);
@@ -328,9 +346,6 @@ static void test_qref_cache_agrees_with_walk() {
                pairs[i].reference, pairs[i].host, a ? "excluded" : "covered");
       CHECK(17 + i, label, a == b);
    }
-
-   lFreeList(&walked);
-   lFreeList(&cached);
 }
 
 // ---------------------------------------------------------------------------

@@ -151,22 +151,22 @@ test_nested() {
  */
 static void
 test_variable_parser() {
-   lList *vars = nullptr;
-   const int ret = var_list_parse_from_string(&vars, "A=1,B=2,A=3", 0);
-   ocs::tom::ConstElement<ocs::tom::VA> a = ocs::tom::find_first<VA_variable>(vars, "A");
+   ocs::tom::ListPtr<ocs::tom::VA> vars;
+   const int ret = var_list_parse_from_string(vars, "A=1,B=2,A=3", 0);
+   ocs::tom::ConstElement<ocs::tom::VA> a = ocs::tom::find_first<VA_variable>(*vars, "A");
    CHECK(8, "-v A=1,B=2,A=3 holds A once, with the value 3",
-         ret == 0 && lGetNumberOfElem(vars) == 2 && a != nullptr && strcmp(ocs::tom::get<VA_value>(a), "3") == 0);
+         ret == 0 && lGetNumberOfElem(*vars) == 2 && a != nullptr && strcmp(ocs::tom::get<VA_value>(a), "3") == 0);
 
-   const int ret2 = var_list_parse_from_string(&vars, "A=4", 0);
-   ocs::tom::ConstElement<ocs::tom::VA> a_va = ocs::tom::find_first<VA_variable>(vars, "A");
+   const int ret2 = var_list_parse_from_string(vars, "A=4", 0);
+   ocs::tom::ConstElement<ocs::tom::VA> a_va = ocs::tom::find_first<VA_variable>(*vars, "A");
    CHECK(9, "a later -v adds to the same list by name",
-         ret2 == 0 && lGetNumberOfElem(vars) == 2 && strcmp(ocs::tom::get<VA_value>(a_va), "4") == 0);
-   lFreeList(&vars);
+         ret2 == 0 && lGetNumberOfElem(*vars) == 2 && strcmp(ocs::tom::get<VA_value>(a_va), "4") == 0);
+   vars.reset();
 
-   const int ret3 = var_list_parse_from_string(&vars, "A,A", 0);
+   const int ret3 = var_list_parse_from_string(vars, "A,A", 0);
    CHECK(10, "a name without a value, given twice, is kept once without a value",
-         ret3 == 0 && lGetNumberOfElem(vars) == 1 && ocs::tom::get<VA_value>(lFirst(vars)) == nullptr);
-   lFreeList(&vars);
+         ret3 == 0 && lGetNumberOfElem(*vars) == 1 && ocs::tom::get<VA_value>(lFirst(vars)) == nullptr);
+   vars.reset();
 }
 
 /**
@@ -211,13 +211,12 @@ test_set_lists() {
  */
 static void
 add_context_switch(lList **change, const char *marker, const char *vars) {
-   lList *option = nullptr;
-   var_list_parse_from_string(&option, vars, 0);
+   ocs::tom::ListPtr<ocs::tom::VA> option;
+   var_list_parse_from_string(option, vars, 0);
    auto ep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
    ocs::tom::set<VA_variable>(ep, marker);
-   lInsertElem(option, nullptr, std::move(ep));
+   lInsertElem(*option, nullptr, std::move(ep));
    ocs_context_change_add(change, option);
-   lFreeList(&option);
 }
 
 /**
@@ -265,7 +264,7 @@ test_context_change() {
    add_context_switch(&readd, "=", "a=1");
    add_context_switch(&readd, "-", "a");
    add_context_switch(&readd, "+", "c=1");
-   set_context(readd, *job);
+   set_context(ocs::tom::ConstList<ocs::tom::CX>(readd), *job);
    CHECK(18, "a variable added after the context became empty is kept",
          lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(*job, "c", "1"));
    lFreeList(&readd);
@@ -279,7 +278,7 @@ test_context_change() {
    add_context_switch(&big, "-", "x0");
    add_context_switch(&big, "+", "x0=new");
    const bool found = static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "+")) != nullptr && static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "x0")) != nullptr;
-   set_context(big, *job);
+   set_context(ocs::tom::ConstList<ocs::tom::CX>(big), *job);
    CHECK(19, "above the hash threshold the lookups work; c and the 20 added variables remain, x0 with its new value",
          lGetNumberOfElem(big) > OCS_CULL_HASH_MIN_ELEMS && found &&
          lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 21 && context_has(*job, "x0", "new"));
@@ -287,11 +286,11 @@ test_context_change() {
 
    // a request without a marker replaces the context
    lList *plain = nullptr;
-   lList *vars = nullptr;
-   var_list_parse_from_string(&vars, "d=4", 0);
+   ocs::tom::ListPtr<ocs::tom::VA> vars;
+   var_list_parse_from_string(vars, "d=4", 0);
    ocs_context_change_add(&plain, vars);
-   lFreeList(&vars);
-   set_context(plain, *job);
+   vars.reset();
+   set_context(ocs::tom::ConstList<ocs::tom::CX>(plain), *job);
    CHECK(20, "a request without a marker replaces the context",
          lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(*job, "d", "4"));
    lFreeList(&plain);
@@ -306,11 +305,11 @@ test_context_change() {
    setenv("JOB_ID", "42", 1);
    job_add_parent_id_to_context(*child);
    unsetenv("JOB_ID");
-   lList *effective = ocs_context_get_effective(*child).release();
-   ocs::tom::ConstElement<ocs::tom::VA> parent = ocs::tom::find_first<VA_variable>(effective, CONTEXT_PARENT);
+   auto effective = ocs_context_get_effective(*child);
+   ocs::tom::ConstElement<ocs::tom::VA> parent = ocs::tom::find_first<VA_variable>(*effective, CONTEXT_PARENT);
    CHECK(21, "PARENT given after a trailing -dc is in the effective context",
-         lGetNumberOfElem(effective) == 1 && parent != nullptr && strcmp(ocs::tom::get<VA_value>(parent), "42") == 0);
-   lFreeList(&effective);
+         lGetNumberOfElem(*effective) == 1 && parent != nullptr && strcmp(ocs::tom::get<VA_value>(parent), "42") == 0);
+   effective.reset();
    child.reset();
 
    // qstat -j works on a reduced job that does not contain JB_context_change
@@ -321,10 +320,11 @@ test_context_change() {
    ocs::tom::set<JB_context>(full, context);
    lEnumeration *what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_context);
    lList *reduced = lSelect("reduced", jobs, nullptr, what);
-   lList *reduced_effective = ocs_context_get_effective(lFirst(reduced));
+   auto reduced_effective = ocs_context_get_effective(ocs::tom::ConstElement<ocs::tom::JB>(lFirst(reduced)));
    CHECK(22, "the effective context of a reduced job without the change request is its context",
-         lGetNumberOfElem(reduced_effective) == 1 && static_cast<const lListElem *>(ocs::tom::find_first<VA_variable>(reduced_effective, "f")) != nullptr);
-   lFreeList(&reduced_effective);
+         lGetNumberOfElem(*reduced_effective) == 1 &&
+         static_cast<const lListElem *>(ocs::tom::find_first<VA_variable>(*reduced_effective, "f")) != nullptr);
+   reduced_effective.reset();
    lFreeList(&reduced);
    lFreeWhat(&what);
    lFreeList(&jobs);
@@ -494,13 +494,16 @@ test_merge() {
 
 /**
  * @brief A resource request holding one value of the string attribute arch, by its full name or its shortcut
- * @param lpp the request list, created if needed
+ * @param lp the request list, created if needed
  * @param name arch or a
  * @param value the requested value
  */
 static void
-add_arch_request(lList **lpp, const char *name, const char *value) {
-   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(lpp, name), value);
+add_arch_request(ocs::tom::ListPtr<ocs::tom::CE> &lp, const char *name, const char *value) {
+   if (!lp) {
+      lp = ocs::tom::ListPtr<ocs::tom::CE>::create("request");
+   }
+   ocs::tom::set<CE_stringval>(lp->emplace_back<CE_name>(name), value);
 }
 
 /**
@@ -509,7 +512,7 @@ add_arch_request(lList **lpp, const char *name, const char *value) {
  * @return the requested value, or nullptr if the list does not hold exactly one request named arch
  */
 static const char *
-only_arch_value(const lList *lp) {
+only_arch_value(const ocs::tom::ConstList<ocs::tom::CE> lp) {
    if (lGetNumberOfElem(lp) != 1 || strcmp(ocs::tom::get<CE_name>(lFirst(lp)), "arch") != 0) {
       return nullptr;
    }
@@ -526,34 +529,34 @@ only_arch_value(const lList *lp) {
  */
 static void
 test_inventory() {
-   lList *master_centry_list = nullptr;
-   ocs::tom::Element<ocs::tom::CE> arch = ocs::tom::emplace_back<CE_name>(&master_centry_list, "arch");
+   auto master_centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("master_centry_list");
+   ocs::tom::Element<ocs::tom::CE> arch = master_centry_list->emplace_back<CE_name>("arch");
    ocs::tom::set<CE_shortcut>(arch, "a");
    ocs::tom::set<CE_valtype>(arch, static_cast<uint32_t>(ocs::CEntry::Type::STR));
    ocs::tom::set<CE_relop>(arch, CMPLXEQ_OP);
    ocs::tom::set<CE_requestable>(arch, REQU_YES);
    ocs::tom::set<CE_consumable>(arch, CONSUMABLE_NO);
 
-   lList *request = nullptr;
-   add_arch_request(&request, "a", "lx-amd64");
-   add_arch_request(&request, "arch", "lx-arm64");
+   ocs::tom::ListPtr<ocs::tom::CE> request;
+   add_arch_request(request, "a", "lx-amd64");
+   add_arch_request(request, "arch", "lx-arm64");
    ocs::tom::ListPtr<ocs::tom::AN> answers;
    int ret = centry_list_fill_request(request, &answers, master_centry_list, false, true, false);
    const char *value = only_arch_value(request);
    CHECK(33, "-l a=lx-amd64,arch=lx-arm64 holds arch once, with the later value",
          ret == 0 && value != nullptr && strcmp(value, "lx-arm64") == 0);
-   lFreeList(&request);
+   request.reset();
    answers.reset();
 
-   add_arch_request(&request, "arch", "lx-amd64");
-   add_arch_request(&request, "a", "lx-arm64");
+   add_arch_request(request, "arch", "lx-amd64");
+   add_arch_request(request, "a", "lx-arm64");
    ret = centry_list_fill_request(request, &answers, master_centry_list, false, true, false);
    value = only_arch_value(request);
    CHECK(34, "-l arch=lx-amd64,a=lx-arm64 holds arch once, with the later value",
          ret == 0 && value != nullptr && strcmp(value, "lx-arm64") == 0);
-   lFreeList(&request);
+   request.reset();
    answers.reset();
-   lFreeList(&master_centry_list);
+   master_centry_list.reset();
 
    // qconf -mattr queue slots 4 all.q@h1 all.q@h2 all.q: one request per target, each with a default entry
    lList *targets = nullptr;
@@ -591,19 +594,19 @@ test_inventory() {
    job.reset();
 
    // qsub -q '*@@*': a host that belongs to several matching host groups
-   lList *hgroups = nullptr;
+   auto hgroups = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
    const char *const members[][3] = {{"@a", "h1", "h2"}, {"@b", "h2", "h3"}};
    for (const auto &m : members) {
-      ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroups, m[0]);
+      ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroups->emplace_back<HGRP_name>(ocs::tom::Host(m[0]));
       ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, m[1]);
       ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, m[2]);
    }
-   lList *hosts = nullptr;
+   ocs::tom::ListPtr<ocs::tom::HR> hosts;
    ok = hgroup_list_find_matching_and_resolve(hgroups, &answers, "@*", &hosts);
    CHECK(37, "resolving @* over @a (h1, h2) and @b (h2, h3) collects h1, h2 and h3 once each",
-         ok && lGetNumberOfElem(hosts) == 3);
-   lFreeList(&hosts);
-   lFreeList(&hgroups);
+         ok && lGetNumberOfElem(*hosts) == 3);
+   hosts.reset();
+   hgroups.reset();
    answers.reset();
 }
 

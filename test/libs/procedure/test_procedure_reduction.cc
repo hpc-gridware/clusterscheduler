@@ -102,16 +102,12 @@ namespace {
       auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::create("");
 
       if (text != nullptr) {
-         lList *output_list = nullptr;
-         ocs::tom::emplace_back<ST_name>(&output_list, text);
          ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::RESPONSE,
-                                                       output_list);
+                                                       ocs::ProcedureParameter::string_value_list(text));
       }
       if (with_reduction) {
-         lList *reduction_list = nullptr;
-         ocs::tom::emplace_back<ULNG_value>(&reduction_list, reduction);
          ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::REDUCTION,
-                                                       reduction_list);
+                                                       ocs::ProcedureParameter::ulong_value_list(reduction));
       }
       return bundle.release();
    }

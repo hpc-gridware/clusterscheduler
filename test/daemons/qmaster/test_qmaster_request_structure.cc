@@ -49,6 +49,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/tom/ocs_tom_CAL.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -84,15 +85,19 @@ static int s_fail = 0;
  * these requests too, later and for other reasons (a missing field, the
  * caller's rights), and those must not count.
  *
+ * @tparam T the object type the data list is sent as
  * @param target the target
  * @param command the command
- * @param lp the data list; freed
+ * @param lp the data list; taken over and freed
  * @param syntax_only count only a refusal with STATUS_ESYNTAX
  * @return true when the answer holds an error (of status STATUS_ESYNTAX with syntax_only)
  */
+template <ocs::tom::ObjectType T>
 static bool
-refused(const ocs::gdi::Target target, const ocs::gdi::Command command, lList **lp, const bool syntax_only = true) {
-   auto alp = ocs::gdi::Client::sge_gdi(target, command, ocs::gdi::SubCommand::NONE, lp, nullptr, nullptr);
+refused(const ocs::gdi::Target target, const ocs::gdi::Command command, ocs::tom::ListPtr<T> &&lp,
+        const bool syntax_only = true) {
+   auto data = std::move(lp);
+   auto alp = ocs::gdi::Client::sge_gdi(target, command, ocs::gdi::SubCommand::NONE, data);
    bool error = false;
    for (const lListElem *aep = lFirst(alp); aep != nullptr; aep = lNext(aep)) {
       if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR &&
@@ -104,7 +109,7 @@ refused(const ocs::gdi::Target target, const ocs::gdi::Command command, lList **
       answer_list_output(&alp);
    }
    alp.reset();
-   lFreeList(lp);
+   data.reset();
    return error;
 }
 
@@ -114,12 +119,12 @@ refused(const ocs::gdi::Target target, const ocs::gdi::Command command, lList **
  */
 static bool
 calendar_request(const ocs::gdi::Command command) {
-   lList *lp = nullptr;
-   ocs::tom::Element<ocs::tom::CAL> ep = ocs::tom::emplace_back<CAL_name>(&lp, CAL_NAME);
+   auto lp = ocs::tom::ListPtr<ocs::tom::CAL>::create("calendars");
+   ocs::tom::Element<ocs::tom::CAL> ep = lp->emplace_back<CAL_name>(CAL_NAME);
    if (command == ocs::gdi::Command::ADD) {
       ocs::tom::set<CAL_week_calendar>(ep, WEEK);
    }
-   return !refused(ocs::gdi::Target::CAL_LIST, command, &lp, false);
+   return !refused(ocs::gdi::Target::CAL_LIST, command, std::move(lp), false);
 }
 
 /** @brief Whether the test calendar can be read back - qmaster is alive and answers
@@ -127,16 +132,13 @@ calendar_request(const ocs::gdi::Command command) {
  */
 static bool
 calendar_readable() {
-   lList *lp = nullptr;
-   lCondition *where = lWhere("%T(%I==%s)", CAL_Type, CAL_name, CAL_NAME);
-   lEnumeration *what = lWhat("%T(ALL)", CAL_Type);
+   ocs::tom::ListPtr<ocs::tom::CAL> lp;
+   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", CAL_Type, CAL_name, CAL_NAME));
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
+                                        ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::CAL>());
    alp.reset();
-   const bool found = ocs::tom::find_first<CAL_name>(lp, CAL_NAME) != nullptr;
-   lFreeList(&lp);
+   const bool found = ocs::tom::find_first<CAL_name>(*lp, CAL_NAME) != nullptr;
+   lp.reset();
    return found;
 }
 
@@ -188,16 +190,20 @@ main(int /*argc*/, char * /*argv*/[]) {
    {
       lList *lp = nullptr;
       lAddElemStr(&lp, ST_name, CAL_NAME, ST_Type);
+      // sent as calendars on purpose, so the list is taken over unchecked
       CHECK(2, "a calendar modify request with string elements is refused as a syntax error",
-            refused(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::MOD, &lp));
+            refused(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::MOD,
+                    ocs::tom::ListPtr<ocs::tom::CAL>::from_typed(lp)));
    }
 
    // T03: an empty access list of the wrong type in the global host - it used to be stored
    {
       lList *acl = lCreateList("acl", ST_Type);
       lList *lp = global_host_with_acl(acl);
+      // the sublist is of the wrong type on purpose, so the list is taken over unchecked
       CHECK(3, "an empty sublist of the wrong type is refused",
-            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD, &lp));
+            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD,
+                    ocs::tom::ListPtr<ocs::tom::EH>::from_typed(lp)));
    }
 
    // T04: a non-empty access list of the wrong type - it used to abort qmaster
@@ -205,8 +211,10 @@ main(int /*argc*/, char * /*argv*/[]) {
       lList *acl = nullptr;
       lAddElemStr(&acl, ST_name, "no_such_userset", ST_Type);
       lList *lp = global_host_with_acl(acl);
+      // the sublist is of the wrong type on purpose, so the list is taken over unchecked
       CHECK(4, "a non-empty sublist of the wrong type is refused",
-            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD, &lp));
+            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD,
+                    ocs::tom::ListPtr<ocs::tom::EH>::from_typed(lp)));
    }
 
    CHECK(5, "qmaster still answers after the refused requests", calendar_readable());

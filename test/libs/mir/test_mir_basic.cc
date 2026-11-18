@@ -57,6 +57,15 @@
 int events;             ///< how many events the mirror has seen
 uint32_t events_size;   ///< how many bytes they took on the wire, to show what a subscription costs
 
+/**
+ * @brief Mirror callback: print one event and count it with its wire size
+ * @param evc the event client
+ * @param type the object type of the event
+ * @param action the action of the event
+ * @param event the event
+ * @param clientdata unused
+ * @return SGE_EMA_OK
+ */
 static sge_callback_result
 print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
@@ -72,7 +81,7 @@ print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   printf("%s\n", event_text(event, &buffer_wrapper));
+   printf("%s\n", event_text(ocs::tom::ConstElement<ocs::tom::ET>(event), &buffer_wrapper));
 
    DRETURN(SGE_EMA_OK);
 }

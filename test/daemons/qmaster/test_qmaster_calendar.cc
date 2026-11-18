@@ -301,9 +301,13 @@ static void printDateError(time_t *when, struct tm *expected) {
       result->tm_wday, result->tm_yday, result->tm_isdst);
 }
 
-static lListElem *createCalObject(cal_entry_t *calendar) {
+/**
+ * @brief Build a calendar object the way qmaster does, through calendar_mod()
+ * @param calendar the year and week calendar strings
+ * @return the calendar, or an empty handle if calendar_mod() refused it
+ */
+static ocs::tom::ElementPtr<ocs::tom::CAL> createCalObject(cal_entry_t *calendar) {
    monitoring_t monitor;
-   lListElem *destCal = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> answerList;
 
    sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR, nullptr);
@@ -313,12 +317,12 @@ static lListElem *createCalObject(cal_entry_t *calendar) {
    ocs::tom::set<CAL_year_calendar>(sourceCal, calendar->year_cal);
    ocs::tom::set<CAL_week_calendar>(sourceCal, calendar->week_cal);
 
-   destCal = lCreateElem(CAL_Type);
+   auto destCal = ocs::tom::ElementPtr<ocs::tom::CAL>::create();
 
-   if (0 != calendar_mod(nullptr, nullptr, &answerList, destCal, *sourceCal, 1, "", "", nullptr,
+   if (0 != calendar_mod(nullptr, nullptr, &answerList, *destCal, *sourceCal, 1, "", "", nullptr,
                          ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, &monitor)) {
       lWriteListTo(*answerList, stdout);
-      lFreeElem(&destCal);
+      destCal.reset();
       answerList.reset();
    }
 
@@ -327,8 +331,16 @@ static lListElem *createCalObject(cal_entry_t *calendar) {
    return destCal;
 }
 
-// returns true when stateObject matches expected state and time
-static bool check_state_change(lListElem *stateObject, uint32_t state, struct tm *time, int elem_nr) {
+/**
+ * @brief Does a state change match the expected state and time?
+ * @param stateObject the state change
+ * @param state the expected state
+ * @param time the expected time
+ * @param elem_nr the position of the state change, for the message
+ * @return true on a match
+ */
+static bool check_state_change(const ocs::tom::ConstElement<ocs::tom::CQU> stateObject, const uint32_t state,
+                               struct tm *time, const int elem_nr) {
    if (ocs::tom::get<CQU_state>(stateObject) != state) {
       printf("wrong state in state list (elem %d): expected %d, got %d\n",
              elem_nr, (int)state, (int)ocs::tom::get<CQU_state>(stateObject));
@@ -344,33 +356,43 @@ static bool check_state_change(lListElem *stateObject, uint32_t state, struct tm
    return true;
 }
 
-// returns true when the full state-change list matches the expected entries
-static bool check_state_change_list(date_entry_t *t, lList *state_changes) {
+/**
+ * @brief Does the full state change list match the expected entries?
+ * @param t the test entry holding the expected states and times
+ * @param state_changes the state change list
+ * @return true on a match
+ */
+static bool check_state_change_list(date_entry_t *t, const ocs::tom::ConstList<ocs::tom::CQU> state_changes) {
    int nr;
    if (t->state2 != -1) {
       if ((nr = lGetNumberOfElem(state_changes)) != 2) {
          printf("wrong number of elements in state change list: expected 2, got %d\n", nr);
          return false;
       }
-      lListElem *state = lFirstRW(state_changes);
+      ocs::tom::ConstElement<ocs::tom::CQU> state = lFirst(state_changes);
       if (!check_state_change(state, t->state1, &t->result1, 1)) {
          return false;
       }
-      state = lNextRW(state);
+      state = lNext(state);
       return check_state_change(state, t->state2, &t->result2, 2);
    } else {
       if ((nr = lGetNumberOfElem(state_changes)) != 1) {
          printf("wrong number of elements in state change list: expected 1, got %d\n", nr);
          return false;
       }
-      lListElem *state = lFirstRW(state_changes);
+      ocs::tom::ConstElement<ocs::tom::CQU> state = lFirst(state_changes);
       return check_state_change(state, t->state1, &t->result1, 1);
    }
 }
 
-// runs one date/state scenario; prints diagnostics on failure; returns true on pass
+/**
+ * @brief Run one date/state scenario, printing diagnostics on failure
+ * @param t the test entry
+ * @param cal the calendar
+ * @return true on pass
+ */
 static bool run_date_test(date_entry_t *t, cal_entry_t *cal) {
-   lListElem *destCal = createCalObject(cal);
+   auto destCal = createCalObject(cal);
    if (destCal == nullptr) {
       printf("createCalObject failed\n");
       return false;
@@ -379,11 +401,9 @@ static bool run_date_test(date_entry_t *t, cal_entry_t *cal) {
    bool ok = false;
    time_t when = 0;
    time_t now = mktime(&t->now);
-   lList *state_changes_list = nullptr;
 
-   uint64_t when64 = sge_time_t_to_gmt64(when);
    uint64_t now64 = sge_time_t_to_gmt64(now);
-   uint32_t current_state = calender_state_changes(destCal, &state_changes_list, &when64, &now64);
+   const auto [current_state, when64, state_changes_list] = calender_state_changes(*destCal, &now64);
    when = sge_gmt64_to_time_t(when64);
 
    if ((int)current_state != t->state1) {
@@ -394,27 +414,29 @@ static bool run_date_test(date_entry_t *t, cal_entry_t *cal) {
       ok = check_state_change_list(t, state_changes_list);
    }
 
-   lFreeList(&state_changes_list);
-   lFreeElem(&destCal);
    return ok;
 }
 
-// runs one time-frame scenario; returns true when open/closed matches expectation
+/**
+ * @brief Run one time-frame scenario
+ * @param t the test entry
+ * @param cal the calendar
+ * @return true when open/closed matches the expectation
+ */
 static bool run_time_frame_test(time_frame_entry_t *t, cal_entry_t *cal) {
-   lListElem *destCal = createCalObject(cal);
+   auto destCal = createCalObject(cal);
    if (destCal == nullptr) {
       printf("createCalObject failed\n");
       return false;
    }
 
    uint64_t start_time = sge_time_t_to_gmt64(mktime(&t->start_time));
-   bool result = calendar_open_in_time_frame(destCal, start_time, sge_gmt32_to_gmt64(t->duration));
+   bool result = calendar_open_in_time_frame(*destCal, start_time, sge_gmt32_to_gmt64(t->duration));
    bool ok = (t->open == result);
    if (!ok) {
       printf("wrong state for time frame: expected %d, got %d\n", (int)t->open, (int)result);
    }
 
-   lFreeElem(&destCal);
    return ok;
 }
 

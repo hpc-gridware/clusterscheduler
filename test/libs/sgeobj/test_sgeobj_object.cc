@@ -594,24 +594,27 @@ static void test_pack_type_roundtrip() {
    CHECK(63, "PACK_id is known to the name space", strcmp(lNm2Str(PACK_id), "PACK_id") == 0);
 
    lEnumeration *what = lWhat("%T(%I %I)", QU_Type, QU_qname, QU_qhostname);
-   lListElem *what_elem = lWhatToElem(what);
+   auto what_elem = ocs_what_to_elem(what);
    lListElem *what_back = nullptr;
-   const int what_ret = pack_roundtrip(what_elem, &what_back);
+   const int what_ret = pack_roundtrip(*what_elem, &what_back);
 
    // T64: the element comes back with the static PACK_Type descriptor
    CHECK(64, "packed what → PACK_Type element",
          what_ret == PACK_SUCCESS && what_back != nullptr && lGetElemDescr(what_back) == PACK_Type);
 
    // T65: the what read from it selects the same fields
-   lEnumeration *what_read = what_back != nullptr ? lWhatFromElem(what_back) : nullptr;
+   lEnumeration *what_read =
+      what_back != nullptr ? ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK>(what_back)) : nullptr;
    CHECK(65, "what from the element → same fields",
          what_read != nullptr && lCountWhat(what_read, QU_Type) == 2 && lCountWhat(what, QU_Type) == 2);
 
    lCondition *where = lWhere("%T(%I==%s)", QU_Type, QU_qname, "all.q");
-   lListElem *where_elem = lWhereToElem(where);
+   auto where_elem = ocs_where_to_elem(where);
    lListElem *where_back = nullptr;
-   const int where_ret = pack_roundtrip(where_elem, &where_back);
-   lCondition *where_read = where_ret == PACK_SUCCESS && where_back != nullptr ? lWhereFromElem(where_back) : nullptr;
+   const int where_ret = pack_roundtrip(*where_elem, &where_back);
+   lCondition *where_read = where_ret == PACK_SUCCESS && where_back != nullptr
+                               ? ocs_where_from_elem(ocs::tom::ConstElement<ocs::tom::PACK>(where_back))
+                               : nullptr;
 
    // T66: the where read from it matches as the original does
    auto match = ocs::tom::ElementPtr<ocs::tom::QU>::create();
@@ -625,11 +628,11 @@ static void test_pack_type_roundtrip() {
    match.reset();
    lFreeWhere(&where_read);
    lFreeElem(&where_back);
-   lFreeElem(&where_elem);
+   where_elem.reset();
    lFreeWhere(&where);
    lFreeWhat(&what_read);
    lFreeElem(&what_back);
-   lFreeElem(&what_elem);
+   what_elem.reset();
    lFreeWhat(&what);
 }
 

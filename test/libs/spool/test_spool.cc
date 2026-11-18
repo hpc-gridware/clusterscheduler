@@ -131,25 +131,17 @@ static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::List
    DRETURN(0);
 }
 
-/* JG: TODO: This should be a public interface in libspool
- *           that can be used in all modules unspooling data.
- *           Therefore it will be necessary to extract some
- *           special handling and processing still contained
- *           in the reading functions (classic spooling) into
- *           other interfaces, e.g. use callbacks).
- *            
- *           Instead of hardcoding each list, we could loop over
- *           the sge_object_type enum. Problem is currently that
- *           a certain order of unspooling is required.
- *           This could be eliminated by splitting the read list 
- *           functions (from classic spooling) into reading and 
- *           post processing.
- *           
- *           If we do not need to spool/unspool all lists in a certain
- *           spooling client, we could even require that subscription
- *           has been done before calling this functions and call
- *           a function sge_mirror_is_subscribed function to check if we have
- *           to unspool a certain list or not.
+/**
+ * @brief Read every object list of the cluster from the spooling context
+ *
+ * Should become a public interface of libspool usable by every module that unspools data; that needs the
+ * special handling still contained in the classic spooling read functions moved out (e.g. into callbacks).
+ * Instead of hardcoding each list it could loop over the sge_object_type enum, but a certain order of
+ * unspooling is required today; splitting the read functions into reading and post processing would remove
+ * that. A client that does not need every list could require the subscription first and check it with
+ * sge_mirror_is_subscribed().
+ *
+ * @return true when every list was read
  */
 static bool read_spooled_data() {
    DENTER(TOP_LAYER);
@@ -170,9 +162,13 @@ static bool read_spooled_data() {
    {
       lList *schedd_config = nullptr;
       spool_read_list(&answer_list, context, &schedd_config, SGE_TYPE_SCHEDD_CONF);
-      if (schedd_config)
-         if (sconf_set_config(&schedd_config, &answer_list))
-            lFreeList(&schedd_config);
+      if (schedd_config) {
+         // the handle takes the spooled list over; a list the call refused is freed with it
+         ocs::tom::ListPtr<ocs::tom::SC> config(schedd_config);
+         if (sconf_set_config(config, &answer_list)) {
+            config.reset();
+         }
+      }
       answer_list_output(&answer_list);
       DPRINTF("read %d entries to master scheduler configuration list\n", static_cast<int>(sconf_get_config_list().get().size()));
    }

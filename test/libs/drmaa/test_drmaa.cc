@@ -798,6 +798,13 @@ int main(int argc, char *argv[]) {
 }
 
 
+/**
+ * @brief Run the test case selected on the command line
+ * @param argc the number of arguments, advanced past the ones consumed
+ * @param argv the arguments, advanced past the ones consumed
+ * @param parse_args whether the arguments of the test case are parsed
+ * @return 0 if the test passed, otherwise a failure count or error code
+ */
 static int test(int *argc, char **argv[], int parse_args) {
    bool bBulkJob = false;
    int  i;
@@ -2903,8 +2910,8 @@ static int test(int *argc, char **argv[], int parse_args) {
          char jobid[1024], new_jobid[1024];
          char buffer[100];
          ocs::tom::ListPtr<ocs::tom::AN> alp;
-         lList *job_lp;
-         const lListElem *job_ep;
+         ocs::tom::ListPtr<ocs::tom::JB> job_lp;
+         ocs::tom::ConstElement<ocs::tom::JB> job_ep;
          FILE *fp;
          const char *mirror_text = "thefoxjumps...";
          mirror_job = "/bin/cat";
@@ -3031,12 +3038,13 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid));
-               lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &job_lp, where, what);
+               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
+                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
+               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
+                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
+                                               ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
-               lFreeWhere(&where);
-               lFreeWhat(&what);
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3059,7 +3067,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                failed_test = 1;
             }
 
-            lFreeList(&job_lp);
+            job_lp.reset();
             
             printf ("Checking job state\n");
             if (drmaa_job_ps(jobid, &job_state, diagnosis, sizeof(diagnosis)-1)
@@ -3513,12 +3521,13 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid));
-               lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &job_lp, where, what);
+               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
+                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
+               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
+                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
+                                               ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
-               lFreeWhere(&where);
-               lFreeWhat(&what);
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3542,7 +3551,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                failed_test = 1;
             }
 
-            lFreeList(&job_lp);
+            job_lp.reset();
 
             printf ("Checking job state\n");
             if (drmaa_job_ps(jobid, &job_state, diagnosis, sizeof(diagnosis)-1)
@@ -3618,12 +3627,13 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               lCondition *where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid));
-               lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &job_lp, where, what);
+               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
+                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
+               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
+                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
+                                               ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
-               lFreeWhere(&where);
-               lFreeWhat(&what);
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3646,7 +3656,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                failed_test = 1;
             }
 
-            lFreeList(&job_lp);
+            job_lp.reset();
 
             printf ("Checking job state\n");
             if (drmaa_job_ps(jobid, &job_state, diagnosis, sizeof(diagnosis)-1)
@@ -3739,12 +3749,13 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               lCondition* where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid));
-               lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &job_lp, where, what);
+               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
+                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
+               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
+                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
+                                               ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
-               lFreeWhere(&where);
-               lFreeWhat(&what);
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3768,7 +3779,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                failed_test = 1;
             }
 
-            lFreeList(&job_lp);
+            job_lp.reset();
 
             printf ("Checking job state\n");
             if (drmaa_job_ps(jobid, &job_state, diagnosis, sizeof(diagnosis)-1)
@@ -3844,12 +3855,13 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               lCondition *where = lWhere ("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid));
-               lEnumeration *what = lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name);
-               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &job_lp, where, what);
+               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
+                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
+               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
+                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
+                                               ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
-               lFreeWhere(&where);
-               lFreeWhat(&what);
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3872,7 +3884,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                failed_test = 1;
             }
 
-            lFreeList(&job_lp);
+            job_lp.reset();
 
             printf ("Checking job state\n");
             if (drmaa_job_ps(jobid, &job_state, diagnosis, sizeof(diagnosis)-1)

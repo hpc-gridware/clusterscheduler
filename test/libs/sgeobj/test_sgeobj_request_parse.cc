@@ -84,98 +84,116 @@ check_int(const char *id, const char *what, int got, int expected) {
 }
 
 /**
- * Parse a request string and report how many elements it produced, plus the name and value of
- * each, so a test can assert the split without reaching into the list itself.
+ * @brief Parse a request string
+ *
+ * Report how many elements it produced, plus the name and value of each, so a test can assert
+ * the split without reaching into the list itself.
+ *
+ * @param request the request string
+ * @return the parsed request list, empty if nothing was parsed
  */
-static lList *
+static ocs::tom::ListPtr<ocs::tom::CE>
 parse(const char *request) {
-   return centry_list_parse_from_string(nullptr, request, false);
+   return centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(), request, false);
 }
 
+/**
+ * @brief The string value of a request
+ * @param lp the request list
+ * @param name the name of the request
+ * @return its CE_stringval, or nullptr if there is no such request
+ */
 static const char *
-value_of(const lList *lp, const char *name) {
-   ocs::tom::ConstElement<ocs::tom::CE> ep = ocs::tom::find_first<CE_name>(lp, name);
+value_of(const ocs::tom::ConstList<ocs::tom::CE> lp, const char *name) {
+   ocs::tom::ConstElement<ocs::tom::CE> ep = lp.find_first<CE_name>(name);
    return ep == nullptr ? nullptr : ocs::tom::get<CE_stringval>(ep);
 }
 
+/// The empty instance list, for a call that books or holds nothing
+static const ocs::tom::ConstList<ocs::tom::RESL> no_instances;
+
+/**
+ * @brief A request string is split into requests, a bracket list kept whole
+ */
 static void
 test_splitting() {
-   lList *lp;
+   ocs::tom::ListPtr<ocs::tom::CE> lp;
 
    /* the ordinary cases have to keep working */
    lp = parse("mem=2G");
-   check_int("T01", "one request yields one element", (int)lGetNumberOfElem(lp), 1);
+   check_int("T01", "one request yields one element", (int)lGetNumberOfElem(*lp), 1);
    check_str("T01b", "its value is kept", value_of(lp, "mem"), "2G");
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("mem=2G,arch=lx-amd64");
-   check_int("T02", "a comma separates two requests", (int)lGetNumberOfElem(lp), 2);
-   lFreeList(&lp);
+   check_int("T02", "a comma separates two requests", (int)lGetNumberOfElem(*lp), 2);
+   lp.reset();
 
    lp = parse("mem=2G arch=lx-amd64");
-   check_int("T03", "a space separates two requests", (int)lGetNumberOfElem(lp), 2);
-   lFreeList(&lp);
+   check_int("T03", "a space separates two requests", (int)lGetNumberOfElem(*lp), 2);
+   lp.reset();
 
    lp = parse("mem=2G,,arch=lx-amd64");
    check_int("T04", "repeated separators do not produce empty elements",
-             (int)lGetNumberOfElem(lp), 2);
-   lFreeList(&lp);
+             (int)lGetNumberOfElem(*lp), 2);
+   lp.reset();
 
    /* the bracket list is one value, whatever it contains */
    lp = parse("gpu=4[same=id]");
-   check_int("T05", "a bracket list does not split the request", (int)lGetNumberOfElem(lp), 1);
+   check_int("T05", "a bracket list does not split the request", (int)lGetNumberOfElem(*lp), 1);
    check_str("T05b", "the whole string is kept in CE_stringval",
              value_of(lp, "gpu"), "4[same=id]");
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=4[id=gpu1*,same=id],mem=2G");
    check_int("T06", "a comma inside brackets does not split, the one outside does",
-             (int)lGetNumberOfElem(lp), 2);
+             (int)lGetNumberOfElem(*lp), 2);
    check_str("T06b", "the bracket list is intact", value_of(lp, "gpu"), "4[id=gpu1*,same=id]");
    check_str("T06c", "the following request is intact", value_of(lp, "mem"), "2G");
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=4[id=a b]");
-   check_int("T07", "a space inside brackets does not split", (int)lGetNumberOfElem(lp), 1);
+   check_int("T07", "a space inside brackets does not split", (int)lGetNumberOfElem(*lp), 1);
    check_str("T07b", "including the space", value_of(lp, "gpu"), "4[id=a b]");
-   lFreeList(&lp);
+   lp.reset();
 
    /* a nested bracket, as in a character class inside a pattern */
    lp = parse("gpu=1[id=gpu[01]*],mem=2G");
    check_int("T08", "a nested bracket is counted, the list ends at the matching one",
-             (int)lGetNumberOfElem(lp), 2);
+             (int)lGetNumberOfElem(*lp), 2);
    check_str("T08b", "the nested class survives", value_of(lp, "gpu"), "1[id=gpu[01]*]");
-   lFreeList(&lp);
+   lp.reset();
 
    /* the same rule makes a character class in a string request work, which it did not before */
    lp = parse("h=node[1,2]");
    check_int("T09", "a character class in a string request is one request",
-             (int)lGetNumberOfElem(lp), 1);
+             (int)lGetNumberOfElem(*lp), 1);
    check_str("T09b", "and keeps its comma", value_of(lp, "h"), "node[1,2]");
-   lFreeList(&lp);
+   lp.reset();
 
    /* an unbalanced bracket swallows the rest rather than splitting silently */
    lp = parse("gpu=4[same=id,mem=2G");
    check_int("T10", "an unbalanced bracket yields one element, not two",
-             (int)lGetNumberOfElem(lp), 1);
-   lFreeList(&lp);
+             (int)lGetNumberOfElem(*lp), 1);
+   lp.reset();
 
    /* a bare boolean request still becomes TRUE when values are not required */
    lp = parse("some_bool");
    check_str("T11", "a bare request becomes TRUE", value_of(lp, "some_bool"), "TRUE");
-   lFreeList(&lp);
+   lp.reset();
 
    /* the last of two requests for one complex wins, as before */
    lp = parse("gpu=1,gpu=2");
-   check_int("T12", "a repeated complex yields one element", (int)lGetNumberOfElem(lp), 1);
+   check_int("T12", "a repeated complex yields one element", (int)lGetNumberOfElem(*lp), 1);
    check_str("T12b", "and keeps the last value", value_of(lp, "gpu"), "2");
-   lFreeList(&lp);
+   lp.reset();
 }
 
 /**
- * Build the master complex list the amount split is resolved against.
+ * @brief Build the master complex list the amount split is resolved against
+ * @return the complex list
  */
-static lList *
+static ocs::tom::ListPtr<ocs::tom::CE>
 make_centry_list() {
    auto lp = ocs::tom::ListPtr<ocs::tom::CE>::create("complexes");
 
@@ -221,13 +239,16 @@ make_centry_list() {
    ocs::tom::set<CE_requestable>(ep_ce_4, REQU_YES);
    lAppendElem(*lp, std::move(ep_ce_4));
 
-   return lp.release();
+   return lp;
 }
 
+/**
+ * @brief The amount in front of a parameter list is what CE_doubleval holds
+ */
 static void
 test_amount_split() {
-   lList *centries = make_centry_list();
-   lList *lp;
+   auto centries = make_centry_list();
+   ocs::tom::ListPtr<ocs::tom::CE> lp;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* the amount in front of the bracket is what CE_doubleval holds */
@@ -236,22 +257,22 @@ test_amount_split() {
    check_int("T20", "a request with a parameter list is accepted" PARAM_LIST_NOTE,
              centry_list_fill_request(lp, &answer_list, centries, true, false, true),
              PARAM_LIST_RC);
-   ocs::tom::ConstElement<ocs::tom::CE> ep = ocs::tom::find_first<CE_name>(lp, "gpu");
+   ocs::tom::ConstElement<ocs::tom::CE> ep = ocs::tom::find_first<CE_name>(*lp, "gpu");
    check_int("T20b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep), 4);
    check_str("T20c", "CE_stringval still carries the parameters",
              ocs::tom::get<CE_stringval>(ep), "4[same=id]");
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
 
    /* no bracket, unchanged behaviour */
    lp = parse("gpu=4");
    answer_list = nullptr;
    check_int("T21", "a plain amount is accepted",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
-   ocs::tom::ConstElement<ocs::tom::CE> ep_ce = ocs::tom::find_first<CE_name>(lp, "gpu");
+   ocs::tom::ConstElement<ocs::tom::CE> ep_ce = ocs::tom::find_first<CE_name>(*lp, "gpu");
    check_int("T21b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep_ce), 4);
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
 
    /* a bracket with no amount in front of it is not a number */
    lp = parse("gpu=[same=id]");
@@ -259,7 +280,7 @@ test_amount_split() {
    check_int("T22", "a parameter list without an amount is rejected",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), -1);
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
 
    /* the split is for resource maps only; another type keeps rejecting a bracket */
    lp = parse("mem=2G[x=y]");
@@ -267,7 +288,7 @@ test_amount_split() {
    check_int("T23", "a parameter list on a non resource map is rejected",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), -1);
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
 
    /* The checks that follow the parse apply to a resource map like to any other numeric
       type. An earlier version of the split returned early for a bracketed request and
@@ -278,46 +299,55 @@ test_amount_split() {
    check_int("T25", "a negative amount is rejected",
              centry_list_fill_request(lp, &answer_list, centries, true, false, false), -1);
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=-1[same=id]");
    answer_list = nullptr;
    check_int("T26", "a negative amount is rejected with a parameter list too",
              centry_list_fill_request(lp, &answer_list, centries, true, false, false), -1);
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
 
    /* a memory amount is still parsed with its multiplier */
    lp = parse("mem=2G");
    answer_list = nullptr;
    check_int("T24", "a memory request is accepted",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
-   ocs::tom::ConstElement<ocs::tom::CE> ep_ce_2 = ocs::tom::find_first<CE_name>(lp, "mem");
+   ocs::tom::ConstElement<ocs::tom::CE> ep_ce_2 = ocs::tom::find_first<CE_name>(*lp, "mem");
    check_int("T24b", "the multiplier is applied",
              (int)(ocs::tom::get<CE_doubleval>(ep_ce_2) / (1024 * 1024)), 2048);
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
 
-   lFreeList(&centries);
+   centries.reset();
 }
 
 /**
+ * @brief Fill a request against the master complex list
+ *
  * The parameter list is validated by centry_list_fill_request(), so these go through the same
- * entry point as a real submit. A return of 0 means accepted, -1 rejected.
+ * entry point as a real submit.
+ *
+ * @param request the request string
+ * @param centries the master complex list
+ * @return 0 if accepted, -1 if rejected
  */
 static int
-fill(const char *request, lList *centries) {
-   lList *lp = parse(request);
+fill(const char *request, const ocs::tom::ConstList<ocs::tom::CE> centries) {
+   auto lp = parse(request);
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    int ret = centry_list_fill_request(lp, &answer_list, centries, true, false, true);
    answer_list.reset();
-   lFreeList(&lp);
+   lp.reset();
    return ret;
 }
 
+/**
+ * @brief The parameter list of a resource map request is validated
+ */
 static void
 test_parameter_validation() {
-   lList *centries = make_centry_list();
+   auto centries = make_centry_list();
 
    /* accepted: the reserved names which are implemented, in any order, and no list at all */
    check_int("T30", "a reserved parameter is accepted" PARAM_LIST_NOTE,
@@ -424,14 +454,20 @@ test_parameter_validation() {
    check_int("T32e", "a resource map cannot be a characteristic",
              fill("gpu=1[gpu=1]", centries), -1);
 
-   lFreeList(&centries);
+   centries.reset();
 }
 
 /**
+ * @brief Build an ordinary integer complex
+ *
  * A complex may not be created or modified under one of the reserved parameter names, but one
  * already in the spool keeps working - refusing it there would stop qmaster from starting.
+ *
+ * @param name the complex name
+ * @param shortcut its shortcut
+ * @return the complex
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_complex(const char *name, const char *shortcut) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
@@ -440,12 +476,15 @@ make_complex(const char *name, const char *shortcut) {
    ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
    ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
    ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   return ep.release();
+   return ep;
 }
 
+/**
+ * @brief A complex may not be named after a reserved parameter
+ */
 static void
 test_reserved_names() {
-   lListElem *ep;
+   ocs::tom::ElementPtr<ocs::tom::CE> ep;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* every reserved name is refused, by name and by shortcut */
@@ -457,40 +496,43 @@ test_reserved_names() {
       ep = make_complex(reserved[i], "sc");
       answer_list = nullptr;
       check_int(id, "a reserved name is refused when a complex is created",
-                centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
+                centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false) ? 1 : 0, 0);
       answer_list.reset();
-      lFreeElem(&ep);
+      ep.reset();
    }
 
    ep = make_complex("something", "same");
    answer_list = nullptr;
    check_int("T55", "a reserved shortcut is refused too",
-             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
+             centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false) ? 1 : 0, 0);
    answer_list.reset();
-   lFreeElem(&ep);
+   ep.reset();
 
    /* an ordinary complex is unaffected */
    ep = make_complex("gpu_temp", "gt");
    answer_list = nullptr;
    check_int("T56", "an ordinary complex is accepted",
-             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 1);
+             centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false) ? 1 : 0, 1);
    answer_list.reset();
-   lFreeElem(&ep);
+   ep.reset();
 
    /* read from the spool it is kept, so that a qmaster which has one still starts */
    ep = make_complex("same", "sc");
    answer_list = nullptr;
    check_int("T57", "a reserved name found in the spool is kept",
-             centry_elem_validate(ep, nullptr, &answer_list, true) ? 1 : 0, 1);
+             centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, true) ? 1 : 0, 1);
    check_int("T57b", "and is reported", (int)answer_list->size(), 1);
    answer_list.reset();
-   lFreeElem(&ep);
+   ep.reset();
 }
 
+/**
+ * @brief The values of bind and distinct, and the default value of a resource map
+ */
 static void
 test_parameter_values_and_defaults() {
-   lList *centries = make_centry_list();
-   lListElem *ep;
+   auto centries = make_centry_list();
+   ocs::tom::ElementPtr<ocs::tom::CE> ep;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* bind= is reserved and validated now, although nothing reads it until CS-2706 */
@@ -512,9 +554,9 @@ test_parameter_values_and_defaults() {
    ocs::tom::set<CE_defaultval>(ep, "4");
    answer_list = nullptr;
    check_int("T64", "a numeric default is accepted",
-             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 1);
+             centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false) ? 1 : 0, 1);
    answer_list.reset();
-   lFreeElem(&ep);
+   ep.reset();
 
    ep = make_complex("gpu2", "g2");
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
@@ -523,18 +565,22 @@ test_parameter_values_and_defaults() {
    ocs::tom::set<CE_defaultval>(ep, "4[same=id]");
    answer_list = nullptr;
    check_int("T65", "a default carrying a parameter list is refused",
-             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
+             centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false) ? 1 : 0, 0);
    answer_list.reset();
-   lFreeElem(&ep);
+   ep.reset();
 
-   lFreeList(&centries);
+   centries.reset();
 }
 
 /**
- * Build the resource map of a host: "gpu=8(0 0 0 0 1 1 1 1)" as the reader leaves it, two
- * elements carrying a count rather than eight elements.
+ * @brief Build the resource map of a host
+ *
+ * "gpu=8(0 0 0 0 1 1 1 1)" as the reader leaves it, two elements carrying a count rather than
+ * eight elements.
+ *
+ * @return the resource map
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_resource_definition() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
@@ -546,7 +592,7 @@ make_resource_definition() {
    ocs::tom::Element<ocs::tom::RESL> resl_resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, "1");
    ocs::tom::set<RESL_amount>(resl_resl, 4);
 
-   return ep.release();
+   return ep;
 }
 
 /**
@@ -557,8 +603,10 @@ make_resource_definition() {
  * Two instances per identifier, two identifiers per node, so a node holds four and no single
  * identifier does. That is the shape which tells same=<characteristic> apart from same=id: a
  * request for three can be served by a node and by no identifier.
+ *
+ * @return the resource map
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_resource_definition_numa() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
@@ -575,282 +623,304 @@ make_resource_definition_numa() {
       ocs::tom::set<CE_stringval>(property, node_of[i]);
    }
 
-   return ep.release();
+   return ep;
 }
 
 /**
- * Book "used" instances of one id, the way the host's utilization records them.
+ * @brief Book "used" instances of one id, the way the host's utilization records them
+ * @param id the id, or nullptr for no booking at all
+ * @param used the number of instances booked
+ * @return the utilization, empty if @p id is nullptr
  */
-static lList *
-make_utilization(const char *id, uint32_t used) {
-   lList *taken = nullptr;
+static ocs::tom::ListPtr<ocs::tom::RESL>
+make_utilization(const char *id, const uint32_t used) {
+   ocs::tom::ListPtr<ocs::tom::RESL> taken;
    if (id != nullptr) {
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back<RESL_value>(&taken, id);
+      taken = ocs::tom::ListPtr<ocs::tom::RESL>::create("taken");
+      ocs::tom::Element<ocs::tom::RESL> resl = taken->emplace_back<RESL_value>(id);
       ocs::tom::set<RESL_amount>(resl, used);
    }
    return taken;
 }
 
+/**
+ * @brief Keep a selection and report whether there was one
+ * @param selected receives the selection, empty if there was none
+ * @param chosen the selection a select function returned
+ * @return 1 if there was a selection, 0 otherwise
+ */
+static int
+took(ocs::tom::ListPtr<ocs::tom::RESL> &selected, ocs::tom::ListPtr<ocs::tom::RESL> &&chosen) {
+   selected = std::move(chosen);
+   return selected ? 1 : 0;
+}
+
+/**
+ * @brief centry_rsmap_best_free_id() reports the emptiest identifier
+ */
 static void
 test_best_free_id() {
-   lListElem *def = make_resource_definition();
-   lList *use;
+   auto def = make_resource_definition();
+   ocs::tom::ListPtr<ocs::tom::RESL> use;
    uint32_t free = 0;
 
-   check_str("T90", "an unused map reports its first id", centry_rsmap_best_free_id(def, nullptr, &free), "0");
+   check_str("T90", "an unused map reports its first id", centry_rsmap_best_free_id(*def, no_instances, &free), "0");
    check_int("T90b", "with its full count", (int)free, 4);
 
    /* one share of card 0 booked, so card 1 is now the emptiest */
    use = make_utilization("0", 1);
-   check_str("T91", "the emptiest id is reported", centry_rsmap_best_free_id(def, use, &free), "1");
+   check_str("T91", "the emptiest id is reported", centry_rsmap_best_free_id(*def, use, &free), "1");
    check_int("T91b", "with its count", (int)free, 4);
-   lFreeList(&use);
+   use.reset();
 
    /* both cards half used: four free in the map, two on the best id */
    use = make_utilization("0", 2);
-   ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back<RESL_value>(&use, "1");
+   ocs::tom::Element<ocs::tom::RESL> resl = use->emplace_back<RESL_value>("1");
    ocs::tom::set<RESL_amount>(resl, 2);
-   check_int("T92", "the count is of one id, not of the map", (int)(centry_rsmap_best_free_id(def, use, &free), free), 2);
-   lFreeList(&use);
+   check_int("T92", "the count is of one id, not of the map",
+             (int)(centry_rsmap_best_free_id(*def, use, &free), free), 2);
+   use.reset();
 
    /* a full map reports zero rather than nothing, so a caller can tell "no room" from
       "no such resource map" */
    use = make_utilization("0", 4);
-   ocs::tom::Element<ocs::tom::RESL> resl_resl = ocs::tom::emplace_back<RESL_value>(&use, "1");
+   ocs::tom::Element<ocs::tom::RESL> resl_resl = use->emplace_back<RESL_value>("1");
    ocs::tom::set<RESL_amount>(resl_resl, 4);
-   check_int("T93", "a full map reports an id", centry_rsmap_best_free_id(def, use, &free) != nullptr, 1);
+   check_int("T93", "a full map reports an id", centry_rsmap_best_free_id(*def, use, &free) != nullptr, 1);
    check_int("T93b", "with a free count of zero", (int)free, 0);
-   lFreeList(&use);
+   use.reset();
 
    check_int("T94", "a missing definition reports nothing",
-             centry_rsmap_best_free_id(nullptr, nullptr, &free) == nullptr, 1);
+             centry_rsmap_best_free_id(ocs::tom::ConstElement<ocs::tom::CE>(), no_instances, &free) == nullptr, 1);
    check_int("T94b", "and a free count of zero", (int)free, 0);
 
-   lFreeElem(&def);
+   def.reset();
 }
 
 /**
- * Grouping by a characteristic rather than by the identifier. The map has four identifiers of
+ * @brief Grouping by a characteristic rather than by the identifier. The map has four identifiers of
  * two on two NUMA nodes, so a node holds four instances and no identifier holds more than two.
+ * @return nothing; CHECK records the results
  */
 static void
 test_best_free_group() {
-   lListElem *def = make_resource_definition_numa();
+   auto def = make_resource_definition_numa();
    uint32_t free = 0;
 
    /* keying on the identifier has to reach exactly what the id function reaches, since that is
     * the case every request in the field takes today */
-   const char *key = centry_rsmap_best_free_group(def, nullptr, "id", &free);
+   const char *key = centry_rsmap_best_free_group(*def, no_instances, "id", &free);
    check_str("T95", "keying on id returns an id", key, "0");
    check_int("T95b", "with the free count of that one id", (int)free, 2);
    check_int("T95c", "and a nullptr key means the same thing",
-             centry_rsmap_best_free_group(def, nullptr, nullptr, &free) != nullptr, 1);
+             centry_rsmap_best_free_group(*def, no_instances, nullptr, &free) != nullptr, 1);
 
    /* the point of the generalization: a node has more than any one id it is made of */
-   key = centry_rsmap_best_free_group(def, nullptr, "numa_node", &free);
+   key = centry_rsmap_best_free_group(*def, no_instances, "numa_node", &free);
    check_int("T96", "keying on a characteristic finds a group", key != nullptr, 1);
    check_int("T96b", "which holds the instances of both its ids", (int)free, 4);
 
    /* booking one id shrinks its node but not the other */
-   lList *use = make_utilization("0", 2);
-   key = centry_rsmap_best_free_group(def, use, "numa_node", &free);
+   auto use = make_utilization("0", 2);
+   key = centry_rsmap_best_free_group(*def, use, "numa_node", &free);
    check_str("T97", "the emptier node is returned", key, "1");
    check_int("T97b", "with its full count", (int)free, 4);
-   lFreeList(&use);
+   use.reset();
 
    /* an instance which does not carry the characteristic cannot agree with anything, so it is
     * left out rather than forming a group of its own */
-   lListElem *def_partial = make_resource_definition_numa();
-   ocs::tom::Element<ocs::tom::RESL> stray = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def_partial, "9");
+   auto def_partial = make_resource_definition_numa();
+   ocs::tom::Element<ocs::tom::RESL> stray =
+      ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def_partial, "9");
    ocs::tom::set<RESL_amount>(stray, 99);
-   key = centry_rsmap_best_free_group(def_partial, nullptr, "numa_node", &free);
+   key = centry_rsmap_best_free_group(*def_partial, no_instances, "numa_node", &free);
    check_int("T98", "an instance without the characteristic is left out", (int)free, 4);
    check_int("T98b", "so the group is still a node", key != nullptr && strcmp(key, "9") != 0, 1);
 
    /* a characteristic no instance carries leaves nothing to group by */
-   key = centry_rsmap_best_free_group(def, nullptr, "no_such_characteristic", &free);
+   key = centry_rsmap_best_free_group(*def, no_instances, "no_such_characteristic", &free);
    check_int("T99", "a characteristic nothing carries finds no group", key == nullptr, 1);
    check_int("T99b", "and a free count of zero", (int)free, 0);
 
-   lFreeElem(&def_partial);
-   lFreeElem(&def);
+   def_partial.reset();
+   def.reset();
 }
 
 /**
- * Taking the instances, rather than only asking what a group could serve.
+ * @brief Taking the instances, rather than only asking what a group could serve.
+ * @return nothing; CHECK records the results
  */
 static void
 test_select_group_instances() {
-   lList *selected = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RESL> selected;
 
    /* keying on the identifier: one entry, because a group has one member there */
-   lListElem *def = make_resource_definition();
+   auto def = make_resource_definition();
    check_int("T100", "four taken from the plain map",
-             centry_rsmap_select_group_instances(def, nullptr, nullptr, "id", 4, &selected), 1);
-   check_int("T100b", "come from a single id", (int)lGetNumberOfElem(selected), 1);
+             took(selected, centry_rsmap_select_group_instances(*def, nullptr, nullptr, "id", 4)), 1);
+   check_int("T100b", "come from a single id", (int)lGetNumberOfElem(*selected), 1);
    check_int("T100c", "with the whole amount on it",
              (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 4);
-   lFreeList(&selected);
+   selected.reset();
 
    check_int("T101", "more than any id holds is refused",
-             centry_rsmap_select_group_instances(def, nullptr, nullptr, "id", 5, &selected), 0);
+             took(selected, centry_rsmap_select_group_instances(*def, nullptr, nullptr, "id", 5)), 0);
    check_int("T101b", "and nothing is handed back", selected == nullptr, 1);
-   lFreeElem(&def);
+   def.reset();
 
    /* keying on a characteristic: a node of two cards of two serves three, no card does */
-   lListElem *numa = make_resource_definition_numa();
+   auto numa = make_resource_definition_numa();
    check_int("T102", "three taken from one node",
-             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 3,
-                                                 &selected), 1);
-   check_int("T102b", "spread over the two cards of it", (int)lGetNumberOfElem(selected), 2);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 3)), 1);
+   check_int("T102b", "spread over the two cards of it", (int)lGetNumberOfElem(*selected), 2);
    check_int("T102c", "filling the first before touching the second",
              (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 2);
    check_int("T102d", "and taking the remainder from the second",
              (int)ocs::tom::get<RESL_amount>(lLast(selected)), 1);
-   lFreeList(&selected);
+   selected.reset();
 
    check_int("T103", "the same three are refused by the identifier keying",
-             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "id", 3, &selected), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "id", 3)), 0);
+   selected.reset();
 
    check_int("T104", "more than a node holds is refused",
-             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 5,
-                                                 &selected), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 5)), 0);
+   selected.reset();
 
    /* a second request scope: the group is read back from what was granted already, and what
     * this job holds is subtracted along with what other jobs hold */
-   lList *already = nullptr;
-   ocs::tom::Element<ocs::tom::RESL> held = ocs::tom::emplace_back<RESL_value>(&already, "0");
+   auto already = ocs::tom::ListPtr<ocs::tom::RESL>::create("already");
+   ocs::tom::Element<ocs::tom::RESL> held = already->emplace_back<RESL_value>("0");
    ocs::tom::set<RESL_amount>(held, 2);
 
    check_int("T105", "a later scope takes from the group the first one took from",
-             centry_rsmap_select_group_instances(numa, nullptr, already, "numa_node", 2,
-                                                 &selected), 1);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, already, "numa_node", 2)), 1);
    check_str("T105b", "from the other card of that node, the first being spent",
              ocs::tom::get<RESL_value>(lFirst(selected)), "1");
    check_int("T105c", "and only what is left of it",
              (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 2);
-   lFreeList(&selected);
+   selected.reset();
 
    check_int("T106", "what this job already holds is not free for it again",
-             centry_rsmap_select_group_instances(numa, nullptr, already, "numa_node", 3,
-                                                 &selected), 0);
-   lFreeList(&selected);
-   lFreeList(&already);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, already, "numa_node", 3)), 0);
+   selected.reset();
+   already.reset();
 
    /* what other jobs hold counts against the group too */
-   lList *use = make_utilization("0", 2);
+   auto use = make_utilization("0", 2);
    check_int("T107", "a node booked down to two cannot serve three",
-             centry_rsmap_select_group_instances(numa, use, nullptr, "numa_node", 3,
-                                                 &selected), 1);
+             took(selected, centry_rsmap_select_group_instances(*numa, use, nullptr, "numa_node", 3)), 1);
    check_str("T107b", "it moves to the node which can",
              ocs::tom::get<RESL_value>(lFirst(selected)), "2");
-   lFreeList(&selected);
-   lFreeList(&use);
+   selected.reset();
+   use.reset();
 
    /* scope=job hands the group down rather than letting the host pick one: the whole job is
     * bound to it, so a host takes from that group or from none - see rsmap_job_scope_key() */
    check_int("T108", "a required group is taken from although another is no worse",
-             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 3,
-                                                 &selected, nullptr, nullptr, "1"), 1);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 3, nullptr,
+                                                                nullptr, "1")), 1);
    check_str("T108b", "so the cards of that node are used",
              ocs::tom::get<RESL_value>(lFirst(selected)), "2");
    check_str("T108c", "both of them", ocs::tom::get<RESL_value>(lLast(selected)), "3");
-   lFreeList(&selected);
+   selected.reset();
 
    check_int("T109", "more than the required group holds is refused, not moved elsewhere",
-             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 5,
-                                                 &selected, nullptr, nullptr, "1"), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 5, nullptr,
+                                                                nullptr, "1")), 0);
+   selected.reset();
 
    check_int("T109b", "a required group the map does not have is refused",
-             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 1,
-                                                 &selected, nullptr, nullptr, "9"), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 1, nullptr,
+                                                                nullptr, "9")), 0);
+   selected.reset();
 
    /* what an earlier request scope was granted on this host comes first: it has already been
     * handed out and cannot be exchanged for the group the rest of the job uses */
-   lList *granted = nullptr;
-   ocs::tom::Element<ocs::tom::RESL> granted_ep = ocs::tom::emplace_back<RESL_value>(&granted, "0");
+   auto granted = ocs::tom::ListPtr<ocs::tom::RESL>::create("granted");
+   ocs::tom::Element<ocs::tom::RESL> granted_ep = granted->emplace_back<RESL_value>("0");
    ocs::tom::set<RESL_amount>(granted_ep, 2);
 
    check_int("T109c", "a group already granted here wins over the required one",
-             centry_rsmap_select_group_instances(numa, nullptr, granted, "numa_node", 2,
-                                                 &selected, nullptr, nullptr, "1"), 1);
+             took(selected, centry_rsmap_select_group_instances(*numa, nullptr, granted, "numa_node", 2, nullptr,
+                                                                nullptr, "1")), 1);
    check_str("T109d", "so the rest comes from the node that scope used",
              ocs::tom::get<RESL_value>(lFirst(selected)), "1");
-   lFreeList(&selected);
-   lFreeList(&granted);
+   selected.reset();
+   granted.reset();
 
-   lFreeElem(&numa);
+   numa.reset();
 }
 
 /**
- * Taking instances without a constraint between them.
+ * @brief Taking instances without a constraint between them.
+ * @return nothing; CHECK records the results
  */
 static void
 test_select_instances() {
-   lListElem *def = make_resource_definition();   /* two ids of four */
-   lList *selected = nullptr;
+   auto def = make_resource_definition();   /* two ids of four */
+   ocs::tom::ListPtr<ocs::tom::RESL> selected;
 
    check_int("T110", "four are taken from one id",
-             centry_rsmap_select_instances(def, nullptr, nullptr, 4, &selected), 1);
-   check_int("T110b", "so a single entry is returned", (int)lGetNumberOfElem(selected), 1);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 4)), 1);
+   check_int("T110b", "so a single entry is returned", (int)lGetNumberOfElem(*selected), 1);
+   selected.reset();
 
    check_int("T111", "six spread over both ids",
-             centry_rsmap_select_instances(def, nullptr, nullptr, 6, &selected), 1);
-   check_int("T111b", "two entries", (int)lGetNumberOfElem(selected), 2);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 6)), 1);
+   check_int("T111b", "two entries", (int)lGetNumberOfElem(*selected), 2);
    check_int("T111c", "the first id filled before the second is touched",
              (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 4);
    check_int("T111d", "and the remainder from the second",
              (int)ocs::tom::get<RESL_amount>(lLast(selected)), 2);
-   lFreeList(&selected);
+   selected.reset();
 
    check_int("T112", "more than the map holds is refused",
-             centry_rsmap_select_instances(def, nullptr, nullptr, 9, &selected), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 9)), 0);
+   selected.reset();
 
    /* What this job already holds is not free for it a second time. A map requested in more
     * than one request scope reaches the selection twice, and the first grant is not in the
     * utilization yet - nothing is debited until the assignment is complete. */
-   lList *already = nullptr;
-   ocs::tom::Element<ocs::tom::RESL> held = ocs::tom::emplace_back<RESL_value>(&already, "0");
+   auto already = ocs::tom::ListPtr<ocs::tom::RESL>::create("already");
+   ocs::tom::Element<ocs::tom::RESL> held = already->emplace_back<RESL_value>("0");
    ocs::tom::set<RESL_amount>(held, 4);
 
    check_int("T113", "a later scope skips the id the first one used up",
-             centry_rsmap_select_instances(def, nullptr, already, 4, &selected), 1);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, already, 4)), 1);
    check_str("T113b", "and takes from the other", ocs::tom::get<RESL_value>(lFirst(selected)), "1");
-   check_int("T113c", "in one entry", (int)lGetNumberOfElem(selected), 1);
-   lFreeList(&selected);
+   check_int("T113c", "in one entry", (int)lGetNumberOfElem(*selected), 1);
+   selected.reset();
 
    check_int("T114", "and cannot take more than the rest of the map holds",
-             centry_rsmap_select_instances(def, nullptr, already, 5, &selected), 0);
-   lFreeList(&selected);
-   lFreeList(&already);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, already, 5)), 0);
+   selected.reset();
+   already.reset();
 
    /* what other jobs hold counts too */
-   lList *use = make_utilization("0", 4);
+   auto use = make_utilization("0", 4);
    check_int("T115", "an id used up by other jobs is skipped",
-             centry_rsmap_select_instances(def, use, nullptr, 4, &selected), 1);
+             took(selected, centry_rsmap_select_instances(*def, use, nullptr, 4)), 1);
    check_str("T115b", "so the free one is taken", ocs::tom::get<RESL_value>(lFirst(selected)), "1");
-   lFreeList(&selected);
-   lFreeList(&use);
+   selected.reset();
+   use.reset();
 
-   lFreeElem(&def);
+   def.reset();
 }
 
+/**
+ * @brief centry_rsmap_get_request_param() and centry_rsmap_request_is_job_scope()
+ */
 static void
 test_get_request_param() {
-   lList *lp;
+   ocs::tom::ListPtr<ocs::tom::CE> lp;
    DSTRING_STATIC(value, 256);
 
    lp = parse("gpu=4[same=id]");
    check_int("T81", "a single parameter is found",
              centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 1);
    check_str("T81b", "with its value", sge_dstring_get_string(&value), "id");
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=4[scope=host,same=id,memory=40G]");
    check_int("T82", "a parameter in the middle is found",
@@ -859,13 +929,13 @@ test_get_request_param() {
    check_int("T83", "the last parameter is found",
              centry_rsmap_get_request_param(lFirst(lp), "memory", &value) ? 1 : 0, 1);
    check_str("T83b", "with its value", sge_dstring_get_string(&value), "40G");
-   lFreeList(&lp);
+   lp.reset();
 
    /* a name which is a prefix of another must not match it */
    lp = parse("gpu=4[same_thing=x]");
    check_int("T84", "a longer name is not matched by a shorter one",
              centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 0);
-   lFreeList(&lp);
+   lp.reset();
 
    /* a value containing a bracket does not confuse the scan */
    lp = parse("gpu=4[id=gpu[01]*,same=id]");
@@ -875,36 +945,40 @@ test_get_request_param() {
    check_int("T86", "and the bracketed value itself is returned whole",
              centry_rsmap_get_request_param(lFirst(lp), "id", &value) ? 1 : 0, 1);
    check_str("T86b", "including its brackets", sge_dstring_get_string(&value), "gpu[01]*");
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=4");
    check_int("T87", "a request without a parameter list has no parameters",
              centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 0);
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=4[same=id]");
    check_int("T88", "a parameter which is not there is not found",
              centry_rsmap_get_request_param(lFirst(lp), "scope", &value) ? 1 : 0, 0);
    check_int("T89", "and a request without scope reads as the per host default",
              centry_rsmap_request_is_job_scope(lFirst(lp)) ? 1 : 0, 0);
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=4[same=id,scope=host]");
    check_int("T89b", "as does one which writes that default out",
              centry_rsmap_request_is_job_scope(lFirst(lp)) ? 1 : 0, 0);
-   lFreeList(&lp);
+   lp.reset();
 
    lp = parse("gpu=4[same=id,scope=job]");
    check_int("T89c", "the job wide reading is recognised",
              centry_rsmap_request_is_job_scope(lFirst(lp)) ? 1 : 0, 1);
-   lFreeList(&lp);
+   lp.reset();
 }
 
 /**
- * A map whose identifiers say which card a share belongs to, as in the CS-2732 example:
- * "gpu=4(gpu1a gpu1b gpu2a gpu2b)". One instance each, so a count is a count of identifiers.
+ * @brief Build a map whose identifiers say which card a share belongs to
+ *
+ * As in the CS-2732 example: "gpu=4(gpu1a gpu1b gpu2a gpu2b)". One instance each, so a count
+ * is a count of identifiers.
+ *
+ * @return the resource map
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_named_map() {
    static const char *ids[] = {"gpu1a", "gpu1b", "gpu2a", "gpu2b"};
 
@@ -917,71 +991,72 @@ make_named_map() {
       ocs::tom::set<RESL_amount>(resl, 1);
    }
 
-   return ep.release();
+   return ep;
 }
 
 /**
- * id= narrows which instances a request may use. The expression is asked of the identifier of
+ * @brief id= narrows which instances a request may use. The expression is asked of the identifier of
  * each instance, at every point which looks at one, so that what is counted and what is taken
  * are the same set.
+ * @return nothing; CHECK records the results
  */
 static void
 test_id_expression() {
-   lListElem *def = make_named_map();
-   lList *selected = nullptr;
+   auto def = make_named_map();
+   ocs::tom::ListPtr<ocs::tom::RESL> selected;
    uint32_t free = 0;
 
    /* counting */
    check_int("T120", "without an expression the whole map is available",
-             (int)centry_rsmap_free(def, nullptr, nullptr), 4);
+             (int)centry_rsmap_free(*def, no_instances, nullptr), 4);
    check_int("T121", "a wildcard counts only the instances it accepts",
-             (int)centry_rsmap_free(def, nullptr, "gpu1*"), 2);
+             (int)centry_rsmap_free(*def, no_instances, "gpu1*"), 2);
    check_int("T122", "an exact identifier counts one",
-             (int)centry_rsmap_free(def, nullptr, "gpu2a"), 1);
+             (int)centry_rsmap_free(*def, no_instances, "gpu2a"), 1);
    check_int("T123", "an alternation counts both sides",
-             (int)centry_rsmap_free(def, nullptr, "gpu1a|gpu2b"), 2);
+             (int)centry_rsmap_free(*def, no_instances, "gpu1a|gpu2b"), 2);
    check_int("T124", "a negation counts the rest",
-             (int)centry_rsmap_free(def, nullptr, "!gpu1a"), 3);
+             (int)centry_rsmap_free(*def, no_instances, "!gpu1a"), 3);
    check_int("T125", "grouping and negation combined",
-             (int)centry_rsmap_free(def, nullptr, "(gpu1*|gpu2*)&!*b"), 2);
+             (int)centry_rsmap_free(*def, no_instances, "(gpu1*|gpu2*)&!*b"), 2);
    check_int("T126", "an expression matching nothing counts nothing",
-             (int)centry_rsmap_free(def, nullptr, "gpu3*"), 0);
+             (int)centry_rsmap_free(*def, no_instances, "gpu3*"), 0);
 
    /* what other jobs hold is still subtracted */
-   lList *use = make_utilization("gpu1a", 1);
+   auto use = make_utilization("gpu1a", 1);
    check_int("T127", "an instance in use is not free even when it matches",
-             (int)centry_rsmap_free(def, use, "gpu1*"), 1);
-   lFreeList(&use);
+             (int)centry_rsmap_free(*def, use, "gpu1*"), 1);
+   use.reset();
 
    /* selecting */
    check_int("T130", "one instance is taken from those the expression accepts",
-             centry_rsmap_select_instances(def, nullptr, nullptr, 1, &selected, "gpu1*"), 1);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 1, "gpu1*")), 1);
    check_str("T130b", "and it is one of them",
              ocs::tom::get<RESL_value>(lFirst(selected)), "gpu1a");
-   lFreeList(&selected);
+   selected.reset();
 
    check_int("T131", "more matches than are asked for is not a problem",
-             centry_rsmap_select_instances(def, nullptr, nullptr, 2, &selected, "!gpu1a"), 1);
-   check_int("T131b", "the amount is taken", (int)lGetNumberOfElem(selected), 2);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 2, "!gpu1a")), 1);
+   check_int("T131b", "the amount is taken", (int)lGetNumberOfElem(*selected), 2);
    check_str("T131c", "from the accepted set only",
              ocs::tom::get<RESL_value>(lFirst(selected)), "gpu1b");
-   lFreeList(&selected);
+   selected.reset();
 
    check_int("T132", "more than the expression leaves is refused",
-             centry_rsmap_select_instances(def, nullptr, nullptr, 3, &selected, "gpu1*"), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 3, "gpu1*")), 0);
+   selected.reset();
 
    check_int("T133", "an expression matching nothing is refused",
-             centry_rsmap_select_instances(def, nullptr, nullptr, 1, &selected, "gpu3*"), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 1, "gpu3*")), 0);
+   selected.reset();
 
    /* the best free identifier is the best of those accepted */
    check_str("T134", "the expression narrows which identifier is reported",
-             centry_rsmap_best_free_id(def, nullptr, &free, "gpu2*"), "gpu2a");
+             centry_rsmap_best_free_id(*def, no_instances, &free, "gpu2*"), "gpu2a");
    check_int("T135", "no accepted identifier reports none",
-             centry_rsmap_best_free_id(def, nullptr, &free, "gpu3*") == nullptr, 1);
+             centry_rsmap_best_free_id(*def, no_instances, &free, "gpu3*") == nullptr, 1);
 
-   lFreeElem(&def);
+   def.reset();
 
    /* id= and same= together: the instances agree in the identifier and match the expression */
    auto shared = ocs::tom::ElementPtr<ocs::tom::CE>::create();
@@ -993,25 +1068,32 @@ test_id_expression() {
    }
 
    check_int("T136", "a whole card is taken from the one the expression names",
-             centry_rsmap_select_group_instances(*shared, nullptr, nullptr, "id", 4, &selected,
-                                                 "gpu2*"), 1);
+             took(selected, centry_rsmap_select_group_instances(*shared, nullptr, nullptr, "id", 4,
+                                                                "gpu2*")), 1);
    check_str("T136b", "and it is that card",
              ocs::tom::get<RESL_value>(lFirst(selected)), "gpu2");
-   check_int("T136c", "in one entry", (int)lGetNumberOfElem(selected), 1);
-   lFreeList(&selected);
+   check_int("T136c", "in one entry", (int)lGetNumberOfElem(*selected), 1);
+   selected.reset();
 
    check_int("T137", "a card the expression excludes cannot serve the request",
-             centry_rsmap_select_group_instances(*shared, nullptr, nullptr, "id", 5, &selected,
-                                                 "gpu2*"), 0);
-   lFreeList(&selected);
+             took(selected, centry_rsmap_select_group_instances(*shared, nullptr, nullptr, "id", 5,
+                                                                "gpu2*")), 0);
+   selected.reset();
 
 }
 
 /**
- * Build a complex which can be a characteristic, so that the type and operator matrix can be
- * exercised: the comparison uses the type and the relop the complex declares.
+ * @brief Build a complex which can be a characteristic
+ *
+ * So that the type and operator matrix can be exercised: the comparison uses the type and the
+ * relop the complex declares.
+ *
+ * @param name the complex name
+ * @param type its type
+ * @param relop its relational operator
+ * @return the complex
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_characteristic(const char *name, ocs::CEntry::Type type, uint32_t relop) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
@@ -1019,13 +1101,20 @@ make_characteristic(const char *name, ocs::CEntry::Type type, uint32_t relop) {
    ocs::tom::set<CE_relop>(ep, relop);
    ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
    ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   return ep.release();
+   return ep;
 }
 
-/** Give one instance of a map a characteristic with a value. */
+/**
+ * @brief Give one instance of a map a characteristic with a value
+ * @param def the resource map
+ * @param id the identifier of the instance
+ * @param pname the name of the characteristic
+ * @param type its type
+ * @param value its value
+ */
 static void
-set_characteristic(lListElem *def, const char *id, const char *pname, ocs::CEntry::Type type,
-                   const char *value) {
+set_characteristic(const ocs::tom::Element<ocs::tom::CE> def, const char *id, const char *pname,
+                   const ocs::CEntry::Type type, const char *value) {
    ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(def, id);
    ocs::tom::Element<ocs::tom::CE> prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, pname);
    ocs::tom::set<CE_valtype>(prop, static_cast<uint32_t>(type));
@@ -1035,8 +1124,11 @@ set_characteristic(lListElem *def, const char *id, const char *pname, ocs::CEntr
    answers.reset();
 }
 
-/** A map of two instances, each carrying the characteristics the cases below ask about. */
-static lListElem *
+/**
+ * @brief A map of two instances, each carrying the characteristics the cases below ask about
+ * @return the resource map
+ */
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_map_with_characteristics() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
@@ -1059,13 +1151,14 @@ make_map_with_characteristics() {
    set_characteristic(*ep, "gpu0", "gpu_ci", ocs::CEntry::Type::CSTR, "A100");
    set_characteristic(*ep, "gpu1", "gpu_ci", ocs::CEntry::Type::CSTR, "H100");
 
-   return ep.release();
+   return ep;
 }
 
 /**
- * The type and operator matrix. The comparison is "requested relop configured" with the
+ * @brief The type and operator matrix. The comparison is "requested relop configured" with the
  * operator the characteristic's own complex declares, so the same request reads differently
  * depending on how the complex was defined - which is the point of it.
+ * @return nothing; CHECK records the results
  */
 static void
 test_characteristic_matching() {
@@ -1090,7 +1183,7 @@ test_characteristic_matching() {
    lAppendElem(*centries, make_characteristic("gpu_re", ocs::CEntry::Type::RESTR, CMPLXEQ_OP));
    lAppendElem(*centries, make_characteristic("gpu_ci", ocs::CEntry::Type::CSTR, CMPLXEQ_OP));
 
-   lListElem *def = make_map_with_characteristics();
+   auto def = make_map_with_characteristics();
 
    struct {
       const char *id;
@@ -1139,18 +1232,14 @@ test_characteristic_matching() {
    };
 
    for (int i = 0; cases[i].id != nullptr; i++) {
-      lList *request = centry_list_parse_from_string(nullptr, cases[i].request, false);
-      lListElem *req = lFirstRW(request);
+      auto request = centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(), cases[i].request, false);
+      ocs::tom::Element<ocs::tom::CE> req = lFirstRW(request);
       ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
-      lList *required = nullptr;
-      centry_rsmap_resolve_request_properties(req, *centries, &required);
+      auto required = centry_rsmap_resolve_request_properties(req, centries);
 
-      const uint32_t free = centry_rsmap_free(def, nullptr, nullptr, required);
+      const uint32_t free = centry_rsmap_free(*def, no_instances, nullptr, required);
       check_int(cases[i].id, cases[i].what, (int)free, (int)cases[i].expected);
-
-      lFreeList(&required);
-      lFreeList(&request);
    }
 
    /* an instance which does not carry the characteristic at all never matches, even when the
@@ -1161,18 +1250,17 @@ test_characteristic_matching() {
    ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(bare, "gpu9");
    ocs::tom::set<RESL_amount>(resl, 1);
 
-   lList *request = centry_list_parse_from_string(nullptr, "gpu=1[gpu_temp=99]", false);
-   lListElem *req = lFirstRW(request);
+   auto request = centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(), "gpu=1[gpu_temp=99]", false);
+   ocs::tom::Element<ocs::tom::CE> req = lFirstRW(request);
    ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lList *required = nullptr;
-   centry_rsmap_resolve_request_properties(req, *centries, &required);
+   auto required = centry_rsmap_resolve_request_properties(req, centries);
    check_int("T151", "an instance carrying no characteristics matches none of them",
-             (int)centry_rsmap_free(*bare, nullptr, nullptr, required), 0);
-   lFreeList(&required);
-   lFreeList(&request);
+             (int)centry_rsmap_free(*bare, no_instances, nullptr, required), 0);
+   required.reset();
+   request.reset();
    bare.reset();
 
-   lFreeElem(&def);
+   def.reset();
 }
 
 int

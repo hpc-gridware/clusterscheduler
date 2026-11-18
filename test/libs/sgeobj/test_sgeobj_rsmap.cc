@@ -53,9 +53,9 @@ first_answer_text(const ocs::tom::ConstList<ocs::tom::AN> answer_list) {
  * @brief Build a complex_values entry as it looks after centry_list_fill_request().
  * @param[in] type    the complex type, e.g. TYPE_RSMAP
  * @param[in] amount  the configured amount, i.e. what CE_doubleval holds
- * @return a CE_Type element the caller has to free
+ * @return the CE_Type element
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_centry(uint32_t type, double amount) {
    auto centry = ocs::tom::ElementPtr<ocs::tom::CE>::create();
 
@@ -64,7 +64,7 @@ make_centry(uint32_t type, double amount) {
    ocs::tom::set<CE_consumable>(centry, CONSUMABLE_YES);
    ocs::tom::set<CE_doubleval>(centry, amount);
 
-   return centry.release();
+   return centry;
 }
 
 /**
@@ -74,11 +74,10 @@ make_centry(uint32_t type, double amount) {
  * @param[in]  size   size of buffer
  */
 static void
-ids_to_string(const lListElem *centry, char *buffer, size_t size) {
+ids_to_string(const ocs::tom::ConstElement<ocs::tom::CE> centry, char *buffer, const size_t size) {
    buffer[0] = '\0';
 
-   ocs::tom::ConstElement<ocs::tom::RESL> resl;
-   for_each_ep(resl, ocs::tom::get<CE_resource_map_list>(centry)) {
+   for (const ocs::tom::ConstElement<ocs::tom::RESL> resl : ocs::tom::get<CE_resource_map_list>(centry)) {
       if (buffer[0] != '\0') {
          strncat(buffer, " ", size - strlen(buffer) - 1);
       }
@@ -99,82 +98,82 @@ test_expand_implicit_ids() {
    // T01: a bare amount creates one id per instance, numbered from 0
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 4);
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 512);
-      ids_to_string(centry, ids, sizeof(ids));
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 4);
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
+      ids_to_string(*centry, ids, sizeof(ids));
       CHECK(1, "bare amount 4 expands to ids 0 1 2 3",
             ok && lGetNumberOfElem(ocs::tom::get<CE_resource_map_list>(centry)) == 4 &&
             strcmp(ids, "0 1 2 3") == 0);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
    // T02: every implicit id stands for exactly one instance
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 2);
-      centry_rsmap_expand_implicit_ids(&al, centry, 512);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 2);
+      centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       ocs::tom::ConstElement<ocs::tom::RESL> first = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
       CHECK(2, "implicit id has amount 1", ocs::tom::get<RESL_amount>(first) == 1);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
    // T03: an explicit id list is never touched
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 2);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 2);
       ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, "gpu0");
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 512);
-      ids_to_string(centry, ids, sizeof(ids));
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
+      ids_to_string(*centry, ids, sizeof(ids));
       CHECK(3, "configured ids are left alone", ok && strcmp(ids, "gpu0") == 0);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
    // T04: amount 0 is a host without instances, not an error
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 0);
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 512);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 0);
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       CHECK(4, "amount 0 stays without ids",
             ok && static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(centry)) == nullptr);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
    // T05: a complex which is no RSMAP is not given ids
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::INT), 4);
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 512);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::INT), 4);
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       CHECK(5, "non RSMAP is not expanded",
             ok && static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(centry)) == nullptr);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
    // T06: the limit itself is still accepted
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 512);
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 512);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 512);
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       CHECK(6, "amount equal to the limit is expanded",
             ok && lGetNumberOfElem(ocs::tom::get<CE_resource_map_list>(centry)) == 512);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
    // T07: one above the limit is rejected, and nothing is left half expanded
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 513);
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 512);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 513);
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       const char *msg = first_answer_text(al);
       CHECK(7, "amount above the limit is rejected",
             !ok && static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(centry)) == nullptr &&
             al->size() == 1 && strstr(msg, "exceeds the limit") != nullptr);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -182,13 +181,13 @@ test_expand_implicit_ids() {
    //      and it is reported as "needs to define IDs", not as a limit that was exceeded
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 0);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 0);
       const char *msg = first_answer_text(al);
       CHECK(8, "limit 0 rejects a bare amount",
             !ok && static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(centry)) == nullptr &&
             al->size() == 1 && strstr(msg, "exceeds the limit") == nullptr);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -196,11 +195,11 @@ test_expand_implicit_ids() {
    //      bounds what the system creates on its own
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
+      auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
       ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, "gpu0");
-      bool ok = centry_rsmap_expand_implicit_ids(&al, centry, 0);
+      bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 0);
       CHECK(9, "limit 0 does not affect configured ids", ok);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -208,7 +207,7 @@ test_expand_implicit_ids() {
    {
       ocs::tom::ListPtr<ocs::tom::AN> al;
       CHECK(10, "nullptr centry is tolerated",
-            centry_rsmap_expand_implicit_ids(&al, nullptr, 512));
+            centry_rsmap_expand_implicit_ids(&al, ocs::tom::Element<ocs::tom::CE>(), 512));
       al.reset();
    }
 }
@@ -235,11 +234,11 @@ add_master_centry(lList *master, const char *name, ocs::CEntry::Type type, uint3
  * @param[in] names  names of the characteristics
  * @param[in] values their values, one per name
  * @param[in] count  how many characteristics
- * @return a CE_Type element the caller has to free
+ * @return the CE_Type element
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_map_with_characteristics(const char *const names[], const char *const values[], int count) {
-   lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
+   auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
    ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, "gpu0");
    ocs::tom::set<RESL_amount>(resl, 1);
    for (int i = 0; i < count; i++) {
@@ -268,14 +267,14 @@ test_check_characteristics() {
       const char *names[] = {"gpu_model"};
       const char *values[] = {"A100"};
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
+      auto centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, *centry, *master);
       ocs::tom::ConstElement<ocs::tom::RESL> resl = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
       ocs::tom::ConstElement<ocs::tom::CE> prop = lFirst(ocs::tom::get<RESL_properties>(resl));
       CHECK(11, "a string characteristic is accepted and typed",
             ok && static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(prop)) ==
                   ocs::CEntry::Type::STR);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -284,10 +283,10 @@ test_check_characteristics() {
       const char *names[] = {"gpu_mem"};
       const char *values[] = {"80G"};
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
+      auto centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, *centry, *master);
       CHECK(12, "a consumable characteristic is accepted", ok);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -296,11 +295,11 @@ test_check_characteristics() {
       const char *names[] = {"nested"};
       const char *values[] = {"4"};
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
+      auto centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, *centry, *master);
       CHECK(13, "a resource map as characteristic is refused",
             !ok && strstr(first_answer_text(al), "is a resource map") != nullptr);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -309,10 +308,10 @@ test_check_characteristics() {
       const char *names[] = {"gpu"};
       const char *values[] = {"1"};
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
+      auto centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, *centry, *master);
       CHECK(14, "the resource map itself as characteristic is refused", !ok);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -321,11 +320,11 @@ test_check_characteristics() {
       const char *names[] = {"no_such_complex"};
       const char *values[] = {"x"};
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
+      auto centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, *centry, *master);
       CHECK(15, "an unknown characteristic is refused",
             !ok && strstr(first_answer_text(al), "is not a defined complex") != nullptr);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 
@@ -336,11 +335,11 @@ test_check_characteristics() {
       const char *names[] = {"gpu_model", "gpu_model"};
       const char *values[] = {"A100", "H100"};
       ocs::tom::ListPtr<ocs::tom::AN> al;
-      lListElem *centry = make_map_with_characteristics(names, values, 2);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
+      auto centry = make_map_with_characteristics(names, values, 2);
+      bool ok = centry_check_rsmap_characteristics(&al, *centry, *master);
       CHECK(16, "a duplicate characteristic is refused",
             !ok && strstr(first_answer_text(al), "is set more than once") != nullptr);
-      lFreeElem(&centry);
+      centry.reset();
       al.reset();
    }
 

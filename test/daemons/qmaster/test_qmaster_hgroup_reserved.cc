@@ -87,66 +87,74 @@ static int s_fail = 0;
       } \
    } while (0)
 
-/** @brief Fetch one host group from the qmaster. Returns nullptr if absent. */
-static lListElem *
+/**
+ * @brief Fetch one host group from the qmaster
+ * @param name the group name
+ * @return a copy of the group, or an empty handle if it is absent
+ */
+static ocs::tom::ElementPtr<ocs::tom::HGRP>
 fetch_hgroup(const char *name) {
-   lList *lp = nullptr;
-   lCondition *where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, name);
-   lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
+   ocs::tom::ListPtr<ocs::tom::HGRP> lp;
+   const auto where = ocs::tom::Where<ocs::tom::HGRP>::from_typed(lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, name));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
+                                        ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::HGRP>());
    alp.reset();
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
-   lListElem *found = ocs::tom::find_first_rw<HGRP_name>(lp, name);
-   lListElem *copy = (found != nullptr) ? lCopyElem(found) : nullptr;
-   lFreeList(&lp);
-   return copy;
+   ocs::tom::ConstElement<ocs::tom::HGRP> found = ocs::tom::find_first<HGRP_name>(*lp, name);
+   return found ? found.clone() : ocs::tom::ElementPtr<ocs::tom::HGRP>();
 }
 
-/** @brief Try to delete a host group. Returns true if the qmaster REFUSED. */
+/**
+ * @brief Try to delete a host group
+ * @param name the group name
+ * @return true if the qmaster REFUSED
+ */
 static bool
 delete_refused(const char *name) {
-   lList *lp = lCreateList("del", HGRP_Type);
-   lListElem *ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
-   (void) ep;
+   auto lp = ocs::tom::ListPtr<ocs::tom::HGRP>::create("del");
+   lp->emplace_back<HGRP_name>(ocs::tom::Host(name));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+                                        ocs::gdi::SubCommand::NONE, lp);
    bool refused = answer_list_has_error(&alp);
    alp.reset();
-   lFreeList(&lp);
    return refused;
 }
 
-/** @brief Try to replace a host group's host list. Returns true if REFUSED. */
+/**
+ * @brief Try to replace a host group's host list
+ * @param name the group name
+ * @param new_host_list the new host list, taken over
+ * @return true if the qmaster REFUSED
+ */
 static bool
-modify_refused(const char *name, lList *new_host_list) {
-   lList *lp = lCreateList("mod", HGRP_Type);
-   ocs::tom::Element<ocs::tom::HGRP> ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
-   ocs::tom::set<HGRP_host_list>(ep, new_host_list);
+modify_refused(const char *name, ocs::tom::ListPtr<ocs::tom::HR> &&new_host_list) {
+   auto hosts = std::move(new_host_list);
+   auto lp = ocs::tom::ListPtr<ocs::tom::HGRP>::create("mod");
+   ocs::tom::Element<ocs::tom::HGRP> ep = lp->emplace_back<HGRP_name>(ocs::tom::Host(name));
+   ocs::tom::set<HGRP_host_list>(ep, std::move(hosts));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+                                        ocs::gdi::SubCommand::NONE, lp);
    bool refused = answer_list_has_error(&alp);
    alp.reset();
-   lFreeList(&lp);
    return refused;
 }
 
-/** @brief Number of direct entries of a group, -1 if the group is absent. */
+/**
+ * @brief Number of direct entries of a group
+ * @param name the group name
+ * @return the number of entries, -1 if the group is absent
+ */
 static int
 member_count(const char *name) {
-   lListElem *hgrp = fetch_hgroup(name);
+   auto hgrp = fetch_hgroup(name);
    if (hgrp == nullptr) {
       return -1;
    }
-   int n = lGetNumberOfElem(ocs::tom::get<HGRP_host_list>(hgrp));
-   lFreeElem(&hgrp);
-   return n;
+   return lGetNumberOfElem(ocs::tom::get<HGRP_host_list>(hgrp));
 }
 
 // ---------------------------------------------------------------------------
@@ -172,12 +180,12 @@ main(int /*argc*/, char * /*argv*/[]) {
 
    /* the qmaster host is an admin host by definition */
    {
-      lListElem *hgrp = fetch_hgroup(ADMIN_HOSTGROUP);
+      auto hgrp = fetch_hgroup(ADMIN_HOSTGROUP);
       const char *qmaster_host = component_get_qualified_hostname();
       CHECK(4, "qmaster host is a direct member of @admin_hosts",
             hgrp != nullptr &&
             href_list_locate(ocs::tom::get<HGRP_host_list>(hgrp), qmaster_host) != nullptr);
-      lFreeElem(&hgrp);
+      hgrp.reset();
    }
 
    /* ---- none of the reserved groups may be deleted ----------------------- */
@@ -199,10 +207,10 @@ main(int /*argc*/, char * /*argv*/[]) {
    /* ---- @exec_hosts is read-only, even for a manager --------------------- */
    {
       const int before = member_count(EXEC_HOSTGROUP);
-      lList *hosts = lCreateList("hosts", HR_Type);
-      ocs::tom::emplace_back<HR_name>(&hosts, component_get_qualified_hostname());
+      auto hosts = ocs::tom::ListPtr<ocs::tom::HR>::create("hosts");
+      hosts->emplace_back<HR_name>(ocs::tom::Host(component_get_qualified_hostname()));
 
-      CHECK(11, "modify of @exec_hosts refused", modify_refused(EXEC_HOSTGROUP, hosts));
+      CHECK(11, "modify of @exec_hosts refused", modify_refused(EXEC_HOSTGROUP, std::move(hosts)));
       CHECK(12, "@exec_hosts unchanged after the modify attempt", member_count(EXEC_HOSTGROUP) == before);
    }
 
@@ -212,22 +220,23 @@ main(int /*argc*/, char * /*argv*/[]) {
       const int before = member_count(ADMIN_HOSTGROUP);
 
       /* an empty host list would drop the qmaster host -> end-state check bites */
-      lList *empty = lCreateList("hosts", HR_Type);
-      CHECK(13, "emptying @admin_hosts refused", modify_refused(ADMIN_HOSTGROUP, empty));
+      auto empty = ocs::tom::ListPtr<ocs::tom::HR>::create("hosts");
+      CHECK(13, "emptying @admin_hosts refused", modify_refused(ADMIN_HOSTGROUP, std::move(empty)));
 
       /* a list of other hosts, still without the qmaster host, must fail too --
        * the guard is about the end state, not about the list being empty */
-      lList *others = lCreateList("hosts", HR_Type);
-      ocs::tom::emplace_back<HR_name>(&others, "an-unrelated-host");
-      CHECK(14, "@admin_hosts without the qmaster host refused", modify_refused(ADMIN_HOSTGROUP, others));
+      auto others = ocs::tom::ListPtr<ocs::tom::HR>::create("hosts");
+      others->emplace_back<HR_name>(ocs::tom::Host("an-unrelated-host"));
+      CHECK(14, "@admin_hosts without the qmaster host refused",
+            modify_refused(ADMIN_HOSTGROUP, std::move(others)));
 
       CHECK(15, "@admin_hosts unchanged after both attempts", member_count(ADMIN_HOSTGROUP) == before);
 
-      lListElem *hgrp = fetch_hgroup(ADMIN_HOSTGROUP);
+      auto hgrp = fetch_hgroup(ADMIN_HOSTGROUP);
       CHECK(16, "qmaster host still a member",
             hgrp != nullptr &&
             href_list_locate(ocs::tom::get<HGRP_host_list>(hgrp), qmaster_host) != nullptr);
-      lFreeElem(&hgrp);
+      hgrp.reset();
    }
 
    /* ---- an ordinary group is NOT protected ------------------------------- */

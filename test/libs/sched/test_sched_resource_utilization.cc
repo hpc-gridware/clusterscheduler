@@ -353,15 +353,23 @@ int main(int /*argc*/, char * /*argv*/[]) {
  * @brief build a resource map instance list, as the granted resources carry it
  *
  * The arguments are identifier and amount pairs, ended by a nullptr identifier.
+ *
+ * @param id the first identifier, or nullptr for no instance at all
+ * @param amount its amount
+ * @param ... further identifier and amount pairs, ended by a nullptr identifier
+ * @return the instance list, empty if @p id is nullptr
  */
-static lList *
+static ocs::tom::ListPtr<ocs::tom::RESL>
 make_rsmap(const char *id, uint32_t amount, ...) {
-   lList *ids = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RESL> ids;
    va_list ap;
 
    va_start(ap, amount);
    while (id != nullptr) {
-      ocs::tom::Element<ocs::tom::RESL> ep = ocs::tom::emplace_back<RESL_value>(&ids, id);
+      if (!ids) {
+         ids = ocs::tom::ListPtr<ocs::tom::RESL>::create("rsmap");
+      }
+      ocs::tom::Element<ocs::tom::RESL> ep = ids->emplace_back<RESL_value>(id);
       ocs::tom::set<RESL_amount>(ep, amount);
       id = va_arg(ap, const char *);
       if (id != nullptr) {
@@ -431,9 +439,9 @@ static int test_rsmap_utilization() {
    ocs::tom::set<RUE_name>(cr, "gpu");
 
    // a reservation takes two instances of gpu0 from 1000 for 200 seconds
-   lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
+   auto two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
    utilization_add(*cr, 1000, 200, 2, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
-                   nullptr, two_of_gpu0);
+                   no_binding, two_of_gpu0);
 
    printf("a reservation of gpu0 twice, from 1000 for 200s\n");
    ret += check_rsmap(*cr, 900, "gpu0", 0);
@@ -442,9 +450,9 @@ static int test_rsmap_utilization() {
    ret += check_rsmap(*cr, 1200, "gpu0", 0);
 
    // a job inside that window takes one of gpu1, which has to leave gpu0 alone
-   lList *one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
+   auto one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
    utilization_add(*cr, 1050, 100, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, one_of_gpu1);
+                   no_binding, one_of_gpu1);
 
    printf("a job taking gpu1 once, from 1050 for 100s\n");
    ret += check_rsmap(*cr, 1000, "gpu1", 0);
@@ -454,9 +462,9 @@ static int test_rsmap_utilization() {
    ret += check_rsmap(*cr, 1100, "gpu0", 2);
 
    // a second booking of gpu0 inside the same window adds up
-   lList *one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
+   auto one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
    utilization_add(*cr, 1100, 50, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, one_of_gpu0);
+                   no_binding, one_of_gpu0);
 
    printf("a job taking gpu0 once more, from 1100 for 50s\n");
    ret += check_rsmap(*cr, 1050, "gpu0", 2);
@@ -466,7 +474,7 @@ static int test_rsmap_utilization() {
 
    // and withdrawing it leaves what the others hold
    utilization_add(*cr, 1100, 50, -1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, one_of_gpu0);
+                   no_binding, one_of_gpu0);
 
    printf("that job is withdrawn again\n");
    ret += check_rsmap(*cr, 1100, "gpu0", 2);
@@ -574,7 +582,7 @@ static int test_rsmap_utilization() {
       auto global_cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
       ocs::tom::set<RUE_name>(global_cr, "gpu");
       utilization_add(*global_cr, 1000, 100, 1, 200, 1, GLOBAL_TAG, "global", "STARTING", false,
-                      false, nullptr, one_of_gpu1);
+                      false, no_binding, one_of_gpu1);
 
       auto taken = utilization_rsmap_max(*global_cr, 1000, 1000, 100);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu1");
@@ -589,7 +597,7 @@ static int test_rsmap_utilization() {
       auto queue_cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
       ocs::tom::set<RUE_name>(queue_cr, "gpu");
       utilization_add(*queue_cr, 1000, 100, 1, 201, 1, QUEUE_TAG, "a.q", "STARTING", false,
-                      false, nullptr, one_of_gpu1);
+                      false, no_binding, one_of_gpu1);
 
       taken = utilization_rsmap_max(*queue_cr, 1000, 1000, 100);
       if (lGetNumberOfElem(taken.get()) != 0) {
@@ -600,9 +608,9 @@ static int test_rsmap_utilization() {
       }
    }
 
-   lFreeList(&two_of_gpu0);
-   lFreeList(&one_of_gpu1);
-   lFreeList(&one_of_gpu0);
+   two_of_gpu0.reset();
+   one_of_gpu1.reset();
+   one_of_gpu0.reset();
    cr.reset();
 
    if (ret == 0) {
@@ -668,12 +676,12 @@ static int test_rsmap_below() {
 
    // one share of each card held to 1000 and 2000. Two shares in total are free the whole
    // time, but never two of one card until the first is given back.
-   lList *one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
-   lList *one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
+   auto one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
+   auto one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
    utilization_add(*cr, 0, 1000, 1, 100, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, one_of_gpu0);
+                   no_binding, one_of_gpu0);
    utilization_add(*cr, 0, 2000, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, one_of_gpu1);
+                   no_binding, one_of_gpu1);
 
    ret += check_below(def, *cr, "id", 1, DISPATCH_TIME_NOW,
                       "one share is free on both cards now");
@@ -694,13 +702,13 @@ static int test_rsmap_below() {
    // The gap at 1000 fits a whole card but does not last, so the answer is gpu0 at 2500.
    auto gap = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(gap, "gpu");
-   lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
+   auto two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
    utilization_add(*gap, 0, 1000, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, one_of_gpu0);
+                   no_binding, one_of_gpu0);
    utilization_add(*gap, 1500, 1000, 2, 103, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, two_of_gpu0);
+                   no_binding, two_of_gpu0);
    utilization_add(*gap, 0, 3000, 1, 104, 1, HOST_TAG, "node01", "STARTING", false, false,
-                   nullptr, one_of_gpu1);
+                   no_binding, one_of_gpu1);
 
    ret += check_below(def, *gap, "id", 2, 2500,
                       "the gap at 1000 closes again, so gpu0 answers at 2500 instead");
@@ -709,27 +717,27 @@ static int test_rsmap_below() {
    // is free throughout still answers
    auto full = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(full, "gpu");
-   lList *both_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
+   auto both_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
    utilization_add(*full, 0, std::numeric_limits<uint64_t>::max(), 2, 105, 1, HOST_TAG, "node01", "STARTING", false,
-                   false, nullptr, both_of_gpu0);
+                   false, no_binding, both_of_gpu0);
 
    ret += check_below(def, *full, "id", 2, DISPATCH_TIME_NOW,
                       "gpu0 never comes free, gpu1 is untouched and answers now");
 
-   lList *both_cards = make_rsmap("gpu0", 2, "gpu1", 2, nullptr);
+   auto both_cards = make_rsmap("gpu0", 2, "gpu1", 2, nullptr);
    auto all_full = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(all_full, "gpu");
    utilization_add(*all_full, 0, std::numeric_limits<uint64_t>::max(), 4, 104, 1, HOST_TAG, "node01", "STARTING", false,
-                   false, nullptr, both_cards);
+                   false, no_binding, both_cards);
 
    ret += check_below(def, *all_full, "id", 2, std::numeric_limits<uint64_t>::max(),
                       "when no card ever comes free there is nothing to reserve");
 
-   lFreeList(&one_of_gpu0);
-   lFreeList(&one_of_gpu1);
-   lFreeList(&two_of_gpu0);
-   lFreeList(&both_of_gpu0);
-   lFreeList(&both_cards);
+   one_of_gpu0.reset();
+   one_of_gpu1.reset();
+   two_of_gpu0.reset();
+   both_of_gpu0.reset();
+   both_cards.reset();
    cr.reset();
    gap.reset();
    full.reset();

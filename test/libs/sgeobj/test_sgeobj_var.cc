@@ -34,13 +34,13 @@
 
 /**
  * @brief Return the VA_variable string of the n-th element, or "" if absent.
- * @param[in] lp list to inspect (may be nullptr)
+ * @param[in] lp list to inspect (may be empty)
  * @param[in] n  zero-based element index
  * @return the element's VA_variable, or "" when missing
  */
 static const char *
-nth_var(lList *lp, int n) {
-   const lListElem *ep = lFirst(lp);
+nth_var(const ocs::tom::ConstList<ocs::tom::VA> lp, const int n) {
+   ocs::tom::ConstElement<ocs::tom::VA> ep = lFirst(lp);
    for (int i = 0; i < n && ep != nullptr; ++i) {
       ep = lNext(ep);
    }
@@ -51,7 +51,7 @@ nth_var(lList *lp, int n) {
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Regression tests for var_list_parse_from_string() [T01–T10].
+ * @brief Regression tests for var_list_parse_from_string() [T01–T09].
  *
  * var_list_parse_from_string() parses an attacker-controlled comma-separated
  * variable list (qsub/qalter -v/-V/-ac/-dc, JSV job context) into a VA_Type
@@ -70,78 +70,65 @@ static void
 test_var_list_parse() {
    // T01: a well-formed name=value pair parses successfully.
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "FOO=bar", 0);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "FOO=bar", 0);
       CHECK(1, "valid FOO=bar accepted", ret == 0 && strcmp(nth_var(lp, 0), "FOO") == 0);
-      lFreeList(&lp);
    }
 
    // T02: RED->GREEN. An all-delimiter token ("==") must be rejected with an
    //      error, not asserted/dereferenced. Unpatched code aborts/segfaults here.
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "==", 0);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "==", 0);
       CHECK(2, "all-delimiter token \"==\" rejected (no crash)", ret != 0);
-      lFreeList(&lp);
    }
 
    // T03: a single '=' is likewise an empty name -> rejected.
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "=", 0);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "=", 0);
       CHECK(3, "single \"=\" rejected", ret != 0);
-      lFreeList(&lp);
    }
 
    // T04: a valid name with no value parses (value taken as none here).
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "FOO", 0);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "FOO", 0);
       CHECK(4, "valid name without value accepted",
             ret == 0 && strcmp(nth_var(lp, 0), "FOO") == 0);
-      lFreeList(&lp);
    }
 
    // T05: a malformed token *after* a valid one is still caught (mid-list).
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "FOO=bar,==", 0);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "FOO=bar,==", 0);
       CHECK(5, "malformed token mid-list rejected", ret != 0);
-      lFreeList(&lp);
    }
 
    // T06: a malformed token *before* a valid one is caught on the first token.
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "==,FOO=bar", 0);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "==,FOO=bar", 0);
       CHECK(6, "malformed leading token rejected", ret != 0);
-      lFreeList(&lp);
    }
 
    // T07/T08: multiple valid tokens produce one element each, in order.
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "A=1,B=2", 0);
-      CHECK(7, "two valid tokens accepted", ret == 0 && lGetNumberOfElem(lp) == 2);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "A=1,B=2", 0);
+      CHECK(7, "two valid tokens accepted", ret == 0 && lGetNumberOfElem(*lp) == 2);
       CHECK(8, "elements kept in order",
             strcmp(nth_var(lp, 0), "A") == 0 && strcmp(nth_var(lp, 1), "B") == 0);
-      lFreeList(&lp);
    }
 
    // T09: empty value after '=' is valid (name present, value empty).
    {
-      lList *lp = nullptr;
-      int ret = var_list_parse_from_string(&lp, "FOO=", 0);
+      ocs::tom::ListPtr<ocs::tom::VA> lp;
+      int ret = var_list_parse_from_string(lp, "FOO=", 0);
       CHECK(9, "name with empty value accepted",
             ret == 0 && strcmp(nth_var(lp, 0), "FOO") == 0);
-      lFreeList(&lp);
    }
 
-   // T10: a nullptr list pointer is rejected without crashing.
-   {
-      int ret = var_list_parse_from_string(nullptr, "A=1", 0);
-      CHECK(10, "nullptr lpp rejected", ret != 0);
-   }
 }
 
 // ---------------------------------------------------------------------------
@@ -163,10 +150,9 @@ int main(int argc, char *argv[]) {
         "parse the tokens \"==\" and \"=\"",
         "parse a name without a value and a name with an empty value",
         "parse a list with a malformed token in the middle and one with a malformed first token",
-        "parse a list of two valid tokens",
-        "pass nullptr as the list pointer"},
-       "every valid list is accepted with its elements in order, every malformed token and the "
-       "nullptr list pointer are rejected, nothing aborts",
-       {}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, test_var_list_parse},
+        "parse a list of two valid tokens"},
+       "every valid list is accepted with its elements in order, every malformed token is rejected, "
+       "nothing aborts",
+       {}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, test_var_list_parse},
    });
 }

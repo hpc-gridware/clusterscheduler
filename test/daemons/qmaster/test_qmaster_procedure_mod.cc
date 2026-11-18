@@ -181,15 +181,14 @@ public:
  */
 static bool
 add_calendar(const char *name, const char *week) {
-   lList *lp = nullptr;
-   ocs::tom::Element<ocs::tom::CAL> ep = ocs::tom::emplace_back<CAL_name>(&lp, name);
+   auto lp = ocs::tom::ListPtr<ocs::tom::CAL>::create("calendars");
+   ocs::tom::Element<ocs::tom::CAL> ep = lp->emplace_back<CAL_name>(name);
    ocs::tom::set<CAL_week_calendar>(ep, week);
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::ADD,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+                                        ocs::gdi::SubCommand::NONE, lp);
    const bool ok = !answer_list_has_error(&alp);
    alp.reset();
-   lFreeList(&lp);
    return ok;
 }
 
@@ -199,14 +198,13 @@ add_calendar(const char *name, const char *week) {
  */
 static bool
 del_calendar(const char *name) {
-   lList *lp = nullptr;
-   ocs::tom::emplace_back<CAL_name>(&lp, name);
+   auto lp = ocs::tom::ListPtr<ocs::tom::CAL>::create("calendars");
+   lp->emplace_back<CAL_name>(name);
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::DEL,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+                                        ocs::gdi::SubCommand::NONE, lp);
    const bool ok = !answer_list_has_error(&alp);
    alp.reset();
-   lFreeList(&lp);
    return ok;
 }
 
@@ -216,21 +214,18 @@ del_calendar(const char *name) {
  */
 static std::string
 get_week_calendar(const char *name) {
-   lList *lp = nullptr;
-   lCondition *where = lWhere("%T(%I==%s)", CAL_Type, CAL_name, name);
-   lEnumeration *what = lWhat("%T(ALL)", CAL_Type);
+   ocs::tom::ListPtr<ocs::tom::CAL> lp;
+   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", CAL_Type, CAL_name, name));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
+                                        ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::CAL>());
    alp.reset();
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
-   ocs::tom::ConstElement<ocs::tom::CAL> found = ocs::tom::find_first<CAL_name>(lp, name);
+   ocs::tom::ConstElement<ocs::tom::CAL> found = ocs::tom::find_first<CAL_name>(*lp, name);
    const char *value = (found != nullptr) ? ocs::tom::get<CAL_week_calendar>(found) : nullptr;
    std::string result = (value != nullptr) ? value : "";
-   lFreeList(&lp);
+   lp.reset();
    return result;
 }
 
