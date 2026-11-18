@@ -593,24 +593,36 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       }
    } else if (task->target == ocs::gdi::Target::SGE_JB_LIST) {
       lListElem *next;
+      const bool return_new_version = (sub_command & ocs::gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION) ? true : false;
 
-      next = lFirstRW(task->data_list);
+      /* With SGE_GDI_RETURN_NEW_VERSION sge_gdi_add_job() appends a copy of every added job to task->data_list,
+       * which goes back to the client. The requests are taken out of task->data_list before the loop, so that
+       * the copies are neither walked by the loop as further submissions nor mixed with the requests
+       * (CS-3161), and freed after it. */
+      lList *requests = task->data_list;
+      if (return_new_version) {
+         task->data_list = nullptr;
+      }
+
+      next = lFirstRW(requests);
       while ((ep = next) != nullptr) { /* is thread save. the global lock is used, when needed */
          next = lNextRW(ep);
 
-         lDechainElem(task->data_list, ep);
+         lDechainElem(requests, ep);
 
          /* fill address infos from request into event client that must be added */
          if (!job_verify_submitted_job(ep, &(task->answer_list))) {
             ERROR(MSG_QMASTER_INVALIDJOBSUBMISSION_SSS, packet->user, packet->commproc, packet->host);
          } else {
             /* submit needs to know user and group */
-            sge_gdi_add_job(&ep, &(task->answer_list),
-                            (sub_command & ocs::gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION) ?
-                            &(task->data_list) : nullptr,
+            sge_gdi_add_job(&ep, &(task->answer_list), return_new_version ? &(task->data_list) : nullptr,
                             packet, task, monitor);
          }
-         lInsertElem(task->data_list, nullptr, ep);
+         lInsertElem(requests, nullptr, ep);
+      }
+
+      if (return_new_version) {
+         lFreeList(&requests);
       }
    } else if (task->target == ocs::gdi::Target::SGE_SC_LIST) {
       lListElem *next;
