@@ -217,6 +217,7 @@ static int qstat_xml_zombie_jobs_finished(qstat_handler_t *handler, lList **alpp
 
 static int qstat_xml_started(qstat_handler_t* handler, lList** alpp);
 static int qstat_xml_finished(qstat_handler_t* handler, lList** alpp);
+static int qstat_xml_handler_destroy(qstat_handler_t *handler);
 
 static int qstat_xml_dummy_started(job_handler_t* handler, lList** alpp);
 static int qstat_xml_dummy_with_int_started(job_handler_t* handler, int some_value, lList** alpp);
@@ -329,6 +330,7 @@ int qstat_xml_handler_init(qstat_handler_t* handler, lList **alpp) {
    
    handler->report_finished = qstat_xml_finished; 
    handler->report_started = qstat_xml_started;
+   handler->destroy = qstat_xml_handler_destroy;
 error:
    DRETURN(ret);
 }
@@ -373,6 +375,34 @@ static int qstat_xml_finished(qstat_handler_t* handler, lList** alpp) {
    /*lWriteListTo(XML_out, stdout);*/
    lWriteElemXMLTo(xml_elem, stdout, -1);
    lFreeElem(&xml_elem);
+
+   DRETURN(0);
+}
+
+/**
+ * @brief Free the XML context of a qstat handler.
+ *
+ * Frees the context created by qstat_xml_handler_init() and the XML elements it still owns:
+ * an element is handed on to its parent list and its pointer in the context is reset to
+ * nullptr, so only the elements of an incomplete output are freed here.
+ *
+ * @param handler qstat handler carrying the XML context
+ * @return 0
+ */
+static int qstat_xml_handler_destroy(qstat_handler_t *handler) {
+   DENTER(TOP_LAYER);
+
+   auto *ctx = static_cast<qstat_xml_ctx_t *>(handler->ctx);
+   if (ctx != nullptr) {
+      lFreeElem(&ctx->queue_list_elem);
+      lFreeElem(&ctx->queue_elem);
+      lFreeElem(&ctx->job_list_elem);
+      lFreeList(&ctx->job_list);
+      lFreeElem(&ctx->job_elem);
+      sge_free(&ctx);
+      handler->ctx = nullptr;
+      handler->job_handler.ctx = nullptr;
+   }
 
    DRETURN(0);
 }

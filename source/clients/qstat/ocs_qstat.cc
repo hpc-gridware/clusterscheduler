@@ -2244,7 +2244,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
          elem2 = lNextRW(elem1);
 
          if (ocs::is_pattern(lGetString(elem1, ST_name))) {
-            lDechainElem(jid_list, elem1);
+            lRemoveElem(jid_list, &elem1);
             removed_pattern = true;
          }
       }
