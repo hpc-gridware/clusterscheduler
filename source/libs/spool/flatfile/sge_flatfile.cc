@@ -87,6 +87,7 @@
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
 #include "spool/flatfile/ocs_spool_json.h"   /* CS-2313a: SP_FORM_JSON delegate */
+#include "spool/flatfile/ocs_spool_fields.h"
 #include "spool/flatfile/msg_spoollib_flatfile.h"
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
 #include "spool/flatfile/sge_flatfile.h"
@@ -672,6 +673,109 @@ _spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lD
 
 static spooling_field *get_recursion_field_list (const spool_flatfile_instr *instr);
 
+/* The type dependent parts of the walkers below. A row generated from a typed
+ * field table carries the typed code of its field (ocs_spool_fields.h); a row
+ * built from a descriptor - spool_get_fields_to_spool(), the recursion list of
+ * the share tree and the JSON share tree list - has none and is handled by
+ * field number, as before. These are called per field, so they have no
+ * DENTER, as the field callbacks have none. */
+
+/**
+ * @brief Whether the field of a row is a list
+ * @param field the row
+ * @param descr the descriptor of the element the row is applied to
+ * @param pos the position of the row's field in @p descr
+ * @return true for a list field
+ */
+static bool
+ocs_spool_row_is_list(const spooling_field &field, const lDescr *descr, const int pos) {
+   if (field.ops != nullptr) {
+      return field.ops->type == ocs::tom::FieldType::List;
+   }
+   return mt_get_type(descr[pos].mt) == lListT;
+}
+
+/**
+ * @brief Whether the field of a row is an unsigned 32 bit number
+ * @param field the row
+ * @param descr the descriptor of the element the row is applied to
+ * @param pos the position of the row's field in @p descr
+ * @return true for an unsigned 32 bit field
+ */
+static bool
+ocs_spool_row_is_uint32(const spooling_field &field, const lDescr *descr, const int pos) {
+   if (field.ops != nullptr) {
+      return field.ops->type == ocs::tom::FieldType::Uint32;
+   }
+   return mt_get_type(descr[pos].mt) == lUlongT;
+}
+
+/**
+ * @brief Append the value of a row's field that is no list
+ *
+ * A typed row formats the value by the field's type; a row without typed code,
+ * a list field and an element that lacks the field go through
+ * object_append_field_to_dstring(), which writes the old message for the last.
+ *
+ * @param field the row
+ * @param object the element
+ * @param answer_list receives the messages
+ * @param buffer receives the value, appended
+ * @return the buffer's text, or nullptr if nothing could be rendered
+ */
+static const char *
+ocs_spool_row_append(const spooling_field &field, const lListElem *object,
+                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
+   if (field.ops != nullptr && field.ops->append != nullptr &&
+       lGetPosInDescr(lGetElemDescr(object), field.nm) >= 0) {
+      return field.ops->append(object, answer_list, buffer);
+   }
+   return object_append_field_to_dstring(object, answer_list, buffer, field.nm, '\0');
+}
+
+/**
+ * @brief The list of a row's list field
+ * @param field the row, of a list field
+ * @param object the element, holding the field
+ * @return the list, nullptr if unset
+ */
+static const lList *
+ocs_spool_row_get_list(const spooling_field &field, const lListElem *object) {
+   if (field.ops != nullptr && field.ops->get_list != nullptr) {
+      return field.ops->get_list(object);
+   }
+   return lGetList(object, field.nm);
+}
+
+/**
+ * @brief The descriptor of the elements of a row's list field
+ * @param field the row, of a list field
+ * @return the descriptor, nullptr if the field has no sub-type
+ */
+static const lDescr *
+ocs_spool_row_sub_descr(const spooling_field &field) {
+   if (field.ops != nullptr) {
+      return field.ops->sub_descr;
+   }
+   return object_get_subtype(field.nm);
+}
+
+/**
+ * @brief Store a list read for a row's list field
+ * @param field the row, of a list field with a sub-type
+ * @param object the element, holding the field
+ * @param pos the position of the field in the element's descriptor
+ * @param list the list, of the field's sub-type, or nullptr; taken over
+ */
+static void
+ocs_spool_row_set_list(const spooling_field &field, lListElem *object, const int pos, lList *list) {
+   if (field.ops != nullptr && field.ops->set_list != nullptr) {
+      field.ops->set_list(object, list);
+   } else {
+      lSetPosList(object, pos, list);
+   }
+}
+
 /**
  * @brief Align object output
  *
@@ -742,8 +846,7 @@ bool spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
          const char *value;
          
          sge_dstring_clear(&buffer);
-         value = object_append_field_to_dstring(object, answer_list, 
-                                                &buffer, fields[i].nm, '\0');
+         value = ocs_spool_row_append(fields[i], object, answer_list, &buffer);
          fields[i].width = std::max(static_cast<size_t>(fields[i].width), sge_strlen(value) + padding);
       }
    }
@@ -1387,6 +1490,25 @@ spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const vo
    DRETURN(result);
 }
 
+/**
+ * @brief Write the fields of one object
+ *
+ * Walks the rows of @p fields; the type dependent parts - list or value, the
+ * value's format, the list of a list field - come from the typed code of a
+ * row (see ocs_spool_row_is_list() and its siblings). A field the element
+ * lacks is skipped with a warning.
+ *
+ * @param answer_list receives the messages
+ * @param object the object to write
+ * @param buffer receives the text, appended
+ * @param instr the layout
+ * @param fields the rows to write, terminated by a `NoName` row
+ * @param recurse the share tree's second pass: every field is preceded by a
+ *                field delimiter, also the first
+ * @param root the object is the root of a share tree, so the field
+ *             #recursion_info::supress_field is written
+ * @return true; false if a pointer argument is nullptr
+ */
 static bool
 spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                    dstring *buffer,
@@ -1486,7 +1608,7 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
              && !show_empty_fields) {
             continue;
          }
-      } else if (mt_get_type(descr[pos].mt) == lListT) {
+      } else if (ocs_spool_row_is_list(fields[i], descr, pos)) {
          const spool_flatfile_instr *sub_instr = nullptr;
          const bool recurse_field = (instr->recursion_info.recursion_field
                                        == nm) ? true : false;
@@ -1516,7 +1638,7 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                continue;
             }
          } else {
-            const lList *sub_list = lGetList(object, nm);      
+            const lList *sub_list = ocs_spool_row_get_list(fields[i], object);
 
             /* Bugfix: Issuezilla #1137
              * If a list field has no name and no value, it should be ignored
@@ -1541,9 +1663,7 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       } else {
          dstring tmp_buffer = DSTRING_INIT;
 
-         value = object_append_field_to_dstring(object, answer_list, 
-                                                &tmp_buffer, fields[i].nm, 
-                                                '\0');
+         value = ocs_spool_row_append(fields[i], object, answer_list, &tmp_buffer);
          if (!show_empty_fields && !strcasecmp(value, NONE_STR)) {
             sge_dstring_free(&tmp_buffer);
             continue;
@@ -1964,6 +2084,26 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
    return object;
 }
 
+/**
+ * @brief Read the fields of one object from the current scanner input into an element
+ *
+ * Creates the element when @p object points at nullptr. The type dependent
+ * parts - list or value, the check of an unsigned value, the sub-type of a
+ * list and storing it - come from the typed code of a row (see
+ * ocs_spool_row_is_list() and its siblings); a value is converted by
+ * object_parse_field_from_string() or the row's read callback.
+ *
+ * @param answer_list receives the messages
+ * @param object the element to fill; created when it points at nullptr
+ * @param descr the descriptor of the element
+ * @param root the root of a share tree while its children are read, else nullptr
+ * @param instr the layout
+ * @param fields the rows that may occur, terminated by a `NoName` row
+ * @param fields_out receives the fields read, nullptr if not needed
+ * @param token the current scanner token, advanced while reading
+ * @param end_token characters ending the object, nullptr for none
+ * @param parse_values whether to parse the attribute values
+ */
 static void
 _spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **object,
                                  const lDescr *descr, lListElem *root,
@@ -1982,7 +2122,8 @@ FF_DEBUG("reading object");
 
    while (*token != 0 && !stop) {
       int nm = NoName;
-      int pos, type;
+      int pos;
+      bool is_list;
       bool field_end  = false;
       bool record_end = false;
       bool field_has_name = false;
@@ -2146,10 +2287,10 @@ FF_DEBUG(lNm2Str(nm));
          }
       }
 
-      type = mt_get_type(descr[pos].mt);
-      
+      is_list = ocs_spool_row_is_list(fields[field_index], descr, pos);
+
       /* now read the data */
-      if ((type != lListT) || (fields[field_index].read_func != nullptr)) {
+      if (!is_list || (fields[field_index].read_func != nullptr)) {
          bool found_value = false;
          /* Depth of unmatched '[' seen so far in the current value.
           * When > 0 we are inside a bracketed sub-block and must NOT stop
@@ -2229,7 +2370,7 @@ FF_DEBUG("detected end_token");
          
          if (fields[field_index].read_func == nullptr) {
                         
-            if(type == lUlongT) {            
+            if (ocs_spool_row_is_uint32(fields[field_index], descr, pos)) {
                char *end_ptr = nullptr;
                double dbl_value;
                
@@ -2256,7 +2397,7 @@ FF_DEBUG("detected end_token");
                continue;
             }
          }
-      } else { /* if (type == lListT) */
+      } else { /* a list */
          lList *list;
          const lDescr *sub_descr;
 
@@ -2294,7 +2435,7 @@ FF_DEBUG("empty list");
             }
 
             /* get / check type of sublist */
-            sub_descr = object_get_subtype(nm);
+            sub_descr = ocs_spool_row_sub_descr(fields[field_index]);
             if (sub_descr == nullptr)  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
@@ -2320,7 +2461,7 @@ FF_DEBUG("empty list");
                                                 new_end_token, parse_values,
                                                 fields[field_index].name);
             
-               lSetPosList(*object, pos, list);
+               ocs_spool_row_set_list(fields[field_index], *object, pos, list);
                
                if (instr->recursion_info.recursion_field == nm) {
                   lListElem *rep = root;

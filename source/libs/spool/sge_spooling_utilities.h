@@ -89,11 +89,16 @@ extern const spool_instr_t spool_user_instr;        ///< Users and projects: #CU
 extern const spool_instr_t spool_userprj_subinstr;  ///< Sublists of a user or project - it names *itself* as its own `sub_instr`, so nesting to any depth uses the same selection
 /** @} */
 
+struct ocs_spool_field_ops;
+
 /** @brief One attribute to spool, as the backends see it
  *
  * #spool_get_fields_to_spool returns these as an array terminated by an entry
  * with `nm == NoName`. The `free_*` flags say which pointers that array owns,
  * so that #spool_free_spooling_fields can release exactly those.
+ *
+ * The flatfile field tables are typed (spool/flatfile/ocs_spool_fields.h); the
+ * arrays generated from them carry the typed code of each field in `ops`.
  */
 typedef struct spooling_field {
    int nm;                    ///< The cull attribute number, `NoName` in the terminating entry
@@ -107,6 +112,8 @@ typedef struct spooling_field {
    int (*read_func) (lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
    int (*write_func) (const lListElem *ep, int nm, dstring *buffer,
                       ocs::tom::ListPtr<ocs::tom::AN> *alp);   ///< Backend hook rendering this attribute into `buffer`
+   /// The typed code of the field, from a typed field table; nullptr for an entry built from a descriptor
+   const ocs_spool_field_ops *ops;
 } spooling_field;
 
 spooling_field *

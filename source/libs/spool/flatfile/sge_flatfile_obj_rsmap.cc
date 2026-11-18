@@ -223,14 +223,16 @@ parse_id_characteristics(const char *token, std::string &id_out, ocs::tom::ListP
 /**
  * @brief parse an entry of complex_values
  *
- * @param ep        CE_Type element which will store the complex_value
- * @param nm        attribute to fill in, always CE_stringval (the field table's), so it is not read
+ * The field reader of CE_stringval in the host level complex values.
+ *
+ * @param centry    the complex entry which will store the complex_value
  * @param buf       string buffer with the complex value
  * @param alpp      for returning errors
- * @return          1 in case of success, else 0
+ * @return          true in case of success, else false
  */
-int
-read_CE_stringval_host(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
+bool
+read_CE_stringval_host(const ocs::tom::Element<ocs::tom::CE> centry, const char *buf,
+                       ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
@@ -258,8 +260,6 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr
     * between id-specs (outside brackets) and removes the line-continuation
     * residue (inside brackets) before the strtok-based tokenizer runs.
     */
-   // the field reader of CE_stringval gets a complex entry; its type is checked here, as the first read did
-   const auto centry = ocs::tom::Element<ocs::tom::CE>(ep);
    const char *rsmap_name = centry.get<CE_name>();
    std::string cleaned;
    cleaned.reserve(strlen(buf));
@@ -284,7 +284,7 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr
    struct saved_vars_s *context = nullptr;
    char *token;
    if ((token = sge_strtok_r(&cleaned[0], " (", &context))) {
-      // first token is the amount; the field table passes CE_stringval as nm, the writer reads it the same way
+      // first token is the amount
       centry.set<CE_stringval>(token);
       uint32_t amount = SGE_STRTOU_LONG32(token);
 
@@ -362,7 +362,7 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr
    }
 
    sge_free_saved_vars(context);
-   DRETURN(ret);
+   DRETURN(ret == 1);
 }
 
 static void
@@ -397,20 +397,19 @@ store_range(std::string &str_out, long &range_start, long &range_last, uint32_t 
 /**
  * @brief write an entry of complex_values
  *
- * @param ep        CE_Type element representing a complex_value
- * @param nm        attribute to read from (CE_stringval)
+ * The field writer of CE_stringval in the host level complex values.
+ *
+ * @param centry    the complex entry representing a complex_value
  * @param buffer    string buffer we fill in with the data
- * @param alp       for returning errors
- * @return          1 in case of success, else 0
+ * @param alp       for returning errors, unused
+ * @return          true
  */
-int
-write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+bool
+write_CE_stringval_host(const ocs::tom::ConstElement<ocs::tom::CE> centry, dstring *buffer,
+                        [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
    std::string str_out{};
-
-   // the field writer of CE_stringval gets a complex entry; its type is checked here, as the first read did
-   const auto centry = ocs::tom::ConstElement<ocs::tom::CE>(ep);
 
    // add the value of the complex_value to the output buffer
    const char *str_value = centry.get<CE_stringval>();
@@ -530,6 +529,6 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, ocs::tom::
       }
    }
 
-   DRETURN(1);
+   DRETURN(true);
 }
 

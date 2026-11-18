@@ -47,28 +47,30 @@
 /** @name Object types whose field list never varies
  *
  * Each is a #spooling_field array terminated by a `NoName` entry, ready to
- * pass to #spool_flatfile_write_object or #spool_flatfile_read_object.
+ * pass to #spool_flatfile_write_object or #spool_flatfile_read_object. The
+ * arrays are generated from the typed field tables in sge_flatfile_obj.cc
+ * (see ocs_spool_fields.h); they are mutable because callers align them in
+ * place.
  * @{
  */
-extern spooling_field CAL_fields[];    ///< Calendar
-extern spooling_field CAT_fields[];    ///< Job category - the fields are `CT_*`, only the array is named `CAT_`
-extern spooling_field CK_fields[];     ///< Checkpointing environment
-extern spooling_field CE_fields[];     ///< Complex entry
-extern spooling_field HGRP_fields[];   ///< Host group
-extern spooling_field US_fields[];     ///< User set
-extern spooling_field SC_fields[];     ///< Scheduler configuration
-extern spooling_field CQ_fields[];     ///< Cluster queue
-extern spooling_field CU_fields[];     ///< @warning Declared here, defined nowhere and used nowhere in either repository
-extern spooling_field AR_fields[];     ///< Advance reservation
-extern spooling_field PE_fields[];     ///< Parallel environment
-extern spooling_field RL_fields[];     ///< RBAC role
-extern spooling_field RQS_fields[];    ///< Resource quota set
+extern spooling_field *const CAL_fields;    ///< Calendar
+extern spooling_field *const CAT_fields;    ///< Job category - the fields are `CT_*`, only the array is named `CAT_`
+extern spooling_field *const CK_fields;     ///< Checkpointing environment
+extern spooling_field *const CE_fields;     ///< Complex entry
+extern spooling_field *const HGRP_fields;   ///< Host group
+extern spooling_field *const US_fields;     ///< User set
+extern spooling_field *const SC_fields;     ///< Scheduler configuration
+extern spooling_field *const CQ_fields;     ///< Cluster queue
+extern spooling_field *const AR_fields;     ///< Advance reservation
+extern spooling_field *const PE_fields;     ///< Parallel environment
+extern spooling_field *const RL_fields;     ///< RBAC role
+extern spooling_field *const RQS_fields;    ///< Resource quota set
 /** @} */
 
 /** @name Object types whose field list depends on the caller
  *
- * These build a #spooling_field array on the heap, which the caller frees
- * with #spool_free_spooling_fields.
+ * These select the rows of a typed field table into a #spooling_field array
+ * on the heap, which the caller frees with #spool_free_spooling_fields.
  *
  * The recurring `spool` flag is the reason they exist: an object's spool file
  * and the text a user edits under `qconf -m*` are not the same set of

@@ -235,6 +235,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
       fields[i].clientdata = nullptr;
       fields[i].read_func = nullptr;
       fields[i].write_func = nullptr;
+      fields[i].ops = nullptr;
    }
 
    /* do we have to strip field prefixes, e.g. "QU_" from field names? */

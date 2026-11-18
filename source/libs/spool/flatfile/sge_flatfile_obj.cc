@@ -39,6 +39,7 @@
 #include <cstring>
 #include <strings.h>
 #include <cctype>
+#include <tuple>
 #include <utility>
 
 #include "uti/sge.h"
@@ -67,113 +68,118 @@
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_RQRF.h"
 #include "sgeobj/tom/ocs_tom_SC.h"
+#include "sgeobj/tom/ocs_tom_all.h"
 
+#include "spool/flatfile/ocs_spool_fields.h"
 #include "spool/flatfile/sge_flatfile.h"
+#include "spool/flatfile/sge_flatfile_obj.h"
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
 #include "spool/flatfile/msg_spoollib_flatfile.h"
 
 #include "msg_common.h"
 
-/* This file defines variables and functions that are used to create field
- * lists to pass to the flatfile spooling framework.  The reason that some
- * field lists are represented as structs and some are represented as
- * functions is that some field lists are always that same, while others
- * change depending on the context from which they're called. */
+/* This file defines the field tables of the flatfile spooling framework. Every
+ * table is a typed table (see ocs_spool_fields.h); the run-time arrays the
+ * framework and its callers take are generated from them. Some arrays are
+ * exported as they are, others are selected per call by a builder function,
+ * because the fields to spool change with the context the builder is called
+ * from. A builder selects the rows whose variant bits it sets. */
 
-/* read_func's and write_func's -- signature is defined in
- * sge_spooling_utilities.h:spooling_field. */
-static void create_spooling_field (
-   spooling_field *field,
-   int nm, 
-   int width, 
-   const char *name,
-   bool free_name,
-   struct spooling_field *sub_fields,
-   bool free_sub_fields,
-   const void *clientdata, 
-   int (*read_func) (lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp), 
-   int (*write_func) (const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp)
-);
-static int read_SC_queue_sort_method(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_SC_queue_sort_method(const lListElem *ep, int nm, dstring *buffer,
+static bool read_SC_queue_sort_method(ocs::tom::Element<ocs::tom::SC> sc, const char *buffer,
                                       ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CF_value(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-template <OcsHostAttr A>
-static int read_CQ_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-template <OcsHostAttr A>
-static int write_CQ_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CQ_hostlist(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
-                       ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
-                       ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static bool write_SC_queue_sort_method(ocs::tom::ConstElement<ocs::tom::SC> sc, dstring *buffer,
+                                       ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static bool read_CF_value(ocs::tom::Element<ocs::tom::CF> cf, const char *buf, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+template <auto F>
+static bool read_CQ_attr_list(ocs::tom::Element<ocs::tom::CQ> cq, const char *buffer,
+                              ocs::tom::ListPtr<ocs::tom::AN> *alp);
+template <auto F>
+static bool write_CQ_attr_list(ocs::tom::ConstElement<ocs::tom::CQ> cq, dstring *buffer,
+                               ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static bool read_CQ_hostlist(ocs::tom::Element<ocs::tom::CQ> cq, const char *buffer,
+                             ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static bool write_CQ_hostlist(ocs::tom::ConstElement<ocs::tom::CQ> cq, dstring *buffer,
+                              ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static bool write_CE_stringval(ocs::tom::ConstElement<ocs::tom::CE> centry, dstring *buffer,
+                               ocs::tom::ListPtr<ocs::tom::AN> *alp);
+template <auto F>
+static bool read_RQR_obj(ocs::tom::Element<ocs::tom::RQR> rule, const char *buffer,
+                         ocs::tom::ListPtr<ocs::tom::AN> *alp);
+template <auto F>
+static bool write_RQR_obj(ocs::tom::ConstElement<ocs::tom::RQR> rule, dstring *buffer,
+                          ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static bool read_SC_load_formula(ocs::tom::Element<ocs::tom::SC> sc, const char *buffer,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static bool write_EH_auto_added_time(ocs::tom::ConstElement<ocs::tom::EH> host, dstring *buffer,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
-static int read_SC_load_formula(lListElem *ep, int nm,
-                                     const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+/** @name The variant bits of the builders
+ *
+ * An entry of a table that a builder selects from names the bits it needs;
+ * the builder sets the bits its arguments ask for.
+ * @{
+ */
+static constexpr unsigned OCS_SPOOL_V_SPOOL = 1u << 0;      ///< the spool file layout, with the fields qmaster owns
+static constexpr unsigned OCS_SPOOL_V_RECURSE = 1u << 1;    ///< a share tree node with its id and its children
+static constexpr unsigned OCS_SPOOL_V_LOADS = 1u << 2;      ///< an execution host with its load values
+static constexpr unsigned OCS_SPOOL_V_MORE_INFO = 1u << 3;  ///< an execution host with its actual complex values
+static constexpr unsigned OCS_SPOOL_V_SHOW_MORE = 1u << 4;  ///< an execution host shown with the time it added itself
+static constexpr unsigned OCS_SPOOL_V_HOSTLIST = 1u << 5;   ///< a cluster queue with its host list
+static constexpr unsigned OCS_SPOOL_V_QU_SHOW = 1u << 6;    ///< a queue instance as `qconf -sq` shows it
+static constexpr unsigned OCS_SPOOL_V_QU_FILE = 1u << 7;    ///< a queue instance as it is spooled
+/** @} */
 
-/* Field lists for context-independent spooling of sub-lists */
-static spooling_field AMEM_sub_fields[] = {
-   {  AMEM_href,           0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  AMEM_value,          0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+/* *INDENT-OFF* */
+
+/* Field tables for context-independent spooling of sub-lists */
+static constexpr std::tuple ocs_spool_AMEM_sub{
+   OcsSpoolField<AMEM_href>{nullptr, 0},
+   OcsSpoolField<AMEM_value>{nullptr, 0},
 };
 
-static spooling_field ATIME_sub_fields[] = {
-   {  ATIME_href,          0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  ATIME_value,         0, nullptr,                false, nullptr,false,  nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ATIME_sub{
+   OcsSpoolField<ATIME_href>{nullptr, 0},
+   OcsSpoolField<ATIME_value>{nullptr, 0},
 };
 
-static spooling_field PR_sub_fields[] = {
-   {  PR_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_PR_sub{
+   OcsSpoolField<PR_name>{nullptr, 0},
 };
 
-static spooling_field APRJLIST_sub_fields[] = {
-   {  APRJLIST_href,       0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  APRJLIST_value,      0, nullptr,                false, PR_sub_fields, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_APRJLIST_sub{
+   OcsSpoolField<APRJLIST_href>{nullptr, 0},
+   OcsSpoolField<APRJLIST_value, ocs_spool_PR_sub>{nullptr, 0},
 };
 
-static spooling_field SO_sub_fields[] = {
-   {  SO_name,            11, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  SO_threshold,       11, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  SO_slots_sum,       11, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  SO_seq_no,          11, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  SO_action,          11, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             11, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_SO_sub{
+   OcsSpoolField<SO_name>{nullptr, 11},
+   OcsSpoolField<SO_threshold>{nullptr, 11},
+   OcsSpoolField<SO_slots_sum>{nullptr, 11},
+   OcsSpoolField<SO_seq_no>{nullptr, 11},
+   OcsSpoolField<SO_action>{nullptr, 11},
 };
 
-static spooling_field ASOLIST_sub_fields[] = {
-   {  ASOLIST_href,        0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  ASOLIST_value,       0, nullptr,                false, SO_sub_fields, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ASOLIST_sub{
+   OcsSpoolField<ASOLIST_href>{nullptr, 0},
+   OcsSpoolField<ASOLIST_value, ocs_spool_SO_sub>{nullptr, 0},
 };
 
-static spooling_field US_sub_fields[] = {
-   {  US_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_US_sub{
+   OcsSpoolField<US_name>{nullptr, 0},
 };
 
-static spooling_field AUSRLIST_sub_fields[] = {
-   {  AUSRLIST_href,       0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  AUSRLIST_value,      0, nullptr,                false, US_sub_fields, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_AUSRLIST_sub{
+   OcsSpoolField<AUSRLIST_href>{nullptr, 0},
+   OcsSpoolField<AUSRLIST_value, ocs_spool_US_sub>{nullptr, 0},
 };
 
-static spooling_field ABOOL_sub_fields[] = {
-   {  ABOOL_href,          0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  ABOOL_value,         0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ABOOL_sub{
+   OcsSpoolField<ABOOL_href>{nullptr, 0},
+   OcsSpoolField<ABOOL_value>{nullptr, 0},
 };
 
-static spooling_field ST_sub_fields[] = {
-   {  ST_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ST_sub{
+   OcsSpoolField<ST_name>{nullptr, 0},
 };
 
 #if 0
@@ -184,425 +190,578 @@ static spooling_field ST_sub_fields_binding[] = {
 };
 #endif
 
-static spooling_field ASTRLIST_sub_fields[] = {
-   {  ASTRLIST_href,       0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  ASTRLIST_value,      0, nullptr,                false, ST_sub_fields, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ASTRLIST_sub{
+   OcsSpoolField<ASTRLIST_href>{nullptr, 0},
+   OcsSpoolField<ASTRLIST_value, ocs_spool_ST_sub>{nullptr, 0},
 };
 
-static spooling_field AQTLIST_sub_fields[] = {
-   {  AQTLIST_href,        0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  AQTLIST_value,       0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_AQTLIST_sub{
+   OcsSpoolField<AQTLIST_href>{nullptr, 0},
+   OcsSpoolField<AQTLIST_value>{nullptr, 0},
 };
 
-static spooling_field ASTR_sub_fields[] = {
-   {  ASTR_href,           0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  ASTR_value,          0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ASTR_sub{
+   OcsSpoolField<ASTR_href>{nullptr, 0},
+   OcsSpoolField<ASTR_value>{nullptr, 0},
 };
 
-static spooling_field AINTER_sub_fields[] = {
-   {  AINTER_href,         0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  AINTER_value,        0, nullptr,                false, nullptr, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_AINTER_sub{
+   OcsSpoolField<AINTER_href>{nullptr, 0},
+   OcsSpoolField<AINTER_value>{nullptr, 0},
 };
 
-static spooling_field CE_sub_fields[] = {
-   {  CE_name,            11, "name",    false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_stringval,       11, "value",   false, nullptr, false, nullptr, nullptr, write_CE_stringval},
-   {  NoName,             11, nullptr,      false, nullptr,false,  nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_CE_sub{
+   OcsSpoolField<CE_name>{"name", 11},
+   OcsSpoolField<CE_stringval>{"value", 11, nullptr, nullptr, write_CE_stringval},
 };
 
 /* in order to distinguish between host level and queue level consumables */
-static spooling_field CE_host_sub_fields[] = {
-   {  CE_name,            11, "name",    false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_stringval,       11, "value",   false, nullptr, false, nullptr, read_CE_stringval_host, write_CE_stringval_host},
-   {  NoName,             11, nullptr,      false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_CE_host_sub{
+   OcsSpoolField<CE_name>{"name", 11},
+   OcsSpoolField<CE_stringval>{"value", 11, nullptr, read_CE_stringval_host, write_CE_stringval_host},
 };
 
-static spooling_field RUE_sub_fields[] = {
-   {  RUE_name,           11, nullptr,   false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RUE_utilized_now,   11, nullptr,   false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             11, nullptr,   false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_RUE_sub{
+   OcsSpoolField<RUE_name>{nullptr, 11},
+   OcsSpoolField<RUE_utilized_now>{nullptr, 11},
 };
 
-static spooling_field ACELIST_sub_fields[] = {
-   {  ACELIST_href,        0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  ACELIST_value,       0, nullptr, false, CE_sub_fields, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ACELIST_sub{
+   OcsSpoolField<ACELIST_href>{nullptr, 0},
+   OcsSpoolField<ACELIST_value, ocs_spool_CE_sub>{nullptr, 0},
 };
 
-static spooling_field AULNG_sub_fields[] = {
-   {  AULNG_href,          0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  AULNG_value,         0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_AULNG_sub{
+   OcsSpoolField<AULNG_href>{nullptr, 0},
+   OcsSpoolField<AULNG_value>{nullptr, 0},
 };
 
-static spooling_field CF_sub_fields[] = {
-   {  CF_name,             28, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CF_value,            28, nullptr, false, nullptr, false, nullptr, read_CF_value, nullptr},
-   {  NoName,              28, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_CF_sub{
+   OcsSpoolField<CF_name>{nullptr, 28},
+   OcsSpoolField<CF_value>{nullptr, 28, nullptr, read_CF_value},
 };
 
-static spooling_field STN_sub_fields[] = {
-   {  STN_id,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr,false,  nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_STN_sub{
+   OcsSpoolField<STN_id>{nullptr, 0},
 };
 
-static spooling_field HS_sub_fields[] = {
-   {  HS_name,             0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  HS_value,            0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_HS_sub{
+   OcsSpoolField<HS_name>{nullptr, 0},
+   OcsSpoolField<HS_value>{nullptr, 0},
 };
 
-static spooling_field RU_sub_fields[] = {
-   {  RU_job_number,         0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RU_task_number,        0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RU_state,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,                0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_RU_sub{
+   OcsSpoolField<RU_job_number>{nullptr, 0},
+   OcsSpoolField<RU_task_number>{nullptr, 0},
+   OcsSpoolField<RU_state>{nullptr, 0},
 };
 
-static spooling_field HL_sub_fields[] = {
-   {  HL_name,             0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  HL_value,            0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_HL_sub{
+   OcsSpoolField<HL_name>{nullptr, 0},
+   OcsSpoolField<HL_value>{nullptr, 0},
 };
 
-static spooling_field STU_sub_fields[] = {
-   {  STU_name,            0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_STU_sub{
+   OcsSpoolField<STU_name>{nullptr, 0},
 };
 
-static spooling_field UE_sub_fields[] = {
-   {  UE_name,             0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_UE_sub{
+   OcsSpoolField<UE_name>{nullptr, 0},
 };
 
 /* UA_svalue (string usage values, CS-849) is deliberately not listed here.
  * String usage values only ever occur in job accounting usage lists, which are
- * not spooled through this table. Every consumer of UA_sub_fields - the
+ * not spooled through this table. Every consumer of this table - the
  * scheduler config weight list and the sharetree usage lists, which are
  * filtered down to weight-list names by Usage::strip_irrelevant_usage() - is
  * numeric by construction, so an entry here would only ever emit NONE and read
  * that NONE back as a literal string value. */
-static spooling_field UA_sub_fields[] = {
-   {  UA_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  UA_value,            0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_UA_sub{
+   OcsSpoolField<UA_name>{nullptr, 0},
+   OcsSpoolField<UA_value>{nullptr, 0},
 };
 
-static spooling_field UPP_sub_fields[] = {
-   {  UPP_name,            0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  UPP_usage,           0, nullptr,                false, UA_sub_fields, false, nullptr, nullptr, nullptr},
-   {  UPP_long_term_usage, 0, nullptr,                false, UA_sub_fields, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_UPP_sub{
+   OcsSpoolField<UPP_name>{nullptr, 0},
+   OcsSpoolField<UPP_usage, ocs_spool_UA_sub>{nullptr, 0},
+   OcsSpoolField<UPP_long_term_usage, ocs_spool_UA_sub>{nullptr, 0},
 };
 
-static spooling_field UPU_sub_fields[] = {
-   {  UPU_job_number,      0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  UPU_old_usage_list,  0, nullptr,                false, UA_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_UPU_sub{
+   OcsSpoolField<UPU_job_number>{nullptr, 0},
+   OcsSpoolField<UPU_old_usage_list, ocs_spool_UA_sub>{nullptr, 0, &qconf_sub_name_value_comma_sfi},
 };
 
-static spooling_field HR_sub_fields[] = {
-   {  HR_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_HR_sub{
+   OcsSpoolField<HR_name>{nullptr, 0},
 };
 
-static spooling_field RQRL_sub_fields[] = {
-   {  RQRL_name,           0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RQRL_value,          0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_RQRL_sub{
+   OcsSpoolField<RQRL_name>{nullptr, 0},
+   OcsSpoolField<RQRL_value>{nullptr, 0},
 };
 
 /* CS-2313a: structural JSON shape of an RQS filter (RQRF). The ASCII path renders
  * these via write_RQR_obj/read_RQR_obj (the flat "{a,b,!c}" string and takes
  * precedence there); the JSON path instead recurses these sub_fields, emitting
  * { "expand": <bool>, "scope": [..], "xscope": [..] }. */
-static spooling_field RQRF_sub_fields[] = {
-   {  RQRF_expand,         0, "expand",            false, nullptr,       false, nullptr, nullptr, nullptr},
-   {  RQRF_scope,          0, "scope",             false, ST_sub_fields, false, nullptr, nullptr, nullptr},
-   {  RQRF_xscope,         0, "xscope",            false, ST_sub_fields, false, nullptr, nullptr, nullptr},
-   {  NoName,              0, nullptr,             false, nullptr,       false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_RQRF_sub{
+   OcsSpoolField<RQRF_expand>{"expand", 0},
+   OcsSpoolField<RQRF_scope, ocs_spool_ST_sub>{"scope", 0},
+   OcsSpoolField<RQRF_xscope, ocs_spool_ST_sub>{"xscope", 0},
 };
 
-static spooling_field RQR_sub_fields[] = {
-   {  RQR_name,            0, "name",              false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RQR_filter_users,    0, "users",             false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_projects, 0, "projects",          false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_pes,      0, "pes",               false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_queues,   0, "queues",            false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_hosts,    0, "hosts",             false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_limit,           0, "to",                false, RQRL_sub_fields,  false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_RQR_sub{
+   OcsSpoolField<RQR_name>{"name", 0},
+   OcsSpoolField<RQR_filter_users, ocs_spool_RQRF_sub>{"users", 0, nullptr, read_RQR_obj<RQR_filter_users>, write_RQR_obj<RQR_filter_users>},
+   OcsSpoolField<RQR_filter_projects, ocs_spool_RQRF_sub>{"projects", 0, nullptr, read_RQR_obj<RQR_filter_projects>, write_RQR_obj<RQR_filter_projects>},
+   OcsSpoolField<RQR_filter_pes, ocs_spool_RQRF_sub>{"pes", 0, nullptr, read_RQR_obj<RQR_filter_pes>, write_RQR_obj<RQR_filter_pes>},
+   OcsSpoolField<RQR_filter_queues, ocs_spool_RQRF_sub>{"queues", 0, nullptr, read_RQR_obj<RQR_filter_queues>, write_RQR_obj<RQR_filter_queues>},
+   OcsSpoolField<RQR_filter_hosts, ocs_spool_RQRF_sub>{"hosts", 0, nullptr, read_RQR_obj<RQR_filter_hosts>, write_RQR_obj<RQR_filter_hosts>},
+   OcsSpoolField<RQR_limit, ocs_spool_RQRL_sub>{"to", 0, &qconf_sub_name_value_comma_sfi},
 };
 
-/* Field lists for context-independent object spooling */
-spooling_field CE_fields[] = {
-   {  CE_name,            11, "name",          false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_shortcut,        11, "shortcut",      false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_valtype,         11, "type",          false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_relop,           11, "relop",         false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_requestable,     11, "requestable",   false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_consumable,      11, "consumable",    false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CE_defaultval,      11, "default",       false, nullptr,false,  nullptr, nullptr, nullptr},
-   {  CE_urgency_weight,  11, "urgency",      false,  nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             11, nullptr,            false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_RN_sub{
+   OcsSpoolField<RN_min>{nullptr, 0},
+   OcsSpoolField<RN_max>{nullptr, 0},
+   OcsSpoolField<RN_step>{nullptr, 0},
 };
 
-spooling_field CAT_fields[] = {
-   {  CT_id,           10, "id",                 false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CT_refcount,     10, "rcount",             false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CT_str,          10, "str",                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,           10, nullptr,              false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_QR_sub{
+   OcsSpoolField<QR_name>{nullptr, 0},
 };
 
-spooling_field CAL_fields[] = {
-   {  CAL_name,           16, "calendar_name", false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CAL_year_calendar,  16, "year",          false, nullptr, false, nullptr, nullptr, nullptr},
-   {  CAL_week_calendar,  16, "week",          false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             16, nullptr,            false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_JG_sub{
+   OcsSpoolField<JG_qname>{nullptr, 0},
+   OcsSpoolField<JG_slots>{nullptr, 0},
+// OcsSpoolField<JG_binding_to_use, ST_sub_fields_binding>{nullptr, 0, &qconf_sub_sub_name_value_comma_sfi},
 };
 
-spooling_field CK_fields[] = {
-   {  CK_name,            18, "ckpt_name",        false, nullptr, false, nullptr, nullptr},
-   {  CK_interface,       18, "interface",        false, nullptr, false, nullptr, nullptr},
-   {  CK_ckpt_command,    18, "ckpt_command",     false, nullptr, false, nullptr, nullptr},
-   {  CK_migr_command,    18, "migr_command",     false, nullptr, false, nullptr, nullptr},
-   {  CK_rest_command,    18, "restart_command",  false, nullptr, false, nullptr, nullptr},
-   {  CK_clean_command,   18, "clean_command",    false, nullptr, false, nullptr, nullptr},
-   {  CK_ckpt_dir,        18, "ckpt_dir",         false, nullptr, false, nullptr, nullptr},
-   {  CK_signal,          18, "signal",           false, nullptr, false, nullptr, nullptr},
-   {  CK_when,            18, "when",            false,  nullptr, false, nullptr, nullptr},
-   {  NoName,             18, nullptr,               false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_MR_sub{
+   OcsSpoolField<MR_user>{nullptr, 0},
+   OcsSpoolField<MR_host>{nullptr, 0},
 };
 
-spooling_field HGRP_fields[] = {
-   {  HGRP_name,           0, "group_name",        false, nullptr, false, nullptr, nullptr},
-   {  HGRP_host_list,      0, "hostlist",          false, HR_sub_fields, false, nullptr, nullptr},
-   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_ARA_sub{
+   OcsSpoolField<ARA_name>{nullptr, 0},
+   OcsSpoolField<ARA_group>{nullptr, 0},
 };
 
-spooling_field US_fields[] = {
-   {  US_name,    7, "name",    false, nullptr,          false, nullptr, nullptr, nullptr},
-   {  US_type,    7, "type",    false, nullptr,          false, nullptr, nullptr, nullptr},
-   {  US_fshare,  7, "fshare",  false, US_sub_fields, false, nullptr, nullptr, nullptr},
-   {  US_oticket, 7, "oticket", false, US_sub_fields, false, nullptr, nullptr, nullptr},
-   {  US_entries, 7, "entries", false, UE_sub_fields,false,  nullptr, nullptr, nullptr},
-   {  NoName,     7, nullptr,      false, nullptr,         false,  nullptr, nullptr, nullptr}
-};
-   
-spooling_field SC_fields[] = {
-   {  SC_algorithm,                       33, "algorithm",                       false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_schedule_interval,               33, "schedule_interval",               false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_maxujobs,                        33, "maxujobs",                       false,  nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_queue_sort_method,               33, "queue_sort_method",               false, nullptr,          false, nullptr, read_SC_queue_sort_method, write_SC_queue_sort_method},
-   {  SC_job_load_adjustments,            33, "job_load_adjustments",           false,  CE_sub_fields, false, nullptr, nullptr,                      nullptr},
-   {  SC_load_adjustment_decay_time,      33, "load_adjustment_decay_time",      false, CE_sub_fields, false, nullptr, nullptr,                      nullptr},
-   {  SC_load_formula,                    33, "load_formula",                    false, nullptr,          false, nullptr, read_SC_load_formula,      nullptr},
-   {  SC_schedd_job_info,                 33, "schedd_job_info",                 false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_flush_submit_sec,                33, "flush_submit_sec",                false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_flush_finish_sec,                33, "flush_finish_sec",                false, nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_params,                          33, "params",                          false, nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_reprioritize_interval,           33, "reprioritize_interval",           false, nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_halftime,                        33, "halftime",                       false,  nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_usage_weight_list,               33, "usage_weight_list",               false, UA_sub_fields, false, nullptr, nullptr,                      nullptr},
-   {  SC_compensation_factor,             33, "compensation_factor",             false, nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_weight_user,                     33, "weight_user",                     false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_project,                  33, "weight_project",                  false, nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_weight_department,               33, "weight_department",               false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_job,                      33, "weight_job",                      false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_tickets_functional,       33, "weight_tickets_functional",       false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_tickets_share,            33, "weight_tickets_share",            false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_share_override_tickets,          33, "share_override_tickets",          false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_share_functional_shares,         33, "share_functional_shares",         false, nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_max_functional_jobs_to_schedule, 33, "max_functional_jobs_to_schedule", false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_report_pjob_tickets,             33, "report_pjob_tickets",             false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_max_pending_tasks_per_job,       33, "max_pending_tasks_per_job",       false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_halflife_decay_list,             33, "halflife_decay_list",            false,  nullptr,         false,  nullptr, nullptr,                      nullptr},
-   {  SC_policy_hierarchy,                33, "policy_hierarchy",                false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_ticket,                   33, "weight_ticket",                   false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_waiting_time,             33, "weight_waiting_time",             false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_deadline,                 33, "weight_deadline",                 false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_urgency,                  33, "weight_urgency",                  false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_weight_priority,                 33, "weight_priority",                 false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_max_reservation,                 33, "max_reservation",                false,  nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  SC_default_duration,                33, "default_duration",                false, nullptr,          false, nullptr, nullptr,                      nullptr},
-   {  NoName,                             33, nullptr,                              false, nullptr,          false, nullptr, nullptr,                      nullptr}
+/* Field tables for context-independent object spooling */
+static constexpr std::tuple ocs_spool_CE_table{
+   OcsSpoolField<CE_name>{"name", 11},
+   OcsSpoolField<CE_shortcut>{"shortcut", 11},
+   OcsSpoolField<CE_valtype>{"type", 11},
+   OcsSpoolField<CE_relop>{"relop", 11},
+   OcsSpoolField<CE_requestable>{"requestable", 11},
+   OcsSpoolField<CE_consumable>{"consumable", 11},
+   OcsSpoolField<CE_defaultval>{"default", 11},
+   OcsSpoolField<CE_urgency_weight>{"urgency", 11},
 };
 
-spooling_field CQ_fields[] = {
-   {  CQ_name,                   21, "qname",              false, nullptr,                false, nullptr,                                   nullptr,                      nullptr},
-   {  CQ_hostlist,               21, "hostlist",           false, HR_sub_fields,       false, nullptr,                                   read_CQ_hostlist,          write_CQ_hostlist},
-   {  CQ_seq_no,                 21, "seq_no",             false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AULNG>,    write_CQ_attr_list<ocs::tom::AULNG>},
-   {  CQ_load_thresholds,        21, "load_thresholds",    false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ACELIST>,  write_CQ_attr_list<ocs::tom::ACELIST>},
-   {  CQ_suspend_thresholds,     21, "suspend_thresholds", false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ACELIST>,  write_CQ_attr_list<ocs::tom::ACELIST>},
-   {  CQ_nsuspend,               21, "nsuspend",           false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AULNG>,    write_CQ_attr_list<ocs::tom::AULNG>},
-   {  CQ_suspend_interval,       21, "suspend_interval",   false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AINTER>,   write_CQ_attr_list<ocs::tom::AINTER>},
-   {  CQ_priority,               21, "priority",           false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_min_cpu_interval,       21, "min_cpu_interval",   false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AINTER>,   write_CQ_attr_list<ocs::tom::AINTER>},
-   {  CQ_processors,             21, "processors",         false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_qtype,                  21, "qtype",              false, AQTLIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AQTLIST>,  write_CQ_attr_list<ocs::tom::AQTLIST>},
-   {  CQ_ckpt_list,              21, "ckpt_list",          false, ASTRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTRLIST>, write_CQ_attr_list<ocs::tom::ASTRLIST>},
-   {  CQ_pe_list,                21, "pe_list",            false, ASTRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTRLIST>, write_CQ_attr_list<ocs::tom::ASTRLIST>},
-   {  CQ_rerun,                  21, "rerun",              false, ABOOL_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ABOOL>,    write_CQ_attr_list<ocs::tom::ABOOL>},
-   {  CQ_job_slots,              21, "slots",              false, AULNG_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AULNG>,    write_CQ_attr_list<ocs::tom::AULNG>},
-   {  CQ_tmpdir,                 21, "tmpdir",             false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_shell,                  21, "shell",              false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_prolog,                 21, "prolog",             false, ASTR_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_epilog,                 21, "epilog",             false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_shell_start_mode,       21, "shell_start_mode",   false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_starter_method,         21, "starter_method",    false,  ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_suspend_method,         21, "suspend_method",     false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_resume_method,          21, "resume_method",      false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_terminate_method,       21, "terminate_method",   false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_notify,                 21, "notify",             false, AINTER_sub_fields,   false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AINTER>,   write_CQ_attr_list<ocs::tom::AINTER>},
-   {  CQ_owner_list,             21, "owner_list",         false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AUSRLIST>, write_CQ_attr_list<ocs::tom::AUSRLIST>},
-   {  CQ_acl,                    21, "user_lists",         false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AUSRLIST>, write_CQ_attr_list<ocs::tom::AUSRLIST>},
-   {  CQ_xacl,                   21, "xuser_lists",        false, AUSRLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AUSRLIST>, write_CQ_attr_list<ocs::tom::AUSRLIST>},
-   {  CQ_subordinate_list,       21, "subordinate_list",   false, ASOLIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASOLIST>,  write_CQ_attr_list<ocs::tom::ASOLIST>},
-   {  CQ_consumable_config_list, 21, "complex_values",     false, ACELIST_sub_fields,  false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ACELIST>,  write_CQ_attr_list<ocs::tom::ACELIST>},
-   {  CQ_projects,               21, "projects",           false, APRJLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::APRJLIST>, write_CQ_attr_list<ocs::tom::APRJLIST>},
-   {  CQ_xprojects,              21, "xprojects",          false, APRJLIST_sub_fields, false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::APRJLIST>, write_CQ_attr_list<ocs::tom::APRJLIST>},
-   {  CQ_calendar,               21, "calendar",           false, ASTR_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_initial_state,          21, "initial_state",      false, ASTR_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ASTR>,     write_CQ_attr_list<ocs::tom::ASTR>},
-   {  CQ_s_rt,                   21, "s_rt",               false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
-   {  CQ_h_rt,                   21, "h_rt",               false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
-   {  CQ_s_cpu,                  21, "s_cpu",              false, ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
-   {  CQ_h_cpu,                  21, "h_cpu",             false,  ATIME_sub_fields,    false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::ATIME>,    write_CQ_attr_list<ocs::tom::ATIME>},
-   {  CQ_s_fsize,                21, "s_fsize",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_h_fsize,                21, "h_fsize",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_s_data,                 21, "s_data",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_h_data,                 21, "h_data",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_s_stack,                21, "s_stack",            false, AMEM_sub_fields,    false,  &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_h_stack,                21, "h_stack",            false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_s_core,                 21, "s_core",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_h_core,                 21, "h_core",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_s_rss,                  21, "s_rss",              false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_h_rss,                  21, "h_rss",              false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_s_vmem,                 21, "s_vmem",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  CQ_h_vmem,                 21, "h_vmem",             false, AMEM_sub_fields,     false, &qconf_sub_name_value_comma_braced_sfi, read_CQ_attr_list<ocs::tom::AMEM>,     write_CQ_attr_list<ocs::tom::AMEM>},
-   {  NoName,                    21, nullptr,                 false, nullptr,                false, nullptr,                                   nullptr,                      nullptr}
+static constexpr std::tuple ocs_spool_CAT_table{
+   OcsSpoolField<CT_id>{"id", 10},
+   OcsSpoolField<CT_refcount>{"rcount", 10},
+   OcsSpoolField<CT_str>{"str", 10},
 };
 
-static spooling_field RN_sub_fields[] = {
-   {  RN_min,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RN_max,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RN_step,             0, nullptr,                false, nullptr,false,  nullptr, nullptr, nullptr},
-   {  NoName,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_CAL_table{
+   OcsSpoolField<CAL_name>{"calendar_name", 16},
+   OcsSpoolField<CAL_year_calendar>{"year", 16},
+   OcsSpoolField<CAL_week_calendar>{"week", 16},
 };
 
-static spooling_field QR_sub_fields[] = {
-   {  QR_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_CK_table{
+   OcsSpoolField<CK_name>{"ckpt_name", 18},
+   OcsSpoolField<CK_interface>{"interface", 18},
+   OcsSpoolField<CK_ckpt_command>{"ckpt_command", 18},
+   OcsSpoolField<CK_migr_command>{"migr_command", 18},
+   OcsSpoolField<CK_rest_command>{"restart_command", 18},
+   OcsSpoolField<CK_clean_command>{"clean_command", 18},
+   OcsSpoolField<CK_ckpt_dir>{"ckpt_dir", 18},
+   OcsSpoolField<CK_signal>{"signal", 18},
+   OcsSpoolField<CK_when>{"when", 18},
 };
 
-static spooling_field JG_sub_fields[] = {
-   {  JG_qname,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  JG_slots,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-//   {  JG_binding_to_use,    0, nullptr,                false, ST_sub_fields_binding, false, &qconf_sub_sub_name_value_comma_sfi, nullptr, nullptr},
-   {  NoName,               0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_HGRP_table{
+   OcsSpoolField<HGRP_name>{"group_name", 0},
+   OcsSpoolField<HGRP_host_list, ocs_spool_HR_sub>{"hostlist", 0},
 };
 
-static spooling_field MR_sub_fields[] = {
-   {  MR_user,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  MR_host,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_US_table{
+   OcsSpoolField<US_name>{"name", 7},
+   OcsSpoolField<US_type>{"type", 7},
+   OcsSpoolField<US_fshare, ocs_spool_US_sub>{"fshare", 7},
+   OcsSpoolField<US_oticket, ocs_spool_US_sub>{"oticket", 7},
+   OcsSpoolField<US_entries, ocs_spool_UE_sub>{"entries", 7},
 };
 
-static spooling_field ARA_sub_fields[] = {
-   {  ARA_name,             0, nullptr,               false,  nullptr, false, nullptr, nullptr, nullptr},
-   {  ARA_group,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_SC_table{
+   OcsSpoolField<SC_algorithm>{"algorithm", 33},
+   OcsSpoolField<SC_schedule_interval>{"schedule_interval", 33},
+   OcsSpoolField<SC_maxujobs>{"maxujobs", 33},
+   OcsSpoolField<SC_queue_sort_method>{"queue_sort_method", 33, nullptr, read_SC_queue_sort_method, write_SC_queue_sort_method},
+   OcsSpoolField<SC_job_load_adjustments, ocs_spool_CE_sub>{"job_load_adjustments", 33},
+   OcsSpoolField<SC_load_adjustment_decay_time, ocs_spool_CE_sub>{"load_adjustment_decay_time", 33},
+   OcsSpoolField<SC_load_formula>{"load_formula", 33, nullptr, read_SC_load_formula},
+   OcsSpoolField<SC_schedd_job_info>{"schedd_job_info", 33},
+   OcsSpoolField<SC_flush_submit_sec>{"flush_submit_sec", 33},
+   OcsSpoolField<SC_flush_finish_sec>{"flush_finish_sec", 33},
+   OcsSpoolField<SC_params>{"params", 33},
+   OcsSpoolField<SC_reprioritize_interval>{"reprioritize_interval", 33},
+   OcsSpoolField<SC_halftime>{"halftime", 33},
+   OcsSpoolField<SC_usage_weight_list, ocs_spool_UA_sub>{"usage_weight_list", 33},
+   OcsSpoolField<SC_compensation_factor>{"compensation_factor", 33},
+   OcsSpoolField<SC_weight_user>{"weight_user", 33},
+   OcsSpoolField<SC_weight_project>{"weight_project", 33},
+   OcsSpoolField<SC_weight_department>{"weight_department", 33},
+   OcsSpoolField<SC_weight_job>{"weight_job", 33},
+   OcsSpoolField<SC_weight_tickets_functional>{"weight_tickets_functional", 33},
+   OcsSpoolField<SC_weight_tickets_share>{"weight_tickets_share", 33},
+   OcsSpoolField<SC_share_override_tickets>{"share_override_tickets", 33},
+   OcsSpoolField<SC_share_functional_shares>{"share_functional_shares", 33},
+   OcsSpoolField<SC_max_functional_jobs_to_schedule>{"max_functional_jobs_to_schedule", 33},
+   OcsSpoolField<SC_report_pjob_tickets>{"report_pjob_tickets", 33},
+   OcsSpoolField<SC_max_pending_tasks_per_job>{"max_pending_tasks_per_job", 33},
+   OcsSpoolField<SC_halflife_decay_list>{"halflife_decay_list", 33},
+   OcsSpoolField<SC_policy_hierarchy>{"policy_hierarchy", 33},
+   OcsSpoolField<SC_weight_ticket>{"weight_ticket", 33},
+   OcsSpoolField<SC_weight_waiting_time>{"weight_waiting_time", 33},
+   OcsSpoolField<SC_weight_deadline>{"weight_deadline", 33},
+   OcsSpoolField<SC_weight_urgency>{"weight_urgency", 33},
+   OcsSpoolField<SC_weight_priority>{"weight_priority", 33},
+   OcsSpoolField<SC_max_reservation>{"max_reservation", 33},
+   OcsSpoolField<SC_default_duration>{"default_duration", 33},
 };
 
-spooling_field AR_fields[] = {
-   {  AR_id,              20,   "id",                false, nullptr, false, nullptr, nullptr},
-   {  AR_name,            20,   "name",              false, nullptr,false,  nullptr, nullptr},
-   {  AR_account,         20,   "account",           false, nullptr, false, nullptr, nullptr},
-   {  AR_project,         20,   "project",           false, nullptr, false, nullptr, nullptr},
-   {  AR_owner,           20,   "owner",             false, nullptr, false, nullptr, nullptr},
-   {  AR_group,           20,   "group",             false, nullptr, false, nullptr, nullptr},
-   {  AR_submission_time, 20,   "submission_time",   false, nullptr, false, nullptr, nullptr},
-   {  AR_start_time,      20,   "start_time",        false, nullptr, false, nullptr, nullptr},
-   {  AR_end_time,        20,   "end_time",          false, nullptr, false, nullptr, nullptr},
-   {  AR_duration,        20,   "duration",          false, nullptr, false, nullptr, nullptr},
-   {  AR_verify,          20,   "verify",            false, nullptr, false, nullptr, nullptr},
-   {  AR_error_handling,  20,   "error_handling",   false,  nullptr, false, nullptr, nullptr},
-   {  AR_state,           20,   "state",             false, nullptr, false, nullptr, nullptr},
-   {  AR_checkpoint_name, 20,   "checkpoint_name",   false, nullptr, false, nullptr, nullptr},
-   {  AR_resource_list,   20,   "resource_list",     false, CE_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr},
-   {  AR_queue_list,      20,   "queue_list",        false, QR_sub_fields, false, nullptr, nullptr},
-   {  AR_granted_slots,   20,   "granted_slots",     false, JG_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr},
-   {  AR_mail_options,    20,   "mail_options",      false, nullptr, false, nullptr, nullptr},
-   {  AR_mail_list,       20,   "mail_list",         false, MR_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr},
-   {  AR_pe,              20,   "pe",                false, nullptr, false, nullptr, nullptr},
-   {  AR_pe_range,        20,   "pe_range",          false, RN_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr},
-   {  AR_granted_pe,      20,   "granted_pe",        false, nullptr, false, nullptr, nullptr},
-   {  AR_master_queue_list, 20, "master_queue_list", false, QR_sub_fields, false, nullptr, nullptr},
-   {  AR_acl_list,        20,   "acl_list",          false, ARA_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr},
-   {  AR_xacl_list,       20,   "xacl_list",         false, ARA_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr},
-   {  AR_type,            20,   "type",              false, nullptr, false, nullptr, nullptr},
-   {  NoName,             20,   nullptr,               false,  nullptr, false, nullptr, nullptr}
+/// the layout of every per host attribute list of a cluster queue
+static constexpr const spool_flatfile_instr *CQ_SFI = &qconf_sub_name_value_comma_braced_sfi;
+
+static constexpr std::tuple ocs_spool_CQ_table{
+   OcsSpoolField<CQ_name>{"qname", 21},
+   OcsSpoolField<CQ_hostlist, ocs_spool_HR_sub>{"hostlist", 21, nullptr, read_CQ_hostlist, write_CQ_hostlist, OCS_SPOOL_V_HOSTLIST},
+   OcsSpoolField<CQ_seq_no, ocs_spool_AULNG_sub>{"seq_no", 21, CQ_SFI, read_CQ_attr_list<CQ_seq_no>, write_CQ_attr_list<CQ_seq_no>},
+   OcsSpoolField<CQ_load_thresholds, ocs_spool_ACELIST_sub>{"load_thresholds", 21, CQ_SFI, read_CQ_attr_list<CQ_load_thresholds>, write_CQ_attr_list<CQ_load_thresholds>},
+   OcsSpoolField<CQ_suspend_thresholds, ocs_spool_ACELIST_sub>{"suspend_thresholds", 21, CQ_SFI, read_CQ_attr_list<CQ_suspend_thresholds>, write_CQ_attr_list<CQ_suspend_thresholds>},
+   OcsSpoolField<CQ_nsuspend, ocs_spool_AULNG_sub>{"nsuspend", 21, CQ_SFI, read_CQ_attr_list<CQ_nsuspend>, write_CQ_attr_list<CQ_nsuspend>},
+   OcsSpoolField<CQ_suspend_interval, ocs_spool_AINTER_sub>{"suspend_interval", 21, CQ_SFI, read_CQ_attr_list<CQ_suspend_interval>, write_CQ_attr_list<CQ_suspend_interval>},
+   OcsSpoolField<CQ_priority, ocs_spool_ASTR_sub>{"priority", 21, CQ_SFI, read_CQ_attr_list<CQ_priority>, write_CQ_attr_list<CQ_priority>},
+   OcsSpoolField<CQ_min_cpu_interval, ocs_spool_AINTER_sub>{"min_cpu_interval", 21, CQ_SFI, read_CQ_attr_list<CQ_min_cpu_interval>, write_CQ_attr_list<CQ_min_cpu_interval>},
+   OcsSpoolField<CQ_processors, ocs_spool_ASTR_sub>{"processors", 21, CQ_SFI, read_CQ_attr_list<CQ_processors>, write_CQ_attr_list<CQ_processors>},
+   OcsSpoolField<CQ_qtype, ocs_spool_AQTLIST_sub>{"qtype", 21, CQ_SFI, read_CQ_attr_list<CQ_qtype>, write_CQ_attr_list<CQ_qtype>},
+   OcsSpoolField<CQ_ckpt_list, ocs_spool_ASTRLIST_sub>{"ckpt_list", 21, CQ_SFI, read_CQ_attr_list<CQ_ckpt_list>, write_CQ_attr_list<CQ_ckpt_list>},
+   OcsSpoolField<CQ_pe_list, ocs_spool_ASTRLIST_sub>{"pe_list", 21, CQ_SFI, read_CQ_attr_list<CQ_pe_list>, write_CQ_attr_list<CQ_pe_list>},
+   OcsSpoolField<CQ_rerun, ocs_spool_ABOOL_sub>{"rerun", 21, CQ_SFI, read_CQ_attr_list<CQ_rerun>, write_CQ_attr_list<CQ_rerun>},
+   OcsSpoolField<CQ_job_slots, ocs_spool_AULNG_sub>{"slots", 21, CQ_SFI, read_CQ_attr_list<CQ_job_slots>, write_CQ_attr_list<CQ_job_slots>},
+   OcsSpoolField<CQ_tmpdir, ocs_spool_ASTR_sub>{"tmpdir", 21, CQ_SFI, read_CQ_attr_list<CQ_tmpdir>, write_CQ_attr_list<CQ_tmpdir>},
+   OcsSpoolField<CQ_shell, ocs_spool_ASTR_sub>{"shell", 21, CQ_SFI, read_CQ_attr_list<CQ_shell>, write_CQ_attr_list<CQ_shell>},
+   OcsSpoolField<CQ_prolog, ocs_spool_ASTR_sub>{"prolog", 21, CQ_SFI, read_CQ_attr_list<CQ_prolog>, write_CQ_attr_list<CQ_prolog>},
+   OcsSpoolField<CQ_epilog, ocs_spool_ASTR_sub>{"epilog", 21, CQ_SFI, read_CQ_attr_list<CQ_epilog>, write_CQ_attr_list<CQ_epilog>},
+   OcsSpoolField<CQ_shell_start_mode, ocs_spool_ASTR_sub>{"shell_start_mode", 21, CQ_SFI, read_CQ_attr_list<CQ_shell_start_mode>, write_CQ_attr_list<CQ_shell_start_mode>},
+   OcsSpoolField<CQ_starter_method, ocs_spool_ASTR_sub>{"starter_method", 21, CQ_SFI, read_CQ_attr_list<CQ_starter_method>, write_CQ_attr_list<CQ_starter_method>},
+   OcsSpoolField<CQ_suspend_method, ocs_spool_ASTR_sub>{"suspend_method", 21, CQ_SFI, read_CQ_attr_list<CQ_suspend_method>, write_CQ_attr_list<CQ_suspend_method>},
+   OcsSpoolField<CQ_resume_method, ocs_spool_ASTR_sub>{"resume_method", 21, CQ_SFI, read_CQ_attr_list<CQ_resume_method>, write_CQ_attr_list<CQ_resume_method>},
+   OcsSpoolField<CQ_terminate_method, ocs_spool_ASTR_sub>{"terminate_method", 21, CQ_SFI, read_CQ_attr_list<CQ_terminate_method>, write_CQ_attr_list<CQ_terminate_method>},
+   OcsSpoolField<CQ_notify, ocs_spool_AINTER_sub>{"notify", 21, CQ_SFI, read_CQ_attr_list<CQ_notify>, write_CQ_attr_list<CQ_notify>},
+   OcsSpoolField<CQ_owner_list, ocs_spool_AUSRLIST_sub>{"owner_list", 21, CQ_SFI, read_CQ_attr_list<CQ_owner_list>, write_CQ_attr_list<CQ_owner_list>},
+   OcsSpoolField<CQ_acl, ocs_spool_AUSRLIST_sub>{"user_lists", 21, CQ_SFI, read_CQ_attr_list<CQ_acl>, write_CQ_attr_list<CQ_acl>},
+   OcsSpoolField<CQ_xacl, ocs_spool_AUSRLIST_sub>{"xuser_lists", 21, CQ_SFI, read_CQ_attr_list<CQ_xacl>, write_CQ_attr_list<CQ_xacl>},
+   OcsSpoolField<CQ_subordinate_list, ocs_spool_ASOLIST_sub>{"subordinate_list", 21, CQ_SFI, read_CQ_attr_list<CQ_subordinate_list>, write_CQ_attr_list<CQ_subordinate_list>},
+   OcsSpoolField<CQ_consumable_config_list, ocs_spool_ACELIST_sub>{"complex_values", 21, CQ_SFI, read_CQ_attr_list<CQ_consumable_config_list>, write_CQ_attr_list<CQ_consumable_config_list>},
+   OcsSpoolField<CQ_projects, ocs_spool_APRJLIST_sub>{"projects", 21, CQ_SFI, read_CQ_attr_list<CQ_projects>, write_CQ_attr_list<CQ_projects>},
+   OcsSpoolField<CQ_xprojects, ocs_spool_APRJLIST_sub>{"xprojects", 21, CQ_SFI, read_CQ_attr_list<CQ_xprojects>, write_CQ_attr_list<CQ_xprojects>},
+   OcsSpoolField<CQ_calendar, ocs_spool_ASTR_sub>{"calendar", 21, CQ_SFI, read_CQ_attr_list<CQ_calendar>, write_CQ_attr_list<CQ_calendar>},
+   OcsSpoolField<CQ_initial_state, ocs_spool_ASTR_sub>{"initial_state", 21, CQ_SFI, read_CQ_attr_list<CQ_initial_state>, write_CQ_attr_list<CQ_initial_state>},
+   OcsSpoolField<CQ_s_rt, ocs_spool_ATIME_sub>{"s_rt", 21, CQ_SFI, read_CQ_attr_list<CQ_s_rt>, write_CQ_attr_list<CQ_s_rt>},
+   OcsSpoolField<CQ_h_rt, ocs_spool_ATIME_sub>{"h_rt", 21, CQ_SFI, read_CQ_attr_list<CQ_h_rt>, write_CQ_attr_list<CQ_h_rt>},
+   OcsSpoolField<CQ_s_cpu, ocs_spool_ATIME_sub>{"s_cpu", 21, CQ_SFI, read_CQ_attr_list<CQ_s_cpu>, write_CQ_attr_list<CQ_s_cpu>},
+   OcsSpoolField<CQ_h_cpu, ocs_spool_ATIME_sub>{"h_cpu", 21, CQ_SFI, read_CQ_attr_list<CQ_h_cpu>, write_CQ_attr_list<CQ_h_cpu>},
+   OcsSpoolField<CQ_s_fsize, ocs_spool_AMEM_sub>{"s_fsize", 21, CQ_SFI, read_CQ_attr_list<CQ_s_fsize>, write_CQ_attr_list<CQ_s_fsize>},
+   OcsSpoolField<CQ_h_fsize, ocs_spool_AMEM_sub>{"h_fsize", 21, CQ_SFI, read_CQ_attr_list<CQ_h_fsize>, write_CQ_attr_list<CQ_h_fsize>},
+   OcsSpoolField<CQ_s_data, ocs_spool_AMEM_sub>{"s_data", 21, CQ_SFI, read_CQ_attr_list<CQ_s_data>, write_CQ_attr_list<CQ_s_data>},
+   OcsSpoolField<CQ_h_data, ocs_spool_AMEM_sub>{"h_data", 21, CQ_SFI, read_CQ_attr_list<CQ_h_data>, write_CQ_attr_list<CQ_h_data>},
+   OcsSpoolField<CQ_s_stack, ocs_spool_AMEM_sub>{"s_stack", 21, CQ_SFI, read_CQ_attr_list<CQ_s_stack>, write_CQ_attr_list<CQ_s_stack>},
+   OcsSpoolField<CQ_h_stack, ocs_spool_AMEM_sub>{"h_stack", 21, CQ_SFI, read_CQ_attr_list<CQ_h_stack>, write_CQ_attr_list<CQ_h_stack>},
+   OcsSpoolField<CQ_s_core, ocs_spool_AMEM_sub>{"s_core", 21, CQ_SFI, read_CQ_attr_list<CQ_s_core>, write_CQ_attr_list<CQ_s_core>},
+   OcsSpoolField<CQ_h_core, ocs_spool_AMEM_sub>{"h_core", 21, CQ_SFI, read_CQ_attr_list<CQ_h_core>, write_CQ_attr_list<CQ_h_core>},
+   OcsSpoolField<CQ_s_rss, ocs_spool_AMEM_sub>{"s_rss", 21, CQ_SFI, read_CQ_attr_list<CQ_s_rss>, write_CQ_attr_list<CQ_s_rss>},
+   OcsSpoolField<CQ_h_rss, ocs_spool_AMEM_sub>{"h_rss", 21, CQ_SFI, read_CQ_attr_list<CQ_h_rss>, write_CQ_attr_list<CQ_h_rss>},
+   OcsSpoolField<CQ_s_vmem, ocs_spool_AMEM_sub>{"s_vmem", 21, CQ_SFI, read_CQ_attr_list<CQ_s_vmem>, write_CQ_attr_list<CQ_s_vmem>},
+   OcsSpoolField<CQ_h_vmem, ocs_spool_AMEM_sub>{"h_vmem", 21, CQ_SFI, read_CQ_attr_list<CQ_h_vmem>, write_CQ_attr_list<CQ_h_vmem>},
 };
 
-spooling_field PE_fields[] = {
-   {  PE_name,                                 20,   "pe_name",              false, nullptr, false, nullptr, nullptr},
-   {  PE_slots,                                20,   "slots",                false, nullptr, false, nullptr, nullptr},
-   {  PE_user_list,                            20,   "user_lists",           false, US_sub_fields, false, nullptr, nullptr},
-   {  PE_xuser_list,                           20,   "xuser_lists",          false, US_sub_fields, false, nullptr, nullptr},
-   {  PE_start_proc_args,                      20,   "start_proc_args",      false, nullptr, false, nullptr, nullptr},
-   {  PE_stop_proc_args,                       20,   "stop_proc_args",       false, nullptr, false, nullptr, nullptr},
-   {  PE_allocation_rule,                      20,   "allocation_rule",      false, nullptr, false, nullptr, nullptr},
-   {  PE_control_slaves,                       20,   "control_slaves",       false, nullptr, false, nullptr, nullptr},
-   {  PE_job_is_first_task,                    20,   "job_is_first_task",    false,  nullptr, false, nullptr, nullptr},
-   {  PE_urgency_slots,                        20,   "urgency_slots",        false, nullptr, false, nullptr, nullptr},
-   {  PE_accounting_summary,                   20,   "accounting_summary",   false, nullptr, false, nullptr, nullptr},
-   {  PE_ignore_slave_requests_on_master_host, 20,   "ign_sreq_on_mhost",    false, nullptr, false, nullptr, nullptr},
-   {  PE_master_forks_slaves,                  20,   "master_forks_slaves",  false, nullptr, false, nullptr, nullptr},
-   {  PE_daemon_forks_slaves,                  20,   "daemon_forks_slaves",  false, nullptr, false, nullptr, nullptr},
-   {  NoName,                                  20,   nullptr,                false, nullptr, false, nullptr, nullptr}
+/// the layout of the sublists of an advance reservation and an execution host
+static constexpr const spool_flatfile_instr *COMMA_SFI = &qconf_sub_name_value_comma_sfi;
+
+static constexpr std::tuple ocs_spool_AR_table{
+   OcsSpoolField<AR_id>{"id", 20},
+   OcsSpoolField<AR_name>{"name", 20},
+   OcsSpoolField<AR_account>{"account", 20},
+   OcsSpoolField<AR_project>{"project", 20},
+   OcsSpoolField<AR_owner>{"owner", 20},
+   OcsSpoolField<AR_group>{"group", 20},
+   OcsSpoolField<AR_submission_time>{"submission_time", 20},
+   OcsSpoolField<AR_start_time>{"start_time", 20},
+   OcsSpoolField<AR_end_time>{"end_time", 20},
+   OcsSpoolField<AR_duration>{"duration", 20},
+   OcsSpoolField<AR_verify>{"verify", 20},
+   OcsSpoolField<AR_error_handling>{"error_handling", 20},
+   OcsSpoolField<AR_state>{"state", 20},
+   OcsSpoolField<AR_checkpoint_name>{"checkpoint_name", 20},
+   OcsSpoolField<AR_resource_list, ocs_spool_CE_sub>{"resource_list", 20, COMMA_SFI},
+   OcsSpoolField<AR_queue_list, ocs_spool_QR_sub>{"queue_list", 20},
+   OcsSpoolField<AR_granted_slots, ocs_spool_JG_sub>{"granted_slots", 20, COMMA_SFI},
+   OcsSpoolField<AR_mail_options>{"mail_options", 20},
+   OcsSpoolField<AR_mail_list, ocs_spool_MR_sub>{"mail_list", 20, COMMA_SFI},
+   OcsSpoolField<AR_pe>{"pe", 20},
+   OcsSpoolField<AR_pe_range, ocs_spool_RN_sub>{"pe_range", 20, COMMA_SFI},
+   OcsSpoolField<AR_granted_pe>{"granted_pe", 20},
+   OcsSpoolField<AR_master_queue_list, ocs_spool_QR_sub>{"master_queue_list", 20},
+   OcsSpoolField<AR_acl_list, ocs_spool_ARA_sub>{"acl_list", 20, COMMA_SFI},
+   OcsSpoolField<AR_xacl_list, ocs_spool_ARA_sub>{"xacl_list", 20, COMMA_SFI},
+   OcsSpoolField<AR_type>{"type", 20},
 };
 
-spooling_field RL_fields[] = {
-   {  RL_name,              20,   "name",              false, nullptr,       false, nullptr, nullptr},
-   {  RL_enabled,           20,   "enabled",           false, nullptr,       false, nullptr, nullptr},
-   {  RL_user_list,         20,   "user_list",         false, US_sub_fields, false, nullptr, nullptr},
-   {  RL_parent_role_list,  20,   "parent_role_list",  false, ST_sub_fields, false, nullptr, nullptr},
-   {  RL_perm_list,         20,   "perm_list",         false, nullptr,       false, nullptr, nullptr},
-   {  NoName,               20,   nullptr,             false, nullptr,       false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_PE_table{
+   OcsSpoolField<PE_name>{"pe_name", 20},
+   OcsSpoolField<PE_slots>{"slots", 20},
+   OcsSpoolField<PE_user_list, ocs_spool_US_sub>{"user_lists", 20},
+   OcsSpoolField<PE_xuser_list, ocs_spool_US_sub>{"xuser_lists", 20},
+   OcsSpoolField<PE_start_proc_args>{"start_proc_args", 20},
+   OcsSpoolField<PE_stop_proc_args>{"stop_proc_args", 20},
+   OcsSpoolField<PE_allocation_rule>{"allocation_rule", 20},
+   OcsSpoolField<PE_control_slaves>{"control_slaves", 20},
+   OcsSpoolField<PE_job_is_first_task>{"job_is_first_task", 20},
+   OcsSpoolField<PE_urgency_slots>{"urgency_slots", 20},
+   OcsSpoolField<PE_accounting_summary>{"accounting_summary", 20},
+   OcsSpoolField<PE_ignore_slave_requests_on_master_host>{"ign_sreq_on_mhost", 20},
+   OcsSpoolField<PE_master_forks_slaves>{"master_forks_slaves", 20},
+   OcsSpoolField<PE_daemon_forks_slaves>{"daemon_forks_slaves", 20},
 };
 
-spooling_field RQS_fields[] = {
-   {  RQS_name,           12,   "name",              false, nullptr, false, nullptr, nullptr},
-   {  RQS_description,    12,   "description",       false, nullptr, false, nullptr, nullptr},
-   {  RQS_enabled,        12,   "enabled",           false, nullptr, false, nullptr, nullptr},
-   {  RQS_rule,           12,   "limit",             false, RQR_sub_fields, false, &qconf_sub_rqs_sfi, nullptr},
-   {  NoName,             12,   nullptr,                false, nullptr, false, nullptr, nullptr}
+static constexpr std::tuple ocs_spool_RL_table{
+   OcsSpoolField<RL_name>{"name", 20},
+   OcsSpoolField<RL_enabled>{"enabled", 20},
+   OcsSpoolField<RL_user_list, ocs_spool_US_sub>{"user_list", 20},
+   OcsSpoolField<RL_parent_role_list, ocs_spool_ST_sub>{"parent_role_list", 20},
+   OcsSpoolField<RL_perm_list>{"perm_list", 20},
 };
 
-static void create_spooling_field(
-        spooling_field *field,
-        int nm,
-        int width,
-        const char *name,
-        bool free_name,
-        struct spooling_field *sub_fields,
-        bool free_sub_fields,
-        const void *clientdata,
-        int (*read_func)(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp),
-        int (*write_func)(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp)) {
+static constexpr std::tuple ocs_spool_RQS_table{
+   OcsSpoolField<RQS_name>{"name", 12},
+   OcsSpoolField<RQS_description>{"description", 12},
+   OcsSpoolField<RQS_enabled>{"enabled", 12},
+   OcsSpoolField<RQS_rule, ocs_spool_RQR_sub>{"limit", 12, &qconf_sub_rqs_sfi},
+};
+
+/* Field tables whose rows a builder selects per call */
+static constexpr std::tuple ocs_spool_PR_table{
+   OcsSpoolField<PR_name>{"name", 0},
+   OcsSpoolField<PR_oticket>{"oticket", 0},
+   OcsSpoolField<PR_fshare>{"fshare", 0},
+   OcsSpoolField<PR_usage, ocs_spool_UA_sub>{"usage", 0, &qconf_sub_name_value_space_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<PR_usage_time_stamp>{"usage_time_stamp", 0, nullptr, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<PR_long_term_usage, ocs_spool_UA_sub>{"long_term_usage", 0, &qconf_sub_name_value_space_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<PR_project, ocs_spool_UPP_sub>{"project", 0, &qconf_sub_spool_usage_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<PR_acl, ocs_spool_US_sub>{"acl", 0},
+   OcsSpoolField<PR_xacl, ocs_spool_US_sub>{"xacl", 0},
+   OcsSpoolField<PR_debited_job_usage, ocs_spool_UPU_sub>{"debited_job_usage", 0, &qconf_sub_spool_usage_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+};
+
+static constexpr std::tuple ocs_spool_UU_table{
+   OcsSpoolField<UU_name>{"name", 0},
+   OcsSpoolField<UU_oticket>{"oticket", 0},
+   OcsSpoolField<UU_fshare>{"fshare", 0},
+   OcsSpoolField<UU_delete_time>{"delete_time", 0},
+   OcsSpoolField<UU_usage, ocs_spool_UA_sub>{"usage", 0, &qconf_sub_name_value_space_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<UU_usage_time_stamp>{"usage_time_stamp", 0, nullptr, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<UU_long_term_usage, ocs_spool_UA_sub>{"long_term_usage", 0, &qconf_sub_name_value_space_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<UU_project, ocs_spool_UPP_sub>{"project", 0, &qconf_sub_spool_usage_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<UU_default_project>{"default_project", 0},
+   OcsSpoolField<UU_debited_job_usage, ocs_spool_UPU_sub>{"debited_job_usage", 0, &qconf_sub_spool_usage_sfi, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+};
+
+static constexpr std::tuple ocs_spool_STN_table{
+   OcsSpoolField<STN_id>{"id", 0, nullptr, nullptr, nullptr, OCS_SPOOL_V_RECURSE},
+   OcsSpoolField<STN_version>{"version", 0, nullptr, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<STN_name>{"name", 0},
+   OcsSpoolField<STN_type>{"type", 0},
+   OcsSpoolField<STN_shares>{"shares", 0},
+   OcsSpoolField<STN_children, ocs_spool_STN_sub>{"childnodes", 0, nullptr, nullptr, nullptr, OCS_SPOOL_V_RECURSE},
+};
+
+/* The time at which a host added itself has two rows: the spool file carries
+ * the raw value, as the classic format separates the name of an attribute from
+ * its value by a blank and a formatted date and time could not be read back;
+ * qconf -se with more info shows it formatted. It is not part of the field
+ * list qconf -Ae and qconf -Me use, as it is not meant to be edited by hand.
+ * The variants of the two rows exclude each other. */
+static constexpr std::tuple ocs_spool_EH_table{
+   OcsSpoolField<EH_name>{"hostname", 21},
+   OcsSpoolField<EH_scaling_list, ocs_spool_HS_sub>{"load_scaling", 21, COMMA_SFI},
+   OcsSpoolField<EH_consumable_config_list, ocs_spool_CE_host_sub>{"complex_values", 21, COMMA_SFI},
+   OcsSpoolField<EH_resource_utilization, ocs_spool_RUE_sub>{"complex_values_actual", 21, COMMA_SFI, nullptr, nullptr, OCS_SPOOL_V_MORE_INFO},
+   OcsSpoolField<EH_load_list, ocs_spool_HL_sub>{"load_values", 21, COMMA_SFI, nullptr, nullptr, OCS_SPOOL_V_LOADS},
+   OcsSpoolField<EH_processors>{"processors", 21, nullptr, nullptr, nullptr, OCS_SPOOL_V_LOADS},
+   OcsSpoolField<EH_reschedule_unknown_list, ocs_spool_RU_sub>{"reschedule_unknown_list", 21, COMMA_SFI, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<EH_auto_added_time>{"auto_added_time", 21, nullptr, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<EH_auto_added_time>{"auto_added_time", 21, nullptr, nullptr, write_EH_auto_added_time, OCS_SPOOL_V_SHOW_MORE},
+   OcsSpoolField<EH_acl, ocs_spool_US_sub>{"user_lists", 21},
+   OcsSpoolField<EH_xacl, ocs_spool_US_sub>{"xuser_lists", 21},
+   OcsSpoolField<EH_prj, ocs_spool_PR_sub>{"projects", 21},
+   OcsSpoolField<EH_xprj, ocs_spool_PR_sub>{"xprojects", 21},
+   OcsSpoolField<EH_usage_scaling_list, ocs_spool_HS_sub>{"usage_scaling", 21, COMMA_SFI},
+   OcsSpoolField<EH_report_variables, ocs_spool_STU_sub>{"report_variables", 21, COMMA_SFI},
+};
+
+static constexpr std::tuple ocs_spool_CONF_table{
+   OcsSpoolField<CONF_name>{"conf_name", 28, nullptr, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<CONF_version>{"conf_version", 28, nullptr, nullptr, nullptr, OCS_SPOOL_V_SPOOL},
+   OcsSpoolField<CONF_entries, ocs_spool_CF_sub>{nullptr, 28, &qconf_sub_param_sfi},
+};
+
+static constexpr unsigned QS = OCS_SPOOL_V_QU_SHOW;   ///< short for the rows of qconf -sq
+static constexpr unsigned QF = OCS_SPOOL_V_QU_FILE;   ///< short for the rows of the spool file
+
+static constexpr std::tuple ocs_spool_QU_table{
+   OcsSpoolField<QU_qname>{"qname", 21},
+   OcsSpoolField<QU_qhostname>{"hostname", 21},
+   OcsSpoolField<QU_seq_no>{"seq_no", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_load_thresholds, ocs_spool_CE_sub>{"load_thresholds", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_suspend_thresholds, ocs_spool_CE_sub>{"suspend_thresholds", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_nsuspend>{"nsuspend", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_suspend_interval>{"suspend_interval", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_priority>{"priority", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_min_cpu_interval>{"min_cpu_interval", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_processors>{"processors", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_qtype>{"qtype", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_ckpt_list, ocs_spool_ST_sub>{"ckpt_list", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_pe_list, ocs_spool_ST_sub>{"pe_list", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_rerun>{"rerun", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_job_slots>{"slots", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_tmpdir>{"tmpdir", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_shell>{"shell", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_prolog>{"prolog", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_epilog>{"epilog", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_shell_start_mode>{"shell_start_mode", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_starter_method>{"starter_method", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_suspend_method>{"suspend_method", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_resume_method>{"resume_method", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_terminate_method>{"terminate_method", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_notify>{"notify", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_owner_list, ocs_spool_US_sub>{"owner_list", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_acl, ocs_spool_US_sub>{"user_lists", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_xacl, ocs_spool_US_sub>{"xuser_lists", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_subordinate_list, ocs_spool_SO_sub>{"subordinate_list", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_consumable_config_list, ocs_spool_CE_sub>{"complex_values", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_projects, ocs_spool_PR_sub>{"projects", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_xprojects, ocs_spool_PR_sub>{"xprojects", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_calendar>{"calendar", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_initial_state>{"initial_state", 21, nullptr, nullptr, nullptr, QS},
+#if 0
+   OcsSpoolField<QU_fshare>{"fshare", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_oticket>{"oticket", 21, nullptr, nullptr, nullptr, QS},
+#endif
+   OcsSpoolField<QU_s_rt>{"s_rt", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_rt>{"h_rt", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_s_cpu>{"s_cpu", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_cpu>{"h_cpu", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_s_fsize>{"s_fsize", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_fsize>{"h_fsize", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_s_data>{"s_data", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_data>{"h_data", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_s_stack>{"s_stack", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_stack>{"h_stack", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_s_core>{"s_core", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_core>{"h_core", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_s_rss>{"s_rss", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_rss>{"h_rss", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_s_vmem>{"s_vmem", 21, nullptr, nullptr, nullptr, QS},
+   OcsSpoolField<QU_h_vmem>{"h_vmem", 21, nullptr, nullptr, nullptr, QS},
+   /* the spool file holds only the attributes a queue instance does not take from its cluster queue */
+   OcsSpoolField<QU_state>{"state", 21, nullptr, nullptr, nullptr, QF},
+   OcsSpoolField<QU_pending_signal>{"pending_signal", 21, nullptr, nullptr, nullptr, QF},
+   OcsSpoolField<QU_pending_signal_delivery_time>{"pending_signal_del", 21, nullptr, nullptr, nullptr, QF},
+   OcsSpoolField<QU_version>{"version", 21, nullptr, nullptr, nullptr, QF},
+   /* SG: not supported */
+#if 0
+   OcsSpoolField<QU_error_messages>{"error_messages", 21, nullptr, nullptr, nullptr, QF},
+#endif
+};
+
+/* *INDENT-ON* */
+
+/* The arrays of the tables whose rows never vary */
+spooling_field *const CE_fields = ocs_spool_view_rows<ocs_spool_CE_table>();
+spooling_field *const CAT_fields = ocs_spool_view_rows<ocs_spool_CAT_table>();
+spooling_field *const CAL_fields = ocs_spool_view_rows<ocs_spool_CAL_table>();
+spooling_field *const CK_fields = ocs_spool_view_rows<ocs_spool_CK_table>();
+spooling_field *const HGRP_fields = ocs_spool_view_rows<ocs_spool_HGRP_table>();
+spooling_field *const US_fields = ocs_spool_view_rows<ocs_spool_US_table>();
+spooling_field *const SC_fields = ocs_spool_view_rows<ocs_spool_SC_table>();
+spooling_field *const CQ_fields = ocs_spool_view_rows<ocs_spool_CQ_table>();
+spooling_field *const AR_fields = ocs_spool_view_rows<ocs_spool_AR_table>();
+spooling_field *const PE_fields = ocs_spool_view_rows<ocs_spool_PE_table>();
+spooling_field *const RL_fields = ocs_spool_view_rows<ocs_spool_RL_table>();
+spooling_field *const RQS_fields = ocs_spool_view_rows<ocs_spool_RQS_table>();
+
+/**
+ * @brief Copy the rows of a typed table a variant selects
+ *
+ * The type independent part of ocs_spool_select(). The copies own neither
+ * their names nor their sub-tables; the views do.
+ *
+ * @param view the rows of the table and its terminating row
+ * @param needs the variant bits each row needs
+ * @param size the number of rows, without the terminating one
+ * @param variant the variant bits the caller selects
+ * @return the selected rows and the terminating row, allocated with sge_malloc()
+ */
+spooling_field *ocs_spool_select_rows(const spooling_field *view, const unsigned *needs, const size_t size,
+                                      const unsigned variant) {
+   size_t count = 0;
+   for (size_t i = 0; i < size; i++) {
+      if ((needs[i] & ~variant) == 0) {
+         count++;
+      }
+   }
+
+   auto *fields = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * (count + 1)));
+   size_t j = 0;
+   for (size_t i = 0; i < size; i++) {
+      if ((needs[i] & ~variant) == 0) {
+         fields[j++] = view[i];
+      }
+   }
+   fields[j] = view[size];
+
+   return fields;
+}
+
+/** @brief Fill one entry of a field list built at run time
+ *
+ * Only the self-referential share tree list for JSON is still built this way,
+ * as its sub-table is the list itself.
+ *
+ * @param field the entry to fill
+ * @param nm the field
+ * @param width the width of the name column
+ * @param name the name in the text
+ * @param sub_fields the field list of a sublist, or nullptr
+ */
+static void create_spooling_field(spooling_field *field, const int nm, const int width, const char *name,
+                                  spooling_field *sub_fields) {
    if (field != nullptr) {
       field->nm = nm;
       field->width = width;
       field->name = name;
-      field->free_name = free_name;
+      field->free_name = false;
       field->sub_fields = sub_fields;
-      field->free_sub_fields = free_sub_fields;
-      field->clientdata = clientdata;
-      field->read_func = read_func;
-      field->write_func = write_func;
+      field->free_sub_fields = false;
+      field->clientdata = nullptr;
+      field->read_func = nullptr;
+      field->write_func = nullptr;
+      field->ops = nullptr;
    }
 }
 
@@ -610,58 +769,16 @@ static void create_spooling_field(
  * @param spool include the usage, the long term usage and the debited job usage
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
-spooling_field *sge_build_PR_field_list(bool spool) {
-   /* There are 11 possible PR_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*11);
-   int count = 0;
-   
-   /* Build the list of fields to read and write */
-   create_spooling_field(&fields[count++], PR_name, 0, "name", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], PR_oticket, 0, "oticket", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], PR_fshare, 0, "fshare", false, nullptr, false, nullptr, nullptr, nullptr);
-   if (spool) {
-      create_spooling_field(&fields[count++], PR_usage, 0, "usage", false, UA_sub_fields, false, &qconf_sub_name_value_space_sfi, nullptr, nullptr);
-      create_spooling_field(&fields[count++], PR_usage_time_stamp, 0, "usage_time_stamp", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field(&fields[count++], PR_long_term_usage, 0, "long_term_usage", false, UA_sub_fields, false, &qconf_sub_name_value_space_sfi, nullptr, nullptr);
-      create_spooling_field(&fields[count++], PR_project, 0, "project", false, UPP_sub_fields,  false, &qconf_sub_spool_usage_sfi, nullptr, nullptr);
-   }
-   create_spooling_field(&fields[count++], PR_acl, 0, "acl", false, US_sub_fields, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], PR_xacl, 0, "xacl", false, US_sub_fields, false, nullptr, nullptr, nullptr);
-   if (spool) {
-      create_spooling_field(&fields[count++], PR_debited_job_usage, 0, "debited_job_usage", false, UPU_sub_fields, false, &qconf_sub_spool_usage_sfi, nullptr, nullptr);
-   }
-   create_spooling_field(&fields[count++], NoName, 0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-   
-   return fields;
+spooling_field *sge_build_PR_field_list(const bool spool) {
+   return ocs_spool_select<ocs_spool_PR_table>(spool ? OCS_SPOOL_V_SPOOL : 0);
 }
 
 /** @brief Build the field list of a user
  * @param spool include the accumulated usage, as for a project
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
-spooling_field *sge_build_UU_field_list(bool spool) {
-   /* There are 11 possible UU_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*11);
-   int count = 0;
-   
-   /* Build the list of fields to read and write */
-   create_spooling_field(&fields[count++], UU_name, 0, "name", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], UU_oticket, 0, "oticket", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], UU_fshare, 0, "fshare", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], UU_delete_time, 0, "delete_time", false, nullptr, false, nullptr, nullptr, nullptr);
-   if (spool) {
-      create_spooling_field(&fields[count++], UU_usage, 0, "usage", false, UA_sub_fields, false, &qconf_sub_name_value_space_sfi, nullptr, nullptr);
-      create_spooling_field(&fields[count++], UU_usage_time_stamp, 0, "usage_time_stamp", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field(&fields[count++], UU_long_term_usage, 0, "long_term_usage", false, UA_sub_fields, false, &qconf_sub_name_value_space_sfi, nullptr, nullptr);
-      create_spooling_field(&fields[count++], UU_project, 0, "project", false, UPP_sub_fields, false, &qconf_sub_spool_usage_sfi, nullptr, nullptr);
-   }
-   create_spooling_field(&fields[count++], UU_default_project, 0, "default_project", false,  nullptr, false, nullptr, nullptr, nullptr);
-   if (spool) {
-      create_spooling_field(&fields[count++], UU_debited_job_usage, 0, "debited_job_usage", false, UPU_sub_fields, false, &qconf_sub_spool_usage_sfi, nullptr, nullptr);
-   }
-   create_spooling_field(&fields[count++], NoName, 0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-   
-   return fields;
+spooling_field *sge_build_UU_field_list(const bool spool) {
+   return ocs_spool_select<ocs_spool_UU_table>(spool ? OCS_SPOOL_V_SPOOL : 0);
 }
 
 /** @brief Build the field list of a share tree node
@@ -670,62 +787,37 @@ spooling_field *sge_build_UU_field_list(bool spool) {
  *                one object to write
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
-spooling_field *sge_build_STN_field_list(bool spool, bool recurse) {
-   /* There are 7 possible STN_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc (sizeof(spooling_field)*7);
-   int count = 0;
-
-   if (recurse) {
-      create_spooling_field (&fields[count++], STN_id, 0, "id", false, nullptr, false, nullptr, nullptr, nullptr);
-   }
-  
-   if (spool) {
-      create_spooling_field (&fields[count++], STN_version, 0, "version", false, nullptr, false, nullptr, nullptr, nullptr);
-   }
-
-   create_spooling_field (&fields[count++], STN_name, 0, "name", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field (&fields[count++], STN_type, 0, "type", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field (&fields[count++], STN_shares, 0, "shares", false, nullptr, false, nullptr, nullptr, nullptr);
-   
-   if (recurse) {
-      create_spooling_field (&fields[count++], STN_children, 0, "childnodes", false, STN_sub_fields, false, nullptr, nullptr, nullptr);
-   }
-   
-   create_spooling_field (&fields[count++], NoName, 0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-
-   return fields;
+spooling_field *sge_build_STN_field_list(const bool spool, const bool recurse) {
+   return ocs_spool_select<ocs_spool_STN_table>((spool ? OCS_SPOOL_V_SPOOL : 0) |
+                                                (recurse ? OCS_SPOOL_V_RECURSE : 0));
 }
 
-/**
- * @brief Build the nested-tree STN field list used for JSON (CS-2313a).
- *
- * Unlike sge_build_STN_field_list (the flat ASCII model, where childnodes is a list of
- * child ids and the writer flattens the tree into separate id-keyed blocks), this list
- * renders childnodes as an array of full child node objects recursively: the
- * "childnodes" field's sub_fields point back at the same field list, so the generic
- * JSON writer/reader descend the real CULL tree directly. STN_id and STN_version are
- * omitted (the nested form needs no id bookkeeping; ids are re-assigned via
- * id_sharetree() after a read).
- *
- * @return a freshly allocated, self-referential spooling field list (caller frees)
- */
 /** @brief Build the field list of a share tree node for JSON output
  *
  * No `recurse` flag: in JSON the nesting is expressed by the format itself.
+ *
+ * Unlike sge_build_STN_field_list (the flat ASCII model, where childnodes is a list of
+ * child ids and the writer flattens the tree into separate id-keyed blocks), this list
+ * renders childnodes as an array of full child node objects recursively (CS-2313a): the
+ * "childnodes" field's sub_fields point back at the same field list, so the generic
+ * JSON writer/reader descend the real CULL tree directly. STN_id and STN_version are
+ * omitted (the nested form needs no id bookkeeping; ids are re-assigned via
+ * id_sharetree() after a read). A typed table cannot name itself as its sub-table,
+ * so this list is still built at run time and has no typed ops.
  *
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
 spooling_field *sge_build_STN_json_field_list() {
    /* name, type, shares, childnodes, terminator = 5 fields */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field) * 5);
+   auto *fields = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * 5));
    int count = 0;
 
-   create_spooling_field (&fields[count++], STN_name,   0, "name",   false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field (&fields[count++], STN_type,   0, "type",   false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field (&fields[count++], STN_shares, 0, "shares", false, nullptr, false, nullptr, nullptr, nullptr);
+   create_spooling_field(&fields[count++], STN_name, 0, "name", nullptr);
+   create_spooling_field(&fields[count++], STN_type, 0, "type", nullptr);
+   create_spooling_field(&fields[count++], STN_shares, 0, "shares", nullptr);
    /* childnodes recurses with this very field list -> a nested tree of full child nodes */
-   create_spooling_field (&fields[count++], STN_children, 0, "childnodes", false, fields, false, nullptr, nullptr, nullptr);
-   create_spooling_field (&fields[count++], NoName, 0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
+   create_spooling_field(&fields[count++], STN_children, 0, "childnodes", fields);
+   create_spooling_field(&fields[count++], NoName, 0, nullptr, nullptr);
 
    return fields;
 }
@@ -744,78 +836,47 @@ spooling_field *sge_build_STN_json_field_list() {
  *                  passes false, so that no environment can add a field to a spool file.
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
-spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
-                                        bool history, bool more_info) {
-   /* There are 15 possible EH_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*15);
-   int count = 0;
+spooling_field *sge_build_EH_field_list(const bool spool, const bool to_stdout, const bool history,
+                                        const bool more_info) {
+   unsigned variant = 0;
 
-   create_spooling_field(&fields[count++], EH_name, 21, "hostname", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], EH_scaling_list, 21, "load_scaling", false, HS_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
-   create_spooling_field(&fields[count++], EH_consumable_config_list, 21, "complex_values", false, CE_host_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
-   
+   if (spool) {
+      variant |= OCS_SPOOL_V_SPOOL;
+   }
    if (more_info) {
-      create_spooling_field(&fields[count++], EH_resource_utilization, 21, "complex_values_actual", false, RUE_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
+      variant |= OCS_SPOOL_V_MORE_INFO;
    }
-   
-   if (spool || (!spool && to_stdout) || history) {
-      create_spooling_field(&fields[count++], EH_load_list, 21, "load_values", false, HL_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
-      create_spooling_field(&fields[count++], EH_processors, 21, "processors", false, nullptr, false, nullptr, nullptr, nullptr);
+   if (spool || to_stdout || history) {
+      variant |= OCS_SPOOL_V_LOADS;
    }
-
-   if (spool) {
-      create_spooling_field(&fields[count++], EH_reschedule_unknown_list, 21, "reschedule_unknown_list", false, RU_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
+   // the formatted time; the spool file has the raw one, and the two exclude each other
+   if (!spool && to_stdout && more_info) {
+      variant |= OCS_SPOOL_V_SHOW_MORE;
    }
 
-   /* the time at which a host added itself. It is not part of the field list used by qconf -Ae
-    * and qconf -Me, as it is not meant to be edited by hand, and qconf -se shows it only when
-    * the caller asks for more info, because an additional line in that output would change an
-    * interface.
-    *
-    * The spool file carries the raw value, not the formatted one: the classic format separates
-    * the name of an attribute from its value by a blank, so a formatted date and time could not
-    * be read back. The two cases are mutually exclusive for every caller, and the else keeps the
-    * attribute from being added twice should that ever change */
-   if (spool) {
-      create_spooling_field(&fields[count++], EH_auto_added_time, 21, "auto_added_time", false, nullptr, false, nullptr, nullptr, nullptr);
-   } else if (to_stdout && more_info) {
-      create_spooling_field(&fields[count++], EH_auto_added_time, 21, "auto_added_time", false, nullptr, false, nullptr, nullptr, write_EH_auto_added_time);
-   }
-   
-   create_spooling_field(&fields[count++], EH_acl, 21, "user_lists", false, US_sub_fields, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], EH_xacl, 21, "xuser_lists", false, US_sub_fields, false, nullptr, nullptr, nullptr);
-   
-   create_spooling_field(&fields[count++], EH_prj, 21, "projects", false, PR_sub_fields, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], EH_xprj, 21, "xprojects", false, PR_sub_fields, false, nullptr, nullptr, nullptr);
-   create_spooling_field(&fields[count++], EH_usage_scaling_list, 21, "usage_scaling", false, HS_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
-   create_spooling_field(&fields[count++], EH_report_variables, 21, "report_variables", false, STU_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
-   create_spooling_field(&fields[count++], NoName, 21, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-   
-   return fields;
+   return ocs_spool_select<ocs_spool_EH_table>(variant);
 }
 
 /**
  * @brief Read the queue sort method of the scheduler configuration
  *
- * The field reader of SC_queue_sort_method; the field table passes that
- * field as @p nm, so it is not read. Without DENTER, as the other field
- * readers.
+ * The field reader of SC_queue_sort_method. Without DENTER, as the other
+ * field readers.
  *
- * @param ep the scheduler configuration (SC_Type)
- * @param nm the field to read, always SC_queue_sort_method
+ * @param sc the scheduler configuration
  * @param buffer the text of the value, `load` or `seqno`; anything else leaves the field as it is
  * @param alp receives messages for the caller, unused here
- * @return 1
+ * @return true
  */
-static int read_SC_queue_sort_method(lListElem *ep, int nm,
-                                     const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+static bool read_SC_queue_sort_method(const ocs::tom::Element<ocs::tom::SC> sc, const char *buffer,
+                                      [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    if (!strncasecmp(buffer, "load", 4)) {
-      ocs::tom::set<SC_queue_sort_method>(ep, QSM_LOAD);
+      sc.set<SC_queue_sort_method>(QSM_LOAD);
    } else if (!strncasecmp(buffer, "seqno", 5)) {
-      ocs::tom::set<SC_queue_sort_method>(ep, QSM_SEQNUM);
+      sc.set<SC_queue_sort_method>(QSM_SEQNUM);
    }
-   
-   return 1;
+
+   return true;
 }
 
 /**
@@ -823,14 +884,13 @@ static int read_SC_queue_sort_method(lListElem *ep, int nm,
  *
  * The formula is stored without blanks once it is valid.
  *
- * @param ep the scheduler configuration (SC_Type)
- * @param nm the field to read, always SC_load_formula
+ * @param sc the scheduler configuration
  * @param load_formula the text of the value, may be nullptr
  * @param alp receives the reason when the formula is not valid
- * @return 1 on success, 0 for an invalid formula
+ * @return true on success, false for an invalid formula
  */
-static int
-read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+static bool read_SC_load_formula(const ocs::tom::Element<ocs::tom::SC> sc, const char *load_formula,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
    if (load_formula != nullptr) {
       int n = strlen(load_formula);
@@ -840,37 +900,35 @@ read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, ocs::tom::
          sge_strip_blanks(copy);
          if (!validate_load_formula(load_formula, alp, ocs::tom::ConstList<ocs::tom::CE>(), SGE_ATTR_LOAD_FORMULA)) {
             sge_free(&copy);
-            DRETURN(0);
+            DRETURN(false);
          }
-         ocs::tom::set<SC_load_formula>(ep, copy);
+         sc.set<SC_load_formula>(copy);
          sge_free(&copy);
       }
    }
-   DRETURN(1);
+   DRETURN(true);
 }
 
 /**
  * @brief Write the queue sort method of the scheduler configuration
  *
- * The field writer of SC_queue_sort_method; the field table passes that
- * field as @p nm, so it is not read. Without DENTER, as the other field
- * writers.
+ * The field writer of SC_queue_sort_method. Without DENTER, as the other
+ * field writers.
  *
- * @param ep the scheduler configuration (SC_Type)
- * @param nm the field to write, always SC_queue_sort_method
+ * @param sc the scheduler configuration
  * @param buffer receives `seqno` or `load`
  * @param alp receives messages for the caller, unused here
- * @return 1
+ * @return true
  */
-static int write_SC_queue_sort_method(const lListElem *ep, int nm,
-                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   if (ocs::tom::get<SC_queue_sort_method>(ep) == QSM_SEQNUM) {
+static bool write_SC_queue_sort_method(const ocs::tom::ConstElement<ocs::tom::SC> sc, dstring *buffer,
+                                       [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   if (sc.get<SC_queue_sort_method>() == QSM_SEQNUM) {
       sge_dstring_append(buffer, "seqno");
    } else {
       sge_dstring_append(buffer, "load");
    }
 
-   return 1;
+   return true;
 }
 
 /**
@@ -880,17 +938,16 @@ static int write_SC_queue_sort_method(const lListElem *ep, int nm,
  * whose ids are not below #GID_RANGE_NOT_ALLOWED_ID; most other entries take
  * the first white space separated word, some take the rest of the line.
  *
- * @param ep the configuration entry (CF_Type) whose CF_name is set already
- * @param nm the field to read, CF_value
+ * @param cf the configuration entry whose CF_name is set already
  * @param buf the text of the value
  * @param alp receives messages for the caller
- * @return 1 on success, 0 if the value is rejected
+ * @return true on success, false if the value is rejected
  */
-static int read_CF_value(lListElem *ep, int nm, const char *buf,
-                         ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *buf,
+                          ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
-   const char *name = ocs::tom::get<CF_name>(ep);
+   const char *name = cf.get<CF_name>();
    char *value = nullptr;
    char *buffer = strdup(buf);
    struct saved_vars_s *context = nullptr;
@@ -898,7 +955,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
    if (!strcmp(name, "gid_range")) {
       if ((value = sge_strtok_r(buffer, " \t\n", &context))) {
          if (!strcasecmp(value, NONE_STR)) {
-            ocs::tom::set<CF_value>(ep, value);
+            cf.set<CF_value>(value);
          } else {
             ocs::tom::ListPtr<ocs::tom::RN> rlp;
 
@@ -906,22 +963,22 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
                                          false, false, INF_NOT_ALLOWED);
             if (!rlp) {
                WARNING(MSG_CONFIG_CONF_INCORRECTVALUEFORCONFIGATTRIB_SS, name, value);
-   
+
                sge_free_saved_vars(context);
                sge_free(&buffer);
-               DRETURN(0);
+               DRETURN(false);
             } else {
                for (const ocs::tom::ConstElement<ocs::tom::RN> rep : *rlp) {
                   const uint32_t min = rep.get<RN_min>();
                   if (min < GID_RANGE_NOT_ALLOWED_ID) {
                      WARNING(MSG_CONFIG_CONF_GIDRANGELESSTHANNOTALLOWED_I, GID_RANGE_NOT_ALLOWED_ID);
-   
+
                      sge_free_saved_vars(context);
                      sge_free(&buffer);
-                     DRETURN(0);
-                  }                  
+                     DRETURN(false);
+                  }
                }
-               ocs::tom::set<CF_value>(ep, value);
+               cf.set<CF_value>(value);
             }
          }
       }
@@ -930,27 +987,27 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
       while (value[0] && isspace((int)value[0]))
          value++;
       if (value) {
-         ocs::tom::set<CF_value>(ep, value);
+         cf.set<CF_value>(value);
       } else {
          WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
-   
+
          sge_free_saved_vars(context);
          sge_free(&buffer);
-         DRETURN(0);
+         DRETURN(false);
       }
-   } else if (!strcmp(name, "user_lists") || 
-      !strcmp(name, "xuser_lists") || 
-      !strcmp(name, "projects") || 
-      !strcmp(name, "xprojects") || 
-      !strcmp(name, "prolog") || 
-      !strcmp(name, "epilog") || 
-      !strcmp(name, "starter_method") || 
-      !strcmp(name, "suspend_method") || 
-      !strcmp(name, "resume_method") || 
-      !strcmp(name, "terminate_method") || 
-      !strcmp(name, "qmaster_params") || 
-      !strcmp(name, "execd_params") || 
-      !strcmp(name, "reporting_params") || 
+   } else if (!strcmp(name, "user_lists") ||
+      !strcmp(name, "xuser_lists") ||
+      !strcmp(name, "projects") ||
+      !strcmp(name, "xprojects") ||
+      !strcmp(name, "prolog") ||
+      !strcmp(name, "epilog") ||
+      !strcmp(name, "starter_method") ||
+      !strcmp(name, "suspend_method") ||
+      !strcmp(name, "resume_method") ||
+      !strcmp(name, "terminate_method") ||
+      !strcmp(name, "qmaster_params") ||
+      !strcmp(name, "execd_params") ||
+      !strcmp(name, "reporting_params") ||
       !strcmp(name, "qlogin_command") ||
       !strcmp(name, "rlogin_command") ||
       !strcmp(name, "rsh_command") ||
@@ -964,25 +1021,25 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
       if (!(value = sge_strtok_r(buffer, "\t\n", &context))) {
          /* return line if value is empty */
          WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
-   
+
          sge_free_saved_vars(context);
          sge_free(&buffer);
-         DRETURN(0);
+         DRETURN(false);
       }
       /* skip leading delimitors */
       while (value[0] && isspace((int)value[0]))
          value++;
 
-      ocs::tom::set<CF_value>(ep, value);
+      cf.set<CF_value>(value);
    } else {
       if (!(value = sge_strtok_r(buffer, " \t\n", &context))) {
          WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
-   
+
          sge_free_saved_vars(context);
          sge_free(&buffer);
-         DRETURN(0);
+         DRETURN(false);
       }
-      if (strcmp(name, "auto_user_oticket") == 0 || 
+      if (strcmp(name, "auto_user_oticket") == 0 ||
               strcmp(name, "auto_user_fshare") == 0 ) {
          char *end_ptr = nullptr;
          double dbl_value;
@@ -993,24 +1050,26 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
                                  ANSWER_QUALITY_ERROR,
 				 MSG_MUST_BE_POSITIVE_VALUE_S,
                                  name);
-            DRETURN(0);
-         }            
-      } 
-      ocs::tom::set<CF_value>(ep, value);
+            sge_free_saved_vars(context);
+            sge_free(&buffer);
+            DRETURN(false);
+         }
+      }
+      cf.set<CF_value>(value);
 
       if (sge_strtok_r(nullptr, " \t\n", &context)) {
          /* Allow only one value per line */
          WARNING(MSG_CONFIG_CONF_ONLYSINGLEVALUEFORCONFIGATTRIB_S, name);
-   
+
          sge_free_saved_vars(context);
          sge_free(&buffer);
-         DRETURN(0);
+         DRETURN(false);
       }
    }
 
    sge_free_saved_vars(context);
    sge_free(&buffer);
-   DRETURN(1);
+   DRETURN(true);
 }
 
 /** @brief Build the field list of a global or local configuration
@@ -1018,20 +1077,8 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
  *                     `qconf -sconf` shows
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
-spooling_field *sge_build_CONF_field_list(bool spool_config) {
-   /* There are 4 possible CONF_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*4);
-   int count = 0;
-   
-   if (spool_config) {
-      create_spooling_field(&fields[count++], CONF_name, 28, "conf_name", false, nullptr, false,  nullptr, nullptr, nullptr);
-      create_spooling_field(&fields[count++], CONF_version, 28, "conf_version", false, nullptr, false, nullptr, nullptr, nullptr);
-   }
-   
-   create_spooling_field(&fields[count++], CONF_entries, 28, nullptr, false, CF_sub_fields, false, &qconf_sub_param_sfi, nullptr, nullptr);
-   create_spooling_field(&fields[count++], NoName, 28, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-   
-   return fields;
+spooling_field *sge_build_CONF_field_list(const bool spool_config) {
+   return ocs_spool_select<ocs_spool_CONF_table>(spool_config ? OCS_SPOOL_V_SPOOL : 0);
 }
 
 /** @brief Build the field list of a cluster queue
@@ -1047,172 +1094,68 @@ spooling_field *sge_build_CONF_field_list(bool spool_config) {
  * @param with_hostlist keep the `hostlist` entry, the layout `qconf -sq` shows
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
-spooling_field *sge_build_CQ_field_list(bool with_hostlist) {
-   int size = 0;
-
-   while (CQ_fields[size].nm != NoName) {
-      size++;
-   }
-   size++;   /* the terminating entry */
-
-   auto *fields = (spooling_field *)sge_malloc(sizeof(spooling_field) * size);
-   int count = 0;
-
-   for (int i = 0; CQ_fields[i].nm != NoName; i++) {
-      if (!with_hostlist && CQ_fields[i].nm == CQ_hostlist) {
-         continue;
-      }
-      fields[count] = CQ_fields[i];
-
-      /* the copy owns neither the name nor the sub fields; the static table does */
-      fields[count].free_name = false;
-      fields[count].free_sub_fields = false;
-      count++;
-   }
-   create_spooling_field(&fields[count], NoName, 21, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-
-   return fields;
+spooling_field *sge_build_CQ_field_list(const bool with_hostlist) {
+   return ocs_spool_select<ocs_spool_CQ_table>(with_hostlist ? OCS_SPOOL_V_HOSTLIST : 0);
 }
 
 /** @brief Build the field list of a queue instance
  * @param to_stdout use the layout `qconf -sq` shows
- * @param to_file   use the spool file layout
+ * @param to_file   use the spool file layout; ignored when @p to_stdout is set
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
-spooling_field *sge_build_QU_field_list(bool to_stdout, bool to_file) {
-   /* There are 52 possible QU_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*52);
-   int count = 0;
-   
-   create_spooling_field (&fields[count++], QU_qname, 21, "qname", false, nullptr, false, nullptr, nullptr, nullptr);
-   create_spooling_field (&fields[count++], QU_qhostname, 21, "hostname", false, nullptr, false, nullptr, nullptr, nullptr);
-   
+spooling_field *sge_build_QU_field_list(const bool to_stdout, const bool to_file) {
+   unsigned variant = 0;
+
    if (to_stdout) {
-      create_spooling_field (&fields[count++], QU_seq_no, 21, "seq_no", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_load_thresholds, 21, "load_thresholds", false, CE_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_suspend_thresholds, 21, "suspend_thresholds", false, CE_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_nsuspend, 21, "nsuspend", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_suspend_interval, 21, "suspend_interval", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_priority, 21, "priority", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_min_cpu_interval, 21, "min_cpu_interval", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_processors, 21, "processors", false, nullptr,false,  nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_qtype, 21, "qtype", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_ckpt_list, 21, "ckpt_list", false, ST_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_pe_list, 21, "pe_list", false, ST_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_rerun, 21, "rerun", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_job_slots, 21, "slots", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_tmpdir, 21, "tmpdir", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_shell, 21, "shell", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_prolog, 21, "prolog", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_epilog, 21, "epilog", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_shell_start_mode, 21, "shell_start_mode", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_starter_method, 21, "starter_method", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_suspend_method, 21, "suspend_method", false, nullptr,false,  nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_resume_method, 21, "resume_method", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_terminate_method, 21, "terminate_method", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_notify, 21, "notify", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_owner_list, 21, "owner_list", false, US_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_acl, 21, "user_lists", false, US_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_xacl, 21, "xuser_lists", false, US_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_subordinate_list, 21, "subordinate_list", false, SO_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_consumable_config_list, 21, "complex_values", false, CE_sub_fields,false,  nullptr, nullptr, nullptr);
-      
-      create_spooling_field (&fields[count++], QU_projects, 21, "projects", false, PR_sub_fields, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_xprojects, 21, "xprojects", false, PR_sub_fields, false, nullptr, nullptr, nullptr);
-      
-      create_spooling_field (&fields[count++], QU_calendar, 21, "calendar", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_initial_state, 21, "initial_state", false, nullptr, false, nullptr, nullptr, nullptr);
-#if 0
-      create_spooling_field (&fields[count++], QU_fshare, 21, "fshare", nullptr,
-                             nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_oticket, 21, "oticket",
-                             nullptr, nullptr, nullptr, nullptr);
-#endif
-      create_spooling_field (&fields[count++], QU_s_rt, 21, "s_rt", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_rt, 21, "h_rt", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_s_cpu, 21, "s_cpu", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_cpu, 21, "h_cpu", false,  nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_s_fsize, 21, "s_fsize", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_fsize, 21, "h_fsize", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_s_data, 21, "s_data", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_data, 21, "h_data", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_s_stack, 21, "s_stack", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_stack, 21, "h_stack", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_s_core, 21, "s_core", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_core, 21, "h_core", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_s_rss, 21, "s_rss", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_rss, 21, "h_rss", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_s_vmem, 21, "s_vmem", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_h_vmem, 21, "h_vmem", false, nullptr, false, nullptr, nullptr, nullptr);
+      variant = OCS_SPOOL_V_QU_SHOW;
    } else if (to_file) {
-      /*
-       * Spool only non-CQ attributes
-       */
-      create_spooling_field (&fields[count++], QU_state, 21, "state", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_pending_signal, 21, "pending_signal", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_pending_signal_delivery_time, 21, "pending_signal_del", false, nullptr, false, nullptr, nullptr, nullptr);
-      create_spooling_field (&fields[count++], QU_version, 21, "version", false, nullptr, false, nullptr, nullptr, nullptr);
-      /* SG: not supported */
-#if 0      
-      create_spooling_field (&fields[count++], QU_error_messages, 21,
-                             "error_messages", nullptr, nullptr, nullptr, nullptr);
-#endif      
+      variant = OCS_SPOOL_V_QU_FILE;
    }
-   create_spooling_field (&fields[count++], NoName, 21, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-   
-   return fields;
+
+   return ocs_spool_select<ocs_spool_QU_table>(variant);
 }
 
 /**
  * @brief Read a per host attribute list of a cluster queue; the field reader of every such field
  *
- * The signature is the one of the field readers of the spooling field table, so the element and the field
- * arrive untyped; the table pairs each field with the reader of its attribute type.
- *
- * @tparam A the attribute type of the field's list
- * @param ep the cluster queue (CQ_Type)
- * @param nm the attribute list field
+ * @tparam F the attribute list field of the cluster queue; its sub-type is the attribute type
+ * @param cq the cluster queue
  * @param buffer the text to parse
  * @param alp receives the errors
- * @return 1 if the list was read and set, 0 otherwise
+ * @return true if the list was read and set, false otherwise
  */
-template <OcsHostAttr A>
-static int read_CQ_attr_list(lListElem *ep, const int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   ocs::tom::ListPtr<A> lp;
+template <auto F>
+static bool read_CQ_attr_list(const ocs::tom::Element<ocs::tom::CQ> cq, const char *buffer,
+                              ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Sub> lp;
 
    if (!ocs_attr_list_parse_from_string(lp, alp, buffer, HOSTATTR_ALLOW_AMBIGUITY)) {
-      return 0;
+      return false;
    }
 
    if (lp) {
-      // the field is given at run time by the spooling field table
-      lSetList(ep, nm, lp.release());
-      return 1;
+      cq.set<F>(std::move(lp));
+      return true;
    }
 
-   return 0;
+   return false;
 }
 
 /**
  * @brief Write a per host attribute list of a cluster queue; the field writer of every such field
  *
- * The signature is the one of the field writers of the spooling field table, so the element and the field
- * arrive untyped; the table pairs each field with the writer of its attribute type, which is why the list is
- * taken into a handle without a check.
- *
- * @tparam A the attribute type of the field's list
- * @param ep the cluster queue (CQ_Type)
- * @param nm the attribute list field
+ * @tparam F the attribute list field of the cluster queue; its sub-type is the attribute type
+ * @param cq the cluster queue
  * @param buffer receives the text, appended
  * @param alp unused
- * @return 1
+ * @return true
  */
-template <OcsHostAttr A>
-static int write_CQ_attr_list(const lListElem *ep, const int nm, dstring *buffer,
-                              [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   ocs_attr_list_append_to_dstring(ocs::tom::ConstList<A>::from_typed(lGetList(ep, nm)), buffer);
+template <auto F>
+static bool write_CQ_attr_list(const ocs::tom::ConstElement<ocs::tom::CQ> cq, dstring *buffer,
+                               [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   ocs_attr_list_append_to_dstring(cq.get<F>(), buffer);
 
-   return 1;
+   return true;
 }
 
 /**
@@ -1221,50 +1164,47 @@ static int write_CQ_attr_list(const lListElem *ep, const int nm, dstring *buffer
  * The field reader of CQ_hostlist. A list that starts with `none` leaves the
  * field as it is. Without DENTER, as the other field readers.
  *
- * @param ep the cluster queue (CQ_Type)
- * @param nm the field to read, CQ_hostlist
+ * @param cq the cluster queue
  * @param buffer the text of the host list
  * @param alp receives messages for the caller, unused here
- * @return 1
+ * @return true
  */
-static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
-                            ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   char delims[] = "\t \v\r,"; 
+static bool read_CQ_hostlist(const ocs::tom::Element<ocs::tom::CQ> cq, const char *buffer,
+                             [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   char delims[] = "\t \v\r,";
 
    auto lp = ocs::tom::ListPtr<ocs::tom::HR>::from_string<HR_name>(buffer, delims);
 
    if (lp) {
       if (strcasecmp(NONE_STR, lp->front().get<HR_name>()) != 0) {
-         ocs::tom::set<CQ_hostlist>(ep, std::move(lp));
+         cq.set<CQ_hostlist>(std::move(lp));
       }
    }
 
-   return 1;
+   return true;
 }
 
 /**
  * @brief Write the host list of a cluster queue
  *
- * The field writer of CQ_hostlist; the field table passes that field as
- * @p nm, so it is not read. Without DENTER, as the other field writers.
+ * The field writer of CQ_hostlist. Without DENTER, as the other field writers.
  *
- * @param ep the cluster queue (CQ_Type)
- * @param nm the field to write, always CQ_hostlist
+ * @param cq the cluster queue
  * @param buffer receives the host list, or `none`
  * @param alp receives messages for the caller, unused here
- * @return 1
+ * @return true
  */
-static int write_CQ_hostlist(const lListElem *ep, int nm,
-                             dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   const auto lp = ocs::tom::get<CQ_hostlist>(ep);
-   
+static bool write_CQ_hostlist(const ocs::tom::ConstElement<ocs::tom::CQ> cq, dstring *buffer,
+                              [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   const auto lp = cq.get<CQ_hostlist>();
+
    if (lp) {
       href_list_append_to_dstring(lp, buffer);
    } else {
       sge_dstring_append(buffer, NONE_STR);
    }
-   
-   return 1;
+
+   return true;
 }
 
 /** @brief Writes the time at which an execution host added itself as a date and time
@@ -1272,15 +1212,14 @@ static int write_CQ_hostlist(const lListElem *ep, int nm,
  * An execution host which an administrator added carries 0, which is written as the empty value
  * of this format, so that it does not read as an instant in time.
  *
- * @param ep the execution host
- * @param nm the attribute to write, always EH_auto_added_time (the field table's), so it is not read
+ * @param host the execution host
  * @param buffer receives the formatted value
  * @param alp receives messages for the caller, unused here
- * @return 1 on success
+ * @return true
  */
-static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   const uint64_t auto_added_time = ocs::tom::get<EH_auto_added_time>(ep);
+static bool write_EH_auto_added_time(const ocs::tom::ConstElement<ocs::tom::EH> host, dstring *buffer,
+                                     [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+   const uint64_t auto_added_time = host.get<EH_auto_added_time>();
 
    if (auto_added_time == 0) {
       sge_dstring_append(buffer, NONE_STR);
@@ -1289,76 +1228,77 @@ static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer
       sge_dstring_append(buffer, sge_ctime64_short(auto_added_time, &dstr));
    }
 
-   return 1;
+   return true;
 }
 
-static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
-                              ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+/**
+ * @brief Write the value of a complex entry of a queue level list
+ *
+ * The string value, or the double value when there is no string.
+ *
+ * @param centry the complex entry
+ * @param buffer receives the value
+ * @param alp receives messages for the caller, unused here
+ * @return true
+ */
+static bool write_CE_stringval(const ocs::tom::ConstElement<ocs::tom::CE> centry, dstring *buffer,
+                               [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    const char *s;
 
-   if ((s=ocs::tom::get<CE_stringval>(ep)) != nullptr) {
+   if ((s = centry.get<CE_stringval>()) != nullptr) {
       sge_dstring_append(buffer, s);
    } else {
-      sge_dstring_sprintf_append(buffer, "%f", ocs::tom::get<CE_doubleval>(ep));
+      sge_dstring_sprintf_append(buffer, "%f", centry.get<CE_doubleval>());
    }
-   
-   return 1;
+
+   return true;
 }
 
 /**
  * @brief Parse a RQR object from string
  *
- * Reads in a RQR Element from string
+ * The field reader of the five RQR_filter_* fields.
  *
- * The field reader of the five RQR_filter_* fields; the field number varies
- * per call, so the filter is stored through the untyped interface.
- *
- * @param ep Store for parsed Elem (RQR_Type)
- * @param nm nm to be parsed, one of the RQR_filter_* fields
+ * @tparam F the filter field
+ * @param rule the rule the filter is stored in
  * @param buffer String of the elem to be parsed
  * @param alp Answer list
- *
- * @return 1 on success 0 on error
+ * @return true on success, false on error
  *
  * @note MT-NOTE: read_RQR_obj() is MT safe
  */
-static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
-                             ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+template <auto F>
+static bool read_RQR_obj(const ocs::tom::Element<ocs::tom::RQR> rule, const char *buffer,
+                         ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
-   int ret = 0;
+   bool ret = false;
 
    if (auto filter = rqs_parse_filter_from_string(buffer, alp)) {
-      // the field number is known only at run time, so the filter is handed over raw
-      lSetObject(ep, nm, filter.release());
-      ret = 1;
-   } 
+      rule.set<F>(std::move(filter));
+      ret = true;
+   }
 
    DRETURN(ret);
 }
 
 /**
- * @brief Converts a element to string
+ * @brief Write a filter of a resource quota rule to a string
  *
- * Prints out a RQR Element to a string
+ * The field writer of the five RQR_filter_* fields.
  *
- * The field writer of the five RQR_filter_* fields; the field number varies
- * per call, so the filter is read through the untyped interface. Those
- * fields hold a filter (RQRF_Type) only, so it is taken without a check.
- *
- * @param ep Elem to be converted (RQR_Type)
- * @param nm nm of Elem, one of the RQR_filter_* fields
- * @param buffer Element as string
+ * @tparam F the filter field
+ * @param rule the rule holding the filter
+ * @param buffer receives the filter
  * @param alp Answer List
- *
- * @return 1 on success 0 on error
+ * @return true on success, false on error
  *
  * @note MT-NOTE: write_RQR_obj() is MT safe
  */
-static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
-                       ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+template <auto F>
+static bool write_RQR_obj(const ocs::tom::ConstElement<ocs::tom::RQR> rule, dstring *buffer,
+                          ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
-   const auto filter = ocs::tom::ConstElement<ocs::tom::RQRF>::from_typed(lGetObject(ep, nm));
-   const int ret = rqs_append_filter_to_dstring(filter, buffer, alp);
+   const bool ret = rqs_append_filter_to_dstring(rule.get<F>(), buffer, alp);
    DRETURN(ret);
 }

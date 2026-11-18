@@ -26,6 +26,8 @@
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 /** @name The grammar of an RSMAP characteristics block
  *
@@ -49,8 +51,8 @@
 #define RSMAP_CHARACTERISTIC_SEPARATOR_STR ","   ///< The same separator, as a string, for `strtok`-style use
 /** @} */
 
-int read_CE_stringval_host(lListElem *ep, int nm, const char *buf,
-                           ocs::tom::ListPtr<ocs::tom::AN> *alp);
+bool read_CE_stringval_host(ocs::tom::Element<ocs::tom::CE> centry, const char *buf,
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
-int write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer,
-                            ocs::tom::ListPtr<ocs::tom::AN> *alp);
+bool write_CE_stringval_host(ocs::tom::ConstElement<ocs::tom::CE> centry, dstring *buffer,
+                             ocs::tom::ListPtr<ocs::tom::AN> *alp);

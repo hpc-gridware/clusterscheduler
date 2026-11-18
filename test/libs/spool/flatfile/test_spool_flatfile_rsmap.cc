@@ -86,7 +86,7 @@ make_rsmap_ce(const char *name) {
 static int
 run_reader(lListElem *ce, const char *input, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    char *buf = strdup(input);
-   int rc = read_CE_stringval_host(ce, CE_stringval, buf, alp);
+   int rc = read_CE_stringval_host(ocs::tom::Element<ocs::tom::CE>(ce), buf, alp) ? 1 : 0;
    free(buf);
    return rc;
 }
@@ -97,7 +97,7 @@ static std::string
 run_writer(const lListElem *ce) {
    dstring buffer = DSTRING_INIT;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   write_CE_stringval_host(ce, CE_stringval, &buffer, &alp);
+   write_CE_stringval_host(ocs::tom::ConstElement<ocs::tom::CE>(ce), &buffer, &alp);
    std::string out{sge_dstring_get_string(&buffer) == nullptr ? "" : sge_dstring_get_string(&buffer)};
    sge_dstring_free(&buffer);
    alp.reset();
