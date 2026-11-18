@@ -110,8 +110,8 @@ calendar_initalize_timer(monitoring_t *monitor) {
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param raw_new_cal the calendar being built (CAL_Type), checked
- * @param raw_cep the calendar as sent by the client (CAL_Type), checked
+ * @param new_cal the calendar being built
+ * @param cep the calendar as sent by the client, may be reduced
  * @param add 1 for add, 0 for modify
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -123,14 +123,11 @@ calendar_initalize_timer(monitoring_t *monitor) {
  */
 int
 calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-             lListElem *raw_new_cal, lListElem *raw_cep,
+             const ocs::tom::Element<ocs::tom::CAL> new_cal, const ocs::tom::ConstElement<ocs::tom::CAL> cep,
              int add, const char *ruser, const char *rhost, gdi_object_t *object,
              ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::modifier; both elements are calendars (request data is checked)
-   const ocs::tom::Element<ocs::tom::CAL> new_cal(raw_new_cal);
-   const ocs::tom::Element<ocs::tom::CAL> cep(raw_cep);
    const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
    const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
    const char *cal_name;
@@ -164,7 +161,8 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
          for (ocs::tom::ConstElement<ocs::tom::QU> queue : ocs::tom::get<CQ_qinstances>(cqueue)) {
             const char *q_cal = ocs::tom::get<QU_calendar>(queue);
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
-               if (sge_ar_list_conflicts_with_calendar(alpp, ocs::tom::get<QU_full_name>(queue), new_cal, master_ar_list)) {
+               if (sge_ar_list_conflicts_with_calendar(alpp, ocs::tom::get<QU_full_name>(queue), new_cal,
+                                                       master_ar_list)) {
                   goto ERROR;
                }
             }
@@ -185,14 +183,13 @@ DRETURN(STATUS_EUNKNOWN);
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param cep see the declaration
+ * @param cep the calendar
  * @param object the table entry for this object type
  * @return 0 on success
  */
 int
-calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *cep,
-               gdi_object_t *object) {
-   // the signature is fixed by gdi_object_t::writer; spool_write_object() is generic over the object type
+calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+               const ocs::tom::ConstElement<ocs::tom::CAL> cep, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -390,22 +387,22 @@ calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
    DRETURN(0);
 }
 
-/** @brief calendar_update_queue_states() as the gdi_object_t::on_success callback of calendars
- *
- * The signature is fixed by the gdi_object_t table in sge_c_gdi.cc.
+/** @brief calendar_update_queue_states() as the gdi_object_t::on_success of calendars
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param cep the calendar (CAL_Type), checked
- * @param old_cep the calendar as it was (CAL_Type), checked, or nullptr when it was added
+ * @param cep the calendar
+ * @param old_cep the calendar as it was, or an empty handle when it was added
  * @param object the table entry for calendars, unused
  * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
-calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep,
-                             gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
-   return calendar_update_queue_states(packet, task, ocs::tom::Element<ocs::tom::CAL>(cep),
-                                       ocs::tom::ConstElement<ocs::tom::CAL>(old_cep), monitor);
+calendar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CAL> cep,
+                 const ocs::tom::ConstElement<ocs::tom::CAL> old_cep, [[maybe_unused]] gdi_object_t *object,
+                 [[maybe_unused]] lList **ppList, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+   const int ret = calendar_update_queue_states(packet, task, cep, old_cep, monitor);
+   DRETURN(ret);
 }

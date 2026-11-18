@@ -80,17 +80,19 @@ void
 cqueue_rollback(lListElem *cqueue);
 
 int
-cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
+               ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor);
 
 int
-cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
-           lListElem *ep, int add, const char *ruser,
-           const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::Element<ocs::tom::CQ> reduced_elem, int add,
+           const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+           ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
 cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-             lListElem *this_elem, gdi_object_t *object);
+             ocs::tom::Element<ocs::tom::CQ> cqueue, gdi_object_t *object);
 
 int
 cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CQ> this_elem,

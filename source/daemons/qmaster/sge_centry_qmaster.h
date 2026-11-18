@@ -52,17 +52,19 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstEl
                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 int
-centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
-               gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CE> centry,
+               ocs::tom::ConstElement<ocs::tom::CE> old_centry, gdi_object_t *object,
+               ocs::tom::ListPtr<ocs::tom::STU> *ppList, monitoring_t *monitor);
 
 int 
-centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *cep,
-             gdi_object_t *object);
+centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             ocs::tom::ConstElement<ocs::tom::CE> centry, gdi_object_t *object);
 
 int 
 centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-           lListElem *new_complex, lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-           ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+           ocs::tom::Element<ocs::tom::CE> ce, ocs::tom::ConstElement<ocs::tom::CE> reduced, int add,
+           const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+           ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 void
 centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU> centries, uint64_t gdi_version);

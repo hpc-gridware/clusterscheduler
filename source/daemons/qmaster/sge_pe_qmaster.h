@@ -49,18 +49,19 @@
 
 /* funtions called from within gdi framework in qmaster */
 int
-pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_pe,
-       lListElem *pe, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-       ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+       ocs::tom::Element<ocs::tom::PE> new_pe, ocs::tom::Element<ocs::tom::PE> pe, int add, const char *ruser,
+       const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
        monitoring_t *monitor);
 
 int
-pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *pep,
-         gdi_object_t *object);
+pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         ocs::tom::ConstElement<ocs::tom::PE> pep, gdi_object_t *object);
 
 int
-pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-           lList **ppList, monitoring_t *monitor);
+pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::PE> ep,
+           ocs::tom::ConstElement<ocs::tom::PE> old_ep, gdi_object_t *object, lList **ppList,
+           monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int

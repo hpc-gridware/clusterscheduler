@@ -87,13 +87,12 @@
  *
  * Copies every attribute the (possibly reduced) request element holds into the complex
  * entry; the slots entry keeps its fixed type, relop, requestable, consumable and default.
- * The signature is fixed by the gdi_object_t table.
  *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param answer_list receives messages for the caller
- * @param centry the complex entry to change (`CE_Type`)
- * @param reduced_elem the request element (`CE_Type`, possibly reduced)
+ * @param ce the complex entry to change
+ * @param reduced the request element, possibly reduced
  * @param add 1 for add, 0 for modify
  * @param remote_user the requesting user
  * @param remote_host the requesting host
@@ -105,15 +104,10 @@
  */
 int
 centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-           lListElem *centry, lListElem *reduced_elem, const int add, const char *remote_user, const char *remote_host,
-           gdi_object_t *object, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
-           monitoring_t *monitor) {
+           const ocs::tom::Element<ocs::tom::CE> ce, const ocs::tom::ConstElement<ocs::tom::CE> reduced, const int add,
+           const char *remote_user, const char *remote_host, gdi_object_t *object, const ocs::gdi::Command cmd,
+           const ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-
-   // the generic GDI code hands over an element of the table's type (CE_Type), the request element
-   // is structure-checked in the listener
-   const ocs::tom::Element<ocs::tom::CE> ce(centry);
-   const ocs::tom::ConstElement<ocs::tom::CE> reduced(reduced_elem);
 
    bool ret = true;
    bool is_slots_attr = false;
@@ -251,22 +245,18 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
 
 /** @brief Write a complex entry to the spool
  *
- * The signature is fixed by the gdi_object_t table.
- *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param cep the complex entry to write (`CE_Type`)
+ * @param centry the complex entry to write
  * @param object the table entry for this object type
  * @return 0 on success, 1 if writing failed
  */
 int
-centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *cep,
-             gdi_object_t *object) {
+centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             const ocs::tom::ConstElement<ocs::tom::CE> centry, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   // the generic GDI code hands over an element of the table's type (CE_Type)
-   const ocs::tom::Element<ocs::tom::CE> centry(cep);
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), centry,
@@ -291,12 +281,13 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
  * running jobs are re-done against all hosts and queues, and the change is
  * announced as an event. See the `@bug` below for the cost of that.
  *
- * @param ep the new or modified complex entry (`CE_Type`)
- * @param old_ep the previous version, or `nullptr` when the entry was added
+ * @param centry the new or modified complex entry
+ * @param old_centry the previous version, or an empty handle when the entry was added
  * @param object the GDI object description for complex entries
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ppList see the brief above
+ * @param ppList collects the names of the complex entries whose consumables are to be rebuilt (created if
+ *        empty), or nullptr
  * @param monitor for monitoring qmaster threads
  *
  * @return 0 on success
@@ -331,13 +322,11 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
  *      - soft requests on consumables could be enabled
  */
 int
-centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
-               gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CE> centry,
+               const ocs::tom::ConstElement<ocs::tom::CE> old_centry, gdi_object_t *object,
+               ocs::tom::ListPtr<ocs::tom::STU> *ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the generic GDI code hands over elements of the table's type (CE_Type)
-   const ocs::tom::Element<ocs::tom::CE> centry(ep);
-   const ocs::tom::ConstElement<ocs::tom::CE> old_centry(old_ep);
    bool rebuild_consumables = false;
 
    sge_add_event(0, old_centry ? sgeE_CENTRY_MOD : sgeE_CENTRY_ADD, 0, 0,
@@ -363,8 +352,12 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
       }
    }
 
-   if (rebuild_consumables) {
-      ocs::tom::emplace_back<STU_name>(ppList, ocs::tom::get<CE_name>(centry));
+   // a nullptr name adds nothing, as the free emplace_back() on the raw list did
+   if (const char *name = ocs::tom::get<CE_name>(centry); rebuild_consumables && ppList != nullptr && name != nullptr) {
+      if (*ppList == nullptr) {
+         *ppList = ocs::tom::ListPtr<ocs::tom::STU>::create("");
+      }
+      (*ppList)->emplace_back<STU_name>(name);
    }
 
    DRETURN(0);

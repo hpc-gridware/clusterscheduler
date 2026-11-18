@@ -858,14 +858,11 @@ cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const o
  */
 int
 cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-           lListElem *raw_cqueue,
-           lListElem *raw_reduced_elem, int add, const char *remote_user, const char *remote_host,
-           gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+           const ocs::tom::Element<ocs::tom::CQ> cqueue, const ocs::tom::Element<ocs::tom::CQ> reduced_elem, int add,
+           const char *remote_user, const char *remote_host, gdi_object_t *object, ocs::gdi::Command cmd,
+           ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::modifier; both are cluster queues, the request data is checked
-   const ocs::tom::Element<ocs::tom::CQ> cqueue(raw_cqueue);
-   const ocs::tom::Element<ocs::tom::CQ> reduced_elem(raw_reduced_elem);
    bool ret = true;
    const ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR));
    const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
@@ -1019,20 +1016,18 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
  * @param packet the client request
  * @param task the GDI task being answered
  * @param cqueue the cluster queue
- * @param old_cqueue see the declaration
+ * @param old_cqueue the cluster queue as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing
+ * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
-cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *raw_cqueue, lListElem *raw_old_cqueue,
-               gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CQ> cqueue,
+               const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, gdi_object_t *object, lList **ppList,
+               monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::on_success; both are cluster queues
-   const ocs::tom::Element<ocs::tom::CQ> cqueue(raw_cqueue);
-   const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue(raw_old_cqueue);
    const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
 
    /*
@@ -1200,10 +1195,8 @@ cqueue_commit(const ocs::tom::Element<ocs::tom::CQ> cqueue, const uint64_t gdi_s
  */
 int
 cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-             lListElem *raw_cqueue, gdi_object_t *object) {
+             const ocs::tom::Element<ocs::tom::CQ> cqueue, gdi_object_t *object) {
    DENTER(TOP_LAYER);
-   // the signature is fixed by gdi_object_t::writer
-   const ocs::tom::Element<ocs::tom::CQ> cqueue(raw_cqueue);
    int ret = 0;
    const char *name = ocs::tom::get<CQ_name>(cqueue);
    dstring key_dstring = DSTRING_INIT;
@@ -1222,14 +1215,15 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
       uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
 
       if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {
-         const char *key =
-                 sge_dstring_sprintf(&key_dstring, "%s/%s", name, static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
+         const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", name,
+                                               static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
          dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), qinstance,
                                     key, SGE_TYPE_QINSTANCE);
          answer_list_output(&spool_answer_list);
 
          if (!dbret) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_PERSISTENCE_WRITE_FAILED_S, key);
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_PERSISTENCE_WRITE_FAILED_S,
+                                    key);
             ret = 1;
          }
       }

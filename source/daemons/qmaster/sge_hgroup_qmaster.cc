@@ -250,7 +250,7 @@ hgroup_reserved_delta_is_strict(const ocs::tom::ConstElement<ocs::tom::HGRP> hgr
  * @param hgroup the host group being modified
  * @param answer_list receives messages for the caller
  * @param reduced_elem the reduced element the client sent
- * @param cmd the command being executed
+ * @param cmd the command being executed, unused
  * @param sub_command what kind of modification this is
  * @param[out] add_hosts receives the hosts the effective membership gains
  * @param[out] rem_hosts receives the hosts the effective membership loses
@@ -259,7 +259,7 @@ hgroup_reserved_delta_is_strict(const ocs::tom::ConstElement<ocs::tom::HGRP> hgr
  */
 static bool
 hgroup_mod_hostlist(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                    const ocs::tom::Element<ocs::tom::HGRP> reduced_elem, const ocs::gdi::Command cmd,
+                    const ocs::tom::Element<ocs::tom::HGRP> reduced_elem, [[maybe_unused]] const ocs::gdi::Command cmd,
                     const ocs::gdi::SubCommand sub_command, ocs::tom::ListPtr<ocs::tom::HR> &add_hosts,
                     ocs::tom::ListPtr<ocs::tom::HR> &rem_hosts, ocs::tom::ListPtr<ocs::tom::HR> &occupant_groups) {
    DENTER(TOP_LAYER);
@@ -297,9 +297,8 @@ hgroup_mod_hostlist(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::Li
                                                    master_hgroup_list);
          }
          if (ret) {
-            attr_mod_sub_list(answer_list, hgroup, HGRP_host_list, HR_name,
-                              reduced_elem, cmd, sub_command, SGE_ATTR_HOSTLIST,
-                              SGE_OBJ_HGROUP, 0, nullptr);
+            attr_mod_sub_list<HGRP_host_list, HR_name>(answer_list, hgroup, reduced_elem, sub_command,
+                                                       SGE_ATTR_HOSTLIST, SGE_OBJ_HGROUP);
             /*
              * CS-2680, N-N-5. Members denoting the same set are collapsed into
              * one, and the collapse is reported. Run on the *result* list, so
@@ -486,15 +485,11 @@ hgroup_rollback_cqueues(const ocs::tom::Element<ocs::tom::HGRP> hgroup) {
  */
 int
 hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-           lListElem *raw_hgroup,
-           lListElem *raw_reduced_elem, int add, const char *remote_user, const char *remote_host,
-           gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-           monitoring_t *monitor) {
+           const ocs::tom::Element<ocs::tom::HGRP> hgroup, const ocs::tom::Element<ocs::tom::HGRP> reduced_elem,
+           int add, const char *remote_user, const char *remote_host, gdi_object_t *object, ocs::gdi::Command cmd,
+           ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::modifier; both are host groups, the request data is checked
-   const ocs::tom::Element<ocs::tom::HGRP> hgroup(raw_hgroup);
-   const ocs::tom::Element<ocs::tom::HGRP> reduced_elem(raw_reduced_elem);
    bool ret = true;
    const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
    const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
@@ -1195,19 +1190,18 @@ void hgroup_send_referencee_events(const ocs::tom::ConstList<ocs::tom::HR> refer
  * @param packet the client request
  * @param task the GDI task being answered
  * @param hgroup the host group
- * @param old_hgroup see the declaration
+ * @param old_hgroup the host group as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing
+ * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
-hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *raw_hgroup, lListElem *old_hgroup,
-               gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::HGRP> hgroup,
+               const ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup, gdi_object_t *object, lList **ppList,
+               monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::on_success
-   const ocs::tom::Element<ocs::tom::HGRP> hgroup(raw_hgroup);
    const char *name = ocs::tom::get<HGRP_name>(hgroup);
    const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
    ocs::tom::ListPtr<ocs::tom::HR> referencees;
@@ -1219,7 +1213,8 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *raw_hg
    /*
     * HGRP modify or add event
     */
-   sge_add_event(0, old_hgroup ? sgeE_HGROUP_MOD : sgeE_HGROUP_ADD, 0, 0, name, nullptr, nullptr, hgroup, packet->gdi_session);
+   sge_add_event(0, old_hgroup ? sgeE_HGROUP_MOD : sgeE_HGROUP_ADD, 0, 0, name, nullptr, nullptr, hgroup,
+                 packet->gdi_session);
 
    static_cast<void>(hgroup.exchange<HGRP_cqueue_list>(std::move(cqueue_list)));
 
@@ -1248,11 +1243,9 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *raw_hg
  */
 int
 hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-             lListElem *raw_this_elem, gdi_object_t *object) {
+             const ocs::tom::Element<ocs::tom::HGRP> this_elem, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::writer
-   const ocs::tom::Element<ocs::tom::HGRP> this_elem(raw_this_elem);
    bool tmp_ret = true;
    bool dbret;
    const char *name = ocs::tom::get<HGRP_name>(this_elem);
@@ -1280,7 +1273,8 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
             uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
 
             if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {
-               const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname, static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
+               const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname,
+                                                     static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
                dbret = spool_write_object(&spool_answer_list, spool_get_default_context(),
                                           qinstance, key, SGE_TYPE_QINSTANCE);
                answer_list_output(&spool_answer_list);

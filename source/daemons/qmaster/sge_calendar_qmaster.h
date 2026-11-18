@@ -48,21 +48,23 @@
 
 
 int
-calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_cal,
-             lListElem *cep, int add, const char *ruser,
-             const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             ocs::tom::Element<ocs::tom::CAL> new_cal, ocs::tom::ConstElement<ocs::tom::CAL> cep, int add,
+             const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+             ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
-calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *cep,
-               gdi_object_t *object);
+calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+               ocs::tom::ConstElement<ocs::tom::CAL> cep, gdi_object_t *object);
 
 int
 calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CAL> cep,
                              ocs::tom::ConstElement<ocs::tom::CAL> old_cep, monitoring_t *monitor);
 
 int
-calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
-                             lList **ppList, monitoring_t *monitor);
+calendar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CAL> cep,
+                 ocs::tom::ConstElement<ocs::tom::CAL> old_cep, gdi_object_t *object, lList **ppList,
+                 monitoring_t *monitor);
 
 int
 sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CAL> cep,

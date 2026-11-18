@@ -88,8 +88,8 @@ static void pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE> new_pe,
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param raw_new_pe the parallel environment as it is to become (PE_Type)
- * @param raw_pe the reduced element the client sent (PE_Type)
+ * @param new_pe the parallel environment as it is to become
+ * @param pe the reduced element the client sent; its user lists are normalized and consumed
  * @param add 1 for add, 0 for modify
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -100,17 +100,12 @@ static void pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE> new_pe,
  * @return 0 on success
  */
 int
-pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *raw_new_pe,
-       lListElem *raw_pe, /* reduced */
-       int add, const char *ruser, const char *rhost, gdi_object_t *object,
-       ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-       monitoring_t *monitor) {
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+       const ocs::tom::Element<ocs::tom::PE> new_pe, const ocs::tom::Element<ocs::tom::PE> pe, int add,
+       const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+       ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::modifier; both elements are parallel environments
-   // (the gdi object table and the listener's structure check of the request data guarantee it)
-   const ocs::tom::Element<ocs::tom::PE> new_pe(raw_new_pe);
-   const ocs::tom::Element<ocs::tom::PE> pe(raw_pe);
    int ret;
    const char *s, *pe_name;
    const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
@@ -157,8 +152,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
          goto ERROR;
       }
 
-      attr_mod_sub_list(alpp, new_pe, PE_user_list, US_name, pe, cmd, sub_command,
-                        SGE_ATTR_USER_LISTS, SGE_OBJ_PE, 0, nullptr);
+      attr_mod_sub_list<PE_user_list, US_name>(alpp, new_pe, pe, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_PE);
    }
 
    /* ---- PE_xuser_list */
@@ -169,8 +163,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
       if (userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pe), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
-      attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, cmd, sub_command,
-                        SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE, 0, nullptr);
+      attr_mod_sub_list<PE_xuser_list, US_name>(alpp, new_pe, pe, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE);
    }
 
    if (ocs::tom::has<PE_xuser_list>(pe) ||
@@ -248,8 +241,8 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
  * @return 0 on success
  */
 int
-pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *pep,
-         gdi_object_t *object) {
+pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         const ocs::tom::ConstElement<ocs::tom::PE> pep, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -274,22 +267,22 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
  * @param packet the client request
  * @param task the GDI task being answered
  * @param ep the object
- * @param old_ep the object as it was, or nullptr on add
+ * @param old_ep the object as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing
+ * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
-int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-               lList **ppList, monitoring_t *monitor) {
+int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::PE> ep,
+               const ocs::tom::ConstElement<ocs::tom::PE> old_ep, gdi_object_t *object, lList **ppList,
+               monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *pe_name;
 
    pe_name = ocs::tom::get<PE_name>(ep);
 
-   pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE>(ep), ocs::tom::ConstElement<ocs::tom::PE>(old_ep),
-                        packet->gdi_session);
+   pe_update_categories(ep, old_ep, packet->gdi_session);
 
    sge_add_event(0, old_ep ? sgeE_PE_MOD : sgeE_PE_ADD, 0, 0, pe_name, nullptr, nullptr, ep, packet->gdi_session);
 

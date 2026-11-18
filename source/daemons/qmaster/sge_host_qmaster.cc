@@ -155,8 +155,7 @@ host_update_categories(ocs::tom::ConstElement<ocs::tom::EH> new_hep, ocs::tom::C
 
 static int
 attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::EH> ep,
-                   ocs::tom::Element<ocs::tom::EH> new_ep,
-                   ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, const char *attr_name,
+                   ocs::tom::Element<ocs::tom::EH> new_ep, ocs::gdi::SubCommand sub_command, const char *attr_name,
                    const char *object_name);
 
 /** @brief Arm the timers this host needs: load cleanup and reschedule-unknown
@@ -499,8 +498,8 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param new_host the host as it is to become
- * @param ep the reduced element the client sent
+ * @param new_eh the host as it is to become
+ * @param reduced the reduced element the client sent
  * @param add 1 for add, 0 for modify
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -511,9 +510,10 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
  * @return 0 on success
  */
 int
-host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_host,
-         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-         ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         const ocs::tom::Element<ocs::tom::EH> new_eh, const ocs::tom::Element<ocs::tom::EH> reduced, int add,
+         const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+         ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *host;
@@ -528,13 +528,11 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    // the key field comes from the gdi_object_t table at run time, the name handling stays generic
    nm = object->key_nm;
 
-   /* ---- EH_name: the gdi_object_t table uses host_mod() for EH_LIST alone, and the listener checks the
-    * request data, so both elements are execution hosts; a nullptr name is refused by verify_host_name() */
+   /* ---- EH_name: a nullptr name is refused by verify_host_name() */
    if (add) {
-      ocs::tom::copy_if_present<EH_name>(ocs::tom::Element<ocs::tom::EH>::from_typed(new_host),
-                                         ocs::tom::ConstElement<ocs::tom::EH>::from_typed(ep));
+      ocs::tom::copy_if_present<EH_name>(new_eh, reduced);
    }
-   host = ocs::tom::get<EH_name>(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(new_host));
+   host = ocs::tom::get<EH_name>(new_eh);
 
    /* On add, reject a host name that is unsafe as a spool path component (e.g.
     * "../../tmp/x"): host names skip verify_str_key() and are used verbatim as a
@@ -546,14 +544,11 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
 
    if (nm == EH_name) {
       bool acl_changed = false;
-      // with EH_name as the key both elements are execution hosts (the request data is checked)
-      const ocs::tom::Element<ocs::tom::EH> reduced(ep);
-      const ocs::tom::Element<ocs::tom::EH> new_eh(new_host);
 
       /* ---- EH_scaling_list */
       if (ocs::tom::has<EH_scaling_list>(reduced)) {
-         attr_mod_sub_list(alpp, new_eh, EH_scaling_list, HS_name, reduced, cmd,
-                           sub_command, SGE_ATTR_LOAD_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
+         changed = attr_mod_sub_list<EH_scaling_list, HS_name>(alpp, new_eh, reduced, sub_command,
+                                                               SGE_ATTR_LOAD_SCALING, SGE_OBJ_EXECHOST).changed;
          if (verify_scaling_list(alpp, new_eh) != STATUS_OK) {
             goto ERROR;
          }
@@ -564,7 +559,7 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
 
       /* ---- EH_consumable_config_list */
       if (ocs::tom::has<EH_consumable_config_list>(reduced)) {
-         if (attr_mod_threshold(alpp, reduced, new_eh, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_EXECHOST)) {
+         if (attr_mod_threshold(alpp, reduced, new_eh, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_EXECHOST)) {
             goto ERROR;
          }
          if (changed) {
@@ -579,8 +574,8 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
          if (userset_list_validate_acl_list(ocs::tom::get<EH_acl>(reduced), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_eh, EH_acl, US_name, reduced, cmd,
-                           sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_EXECHOST, 0, &changed);
+         changed = attr_mod_sub_list<EH_acl, US_name>(alpp, new_eh, reduced, sub_command, SGE_ATTR_USER_LISTS,
+                                                      SGE_OBJ_EXECHOST).changed;
          if (changed) {
             acl_changed = true;
             update_qversion = true;
@@ -594,9 +589,8 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
          if (userset_list_validate_acl_list(ocs::tom::get<EH_xacl>(reduced), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_eh, EH_xacl, US_name, reduced, cmd,
-                           sub_command, SGE_ATTR_XUSER_LISTS,
-                           SGE_OBJ_EXECHOST, 0, &changed);
+         changed = attr_mod_sub_list<EH_xacl, US_name>(alpp, new_eh, reduced, sub_command, SGE_ATTR_XUSER_LISTS,
+                                                       SGE_OBJ_EXECHOST).changed;
          if (changed) {
             acl_changed = true;
             update_qversion = true;
@@ -613,9 +607,8 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
                                  host) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_eh, EH_prj, PR_name, reduced, cmd,
-                           sub_command, SGE_ATTR_PROJECTS,
-                           SGE_OBJ_EXECHOST, 0, &changed);
+         changed = attr_mod_sub_list<EH_prj, PR_name>(alpp, new_eh, reduced, sub_command, SGE_ATTR_PROJECTS,
+                                                      SGE_OBJ_EXECHOST).changed;
          if (changed) {
             update_qversion = true;
          }
@@ -630,9 +623,8 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
                                  host) != STATUS_OK) {
             goto ERROR;
          }
-         attr_mod_sub_list(alpp, new_eh, EH_xprj, PR_name, reduced, cmd,
-                           sub_command, SGE_ATTR_XPROJECTS,
-                           SGE_OBJ_EXECHOST, 0, &changed);
+         changed = attr_mod_sub_list<EH_xprj, PR_name>(alpp, new_eh, reduced, sub_command, SGE_ATTR_XPROJECTS,
+                                                       SGE_OBJ_EXECHOST).changed;
          if (changed) {
             update_qversion = true;
          }
@@ -640,17 +632,16 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
 
       /* ---- EH_usage_scaling_list */
       if (ocs::tom::has<EH_usage_scaling_list>(reduced)) {
-         attr_mod_sub_list(alpp, new_eh, EH_usage_scaling_list, HS_name, reduced, cmd,
-                           sub_command, SGE_ATTR_USAGE_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
+         changed = attr_mod_sub_list<EH_usage_scaling_list, HS_name>(alpp, new_eh, reduced, sub_command,
+                                                                     SGE_ATTR_USAGE_SCALING, SGE_OBJ_EXECHOST).changed;
          if (changed) {
             update_qversion = true;
          }
       }
 
       if (ocs::tom::has<EH_report_variables>(reduced)) {
-         attr_mod_sub_list(alpp, new_eh, EH_report_variables, STU_name, reduced, cmd,
-                           sub_command, "report_variables",
-                           SGE_OBJ_EXECHOST, 0, nullptr);
+         attr_mod_sub_list<EH_report_variables, STU_name>(alpp, new_eh, reduced, sub_command, "report_variables",
+                                                          SGE_OBJ_EXECHOST);
 
 
          /* check if all report_variables are valid complex variables */
@@ -700,11 +691,11 @@ DRETURN(STATUS_EUNKNOWN);
  */
 int
 host_spool([[maybe_unused]] ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task,
-           ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, [[maybe_unused]] gdi_object_t *object) {
+           ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement<ocs::tom::EH> ep,
+           [[maybe_unused]] gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::writer; the table uses host_spool() for EH_LIST alone
-   const char *key = ocs::tom::get<EH_name>(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(ep));
+   const char *key = ocs::tom::get<EH_name>(ep);
 
    int ret = 0;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -996,22 +987,20 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
  * @param ep the host as it now is
  * @param old_ep the host as it was, or nullptr on add
  * @param object the table entry for hosts
- * @param ppList receives information for post processing
+ * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
-host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *raw_ep, lListElem *raw_old_ep,
-             gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::EH> ep,
+             const ocs::tom::ConstElement<ocs::tom::EH> old_ep, gdi_object_t *object, lList **ppList,
+             monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
 
-   // the signature is fixed by gdi_object_t::on_success, the key field comes from the table at run time
+   // the key field comes from the table at run time; the table uses host_success() for EH_LIST alone
    switch (object->key_nm) {
       case EH_name: {
-         // with EH_name as the key both elements are execution hosts
-         const ocs::tom::Element<ocs::tom::EH> ep(raw_ep);
-         const ocs::tom::ConstElement<ocs::tom::EH> old_ep(raw_old_ep);
          const char *host = ocs::tom::get<EH_name>(ep);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 
@@ -2228,9 +2217,8 @@ host_update_categories(const ocs::tom::ConstElement<ocs::tom::EH> new_hep,
  */
 static int
 attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<ocs::tom::EH> ep,
-                   const ocs::tom::Element<ocs::tom::EH> new_ep,
-                   const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command, const char *attr_name,
-                   const char *object_name) {
+                   const ocs::tom::Element<ocs::tom::EH> new_ep, const ocs::gdi::SubCommand sub_command,
+                   const char *attr_name, const char *object_name) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
@@ -2255,9 +2243,8 @@ attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elemen
       /* work on a temporary element to allow rollback on error */
       auto tmp_elem = new_ep.clone();
 
-      /* the attr_mod_sub_list return boolean and there is stored in the int value, attention true=1 */
-      if (!attr_mod_sub_list(alpp, *tmp_elem, EH_consumable_config_list, CE_name, ep, cmd,
-                             sub_command, attr_name, object_name, 0, nullptr)) {
+      if (!attr_mod_sub_list<EH_consumable_config_list, CE_name>(alpp, *tmp_elem, ep, sub_command, attr_name,
+                                                                 object_name).ok) {
          DRETURN(STATUS_EUNKNOWN);
       }
 

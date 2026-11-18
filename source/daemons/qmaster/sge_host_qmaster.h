@@ -64,16 +64,19 @@ sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElem
              monitoring_t *monitor);
 
 int
-host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
-           gdi_object_t *object);
+host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           ocs::tom::ConstElement<ocs::tom::EH> ep, gdi_object_t *object);
 
 int
-host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_host,
-         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-         ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         ocs::tom::Element<ocs::tom::EH> new_eh, ocs::tom::Element<ocs::tom::EH> reduced, int add,
+         const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+         ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
-host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::EH> ep,
+             ocs::tom::ConstElement<ocs::tom::EH> old_ep, gdi_object_t *object, lList **ppList,
+             monitoring_t *monitor);
 
 /* CS-2438 chunk 7: rebuild the reserved "@exec_hosts" group from the execution
  * host list, excluding the "global"/"template" pseudo-hosts. Returns true if the

@@ -71,15 +71,15 @@ userset_update_categories(ocs::tom::ConstList<ocs::tom::US> added, ocs::tom::Con
 
 int
 userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-            lListElem *new_userset, lListElem *userset,
-            int add, const char *ruser, const char *rhost, gdi_object_t *object,
-            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-            monitoring_t *monitor);
+            ocs::tom::Element<ocs::tom::US> new_us, ocs::tom::Element<ocs::tom::US> delta_us, int add,
+            const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+            ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
-userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *userset,
-              gdi_object_t *object);
+userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+              ocs::tom::ConstElement<ocs::tom::US> us, gdi_object_t *object);
 
 int
-userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-                lList **ppList, monitoring_t *monitor);
+userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::US> userset,
+                ocs::tom::ConstElement<ocs::tom::US> old_ep, gdi_object_t *object, lList **ppList,
+                monitoring_t *monitor);

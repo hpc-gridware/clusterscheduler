@@ -1193,6 +1193,170 @@ test_keyed_merge() {
          values_of(dst) == "1,20,31,41" && src_kept);
 }
 
+/**
+ * @brief A job whose environment holds the given variables
+ * @param pairs the variables as name/value pairs, a nullptr name for an entry without a name
+ * @param with_list false for a job without an environment list
+ * @return the job
+ */
+static ocs::tom::ElementPtr<ocs::tom::JB>
+make_env_job(std::initializer_list<std::pair<const char *, const char *>> pairs, const bool with_list = true) {
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   if (with_list) {
+      ocs::tom::set<JB_env_list>(job.get(), make_vars(pairs));
+   }
+   return job;
+}
+
+/**
+ * @brief The values of a job's environment, joined by ',', or "null" without an environment list
+ * @param job the job
+ * @return the values
+ */
+static std::string
+env_of(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   const auto env = ocs::tom::get<JB_env_list>(job);
+   return env ? values_of(env) : "null";
+}
+
+/** @brief What one modify_sublist() call gave and reported */
+struct SublistRun {
+   ocs::tom::SublistOutcome outcome;   ///< the result
+   std::string events;                 ///< the events as "<event>:<key>", separated by blanks
+};
+
+/**
+ * @brief Apply the environment of a request to a job with modify_sublist(), recording the events
+ *
+ * Two variables differ when their values differ.
+ *
+ * @param dst the job to modify
+ * @param request the request; its environment is consumed
+ * @param mode how to apply it
+ * @return the outcome and the events
+ */
+static SublistRun
+run_modify_sublist(const ocs::tom::Element<ocs::tom::JB> dst, const ocs::tom::Element<ocs::tom::JB> request,
+                   const ocs::tom::SublistMode mode) {
+   std::string events;
+   const auto outcome = ocs::tom::modify_sublist<JB_env_list, VA_variable>(
+      dst, request, mode,
+      [](const ocs::tom::ConstElement<ocs::tom::VA> a, const ocs::tom::ConstElement<ocs::tom::VA> b) {
+         const char *x = ocs::tom::get<VA_value>(a);
+         const char *y = ocs::tom::get<VA_value>(b);
+         return x == nullptr || y == nullptr ? x != y : std::strcmp(x, y) != 0;
+      },
+      [&events](const ocs::tom::SublistEvent event, const char *key) {
+         static const char *const names[] = {"missing", "held", "notheld", "created", "appended"};
+         events += events.empty() ? "" : " ";
+         events += std::string(names[static_cast<int>(event)]) + ":" + (key != nullptr ? key : "-");
+      });
+   return {outcome, events};
+}
+
+/**
+ * @brief OPS-FREE-18: modify_sublist<ListF, SubKeyF> does what attr_mod_sub_list() did
+ * @return nothing; CHECK records the results
+ */
+static void
+test_modify_sublist() {
+   constexpr ocs::tom::SublistMode set_mode{};
+   constexpr ocs::tom::SublistMode change_mode{.change = true};
+   constexpr ocs::tom::SublistMode append_mode{.append = true};
+   constexpr ocs::tom::SublistMode remove_mode{.remove = true};
+
+   // set: the request's list replaces the object's as a copy; a request without a list removes it
+   {
+      auto dst = make_env_job({{"A", "1"}, {"B", "2"}});
+      auto request = make_env_job({{"C", "3"}});
+      const auto run = run_modify_sublist(dst.get(), request.get(), set_mode);
+      auto dst2 = make_env_job({{"A", "1"}});
+      auto empty_request = make_env_job({}, false);
+      const auto run2 = run_modify_sublist(dst2.get(), empty_request.get(), set_mode);
+      CHECK(38, "set replaces the sub-list by a copy, also by none, and reports nothing",
+            run.outcome.ok && run.outcome.changed && run.events.empty() && env_of(dst.get()) == "3" &&
+            env_of(request.get()) == "3" && run2.outcome.ok && run2.outcome.changed && env_of(dst2.get()) == "null");
+   }
+
+   // change: a differing held key is replaced and goes to the end, an equal one is dropped, a new one appended
+   {
+      auto dst = make_env_job({{"A", "1"}, {"B", "2"}});
+      auto request = make_env_job({{"B", "20"}, {"C", "30"}, {"A", "1"}});
+      const auto run = run_modify_sublist(dst.get(), request.get(), change_mode);
+      auto same = make_env_job({{"A", "1"}});
+      auto same_request = make_env_job({{"A", "1"}});
+      const auto run2 = run_modify_sublist(same.get(), same_request.get(), change_mode);
+      CHECK(39, "change replaces a differing key, drops an equal one and appends a key not found, consuming the "
+            "request",
+            run.outcome.ok && run.outcome.changed && run.events == "appended:C" && env_of(dst.get()) == "1,20,30" &&
+            env_of(request.get()).empty() && run2.outcome.ok && !run2.outcome.changed && run2.events.empty() &&
+            env_of(same.get()) == "1");
+   }
+
+   // append: a new key is appended; a held key fails the operation and nothing after it is applied
+   {
+      auto dst = make_env_job({{"A", "1"}});
+      auto request = make_env_job({{"B", "2"}, {"A", "9"}, {"C", "3"}});
+      const auto run = run_modify_sublist(dst.get(), request.get(), append_mode);
+      auto dst2 = make_env_job({{"A", "1"}});
+      auto request2 = make_env_job({{"B", "2"}});
+      const auto run2 = run_modify_sublist(dst2.get(), request2.get(), append_mode);
+      CHECK(40, "append of a held key fails and applies nothing, append of a key not found adds it",
+            !run.outcome.ok && !run.outcome.changed && run.events == "held:A" && env_of(dst.get()) == "1" &&
+            env_of(request.get()) == "2,3" && run2.outcome.ok && run2.outcome.changed &&
+            run2.events == "appended:B" && env_of(dst2.get()) == "1,2");
+   }
+
+   // remove: every element with the key goes, a key not found is reported, an emptied list is removed
+   {
+      // the object holds a key twice on purpose; a debug build refuses that at the append (N-H-18)
+      const ocs::tom::UniqueCheckSuspension suspension;
+      auto dst = make_env_job({{"A", "1"}, {"B", "2"}, {"A", "3"}});
+      auto request = make_env_job({{"A", nullptr}, {"X", nullptr}});
+      const auto run = run_modify_sublist(dst.get(), request.get(), remove_mode);
+      auto dst2 = make_env_job({{"A", "1"}});
+      auto request2 = make_env_job({{"A", nullptr}});
+      const auto run2 = run_modify_sublist(dst2.get(), request2.get(), remove_mode);
+      CHECK(41, "remove removes every element with a key, reports a key not found and removes an emptied list",
+            run.outcome.ok && run.outcome.changed && run.events == "notheld:X" && env_of(dst.get()) == "2" &&
+            run2.outcome.ok && run2.outcome.changed && run2.events.empty() && env_of(dst2.get()) == "null");
+   }
+
+   // a missing sub-list: change creates it as a copy of the request's, remove finds nothing
+   {
+      auto dst = make_env_job({}, false);
+      auto request = make_env_job({{"A", "1"}, {"B", "2"}});
+      const auto run = run_modify_sublist(dst.get(), request.get(), change_mode);
+      auto dst2 = make_env_job({}, false);
+      auto request2 = make_env_job({{"A", nullptr}});
+      const auto run2 = run_modify_sublist(dst2.get(), request2.get(), remove_mode);
+      CHECK(42, "a missing sub-list is created as a copy of the request's, a removal from it reports the key",
+            run.outcome.ok && run.outcome.changed && run.events == "created:A" && env_of(dst.get()) == "1,2" &&
+            run2.outcome.ok && !run2.outcome.changed && run2.events == "notheld:A" &&
+            env_of(dst2.get()) == "null");
+   }
+
+   // a key missing in the request, and a request reduced without the list field
+   {
+      auto dst = make_env_job({{"A", "1"}, {"B", "2"}});
+      auto request = make_env_job({{nullptr, "5"}});
+      const auto run = run_modify_sublist(dst.get(), request.get(), change_mode);
+
+      lList *jobs = nullptr;
+      lList *reduced = nullptr;
+      lListElem *rjob = make_reduced_job(jobs, reduced);
+      auto dst2 = make_env_job({{"A", "1"}});
+      const auto run2 = run_modify_sublist(dst2.get(), ocs::tom::Element<ocs::tom::JB>(rjob), change_mode);
+      lFreeList(&reduced);
+      lFreeList(&jobs);
+      CHECK(43, "a missing key is reported for every element compared and fails; a request without the list "
+            "field fails silently",
+            !run.outcome.ok && !run.outcome.changed && run.events == "missing:- missing:-" &&
+            env_of(dst.get()) == "1,2" && !run2.outcome.ok && !run2.outcome.changed && run2.events.empty() &&
+            env_of(dst2.get()) == "1");
+   }
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
    return ocs::module_test::run(argc, argv, {
@@ -1256,5 +1420,10 @@ int main(int argc, char *argv[]) {
        {"a variable list with repeated and missing names, merged and compressed"},
        "the last element of a key wins in place, a known key takes the new value, a new one is appended",
        {{"OPS-02", "covers"}}, {36, 37}, test_keyed_merge},
+      {"OPS-FREE-18", "sub-list modify", "modify_sublist<ListF, SubKeyF> does what attr_mod_sub_list() did",
+       {"set, change, append and remove a job's environment by name, with a missing sub-list, a key not found, "
+        "a key held twice, a missing key and a request without the list field"},
+       "the same lists, results and events in the same order; the request's sub-list consumed",
+       {{"OPS-02", "covers"}}, {38, 39, 40, 41, 42, 43}, test_modify_sublist},
    });
 }

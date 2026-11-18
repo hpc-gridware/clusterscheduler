@@ -48,7 +48,9 @@
 #include "sgeobj/sge_answer.h"
 
 int
-hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::HGRP> hgroup,
+               ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup, gdi_object_t *object, lList **ppList,
+               monitoring_t *monitor);
 
 /* CS-2451: refresh the resolved-host cache of a group and of every group that
  * references it, then let the caller send one HGROUP_MOD per referencee. Used by
@@ -75,13 +77,14 @@ void
 hgroup_rollback_cqueues(ocs::tom::Element<ocs::tom::HGRP> hgroup);
 
 int
-hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
-           lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::Element<ocs::tom::HGRP> reduced_elem, int add,
+           const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
            ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
-hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *upe,
-             gdi_object_t *object);
+hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             ocs::tom::Element<ocs::tom::HGRP> this_elem, gdi_object_t *object);
 
 int
 hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::HGRP> cep,

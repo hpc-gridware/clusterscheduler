@@ -300,13 +300,15 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
  * objects.
  * Modifing is currently not supported.
  *
- * The signature is fixed by the gdi_object_t table, so the elements arrive raw and are taken into
- * checked handles here; the request data has been structure-checked by the listener (CS-3125).
+ * The sub-lists are modified through the run-time form of attr_mod_sub_list(), with AR_name as their
+ * key as ever: AR_name is no field of their element types, so the typed form cannot take it, and the key only
+ * matters for a keyed sub-command, which qrsub does not send.
  *
  * @param alpp the answer_list
- * @param new_ar_ep if a new ar object will be created by this function, then new_ar_ep is a newly initialized
- *                  AR_Type object.
- * @param ar_ep a reduced ar object (AR_Type) that contains all of the requested values
+ * @param new_ar if a new ar object will be created by this function, then new_ar is a newly initialized
+ *               advance reservation
+ * @param ar a reduced advance reservation that contains all of the requested values; its sub-lists are
+ *           consumed
  * @param add 1 for add requests 0 for mod requests
  * @param packet the client request, carrying the requesting user and host
  * @param task the GDI task being answered
@@ -321,14 +323,12 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
  *
  * @note MT-NOTE: ar_mod() is not MT safe
  */
-int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ar_ep,
-           lListElem *ar_ep,
+int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           const ocs::tom::Element<ocs::tom::AR> new_ar, const ocs::tom::Element<ocs::tom::AR> ar,
            const int add, const char *ruser, const char *rhost, gdi_object_t *object, const ocs::gdi::Command cmd,
            const ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::Element<ocs::tom::AR> new_ar(new_ar_ep);
-   const ocs::tom::Element<ocs::tom::AR> ar(ar_ep);
    uint32_t ar_id;
    uint32_t max_advance_reservations = mconf_get_max_advance_reservations();
    const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
@@ -395,25 +395,25 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    ocs::tom::copy_if_present<AR_checkpoint_name>(new_ar, ar);
    /*   AR_resource_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR);
    /*   AR_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR);
    /*   AR_mail_options, SGE_ULONG   */
    ocs::tom::copy_if_present<AR_mail_options>(new_ar, ar);
    /*   AR_mail_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, cmd, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR);
    /*   AR_pe, SGE_STRING */
    ocs::tom::copy_if_present<AR_pe>(new_ar, ar);
    /*   AR_master_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR);
    /*   AR_pe_range, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, cmd, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR);
    /*   AR_allocation_rule, SGE_STRING */
    ocs::tom::copy_if_present<AR_allocation_rule>(new_ar, ar);
    /*   AR_acl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR);
    /*   AR_xacl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR);
    /*   AR_type, SGE_ULONG     */
    ocs::tom::copy_if_present<AR_type>(new_ar, ar);
    // AR_binding
@@ -442,10 +442,8 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
  * After an object was modified/added successfully it
  * is necessary to spool the current state to the filesystem.
  *
- * The signature is fixed by the gdi_object_t table.
- *
  * @param alpp answer_list
- * @param ep element to spool (AR_Type)
+ * @param ar element to spool
  * @param object structure from the GDI framework
  * @param packet the client request
  * @param task the GDI task being answered
@@ -454,11 +452,10 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
  *
  * @note MT-NOTE: ar_spool() is MT safe
  */
-int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
-             gdi_object_t *object) {
+int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             const ocs::tom::ConstElement<ocs::tom::AR> ar, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstElement<ocs::tom::AR> ar(ep);
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    dstring buffer = DSTRING_INIT;
 
@@ -486,12 +483,10 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
  * For example it is necessary to send some events to
  * other daemon.
  *
- * The signature is fixed by the gdi_object_t table.
- *
- * @param ep new added object (AR_Type)
- * @param old_ep old object before modifications or nullptr for add requests
+ * @param ar new added object
+ * @param old_ep old object before modifications or an empty handle for add requests
  * @param object structure from the GDI framework
- * @param ppList receives a copy of the new object, created if it is nullptr (AR_Type)
+ * @param ppList receives a copy of the new object, created if it is empty; nullptr for none
  * @param monitor monitoring structure
  * @param packet the client request
  * @param task the GDI task being answered
@@ -501,10 +496,10 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
  * @note MT-NOTE: ar_success() is not MT safe
  */
 int
-ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-           lList **ppList, monitoring_t *monitor) {
+ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::AR> ar,
+           const ocs::tom::ConstElement<ocs::tom::AR> old_ep, gdi_object_t *object,
+           ocs::tom::ListPtr<ocs::tom::AR> *ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   const ocs::tom::Element<ocs::tom::AR> ar(ep);
    te_event_t ev;
    uint64_t timestamp = sge_get_gmt64();
 
@@ -521,10 +516,9 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
    */
    if (ppList != nullptr) {
       if (*ppList == nullptr) {
-         // the out-parameter is a raw list of the gdi framework
-         *ppList = ocs::tom::ListPtr<ocs::tom::AR>::create("").release();
+         *ppList = ocs::tom::ListPtr<ocs::tom::AR>::create("");
       }
-      ocs::tom::List<ocs::tom::AR>(*ppList).push_back(ar.clone());
+      (*ppList)->push_back(ar.clone());
    }
 
    sge_ar_state_set_waiting(ar);

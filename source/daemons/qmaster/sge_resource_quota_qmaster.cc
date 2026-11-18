@@ -98,15 +98,17 @@ rqs_update_categories(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::C
  * add/modify/delete generic gdi objects.
  * The purpose of this function is it to add new rqs
  * objects or modify existing resource quota sets.
- * The raw parameters are fixed by modifier_func_t; both elements are of RQS_Type.
+ * The rules of a set-all sub-command go through the run-time form of attr_mod_sub_list(), with RQS_name as
+ * their key as ever: RQS_name is no field of the rules, so the typed form cannot take it, and the key only
+ * matters if the request combines set-all with a keyed sub-command.
  *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp reference to an answer list
- * @param new_rqs if a new rqs object will be created by this function, then new_rqs is a newly initialized
- *        CULL object. if this function was called due to a modify request than new_rqs will contain the old data
- * @param rqs a reduced rqs object which contains all necessary information to create a new object or modify
- *        parts of an existing one
+ * @param target if a new rqs object will be created by this function, then target is a newly initialized
+ *        CULL object. if this function was called due to a modify request than target will contain the old data
+ * @param delta a reduced rqs object which contains all necessary information to create a new object or
+ *        modify parts of an existing one; its rule lists are consumed
  * @param add 1 if a new element should be added to the master list 0 to modify an existing object
  * @param ruser username who invoked this gdi request
  * @param rhost hostname of where the gdi request was invoked
@@ -122,13 +124,12 @@ rqs_update_categories(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::C
  * @note MT-NOTE: rqs_mod() is MT safe
  */
 int
-rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_rqs,
-        lListElem *rqs, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+        const ocs::tom::Element<ocs::tom::RQS> target, const ocs::tom::Element<ocs::tom::RQS> delta, int add,
+        const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
         ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::Element<ocs::tom::RQS> target(new_rqs);
-   const ocs::tom::Element<ocs::tom::RQS> delta(rqs);
    const char *rqs_name = nullptr;
    bool rules_changed = false;
    bool previous_enabled = ocs::tom::get<RQS_enabled>(target);
@@ -158,16 +159,16 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
       rules_changed = true;
       if ((sub_command & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
          normalize_sublist<RQS_rule>(delta);
-         attr_mod_sub_list(alpp, target, RQS_rule, RQS_name, delta, cmd, sub_command,
-                           SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
+         // the run-time form: RQS_name is no field of the rules, see attr_mod_sub_list()
+         attr_mod_sub_list(alpp, target, RQS_rule, RQS_name, delta, sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS);
       } else {
          /* *attr cases */
          for (const auto rule : ocs::tom::get<RQS_rule>(delta)) {
             const auto new_rule = rqs_rule_locate(ocs::tom::get<RQS_rule>(target), ocs::tom::get<RQR_name>(rule));
             if (new_rule) {
                /* ---- RQR_limit */
-               attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule, cmd,
-                                 sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
+               attr_mod_sub_list<RQR_limit, RQRL_name>(alpp, new_rule, rule, sub_command, SGE_ATTR_RQSRULES,
+                                                       SGE_OBJ_RQS);
             } else {
                ERROR(SFNMAX, MSG_RESOURCEQUOTA_NORULEDEFINED);
                answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
@@ -198,12 +199,11 @@ DRETURN(STATUS_EUNKNOWN);
  * add/modify/delete generic gdi objects.
  * After an object was modified/added successfully it
  * is necessary to spool the current state to the filesystem.
- * The raw parameters are fixed by writer_func_t; the element is of RQS_Type.
  *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp reference to an answer list, error messages will be added to this list
- * @param ep rqs object which should be spooled
+ * @param rqs rqs object which should be spooled
  * @param object structure of the gdi framework which contains additional information to perform the request
  *        (function pointers, names, CULL-types)
  *
@@ -212,11 +212,10 @@ DRETURN(STATUS_EUNKNOWN);
  * @note MT-NOTE: rqs_spool() is MT safe
  */
 int
-rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
-          gdi_object_t *object) {
+rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+          const ocs::tom::ConstElement<ocs::tom::RQS> rqs, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstElement<ocs::tom::RQS> rqs(ep);
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), rqs,
@@ -239,13 +238,12 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs:
  * After an object was modified/added and spooled successfully
  * it is possibly necessary to perform additional tasks.
  * For example it is necessary to send some events to
- * other daemon. The raw parameters are fixed by on_success_func_t; the
- * elements are of RQS_Type.
+ * other daemon.
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ep new rqs object
- * @param old_ep old rqs object before modification or nullptr if a new object was added
+ * @param rqs new rqs object
+ * @param old_ep old rqs object before modification or an empty handle if a new object was added
  * @param object structure of the gdi framework which contains additional information to perform the request
  *        (function pointers, names, CULL-types)
  * @param ppList receives information for post processing, unused
@@ -256,12 +254,12 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs:
  * @note MT-NOTE: rqs() is MT safe
  */
 int
-rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-            lList **ppList, monitoring_t *monitor) {
+rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::RQS> rqs,
+            const ocs::tom::ConstElement<ocs::tom::RQS> old_ep, gdi_object_t *object, lList **ppList,
+            monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   const ocs::tom::Element<ocs::tom::RQS> rqs(ep);
    const char *rqs_name = ocs::tom::get<RQS_name>(rqs);
-   rqs_update_categories(rqs, ocs::tom::ConstElement<ocs::tom::RQS>(old_ep), packet->gdi_session);
+   rqs_update_categories(rqs, old_ep, packet->gdi_session);
    sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, rqs, packet->gdi_session);
    DRETURN(0);
 }

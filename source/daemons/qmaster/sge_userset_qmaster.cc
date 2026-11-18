@@ -638,14 +638,13 @@ userset_update_categories(const ocs::tom::ConstList<ocs::tom::US> added,
  * @brief Gdi callback function for adding/modifing a userset
  *
  * This function is called from the generic gdi framework when a userset is
- * added or modified. The raw parameters are fixed by the modifier_func_t of
- * the gdi object table.
+ * added or modified.
  *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp answer list
- * @param new_userset if add it's an empty userset that needs to be filled if mod it's the actual stored userset
- * @param userset reduced userset object with new/modified values
+ * @param new_us if add it's an empty userset that needs to be filled if mod it's the actual stored userset
+ * @param delta_us reduced userset object with new/modified values; its entries are consumed
  * @param add 1 for gdi add 0 for gdi mod
  * @param ruser user who invoked the gdi request
  * @param rhost host where the gid request was invoked
@@ -659,15 +658,11 @@ userset_update_categories(const ocs::tom::ConstList<ocs::tom::US> added,
  * @note MT-NOTE: userset_mod() is not MT safe, needs global lock
  */
 int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                lListElem *new_userset, lListElem *userset, int add, const char *ruser,
-                const char *rhost, gdi_object_t *object,
-                ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-                monitoring_t *monitor) {
+                const ocs::tom::Element<ocs::tom::US> new_us, const ocs::tom::Element<ocs::tom::US> delta_us,
+                int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+                ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // both elements are of US_Type: the gdi object table and the listener's structure check guarantee it
-   const ocs::tom::Element<ocs::tom::US> new_us(new_userset);
-   const ocs::tom::Element<ocs::tom::US> delta_us(userset);
    const char *userset_name;
    const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
    const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
@@ -705,8 +700,8 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
       }
    }
    /* ---- US_entries */
-   attr_mod_sub_list(alpp, new_us, US_entries,
-                     UE_name, delta_us, cmd, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
+   attr_mod_sub_list<US_entries, UE_name>(alpp, new_us, delta_us, sub_command, SGE_ATTR_USER_LISTS,
+                                          object->object_name);
    /* interpret user/group names */
    if (userset_validate_entries(new_us, alpp) != STATUS_OK) {
       goto ERROR;
@@ -817,13 +812,12 @@ DRETURN(STATUS_EUNKNOWN);
  * @brief Gdi callback funtion to spool a userset
  *
  * This function is called by the gdi framework after successfully adding or
- * modifing a userset. The raw parameters are fixed by the writer_func_t of the
- * gdi object table.
+ * modifing a userset.
  *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp answer list, error messages will be added to this list
- * @param userset userset object to spool
+ * @param us userset object to spool
  * @param object structure of the gdi framework
  *
  * @return 0 - success, 1 - an error occurred
@@ -831,10 +825,9 @@ DRETURN(STATUS_EUNKNOWN);
  * @note MT-NOTE: userset_spool() is not MT safe
  */
 int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                  lListElem *userset, gdi_object_t *object) {
+                  const ocs::tom::ConstElement<ocs::tom::US> us, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstElement<ocs::tom::US> us(userset);
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), us,
@@ -854,26 +847,25 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::List
  * @brief Do something after a successful add/mod
  *
  * This function is called from the framework after successfull add/mod and
- * spool. The raw parameters are fixed by the on_success_func_t of the gdi
- * object table.
+ * spool.
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ep new added userset
- * @param old_ep for mod the old userset
+ * @param userset new added userset
+ * @param old_ep for mod the old userset, an empty handle for add
  * @param object structure of the gdi framework
- * @param ppList additional list that is returned to the client
+ * @param ppList additional list that is returned to the client, unused
  * @param monitor monitoring structure
  *
  * @return 0 on success
  *
  * @note MT-NOTE: userset_success() is not MT safe
  */
-int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
-                    gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::US> userset,
+                    const ocs::tom::ConstElement<ocs::tom::US> old_ep, gdi_object_t *object, lList **ppList,
+                    monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    dstring ds = DSTRING_INIT;
-   const ocs::tom::Element<ocs::tom::US> userset(ep);
    const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
    const char *userset_name = ocs::tom::get<US_name>(userset);
 

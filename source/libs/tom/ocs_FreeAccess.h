@@ -47,6 +47,7 @@
  * list field of an element, as the old function with "Sub" in its name did.
  */
 
+#include <concepts>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -1589,6 +1590,225 @@ namespace ocs::tom {
             dst.push_back(src_ep.clone());
          }
       }
+   }
+
+   /**
+    * @brief How modify_sublist() applies the sub-list of a request; no flag set replaces the whole sub-list
+    *
+    * The flags combine as the GDI sub-commands they come from. Where more than one is set, a held key is
+    * handled by the first of change, append, remove that is set, and a key that is not held is reported
+    * as not held when remove is set and added otherwise.
+    */
+   struct SublistMode {
+      bool change = false;   ///< a held key takes the request's element if it differs, a new key is added
+      bool append = false;   ///< a new key is added, a held key ends the operation as a failure
+      bool remove = false;   ///< every element holding a requested key is removed
+   };
+
+   /** @brief What modify_sublist() reports to its caller, at the moment it happens */
+   enum class SublistEvent {
+      MissingKey,    ///< an element of either sub-list holds no key; the operation fails
+      AlreadyHeld,   ///< append: the key is held already; the request's element is dropped, the operation fails
+      NotHeld,       ///< remove: the key is not held; nothing is removed for it
+      CreatedList,   ///< the object had no sub-list; it gets a copy of what is left of the request's sub-list
+      Appended       ///< a key the object does not hold: the request's element is moved to the object's sub-list
+   };
+
+   /** @brief The result of modify_sublist() */
+   struct SublistOutcome {
+      bool ok;        ///< false if the request lacks the sub-list, a key is missing or an append met a held key
+      bool changed;   ///< whether the object's sub-list was changed
+   };
+
+   namespace detail {
+      /**
+       * @brief The key of an element of a sub-list as a C string, nullptr if it holds none
+       * @tparam Key the key field, a string or host field
+       * @tparam S the sub-list's object type, deduced from the element
+       * @param ep the element
+       * @return the key, or nullptr if the element lacks the field or the key is not set
+       */
+      template <auto Key, ObjectType S>
+      const char *sublist_key(const ConstElement<S> &ep) {
+         if (!has<Key>(ep)) {
+            return nullptr;
+         }
+         if constexpr (FieldTraits<Key>::type == FieldType::Host) {
+            return get<Key>(ep).c_str();
+         } else {
+            return get<Key>(ep);
+         }
+      }
+
+      /**
+       * @brief Whether two keys of a sub-list are equal, host names as sge_hostcmp() compares them
+       * @tparam Key the key field, a string or host field
+       * @param a the one key, not nullptr
+       * @param b the other key, not nullptr
+       * @return true if the keys are equal
+       */
+      template <auto Key>
+      bool same_sublist_key(const char *const a, const char *const b) {
+         if constexpr (FieldTraits<Key>::type == FieldType::Host) {
+            return Host(a) == Host(b);
+         } else {
+            return std::strcmp(a, b) == 0;
+         }
+      }
+   } // namespace detail
+
+   /**
+    * @brief Apply the sub-list of a modify request to the sub-list of an object, key by key
+    *
+    * Without a flag in @p mode the object's sub-list is replaced by a copy of the request's. Otherwise each
+    * element of the request's sub-list is looked up by @p SubKeyF in the object's:
+    * - a held key: change replaces the held element by the request's one if @p differs says they differ
+    *   (the new one goes to the end) and drops the request's one otherwise; append reports
+    *   SublistEvent::AlreadyHeld and fails; remove removes every element with the key;
+    * - the keys that are not held, once the held ones are done and nothing failed: remove reports
+    *   SublistEvent::NotHeld; otherwise, if the object has no sub-list, it gets a copy of what is left of the
+    *   request's (SublistEvent::CreatedList), else the element is moved over (SublistEvent::Appended).
+    *
+    * An element of either sub-list without a key is reported as SublistEvent::MissingKey for each pair it is
+    * compared in, and the operation fails. After a request element is applied, the walk starts again at the
+    * front of what is left of the request's sub-list, so a key the request holds twice is applied twice.
+    * Unless the operation failed, an object's sub-list left without elements is removed (set to nullptr).
+    *
+    * The request is consumed: its elements are moved to the object or freed as they are applied, as
+    * attr_mod_sub_list() always did. What the operation reports is the caller's to put into words.
+    *
+    * @tparam ListF the list field, of both elements' object type
+    * @tparam SubKeyF the key field, a string or host field of the list field's sub-type
+    * @tparam T the object type, deduced from the destination
+    * @tparam Differs a predicate on (request element, held element) of the sub-type
+    * @tparam Report a callable taking (SublistEvent, const char *key); the key is nullptr for MissingKey
+    * @param dst the object to modify
+    * @param request the modify request, may be reduced; its sub-list is consumed
+    * @param mode how to apply the request's sub-list
+    * @param differs whether a request element changes the held element with the same key
+    * @param report called for every event, in the order they happen
+    * @return whether the operation succeeded and whether the object's sub-list was changed
+    */
+   template <auto ListF, auto SubKeyF, ObjectType T, typename Differs, typename Report>
+      requires detail::SubKeyField<ListF, SubKeyF> &&
+               (FieldTraits<SubKeyF>::type == FieldType::String || FieldTraits<SubKeyF>::type == FieldType::Host) &&
+               std::predicate<Differs &, ConstElement<typename FieldTraits<ListF>::Sub>,
+                              ConstElement<typename FieldTraits<ListF>::Sub>> &&
+               std::invocable<Report &, SublistEvent, const char *>
+   SublistOutcome modify_sublist(const Element<T> &dst, const std::type_identity_t<Element<T>> &request,
+                                 const SublistMode mode, Differs &&differs, Report &&report) {
+      detail::assert_field_of<ListF, T>();
+      using S = typename FieldTraits<ListF>::Sub;
+      bool ok = true;
+      bool changed = false;
+
+      if (!has<ListF>(ConstElement<T>(request))) {
+         return {false, false};
+      }
+
+      if (mode.change || mode.append || mode.remove) {
+         const List<S> reduced = get<ListF>(request);
+         const List<S> full = get<ListF>(dst);
+
+         // first the keys the object holds; whatever is applied leaves the request's sub-list
+         Element<S> next_reduced = reduced.front();
+         while (const Element<S> reduced_ep = next_reduced) {
+            bool restart = false;
+            bool remove_reduced = false;
+
+            next_reduced = reduced_ep.next();
+            Element<S> next_full = full.front();
+            while (const Element<S> full_ep = next_full) {
+               next_full = full_ep.next();
+
+               const char *const rkey = detail::sublist_key<SubKeyF>(ConstElement<S>(reduced_ep));
+               const char *const fkey = detail::sublist_key<SubKeyF>(ConstElement<S>(full_ep));
+               if (rkey == nullptr || fkey == nullptr) {
+                  report(SublistEvent::MissingKey, nullptr);
+                  ok = false;
+               }
+
+               if (ok && detail::same_sublist_key<SubKeyF>(rkey, fkey)) {
+                  if (mode.change) {
+                     if (differs(ConstElement<S>(reduced_ep), ConstElement<S>(full_ep))) {
+                        changed = true;
+                        auto moved = reduced.extract(reduced_ep);
+                        full.erase(full_ep);
+                        full.push_back(std::move(moved));
+                     } else {
+                        reduced.erase(reduced_ep);
+                     }
+                     restart = true;
+                     break;
+                  } else if (mode.append) {
+                     report(SublistEvent::AlreadyHeld, rkey);
+                     ok = false;
+                     reduced.erase(reduced_ep);
+                     restart = true;
+                     break;
+                  } else if (mode.remove) {
+                     // every element with the key goes, so that a key held twice cannot survive its removal
+                     changed = true;
+                     full.erase(full_ep);
+                     remove_reduced = true;
+                     continue;
+                  }
+               }
+            }
+            if (remove_reduced) {
+               reduced.erase(reduced_ep);
+               restart = true;
+            }
+            if (!ok) {
+               break;
+            }
+            if (restart) {
+               next_reduced = reduced.front();
+            }
+         }
+
+         // then the keys the object does not hold
+         if (ok) {
+            next_reduced = reduced.front();
+            while (const Element<S> reduced_ep = next_reduced) {
+               next_reduced = reduced_ep.next();
+
+               const char *const rkey = detail::sublist_key<SubKeyF>(ConstElement<S>(reduced_ep));
+               if (rkey == nullptr) {
+                  report(SublistEvent::MissingKey, nullptr);
+                  ok = false;
+               }
+
+               if (ok) {
+                  if (mode.remove) {
+                     report(SublistEvent::NotHeld, rkey);
+                  } else if (!full) {
+                     report(SublistEvent::CreatedList, rkey);
+                     set<ListF>(dst, reduced.clone(""));
+                     changed = true;
+                     break;
+                  } else {
+                     report(SublistEvent::Appended, rkey);
+                     full.push_back(reduced.extract(reduced_ep));
+                     changed = true;
+                  }
+               }
+            }
+         }
+      } else {
+         // without a flag the request's sub-list replaces the object's
+         set<ListF>(dst, get<ListF>(request).clone(""));
+         changed = true;
+      }
+
+      // a sub-list left without elements is removed
+      if (ok) {
+         if (const auto lp = get<ListF>(dst); lp && lp.empty()) {
+            set<ListF>(dst, nullptr);
+         }
+      }
+
+      return {ok, changed};
    }
 
 } // namespace ocs::tom

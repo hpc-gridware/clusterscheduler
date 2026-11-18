@@ -125,6 +125,10 @@ namespace {
       static constexpr ev_event del_event = sgeE_PROJECT_DEL;            ///< the delete event
       static constexpr int node_type = STT_PROJECT;                      ///< the share tree node type
    };
+
+   /** @brief UserFields for a user object (UU), ProjectFields for a project object (PR) */
+   template <ocs::tom::ObjectType T>
+   using FieldsOf = std::conditional_t<std::is_same_v<T, ocs::tom::UU>, UserFields, ProjectFields>;
 }
 
 static int
@@ -257,9 +261,10 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
 
 /** @brief Apply one attribute change to an user or project
  *
- * The gdi_object_t::modifier for user or projects; see sge_c_gdi.h for the sequence it is called from.
- * The raw parameters are fixed by modifier_func_t; the elements are of the type of the table entry.
+ * The gdi_object_t::modifier for users (UU_LIST) and projects (PR_LIST); see sge_c_gdi.h for the sequence
+ * it is called from.
  *
+ * @tparam T the object type of the table entry, ocs::tom::UU or ocs::tom::PR
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
@@ -274,24 +279,32 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
+template <ocs::tom::ObjectType T>
 int
-userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
-            lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+            const ocs::tom::Element<T> modp, const ocs::tom::Element<T> ep, int add, const char *ruser,
+            const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
             monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   int ret;
-   if (object->target == ocs::gdi::Target::UU_LIST) {
-      ret = ocs_userprj_mod<UserFields>(alpp, ocs::tom::Element<ocs::tom::UU>(modp),
-                                        ocs::tom::Element<ocs::tom::UU>(ep), add, MSG_OBJ_USER);
-   } else {
-      ret = ocs_userprj_mod<ProjectFields>(alpp, ocs::tom::Element<ocs::tom::PR>(modp),
-                                           ocs::tom::Element<ocs::tom::PR>(ep), add, MSG_OBJ_PRJ);
-   }
+   constexpr bool user_flag = std::is_same_v<T, ocs::tom::UU>;
+   const int ret = ocs_userprj_mod<FieldsOf<T>>(alpp, modp, ep, add, user_flag ? MSG_OBJ_USER : MSG_OBJ_PRJ);
 
    DRETURN(ret);
 }
+
+/// @cond explicit instantiations for the gdi_object_t table in sge_c_gdi.cc
+template int userprj_mod<ocs::tom::UU>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                                       ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::UU> modp,
+                                       ocs::tom::Element<ocs::tom::UU> ep, int add, const char *ruser,
+                                       const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+                                       ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+template int userprj_mod<ocs::tom::PR>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                                       ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::PR> modp,
+                                       ocs::tom::Element<ocs::tom::PR> ep, int add, const char *ruser,
+                                       const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+                                       ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+/// @endcond
 
 /** @brief Announce a user or project change once it is safely spooled
  *
@@ -331,37 +344,46 @@ ocs_userprj_success(ocs::gdi::Packet *packet, const ocs::tom::Element<typename F
 
 /** @brief Announce an user or project change once it is safely spooled
  *
- * The gdi_object_t::on_success for user or projects. The raw parameters are
- * fixed by on_success_func_t; the element is of the type of the table entry.
+ * The gdi_object_t::on_success for users (UU_LIST) and projects (PR_LIST).
  *
+ * @tparam T the object type of the table entry, ocs::tom::UU or ocs::tom::PR
  * @param packet the client request
  * @param task the GDI task being answered
  * @param ep the object
- * @param old_ep the object as it was, or nullptr on add
+ * @param old_ep the object as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing
+ * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
+template <ocs::tom::ObjectType T>
 int
-userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-                lList **ppList, monitoring_t *monitor) {
+userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<T> ep,
+                const ocs::tom::ConstElement<T> old_ep, gdi_object_t *object, lList **ppList,
+                monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   if (object->target == ocs::gdi::Target::UU_LIST) {
-      ocs_userprj_success<UserFields>(packet, ocs::tom::Element<ocs::tom::UU>(ep), old_ep != nullptr);
-   } else {
-      ocs_userprj_success<ProjectFields>(packet, ocs::tom::Element<ocs::tom::PR>(ep), old_ep != nullptr);
-   }
+   ocs_userprj_success<FieldsOf<T>>(packet, ep, old_ep != nullptr);
 
    DRETURN(0);
 }
 
+/// @cond explicit instantiations for the gdi_object_t table in sge_c_gdi.cc
+template int userprj_success<ocs::tom::UU>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                                           ocs::tom::Element<ocs::tom::UU> ep,
+                                           ocs::tom::ConstElement<ocs::tom::UU> old_ep, gdi_object_t *object,
+                                           lList **ppList, monitoring_t *monitor);
+template int userprj_success<ocs::tom::PR>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                                           ocs::tom::Element<ocs::tom::PR> ep,
+                                           ocs::tom::ConstElement<ocs::tom::PR> old_ep, gdi_object_t *object,
+                                           lList **ppList, monitoring_t *monitor);
+/// @endcond
+
 /** @brief Write an user or project to the spool
  *
- * The gdi_object_t::writer for user or projects. The raw parameters are fixed
- * by writer_func_t; the element is of the type of the table entry.
+ * The gdi_object_t::writer for users (UU_LIST) and projects (PR_LIST).
  *
+ * @tparam T the object type of the table entry, ocs::tom::UU or ocs::tom::PR
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
@@ -369,14 +391,14 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
  * @param object the table entry for this object type
  * @return 0 on success
  */
+template <ocs::tom::ObjectType T>
 int
-userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *upe,
-              gdi_object_t *object) {
+userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+              const ocs::tom::ConstElement<T> upe, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   const bool user_flag = object->target == ocs::gdi::Target::UU_LIST;
-   const char *name = user_flag ? ocs::tom::get<UU_name>(ocs::tom::ConstElement<ocs::tom::UU>(upe))
-                                : ocs::tom::get<PR_name>(ocs::tom::ConstElement<ocs::tom::PR>(upe));
+   constexpr bool user_flag = std::is_same_v<T, ocs::tom::UU>;
+   const char *name = ocs::tom::get<FieldsOf<T>::name>(upe);
 
    /* write user or project to file */
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -391,6 +413,15 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<
 
    DRETURN(dbret ? 0 : 1);
 }
+
+/// @cond explicit instantiations for the gdi_object_t table in sge_c_gdi.cc
+template int userprj_spool<ocs::tom::UU>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                         ocs::tom::ConstElement<ocs::tom::UU> upe, gdi_object_t *object);
+template int userprj_spool<ocs::tom::PR>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                         ocs::tom::ConstElement<ocs::tom::PR> upe, gdi_object_t *object);
+/// @endcond
 
 /** @brief Check that no queue, host, the global configuration or user references a project
  *

@@ -170,9 +170,9 @@ static bool
 sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 static int
-schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
-           lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-           ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           ocs::tom::Element<ocs::tom::SC> modp, ocs::tom::ConstElement<ocs::tom::SC> ep, int add, const char *ruser,
+           const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
            monitoring_t *monitor);
 
 /*
@@ -184,33 +184,77 @@ schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
 #endif
 
 /* ------------------------------ generic gdi objects --------------------- */
+/*
+ * The function pointers keep the raw signatures of sge_c_gdi.h; each points to an adapter that takes the raw
+ * elements into handles of the entry's type and calls the typed function (ocs_gdi_modifier() and its siblings).
+ */
 /* *INDENT-OFF* */
 static gdi_object_t gdi_object[] = {
-        {ocs::gdi::Target::CAL_LIST,     CAL_name,  CAL_Type,  "calendar",                SGE_TYPE_CALENDAR,        calendar_mod, calendar_spool, calendar_update_queue_states},
-        {ocs::gdi::Target::EV_LIST,      0,         nullptr,   "event",                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::EH_LIST,      EH_name,   EH_Type,   "exechost",                SGE_TYPE_EXECHOST,        host_mod,     host_spool,     host_success},
-        {ocs::gdi::Target::CQ_LIST,      CQ_name,   CQ_Type,   "cluster queue",           SGE_TYPE_CQUEUE,          cqueue_mod,   cqueue_spool,   cqueue_success},
-        {ocs::gdi::Target::JB_LIST,      0,         nullptr,   "job",                     SGE_TYPE_JOB,             nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY,          centry_mod,   centry_spool,   centry_success},
-        {ocs::gdi::Target::ORDER_LIST,   0,         nullptr,   "order",                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::MASTER_EVENT, 0,         nullptr,   "master event",            SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::PE_LIST,      PE_name,   PE_Type,   "parallel environment",    SGE_TYPE_PE,              pe_mod,       pe_spool,       pe_success},
-        {ocs::gdi::Target::CONF_LIST,    0,         nullptr,   "configuration",           SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::SC_LIST,      0,         nullptr,   "scheduler configuration", SGE_TYPE_NONE,            schedd_mod,   nullptr,        nullptr},
-        {ocs::gdi::Target::UU_LIST,      UU_name,   UU_Type,   "user",                    SGE_TYPE_USER,            userprj_mod,  userprj_spool,  userprj_success},
-        {ocs::gdi::Target::US_LIST,      US_name,   US_Type,   "userset",                 SGE_TYPE_USERSET,         userset_mod,  userset_spool,  userset_success},
-        {ocs::gdi::Target::PR_LIST,      PR_name,   PR_Type,   "project",                 SGE_TYPE_PROJECT,         userprj_mod,  userprj_spool,  userprj_success},
-        {ocs::gdi::Target::STN_LIST,     0,         nullptr,   "sharetree",               SGE_TYPE_SHARETREE,       nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::CK_LIST,      CK_name,   CK_Type,   "checkpoint interface",    SGE_TYPE_CKPT,            ckpt_mod,     ckpt_spool,     ckpt_success},
-        {ocs::gdi::Target::SME_LIST,     0,         nullptr,   "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO, nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::RQS_LIST,     RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS,             rqs_mod,      rqs_spool,      rqs_success},
-        {ocs::gdi::Target::HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,          hgroup_mod,   hgroup_spool,   hgroup_success},
-        {ocs::gdi::Target::AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,              ar_mod,       ar_spool,       ar_success},
-        {ocs::gdi::Target::DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::CAT_LIST,     CT_id,     nullptr,   "category",                SGE_TYPE_CATEGORY,        nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::RL_LIST,      RL_name,   RL_Type,   "role",                    SGE_TYPE_RL,              role_mod,     role_spool,     role_success},
-        {ocs::gdi::Target::PROCEDURE,    0,         nullptr,   "procedure",               SGE_TYPE_CATEGORY,        nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::NO_TARGET,    0,         nullptr,   nullptr,                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr}
+        {ocs::gdi::Target::CAL_LIST,     CAL_name,  CAL_Type,  "calendar",                SGE_TYPE_CALENDAR,
+         ocs_gdi_modifier<ocs::tom::CAL, calendar_mod>, ocs_gdi_writer<ocs::tom::CAL, calendar_spool>,
+         ocs_gdi_on_success<ocs::tom::CAL, calendar_success>},
+        {ocs::gdi::Target::EV_LIST,      0,         nullptr,   "event",                   SGE_TYPE_NONE,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::EH_LIST,      EH_name,   EH_Type,   "exechost",                SGE_TYPE_EXECHOST,
+         ocs_gdi_modifier<ocs::tom::EH, host_mod>, ocs_gdi_writer<ocs::tom::EH, host_spool>,
+         ocs_gdi_on_success<ocs::tom::EH, host_success>},
+        {ocs::gdi::Target::CQ_LIST,      CQ_name,   CQ_Type,   "cluster queue",           SGE_TYPE_CQUEUE,
+         ocs_gdi_modifier<ocs::tom::CQ, cqueue_mod>, ocs_gdi_writer<ocs::tom::CQ, cqueue_spool>,
+         ocs_gdi_on_success<ocs::tom::CQ, cqueue_success>},
+        {ocs::gdi::Target::JB_LIST,      0,         nullptr,   "job",                     SGE_TYPE_JOB,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY,
+         ocs_gdi_modifier<ocs::tom::CE, centry_mod>, ocs_gdi_writer<ocs::tom::CE, centry_spool>,
+         ocs_gdi_on_success_list<ocs::tom::CE, ocs::tom::STU, centry_success>},
+        {ocs::gdi::Target::ORDER_LIST,   0,         nullptr,   "order",                   SGE_TYPE_NONE,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::MASTER_EVENT, 0,         nullptr,   "master event",            SGE_TYPE_NONE,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::PE_LIST,      PE_name,   PE_Type,   "parallel environment",    SGE_TYPE_PE,
+         ocs_gdi_modifier<ocs::tom::PE, pe_mod>, ocs_gdi_writer<ocs::tom::PE, pe_spool>,
+         ocs_gdi_on_success<ocs::tom::PE, pe_success>},
+        {ocs::gdi::Target::CONF_LIST,    0,         nullptr,   "configuration",           SGE_TYPE_NONE,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::SC_LIST,      0,         nullptr,   "scheduler configuration", SGE_TYPE_NONE,
+         ocs_gdi_modifier<ocs::tom::SC, schedd_mod>, nullptr, nullptr},
+        {ocs::gdi::Target::UU_LIST,      UU_name,   UU_Type,   "user",                    SGE_TYPE_USER,
+         ocs_gdi_modifier<ocs::tom::UU, userprj_mod<ocs::tom::UU>>,
+         ocs_gdi_writer<ocs::tom::UU, userprj_spool<ocs::tom::UU>>,
+         ocs_gdi_on_success<ocs::tom::UU, userprj_success<ocs::tom::UU>>},
+        {ocs::gdi::Target::US_LIST,      US_name,   US_Type,   "userset",                 SGE_TYPE_USERSET,
+         ocs_gdi_modifier<ocs::tom::US, userset_mod>, ocs_gdi_writer<ocs::tom::US, userset_spool>,
+         ocs_gdi_on_success<ocs::tom::US, userset_success>},
+        {ocs::gdi::Target::PR_LIST,      PR_name,   PR_Type,   "project",                 SGE_TYPE_PROJECT,
+         ocs_gdi_modifier<ocs::tom::PR, userprj_mod<ocs::tom::PR>>,
+         ocs_gdi_writer<ocs::tom::PR, userprj_spool<ocs::tom::PR>>,
+         ocs_gdi_on_success<ocs::tom::PR, userprj_success<ocs::tom::PR>>},
+        {ocs::gdi::Target::STN_LIST,     0,         nullptr,   "sharetree",               SGE_TYPE_SHARETREE,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::CK_LIST,      CK_name,   CK_Type,   "checkpoint interface",    SGE_TYPE_CKPT,
+         ocs_gdi_modifier<ocs::tom::CK, ckpt_mod>, ocs_gdi_writer<ocs::tom::CK, ckpt_spool>,
+         ocs_gdi_on_success<ocs::tom::CK, ckpt_success>},
+        {ocs::gdi::Target::SME_LIST,     0,         nullptr,   "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::RQS_LIST,     RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS,
+         ocs_gdi_modifier<ocs::tom::RQS, rqs_mod>, ocs_gdi_writer<ocs::tom::RQS, rqs_spool>,
+         ocs_gdi_on_success<ocs::tom::RQS, rqs_success>},
+        {ocs::gdi::Target::HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,
+         ocs_gdi_modifier<ocs::tom::HGRP, hgroup_mod>, ocs_gdi_writer<ocs::tom::HGRP, hgroup_spool>,
+         ocs_gdi_on_success<ocs::tom::HGRP, hgroup_success>},
+        {ocs::gdi::Target::AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,
+         ocs_gdi_modifier<ocs::tom::AR, ar_mod>, ocs_gdi_writer<ocs::tom::AR, ar_spool>,
+         ocs_gdi_on_success_list<ocs::tom::AR, ocs::tom::AR, ar_success>},
+        {ocs::gdi::Target::DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::CAT_LIST,     CT_id,     nullptr,   "category",                SGE_TYPE_CATEGORY,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::RL_LIST,      RL_name,   RL_Type,   "role",                    SGE_TYPE_RL,
+         ocs_gdi_modifier<ocs::tom::RL, role_mod>, ocs_gdi_writer<ocs::tom::RL, role_spool>,
+         ocs_gdi_on_success<ocs::tom::RL, role_success>},
+        {ocs::gdi::Target::PROCEDURE,    0,         nullptr,   "procedure",               SGE_TYPE_CATEGORY,
+         nullptr, nullptr, nullptr},
+        {ocs::gdi::Target::NO_TARGET,    0,         nullptr,   nullptr,                   SGE_TYPE_NONE,
+         nullptr, nullptr, nullptr}
 };
 
 /* *INDENT-ON* */
@@ -1813,11 +1857,29 @@ gdi_object_t *get_gdi_object(ocs::gdi::Target target) {
    DRETURN(nullptr);
 }
 
+/** @brief The gdi_object_t::modifier of the scheduler configuration: validates the configuration as it is
+ *
+ * No request reaches it through the table: a scheduler configuration is modified by
+ * sge_mod_sched_configuration(), and the entry has no key field for sge_gdi_add_mod_generic().
+ *
+ * @param packet the client request, unused
+ * @param task the GDI task being answered, unused
+ * @param alpp receives messages for the caller
+ * @param modp the configuration as it is to become, unused
+ * @param ep the reduced element the client sent, unused
+ * @param add 1 for add, 0 for modify, unused
+ * @param ruser the requesting user, unused
+ * @param rhost the requesting host, unused
+ * @param object the table entry, unused
+ * @param cmd the command being executed, unused
+ * @param sub_command what kind of modification this is, unused
+ * @param monitor for monitoring qmaster threads, unused
+ * @return 0 if the configuration is valid, 1 otherwise
+ */
 static int schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                      lListElem *modp, lListElem *ep, int add, const char *ruser,
-                      const char *rhost, gdi_object_t *object,
-                      ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-                      monitoring_t *monitor) {
+                      const ocs::tom::Element<ocs::tom::SC> modp, const ocs::tom::ConstElement<ocs::tom::SC> ep,
+                      int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+                      ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    int ret = sconf_validate_config_(alpp) ? 0 : 1;
    DRETURN(ret);

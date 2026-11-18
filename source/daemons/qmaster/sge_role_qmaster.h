@@ -31,18 +31,19 @@
 #include "sgeobj/sge_answer.h"
 
 int
-role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ep,
-         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-         ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         ocs::tom::Element<ocs::tom::RL> new_ep, ocs::tom::Element<ocs::tom::RL> ep, int add, const char *ruser,
+         const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor);
 
 int
-role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
-           gdi_object_t *object);
+role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           ocs::tom::ConstElement<ocs::tom::RL> ep, gdi_object_t *object);
 
 int
-role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-             lList **ppList, monitoring_t *monitor);
+role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::RL> ep,
+             ocs::tom::ConstElement<ocs::tom::RL> old_ep, gdi_object_t *object, lList **ppList,
+             monitoring_t *monitor);
 
 int
 sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::RL> ep,

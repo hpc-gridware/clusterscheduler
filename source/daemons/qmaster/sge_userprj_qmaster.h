@@ -52,18 +52,22 @@
 void
 sge_userprj_spool(uint64_t gdi_session);
 
+// the gdi_object_t table functions of users and projects, instantiated for ocs::tom::UU and ocs::tom::PR
+template <ocs::tom::ObjectType T>
 int
-userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-                lList **ppList, monitoring_t *monitor);
+userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<T> ep,
+                ocs::tom::ConstElement<T> old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
+template <ocs::tom::ObjectType T>
 int
-userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
-            lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+            ocs::tom::Element<T> modp, ocs::tom::Element<T> ep, int add, const char *ruser, const char *rhost,
+            gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
+template <ocs::tom::ObjectType T>
 int
-userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *upe,
-              gdi_object_t *object);
+userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+              ocs::tom::ConstElement<T> upe, gdi_object_t *object);
 
 int
 sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::UU> up_ep,

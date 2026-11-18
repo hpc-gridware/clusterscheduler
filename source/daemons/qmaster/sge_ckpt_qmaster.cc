@@ -74,10 +74,10 @@
  * objects or modify existing checkpointing interfaces.
  *
  * @param alpp reference to an answer list.
- * @param raw_new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized
+ * @param new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized
  *        CULL object if this function was called due to a modify request than new_ckpt will contain the old
  *        data (see add parameter)
- * @param raw_ckpt a reduced ckpt object which contains all necessary information to create a new object or modify
+ * @param ckpt a reduced ckpt object which contains all necessary information to create a new object or modify
  *        parts of an existing one
  * @param add 1 if a new element should be added to the master list 0 to modify an existing object
  * @param ruser username of person who invoked this gdi request
@@ -96,16 +96,11 @@
  */
 int
 ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-         lListElem *raw_new_ckpt, lListElem *raw_ckpt, int add, const char *ruser, const char *rhost,
-         gdi_object_t *object,
-         ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-         monitoring_t *monitor) {
+         const ocs::tom::Element<ocs::tom::CK> new_ckpt, const ocs::tom::ConstElement<ocs::tom::CK> ckpt, int add,
+         const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+         ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::modifier; both elements are checkpointing environments
-   // (the gdi object table and the listener's structure check of the request data guarantee it)
-   const ocs::tom::Element<ocs::tom::CK> new_ckpt(raw_new_ckpt);
-   const ocs::tom::ConstElement<ocs::tom::CK> ckpt(raw_ckpt);
    const char *ckpt_name;
 
    /* ---- CK_name */
@@ -201,8 +196,8 @@ DRETURN(STATUS_EUNKNOWN);
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
  */
-int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
-               gdi_object_t *object) {
+int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+               const ocs::tom::ConstElement<ocs::tom::CK> ep, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -235,14 +230,15 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr
  *        (function pointers, names, CULL-types)
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ppList see the brief above
+ * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  *
  * @return success
  */
 int
-ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-             lList **ppList, monitoring_t *monitor) {
+ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CK> ep,
+             const ocs::tom::ConstElement<ocs::tom::CK> old_ep, gdi_object_t *object, lList **ppList,
+             monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *ckpt_name;

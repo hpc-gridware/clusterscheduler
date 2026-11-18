@@ -54,8 +54,8 @@
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param raw_new_ep the role as it is to become (RL_Type)
- * @param raw_ep the reduced element the client sent (RL_Type)
+ * @param new_ep the role as it is to become
+ * @param ep the reduced element the client sent; its lists are normalized and consumed
  * @param add 1 for add, 0 for modify
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -67,15 +67,11 @@
  */
 int
 role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-         lListElem *raw_new_ep, lListElem *raw_ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
-         ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-         monitoring_t *monitor) {
+         const ocs::tom::Element<ocs::tom::RL> new_ep, const ocs::tom::Element<ocs::tom::RL> ep, int add,
+         const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+         ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::modifier; both elements are roles
-   // (the gdi object table and the listener's structure check of the request data guarantee it)
-   const ocs::tom::Element<ocs::tom::RL> new_ep(raw_new_ep);
-   const ocs::tom::Element<ocs::tom::RL> ep(raw_ep);
 
    // ---- RL_name: copy and validate the role name on add
    if (add) {
@@ -100,8 +96,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
          // answer list already filled by userset_list_validate_acl_list()
          DRETURN(STATUS_EUNKNOWN);
       }
-      attr_mod_sub_list(alpp, new_ep, RL_user_list, US_name, ep, cmd, sub_command,
-                        SGE_ATTR_USER_LISTS, SGE_OBJ_ROLE, 0, nullptr);
+      attr_mod_sub_list<RL_user_list, US_name>(alpp, new_ep, ep, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_ROLE);
    }
 
    // ---- RL_parent_role_list: reject self-reference and unknown parents, then apply
@@ -126,8 +121,8 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
             DRETURN(STATUS_EUNKNOWN);
          }
       }
-      attr_mod_sub_list(alpp, new_ep, RL_parent_role_list, ST_name, ep, cmd, sub_command,
-                        "parent_role_list", SGE_OBJ_ROLE, 0, nullptr);
+      attr_mod_sub_list<RL_parent_role_list, ST_name>(alpp, new_ep, ep, sub_command, "parent_role_list",
+                                                      SGE_OBJ_ROLE);
    }
 
    // ---- RL_perm_list: validate syntax before applying
@@ -157,8 +152,8 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
  * @return 0 on success
  */
 int
-role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
-           gdi_object_t *object) {
+role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           const ocs::tom::ConstElement<ocs::tom::RL> ep, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -182,15 +177,16 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
  * @param packet the client request
  * @param task the GDI task being answered
  * @param ep the object
- * @param old_ep the object as it was, or nullptr on add
+ * @param old_ep the object as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing
+ * @param ppList receives information for post processing, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
-role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-             lList **ppList, monitoring_t *monitor) {
+role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::RL> ep,
+             const ocs::tom::ConstElement<ocs::tom::RL> old_ep, gdi_object_t *object, lList **ppList,
+             monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *role_name = ocs::tom::get<RL_name>(ep);

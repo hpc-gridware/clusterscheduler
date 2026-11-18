@@ -145,44 +145,110 @@ template int attr_mod_procedure<PE_stop_proc_args>(ocs::tom::ListPtr<ocs::tom::A
 /// @endcond
 
 /**
- * @brief This function modifies a certain configuration sublist
+ * @brief The mode of ocs::tom::modify_sublist() a GDI sub-command asks for
+ * @param sub_cmd the GDI sub-command
+ * @return its change, append and remove flags; none for a sub-command that sets the whole sub-list
+ */
+ocs::tom::SublistMode
+ocs_sublist_mode(const ocs::gdi::SubCommand sub_cmd) {
+   DENTER(TOP_LAYER);
+
+   ocs::tom::SublistMode mode;
+   mode.change = (sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE;
+   mode.append = (sub_cmd & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND;
+   mode.remove = (sub_cmd & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE;
+
+   DRETURN(mode);
+}
+
+/**
+ * @brief Write the answer a sub-list modification gives for one of its events
  *
- * This function modifies a certain configuration sublist of "this_elem".
- * Possible errors will be reported in answer_list "alpp". The reduced_elem
- * "delta_elem" will be used to identify the changes which have been made.
- * "sub_command" defines how these changes should be applied to "this_elem".
- * A removal removes every element of the sublist that holds the key.
+ * The messages attr_mod_sub_list() has always written: an error for a missing key, an info for a key held
+ * already on append, for a key not held on remove, and - only for a change - for a sub-list created and for
+ * a key appended.
  *
- * @param alpp The AN_Type, answer_list
- * @param this_elem The target object element, CQ_Type
- * @param this_elem_name The name of the list elemet (lList)
- * @param this_elem_primary_key The primary field for sublist
- * @param delta_elem The source (probably reduced) list of the elements, CQ_Type
- * @param sub_cmd The add, modify, remove command, GDI subcommand
- * @param sub_list_name The sublist name
- * @param object_name The target object name
- * @param no_info Skip or add the info messages
- * @param changed Report back if changes have been made (may be nullptr)
- * @param cmd the command being executed
+ * @param alpp receives the answer
+ * @param event what happened
+ * @param key the key it happened to, nullptr for a missing key
+ * @param sub_cmd the GDI sub-command of the modification
+ * @param sub_list_name the sub-list's name, for the message
+ * @param object_name the object's name, for the message
+ */
+void
+ocs_sublist_answer(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::SublistEvent event, const char *key,
+                   const ocs::gdi::SubCommand sub_cmd, const char *sub_list_name, const char *object_name) {
+   DENTER(TOP_LAYER);
+
+   const bool change = (sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE;
+   switch (event) {
+      case ocs::tom::SublistEvent::MissingKey:
+         ERROR(SFNMAX, MSG_OBJECT_VALUEMISSING);
+         answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+         break;
+      case ocs::tom::SublistEvent::AlreadyHeld:
+         INFO(MSG_OBJECT_ALREADYEXIN_SSS, key, sub_list_name, object_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+         break;
+      case ocs::tom::SublistEvent::NotHeld:
+         INFO(SFQ " does not exist in " SFQ " of " SFQ, key, sub_list_name, object_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+         break;
+      case ocs::tom::SublistEvent::CreatedList:
+         if (change) {
+            INFO(SFQ " of " SFQ " is empty - Adding new element(s).", sub_list_name, object_name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+         }
+         break;
+      case ocs::tom::SublistEvent::Appended:
+         if (change) {
+            INFO("Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.", key, sub_list_name,
+                 object_name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+         }
+         break;
+   }
+
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Modify a sub-list of an object whose sub-list and key field are known only at run time
  *
- * @return true, the success
+ * The run-time form of the typed attr_mod_sub_list<ListF, SubKeyF>() and of ocs::tom::modify_sublist(), with
+ * the same semantics and the same answers (ocs_sublist_answer()); see there. It stays for the callers whose
+ * fields are not compile-time constants of the right types: cqueue_mod_sublist() takes them from the cluster
+ * queue attribute table, and the advance reservation and resource quota set modifiers pass the object's own
+ * name field as the key of their sub-lists (AR_name, RQS_name), which only matters for a keyed sub-command.
+ *
+ * The key's type is taken from the request element: a key that is neither a string nor a host, or a field
+ * the element lacks, counts as a missing key. A removal removes every element of the sublist that holds the
+ * key. The request's sub-list is consumed.
+ *
+ * @param alpp receives the answers
+ * @param this_elem the object to modify
+ * @param this_elem_name the sub-list field
+ * @param this_elem_primary_key the key field of the sub-list's elements
+ * @param delta_elem the (probably reduced) request element; its sub-list is consumed
+ * @param sub_cmd the GDI sub-command: set, change, append or remove
+ * @param sub_list_name the sub-list's name, for the messages
+ * @param object_name the object's name, for the messages
+ * @return true on success; false if the request lacks the sub-list, a key is missing or an append met a key
+ *         held already
  *
  * @note MT-NOTE: attr_mod_sub_list() is MT safe
  */
 bool
-attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, int this_elem_name,
-                  int this_elem_primary_key,
-                  const lListElem *delta_elem, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
-                  const char *sub_list_name, const char *object_name, int no_info, bool *changed) {
+attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, const int this_elem_name,
+                  const int this_elem_primary_key, lListElem *delta_elem, const ocs::gdi::SubCommand sub_cmd,
+                  const char *sub_list_name, const char *object_name) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   bool did_changes = false;
+   const ocs::tom::SublistMode mode = ocs_sublist_mode(sub_cmd);
 
    if (lGetPosViaElem(delta_elem, this_elem_name, SGE_NO_ABORT) >= 0) {
-      if ((sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE ||
-          (sub_cmd & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND ||
-          (sub_cmd & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE) {
+      if (mode.change || mode.append || mode.remove) {
          lList *reduced_sublist;
          lList *full_sublist;
          lListElem *reduced_element, *next_reduced_element;
@@ -219,8 +285,8 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, i
                }
 
                if (rstring == nullptr || fstring == nullptr) {
-                  ERROR(SFNMAX, MSG_OBJECT_VALUEMISSING);
-                  answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+                  ocs_sublist_answer(alpp, ocs::tom::SublistEvent::MissingKey, nullptr, sub_cmd, sub_list_name,
+                                     object_name);
                   ret = false;
                }
 
@@ -232,10 +298,9 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, i
 
                   /* element already exists */
                   next_reduced_element = lNextRW(reduced_element);
-                  if ((sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE) {
+                  if (mode.change) {
                      if (object_has_differences(reduced_element, nullptr, full_element)) {
                         /* new object differs from old one - exchange them */
-                        did_changes = true;
                         new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
                         old_sub_elem = lDechainElem(full_sublist, full_element);
                         lFreeElem(&old_sub_elem);
@@ -248,22 +313,19 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, i
 
                      restart_loop = 1;
                      break;
-                  } else if ((sub_cmd & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND) {
-                     if (!no_info) {
-                        INFO(MSG_OBJECT_ALREADYEXIN_SSS, rstring, sub_list_name, object_name);
-                        answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-                        ret = false;
-                     }
+                  } else if (mode.append) {
+                     ocs_sublist_answer(alpp, ocs::tom::SublistEvent::AlreadyHeld, rstring, sub_cmd, sub_list_name,
+                                        object_name);
+                     ret = false;
 
                      new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
                      lFreeElem(&new_sub_elem);
 
                      restart_loop = 1;
                      break;
-                  } else if ((sub_cmd & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE) {
+                  } else if (mode.remove) {
                      // remove every element with the key, so that a key held twice (e.g. in a spool
                      // written before CS-3053) cannot survive its removal
-                     did_changes = true;
                      old_sub_elem = lDechainElem(full_sublist, full_element);
                      lFreeElem(&old_sub_elem);
                      remove_reduced = true;
@@ -285,9 +347,7 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, i
          }
 
          /* now we process elements which have not been found in the first step above */
-         if (ret && ((sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE
-             || (sub_cmd & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND
-             || (sub_cmd & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE)) {
+         if (ret) {
             next_reduced_element = lFirstRW(reduced_sublist);
 
             while ((reduced_element = next_reduced_element)) {
@@ -306,35 +366,27 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, i
                }
 
                if (rstring == nullptr) {
-                  ERROR(SFNMAX, MSG_OBJECT_VALUEMISSING);
-                  answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
-                                  ANSWER_QUALITY_ERROR);
+                  ocs_sublist_answer(alpp, ocs::tom::SublistEvent::MissingKey, nullptr, sub_cmd, sub_list_name,
+                                     object_name);
                   ret = false;
                }
 
                if (ret) {
-                  if (!no_info && (sub_cmd & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE) {
-                     INFO(SFQ " does not exist in " SFQ " of " SFQ, rstring, sub_list_name, object_name);
-                     answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+                  if (mode.remove) {
+                     ocs_sublist_answer(alpp, ocs::tom::SublistEvent::NotHeld, rstring, sub_cmd, sub_list_name,
+                                        object_name);
                   } else {
                      if (!full_sublist) {
-                        if (!no_info && (sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE) {
-                           INFO(SFQ " of " SFQ " is empty - Adding new element(s).", sub_list_name, object_name);
-                           answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-                        }
+                        ocs_sublist_answer(alpp, ocs::tom::SublistEvent::CreatedList, rstring, sub_cmd,
+                                           sub_list_name, object_name);
                         lSetList(this_elem, this_elem_name, lCopyList("", lGetList(delta_elem, this_elem_name)));
                         full_sublist = lGetListRW(this_elem, this_elem_name);
-
-                        did_changes = true;
                         break;
                      } else {
-                        if (!no_info && (sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE) {
-                           INFO("Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.", rstring, sub_list_name, object_name);
-                           answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-                        }
+                        ocs_sublist_answer(alpp, ocs::tom::SublistEvent::Appended, rstring, sub_cmd,
+                                           sub_list_name, object_name);
                         new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
                         lAppendElem(full_sublist, new_sub_elem);
-                        did_changes = true;
                      }
                   }
                }
@@ -343,7 +395,6 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, i
       } else {
          /* Overwrite the complete list */
          lSetList(this_elem, this_elem_name, lCopyList("", lGetList(delta_elem, this_elem_name)));
-         did_changes = true;
       }
 
       /* If the list does not contain any elements, we will delete the list itself */
@@ -356,10 +407,6 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, i
       }
    } else {
       ret = false;
-   }
-
-   if (changed != nullptr) {
-      *changed = did_changes;
    }
 
    DRETURN(ret);
@@ -505,11 +552,12 @@ attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elem
  * @param sub_cmd GDI subcommand
  * @param attribute_name CULL attribute name (CQ_Type)
  * @param sublist_host_name CULL sublist attribute name depend on sublist of CQ_Type
- * @param sublist_value_name CULL sublist attribute name of that field which containes the value of the attribute to be modified.
+ * @param sublist_value_name CULL sublist attribute name of that field which containes the value of the attribute
+ *        to be modified
  * @param subsub_key CULL sublist attribute key
  * @param attribute_name_str string used for user output
  * @param object_name_str cqueue name
- * @param cmd the command being executed
+ * @param cmd the command being executed, unused
  *
  * @return error state true  - success false - error
  *
@@ -517,7 +565,7 @@ attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elem
  */
 bool
 cqueue_mod_sublist(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *reduced_elem,
-                   ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
+                   [[maybe_unused]] ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
                    int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
                    const char *attribute_name_str, const char *object_name_str) {
    DENTER(CQUEUE_LAYER);
@@ -606,8 +654,9 @@ cqueue_mod_sublist(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer
           */
          if (org_elem != nullptr) {
             if (subsub_key != NoName) {
-               attr_mod_sub_list(answer_list, org_elem, sublist_value_name, subsub_key, mod_elem, cmd, sub_cmd,
-                                 attribute_name_str, object_name_str, 0, nullptr);
+               // the fields come from the cluster queue attribute table at run time: the run-time form
+               attr_mod_sub_list(answer_list, org_elem, sublist_value_name, subsub_key, mod_elem, sub_cmd,
+                                 attribute_name_str, object_name_str);
             } else {
                object_replace_any_type(org_elem, sublist_value_name, mod_elem);
             }

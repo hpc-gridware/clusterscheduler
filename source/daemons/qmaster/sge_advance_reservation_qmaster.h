@@ -58,19 +58,21 @@
 #include "sge_c_gdi.h"
 #include "sgeobj/sge_answer.h"
 
-/* funtions called from within gdi framework in qmaster, the signatures are fixed by the gdi_object_t table */
+/* funtions called from within gdi framework in qmaster, through the typed adapters of the gdi_object_t table */
 int
-ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ar_ep,
-       lListElem *ar_ep, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
-       ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+       ocs::tom::Element<ocs::tom::AR> new_ar, ocs::tom::Element<ocs::tom::AR> ar, int add, const char *ruser,
+       const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+       monitoring_t *monitor);
 
 int
-ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *pep,
-         gdi_object_t *object);
+ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         ocs::tom::ConstElement<ocs::tom::AR> ar, gdi_object_t *object);
 
 int
-ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
-           lList **ppList, monitoring_t *monitor);
+ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::AR> ar,
+           ocs::tom::ConstElement<ocs::tom::AR> old_ep, gdi_object_t *object,
+           ocs::tom::ListPtr<ocs::tom::AR> *ppList, monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
