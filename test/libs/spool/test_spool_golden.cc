@@ -1,0 +1,2135 @@
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
+ *
+ *  Copyright 2026 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/** @file
+ * @brief Golden output of the flatfile and JSON spooling of every spooled object type
+ *
+ * Writes one file per object type, variant, field list ("layout") and format, built from
+ * objects in which every field the field table writes holds a distinctive value. Two runs,
+ * one before and one after a change of the spooling field tables (`spooling_field[]` in
+ * sge_flatfile_obj.cc, the writers in sge_flatfile.cc and ocs_spool_json.cc, the field
+ * selection in sge_spooling_utilities.cc), are compared with `diff -r`; an empty diff
+ * proves the change byte identical.
+ *
+ * Usage: `test_spool_golden [--no-roundtrip] [<outdir>]`
+ *
+ * - `<outdir>` receives the files. Without it they go to a temporary directory that is
+ *   removed at the end, which is what a bare ctest run does.
+ * - Unless `--no-roundtrip` is given, every text is read back with the reader the product
+ *   uses for it and written again; the second text has to equal the first. A mismatch is
+ *   reported, the second text is left next to the first as `<file>.roundtrip`, and the exit
+ *   code is 1.
+ *
+ * Determinism: TZ is set to UTC (the JSON writer renders UU_delete_time and qconf -se with
+ * more info renders EH_auto_added_time in local time); the `# Version:` line of the spool
+ * header, which carries the version and the build id, is replaced by a fixed text; host
+ * names are fixed strings and never resolved (a throwaway bootstrap with ignore_fqdn is
+ * installed, as test_sgeobj_hgroup does, because hashing a host field needs it). The
+ * classic job and advance reservation files are packed CULL, written below `classic/`.
+ */
+
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <filesystem>
+#include <fstream>
+#include <initializer_list>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <unistd.h>
+
+#include "uti/ocs_Bootstrap.h"
+#include "uti/sge.h"
+#include "uti/sge_component.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_io.h"
+#include "uti/sge_rmon_macros.h"
+#include "uti/sge_spool.h"
+#include "uti/sge_stdlib.h"
+
+#include "cull/cull.h"
+
+#include "symbols.h"
+
+#include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_all.h"
+#include "sgeobj/ocs_CEntry.h"
+#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_attr.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_object.h"
+#include "sgeobj/sge_qinstance.h"
+#include "sgeobj/sge_qinstance_state.h"
+#include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/sge_userset.h"
+
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+
+#include "spool/sge_spooling_utilities.h"
+#include "spool/classic/read_write_ar.h"
+#include "spool/classic/read_write_job.h"
+#include "spool/flatfile/ocs_spool_json.h"
+#include "spool/flatfile/sge_flatfile.h"
+#include "spool/flatfile/sge_flatfile_obj.h"
+
+namespace tom = ocs::tom;
+
+namespace {
+
+// ---------------------------------------------------------------------------------------------------------------
+// run state
+
+std::string g_outdir;          ///< absolute directory the golden files go to
+bool g_roundtrip = true;       ///< read every text back and write it again
+int g_failures = 0;            ///< number of failed checks
+int g_files = 0;               ///< number of golden files written
+
+constexpr uint64_t T0 = 1767225600000000;   ///< 2026-01-01T00:00:00Z in microseconds, the base of every time stamp
+constexpr const char *GRP = "@ggrp1";        ///< the host group the per host overrides name
+constexpr const char *HOST = "gexec02";      ///< the host the per host overrides name
+
+/** @brief Which shape of an object's sublists a builder produces */
+enum class Variant {
+   FULL,    ///< every optional sublist holds distinctive elements
+   NONE,    ///< every optional sublist is unset (nullptr), written as NONE
+   EMPTY    ///< every optional sublist is an empty list
+};
+
+/** @brief One output format a field list is written in */
+enum class Form {
+   SPOOL,         ///< the classic spool file: ASCII with the version header, as SP_DEST_SPOOL writes it
+   QCONF,         ///< ASCII as qconf shows it, long lines broken (SGE_SINGLE_LINE unset)
+   QCONF_1LINE,   ///< ASCII as qconf shows it with SGE_SINGLE_LINE set
+   JSON,          ///< JSON, TIME and MEM values in the compact form (qconf -fmt json)
+   JSON_NUM       ///< JSON, TIME and MEM values as numbers (qconf -fmt json -fmtval numeric)
+};
+
+constexpr unsigned F_SPOOL = 1;   ///< layout is written as Form::SPOOL
+constexpr unsigned F_QCONF = 2;   ///< layout is written as Form::QCONF and Form::QCONF_1LINE
+constexpr unsigned F_JSON = 4;    ///< layout is written as Form::JSON and Form::JSON_NUM
+
+/** @brief How a field list is obtained: the static tables and the builders of sge_flatfile_obj.cc */
+enum class FieldKind {
+   STATIC,     ///< a static table, FieldSource::table
+   PR,         ///< sge_build_PR_field_list(a)
+   UU,         ///< sge_build_UU_field_list(a)
+   STN,        ///< sge_build_STN_field_list(a, b)
+   STN_JSON,   ///< sge_build_STN_json_field_list()
+   EH,         ///< sge_build_EH_field_list(a, b, c, d)
+   CONF,       ///< sge_build_CONF_field_list(a)
+   CQ,         ///< sge_build_CQ_field_list(a)
+   QU,         ///< sge_build_QU_field_list(a, b)
+   SC_SPOOL    ///< spool_get_fields_to_spool(SC_Type, &spool_config_instr), what the classic backend uses
+};
+
+/** @brief The field list of a layout, as the product obtains it */
+struct FieldSource {
+   FieldKind kind;                    ///< which builder
+   spooling_field *table = nullptr;   ///< the static table for FieldKind::STATIC
+   bool a = false;                    ///< first flag of the builder
+   bool b = false;                    ///< second flag of the builder
+   bool c = false;                    ///< third flag of the builder
+   bool d = false;                    ///< fourth flag of the builder
+};
+
+/** @brief One way the product writes an object type: field list, instruction and formats */
+struct Layout {
+   const char *label;                                  ///< part of the file name
+   FieldSource source;                                 ///< the field list
+   const spool_flatfile_instr *instr;                  ///< the flatfile instruction
+   unsigned forms;                                     ///< F_SPOOL, F_QCONF, F_JSON
+   bool is_root;                                       ///< the is_root argument of the writer
+   bool parse_values;                                  ///< the parse_values argument of the reader
+   const char *json_type_name;                         ///< the explicit JSON type, nullptr derives it
+   bool roundtrip;                                     ///< the product reads this text back
+   lListElem *(*prepare)(const lListElem *) = nullptr; ///< turns the object into what is written, or nullptr
+};
+
+/** @brief One spooled object type with every way it is written */
+struct ObjectCase {
+   const char *name;                    ///< file name stem
+   const lDescr *descr;                 ///< the descriptor the reader is given
+   lListElem *(*build)(Variant);        ///< builds the object; the caller frees it
+   bool variants;                       ///< also write the NONE and EMPTY variants
+   void (*fixup)(lListElem *);          ///< applied to an object read back before it is written again, or nullptr
+   std::vector<Layout> layouts;         ///< the ways the object is written
+};
+
+/** @brief How a list is written as JSON */
+enum class ListJson {
+   NONE,       ///< not at all
+   PLAIN,      ///< spool_flatfile_write_list(SP_FORM_JSON) -> spool_json_write_list()
+   TYPED,      ///< spool_json_write_typed_list(json_id)
+   TYPED_EX,   ///< spool_json_write_typed_list_ex(json_id, json_envelope)
+   NAMES       ///< spool_json_write_name_list_ex(name_nm, json_id)
+};
+
+/** @brief One list written as a whole (spool_flatfile_write_list() and the JSON list writers) */
+struct ListCase {
+   const char *name;                      ///< file name stem
+   const lDescr *descr;                   ///< the descriptor of the elements
+   lList *(*build)();                     ///< builds the list; the caller frees it
+   FieldSource source;                    ///< the field list
+   const spool_flatfile_instr *instr;     ///< the ASCII instruction, nullptr when there is no ASCII form
+   bool table;                            ///< fields copied and aligned with padding 3, as QConfTableView does
+   bool parse_values;                     ///< the parse_values argument of the reader
+   ListJson json;                         ///< the JSON writer
+   const char *json_id;                   ///< type name for TYPED, TYPED_EX and NAMES
+   const char *json_envelope;             ///< envelope name for TYPED_EX
+   int name_nm;                           ///< key field for NAMES
+   bool roundtrip;                        ///< the product reads this text back
+};
+
+// ---------------------------------------------------------------------------------------------------------------
+// output, normalisation, reporting
+
+/**
+ * @brief Record a failed check
+ * @param what the file or object the check was about
+ * @param why what went wrong
+ */
+void fail(const std::string &what, const std::string &why) {
+   printf("FAIL  %s: %s\n", what.c_str(), why.c_str());
+   ++g_failures;
+}
+
+/**
+ * @brief Print the messages of an answer list and tell whether it holds an error
+ * @param alp the answer list, emptied afterwards
+ * @param what the file or object the call was about, for the messages
+ * @return true when the list holds no error
+ */
+bool answers_ok(tom::ListPtr<tom::AN> &alp, const std::string &what) {
+   const bool ok = !answer_list_has_error(&alp);
+   if (!ok) {
+      for (const auto an : *alp) {
+         const char *text = an.get<AN_text>();
+         printf("      %s: %s\n", what.c_str(), text != nullptr ? text : "");
+      }
+   }
+   alp.reset();
+   return ok;
+}
+
+/**
+ * @brief Replace what differs between two builds of the same source: the `# Version:` line of the spool header
+ *
+ * The header carries the product version and the build id (feature_get_product_name()), so it
+ * would differ between a build before and one after a change.
+ *
+ * @param text the text as written
+ * @return the text with every `# Version: ...` line replaced by `# Version: <normalised>`
+ */
+std::string normalise(const std::string &text) {
+   static const std::string marker = "# Version: ";
+   std::string out;
+   std::size_t pos = 0;
+   while (pos < text.size()) {
+      std::size_t end = text.find('\n', pos);
+      if (end == std::string::npos) {
+         end = text.size();
+      }
+      const std::string line = text.substr(pos, end - pos);
+      out += (line.compare(0, marker.size(), marker) == 0) ? marker + "<normalised>" : line;
+      if (end < text.size()) {
+         out += '\n';
+      }
+      pos = end + 1;
+   }
+   return out;
+}
+
+/**
+ * @brief Write a golden file
+ * @param name the file name below the output directory
+ * @param text the content, normalised here
+ */
+void emit(const std::string &name, const std::string &text) {
+   std::ofstream out(g_outdir + "/" + name, std::ios::binary | std::ios::trunc);
+   out << normalise(text);
+   if (!out.good()) {
+      fail(name, "cannot write the file");
+   }
+   ++g_files;
+}
+
+/**
+ * @brief Compare a text with the one written again after reading it back
+ * @param name the golden file name
+ * @param first the text as written from the built object
+ * @param second the text written from the object read back
+ */
+void compare(const std::string &name, const std::string &first, const std::string &second) {
+   if (normalise(first) != normalise(second)) {
+      emit(name + ".roundtrip", second);
+      fail(name, "read back and written again it differs, see " + name + ".roundtrip");
+   }
+}
+
+/**
+ * @brief The file name extension of a form
+ * @param form the form
+ * @return the extension, without the dot
+ */
+const char *form_ext(const Form form) {
+   switch (form) {
+      case Form::SPOOL:
+         return "spool";
+      case Form::QCONF:
+         return "qconf";
+      case Form::QCONF_1LINE:
+         return "qconf-1line";
+      case Form::JSON:
+         return "json";
+      case Form::JSON_NUM:
+         return "num.json";
+   }
+   return "?";
+}
+
+/**
+ * @brief The forms a mask of F_SPOOL, F_QCONF and F_JSON stands for
+ * @param mask the mask
+ * @return the forms, in a fixed order
+ */
+std::vector<Form> forms_of(const unsigned mask) {
+   std::vector<Form> forms;
+   if ((mask & F_SPOOL) != 0) {
+      forms.push_back(Form::SPOOL);
+   }
+   if ((mask & F_QCONF) != 0) {
+      forms.push_back(Form::QCONF);
+      forms.push_back(Form::QCONF_1LINE);
+   }
+   if ((mask & F_JSON) != 0) {
+      forms.push_back(Form::JSON);
+      forms.push_back(Form::JSON_NUM);
+   }
+   return forms;
+}
+
+/**
+ * @brief Whether a form is JSON; sets the JSON value format the form stands for
+ * @param form the form
+ * @return true for Form::JSON and Form::JSON_NUM
+ */
+bool select_format(const Form form) {
+   ocs_json_value_format_opt = (form == Form::JSON_NUM) ? OCS_JSON_VALUES_NUMERIC : OCS_JSON_VALUES_COMPACT;
+   return form == Form::JSON || form == Form::JSON_NUM;
+}
+
+/**
+ * @brief The line break mode of a form
+ * @param form the form
+ * @return SP_LINE_BREAKS_OFF for Form::QCONF_1LINE, SP_LINE_BREAKS_ON otherwise
+ */
+spool_flatfile_line_breaks line_breaks_of(const Form form) {
+   return (form == Form::QCONF_1LINE) ? SP_LINE_BREAKS_OFF : SP_LINE_BREAKS_ON;
+}
+
+/**
+ * @brief The name of a variant, part of the file name
+ * @param variant the variant
+ * @return "full", "none" or "empty"
+ */
+const char *variant_name(const Variant variant) {
+   switch (variant) {
+      case Variant::FULL:
+         return "full";
+      case Variant::NONE:
+         return "none";
+      case Variant::EMPTY:
+         return "empty";
+   }
+   return "?";
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// field lists
+
+/**
+ * @brief Obtain a field list the way the product does
+ * @param source which list
+ * @param owned set to true when the list was allocated and has to be freed with spool_free_spooling_fields()
+ * @return the field list
+ */
+spooling_field *build_fields(const FieldSource &source, bool *owned) {
+   *owned = true;
+   switch (source.kind) {
+      case FieldKind::STATIC:
+         *owned = false;
+         return source.table;
+      case FieldKind::PR:
+         return sge_build_PR_field_list(source.a);
+      case FieldKind::UU:
+         return sge_build_UU_field_list(source.a);
+      case FieldKind::STN:
+         return sge_build_STN_field_list(source.a, source.b);
+      case FieldKind::STN_JSON:
+         return sge_build_STN_json_field_list();
+      case FieldKind::EH:
+         return sge_build_EH_field_list(source.a, source.b, source.c, source.d);
+      case FieldKind::CONF:
+         return sge_build_CONF_field_list(source.a);
+      case FieldKind::CQ:
+         return sge_build_CQ_field_list(source.a);
+      case FieldKind::QU:
+         return sge_build_QU_field_list(source.a, source.b);
+      case FieldKind::SC_SPOOL: {
+         tom::ListPtr<tom::AN> alp;
+         spooling_field *fields = spool_get_fields_to_spool(&alp, SC_Type, &spool_config_instr);
+         answers_ok(alp, "spool_get_fields_to_spool(SC_Type)");
+         return fields;
+      }
+   }
+   *owned = false;
+   return nullptr;
+}
+
+/**
+ * @brief Release a field list obtained from build_fields()
+ * @param fields the list
+ * @param owned what build_fields() reported
+ */
+void release_fields(spooling_field *fields, const bool owned) {
+   if (owned && fields != nullptr) {
+      spool_free_spooling_fields(fields);
+   }
+}
+
+/**
+ * @brief Copy a field list, as qconf_copy_fields() does before QConfTableView aligns it
+ * @param fields the list
+ * @return the copy, to be freed with sge_free()
+ */
+spooling_field *copy_fields(const spooling_field *fields) {
+   int n = 0;
+   while (fields[n].nm != NoName) {
+      n++;
+   }
+   auto *copy = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * (n + 1)));
+   memcpy(copy, fields, sizeof(spooling_field) * (n + 1));
+   return copy;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// writing and reading through the product functions
+
+/**
+ * @brief Write one object as the product does
+ * @param ep the object
+ * @param layout field list, instruction and flags
+ * @param fields the field list of the layout
+ * @param form the form
+ * @param what the file name, for the messages
+ * @return the text, empty on an error
+ */
+std::string render_object(const lListElem *ep, const Layout &layout, const spooling_field *fields, const Form form,
+                          const std::string &what) {
+   const bool json = select_format(form);
+   std::ostringstream os;
+   tom::ListPtr<tom::AN> alp;
+   const char *name = spool_flatfile_write_object(&alp, ep, layout.is_root, fields, layout.instr, SP_DEST_STREAM,
+                                                  json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr, form == Form::SPOOL,
+                                                  layout.json_type_name, &os, line_breaks_of(form));
+   sge_free(&name);
+   if (!answers_ok(alp, what)) {
+      return "";
+   }
+   return os.str();
+}
+
+/**
+ * @brief Read one object back with the reader the product uses for the text
+ * @param text the text
+ * @param descr the descriptor of the object
+ * @param layout field list, instruction and flags
+ * @param fields the field list of the layout
+ * @param form the form the text was written in
+ * @param what the file name, for the messages
+ * @return the object, to be freed by the caller, or nullptr
+ */
+lListElem *parse_object(const std::string &text, const lDescr *descr, const Layout &layout,
+                        const spooling_field *fields, const Form form, const std::string &what) {
+   const bool json = select_format(form);
+   tom::ListPtr<tom::AN> alp;
+   lListElem *ep = spool_flatfile_read_object(&alp, descr, nullptr, fields, nullptr, layout.parse_values,
+                                              layout.instr, json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr, nullptr,
+                                              text.c_str());
+   if (!answers_ok(alp, what)) {
+      lFreeElem(&ep);
+   }
+   return ep;
+}
+
+/**
+ * @brief Write one list as the product does
+ * @param lp the list
+ * @param c the list case
+ * @param fields the field list
+ * @param form the form
+ * @param what the file name, for the messages
+ * @return the text, empty on an error
+ */
+std::string render_list(const lList *lp, const ListCase &c, const spooling_field *fields, const Form form,
+                        const std::string &what) {
+   const bool json = select_format(form);
+   tom::ListPtr<tom::AN> alp;
+   spooling_field *aligned = nullptr;
+   if (c.table) {
+      aligned = copy_fields(fields);
+      spool_flatfile_align_list(&alp, lp, aligned, 3);
+      fields = aligned;
+   }
+
+   std::string text;
+   if (!json || c.json == ListJson::PLAIN) {
+      std::ostringstream os;
+      const char *name = spool_flatfile_write_list(&alp, lp, fields, c.instr, SP_DEST_STREAM,
+                                                   json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr, false, &os,
+                                                   line_breaks_of(form));
+      sge_free(&name);
+      text = os.str();
+   } else {
+      dstring out = DSTRING_INIT;
+      switch (c.json) {
+         case ListJson::TYPED:
+            spool_json_write_typed_list(&alp, lp, fields, c.json_id, &out);
+            break;
+         case ListJson::TYPED_EX:
+            spool_json_write_typed_list_ex(&alp, lp, fields, c.json_id, c.json_envelope, &out);
+            break;
+         case ListJson::NAMES:
+            spool_json_write_name_list_ex(&alp, lp, c.name_nm, c.json_id, &out);
+            break;
+         case ListJson::NONE:
+         case ListJson::PLAIN:
+            break;
+      }
+      const char *s = sge_dstring_get_string(&out);
+      text = (s != nullptr) ? s : "";
+      sge_dstring_free(&out);
+   }
+   sge_free(&aligned);
+   if (!answers_ok(alp, what)) {
+      return "";
+   }
+   return text;
+}
+
+/**
+ * @brief Read a list back with the reader the product uses for the text
+ * @param text the text
+ * @param c the list case
+ * @param fields the field list
+ * @param form the form the text was written in
+ * @param what the file name, for the messages
+ * @return the list, to be freed by the caller, or nullptr
+ */
+lList *parse_list(const std::string &text, const ListCase &c, const spooling_field *fields, const Form form,
+                  const std::string &what) {
+   const bool json = select_format(form);
+   tom::ListPtr<tom::AN> alp;
+   lList *lp = spool_flatfile_read_list(&alp, c.descr, fields, nullptr, c.parse_values,
+                                        c.instr != nullptr ? c.instr : &qconf_sfi,
+                                        json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr, nullptr, text.c_str());
+   if (!answers_ok(alp, what)) {
+      lFreeList(&lp);
+   }
+   return lp;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// building blocks for the objects
+
+/**
+ * @brief The list a builder stores for an optional sublist in a variant
+ * @tparam T the element type
+ * @param variant the variant
+ * @param full the list of Variant::FULL
+ * @return @p full, an unset list or an empty list
+ */
+template <tom::ObjectType T>
+tom::ListPtr<T> pick(const Variant variant, tom::ListPtr<T> &&full) {
+   switch (variant) {
+      case Variant::NONE:
+         return {};
+      case Variant::EMPTY:
+         return tom::ListPtr<T>::create("empty");
+      case Variant::FULL:
+         break;
+   }
+   return std::move(full);
+}
+
+/**
+ * @brief A list of elements that hold one name each
+ * @tparam F the name field, a string or host field
+ * @param values the names
+ * @return the list
+ */
+template <auto F>
+tom::ListPtr<typename tom::FieldTraits<F>::Type> names(const std::initializer_list<const char *> values) {
+   using T = typename tom::FieldTraits<F>::Type;
+   auto lp = tom::ListPtr<T>::create("names");
+   for (const char *value : values) {
+      auto ep = tom::ElementPtr<T>::create();
+      tom::set<F>(ep, value);
+      lp->push_back(std::move(ep));
+   }
+   return lp;
+}
+
+/**
+ * @brief A list of name/value elements
+ * @tparam NAME the name field
+ * @tparam VALUE the value field
+ * @tparam V the value type
+ * @param values the pairs
+ * @return the list
+ */
+template <auto NAME, auto VALUE, typename V>
+tom::ListPtr<typename tom::FieldTraits<NAME>::Type> pairs(
+      const std::initializer_list<std::pair<const char *, V>> values) {
+   using T = typename tom::FieldTraits<NAME>::Type;
+   auto lp = tom::ListPtr<T>::create("pairs");
+   for (const auto &[name, value] : values) {
+      auto ep = tom::ElementPtr<T>::create();
+      tom::set<NAME>(ep, name);
+      tom::set<VALUE>(ep, value);
+      lp->push_back(std::move(ep));
+   }
+   return lp;
+}
+
+/**
+ * @brief A cluster queue attribute with a default, a host group override and a host override
+ * @tparam HREF the host reference field of the attribute type
+ * @tparam VALUE the value field
+ * @tparam V the value type
+ * @param def the default value, for HOSTREF_DEFAULT
+ * @param grp the value for the host group GRP
+ * @param host the value for the host HOST
+ * @return the attribute list
+ */
+template <auto HREF, auto VALUE, typename V>
+tom::ListPtr<typename tom::FieldTraits<HREF>::Type> attr(const V def, const V grp, const V host) {
+   using A = typename tom::FieldTraits<HREF>::Type;
+   auto lp = tom::ListPtr<A>::create("attr");
+   const char *hrefs[] = {HOSTREF_DEFAULT, GRP, HOST};
+   const V values[] = {def, grp, host};
+   for (int i = 0; i < 3; i++) {
+      auto ep = tom::ElementPtr<A>::create();
+      tom::set<HREF>(ep, hrefs[i]);
+      tom::set<VALUE>(ep, values[i]);
+      lp->push_back(std::move(ep));
+   }
+   return lp;
+}
+
+/**
+ * @brief A cluster queue attribute whose values are lists, with a default and two overrides
+ *
+ * The default value follows the variant, so that NONE and EMPTY reach the attribute values too.
+ *
+ * @tparam HREF the host reference field of the attribute type
+ * @tparam VALUE the list value field
+ * @tparam Make callable taking the index 0 (default), 1 (GRP) or 2 (HOST), returning the value list
+ * @param variant the variant
+ * @param make builds the value lists
+ * @return the attribute list
+ */
+template <auto HREF, auto VALUE, typename Make>
+tom::ListPtr<typename tom::FieldTraits<HREF>::Type> attr_lists(const Variant variant, Make make) {
+   using A = typename tom::FieldTraits<HREF>::Type;
+   auto lp = tom::ListPtr<A>::create("attr");
+   const char *hrefs[] = {HOSTREF_DEFAULT, GRP, HOST};
+   for (int i = 0; i < 3; i++) {
+      auto ep = tom::ElementPtr<A>::create();
+      tom::set<HREF>(ep, hrefs[i]);
+      tom::set<VALUE>(ep, i == 0 ? pick(variant, make(i)) : make(i));
+      lp->push_back(std::move(ep));
+   }
+   return lp;
+}
+
+/**
+ * @brief A complex entry with every field of CE_fields set
+ * @param name name
+ * @param shortcut shortcut
+ * @param type value type
+ * @param relop relational operator
+ * @param requestable REQU_NO, REQU_YES or REQU_FORCED
+ * @param consumable CONSUMABLE_NO, _YES, _JOB or _HOST
+ * @param defaultval default value
+ * @param urgency urgency weight
+ * @return the complex entry
+ */
+tom::ElementPtr<tom::CE> centry(const char *name, const char *shortcut, const ocs::CEntry::Type type,
+                                const uint32_t relop, const uint32_t requestable, const uint32_t consumable,
+                                const char *defaultval, const char *urgency) {
+   auto ce = tom::ElementPtr<tom::CE>::create();
+   tom::set<CE_name>(ce, name);
+   tom::set<CE_shortcut>(ce, shortcut);
+   tom::set<CE_valtype>(ce, static_cast<uint32_t>(type));
+   tom::set<CE_relop>(ce, relop);
+   tom::set<CE_requestable>(ce, requestable);
+   tom::set<CE_consumable>(ce, consumable);
+   tom::set<CE_defaultval>(ce, defaultval);
+   tom::set<CE_urgency_weight>(ce, urgency);
+   return ce;
+}
+
+/**
+ * @brief A usage list, as projects, users and the scheduler configuration hold it
+ * @param scale multiplies every value, so that several lists differ
+ * @return the usage list
+ */
+tom::ListPtr<tom::UA> usage(const double scale) {
+   return pairs<UA_name, UA_value, double>({{"cpu", 12.5 * scale}, {"mem", 3.25 * scale}, {"io", 0.5 * scale}});
+}
+
+/**
+ * @brief The per project usage of a user or project
+ * @return the list, two projects with usage and long term usage
+ */
+tom::ListPtr<tom::UPP> project_usage() {
+   auto lp = tom::ListPtr<tom::UPP>::create("project usage");
+   const char *projects[] = {"golden_prj", "other_prj"};
+   for (int i = 0; i < 2; i++) {
+      auto upp = tom::ElementPtr<tom::UPP>::create();
+      tom::set<UPP_name>(upp, projects[i]);
+      tom::set<UPP_usage>(upp, usage(1.0 + i));
+      tom::set<UPP_long_term_usage>(upp, usage(10.0 + i));
+      lp->push_back(std::move(upp));
+   }
+   return lp;
+}
+
+/**
+ * @brief The debited job usage of a user or project
+ * @return the list, two jobs with their old usage
+ */
+tom::ListPtr<tom::UPU> debited_usage() {
+   auto lp = tom::ListPtr<tom::UPU>::create("debited usage");
+   const uint32_t jobs[] = {4711, 4712};
+   for (int i = 0; i < 2; i++) {
+      auto upu = tom::ElementPtr<tom::UPU>::create();
+      tom::set<UPU_job_number>(upu, jobs[i]);
+      tom::set<UPU_old_usage_list>(upu, usage(0.5 + i));
+      lp->push_back(std::move(upu));
+   }
+   return lp;
+}
+
+/**
+ * @brief A load value of an execution host
+ * @param name name
+ * @param value value
+ * @param is_static whether it is spooled (ocs_spool_exechost_static_copy() keeps only static ones)
+ * @return the load value
+ */
+tom::ElementPtr<tom::HL> load_value(const char *name, const char *value, const bool is_static) {
+   auto hl = tom::ElementPtr<tom::HL>::create();
+   tom::set<HL_name>(hl, name);
+   tom::set<HL_value>(hl, value);
+   tom::set<HL_is_static>(hl, is_static);
+   return hl;
+}
+
+/**
+ * @brief An entry of a resource map
+ * @param id the id
+ * @param amount how often the id occurs
+ * @return the entry
+ */
+tom::ElementPtr<tom::RESL> resource(const char *id, const uint32_t amount) {
+   auto resl = tom::ElementPtr<tom::RESL>::create();
+   tom::set<RESL_value>(resl, id);
+   tom::set<RESL_amount>(resl, amount);
+   return resl;
+}
+
+/**
+ * @brief A share tree node
+ * @param name name
+ * @param type 0 for a user node, 1 for a project node
+ * @param id node id
+ * @param shares shares
+ * @return the node
+ */
+tom::ElementPtr<tom::STN> share_node(const char *name, const uint32_t type, const uint32_t id,
+                                     const uint32_t shares) {
+   auto stn = tom::ElementPtr<tom::STN>::create();
+   tom::set<STN_name>(stn, name);
+   tom::set<STN_type>(stn, type);
+   tom::set<STN_id>(stn, id);
+   tom::set<STN_shares>(stn, shares);
+   return stn;
+}
+
+/**
+ * @brief A resource quota filter
+ * @param expand whether the filter is written in braces
+ * @param scope the names in scope
+ * @param xscope the excluded names, none when empty
+ * @return the filter
+ */
+tom::ElementPtr<tom::RQRF> rqs_filter(const bool expand, const std::initializer_list<const char *> scope,
+                                      const std::initializer_list<const char *> xscope) {
+   auto filter = tom::ElementPtr<tom::RQRF>::create();
+   tom::set<RQRF_expand>(filter, expand);
+   tom::set<RQRF_scope>(filter, names<ST_name>(scope));
+   if (xscope.size() > 0) {
+      tom::set<RQRF_xscope>(filter, names<ST_name>(xscope));
+   }
+   return filter;
+}
+
+/**
+ * @brief A granted queue of a job or advance reservation
+ * @param qname queue instance name
+ * @param host host name
+ * @param slots slots
+ * @return the granted queue
+ */
+tom::ElementPtr<tom::JG> granted(const char *qname, const char *host, const uint32_t slots) {
+   auto jg = tom::ElementPtr<tom::JG>::create();
+   tom::set<JG_qname>(jg, qname);
+   tom::set<JG_qhostname>(jg, host);
+   tom::set<JG_slots>(jg, slots);
+   return jg;
+}
+
+/**
+ * @brief A range list with one range
+ * @param min first id
+ * @param max last id
+ * @param step step
+ * @return the list
+ */
+tom::ListPtr<tom::RN> range(const uint32_t min, const uint32_t max, const uint32_t step) {
+   auto lp = tom::ListPtr<tom::RN>::create("range");
+   auto rn = tom::ElementPtr<tom::RN>::create();
+   tom::set<RN_min>(rn, min);
+   tom::set<RN_max>(rn, max);
+   tom::set<RN_step>(rn, step);
+   lp->push_back(std::move(rn));
+   return lp;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// the objects
+
+/**
+ * @brief A calendar
+ * @param variant unused, a calendar has no sublists
+ * @return the object, owned by the caller
+ */
+lListElem *build_CAL([[maybe_unused]] const Variant variant) {
+   auto cal = tom::ElementPtr<tom::CAL>::create();
+   tom::set<CAL_name>(cal, "golden_cal");
+   tom::set<CAL_year_calendar>(cal, "1.1.2026=off 24.12.2026-26.12.2026=off");
+   tom::set<CAL_week_calendar>(cal, "mon-fri=8-18=on sat-sun=off");
+   return cal.release();
+}
+
+/**
+ * @brief A checkpointing environment
+ * @param variant unused, a checkpointing environment has no sublists
+ * @return the object, owned by the caller
+ */
+lListElem *build_CK([[maybe_unused]] const Variant variant) {
+   auto ck = tom::ElementPtr<tom::CK>::create();
+   tom::set<CK_name>(ck, "golden_ckpt");
+   tom::set<CK_interface>(ck, "userdefined");
+   tom::set<CK_ckpt_command>(ck, "/opt/ckpt/ckpt.sh $job_id");
+   tom::set<CK_migr_command>(ck, "/opt/ckpt/migrate.sh $job_id");
+   tom::set<CK_rest_command>(ck, "/opt/ckpt/restart.sh $job_id");
+   tom::set<CK_clean_command>(ck, "/opt/ckpt/clean.sh");
+   tom::set<CK_ckpt_dir>(ck, "/var/spool/ckpt");
+   tom::set<CK_signal>(ck, "USR2");
+   tom::set<CK_when>(ck, "smxr");
+   return ck.release();
+}
+
+/**
+ * @brief A complex entry
+ * @param variant unused, the fields of a complex entry that are written hold no sublist
+ * @return the object, owned by the caller
+ */
+lListElem *build_CE([[maybe_unused]] const Variant variant) {
+   return centry("golden_mem", "gm", ocs::CEntry::Type::MEM, CMPLXLE_OP, REQU_FORCED, CONSUMABLE_JOB, "1G", "1000")
+      .release();
+}
+
+/**
+ * @brief A host group with hosts and a nested group
+ * @param variant shape of the host list
+ * @return the object, owned by the caller
+ */
+lListElem *build_HGRP(const Variant variant) {
+   auto hgrp = tom::ElementPtr<tom::HGRP>::create();
+   tom::set<HGRP_name>(hgrp, GRP);
+   tom::set<HGRP_host_list>(hgrp, pick(variant, names<HR_name>({"gexec01", HOST, "@ggrp2"})));
+   return hgrp.release();
+}
+
+/**
+ * @brief The reserved host group of the administrative hosts, how `qconf -ah` is spooled
+ * @param variant shape of the host list
+ * @return the object, owned by the caller
+ */
+lListElem *build_HGRP_admin(const Variant variant) {
+   auto hgrp = tom::ElementPtr<tom::HGRP>::create();
+   tom::set<HGRP_name>(hgrp, ADMIN_HOSTGROUP);
+   tom::set<HGRP_host_list>(hgrp, pick(variant, names<HR_name>({"gmaster", "gexec01"})));
+   return hgrp.release();
+}
+
+/**
+ * @brief An access list that is also a department
+ * @param variant shape of the entries
+ * @return the object, owned by the caller
+ */
+lListElem *build_US(const Variant variant) {
+   auto us = tom::ElementPtr<tom::US>::create();
+   tom::set<US_name>(us, "golden_acl");
+   tom::set<US_type>(us, US_ACL | US_DEPT);
+   tom::set<US_fshare>(us, 1234);
+   tom::set<US_oticket>(us, 5678);
+   tom::set<US_entries>(us, pick(variant, names<UE_name>({"alice", "bob", "@staff"})));
+   return us.release();
+}
+
+/**
+ * @brief The reserved userset of the managers, how `qconf -am` is spooled
+ * @param variant shape of the entries
+ * @return the object, owned by the caller
+ */
+lListElem *build_US_manager(const Variant variant) {
+   auto us = tom::ElementPtr<tom::US>::create();
+   tom::set<US_name>(us, MANAGER_USERSET);
+   tom::set<US_type>(us, US_ACL);
+   tom::set<US_entries>(us, pick(variant, names<UE_name>({"root", "gadmin"})));
+   return us.release();
+}
+
+/**
+ * @brief A parallel environment
+ * @param variant shape of the access lists
+ * @return the object, owned by the caller
+ */
+lListElem *build_PE(const Variant variant) {
+   auto pe = tom::ElementPtr<tom::PE>::create();
+   tom::set<PE_name>(pe, "golden_pe");
+   tom::set<PE_slots>(pe, 4711);
+   tom::set<PE_user_list>(pe, pick(variant, names<US_name>({"pe_acl_a", "pe_acl_b"})));
+   tom::set<PE_xuser_list>(pe, pick(variant, names<US_name>({"pe_xacl"})));
+   tom::set<PE_start_proc_args>(pe, "/opt/pe/start.sh -catch_rsh $pe_hostfile");
+   tom::set<PE_stop_proc_args>(pe, "/opt/pe/stop.sh");
+   tom::set<PE_allocation_rule>(pe, "$round_robin");
+   tom::set<PE_control_slaves>(pe, true);
+   tom::set<PE_job_is_first_task>(pe, true);
+   tom::set<PE_urgency_slots>(pe, "avg");
+   tom::set<PE_accounting_summary>(pe, true);
+   tom::set<PE_ignore_slave_requests_on_master_host>(pe, true);
+   tom::set<PE_master_forks_slaves>(pe, true);
+   tom::set<PE_daemon_forks_slaves>(pe, true);
+   return pe.release();
+}
+
+/**
+ * @brief An RBAC role
+ * @param variant shape of the user list and the parent roles
+ * @return the object, owned by the caller
+ */
+lListElem *build_RL(const Variant variant) {
+   auto rl = tom::ElementPtr<tom::RL>::create();
+   tom::set<RL_name>(rl, "golden_role");
+   tom::set<RL_enabled>(rl, true);
+   tom::set<RL_user_list>(rl, pick(variant, names<US_name>({"golden_acl", "role_acl"})));
+   tom::set<RL_parent_role_list>(rl, pick(variant, names<ST_name>({"operator", "viewer"})));
+   tom::set<RL_perm_list>(rl, "client:*:read:queue:*:*,client:*:modify:job:*:owner");
+   return rl.release();
+}
+
+/**
+ * @brief A job category, as `qconf -scat` shows it
+ * @param variant unused, the fields written hold no sublist
+ * @return the object, owned by the caller
+ */
+lListElem *build_CAT([[maybe_unused]] const Variant variant) {
+   auto ct = tom::ElementPtr<tom::CT>::create();
+   tom::set<CT_id>(ct, 17);
+   tom::set<CT_refcount>(ct, 3);
+   tom::set<CT_str>(ct, "-l h_vmem=1G -q golden.q");
+   return ct.release();
+}
+
+/**
+ * @brief A project with accumulated usage
+ * @param variant shape of the usage and access lists
+ * @return the object, owned by the caller
+ */
+lListElem *build_PR(const Variant variant) {
+   auto pr = tom::ElementPtr<tom::PR>::create();
+   tom::set<PR_name>(pr, "golden_prj");
+   tom::set<PR_oticket>(pr, 111);
+   tom::set<PR_fshare>(pr, 222);
+   tom::set<PR_usage>(pr, pick(variant, usage(1.0)));
+   tom::set<PR_usage_time_stamp>(pr, T0 + 1);
+   tom::set<PR_long_term_usage>(pr, pick(variant, usage(100.0)));
+   tom::set<PR_project>(pr, pick(variant, project_usage()));
+   tom::set<PR_acl>(pr, pick(variant, names<US_name>({"golden_acl"})));
+   tom::set<PR_xacl>(pr, pick(variant, names<US_name>({"bad_acl", "worse_acl"})));
+   tom::set<PR_debited_job_usage>(pr, pick(variant, debited_usage()));
+   return pr.release();
+}
+
+/**
+ * @brief A user with accumulated usage
+ * @param variant shape of the usage lists
+ * @return the object, owned by the caller
+ */
+lListElem *build_UU(const Variant variant) {
+   auto uu = tom::ElementPtr<tom::UU>::create();
+   tom::set<UU_name>(uu, "alice");
+   tom::set<UU_oticket>(uu, 333);
+   tom::set<UU_fshare>(uu, 444);
+   tom::set<UU_delete_time>(uu, T0 + 86400000000);
+   tom::set<UU_usage>(uu, pick(variant, usage(2.0)));
+   tom::set<UU_usage_time_stamp>(uu, T0 + 2);
+   tom::set<UU_long_term_usage>(uu, pick(variant, usage(200.0)));
+   tom::set<UU_project>(uu, pick(variant, project_usage()));
+   tom::set<UU_default_project>(uu, "golden_prj");
+   tom::set<UU_debited_job_usage>(uu, pick(variant, debited_usage()));
+   return uu.release();
+}
+
+/**
+ * @brief A share tree of three levels
+ * @param variant shape of the children of the root
+ * @return the root node, owned by the caller
+ */
+lListElem *build_STN(const Variant variant) {
+   auto root = share_node("Root", 0, 0, 1);
+   tom::set<STN_version>(root, 7);
+
+   auto project = share_node("golden_prj", 1, 1, 100);
+   auto users = tom::ListPtr<tom::STN>::create("children");
+   users->push_back(share_node("alice", 0, 2, 50));
+   users->push_back(share_node("default", 0, 3, 10));
+   tom::set<STN_children>(project, std::move(users));
+
+   auto children = tom::ListPtr<tom::STN>::create("children");
+   children->push_back(std::move(project));
+   children->push_back(share_node("other_prj", 1, 4, 20));
+   tom::set<STN_children>(root, pick(variant, std::move(children)));
+   return root.release();
+}
+
+/**
+ * @brief A scheduler configuration
+ * @param variant shape of the load adjustments and the usage weights
+ * @return the object, owned by the caller
+ */
+lListElem *build_SC(const Variant variant) {
+   auto sc = tom::ElementPtr<tom::SC>::create();
+   tom::set<SC_algorithm>(sc, "default");
+   tom::set<SC_schedule_interval>(sc, "0:0:15");
+   tom::set<SC_maxujobs>(sc, 1024);
+   tom::set<SC_queue_sort_method>(sc, static_cast<uint32_t>(QSM_SEQNUM));
+   tom::set<SC_job_load_adjustments>(sc, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+                                                          {{"np_load_avg", "0.50"}, {"mem_free", "128M"}})));
+   tom::set<SC_load_adjustment_decay_time>(sc, "0:7:30");
+   tom::set<SC_load_formula>(sc, "np_load_avg+mem_used*2");
+   tom::set<SC_schedd_job_info>(sc, "false");
+   tom::set<SC_flush_submit_sec>(sc, 3);
+   tom::set<SC_flush_finish_sec>(sc, 5);
+   tom::set<SC_params>(sc, "MONITOR=true,PROFILE=1");
+   tom::set<SC_reprioritize_interval>(sc, "0:2:0");
+   tom::set<SC_halftime>(sc, 168);
+   tom::set<SC_usage_weight_list>(sc, pick(variant, pairs<UA_name, UA_value, double>(
+                                                       {{"cpu", 0.5}, {"mem", 0.25}, {"io", 0.25}})));
+   tom::set<SC_compensation_factor>(sc, 5.5);
+   tom::set<SC_weight_user>(sc, 0.125);
+   tom::set<SC_weight_project>(sc, 0.25);
+   tom::set<SC_weight_department>(sc, 0.375);
+   tom::set<SC_weight_job>(sc, 0.25);
+   tom::set<SC_weight_tickets_functional>(sc, 10000);
+   tom::set<SC_weight_tickets_share>(sc, 20000);
+   tom::set<SC_share_override_tickets>(sc, true);
+   tom::set<SC_share_functional_shares>(sc, true);
+   tom::set<SC_max_functional_jobs_to_schedule>(sc, 300);
+   tom::set<SC_report_pjob_tickets>(sc, true);
+   tom::set<SC_max_pending_tasks_per_job>(sc, 70);
+   tom::set<SC_halflife_decay_list>(sc, "cpu=168:mem=0:io=-1");
+   tom::set<SC_policy_hierarchy>(sc, "OSF");
+   tom::set<SC_weight_ticket>(sc, 0.5);
+   tom::set<SC_weight_waiting_time>(sc, 0.125);
+   tom::set<SC_weight_deadline>(sc, 3600.5);
+   tom::set<SC_weight_urgency>(sc, 0.25);
+   tom::set<SC_weight_priority>(sc, 2.5);
+   tom::set<SC_max_reservation>(sc, 42);
+   tom::set<SC_default_duration>(sc, "8:0:0");
+   return sc.release();
+}
+
+/**
+ * @brief The global configuration
+ * @param variant unused, the entries are the object
+ * @return the object, owned by the caller
+ */
+lListElem *build_CONF([[maybe_unused]] const Variant variant) {
+   auto conf = tom::ElementPtr<tom::CONF>::create();
+   tom::set<CONF_name>(conf, "global");
+   tom::set<CONF_version>(conf, 3);
+   tom::set<CONF_entries>(conf, pairs<CF_name, CF_value, const char *>({
+      {"execd_spool_dir", "/var/spool/gcs"},
+      {"mailer", "/usr/bin/mail"},
+      {"load_sensor", "none"},
+      {"prolog", "root@/opt/gcs/prolog.sh $job_id"},
+      {"epilog", "none"},
+      {"shell_start_mode", "posix_compliant"},
+      {"login_shells", "sh,bash,ksh,csh,tcsh"},
+      {"min_uid", "100"},
+      {"min_gid", "100"},
+      {"user_lists", "golden_acl role_acl"},
+      {"xuser_lists", "none"},
+      {"projects", "golden_prj"},
+      {"enforce_project", "false"},
+      {"load_report_time", "00:00:40"},
+      {"max_unheard", "00:05:00"},
+      {"reschedule_unknown", "00:00:00"},
+      {"loglevel", "log_warning"},
+      {"administrator_mail", "admin@example.com"},
+      {"qmaster_params", "ENABLE_FORCED_QDEL=true MONITOR_TIME=0:0:10"},
+      {"execd_params", "KEEP_ACTIVE=false,ENABLE_BINDING=true"},
+      {"reporting_params", "accounting=true reporting=false flush_time=00:00:15 joblog=false"},
+      {"finished_jobs", "100"},
+      {"gid_range", "20000-20100"},
+      {"qlogin_command", "builtin"},
+      {"rsh_daemon", "builtin"},
+      {"max_aj_tasks", "75000"},
+      {"max_u_jobs", "0"},
+      {"auto_user_oticket", "0"},
+      {"auto_user_fshare", "10"},
+      {"auto_user_default_project", "none"},
+      {"jsv_url", "none"},
+      {"jsv_allowed_mod", "ac,h,i,e,o,j,M,N,p,w"}
+   }));
+   return conf.release();
+}
+
+/**
+ * @brief An execution host, with a resource map among its complex values
+ * @param variant shape of the sublists
+ * @return the object, owned by the caller
+ */
+lListElem *build_EH(const Variant variant) {
+   auto eh = tom::ElementPtr<tom::EH>::create();
+   tom::set<EH_name>(eh, "gexec01");
+   tom::set<EH_scaling_list>(eh, pick(variant, pairs<HS_name, HS_value, double>(
+                                                  {{"np_load_avg", 1.5}, {"mem_free", 0.75}})));
+
+   auto complex_values = pairs<CE_name, CE_stringval, const char *>({{"mem_free", "4G"}, {"slots", "8"}});
+   auto gpu = tom::ElementPtr<tom::CE>::create();
+   tom::set<CE_name>(gpu, "gpu");
+   tom::set<CE_valtype>(gpu, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   auto map = tom::ListPtr<tom::RESL>::create("resource map");
+   map->push_back(resource("0", 1));
+   map->push_back(resource("1", 1));
+   map->push_back(resource("A", 2));
+#if defined(WITH_EXTENSIONS)
+   // an id with per-instance characteristics (CS-1338), written as id[k=v;...]
+   auto characteristic = resource("gpu7", 1);
+   tom::set<RESL_properties>(characteristic, pairs<CE_name, CE_stringval, const char *>(
+                                                {{"memory", "80G"}, {"device", "/dev/nvidia7"}}));
+   map->push_back(std::move(characteristic));
+   tom::set<CE_stringval>(gpu, "5");
+#else
+   tom::set<CE_stringval>(gpu, "4");
+#endif
+   tom::set<CE_resource_map_list>(gpu, std::move(map));
+   complex_values->push_back(std::move(gpu));
+   tom::set<EH_consumable_config_list>(eh, pick(variant, std::move(complex_values)));
+
+   tom::set<EH_usage_scaling_list>(eh, pick(variant, pairs<HS_name, HS_value, double>(
+                                                        {{"cpu", 1.25}, {"mem", 2.0}, {"io", 0.5}})));
+   auto loads = tom::ListPtr<tom::HL>::create("load values");
+   loads->push_back(load_value("arch", "lx-amd64", true));
+   loads->push_back(load_value("num_proc", "16", true));
+   loads->push_back(load_value("load_avg", "0.250000", false));
+   loads->push_back(load_value("mem_free", "12.5G", false));
+   tom::set<EH_load_list>(eh, pick(variant, std::move(loads)));
+   tom::set<EH_processors>(eh, 16);
+   tom::set<EH_acl>(eh, pick(variant, names<US_name>({"golden_acl"})));
+   tom::set<EH_xacl>(eh, pick(variant, names<US_name>({"bad_acl"})));
+   tom::set<EH_prj>(eh, pick(variant, names<PR_name>({"golden_prj"})));
+   tom::set<EH_xprj>(eh, pick(variant, names<PR_name>({"other_prj"})));
+   tom::set<EH_resource_utilization>(eh, pick(variant, pairs<RUE_name, RUE_utilized_now, double>(
+                                                          {{"slots", 3.0}, {"mem_free", 1073741824.0}})));
+   auto unknown = tom::ListPtr<tom::RU>::create("reschedule unknown");
+   const uint32_t ru[][3] = {{4711, 1, 2}, {4712, 3, 1}};
+   for (const auto &entry : ru) {
+      auto ep = tom::ElementPtr<tom::RU>::create();
+      tom::set<RU_job_number>(ep, entry[0]);
+      tom::set<RU_task_number>(ep, entry[1]);
+      tom::set<RU_state>(ep, entry[2]);
+      unknown->push_back(std::move(ep));
+   }
+   tom::set<EH_reschedule_unknown_list>(eh, pick(variant, std::move(unknown)));
+   tom::set<EH_report_variables>(eh, pick(variant, names<STU_name>({"cpu", "mem_free"})));
+   tom::set<EH_auto_added_time>(eh, T0 + 3000000);
+   return eh.release();
+}
+
+/**
+ * @brief A queue instance on a given host
+ * @param variant shape of the sublists
+ * @param host the host
+ * @return the object, owned by the caller
+ */
+lListElem *build_QU_on(const Variant variant, const char *host) {
+   auto qu = tom::ElementPtr<tom::QU>::create();
+   tom::set<QU_qname>(qu, "golden.q");
+   tom::set<QU_qhostname>(qu, host);
+   tom::set<QU_seq_no>(qu, 7);
+   tom::set<QU_load_thresholds>(qu, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+                                                     {{"np_load_avg", "1.75"}})));
+   tom::set<QU_suspend_thresholds>(qu, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+                                                        {{"load_avg", "3"}})));
+   tom::set<QU_nsuspend>(qu, 2);
+   tom::set<QU_suspend_interval>(qu, "0:10:0");
+   tom::set<QU_priority>(qu, "5");
+   tom::set<QU_min_cpu_interval>(qu, "0:5:0");
+   tom::set<QU_processors>(qu, "UNDEFINED");
+   tom::set<QU_qtype>(qu, static_cast<uint32_t>(BQ | IQ));
+   tom::set<QU_ckpt_list>(qu, pick(variant, names<ST_name>({"golden_ckpt"})));
+   tom::set<QU_pe_list>(qu, pick(variant, names<ST_name>({"golden_pe", "make"})));
+   tom::set<QU_rerun>(qu, true);
+   tom::set<QU_job_slots>(qu, 8);
+   tom::set<QU_tmpdir>(qu, "/scratch");
+   tom::set<QU_shell>(qu, "/bin/bash");
+   tom::set<QU_prolog>(qu, "/opt/gcs/qprolog.sh");
+   tom::set<QU_epilog>(qu, "/opt/gcs/qepilog.sh");
+   tom::set<QU_shell_start_mode>(qu, "unix_behavior");
+   tom::set<QU_starter_method>(qu, "/opt/gcs/starter.sh");
+   tom::set<QU_suspend_method>(qu, "SIGTSTP");
+   tom::set<QU_resume_method>(qu, "SIGCONT");
+   tom::set<QU_terminate_method>(qu, "/opt/gcs/kill.sh $job_pid");
+   tom::set<QU_notify>(qu, "0:0:60");
+   tom::set<QU_owner_list>(qu, pick(variant, names<US_name>({"qowner"})));
+   tom::set<QU_acl>(qu, pick(variant, names<US_name>({"golden_acl"})));
+   tom::set<QU_xacl>(qu, pick(variant, names<US_name>({"bad_acl"})));
+   auto subordinates = tom::ListPtr<tom::SO>::create("subordinates");
+   auto so = tom::ElementPtr<tom::SO>::create();
+   tom::set<SO_name>(so, "sub.q");
+   tom::set<SO_threshold>(so, 3);
+   subordinates->push_back(std::move(so));
+   tom::set<QU_subordinate_list>(qu, pick(variant, std::move(subordinates)));
+   tom::set<QU_consumable_config_list>(qu, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+                                                            {{"slots", "8"}, {"h_vmem", "16G"}})));
+   tom::set<QU_projects>(qu, pick(variant, names<PR_name>({"golden_prj"})));
+   tom::set<QU_xprojects>(qu, pick(variant, names<PR_name>({"other_prj"})));
+   tom::set<QU_calendar>(qu, "golden_cal");
+   tom::set<QU_initial_state>(qu, "enabled");
+   tom::set<QU_s_rt>(qu, "1:0:0");
+   tom::set<QU_h_rt>(qu, "2:0:0");
+   tom::set<QU_s_cpu>(qu, "0:30:0");
+   tom::set<QU_h_cpu>(qu, "1:0:0");
+   tom::set<QU_s_fsize>(qu, "1G");
+   tom::set<QU_h_fsize>(qu, "2G");
+   tom::set<QU_s_data>(qu, "3G");
+   tom::set<QU_h_data>(qu, "4G");
+   tom::set<QU_s_stack>(qu, "8M");
+   tom::set<QU_h_stack>(qu, "16M");
+   tom::set<QU_s_core>(qu, "0");
+   tom::set<QU_h_core>(qu, "1M");
+   tom::set<QU_s_rss>(qu, "5G");
+   tom::set<QU_h_rss>(qu, "6G");
+   tom::set<QU_s_vmem>(qu, "7G");
+   tom::set<QU_h_vmem>(qu, "INFINITY");
+   tom::set<QU_state>(qu, QI_DISABLED | QI_SUSPENDED);
+   tom::set<QU_pending_signal>(qu, 15);
+   tom::set<QU_pending_signal_delivery_time>(qu, T0 + 4000000);
+   tom::set<QU_version>(qu, 42);
+   return qu.release();
+}
+
+/**
+ * @brief A queue instance on gexec01
+ * @param variant shape of the sublists
+ * @return the object, owned by the caller
+ */
+lListElem *build_QU(const Variant variant) {
+   return build_QU_on(variant, "gexec01");
+}
+
+/**
+ * @brief A cluster queue with a host group and a host override for every attribute
+ * @param variant shape of the host list and of the default of every list valued attribute
+ * @return the object, owned by the caller
+ */
+lListElem *build_CQ(const Variant variant) {
+   auto cq = tom::ElementPtr<tom::CQ>::create();
+   tom::set<CQ_name>(cq, "golden.q");
+   tom::set<CQ_hostlist>(cq, pick(variant, names<HR_name>({GRP, HOST, "gexec03"})));
+
+   tom::set<CQ_seq_no>(cq, attr<AULNG_href, AULNG_value, uint32_t>(0, 10, 20));
+   tom::set<CQ_nsuspend>(cq, attr<AULNG_href, AULNG_value, uint32_t>(1, 2, 3));
+   tom::set<CQ_job_slots>(cq, attr<AULNG_href, AULNG_value, uint32_t>(8, 16, 32));
+   tom::set<CQ_rerun>(cq, attr<ABOOL_href, ABOOL_value, bool>(false, true, false));
+   tom::set<CQ_qtype>(cq, attr<AQTLIST_href, AQTLIST_value, uint32_t>(BQ | IQ, BQ, IQ));
+
+   using S = const char *;
+   tom::set<CQ_suspend_interval>(cq, attr<AINTER_href, AINTER_value, S>("00:05:00", "00:10:00", "00:15:00"));
+   tom::set<CQ_min_cpu_interval>(cq, attr<AINTER_href, AINTER_value, S>("00:05:00", "00:01:00", "00:02:00"));
+   tom::set<CQ_notify>(cq, attr<AINTER_href, AINTER_value, S>("00:00:60", "00:00:30", "00:01:30"));
+   tom::set<CQ_priority>(cq, attr<ASTR_href, ASTR_value, S>("0", "5", "-5"));
+   tom::set<CQ_processors>(cq, attr<ASTR_href, ASTR_value, S>("UNDEFINED", "0-3", "4-7"));
+   tom::set<CQ_tmpdir>(cq, attr<ASTR_href, ASTR_value, S>("/tmp", "/scratch", "/local"));
+   tom::set<CQ_shell>(cq, attr<ASTR_href, ASTR_value, S>("/bin/sh", "/bin/bash", "/bin/zsh"));
+   tom::set<CQ_calendar>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "golden_cal", "night_cal"));
+   tom::set<CQ_prolog>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "/opt/p1.sh", "/opt/p2.sh"));
+   tom::set<CQ_epilog>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "/opt/e1.sh", "/opt/e2.sh"));
+   tom::set<CQ_shell_start_mode>(cq, attr<ASTR_href, ASTR_value, S>("unix_behavior", "posix_compliant",
+                                                                    "script_from_stdin"));
+   tom::set<CQ_starter_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "/opt/s1.sh", "/opt/s2.sh"));
+   tom::set<CQ_suspend_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "SIGTSTP", "/opt/susp.sh"));
+   tom::set<CQ_resume_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "SIGCONT", "/opt/res.sh"));
+   tom::set<CQ_terminate_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "SIGKILL", "/opt/term.sh"));
+   tom::set<CQ_initial_state>(cq, attr<ASTR_href, ASTR_value, S>("default", "enabled", "disabled"));
+   tom::set<CQ_s_rt>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "1:0:0", "0:30:0"));
+   tom::set<CQ_h_rt>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "2:0:0", "1:0:0"));
+   tom::set<CQ_s_cpu>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "3:0:0", "0:10:0"));
+   tom::set<CQ_h_cpu>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "4:0:0", "0:20:0"));
+   tom::set<CQ_s_fsize>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "1G", "512M"));
+   tom::set<CQ_h_fsize>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "2G", "1G"));
+   tom::set<CQ_s_data>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "3G", "2G"));
+   tom::set<CQ_h_data>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "4G", "3G"));
+   tom::set<CQ_s_stack>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "8M", "4M"));
+   tom::set<CQ_h_stack>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "16M", "8M"));
+   tom::set<CQ_s_core>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "0", "1K"));
+   tom::set<CQ_h_core>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "1M", "2K"));
+   tom::set<CQ_s_rss>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "5G", "4G"));
+   tom::set<CQ_h_rss>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "6G", "5G"));
+   tom::set<CQ_s_vmem>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "7G", "6G"));
+   tom::set<CQ_h_vmem>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "8G", "7G"));
+
+   tom::set<CQ_pe_list>(cq, attr_lists<ASTRLIST_href, ASTRLIST_value>(variant, [](const int i) {
+      return names<ST_name>({i == 0 ? "make" : i == 1 ? "golden_pe" : "mpi"});
+   }));
+   tom::set<CQ_ckpt_list>(cq, attr_lists<ASTRLIST_href, ASTRLIST_value>(variant, [](const int i) {
+      return names<ST_name>({i == 0 ? "golden_ckpt" : i == 1 ? "ckpt_a" : "ckpt_b"});
+   }));
+   tom::set<CQ_owner_list>(cq, attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
+      return names<US_name>({i == 0 ? "qowner" : i == 1 ? "grp_owner" : "host_owner"});
+   }));
+   tom::set<CQ_acl>(cq, attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
+      return names<US_name>({i == 0 ? "golden_acl" : i == 1 ? "grp_acl" : "host_acl"});
+   }));
+   tom::set<CQ_xacl>(cq, attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
+      return names<US_name>({i == 0 ? "bad_acl" : i == 1 ? "grp_xacl" : "host_xacl"});
+   }));
+   tom::set<CQ_projects>(cq, attr_lists<APRJLIST_href, APRJLIST_value>(variant, [](const int i) {
+      return names<PR_name>({i == 0 ? "golden_prj" : i == 1 ? "grp_prj" : "host_prj"});
+   }));
+   tom::set<CQ_xprojects>(cq, attr_lists<APRJLIST_href, APRJLIST_value>(variant, [](const int i) {
+      return names<PR_name>({i == 0 ? "other_prj" : i == 1 ? "grp_xprj" : "host_xprj"});
+   }));
+   tom::set<CQ_load_thresholds>(cq, attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
+      return pairs<CE_name, CE_stringval, const char *>({{"np_load_avg", i == 0 ? "1.75" : i == 1 ? "2.5" : "4"}});
+   }));
+   tom::set<CQ_suspend_thresholds>(cq, attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
+      return pairs<CE_name, CE_stringval, const char *>({{"load_avg", i == 0 ? "3" : i == 1 ? "6" : "9"}});
+   }));
+   tom::set<CQ_consumable_config_list>(cq, attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
+      return pairs<CE_name, CE_stringval, const char *>(
+         {{"slots", i == 0 ? "8" : i == 1 ? "16" : "32"}, {"h_vmem", i == 0 ? "16G" : "64G"}});
+   }));
+   tom::set<CQ_subordinate_list>(cq, attr_lists<ASOLIST_href, ASOLIST_value>(variant, [](const int i) {
+      auto lp = tom::ListPtr<tom::SO>::create("subordinates");
+      auto so = tom::ElementPtr<tom::SO>::create();
+      tom::set<SO_name>(so, i == 0 ? "sub.q" : i == 1 ? "grp_sub.q" : "host_sub.q");
+      tom::set<SO_threshold>(so, static_cast<uint32_t>(2 + i));
+      lp->push_back(std::move(so));
+      return lp;
+   }));
+   return cq.release();
+}
+
+/**
+ * @brief A resource quota set with three rules over every kind of filter
+ * @param name the name of the set
+ * @param enabled whether the set is enabled
+ * @return the set, as an owning handle
+ */
+tom::ElementPtr<tom::RQS> rqs(const char *name, const bool enabled) {
+   auto rule_set = tom::ElementPtr<tom::RQS>::create();
+   tom::set<RQS_name>(rule_set, name);
+   tom::set<RQS_description>(rule_set, "golden limits");
+   tom::set<RQS_enabled>(rule_set, enabled);
+
+   auto rules = tom::ListPtr<tom::RQR>::create("rules");
+   auto rule = tom::ElementPtr<tom::RQR>::create();
+   tom::set<RQR_name>(rule, "per_user");
+   tom::set<RQR_filter_users>(rule, rqs_filter(true, {"@golden_acl"}, {"baduser"}));
+   tom::set<RQR_filter_projects>(rule, rqs_filter(false, {"golden_prj"}, {}));
+   tom::set<RQR_filter_pes>(rule, rqs_filter(false, {"golden_pe"}, {"other_pe"}));
+   tom::set<RQR_filter_queues>(rule, rqs_filter(false, {"golden.q"}, {}));
+   tom::set<RQR_filter_hosts>(rule, rqs_filter(true, {GRP}, {HOST}));
+   tom::set<RQR_limit>(rule, pairs<RQRL_name, RQRL_value, const char *>({{"slots", "10"}, {"h_vmem", "4G"}}));
+   rules->push_back(std::move(rule));
+
+   rule = tom::ElementPtr<tom::RQR>::create();
+   tom::set<RQR_filter_hosts>(rule, rqs_filter(true, {"*"}, {}));
+   tom::set<RQR_limit>(rule, pairs<RQRL_name, RQRL_value, const char *>({{"slots", "$num_proc*2"}}));
+   rules->push_back(std::move(rule));
+
+   rule = tom::ElementPtr<tom::RQR>::create();
+   tom::set<RQR_name>(rule, "arch_limit");
+   tom::set<RQR_filter_users>(rule, rqs_filter(false, {"*"}, {}));
+   tom::set<RQR_limit>(rule, pairs<RQRL_name, RQRL_value, const char *>({{"arch", "lx-amd64"}}));
+   rules->push_back(std::move(rule));
+
+   tom::set<RQS_rule>(rule_set, std::move(rules));
+   return rule_set;
+}
+
+/**
+ * @brief A resource quota set
+ * @param variant unused, the rules are the object
+ * @return the object, owned by the caller
+ */
+lListElem *build_RQS([[maybe_unused]] const Variant variant) {
+   return rqs("golden_rqs", true).release();
+}
+
+/**
+ * @brief An advance reservation
+ * @param variant shape of the sublists
+ * @return the object, owned by the caller
+ */
+lListElem *build_AR(const Variant variant) {
+   auto ar = tom::ElementPtr<tom::AR>::create();
+   tom::set<AR_id>(ar, 815);
+   tom::set<AR_name>(ar, "golden_ar");
+   tom::set<AR_account>(ar, "golden_account");
+   tom::set<AR_project>(ar, "golden_prj");
+   tom::set<AR_owner>(ar, "alice");
+   tom::set<AR_group>(ar, "staff");
+   tom::set<AR_submission_time>(ar, T0 + 5000000);
+   tom::set<AR_start_time>(ar, T0 + 3600000000);
+   tom::set<AR_end_time>(ar, T0 + 7200000000);
+   tom::set<AR_duration>(ar, uint64_t{3600000000});
+   tom::set<AR_verify>(ar, static_cast<uint32_t>(AR_JUST_VERIFY));
+   tom::set<AR_error_handling>(ar, 1);
+   tom::set<AR_state>(ar, static_cast<uint32_t>(AR_WAITING));
+   tom::set<AR_checkpoint_name>(ar, "golden_ckpt");
+   tom::set<AR_resource_list>(ar, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+                                                   {{"h_vmem", "2G"}, {"arch", "lx-amd64"}})));
+   tom::set<AR_queue_list>(ar, pick(variant, names<QR_name>({"golden.q", "other.q@gexec01"})));
+   auto slots = tom::ListPtr<tom::JG>::create("granted slots");
+   slots->push_back(granted("golden.q@gexec01", "gexec01", 4));
+   slots->push_back(granted("golden.q@gexec02", HOST, 2));
+   tom::set<AR_granted_slots>(ar, pick(variant, std::move(slots)));
+   tom::set<AR_mail_options>(ar, MAIL_AT_BEGINNING | MAIL_AT_EXIT);
+   auto mail = tom::ListPtr<tom::MR>::create("mail");
+   auto mr = tom::ElementPtr<tom::MR>::create();
+   tom::set<MR_user>(mr, "alice");
+   tom::set<MR_host>(mr, "mail.example.com");
+   mail->push_back(std::move(mr));
+   mr = tom::ElementPtr<tom::MR>::create();
+   tom::set<MR_user>(mr, "bob");
+   mail->push_back(std::move(mr));
+   tom::set<AR_mail_list>(ar, pick(variant, std::move(mail)));
+   tom::set<AR_pe>(ar, "golden_pe");
+   tom::set<AR_pe_range>(ar, pick(variant, range(2, 8, 2)));
+   tom::set<AR_granted_pe>(ar, "golden_pe");
+   tom::set<AR_master_queue_list>(ar, pick(variant, names<QR_name>({"golden.q@gexec01"})));
+   auto acl = tom::ListPtr<tom::ARA>::create("acl");
+   auto ara = tom::ElementPtr<tom::ARA>::create();
+   tom::set<ARA_name>(ara, "alice");
+   tom::set<ARA_group>(ara, "staff");
+   acl->push_back(std::move(ara));
+   ara = tom::ElementPtr<tom::ARA>::create();
+   tom::set<ARA_name>(ara, "@golden_acl");
+   acl->push_back(std::move(ara));
+   tom::set<AR_acl_list>(ar, pick(variant, std::move(acl)));
+   auto xacl = tom::ListPtr<tom::ARA>::create("xacl");
+   ara = tom::ElementPtr<tom::ARA>::create();
+   tom::set<ARA_name>(ara, "baduser");
+   tom::set<ARA_group>(ara, "badgroup");
+   xacl->push_back(std::move(ara));
+   tom::set<AR_xacl_list>(ar, pick(variant, std::move(xacl)));
+   tom::set<AR_type>(ar, 1);
+   return ar.release();
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// the lists
+
+/**
+ * @brief The resource quota sets, as `qconf -srqs` writes them
+ * @return the list, owned by the caller
+ */
+lList *build_RQS_list() {
+   auto lp = tom::ListPtr<tom::RQS>::create("rqs");
+   lp->push_back(rqs("golden_rqs", true));
+   lp->push_back(rqs("disabled_rqs", false));
+   return lp.release();
+}
+
+/**
+ * @brief A complex with an entry of every value type, as `qconf -sc` writes it
+ * @return the list, owned by the caller
+ */
+lList *build_CE_list() {
+   using T = ocs::CEntry::Type;
+   auto lp = tom::ListPtr<tom::CE>::create("centries");
+   lp->push_back(centry("arch", "a", T::RESTR, CMPLXEQ_OP, REQU_YES, CONSUMABLE_NO, "NONE", "0"));
+   lp->push_back(centry("calendar", "c", T::STR, CMPLXEQ_OP, REQU_YES, CONSUMABLE_NO, "NONE", "0"));
+   lp->push_back(centry("cpu", "cpu", T::DOUBLE, CMPLXGE_OP, REQU_YES, CONSUMABLE_NO, "0", "0"));
+   lp->push_back(centry("display_win_gui", "dwg", T::BOOL, CMPLXEQ_OP, REQU_YES, CONSUMABLE_NO, "0", "0"));
+   lp->push_back(centry("exclusive", "excl", T::BOOL, CMPLXEXCL_OP, REQU_YES, CONSUMABLE_YES, "0", "1000"));
+   lp->push_back(centry("gpu", "gpu", T::RSMAP, CMPLXLE_OP, REQU_YES, CONSUMABLE_HOST, "0", "500"));
+   lp->push_back(centry("h_rt", "h_rt", T::TIME, CMPLXLE_OP, REQU_FORCED, CONSUMABLE_NO, "0:0:0", "0"));
+   lp->push_back(centry("h_vmem", "h_vmem", T::MEM, CMPLXLE_OP, REQU_YES, CONSUMABLE_JOB, "1G", "100"));
+   lp->push_back(centry("hostname", "h", T::HOST, CMPLXEQ_OP, REQU_YES, CONSUMABLE_NO, "NONE", "0"));
+   lp->push_back(centry("np_load_avg", "nla", T::DOUBLE, CMPLXGT_OP, REQU_NO, CONSUMABLE_NO, "0", "0"));
+   lp->push_back(centry("os", "os", T::CSTR, CMPLXNE_OP, REQU_YES, CONSUMABLE_NO, "NONE", "0"));
+   lp->push_back(centry("slots", "s", T::INT, CMPLXLT_OP, REQU_YES, CONSUMABLE_YES, "1", "1000"));
+   return lp.release();
+}
+
+/**
+ * @brief Two job categories, as `qconf -scatl` writes them
+ * @return the list, owned by the caller
+ */
+lList *build_CAT_list() {
+   auto lp = tom::ListPtr<tom::CT>::create("categories");
+   lp->push_back(tom::ElementPtr<tom::CT>::from_typed(build_CAT(Variant::FULL)));
+   auto ct = tom::ElementPtr<tom::CT>::create();
+   tom::set<CT_id>(ct, 18);
+   tom::set<CT_refcount>(ct, 1);
+   tom::set<CT_str>(ct, "-U alice -pe golden_pe 4");
+   lp->push_back(std::move(ct));
+   return lp.release();
+}
+
+/**
+ * @brief Two queue instances, as `qconf -sq golden.q@*` writes them in JSON
+ * @return the list, owned by the caller
+ */
+lList *build_QU_list() {
+   auto lp = tom::ListPtr<tom::QU>::create("qinstances");
+   lp->push_back(tom::ElementPtr<tom::QU>::from_typed(build_QU_on(Variant::FULL, "gexec01")));
+   lp->push_back(tom::ElementPtr<tom::QU>::from_typed(build_QU_on(Variant::FULL, HOST)));
+   return lp.release();
+}
+
+/**
+ * @brief The managers, as `qconf -sm -fmt json` writes them
+ * @return the list, owned by the caller
+ */
+lList *build_manager_list() {
+   return names<UE_name>({"gadmin", "root"}).release();
+}
+
+/**
+ * @brief The administrative hosts, as `qconf -sh -fmt json` writes them
+ * @return the list, owned by the caller
+ */
+lList *build_adminhost_list() {
+   return names<HR_name>({"gexec01", "gmaster"}).release();
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// hooks
+
+/**
+ * @brief What the classic backend writes for an execution host: the copy without the dynamic load values
+ * @param ep the execution host
+ * @return the copy, owned by the caller
+ */
+lListElem *prepare_EH_spool(const lListElem *ep) {
+   return ocs_spool_exechost_static_copy(tom::ConstElement<tom::EH>::from_typed(ep)).release();
+}
+
+/**
+ * @brief Restore the value type of the resource maps of an execution host read back
+ *
+ * The reader keeps the ids of a resource map but not its type, which qmaster fills in later
+ * from the complex; the writer writes the ids only for a resource map. This does what qmaster
+ * does, for the complex values that hold a resource map.
+ *
+ * @param ep the execution host read back
+ */
+void fixup_EH(lListElem *ep) {
+   const auto eh = tom::Element<tom::EH>::from_typed(ep);
+   for (const auto ce : eh.get<EH_consumable_config_list>()) {
+      if (!ce.get<CE_resource_map_list>().empty()) {
+         ce.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+      }
+   }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// the tables
+
+/**
+ * @brief The layouts of a type that qconf and the classic backend write with one static table
+ * @param table the field table
+ * @param instr the instruction both use
+ * @param parse_values the parse_values argument of the qconf reader
+ * @return a layout for qconf (ASCII and JSON) and one for the spool file
+ */
+std::vector<Layout> static_layouts(spooling_field *table, const spool_flatfile_instr *instr,
+                                   const bool parse_values) {
+   return {
+      {"qconf", {FieldKind::STATIC, table}, instr, F_QCONF | F_JSON, false, parse_values, nullptr, true},
+      {"spool", {FieldKind::STATIC, table}, instr, F_SPOOL, false, true, nullptr, true},
+   };
+}
+
+/**
+ * @brief Every object type and every way the product writes it
+ *
+ * Taken from the field_info table of spool_classic_create_context() (spool files) and from
+ * ocs_qconf_objects (qconf show, modify and JSON).
+ *
+ * @return the cases
+ */
+std::vector<ObjectCase> object_cases() {
+   using K = FieldKind;
+   return {
+      {"CAL", CAL_Type, build_CAL, false, nullptr, static_layouts(CAL_fields, &qconf_sfi, true)},
+      {"CK", CK_Type, build_CK, false, nullptr, static_layouts(CK_fields, &qconf_sfi, true)},
+      {"CE", CE_Type, build_CE, false, nullptr, {
+         {"qconf", {K::STATIC, CE_fields}, &qconf_ce_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
+         {"spool", {K::STATIC, CE_fields}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+      {"HGRP", HGRP_Type, build_HGRP, true, nullptr, static_layouts(HGRP_fields, &qconf_sfi, true)},
+      {"HGRP-adminhosts", HGRP_Type, build_HGRP_admin, false, nullptr, static_layouts(HGRP_fields, &qconf_sfi, true)},
+      {"US", US_Type, build_US, true, nullptr, static_layouts(US_fields, &qconf_param_sfi, true)},
+      {"US-manager", US_Type, build_US_manager, false, nullptr, static_layouts(US_fields, &qconf_param_sfi, true)},
+      {"PE", PE_Type, build_PE, true, nullptr, static_layouts(PE_fields, &qconf_sfi, true)},
+      {"RL", RL_Type, build_RL, true, nullptr, static_layouts(RL_fields, &qconf_sfi, true)},
+      {"CAT", CT_Type, build_CAT, false, nullptr, {
+         {"qconf", {K::STATIC, CAT_fields}, &qconf_cat_sfi, F_QCONF | F_JSON, false, false, "category", true},
+      }},
+      // AR_fields is not used by the product (the classic backend packs the reservation), but it is a table
+      {"AR", AR_Type, build_AR, true, nullptr, {
+         {"qconf", {K::STATIC, AR_fields}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
+      }},
+      {"PR", PR_Type, build_PR, true, nullptr, {
+         {"qconf", {K::PR, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
+         {"spool", {K::PR, nullptr, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+      {"UU", UU_Type, build_UU, true, nullptr, {
+         {"qconf", {K::UU, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
+         {"spool", {K::UU, nullptr, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+      {"STN", STN_Type, build_STN, true, nullptr, {
+         {"qconf", {K::STN, nullptr, false, true}, &qconf_name_value_list_sfi, F_QCONF, true, true, nullptr, true},
+         {"qconf", {K::STN_JSON}, &qconf_name_value_list_sfi, F_JSON, true, true, "sharetree", true},
+         {"spool", {K::STN, nullptr, true, true}, &qconf_name_value_list_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+      {"SC", SC_Type, build_SC, true, nullptr, {
+         {"qconf", {K::STATIC, SC_fields}, &qconf_comma_sfi, F_QCONF | F_JSON, false, true, "sched_conf", true},
+         {"spool", {K::SC_SPOOL}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+      {"CONF", CONF_Type, build_CONF, false, nullptr, {
+         {"qconf", {K::CONF, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, false, nullptr, true},
+         {"spool", {K::CONF, nullptr, true}, &qconf_sfi, F_SPOOL, false, false, nullptr, true},
+      }},
+      {"EH", EH_Type, build_EH, true, fixup_EH, {
+         // -Ae/-Me and the import: no runtime values
+         {"qconf", {K::EH, nullptr, false, false, false, false}, &qconf_sfi, F_QCONF | F_JSON, false, true,
+          "exechost", true},
+         // -se shows the runtime values
+         {"show", {K::EH, nullptr, false, true, false, false}, &qconf_sfi, F_QCONF | F_JSON, false, true,
+          "exechost", true},
+         // -se with MORE_INFO: auto_added_time is a formatted date, which the reader cannot take back
+         {"show-more", {K::EH, nullptr, false, true, false, true}, &qconf_sfi, F_QCONF | F_JSON, false, true,
+          "exechost", false},
+         {"spool", {K::EH, nullptr, true, false, false, false}, &qconf_sfi, F_SPOOL, false, true, nullptr, true,
+          prepare_EH_spool},
+      }},
+      {"QU", QU_Type, build_QU, true, nullptr, {
+         {"show", {K::QU, nullptr, true, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, "qinstance", true},
+         {"spool", {K::QU, nullptr, false, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+      {"CQ", CQ_Type, build_CQ, true, nullptr, {
+         {"qconf", {K::CQ, nullptr, true}, &qconf_sfi, F_QCONF | F_JSON, false, false, nullptr, true},
+         {"spool", {K::CQ, nullptr, false}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+      {"RQS", RQS_Type, build_RQS, false, nullptr, {
+         {"spool", {K::STATIC, RQS_fields}, &qconf_rqs_sfi, F_SPOOL, false, true, nullptr, true},
+      }},
+   };
+}
+
+/**
+ * @brief Every list the product writes as a whole
+ * @return the cases
+ */
+std::vector<ListCase> list_cases() {
+   using K = FieldKind;
+   return {
+      {"RQS-list", RQS_Type, build_RQS_list, {K::STATIC, RQS_fields}, &qconf_rqs_sfi, false, true,
+       ListJson::PLAIN, nullptr, nullptr, NoName, true},
+      {"CE-list", CE_Type, build_CE_list, {K::STATIC, CE_fields}, &qconf_ce_list_sfi, true, true,
+       ListJson::PLAIN, nullptr, nullptr, NoName, true},
+      {"CAT-list", CT_Type, build_CAT_list, {K::STATIC, CAT_fields}, &qconf_cat_list_sfi, true, false,
+       ListJson::TYPED_EX, "category-list", "category", NoName, false},
+      {"QU-list", QU_Type, build_QU_list, {K::QU, nullptr, true, false}, nullptr, false, true,
+       ListJson::TYPED, "qinstance", nullptr, NoName, false},
+      {"MGR-names", UE_Type, build_manager_list, {K::STATIC, nullptr}, nullptr, false, true,
+       ListJson::NAMES, "manager", nullptr, UE_name, false},
+      {"AH-names", HR_Type, build_adminhost_list, {K::STATIC, nullptr}, nullptr, false, true,
+       ListJson::NAMES, "adminhost", nullptr, HR_name, false},
+   };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// the runs
+
+/**
+ * @brief Write one object case in every variant, layout and form, and check the read-back
+ * @param c the case
+ */
+void run_object_case(const ObjectCase &c) {
+   const std::vector<Variant> variants = c.variants ? std::vector<Variant>{Variant::FULL, Variant::NONE,
+                                                                           Variant::EMPTY}
+                                                    : std::vector<Variant>{Variant::FULL};
+   for (const Variant variant : variants) {
+      lListElem *ep = c.build(variant);
+      for (const Layout &layout : c.layouts) {
+         bool owned = false;
+         spooling_field *fields = build_fields(layout.source, &owned);
+         lListElem *prepared = layout.prepare != nullptr ? layout.prepare(ep) : nullptr;
+         const lListElem *subject = prepared != nullptr ? prepared : ep;
+
+         for (const Form form : forms_of(layout.forms)) {
+            const std::string name = std::string(c.name) + "." + variant_name(variant) + "." + layout.label + "." +
+                                     form_ext(form);
+            const std::string text = render_object(subject, layout, fields, form, name);
+            if (text.empty()) {
+               fail(name, "nothing written");
+               continue;
+            }
+            emit(name, text);
+
+            if (g_roundtrip && layout.roundtrip) {
+               lListElem *back = parse_object(text, c.descr, layout, fields, form, name);
+               if (back == nullptr) {
+                  fail(name, "cannot be read back");
+                  continue;
+               }
+               if (c.fixup != nullptr) {
+                  c.fixup(back);
+               }
+               compare(name, text, render_object(back, layout, fields, form, name));
+               lFreeElem(&back);
+            }
+         }
+         lFreeElem(&prepared);
+         release_fields(fields, owned);
+      }
+      lFreeElem(&ep);
+   }
+}
+
+/**
+ * @brief Write one list case in its forms, and check the read-back
+ * @param c the case
+ */
+void run_list_case(const ListCase &c) {
+   lList *lp = c.build();
+   bool owned = false;
+   spooling_field *fields = build_fields(c.source, &owned);
+
+   std::vector<Form> forms;
+   if (c.instr != nullptr) {
+      forms = forms_of(F_QCONF);
+   }
+   if (c.json != ListJson::NONE) {
+      forms.push_back(Form::JSON);
+      forms.push_back(Form::JSON_NUM);
+   }
+
+   for (const Form form : forms) {
+      const std::string name = std::string(c.name) + "." + form_ext(form);
+      const std::string text = render_list(lp, c, fields, form, name);
+      if (text.empty()) {
+         fail(name, "nothing written");
+         continue;
+      }
+      emit(name, text);
+
+      const bool readable = !select_format(form) || c.json == ListJson::PLAIN;
+      if (g_roundtrip && c.roundtrip && readable) {
+         lList *back = parse_list(text, c, fields, form, name);
+         if (back == nullptr) {
+            fail(name, "cannot be read back");
+            continue;
+         }
+         compare(name, text, render_list(back, c, fields, form, name));
+         lFreeList(&back);
+      }
+   }
+   release_fields(fields, owned);
+   lFreeList(&lp);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// classic job and advance reservation spooling
+
+/**
+ * @brief A tightly integrated parallel array job with two tasks, the first running a parallel task
+ * @return the job
+ */
+tom::ElementPtr<tom::JB> build_job() {
+   static const char script[] = "#!/bin/sh\n#$ -N golden\necho golden\n";
+
+   auto job = tom::ElementPtr<tom::JB>::create();
+   tom::set<JB_job_number>(job, 4711);
+   tom::set<JB_job_name>(job, "golden");
+   tom::set<JB_version>(job, 2);
+   tom::set<JB_project>(job, "golden_prj");
+   tom::set<JB_department>(job, "golden_acl");
+   tom::set<JB_directive_prefix>(job, "#$");
+   tom::set<JB_exec_file>(job, EXEC_DIR "/4711");
+   tom::set<JB_script_file>(job, "golden.sh");
+   tom::set<JB_script_size>(job, static_cast<uint32_t>(sizeof(script) - 1));
+   tom::set<JB_script_ptr>(job, script);
+   tom::set<JB_submission_time>(job, T0 + 6000000);
+   tom::set<JB_execution_time>(job, T0 + 7000000);
+   tom::set<JB_deadline>(job, T0 + 8000000);
+   tom::set<JB_owner>(job, "alice");
+   tom::set<JB_uid>(job, 1001);
+   tom::set<JB_group>(job, "staff");
+   tom::set<JB_gid>(job, 100);
+   tom::set<JB_account>(job, "golden_account");
+   tom::set<JB_cwd>(job, "/home/alice/work");
+   tom::set<JB_notify>(job, true);
+   tom::set<JB_priority>(job, 1024 - 100);
+   tom::set<JB_jobshare>(job, 5);
+   tom::set<JB_shell_list>(job, pairs<PN_path, PN_host, const char *>({{"/bin/bash", "gexec01"}}));
+   tom::set<JB_env_list>(job, pairs<VA_variable, VA_value, const char *>(
+                                 {{"PATH", "/usr/bin:/bin"}, {"GOLDEN", "1"}}));
+   tom::set<JB_context>(job, pairs<VA_variable, VA_value, const char *>({{"ctx", "golden"}}));
+   tom::set<JB_job_args>(job, names<ST_name>({"-v", "input.dat"}));
+   tom::set<JB_stdout_path_list>(job, pairs<PN_path, PN_host, const char *>({{"/home/alice/out", "gexec01"}}));
+   tom::set<JB_stderr_path_list>(job, pairs<PN_path, PN_host, const char *>({{"/home/alice/err", HOST}}));
+   tom::set<JB_stdin_path_list>(job, pairs<PN_path, PN_host, const char *>({{"/dev/null", "gexec01"}}));
+   tom::set<JB_merge_stderr>(job, true);
+
+   auto requests = tom::ListPtr<tom::JRS>::create("requests");
+   auto request = tom::ElementPtr<tom::JRS>::create();
+   tom::set<JRS_hard_resource_list>(request, pairs<CE_name, CE_stringval, const char *>(
+                                                {{"h_vmem", "1G"}, {"h_rt", "1:0:0"}}));
+   tom::set<JRS_soft_resource_list>(request, pairs<CE_name, CE_stringval, const char *>({{"arch", "lx-amd64"}}));
+   tom::set<JRS_hard_queue_list>(request, names<QR_name>({"golden.q"}));
+   tom::set<JRS_soft_queue_list>(request, names<QR_name>({"other.q"}));
+   requests->push_back(std::move(request));
+   tom::set<JB_request_set_list>(job, std::move(requests));
+
+   tom::set<JB_mail_options>(job, MAIL_AT_BEGINNING | MAIL_AT_EXIT);
+   auto mail = tom::ListPtr<tom::MR>::create("mail");
+   auto mr = tom::ElementPtr<tom::MR>::create();
+   tom::set<MR_user>(mr, "alice");
+   tom::set<MR_host>(mr, "mail.example.com");
+   mail->push_back(std::move(mr));
+   tom::set<JB_mail_list>(job, std::move(mail));
+   tom::set<JB_pe>(job, "golden_pe");
+   tom::set<JB_pe_range>(job, range(2, 4, 1));
+   tom::set<JB_ja_structure>(job, range(1, 2, 1));
+
+   auto tasks = tom::ListPtr<tom::JAT>::create("ja_tasks");
+   for (uint32_t number = 1; number <= 2; number++) {
+      auto task = tom::ElementPtr<tom::JAT>::create();
+      tom::set<JAT_task_number>(task, number);
+      tom::set<JAT_status>(task, 0x80 * number);
+      tom::set<JAT_state>(task, 0x40 + number);
+      tom::set<JAT_start_time>(task, T0 + 9000000 + number);
+      tom::set<JAT_granted_pe>(task, "golden_pe");
+      tom::set<JAT_master_queue>(task, "golden.q@gexec01");
+      auto destinations = tom::ListPtr<tom::JG>::create("granted");
+      destinations->push_back(granted("golden.q@gexec01", "gexec01", 2));
+      destinations->push_back(granted("golden.q@gexec02", HOST, 2));
+      tom::set<JAT_granted_destin_identifier_list>(task, std::move(destinations));
+      tom::set<JAT_osjobid>(task, number == 1 ? "12345" : "12346");
+      tom::set<JAT_usage_list>(task, usage(number));
+      if (number == 1) {
+         auto pe_tasks = tom::ListPtr<tom::PET>::create("pe tasks");
+         auto pet = tom::ElementPtr<tom::PET>::create();
+         tom::set<PET_id>(pet, "1.gexec02");
+         tom::set<PET_name>(pet, "golden_petask");
+         tom::set<PET_status>(pet, 0x80);
+         tom::set<PET_pid>(pet, 23456);
+         tom::set<PET_osjobid>(pet, "23456");
+         tom::set<PET_submission_time>(pet, T0 + 10000000);
+         tom::set<PET_start_time>(pet, T0 + 11000000);
+         tom::set<PET_cwd>(pet, "/home/alice/work");
+         tom::set<PET_environment>(pet, pairs<VA_variable, VA_value, const char *>({{"PE_TASK", "1"}}));
+         tom::set<PET_usage>(pet, usage(0.25));
+         auto pet_destinations = tom::ListPtr<tom::JG>::create("granted");
+         pet_destinations->push_back(granted("golden.q@gexec02", HOST, 1));
+         tom::set<PET_granted_destin_identifier_list>(pet, std::move(pet_destinations));
+         pe_tasks->push_back(std::move(pet));
+         tom::set<JAT_task_list>(task, std::move(pe_tasks));
+      }
+      tasks->push_back(std::move(task));
+   }
+   tom::set<JB_ja_tasks>(job, std::move(tasks));
+   return job;
+}
+
+/**
+ * @brief The regular files below a directory with their content
+ * @param root the directory
+ * @return relative path to content; the job scripts are left out, the spool reader does not read them
+ */
+std::map<std::string, std::string> snapshot(const std::string &root) {
+   std::map<std::string, std::string> files;
+   for (const auto &entry : std::filesystem::recursive_directory_iterator(root)) {
+      if (!entry.is_regular_file()) {
+         continue;
+      }
+      const std::string rel = std::filesystem::relative(entry.path(), root).string();
+      if (rel.compare(0, strlen(EXEC_DIR), EXEC_DIR) == 0) {
+         continue;
+      }
+      std::ifstream in(entry.path(), std::ios::binary);
+      std::ostringstream content;
+      content << in.rdbuf();
+      files[rel] = content.str();
+   }
+   return files;
+}
+
+/**
+ * @brief Write the job, its script and the advance reservation as the classic backend does
+ * @param job the job
+ * @param ar the advance reservation
+ * @return true when everything was written
+ */
+bool write_classic(const tom::Element<tom::JB> job, const tom::ConstElement<tom::AR> ar) {
+   bool ok = job_write_spool_file(job, 0, nullptr, SPOOL_DEFAULT) == 0;
+   std::filesystem::create_directories(AR_DIR);
+   ok = ocs::spool::classic::ar_write_spool_file(ar) && ok;
+   return ok;
+}
+
+/**
+ * @brief Spool a job with array and parallel tasks, its script and an advance reservation, and read them back
+ *
+ * The files are packed CULL, not flatfile text; they are pinned here because the classic backend
+ * spools these types this way. The job is spooled as a directory (one file per task) because
+ * SGE_MAX_TASKS_PER_FILE is 1 and the job is tightly parallel, which the master PE list installed
+ * here makes it.
+ */
+void run_classic() {
+   const std::string dir = g_outdir + "/classic";
+   std::filesystem::create_directories(dir);
+   char previous[4096];
+   if (getcwd(previous, sizeof(previous)) == nullptr || chdir(dir.c_str()) != 0) {
+      fail("classic", "cannot change into the output directory");
+      return;
+   }
+
+   // the PE of the job, with control_slaves, so that its parallel tasks are spooled as files of their own
+   lList **master_pe_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
+   lFreeList(master_pe_list);
+   *master_pe_list = names<PE_name>({"golden_pe"}).release();
+   tom::set<PE_control_slaves>(lFirstRW(*master_pe_list), true);
+
+   auto job = build_job();
+   auto ar = tom::ElementPtr<tom::AR>::from_typed(build_AR(Variant::FULL));
+   if (!write_classic(*job, *ar)) {
+      fail("classic", "the job or the advance reservation cannot be spooled");
+   }
+   std::filesystem::create_directories(EXEC_DIR);
+   if (sge_string2file(tom::get<JB_script_ptr>(job), static_cast<int>(tom::get<JB_script_size>(job)),
+                       tom::get<JB_exec_file>(job)) != 0) {
+      fail("classic", "the job script cannot be written");
+   }
+   const auto before = snapshot(".");
+   g_files += static_cast<int>(before.size()) + 1;
+
+   if (g_roundtrip) {
+      lList *jobs = nullptr;
+      job_list_read_from_disk(&jobs, "jobs", 0, SPOOL_DEFAULT, nullptr);
+      auto ar_back = ocs::spool::classic::ar_read_spool_file(815);
+      tom::Element<tom::JB> job_back;
+      if (jobs != nullptr) {
+         job_back = tom::List<tom::JB>::from_typed(jobs).front();
+      }
+
+      if (!job_back || !ar_back) {
+         fail("classic", "the job or the advance reservation cannot be read back");
+      } else {
+         // the directories stay: the job writer remembers the last task directory it created
+         for (const auto &[rel, content] : before) {
+            std::filesystem::remove(rel);
+         }
+         if (!write_classic(job_back, *ar_back)) {
+            fail("classic", "the job or the advance reservation read back cannot be spooled again");
+         }
+         const auto after = snapshot(".");
+         for (const auto &[rel, content] : before) {
+            const auto it = after.find(rel);
+            if (it == after.end() || it->second != content) {
+               if (it != after.end()) {
+                  std::ofstream(rel + ".roundtrip", std::ios::binary) << it->second;
+               }
+               fail("classic/" + rel, "read back and spooled again it differs or is missing");
+            }
+            std::ofstream(rel, std::ios::binary | std::ios::trunc) << content;
+         }
+         for (const auto &[rel, content] : after) {
+            if (before.find(rel) == before.end()) {
+               fail("classic/" + rel, "spooled again but not there before");
+            }
+         }
+      }
+      lFreeList(&jobs);
+   }
+
+   lFreeList(master_pe_list);
+   if (chdir(previous) != 0) {
+      fail("classic", "cannot change back");
+   }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// environment
+
+/**
+ * @brief Install a throwaway bootstrap file and point SGE_ROOT/SGE_CELL at it
+ *
+ * Hashing a host field consults ocs::Bootstrap, which reads $SGE_ROOT/$SGE_CELL/common/bootstrap
+ * and exits when it cannot; the values only have to parse (the same trick test_sgeobj_hgroup uses).
+ *
+ * @param root the directory to create it in
+ * @return true when it was created
+ */
+bool setup_bootstrap(const std::string &root) {
+   std::error_code error;
+   std::filesystem::create_directories(root + "/default/common", error);
+   std::ofstream out(root + "/default/common/bootstrap");
+   out << "admin_user        none\n"
+          "default_domain    none\n"
+          "ignore_fqdn       true\n"
+          "spooling_method   classic\n"
+          "spooling_lib      none\n"
+          "spooling_params   none\n"
+          "binary_path       none\n"
+          "qmaster_spool_dir none\n"
+          "security_mode     none\n";
+   if (!out.good()) {
+      return false;
+   }
+   setenv("SGE_ROOT", root.c_str(), 1);
+   setenv("SGE_CELL", "default", 1);
+   return true;
+}
+
+} // namespace
+
+/**
+ * @brief Write the golden files and check the read-back
+ * @param argc number of arguments
+ * @param argv `[--no-roundtrip] [<outdir>]`
+ * @return 0 when every check passed, 1 otherwise, 2 on a usage error
+ */
+int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "test_spool_golden");
+
+   std::string outdir;
+   for (int i = 1; i < argc; i++) {
+      if (strcmp(argv[i], "--no-roundtrip") == 0) {
+         g_roundtrip = false;
+      } else if (strcmp(argv[i], "--roundtrip") == 0) {
+         g_roundtrip = true;
+      } else if (argv[i][0] != '-' && outdir.empty()) {
+         outdir = argv[i];
+      } else {
+         fprintf(stderr, "usage: %s [--no-roundtrip] [<outdir>]\n", argv[0]);
+         DRETURN(2);
+      }
+   }
+
+   char scratch_template[] = "/tmp/test_spool_golden.XXXXXX";
+   const char *scratch = mkdtemp(scratch_template);
+   if (scratch == nullptr) {
+      printf("FAIL - cannot create a temporary directory: %s\n", strerror(errno));
+      DRETURN(1);
+   }
+   const bool temporary_outdir = outdir.empty();
+   g_outdir = temporary_outdir ? std::string(scratch) + "/golden" : std::filesystem::absolute(outdir).string();
+   std::filesystem::create_directories(g_outdir);
+
+   // fixed time zone: two writers render a time stamp in local time
+   setenv("TZ", "UTC", 1);
+   tzset();
+   // one task per file, so that the array tasks of the classic job get files of their own
+   setenv("SGE_MAX_TASKS_PER_FILE", "1", 1);
+
+   if (!setup_bootstrap(std::string(scratch) + "/sge_root")) {
+      printf("FAIL - cannot create the throwaway bootstrap\n");
+      DRETURN(1);
+   }
+   // read the bootstrap while errors still reach stderr
+   ocs::Bootstrap::get_ignore_fqdn();
+   component_set_daemonized(true);
+   lInit(nmv);
+
+   for (const ObjectCase &c : object_cases()) {
+      run_object_case(c);
+   }
+   for (const ListCase &c : list_cases()) {
+      run_list_case(c);
+   }
+   run_classic();
+   ocs_json_value_format_opt = OCS_JSON_VALUES_COMPACT;
+
+   std::error_code error;
+   std::filesystem::remove_all(scratch, error);
+
+   printf("\n%d file(s) written to %s%s\n", g_files, temporary_outdir ? "a temporary directory" : g_outdir.c_str(),
+          g_roundtrip ? ", each read back and written again" : "");
+   printf("%s - %d failure(s)\n", g_failures == 0 ? "PASS" : "FAIL", g_failures);
+   DRETURN(g_failures == 0 ? 0 : 1);
+}

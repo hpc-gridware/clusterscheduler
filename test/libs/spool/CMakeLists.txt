@@ -55,6 +55,15 @@ target_include_directories(test_spool_classic_job PRIVATE "./")
 target_link_libraries(test_spool_classic_job PRIVATE spoolc_static spool gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_classic_job COMMAND test_spool_classic_job)
 
+# Golden output of the flatfile/JSON spooling of every spooled object type, for proving a
+# change of the spooling field tables byte identical: run "test_spool_golden <dir>" before
+# and after the change and compare with "diff -r". Without a directory (as ctest runs it)
+# it only checks that every text reads back and writes again unchanged.
+add_executable(test_spool_golden test_spool_golden.cc)
+target_include_directories(test_spool_golden PRIVATE "./")
+target_link_libraries(test_spool_golden PRIVATE spoolc_static spool gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_spool_golden COMMAND test_spool_golden)
+
 add_executable(test_spool test_spool.cc ../../../source/common/sig_handlers.cc)
 target_include_directories(test_spool PRIVATE "./")
 target_link_libraries(test_spool PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
@@ -72,4 +81,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_spool_utilities DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_spool_duplicates DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_spool_classic_job DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_spool_golden DESTINATION testbin/${SGE_ARCH})
 endif ()
