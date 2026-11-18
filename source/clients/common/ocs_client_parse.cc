@@ -557,9 +557,9 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
       if (!opts_all) {
          opts_all = std::move(scriptfile);
       } else {
-         /* Override the queue (-q) values from defaults; lOverrideStrList() has no typed form yet and
-          * moves every element, the emptied list is freed with the handle */
-         lOverrideStrList(*opts_all, *scriptfile, SPA_switch_val, "-q");
+         /* Override the queue (-q) values from defaults; lOverrideStrList() has no typed form yet, it takes
+          * the second list over and frees it */
+         lOverrideStrList(*opts_all, scriptfile.release(), SPA_switch_val, "-q");
       }
    }
    if (cmdline) {
@@ -567,7 +567,7 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
          opts_all = std::move(cmdline);
       } else {
          /* Override queue (-q) values from both defaults and scriptfile */
-         lOverrideStrList(*opts_all, *cmdline, SPA_switch_val, "-q");
+         lOverrideStrList(*opts_all, cmdline.release(), SPA_switch_val, "-q");
       }
    }
 
