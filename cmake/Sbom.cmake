@@ -30,10 +30,15 @@
 # so the document is written from there, at configure time.
 #
 # Two kinds of components:
-#   - built and shipped by us, or compiled into our binaries: with version, purl, license,
+#   - built and shipped by us, or compiled into our binaries: with version, purl, CPE, license,
 #     download location and, for a tarball, its hash
 #   - taken from the operating system, linked or loaded at runtime: without version - which one
 #     is used is decided by the system the product is installed on
+#
+# Vulnerability scanners like Dependency-Track find the vulnerabilities of a component by its
+# CPE (NVD) or by its purl (OSS Index, OSV, GitHub Advisories). The purl sources cover package
+# ecosystems like Maven, Go or PyPI, but not the pkg:github and pkg:generic purls our C/C++
+# components have - so these components carry the CPE the NVD files their vulnerabilities under.
 #
 # The JSON is written as plain text rather than with string(JSON), which needs CMake 3.19 - more
 # than some of the older build hosts have. Every value written is a constant of the build, so
@@ -62,6 +67,7 @@ endfunction()
 # @param DESCRIPTION  optional: what it is and what we use it for
 # @param LICENSE      optional: SPDX license id or expression
 # @param PURL         optional: package URL
+# @param CPE          optional: CPE 2.3 name, see sbom_cpe()
 # @param VCS          optional: URL of the source repository
 # @param DISTRIBUTION optional: URL the source is downloaded from
 # @param SHA256       optional: SHA-256 hash of what DISTRIBUTION refers to
@@ -70,8 +76,8 @@ endfunction()
 #                     runtime-loaded
 # @param PROVIDED_BY  "product" (built and shipped or compiled in by us) or "operating-system"
 function(sbom_add_component)
-   set(one_value_args BOM_REF NAME VERSION DESCRIPTION LICENSE PURL VCS DISTRIBUTION SHA256 SCOPE
-                      LINKAGE PROVIDED_BY)
+   set(one_value_args BOM_REF NAME VERSION DESCRIPTION LICENSE PURL CPE VCS DISTRIBUTION SHA256
+                      SCOPE LINKAGE PROVIDED_BY)
    cmake_parse_arguments(C "" "${one_value_args}" "" ${ARGN})
 
    foreach (field BOM_REF NAME DESCRIPTION LICENSE PURL VCS DISTRIBUTION)
@@ -100,6 +106,9 @@ function(sbom_add_component)
          set(license "{ \"license\": { \"id\": \"${C_LICENSE}\" } }")
          string(APPEND json "        \"licenses\": [ ${license} ],\n")
       endif ()
+   endif ()
+   if (C_CPE)
+      string(APPEND json "        \"cpe\": \"${C_CPE}\",\n")
    endif ()
    if (C_PURL)
       string(APPEND json "        \"purl\": \"${C_PURL}\",\n")
@@ -132,6 +141,19 @@ function(sbom_add_component)
    set_property(GLOBAL APPEND PROPERTY SBOM_COMPONENT_REFS "${C_BOM_REF}")
 endfunction()
 
+# @brief the CPE 2.3 name of an application
+#
+# The vendor and the product have to be those of the NVD CPE dictionary
+# (https://nvd.nist.gov/products/cpe/search), otherwise the CPE matches no vulnerability.
+#
+# @param out     name of the variable receiving the CPE
+# @param vendor  vendor as in the NVD CPE dictionary, e.g. oracle
+# @param product product as in the NVD CPE dictionary, e.g. berkeley_db
+# @param version version as the NVD records it, e.g. 5.3.28
+function(sbom_cpe out vendor product version)
+   set(${out} "cpe:2.3:a:${vendor}:${product}:${version}:*:*:*:*:*:*:*" PARENT_SCOPE)
+endfunction()
+
 # @brief add a component provided by the operating system
 #
 # @param name        name of the library, e.g. libssl
@@ -152,10 +174,15 @@ function(sbom_collect_components)
       sbom_add_os_component(rapidjson "required" "header-only" "JSON parser and writer")
    else ()
       set(rapidjson_commit ${PROJECT_3RDPARTY_RAPIDJSON_COMMIT})
+      # The NVD records the affected versions as "up to 1.1.0", the only release, and a commit
+      # as version would match none of them. The commit is later than 1.1.0, so a finding has to
+      # be checked against it, and marked as not affected when the commit has the fix.
+      sbom_cpe(rapidjson_cpe "tencent" "rapidjson" "1.1.0")
       sbom_add_component(BOM_REF "rapidjson" NAME "rapidjson" VERSION "${rapidjson_commit}"
                          DESCRIPTION "JSON parser and writer, a commit of the master branch"
                          LICENSE "MIT"
                          PURL "pkg:github/Tencent/rapidjson@${rapidjson_commit}"
+                         CPE "${rapidjson_cpe}"
                          VCS "https://github.com/Tencent/rapidjson.git"
                          SCOPE "required" LINKAGE "header-only" PROVIDED_BY "product")
    endif ()
@@ -167,11 +194,13 @@ function(sbom_collect_components)
          set(bdb_commit ${PROJECT_3RDPARTY_BERKELEYDB_COMMIT})
          set(description "Berkeley DB, spooling - libdb and the db_* utilities, built from")
          string(APPEND description " commit ${bdb_commit} of the libdb5 repository")
+         sbom_cpe(bdb_cpe "oracle" "berkeley_db" "${PROJECT_3RDPARTY_BERKELEYDB_VERSION}")
          sbom_add_component(BOM_REF "berkeleydb" NAME "berkeleydb"
                             VERSION "${PROJECT_3RDPARTY_BERKELEYDB_VERSION}"
                             DESCRIPTION "${description}"
                             LICENSE "Sleepycat"
                             PURL "pkg:github/Positeral/libdb5@${bdb_commit}"
+                            CPE "${bdb_cpe}"
                             VCS "https://github.com/Positeral/libdb5.git"
                             SCOPE "required" LINKAGE "shared" PROVIDED_BY "product")
       endif ()
@@ -182,9 +211,13 @@ function(sbom_collect_components)
          sbom_add_os_component(jemalloc "required" "static" "memory allocator")
       else ()
          set(jemalloc_version ${PROJECT_3RDPARTY_JEMALLOC_VERSION})
+         # not in the NVD CPE dictionary yet, as no vulnerability has been filed for jemalloc:
+         # the likely name, check it once there is one
+         sbom_cpe(jemalloc_cpe "jemalloc" "jemalloc" "${jemalloc_version}")
          sbom_add_component(BOM_REF "jemalloc" NAME "jemalloc" VERSION "${jemalloc_version}"
                             DESCRIPTION "memory allocator" LICENSE "BSD-2-Clause"
                             PURL "pkg:github/jemalloc/jemalloc@${jemalloc_version}"
+                            CPE "${jemalloc_cpe}"
                             VCS "https://github.com/jemalloc/jemalloc.git"
                             SCOPE "required" LINKAGE "static" PROVIDED_BY "product")
       endif ()
@@ -196,9 +229,13 @@ function(sbom_collect_components)
       else ()
          set(hwloc_version ${PROJECT_3RDPARTY_HWLOC_VERSION})
          set(hwloc_url ${PROJECT_3RDPARTY_HWLOC_URL})
+         # not in the NVD CPE dictionary yet, as no vulnerability has been filed for hwloc: the
+         # likely name, check it once there is one
+         sbom_cpe(hwloc_cpe "open-mpi" "hwloc" "${hwloc_version}")
          sbom_add_component(BOM_REF "hwloc" NAME "hwloc" VERSION "${hwloc_version}"
                             DESCRIPTION "hardware topology, core binding" LICENSE "BSD-3-Clause"
                             PURL "pkg:generic/hwloc@${hwloc_version}?download_url=${hwloc_url}"
+                            CPE "${hwloc_cpe}"
                             DISTRIBUTION "${hwloc_url}"
                             SHA256 "${PROJECT_3RDPARTY_HWLOC_SHA256}"
                             SCOPE "required" LINKAGE "static" PROVIDED_BY "product")
@@ -214,9 +251,11 @@ function(sbom_collect_components)
 
    if (WITH_QMAKE)
       set(description "GNU make, extended and shipped as qmake (source/3rdparty/qmake-4.4)")
+      sbom_cpe(make_cpe "gnu" "make" "4.4")
       sbom_add_component(BOM_REF "qmake" NAME "gnu-make" VERSION "4.4"
                          DESCRIPTION "${description}"
                          LICENSE "GPL-3.0-or-later" PURL "pkg:generic/gnu-make@4.4"
+                         CPE "${make_cpe}"
                          SCOPE "required" LINKAGE "executable" PROVIDED_BY "product")
    endif ()
 
