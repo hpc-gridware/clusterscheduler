@@ -370,52 +370,52 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
    }
 
    /*    AR_name, SGE_STRING */
-   attr_mod_zerostr(ar, new_ar, AR_name, object->object_name);
+   ocs::tom::copy_if_present<AR_name>(new_ar, ar);
    /*   AR_account, SGE_STRING */
-   attr_mod_zerostr(ar, new_ar, AR_account, object->object_name);
+   ocs::tom::copy_if_present<AR_account>(new_ar, ar);
    /*   AR_project, SGE_STRING */
-   attr_mod_zerostr(ar, new_ar, AR_project, object->object_name);
+   ocs::tom::copy_if_present<AR_project>(new_ar, ar);
    if (!ar_verify_project(new_ar, packet, alpp)) {
       goto AR_MOD_ERROR;
    }
    /*   AR_submission_time, SGE_ULONG */
    ocs::tom::set<AR_submission_time>(new_ar, sge_get_gmt64());
    /*   AR_start_time, SGE_ULONG          required */
-   attr_mod_ulong64(ar, new_ar, AR_start_time, object->object_name);
+   ocs::tom::copy_if_present<AR_start_time>(new_ar, ar);
    /*   AR_end_time, SGE_ULONG            required */
-   attr_mod_ulong64(ar, new_ar, AR_end_time, object->object_name);
+   ocs::tom::copy_if_present<AR_end_time>(new_ar, ar);
    /*   AR_duration, SGE_ULONG */
-   attr_mod_ulong64(ar, new_ar, AR_duration, object->object_name);
+   ocs::tom::copy_if_present<AR_duration>(new_ar, ar);
    /*   AR_verify, SGE_ULONG              just verify the reservation or final case */
-   attr_mod_ulong(ar, new_ar, AR_verify, object->object_name);
+   ocs::tom::copy_if_present<AR_verify>(new_ar, ar);
    /*   AR_error_handling, SGE_ULONG      how to deal with soft and hard exceptions */
-   attr_mod_ulong(ar, new_ar, AR_error_handling, object->object_name);
+   ocs::tom::copy_if_present<AR_error_handling>(new_ar, ar);
    /*   AR_state, SGE_ULONG               state of the AR */
    ocs::tom::set<AR_state>(new_ar, AR_WAITING);
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
-   attr_mod_zerostr(ar, new_ar, AR_checkpoint_name, object->object_name);
+   ocs::tom::copy_if_present<AR_checkpoint_name>(new_ar, ar);
    /*   AR_resource_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0, nullptr);
    /*   AR_queue_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_mail_options, SGE_ULONG   */
-   attr_mod_ulong(ar, new_ar, AR_mail_options, object->object_name);
+   ocs::tom::copy_if_present<AR_mail_options>(new_ar, ar);
    /*   AR_mail_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, cmd, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_pe, SGE_STRING */
-   attr_mod_zerostr(ar, new_ar, AR_pe, object->object_name);
+   ocs::tom::copy_if_present<AR_pe>(new_ar, ar);
    /*   AR_master_queue_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_pe_range, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, cmd, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_allocation_rule, SGE_STRING */
-   attr_mod_zerostr(ar, new_ar, AR_allocation_rule, object->object_name);
+   ocs::tom::copy_if_present<AR_allocation_rule>(new_ar, ar);
    /*   AR_acl_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_xacl_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_type, SGE_ULONG     */
-   attr_mod_ulong(ar, new_ar, AR_type, object->object_name);
+   ocs::tom::copy_if_present<AR_type>(new_ar, ar);
    // AR_binding
    attr_mod_obj_binding(alpp, new_ar, ar);
 

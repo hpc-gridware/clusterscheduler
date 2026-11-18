@@ -1107,6 +1107,29 @@ void test_owning() {
                  "no view of a temporary owning handle");
    CHECK(34, "an owning list handle is viewed by List and ConstList, and lFirst/lLast take it, also when empty",
          views && empty_views);
+
+   auto src = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   auto dst = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   ocs::tom::set<JB_job_number>(src, 4711);
+   ocs::tom::set<JB_job_name>(dst, "old");
+   auto src_env = ocs::tom::ListPtr<ocs::tom::VA>::create("env");
+   auto src_var = ocs::tom::ElementPtr<ocs::tom::VA>::create();
+   ocs::tom::set<VA_variable>(src_var, "X");
+   src_env->push_back(std::move(src_var));
+   ocs::tom::set<JB_env_list>(src, std::move(src_env));
+   const bool number = ocs::tom::copy_if_present<JB_job_number>(*dst, *src) &&
+                       ocs::tom::get<JB_job_number>(dst) == 4711;
+   // the source holds the name field with nullptr: it is copied as it is
+   const bool null_string = ocs::tom::copy_if_present<JB_job_name>(*dst, *src) &&
+                            ocs::tom::get<JB_job_name>(dst) == nullptr;
+   const bool deep = ocs::tom::copy_if_present<JB_env_list>(*dst, *src) &&
+                     ocs::tom::get<JB_env_list>(dst).size() == 1 &&
+                     ocs::tom::get<JB_env_list>(dst).raw() != ocs::tom::get<JB_env_list>(src).raw();
+   const ocs::tom::ConstElement<ocs::tom::JB> none;
+   const bool absent = !ocs::tom::copy_if_present<JB_job_number>(*dst, none) &&
+                       ocs::tom::get<JB_job_number>(dst) == 4711;
+   CHECK(35, "copy_if_present copies a value, a nullptr string and a deep list copy, and nothing from a source "
+             "without the field", number && null_string && deep && absent);
    lFreeList(&jobs);
 }
 
@@ -1164,8 +1187,9 @@ int main(int argc, char *argv[]) {
        test_handle_forms},
       {"OPS-FREE-16", "owning", "an owning element handle takes the free forms and moves into the calls that take its element over",
        {"field access on an owning job and task, append and insert moved in, set of an object and a list field moved in, "
-        "a refused store, nullptr comparison, List/ConstList views and lFirst/lLast of an owning list"},
+        "a refused store, nullptr comparison, List/ConstList views and lFirst/lLast of an owning list, "
+        "copy_if_present of a value, a nullptr string, a list and from an empty source"},
        "the same results as on the handle; a moved handle is empty, a refused one keeps its element",
-       {{"OPS-02", "covers"}}, {29, 30, 31, 32, 33, 34}, test_owning},
+       {{"OPS-02", "covers"}}, {29, 30, 31, 32, 33, 34, 35}, test_owning},
    });
 }

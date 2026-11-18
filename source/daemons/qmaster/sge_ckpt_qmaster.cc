@@ -74,10 +74,10 @@
  * objects or modify existing checkpointing interfaces.
  *
  * @param alpp reference to an answer list.
- * @param new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized
+ * @param raw_new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized
  *        CULL object if this function was called due to a modify request than new_ckpt will contain the old
  *        data (see add parameter)
- * @param ckpt a reduced ckpt object which contains all necessary information to create a new object or modify
+ * @param raw_ckpt a reduced ckpt object which contains all necessary information to create a new object or modify
  *        parts of an existing one
  * @param add 1 if a new element should be added to the master list 0 to modify an existing object
  * @param ruser username of person who invoked this gdi request
@@ -95,20 +95,24 @@
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EUNKNOWN - an error occurred
  */
 int
-ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ckpt,
-         lListElem *ckpt, int add, const char *ruser, const char *rhost, gdi_object_t *object,
+ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         lListElem *raw_new_ckpt, lListElem *raw_ckpt, int add, const char *ruser, const char *rhost,
+         gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
+   // the signature is fixed by gdi_object_t::modifier; both elements are checkpointing environments
+   // (the gdi object table and the listener's structure check of the request data guarantee it)
+   const ocs::tom::Element<ocs::tom::CK> new_ckpt(raw_new_ckpt);
+   const ocs::tom::ConstElement<ocs::tom::CK> ckpt(raw_ckpt);
    const char *ckpt_name;
 
    /* ---- CK_name */
    if (ocs::tom::has<CK_name>(ckpt)) {
       if (add) {
-         if (attr_mod_str(alpp, ckpt, new_ckpt, CK_name, SGE_ATTR_CKPT_NAME)) {
-            goto ERROR;
-         }
+         // a nullptr name is refused by verify_obj_name() below
+         ocs::tom::copy_if_present<CK_name>(new_ckpt, ckpt);
       }
       ckpt_name = ocs::tom::get<CK_name>(new_ckpt);
       if (add && verify_obj_name(
@@ -122,20 +126,19 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    /* ---- CK_interface */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_interface, SGE_ATTR_INTERFACE);
+   ocs::tom::copy_if_present<CK_interface>(new_ckpt, ckpt);
 
    /* ---- CK_ckpt_command */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_ckpt_command, SGE_ATTR_CKPT_COMMAND);
+   ocs::tom::copy_if_present<CK_ckpt_command>(new_ckpt, ckpt);
 
    /* ---- CK_migr_command */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_migr_command, SGE_ATTR_MIGR_COMMAND);
+   ocs::tom::copy_if_present<CK_migr_command>(new_ckpt, ckpt);
 
    /* ---- CK_rest_command */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_rest_command,
-                SGE_ATTR_RESTART_COMMAND);
+   ocs::tom::copy_if_present<CK_rest_command>(new_ckpt, ckpt);
 
    /* ---- CK_ckpt_dir */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_ckpt_dir, SGE_ATTR_CKPT_DIR);
+   ocs::tom::copy_if_present<CK_ckpt_dir>(new_ckpt, ckpt);
 
    /* ---- CK_when */
    if (ocs::tom::has<CK_when>(ckpt)) {
@@ -162,16 +165,16 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    /* ---- CK_signal */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_signal, SGE_ATTR_SIGNAL);
+   ocs::tom::copy_if_present<CK_signal>(new_ckpt, ckpt);
 
    /* ---- CK_clean_command */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_clean_command, SGE_ATTR_CLEAN_COMMAND);
+   ocs::tom::copy_if_present<CK_clean_command>(new_ckpt, ckpt);
 
    /* ---- CK_job_pid */
-   attr_mod_ulong(ckpt, new_ckpt, CK_job_pid, "job_pid");
+   ocs::tom::copy_if_present<CK_job_pid>(new_ckpt, ckpt);
 
    /* validate ckpt data */
-   if (ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK>(new_ckpt), alpp) != STATUS_OK) {
+   if (ckpt_validate(new_ckpt, alpp) != STATUS_OK) {
       goto ERROR;
    }
 

@@ -88,8 +88,8 @@ static void pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE> new_pe,
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param new_pe the parallel environment
- * @param pe the parallel environment
+ * @param raw_new_pe the parallel environment as it is to become (PE_Type)
+ * @param raw_pe the reduced element the client sent (PE_Type)
  * @param add 1 for add, 0 for modify
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -100,13 +100,17 @@ static void pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE> new_pe,
  * @return 0 on success
  */
 int
-pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_pe,
-       lListElem *pe, /* reduced */
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *raw_new_pe,
+       lListElem *raw_pe, /* reduced */
        int add, const char *ruser, const char *rhost, gdi_object_t *object,
        ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
        monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
+   // the signature is fixed by gdi_object_t::modifier; both elements are parallel environments
+   // (the gdi object table and the listener's structure check of the request data guarantee it)
+   const ocs::tom::Element<ocs::tom::PE> new_pe(raw_new_pe);
+   const ocs::tom::Element<ocs::tom::PE> pe(raw_pe);
    int ret;
    const char *s, *pe_name;
    const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
@@ -114,9 +118,8 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
 
    /* ---- PE_name */
    if (add) {
-      if (attr_mod_str(alpp, pe, new_pe, PE_name, object->object_name)) {
-         goto ERROR;
-      }
+      // a nullptr name is refused by verify_obj_name() below
+      ocs::tom::copy_if_present<PE_name>(new_pe, pe);
    }
    pe_name = ocs::tom::get<PE_name>(new_pe);
 
@@ -137,19 +140,19 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
          goto ERROR;
       }
    }
-   attr_mod_ulong(pe, new_pe, PE_slots, SGE_ATTR_SLOTS);
+   ocs::tom::copy_if_present<PE_slots>(new_pe, pe);
 
    /* ---- PE_control_slaves */
-   attr_mod_bool(pe, new_pe, PE_control_slaves, "control_slaves");
+   ocs::tom::copy_if_present<PE_control_slaves>(new_pe, pe);
 
    /* ---- PE_job_is_first_task */
-   attr_mod_bool(pe, new_pe, PE_job_is_first_task, "job_is_first_task");
+   ocs::tom::copy_if_present<PE_job_is_first_task>(new_pe, pe);
 
    /* ---- PE_user_list */
    if (ocs::tom::has<PE_user_list>(pe)) {
       DPRINTF("got new PE_user_list\n");
       /* check user_lists */
-      normalize_sublist(pe, PE_user_list);
+      normalize_sublist<PE_user_list>(pe);
       if (userset_list_validate_acl_list(ocs::tom::get<PE_user_list>(pe), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
@@ -162,7 +165,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
    if (ocs::tom::has<PE_xuser_list>(pe)) {
       DPRINTF("got new QU_axcl\n");
       /* check xuser_lists */
-      normalize_sublist(pe, PE_xuser_list);
+      normalize_sublist<PE_xuser_list>(pe);
       if (userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pe), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
@@ -172,16 +175,16 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
 
    if (ocs::tom::has<PE_xuser_list>(pe) ||
        ocs::tom::has<PE_user_list>(pe)) {
-      if (multiple_occurances(alpp, ocs::tom::get<PE_user_list>(new_pe), ocs::tom::get<PE_xuser_list>(new_pe), US_name,
-                              pe_name, object_name)) {
+      if (multiple_occurances<US_name>(alpp, ocs::tom::get<PE_user_list>(new_pe),
+                                       ocs::tom::get<PE_xuser_list>(new_pe), pe_name, object_name)) {
          goto ERROR;
       }
    }
 
-   if (attr_mod_procedure(alpp, pe, new_pe, PE_start_proc_args, "start_proc_args", pe_variables)) {
+   if (attr_mod_procedure<PE_start_proc_args>(alpp, pe, new_pe, "start_proc_args", pe_variables)) {
       goto ERROR;
    }
-   if (attr_mod_procedure(alpp, pe, new_pe, PE_stop_proc_args, "stop_proc_args", pe_variables)) {
+   if (attr_mod_procedure<PE_stop_proc_args>(alpp, pe, new_pe, "stop_proc_args", pe_variables)) {
       goto ERROR;
    }
 
@@ -210,17 +213,17 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
    }
 
    /* ---- PE_accounting_summary */
-   attr_mod_bool(pe, new_pe, PE_accounting_summary, "accounting_summary");
+   ocs::tom::copy_if_present<PE_accounting_summary>(new_pe, pe);
    /* ---- PE_ignore_slave_requests_on_master_host */
-   attr_mod_bool(pe, new_pe, PE_ignore_slave_requests_on_master_host, "ign_sreq_on_mhost");
+   ocs::tom::copy_if_present<PE_ignore_slave_requests_on_master_host>(new_pe, pe);
    /* ---- PE_master_forks_slaves */
-   attr_mod_bool(pe, new_pe, PE_master_forks_slaves, "master_forks_slaves");
+   ocs::tom::copy_if_present<PE_master_forks_slaves>(new_pe, pe);
    /* ---- PE_daemon_forks_slaves */
-   attr_mod_bool(pe, new_pe, PE_daemon_forks_slaves, "daemon_forks_slaves");
+   ocs::tom::copy_if_present<PE_daemon_forks_slaves>(new_pe, pe);
 
    /* -------- PE_resource_utilization */
    if (add) {
-      if (pe_set_slots_used(ocs::tom::Element<ocs::tom::PE>(new_pe), 0)) {
+      if (pe_set_slots_used(new_pe, 0)) {
          ERROR(SFNMAX, MSG_MEM_MALLOC);
          answer_list_add(alpp, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EMALLOC);

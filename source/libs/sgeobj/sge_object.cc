@@ -77,7 +77,11 @@
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PETR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
 #include "tom/ocs_Element.h"
@@ -2592,9 +2596,9 @@ ocs_object_list_add_unique(lList **lpp, lList **src) {
  *
  * Verify that a certain ulong attribute in an object is not 0
  *
+ * @tparam F the 32 bit field to verify, of the element's object type
  * @param ep object to verify
  * @param answer_list answer list to pass back error messages
- * @param nm the attribute to verify
  *
  * @return true on success, false on error with error message in answer_list
  *
@@ -2602,56 +2606,43 @@ ocs_object_list_add_unique(lList **lpp, lList **src) {
  *
  * @see #object_verify_string_not_null
  */
+template <auto F>
 bool
-object_verify_ulong_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
+object_verify_ulong_not_null(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Uint32, "a 32 bit field");
    bool ret = true;
 
-   if (lGetUlong(ep, nm) == 0) {
+   if (ocs::tom::get<F>(ep) == 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL_S,
-                              lNm2Str(nm));
+                              lNm2Str(F));
       ret = false;
    }
 
    return ret;
 }
 
-/**
- * @brief Verify that a certain ulong64 attribute in an object is not 0
- *
- * @param ep object to verify
- * @param[out] answer_list answer list to pass back error messages
- * @param nm the attribute to verify
- * @return true on success, false on error with error message in answer_list
- *
- * @warning Despite the name this reads the attribute with `lGetUlong`, not
- *          `lGetUlong64`, and reports it with the 32 bit message. CULL aborts
- *          on an accessor/type mismatch, so calling this on a real `lUlong64T`
- *          attribute would not merely misreport - it would terminate the
- *          component. The function currently has no callers.
- *
- * @note MT-NOTE: object_verify_ulong64_not_null() is MT safe
- */
-bool
-object_verify_ulong64_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
-   bool ret = true;
-
-   if (lGetUlong(ep, nm) == 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL_S,
-                              lNm2Str(nm));
-      ret = false;
-   }
-
-   return ret;
-}
+/// @cond explicit instantiations for the fields in use
+template bool object_verify_ulong_not_null<JB_job_number>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong_not_null<JAT_task_number>(ocs::tom::ConstElement<ocs::tom::JAT> ep,
+                                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong_not_null<JG_slots>(ocs::tom::ConstElement<ocs::tom::JG> ep,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong_not_null<PETR_jobid>(ocs::tom::ConstElement<ocs::tom::PETR> ep,
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong_not_null<PETR_jataskid>(ocs::tom::ConstElement<ocs::tom::PETR> ep,
+                                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+/// @endcond
 
 /**
  * @brief Verify ulong attribute null
  *
  * Verify that a certain ulong attribute in an object is 0
  *
+ * @tparam F the 32 bit field to verify, of the element's object type
  * @param ep object to verify
  * @param answer_list answer list to pass back error messages
- * @param nm the attribute to verify
  *
  * @return true on success, false on error with error message in answer_list
  *
@@ -2659,50 +2650,74 @@ object_verify_ulong64_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::
  *
  * @see #object_verify_string_not_null
  */
+template <auto F>
 bool
-object_verify_ulong_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
+object_verify_ulong_null(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Uint32, "a 32 bit field");
    bool ret = true;
 
-   if (lGetUlong(ep, nm) != 0) {
+   if (const uint32_t value = ocs::tom::get<F>(ep); value != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL_SU,
-                              lNm2Str(nm), lGetUlong(ep, nm));
+                              lNm2Str(F), value);
       ret = false;
    }
 
    return ret;
 }
+
+/// @cond explicit instantiations for the fields in use
+template bool object_verify_ulong_null<JB_job_number>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong_null<JB_version>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong_null<JB_script_size>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong_null<JB_override_tickets>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+/// @endcond
 
 /**
  * @brief Verify that a certain ulong64 attribute in an object is 0
  *
+ * @tparam F the 64 bit field to verify, of the element's object type
  * @param ep object to verify
  * @param[out] answer_list answer list to pass back error messages
- * @param nm the attribute to verify
  * @return true on success, false on error with error message in answer_list
  *
  * @note MT-NOTE: object_verify_ulong64_null() is MT safe
  */
+template <auto F>
 bool
-object_verify_ulong64_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
+object_verify_ulong64_null(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Uint64, "a 64 bit field");
    bool ret = true;
 
-   if (lGetUlong64(ep, nm) != 0) {
+   if (const uint64_t value = ocs::tom::get<F>(ep); value != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG64_NULL_SU,
-                              lNm2Str(nm), lGetUlong64(ep, nm));
+                              lNm2Str(F), value);
       ret = false;
    }
 
    return ret;
 }
+
+/// @cond explicit instantiations for the fields in use
+template bool object_verify_ulong64_null<JB_soft_wallclock_gmt>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_ulong64_null<JB_hard_wallclock_gmt>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+/// @endcond
 
 /**
  * @brief Verify double attribute null
  *
  * Verify that a certain double attribute in an object is 0
  *
+ * @tparam F the double field to verify, of the element's object type
  * @param ep object to verify
  * @param answer_list answer list to pass back error messages
- * @param nm the attribute to verify
  *
  * @return true on success, false on error with error message in answer_list
  *
@@ -2710,27 +2725,43 @@ object_verify_ulong64_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> 
  *
  * @see #object_verify_string_not_null
  */
+template <auto F>
 bool
-object_verify_double_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
+object_verify_double_null(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Double, "a double field");
    bool ret = true;
 
-   if (lGetDouble(ep, nm) != 0.0) {
+   if (const double value = ocs::tom::get<F>(ep); value != 0.0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_DOUBLE_NULL_SD,
-                              lNm2Str(nm), lGetDouble(ep, nm));
+                              lNm2Str(F), value);
       ret = false;
    }
 
    return ret;
 }
 
+/// @cond explicit instantiations for the fields in use
+template bool object_verify_double_null<JB_urg>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_double_null<JB_nurg>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_double_null<JB_rrcontr>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_double_null<JB_dlcontr>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_double_null<JB_wtcontr>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+/// @endcond
+
 /**
  * @brief Verify string attribute not null
  *
  * Verifies that a string attribute of a certain object is not nullptr.
  *
+ * @tparam F the string field to verify, of the element's object type
  * @param ep the object to verify
  * @param answer_list answer list to pass back error messages
- * @param nm the attribute to verify
  *
  * @return true on success, false on error with error message in answer_list
  *
@@ -2738,18 +2769,30 @@ object_verify_double_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *
  *
  * @see #object_verify_ulong_not_null
  */
+template <auto F>
 bool
-object_verify_string_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
+object_verify_string_not_null(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::String, "a string field");
    bool ret = true;
 
-   if (lGetString(ep, nm) == nullptr) {
+   if (ocs::tom::get<F>(ep) == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRING_NOT_NULL_S,
-                              lNm2Str(nm));
+                              lNm2Str(F));
       ret = false;
    }
 
    return ret;
 }
+
+/// @cond explicit instantiations for the fields in use
+template bool object_verify_string_not_null<JB_job_name>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_string_not_null<JB_owner>(ocs::tom::ConstElement<ocs::tom::JB> ep,
+                                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template bool object_verify_string_not_null<PETR_owner>(ocs::tom::ConstElement<ocs::tom::PETR> ep,
+                                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+/// @endcond
 
 /**
  * @brief Verify string attribute expression syntax

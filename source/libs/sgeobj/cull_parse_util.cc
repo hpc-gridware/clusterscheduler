@@ -930,57 +930,18 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
 
 
 /**
- * @brief Parse a switch's list argument into an attribute of an object
- *
- * @param cmdline the parsed option list to consume from
- * @param option the switch to look for
- * @param[in,out] job the object the list is stored in, a job or an advance reservation
- * @param field the attribute the list is stored in
- * @param nm_var the attribute holding an entry's name
- * @param nm_value the attribute holding its value
- * @param flags one of the `FLG_LIST_*` values, deciding what happens to an
- *              existing value
- * @return 0 on success
- */
-int parse_list_simple(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, lListElem *job, const int field,
-                      const int nm_var, const int nm_value, const uint32_t flags) {
-   DENTER(TOP_LAYER);
-
-   // the list is of the type of the runtime field "field" of an object of any type, so it stays untyped
-   lList *destlist = lCopyList("job_sublist", lGetList(job, field));
-
-   ocs::tom::Element<ocs::tom::SPA> ep;
-   while ((ep = cmdline.find_first<SPA_switch_val>(option)) != nullptr) {
-      DPRINTF("OPTION: %s\n", option);
-      lList *lp = nullptr;
-      ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
-
-      parse_list_simpler(lp, &destlist, option, job, field, nm_var, nm_value, flags);
-
-      cmdline.erase(ep);
-   }
-
-   lSetList(job, field, destlist);
-
-   DRETURN(0);
-}
-
-
-/**
  * @brief Like #parse_list_simple, but into a caller supplied list
  *
  * @param lp the parsed option list to consume from
  * @param[out] destlist receives the parsed entries
- * @param option the switch to look for
- * @param job the object the flags are applied against
- * @param field the attribute the list would be stored in
+ * @param option the switch the list belongs to (not used)
  * @param nm_var the attribute holding an entry's name
  * @param nm_value the attribute holding its value
  * @param flags one of the `FLG_LIST_*` values
  * @return 0 on success
  */
-int parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
-                       int nm_var, int nm_value, uint32_t flags) {
+int parse_list_simpler(lList *lp, lList **destlist, const char *option, const int nm_var, const int nm_value,
+                       const uint32_t flags) {
    if (lp != nullptr) {
       if (flags & FLG_LIST_APPEND) {
          // merged without ever holding a key twice (N-H-18)

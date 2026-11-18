@@ -420,40 +420,40 @@ static void test_object_verify_field_constraints() {
 
    // T51: string field has a value → passes
    ocs::tom::set<JB_job_name>(ep, "test_job");
-   CHECK(51, "string field set → string_not_null passes",   object_verify_string_not_null(*ep, &alp, JB_job_name) == true);
+   CHECK(51, "string field set → string_not_null passes",   object_verify_string_not_null<JB_job_name>(*ep, &alp) == true);
    alp.reset();
 
    // T52: string field is nullptr → fails and populates answer_list
    ocs::tom::set<JB_job_name>(ep, nullptr);
-   CHECK(52, "string field nullptr → string_not_null fails", object_verify_string_not_null(*ep, &alp, JB_job_name) == false);
+   CHECK(52, "string field nullptr → string_not_null fails", object_verify_string_not_null<JB_job_name>(*ep, &alp) == false);
    alp.reset();
 
    // T53: ulong field is non-zero → passes
    ocs::tom::set<JB_job_number>(ep, 1);
-   CHECK(53, "ulong field 1 → ulong_not_null passes",       object_verify_ulong_not_null(*ep, &alp, JB_job_number) == true);
+   CHECK(53, "ulong field 1 → ulong_not_null passes",       object_verify_ulong_not_null<JB_job_number>(*ep, &alp) == true);
    alp.reset();
 
    // T54: ulong field is 0 (default) → fails
    ocs::tom::set<JB_job_number>(ep, 0);
-   CHECK(54, "ulong field 0 → ulong_not_null fails",        object_verify_ulong_not_null(*ep, &alp, JB_job_number) == false);
+   CHECK(54, "ulong field 0 → ulong_not_null fails",        object_verify_ulong_not_null<JB_job_number>(*ep, &alp) == false);
    alp.reset();
 
    // T55: ulong field is 0 → ulong_null passes
-   CHECK(55, "ulong field 0 → ulong_null passes",           object_verify_ulong_null(*ep, &alp, JB_job_number) == true);
+   CHECK(55, "ulong field 0 → ulong_null passes",           object_verify_ulong_null<JB_job_number>(*ep, &alp) == true);
    alp.reset();
 
    // T56: ulong field non-zero → ulong_null fails
    ocs::tom::set<JB_job_number>(ep, 42);
-   CHECK(56, "ulong field 42 → ulong_null fails",           object_verify_ulong_null(*ep, &alp, JB_job_number) == false);
+   CHECK(56, "ulong field 42 → ulong_null fails",           object_verify_ulong_null<JB_job_number>(*ep, &alp) == false);
    alp.reset();
 
    // T57: double field is 0.0 (default) → double_null passes
-   CHECK(57, "double field 0.0 → double_null passes",       object_verify_double_null(*ep, &alp, JB_urg) == true);
+   CHECK(57, "double field 0.0 → double_null passes",       object_verify_double_null<JB_urg>(*ep, &alp) == true);
    alp.reset();
 
    // T58: double field non-zero → double_null fails
    ocs::tom::set<JB_urg>(ep, 0.5);
-   CHECK(58, "double field 0.5 → double_null fails",        object_verify_double_null(*ep, &alp, JB_urg) == false);
+   CHECK(58, "double field 0.5 → double_null fails",        object_verify_double_null<JB_urg>(*ep, &alp) == false);
    alp.reset();
 
 }

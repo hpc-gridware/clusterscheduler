@@ -230,15 +230,15 @@ pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,
     */
 
    if (ret) {
-      ret = object_verify_ulong_not_null(petr, answer_list, PETR_jobid);
+      ret = object_verify_ulong_not_null<PETR_jobid>(petr, answer_list);
    }
 
    if (ret) {
-      ret = object_verify_ulong_not_null(petr, answer_list, PETR_jataskid);
+      ret = object_verify_ulong_not_null<PETR_jataskid>(petr, answer_list);
    }
 
    if (ret) {
-      ret = object_verify_string_not_null(petr, answer_list, PETR_owner);
+      ret = object_verify_string_not_null<PETR_owner>(petr, answer_list);
    }
 
    if (ret) {

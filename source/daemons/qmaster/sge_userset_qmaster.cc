@@ -675,9 +675,8 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
 
    /* ---- US_name */
    if (add) {
-      if (attr_mod_str(alpp, delta_us, new_us, US_name, object->object_name)) {
-         goto ERROR;
-      }
+      // a nullptr name is refused by verify_obj_name() below
+      ocs::tom::copy_if_present<US_name>(new_us, delta_us);
    }
    userset_name = ocs::tom::get<US_name>(new_us);
 
@@ -687,13 +686,13 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
    }
 
    /* ---- US_fshare */
-   attr_mod_ulong(delta_us, new_us, US_fshare, object->object_name);
+   ocs::tom::copy_if_present<US_fshare>(new_us, delta_us);
 
    /* ---- US_oticket */
-   attr_mod_ulong(delta_us, new_us, US_oticket, object->object_name);
+   ocs::tom::copy_if_present<US_oticket>(new_us, delta_us);
 
    /* ---- US_type */
-   attr_mod_ulong(delta_us, new_us, US_type, object->object_name);
+   ocs::tom::copy_if_present<US_type>(new_us, delta_us);
 
    /* ensure userset is at least an ACL (qconf -au ) */
    if (ocs::tom::get<US_type>(new_us) == 0) {

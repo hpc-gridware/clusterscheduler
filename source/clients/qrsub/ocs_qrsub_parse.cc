@@ -235,12 +235,12 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
 
    /*  -l resource_list request the given resources  SGE_LIST */
    /*  a resource given twice keeps its last value, merged by parse_list_simple (CS-3053) */
-   parse_list_simple(pcmdline, "-l", ar, AR_resource_list, 0, 0, FLG_LIST_APPEND);
+   parse_list_simple<AR_resource_list>(pcmdline, "-l", ar, 0, 0, FLG_LIST_APPEND);
 
    /*  -u wc_user access list SGE_LIST */
    /*  -u ! wc_user TBD: Think about eval_expression support in compare allowed and excluded lists */
    /*  an access list is a set: a name given twice is kept once, merged by parse_list_simple (CS-3053) */
-   parse_list_simple(pcmdline, "-u", ar, AR_acl_list, ARA_name, 0, FLG_LIST_APPEND);
+   parse_list_simple<AR_acl_list>(pcmdline, "-u", ar, ARA_name, 0, FLG_LIST_APPEND);
    /*  -u ! list separation */
    ocs::tom::List<ocs::tom::ARA> lp = ocs::tom::get<AR_acl_list>(ar);
    for (auto acl = lp.front(); acl;) {
@@ -286,7 +286,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
 
    /*  -q wc_queue_list 	 reserve in queue(s) SGE_LIST */
    /*  a queue given twice is kept once, merged by parse_list_simple (CS-3053) */
-   parse_list_simple(pcmdline, "-q", ar, AR_queue_list, 0, 0, FLG_LIST_APPEND);
+   parse_list_simple<AR_queue_list>(pcmdline, "-q", ar, 0, 0, FLG_LIST_APPEND);
 
   /*    -pe pe_name slot_range reserve slot range for parallel jobs */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-pe"))) {
@@ -304,7 +304,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
    }
 
    /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
-   parse_list_simple(pcmdline, "-masterq", ar, AR_master_queue_list, 0, 0, FLG_LIST_APPEND);
+   parse_list_simple<AR_master_queue_list>(pcmdline, "-masterq", ar, 0, 0, FLG_LIST_APPEND);
 
    /*  -ckpt ckpt-name 	 reserve in queue with ckpt method SGE_STRING */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-ckpt"))) {
@@ -328,7 +328,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
    }
 
    /*   -M user[@host],... 	 notify these e-mail addresses SGE_LIST*/
-   parse_list_simple(pcmdline, "-M", ar, AR_mail_list, MR_host, MR_user, FLG_LIST_MERGE);
+   parse_list_simple<AR_mail_list>(pcmdline, "-M", ar, MR_host, MR_user, FLG_LIST_MERGE);
 
    /*  -he yes/no 	 hard error handling SGE_ULONG */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-he"))) {

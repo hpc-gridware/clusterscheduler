@@ -2516,12 +2516,12 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_job_number must be 0 */
    if (ret) {
-      ret = object_verify_ulong_null(job, answer_list, JB_job_number);
+      ret = object_verify_ulong_null<JB_job_number>(job, answer_list);
    }
 
    /* JB_version must be 0 */
    if (ret) {
-      ret = object_verify_ulong_null(job, answer_list, JB_version);
+      ret = object_verify_ulong_null<JB_version>(job, answer_list);
    }
 
    /* TODO: JB_jid_request_list */
@@ -2587,7 +2587,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
       const char *name = ocs::tom::get<JB_script_ptr>(job);
       if (name == nullptr) {
          /* JB_script_size must not 0 */
-         ret = object_verify_ulong_null(job, answer_list, JB_script_size);
+         ret = object_verify_ulong_null<JB_script_size>(job, answer_list);
       } else {
          /* JB_script_size must be size of JB_script_ptr */
          /* TODO: define a max script size */
@@ -2748,38 +2748,38 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_soft_wallclock_gmt must be 0 */
    if (ret) {
-      ret = object_verify_ulong64_null(job, answer_list, JB_soft_wallclock_gmt);
+      ret = object_verify_ulong64_null<JB_soft_wallclock_gmt>(job, answer_list);
     }
 
    /* JB_hard_wallclock_gmt must be 0 */
    if (ret) {
-      ret = object_verify_ulong64_null(job, answer_list, JB_hard_wallclock_gmt);
+      ret = object_verify_ulong64_null<JB_hard_wallclock_gmt>(job, answer_list);
     }
 
    /* JB_override_tickets must be 0 */
    if (ret) {
-      ret = object_verify_ulong_null(job, answer_list, JB_override_tickets);
+      ret = object_verify_ulong_null<JB_override_tickets>(job, answer_list);
     }
 
    /* JB_urg must be 0 */
    if (ret) {
-      ret = object_verify_double_null(job, answer_list, JB_urg);
+      ret = object_verify_double_null<JB_urg>(job, answer_list);
     }
    /* JB_nurg must be 0 */
    if (ret) {
-      ret = object_verify_double_null(job, answer_list, JB_nurg);
+      ret = object_verify_double_null<JB_nurg>(job, answer_list);
    }
    /* JB_rrcontr must be 0 */
    if (ret) {
-      ret = object_verify_double_null(job, answer_list, JB_rrcontr);
+      ret = object_verify_double_null<JB_rrcontr>(job, answer_list);
     }
    /* JB_dlcontr must be 0 */
    if (ret) {
-      ret = object_verify_double_null(job, answer_list, JB_dlcontr);
+      ret = object_verify_double_null<JB_dlcontr>(job, answer_list);
     }
    /* JB_wtcontr must be 0 */
    if (ret) {
-      ret = object_verify_double_null(job, answer_list, JB_wtcontr);
+      ret = object_verify_double_null<JB_wtcontr>(job, answer_list);
     }
    // JB_ja_task_concurrency may only be given for array jobs
    if (ret) {

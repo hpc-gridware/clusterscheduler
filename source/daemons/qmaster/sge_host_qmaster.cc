@@ -518,8 +518,6 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
 
    const char *host;
    int nm;
-   int pos;
-   int dataType;
    bool changed = false;
    bool update_qversion = false;
    const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
@@ -530,19 +528,13 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    // the key field comes from the gdi_object_t table at run time, the name handling stays generic
    nm = object->key_nm;
 
-   /* ---- [EAS]H_name */
+   /* ---- EH_name: the gdi_object_t table uses host_mod() for EH_LIST alone, and the listener checks the
+    * request data, so both elements are execution hosts; a nullptr name is refused by verify_host_name() */
    if (add) {
-      if (attr_mod_str(alpp, ep, new_host, nm, object->object_name)) {
-         goto ERROR;
-      }
+      ocs::tom::copy_if_present<EH_name>(ocs::tom::Element<ocs::tom::EH>::from_typed(new_host),
+                                         ocs::tom::ConstElement<ocs::tom::EH>::from_typed(ep));
    }
-   pos = lGetPosViaElem(new_host, nm, SGE_NO_ABORT);
-   dataType = lGetPosType(lGetElemDescr(new_host), pos);
-   if (dataType == lHostT) {
-      host = lGetHost(new_host, nm);
-   } else {
-      host = lGetString(new_host, nm);
-   }
+   host = ocs::tom::get<EH_name>(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(new_host));
 
    /* On add, reject a host name that is unsafe as a spool path component (e.g.
     * "../../tmp/x"): host names skip verify_str_key() and are used verbatim as a
@@ -707,30 +699,16 @@ DRETURN(STATUS_EUNKNOWN);
  * @return 0 on success
  */
 int
-host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
-           gdi_object_t *object) {
+host_spool([[maybe_unused]] ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task,
+           ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, [[maybe_unused]] gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   // the signature is fixed by gdi_object_t::writer, and the key field comes from the table at run time
-
-   const char *key;
-   int pos = lGetPosViaElem(ep, object->key_nm, SGE_NO_ABORT);
-   if (lGetPosType(lGetElemDescr(ep), pos) == lHostT) {
-      key = lGetHost(ep, object->key_nm);
-   } else {
-      key = lGetString(ep, object->key_nm);
-   }
-
-   sge_object_type host_type = SGE_TYPE_EXECHOST;
-   switch (object->key_nm) {
-      case EH_name:
-         host_type = SGE_TYPE_EXECHOST;
-         break;
-   }
+   // the signature is fixed by gdi_object_t::writer; the table uses host_spool() for EH_LIST alone
+   const char *key = ocs::tom::get<EH_name>(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(ep));
 
    int ret = 0;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, key, host_type);
+   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, key, SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,

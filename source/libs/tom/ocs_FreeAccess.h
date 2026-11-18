@@ -1476,6 +1476,34 @@ namespace ocs::tom {
       return clear_bits<F>(ep.get(), mask);
    }
 
+   /**
+    * @brief Copy a field from one element to another when the source holds it
+    *
+    * The source may be reduced (e.g. the element of a modify request, which holds only
+    * the fields the client sent); a field it does not hold leaves the destination as it
+    * is. The value is copied as it is, a string or host field copies nullptr as well; a
+    * list or object field is copied deeply, as `lSetList(dst, nm, lCopyList(...))` does.
+    *
+    * @tparam F the field, of the object type of both elements; not a reference field
+    * @tparam T the object type, deduced from the destination
+    * @param dst the element to copy into
+    * @param src the element to copy from, may be reduced or an empty handle
+    * @return true if the source held the field and it was copied
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && (FieldTraits<F>::type != FieldType::Ref)
+   bool copy_if_present(const Element<T> &dst, const ConstElement<T> &src) {
+      if (!has<F>(src)) {
+         return false;
+      }
+      if constexpr (FieldTraits<F>::type == FieldType::List || FieldTraits<F>::type == FieldType::Object) {
+         set<F>(dst, get<F>(src).clone());
+      } else {
+         set<F>(dst, get<F>(src));
+      }
+      return true;
+   }
+
 } // namespace ocs::tom
 
 // ---------------------------------------------------------------------------------------------------------------

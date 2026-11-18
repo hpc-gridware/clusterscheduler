@@ -242,11 +242,11 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
 
       if (ocs::tom::has<PR_xacl>(modp) ||
           ocs::tom::has<PR_acl>(modp)) {
-         if (multiple_occurances(alpp,
-                                 ocs::tom::get<PR_acl>(modp),
-                                 ocs::tom::get<PR_xacl>(modp),
-                                 US_name, userprj,
-                                 "project")) {
+         if (multiple_occurances<US_name>(alpp,
+                                          ocs::tom::get<PR_acl>(modp),
+                                          ocs::tom::get<PR_xacl>(modp),
+                                          userprj,
+                                          "project")) {
             DRETURN(STATUS_EUNKNOWN);
          }
       }

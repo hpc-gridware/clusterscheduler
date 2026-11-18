@@ -136,8 +136,8 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
 
    /* ---- RQS_name */
    if (add) {
-      if (attr_mod_str(alpp, delta, target, RQS_name, object->object_name))
-         goto ERROR;
+      // a nullptr name is refused by verify_obj_name() below
+      ocs::tom::copy_if_present<RQS_name>(target, delta);
    }
    rqs_name = ocs::tom::get<RQS_name>(target);
 
@@ -148,16 +148,16 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
    }
 
    /* ---- RQS_description */
-   attr_mod_zerostr(delta, target, RQS_description, "description");
+   ocs::tom::copy_if_present<RQS_description>(target, delta);
 
    /* ---- RQS_enabled */
-   attr_mod_bool(delta, target, RQS_enabled, "enabled");
+   ocs::tom::copy_if_present<RQS_enabled>(target, delta);
 
    /* ---- RQS_rule */
    if (ocs::tom::has<RQS_rule>(delta)) {
       rules_changed = true;
       if ((sub_command & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
-         normalize_sublist(delta, RQS_rule);
+         normalize_sublist<RQS_rule>(delta);
          attr_mod_sub_list(alpp, target, RQS_rule, RQS_name, delta, cmd, sub_command,
                            SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
       } else {

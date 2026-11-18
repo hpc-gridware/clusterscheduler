@@ -58,6 +58,11 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_BN.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_RL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -69,34 +74,35 @@
 /**
  * @brief Modify the prolog/epilog/pe_start/pe_stop procedures
  *
- * This function modifies a prolog/epilog/pe_start/pe_stop of "new_qep".
- * The attribute of "qep" element is identified by nm.
- * Possible errors will be reported in "alpp". "qep"
- * "qep" element will be used to identify the changes which have been done.
- * "attr_name" is used to report errors
+ * This function modifies a prolog/epilog/pe_start/pe_stop of "new_ep".
+ * The attribute is the template argument. Possible errors will be reported
+ * in "alpp". The "qep" element will be used to identify the changes which
+ * have been done. "attr_name" is used to report errors.
  *
+ * @tparam F the string field holding the procedure, of the object type of both elements
  * @param alpp AN_Type, The answer list
- * @param qep CQ_Type, reduced changes source element
- * @param new_ep CQ_Type, target element
- * @param nm CULL attribute name (CQ_Type)
- * @param attr_name CULL sublist attribute name of that field which containes the value of the attribute to be modified. char *variables[] - procedure variables
- * @param variables see the brief above
+ * @param qep reduced changes source element
+ * @param new_ep target element
+ * @param attr_name the attribute's name, for the messages
+ * @param variables the procedure variables that may appear in the value
  *
  * @return 0 success, error othewise
  *
  * @note MT-NOTE: attr_mod_procedure() is MT safe
  */
+template <auto F>
 int
-attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm,
+attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                   const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> qep,
+                   const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> new_ep,
                    const char *attr_name, const char *variables[]) {
    DENTER(TOP_LAYER);
 
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      const char *s;
+   /* ---- attribute F */
+   if (ocs::tom::has<F>(qep)) {
       DPRINTF("got new %s\n", attr_name);
 
-      s = lGetString(qep, nm);
+      const char *s = ocs::tom::get<F>(qep);
       if (s) {
          char *t;
          char *script = (char *) s;
@@ -121,290 +127,22 @@ attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListE
             DRETURN(STATUS_EEXIST);
          }
       }
-      lSetString(new_ep, nm, s);
+      ocs::tom::set<F>(new_ep, s);
    }
 
    DRETURN(0);
 }
 
-/**
- * @brief Modify strings, no verification
- *
- *  This function modifies "new_qep" attribute with string from "qep
- *  without any verification. nullptr is a valid value.
- *
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- *
- * @return 0, success, othewise error
- *
- * @note MT-NOTE: attr_mod_zerostr() is MT safe
- */
-int
-attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
-   DENTER(TOP_LAYER);
-
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF("got new %s\n", attr_name);
-      lSetString(new_ep, nm, lGetString(qep, nm));
-   }
-
-   DRETURN(0);
-}
-
-/**
- * @brief Modify strings except that it may not be nullptr
- *
- *  This function modifies "new_qep" attribute with string from "qep
- *  except that the value of an attribute may not be nullptr.
- *
- * @param alpp AN_Type, The answer list
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- *
- * @return 0 success, othewise error
- *
- * @note MT-NOTE: attr_mod_str() is MT safe
- */
-int
-attr_mod_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
-   DENTER(TOP_LAYER);
-
-   int dataType;
-   int pos;
-
-   /* ---- attribute nm */
-   if ((pos = lGetPosViaElem(qep, nm, SGE_NO_ABORT)) >= 0) {
-      const char *s;
-
-      DPRINTF("got new %s\n", attr_name);
-
-      dataType = lGetPosType(lGetElemDescr(qep), pos);
-      switch (dataType) {
-         case lStringT:
-            if (!(s = lGetString(qep, nm))) {
-               ERROR(MSG_GDI_VALUE_S, lNm2Str(nm));
-               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-               DRETURN(STATUS_EUNKNOWN);
-            }
-            lSetString(new_ep, nm, s);
-            break;
-         case lHostT:
-            if (!(s = lGetHost(qep, nm))) {
-               ERROR(MSG_GDI_VALUE_S, attr_name);
-               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-               DRETURN(STATUS_EUNKNOWN);
-            }
-            lSetHost(new_ep, nm, s);
-            break;
-         default:
-            DPRINTF("unexpected data type\n");
-            DRETURN(STATUS_EUNKNOWN);
-      }
-   }
-
-   DRETURN(0);
-}
-
-/**
- * @brief Modify raw boolean, no verification
- *
- * This function modifies "new_qep" attribute with boolean value from "qep"
- *
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- *
- * @return 0 succes, othewise error
- *
- * @note MT-NOTE: attr_mod_bool() is MT safe
- */
-int
-attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
-   DENTER(TOP_LAYER);
-
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF("got new %s\n", attr_name);
-      lSetBool(new_ep, nm, lGetBool(qep, nm));
-   }
-
-   DRETURN(0);
-}
-
-/**
- * @brief Modify raw ulong, no verification
- *
- * This function modifies "new_qep" attribute with boolean value from "qep"
- *
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- *
- * @return 0 succes, othewise error
- *
- * @note MT-NOTE: attr_mod_ulong() is MT safe
- */
-int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
-   DENTER(TOP_LAYER);
-
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF("got new %s\n", attr_name);
-      lSetUlong(new_ep, nm, lGetUlong(qep, nm));
-   }
-
-   DRETURN(0);
-}
-
-/** @brief Modify raw uint64, no verification
- *
- * This function modifies the "new_ep" attribute with the uint64 value from "qep".
- *
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- *
- * @return 0 success, otherwise error
- *
- * @note MT-NOTE: attr_mod_ulong64() is MT safe
- */
-int attr_mod_ulong64(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
-   DENTER(TOP_LAYER);
-
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF("got new %s\n", attr_name);
-      lSetUlong64(new_ep, nm, lGetUlong64(qep, nm));
-   }
-
-   DRETURN(0);
-}
-
-/**
- * @brief Modify raw double, no verification
- *
- * This function modifies "new_qep" attribute with double value from "qep"
- *
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- *
- * @return 0 success, othewise error
- *
- * @note MT-NOTE: attr_mod_double() is MT safe
- */
-int
-attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
-   DENTER(TOP_LAYER);
-
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      DPRINTF("got new %s\n", attr_name);
-      lSetDouble(new_ep, nm, lGetDouble(qep, nm));
-   }
-
-   DRETURN(0);
-}
-
-/**
- * @brief Modify memory string, nullptr is not allowed
- *
- *  This function modifies "new_qep" attribute with string from "qep
- *  except that the value of an memory attribute may not be nullptr.
- *
- * @param alpp AN_Type, The answer list
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- *
- * @return 0 success, othewise error
- *
- * @note MT-NOTE: attr_mod_mem_str() is MT safe
- */
-int
-attr_mod_mem_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
-   DENTER(TOP_LAYER);
-
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      const char *str;
-
-      str = lGetString(qep, nm);
-      DPRINTF("got new %s\n", attr_name);
-
-      if (!parse_ulong_val(nullptr, nullptr, ocs::CEntry::Type::MEM, str, nullptr, 0)) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)");
-         answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DRETURN(STATUS_ESYNTAX);
-      }
-
-      lSetString(new_ep, nm, str);
-   }
-
-   DRETURN(0);
-}
-
-/**
- * @brief Modify a valid time string
- *
- * This function modifies "new_qep" attribute with string from "qep"
- * The value of an time_str attribute may not be nullptr and must be valid.
- *
- * @param alpp AN_Type, The answer list
- * @param qep CQ_Type, source of the modification
- * @param new_ep CQ_Type, destination of the modification
- * @param nm CULL attribute name (CQ_Type) of the element
- * @param attr_name CULL sublist attribute name
- * @param enable_infinity The "infinity" string can be there
- *
- * @return 0 on success, othewise error
- *
- * @note MT-NOTE: attr_mod_time_str() is MT safe
- */
-int
-attr_mod_time_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name,
-                  int enable_infinity) {
-   DENTER(TOP_LAYER);
-
-   /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
-      const char *str;
-
-      str = lGetString(qep, nm);
-      DPRINTF("got new %s\n", attr_name);
-
-      if (str != nullptr) {
-         /* don't allow infinity for these parameters */
-         if ((strcasecmp(str, INFINITY_STR) == 0) && (enable_infinity == 0)) {
-            DPRINTF("ERROR! Infinity value for \"%s\"\n", attr_name);
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SIG_DIGIT_SS, attr_name, str);
-            answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            DRETURN(STATUS_ESYNTAX);
-         }
-      }
-
-      if (!parse_ulong_val(nullptr, nullptr, ocs::CEntry::Type::TIME, str, nullptr, 0)) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_TYPE_TIME_SS, attr_name, str ? str : "(null)");
-         answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DRETURN(STATUS_ESYNTAX);
-      }
-
-      lSetString(new_ep, nm, str);
-   }
-
-   DRETURN(0);
-}
+/// @cond explicit instantiations for the callers in sge_pe_qmaster.cc
+template int attr_mod_procedure<PE_start_proc_args>(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                                    ocs::tom::ConstElement<ocs::tom::PE> qep,
+                                                    ocs::tom::Element<ocs::tom::PE> new_ep,
+                                                    const char *attr_name, const char *variables[]);
+template int attr_mod_procedure<PE_stop_proc_args>(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                                   ocs::tom::ConstElement<ocs::tom::PE> qep,
+                                                   ocs::tom::Element<ocs::tom::PE> new_ep,
+                                                   const char *attr_name, const char *variables[]);
+/// @endcond
 
 /**
  * @brief This function modifies a certain configuration sublist
@@ -880,35 +618,37 @@ cqueue_mod_sublist(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer
    DRETURN(ret);
 }
 
-/** @brief Reject a request that names the same key twice
+/**
+ * @brief Reject a request that names the same key twice
  *
  * Two entries for one key in a sublist would leave the result depending on
  * which the code happened to read first.
  *
+ * @tparam F the string key field of the list elements
  * @param alpp receives messages for the caller
  * @param lp1 the first list to compare
  * @param lp2 the second list to compare
- * @param nm the key field
  * @param name the attribute's name, for the message
  * @param obj_name the object's name, for the message
  * @return non-zero when a key occurs more than once
  */
+template <auto F>
 int
-multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *lp1, const lList *lp2, int nm, const char *name,
+multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                    const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> lp1,
+                    const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> lp2, const char *name,
                     const char *obj_name) {
    DENTER(TOP_LAYER);
-
-   const lListElem *ep1;
-   const char *s;
 
    if (!lp1 || !lp2) {
       DRETURN(0);
    }
 
-   for_each_ep(ep1, lp1) {
-      s = lGetString(ep1, nm);
-      if (lGetElemStr(lp2, nm, s)) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_MULTIPLE_OCCUR_SSSS, (nm == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name);
+   for (const auto ep1 : lp1) {
+      const char *s = ocs::tom::get<F>(ep1);
+      if (ocs::tom::find_first<F>(lp2, s)) {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_MULTIPLE_OCCUR_SSSS,
+                  (F == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }
@@ -917,15 +657,8 @@ multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *lp1, con
    DRETURN(0);
 }
 
-/** @brief Drop an empty sublist so it is not spooled as an empty element
- * @param ep the object
- * @param nm the sublist field
- */
-void
-normalize_sublist(lListElem *ep, int nm) {
-   const lList *lp;
-
-   if ((lp = lGetList(ep, nm)) && lGetNumberOfElem(lp) == 0)
-      lSetList(ep, nm, nullptr);
-}
-
+/// @cond explicit instantiation for the callers in sge_pe_qmaster.cc and sge_userprj_qmaster.cc
+template int multiple_occurances<US_name>(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstList<ocs::tom::US> lp1,
+                                          ocs::tom::ConstList<ocs::tom::US> lp2, const char *name,
+                                          const char *obj_name);
+/// @endcond

@@ -146,14 +146,14 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
    }
 
    /* ---- CAL_year_calendar */
-   attr_mod_zerostr(cep, new_cal, CAL_year_calendar, "year calendar");
+   ocs::tom::copy_if_present<CAL_year_calendar>(new_cal, cep);
    if (ocs::tom::has<CAL_year_calendar>(cep)) {
       if (!calendar_parse_year(new_cal, alpp))
          goto ERROR;
    }
 
    /* ---- CAL_week_calendar */
-   attr_mod_zerostr(cep, new_cal, CAL_week_calendar, "week calendar");
+   ocs::tom::copy_if_present<CAL_week_calendar>(new_cal, cep);
    if (ocs::tom::has<CAL_week_calendar>(cep)) {
       if (!calendar_parse_week(new_cal, alpp))
          goto ERROR;

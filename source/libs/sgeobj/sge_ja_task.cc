@@ -403,7 +403,7 @@ bool ja_task_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::JAT> 
 bool ja_task_verify(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   const bool ret = object_verify_ulong_not_null(ja_task, answer_list, JAT_task_number);
+   const bool ret = object_verify_ulong_not_null<JAT_task_number>(ja_task, answer_list);
 
    /*
     * TODO: JAT_status,
@@ -552,7 +552,7 @@ bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::
    }
 
    if (ret) {
-      ret = object_verify_ulong_not_null(ep, answer_list, JG_slots);
+      ret = object_verify_ulong_not_null<JG_slots>(ep, answer_list);
    }
 
    if (ret) {

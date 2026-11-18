@@ -571,13 +571,11 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          nm_set(job_field, JB_deadline);
       }
 
-      parse_list_simple(cmdline, "-e", job, JB_stderr_path_list, 0, 0, 
-                        FLG_LIST_APPEND);
+      parse_list_simple<JB_stderr_path_list>(cmdline, "-e", job, 0, 0, FLG_LIST_APPEND);
       if (ocs::tom::get<JB_stderr_path_list>(job))
          nm_set(job_field, JB_stderr_path_list);
       
-      parse_list_simple(cmdline, "-i", job, JB_stdin_path_list, 0, 0, 
-                        FLG_LIST_APPEND);
+      parse_list_simple<JB_stdin_path_list>(cmdline, "-i", job, 0, 0, FLG_LIST_APPEND);
       if (ocs::tom::get<JB_stdin_path_list>(job))
          nm_set(job_field, JB_stdin_path_list);
    }
@@ -711,7 +709,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          nm_set(job_field, JB_mail_options);
       }
 
-      parse_list_simple(cmdline, "-M", job, JB_mail_list, MR_host, MR_user, FLG_LIST_MERGE);
+      parse_list_simple<JB_mail_list>(cmdline, "-M", job, MR_host, MR_user, FLG_LIST_MERGE);
       if (ocs::tom::get<JB_mail_list>(job))
          nm_set(job_field, JB_mail_list);
 
@@ -727,8 +725,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          nm_set(job_field, JB_notify);
       }
 
-      parse_list_simple(cmdline, "-o", job, JB_stdout_path_list, 0, 0, 
-                        FLG_LIST_APPEND);
+      parse_list_simple<JB_stdout_path_list>(cmdline, "-o", job, 0, 0, FLG_LIST_APPEND);
       if (ocs::tom::get<JB_stdout_path_list>(job))
          nm_set(job_field, JB_stdout_path_list);
 
@@ -814,7 +811,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          cmdline.erase(ep);
       }
 
-      parse_list_simple(cmdline, "-S", job, JB_shell_list, 0, 0, FLG_LIST_APPEND);
+      parse_list_simple<JB_shell_list>(cmdline, "-S", job, 0, 0, FLG_LIST_APPEND);
       if (ocs::tom::get<JB_shell_list>(job))
          nm_set(job_field, JB_shell_list);
 
@@ -839,7 +836,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       while ((ep = cmdline.find_first<SPA_switch_val>("-V"))) {
          ocs::tom::set<SPA_switch_val>(ep, "-v");
       }
-      parse_list_simple(cmdline, "-v", job, JB_env_list, VA_variable, VA_value, FLG_LIST_MERGE);
+      parse_list_simple<JB_env_list>(cmdline, "-v", job, VA_variable, VA_value, FLG_LIST_MERGE);
       if (ocs::tom::get<JB_env_list>(job))
          nm_set(job_field, JB_env_list);
 

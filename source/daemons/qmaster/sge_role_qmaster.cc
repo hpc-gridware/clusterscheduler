@@ -54,8 +54,8 @@
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param new_ep see the declaration
- * @param ep the object
+ * @param raw_new_ep the role as it is to become (RL_Type)
+ * @param raw_ep the reduced element the client sent (RL_Type)
  * @param add 1 for add, 0 for modify
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -66,18 +66,21 @@
  * @return 0 on success
  */
 int
-role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ep,
-         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
+role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+         lListElem *raw_new_ep, lListElem *raw_ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
+   // the signature is fixed by gdi_object_t::modifier; both elements are roles
+   // (the gdi object table and the listener's structure check of the request data guarantee it)
+   const ocs::tom::Element<ocs::tom::RL> new_ep(raw_new_ep);
+   const ocs::tom::Element<ocs::tom::RL> ep(raw_ep);
+
    // ---- RL_name: copy and validate the role name on add
    if (add) {
-      if (attr_mod_str(alpp, ep, new_ep, RL_name, object->object_name)) {
-         // answer list already filled by attr_mod_str()
-         DRETURN(STATUS_EUNKNOWN);
-      }
+      // a nullptr name is refused by verify_obj_name() below
+      ocs::tom::copy_if_present<RL_name>(new_ep, ep);
    }
    const char *role_name = ocs::tom::get<RL_name>(new_ep);
 
@@ -87,11 +90,11 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    // ---- RL_enabled
-   attr_mod_bool(ep, new_ep, RL_enabled, "enabled");
+   ocs::tom::copy_if_present<RL_enabled>(new_ep, ep);
 
    // ---- RL_user_list: verify all referenced usersets exist, then apply
    if (ocs::tom::has<RL_user_list>(ep)) {
-      normalize_sublist(ep, RL_user_list);
+      normalize_sublist<RL_user_list>(ep);
       const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
       if (userset_list_validate_acl_list(ocs::tom::get<RL_user_list>(ep), alpp, master_userset_list) != STATUS_OK) {
          // answer list already filled by userset_list_validate_acl_list()
@@ -103,7 +106,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
 
    // ---- RL_parent_role_list: reject self-reference and unknown parents, then apply
    if (ocs::tom::has<RL_parent_role_list>(ep)) {
-      normalize_sublist(ep, RL_parent_role_list);
+      normalize_sublist<RL_parent_role_list>(ep);
       const ocs::tom::ConstList<ocs::tom::RL> master_role_list(*ocs::DataStore::get_master_list(SGE_TYPE_RL));
       for (const ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(ep)) {
          const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
@@ -137,7 +140,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
          }
       }
    }
-   attr_mod_zerostr(ep, new_ep, RL_perm_list, "perm_list");
+   ocs::tom::copy_if_present<RL_perm_list>(new_ep, ep);
 
    DRETURN(0);
 }

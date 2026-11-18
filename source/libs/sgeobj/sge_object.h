@@ -324,21 +324,30 @@ bool
 ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const char *object_name);
 
+// The object_verify_*() templates are defined in sge_object.cc and instantiated there for the fields in use,
+// because their messages come from the module's message catalogue.
+template <auto F>
 bool
-object_verify_ulong_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
+object_verify_ulong_not_null(ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template <auto F>
 bool
-object_verify_ulong64_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
+object_verify_ulong_null(ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+template <auto F>
+bool
+object_verify_ulong64_null(ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
+template <auto F>
 bool
-object_verify_ulong_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
-bool
-object_verify_ulong64_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
+object_verify_double_null(ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
+template <auto F>
 bool
-object_verify_double_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
-
-bool
-object_verify_string_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
+object_verify_string_not_null(ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool
 object_verify_expression_syntax(ocs::tom::ConstElement<ocs::tom::CE> elem,

@@ -44,7 +44,10 @@
 
 #include "cull/cull.h"
 
+#include "uti/sge_rmon_macros.h"
+
 #include "tom/ocs_Element.h"
+#include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
@@ -76,9 +79,6 @@
 #define FLG_LIST_MERGE_DOUBLE_KEY    8 ///< like #FLG_LIST_MERGE, but the key is a name/value pair
 /** @} */
 
-int parse_list_simple(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, lListElem *job, int field, int nm_var,
-                      int nm_value, uint32_t flags);
-
 void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job,
                          uint32_t scope, int hard_field, int soft_field);
 
@@ -93,9 +93,51 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
 int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);
 int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);
 
-int 
-parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
-                  int nm_var, int nm_value, uint32_t flags);
+int
+parse_list_simpler(lList *lp, lList **destlist, const char *option, int nm_var, int nm_value, uint32_t flags);
+
+/**
+ * @brief Parse a switch's list argument into an attribute of an object
+ *
+ * Every occurrence of the switch is taken out of the command line, and its
+ * list is combined with the value the attribute holds so far, as @p flags says.
+ *
+ * @tparam F the list field the list is stored in, of the object type of @p job
+ * @param cmdline the parsed option list to consume from
+ * @param option the switch to look for
+ * @param[in,out] job the object the list is stored in, a job or an advance reservation
+ * @param nm_var the attribute holding an entry's name, passed on to the descriptor generic merge
+ * @param nm_value the attribute holding its value, passed on to the descriptor generic merge
+ * @param flags one of the `FLG_LIST_*` values, deciding what happens to an
+ *              existing value
+ * @return 0 on success
+ */
+template <auto F>
+   requires (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::List && ocs::tom::FieldTraits<F>::has_sub)
+int parse_list_simple(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
+                      const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> job, const int nm_var,
+                      const int nm_value, const uint32_t flags) {
+   DENTER(TOP_LAYER);
+
+   // the merge helpers below are descriptor generic and work on the raw list
+   lList *destlist = ocs::tom::get<F>(job).clone("job_sublist").release();
+
+   ocs::tom::Element<ocs::tom::SPA> ep;
+   while ((ep = cmdline.find_first<SPA_switch_val>(option)) != nullptr) {
+      DPRINTF("OPTION: %s\n", option);
+      lList *lp = nullptr;
+      ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
+
+      parse_list_simpler(lp, &destlist, option, nm_var, nm_value, flags);
+
+      cmdline.erase(ep);
+   }
+
+   // the entries come from the option parser, which builds the list of the field's sub-type
+   ocs::tom::set<F>(job, ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Sub>::from_typed(destlist));
+
+   DRETURN(0);
+}
 
 std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char *path_str);
 

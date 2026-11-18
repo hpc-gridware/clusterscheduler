@@ -41,41 +41,43 @@
 #include "cull/cull.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_daemonize.h"
+#include "uti/sge_rmon_macros.h"
+
 #include "tom/ocs_Element.h"
+#include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 
-int attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_queue, int nm,
+template <auto F>
+int attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                       ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> qep,
+                       ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> new_ep,
                        const char *attr_name, const char *variables[]);
-
-int attr_mod_zerostr(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
-
-int attr_mod_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_queue, int nm,
-                 const char *attr_name);
-
-int attr_mod_double(lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
-
-int attr_mod_bool(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
-
-int attr_mod_ulong(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
-int attr_mod_ulong64(lListElem *qep, lListElem *new_queue, int nm, const char *attr_name);
-
-int attr_mod_mem_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_queue, int nm,
-                     char *attr_name);
-
-int attr_mod_time_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_queue, int nm,
-                      char *attr_name, int enable_infinity);
 
 bool cqueue_mod_sublist(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *reduced_elem,
                         ocs::gdi::Command command, ocs::gdi::SubCommand sub_command,
                         int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
                         const char *attribute_name_str, const char *object_name_str);
 
-int
-multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *lp1, const lList *lp2, int nm, const char *name,
-                    const char *obj_name);
+template <auto F>
+int multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                        ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> lp1,
+                        ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> lp2, const char *name,
+                        const char *obj_name);
 
-void normalize_sublist(lListElem *ep, int nm);
+/**
+ * @brief Drop an empty sublist so it is not spooled as an empty element
+ * @tparam F the sublist field, of the element's object type
+ * @param ep the object
+ */
+template <auto F>
+   requires (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::List && ocs::tom::FieldTraits<F>::has_sub)
+void normalize_sublist(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep) {
+   if (const auto lp = ocs::tom::get<F>(ep); lp && lp.empty()) {
+      ocs::tom::set<F>(ep, nullptr);
+   }
+}
 
 bool attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, int this_elem_name,
                        int this_elem_primary_key,

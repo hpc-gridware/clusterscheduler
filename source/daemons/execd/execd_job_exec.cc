@@ -837,15 +837,15 @@ bool job_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::t
     */
 
    if (ret) {
-      ret = object_verify_ulong_not_null(job, answer_list, JB_job_number);
+      ret = object_verify_ulong_not_null<JB_job_number>(job, answer_list);
    }
 
    if (ret) {
-      ret = object_verify_string_not_null(job, answer_list, JB_job_name);
+      ret = object_verify_string_not_null<JB_job_name>(job, answer_list);
    }
 
    if (ret) {
-      ret = object_verify_string_not_null(job, answer_list, JB_owner);
+      ret = object_verify_string_not_null<JB_owner>(job, answer_list);
    }
 
    if (ret) {
