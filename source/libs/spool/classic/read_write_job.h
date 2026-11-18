@@ -47,8 +47,6 @@
 
 int job_write_spool_file(ocs::tom::Element<ocs::tom::JB> job, uint32_t ja_taskid, const char *pe_task_id,
                          sge_spool_flags_t flags);
-OCS_TRANSITIONAL int job_write_spool_file(lListElem *job, uint32_t ja_taskid, const char *pe_task_id,
-                                          sge_spool_flags_t flags);
 
 int job_remove_spool_file(uint32_t job_id, uint32_t ja_taskid,
                           const char *pe_task_id,

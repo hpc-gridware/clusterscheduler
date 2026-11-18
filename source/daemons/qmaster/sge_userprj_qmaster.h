@@ -73,9 +73,6 @@ int
 sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::PR> up_ep,
                 ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::List<ocs::tom::PR> upl, const char *ruser,
                 const char *rhost);
-OCS_TRANSITIONAL int sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                     lList **upl, const char *ruser, const char *rhost, int user);
 
 int
 verify_project_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstList<ocs::tom::PR> name_list,

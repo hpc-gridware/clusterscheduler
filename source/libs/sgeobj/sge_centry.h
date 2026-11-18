@@ -182,15 +182,10 @@ bool centry_is_referenced(ocs::tom::ConstElement<ocs::tom::CE> centry, ocs::tom:
                           ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                           ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                           ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list);
-OCS_TRANSITIONAL bool centry_is_referenced(const lListElem *centry, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           const lList *master_cqueue_list, const lList *master_exechost_list,
-                                           const lList *master_rqs_list);
 
 bool centry_print_resource_to_dstring(ocs::tom::ConstElement<ocs::tom::CE> this_elem, dstring *string);
-OCS_TRANSITIONAL bool centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string);
 
 ocs::tom::Element<ocs::tom::CE> centry_list_locate(ocs::tom::ConstList<ocs::tom::CE> this_list, const char *name);
-OCS_TRANSITIONAL lListElem *centry_list_locate(const lList *this_list, const char *name);
 
 bool centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE> centry, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool from_spool_read);
@@ -198,10 +193,8 @@ OCS_TRANSITIONAL bool centry_elem_validate(lListElem *centry, const lList *centr
                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool from_spool_read);
 
 bool centry_list_sort(ocs::tom::List<ocs::tom::CE> this_list);
-OCS_TRANSITIONAL bool centry_list_sort(lList *this_list);
 
 void centry_list_init_double(ocs::tom::List<ocs::tom::CE> this_list);
-OCS_TRANSITIONAL void centry_list_init_double(const lList *this_list);
 
 int centry_list_fill_request(ocs::tom::List<ocs::tom::CE> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              ocs::tom::ConstList<ocs::tom::CE> master_centry_list, bool allow_non_requestable,
@@ -221,7 +214,6 @@ const char *centry_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::CE> this
 OCS_TRANSITIONAL const char *centry_list_append_to_dstring(const lList *this_list, dstring *string);
 
 int centry_list_append_to_string(ocs::tom::List<ocs::tom::CE> this_list, char *buff, uint32_t max_len);
-OCS_TRANSITIONAL int centry_list_append_to_string(lList *this_list, char *buff, uint32_t max_len);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::CE>
 centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attributes, const char *str, bool check_value);
@@ -240,8 +232,6 @@ bool centry_list_is_correct(ocs::tom::ConstList<ocs::tom::CE> this_list, ocs::to
 
 int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, int nm,
                             ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
-OCS_TRANSITIONAL int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, int nm,
-                                             const lList *master_centry_list);
 
 int host_ensure_slots_are_defined(ocs::tom::Element<ocs::tom::EH> ehost, uint32_t processors);
 OCS_TRANSITIONAL int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors);
@@ -255,9 +245,6 @@ bool load_formula_is_centry_referenced(const char *load_formula, ocs::tom::Const
 
 const char *sge_get_dominant_stringval(ocs::tom::ConstElement<ocs::tom::CE> rep, uint32_t *dominant_p,
                                        dstring *resource_string_p, double *dbl_value, uint64_t *uint64_value);
-OCS_TRANSITIONAL const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_p,
-                                                        dstring *resource_string_p, double *dbl_value,
-                                                        uint64_t *uint64_value);
 
 int slot_signum(int slots);
 bool consumable_do_booking(uint32_t consumable, bool is_master_task, bool do_per_host_booking);

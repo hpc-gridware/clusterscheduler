@@ -64,8 +64,6 @@ jsv_send_command(ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::to
 bool
 jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool holding_lock);
-OCS_TRANSITIONAL bool jsv_do_verify(const char *context, lListElem **job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                    bool holding_lock);
 
 bool
 jsv_stop(ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool try_soft_quit);

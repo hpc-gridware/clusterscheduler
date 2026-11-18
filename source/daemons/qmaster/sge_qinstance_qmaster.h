@@ -117,5 +117,3 @@ sge_qmaster_qinstance_set_initial_state(ocs::tom::Element<ocs::tom::QU> this_ele
 bool
 qinstance_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::QU> this_elem,
                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL bool qinstance_reinit_consumable_actual_list(lListElem *this_elem,
-                                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

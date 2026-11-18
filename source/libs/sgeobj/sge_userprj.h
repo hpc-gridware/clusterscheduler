@@ -126,10 +126,8 @@ enum {
 };
 
 ocs::tom::Element<ocs::tom::PR> prj_list_locate(ocs::tom::ConstList<ocs::tom::PR> prj_list, const char *prj_name);
-OCS_TRANSITIONAL ocs::tom::Element<ocs::tom::PR> prj_list_locate(const lList *prj_list, const char *prj_name);
 
 ocs::tom::Element<ocs::tom::UU> user_list_locate(ocs::tom::ConstList<ocs::tom::UU> user_list, const char *user_name);
-OCS_TRANSITIONAL ocs::tom::Element<ocs::tom::UU> user_list_locate(const lList *user_list, const char *user_name);
 
 const char *prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR> this_list, dstring *string);
 OCS_TRANSITIONAL const char *prj_list_append_to_dstring(const lList *this_list, dstring *string);

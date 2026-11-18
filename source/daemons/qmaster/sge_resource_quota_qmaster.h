@@ -68,22 +68,16 @@ int
 rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::RQS> ep,
         ocs::tom::ListPtr<ocs::tom::AN> *alpp,
         ocs::tom::List<ocs::tom::RQS> rqs_list, const char *ruser, const char *rhost);
-OCS_TRANSITIONAL int rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
-                             ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **rqs_list, char *ruser, char *rhost);
 
 bool
 rqs_diff_usersets(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::ConstElement<ocs::tom::RQS> old_rqs,
                   ocs::tom::ListPtr<ocs::tom::US> *new_list, ocs::tom::ListPtr<ocs::tom::US> *old_list,
                   ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
-                                        lList **old_list, const lList *master_userset_list);
 
 bool
 rqs_diff_projects(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::ConstElement<ocs::tom::RQS> old_rqs,
                   ocs::tom::ListPtr<ocs::tom::PR> *new_list, ocs::tom::ListPtr<ocs::tom::PR> *old_list,
                   ocs::tom::ConstList<ocs::tom::PR> master_project_list);
-OCS_TRANSITIONAL bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
-                                        lList **old_list, const lList *master_project_list);
 
 bool
 scope_is_referenced_rqs(ocs::tom::ConstElement<ocs::tom::RQS> rqs, int filter_type, const char *name);

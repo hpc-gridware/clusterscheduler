@@ -71,20 +71,6 @@ ocs::AdvanceReservation::binding_get_or_create_elem(const ocs::tom::Element<ocs:
    DRETURN(Binding::binding_get_or_create_elem<AR_binding>(ar, answer_list));
 }
 
-/**
- * @brief binding_get_or_create_elem() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @param[out] answer_list receives the reason when it could not be created
- * @return as binding_get_or_create_elem()
- */
-lListElem *
-ocs::AdvanceReservation::binding_get_or_create_elem(lListElem *ar, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return Binding::binding_get_or_create_elem<AR_binding>(ocs::tom::Element<ocs::tom::AR>::from_typed(ar),
-                                                          answer_list);
-}
 
 /**
  * @brief Who applies the binding
@@ -98,18 +84,6 @@ ocs::AdvanceReservation::binding_get_type(const ocs::tom::ConstElement<ocs::tom:
    DRETURN(Binding::binding_get_type<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_type() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_type()
- */
-ocs::BindingType::Type
-ocs::AdvanceReservation::binding_get_type(const lListElem *ar) {
-   return Binding::binding_get_type<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief The hardware unit the binding counts in
@@ -123,18 +97,6 @@ ocs::AdvanceReservation::binding_get_unit(const ocs::tom::ConstElement<ocs::tom:
    DRETURN(Binding::binding_get_unit<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_unit() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_unit()
- */
-ocs::BindingUnit::Unit
-ocs::AdvanceReservation::binding_get_unit(const lListElem *ar) {
-   return Binding::binding_get_unit<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief How the selected hardware is ordered
@@ -148,18 +110,6 @@ ocs::AdvanceReservation::binding_get_sort(const ocs::tom::ConstElement<ocs::tom:
    DRETURN(Binding::binding_get_sort<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_sort() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_sort()
- */
-std::string
-ocs::AdvanceReservation::binding_get_sort(const lListElem *ar) {
-   return Binding::binding_get_sort<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief Where on the topology the binding starts
@@ -173,18 +123,6 @@ ocs::AdvanceReservation::binding_get_start(const ocs::tom::ConstElement<ocs::tom
    DRETURN(Binding::binding_get_start<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_start() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_start()
- */
-ocs::BindingStart::Start
-ocs::AdvanceReservation::binding_get_start(const lListElem *ar) {
-   return Binding::binding_get_start<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief Where the binding stops
@@ -198,18 +136,6 @@ ocs::AdvanceReservation::binding_get_stop(const ocs::tom::ConstElement<ocs::tom:
    DRETURN(Binding::binding_get_end<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_stop() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_stop()
- */
-ocs::BindingStop::Stop
-ocs::AdvanceReservation::binding_get_stop(const lListElem *ar) {
-   return Binding::binding_get_end<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief How the binding walks the topology
@@ -223,18 +149,6 @@ ocs::AdvanceReservation::binding_get_strategy(const ocs::tom::ConstElement<ocs::
    DRETURN(Binding::binding_get_strategy<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_strategy() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_strategy()
- */
-ocs::BindingStrategy::Strategy
-ocs::AdvanceReservation::binding_get_strategy(const lListElem *ar) {
-   return Binding::binding_get_strategy<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief Which instance of the job the binding applies to
@@ -248,18 +162,6 @@ ocs::AdvanceReservation::binding_get_instance(const ocs::tom::ConstElement<ocs::
    DRETURN(Binding::binding_get_instance<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_instance() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_instance()
- */
-ocs::BindingInstance::Instance
-ocs::AdvanceReservation::binding_get_instance(const lListElem *ar) {
-   return Binding::binding_get_instance<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief Which hardware the binding is restricted to
@@ -273,18 +175,6 @@ ocs::AdvanceReservation::binding_get_filter(const ocs::tom::ConstElement<ocs::to
    DRETURN(Binding::binding_get_filter<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_filter() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_filter()
- */
-std::string
-ocs::AdvanceReservation::binding_get_filter(const lListElem *ar) {
-   return Binding::binding_get_filter<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief How many units the binding asks for
@@ -298,18 +188,6 @@ ocs::AdvanceReservation::binding_get_amount(const ocs::tom::ConstElement<ocs::to
    DRETURN(Binding::binding_get_amount<AR_binding>(ar));
 }
 
-/**
- * @brief binding_get_amount() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @return as binding_get_amount()
- */
-uint32_t
-ocs::AdvanceReservation::binding_get_amount(const lListElem *ar) {
-   return Binding::binding_get_amount<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR>::from_typed(ar));
-}
 
 /**
  * @brief Fill in the binding fields the request left out
@@ -324,16 +202,3 @@ void ocs::AdvanceReservation::binding_set_missing_defaults(const ocs::tom::Eleme
    DRETURN_VOID;
 }
 
-/**
- * @brief binding_set_missing_defaults() for an untyped caller
- *
- * The reservation is passed on unchecked, as before.
- *
- * @param ar the advance reservation (AR_Type)
- * @param[out] answer_list receives the reason on failure
- */
-void ocs::AdvanceReservation::binding_set_missing_defaults(lListElem *ar,
-                                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   Binding::binding_set_missing_defaults<AR_binding>(ocs::tom::Element<ocs::tom::AR>::from_typed(ar),
-                                                     answer_list);
-}

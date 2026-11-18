@@ -224,17 +224,6 @@ bool href_list_has_member(const ocs::tom::ConstList<ocs::tom::HR> this_list, con
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_has_member() for an untyped caller
- *
- * @param this_list HR_Type list, checked; may be nullptr
- * @param host_or_group hostname or hgroup
- *
- * @return as href_list_has_member()
- */
-bool href_list_has_member(const lList *this_list, const char *host_or_group) {
-   return href_list_has_member(ocs::tom::ConstList<ocs::tom::HR>(this_list), host_or_group);
-}
 
 /**
  * @brief Finds additional entries in list
@@ -379,30 +368,6 @@ bool href_list_find_diff(const ocs::tom::ConstList<ocs::tom::HR> this_list,
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_find_diff() for an untyped caller
- *
- * @param this_list HR_Type list to be compared, checked; may be nullptr
- * @param answer_list AN_Type list
- * @param list 2nd HR_Type list to be compared, checked; may be nullptr
- * @param add_hosts in-out: HR_Type list, or nullptr
- * @param rem_hosts in-out: HR_Type list, or nullptr
- * @param add_groups in-out: HR_Type list, or nullptr
- * @param rem_groups in-out: HR_Type list, or nullptr
- *
- * @return as href_list_find_diff()
- */
-bool href_list_find_diff(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
-                         lList **add_hosts, lList **rem_hosts, lList **add_groups, lList **rem_groups) {
-   ocs::UntypedHrefList typed_add_hosts(add_hosts);
-   ocs::UntypedHrefList typed_rem_hosts(rem_hosts);
-   ocs::UntypedHrefList typed_add_groups(add_groups);
-   ocs::UntypedHrefList typed_rem_groups(rem_groups);
-
-   return href_list_find_diff(ocs::tom::ConstList<ocs::tom::HR>(this_list), answer_list,
-                              ocs::tom::ConstList<ocs::tom::HR>(list), typed_add_hosts.get(), typed_rem_hosts.get(),
-                              typed_add_groups.get(), typed_rem_groups.get());
-}
 
 /**
  * @brief Resolves groups and creates diff
@@ -453,29 +418,6 @@ bool href_list_find_effective_diff(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_find_effective_diff() for an untyped caller
- *
- * @param answer_list AN_Type list
- * @param add_groups HR_Type list1 (hgroups), checked; may be nullptr
- * @param rem_groups HR_Type list2 (hgroups), checked; may be nullptr
- * @param master_list HGRP_Type list of all hgroups, checked
- * @param add_hosts in-out: resolved "add_groups" hosts not part of "rem_groups"
- * @param rem_hosts in-out: resolved "rem_groups" hosts not part of "add_hosts"
- *
- * @return as href_list_find_effective_diff()
- */
-bool href_list_find_effective_diff(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *add_groups,
-                                   const lList *rem_groups,
-                                   const lList *master_list, lList **add_hosts, lList **rem_hosts) {
-   ocs::UntypedHrefList typed_add_hosts(add_hosts);
-   ocs::UntypedHrefList typed_rem_hosts(rem_hosts);
-
-   return href_list_find_effective_diff(answer_list, ocs::tom::ConstList<ocs::tom::HR>(add_groups),
-                                        ocs::tom::ConstList<ocs::tom::HR>(rem_groups),
-                                        ocs::tom::ConstList<ocs::tom::HGRP>(master_list), typed_add_hosts.get(),
-                                        typed_rem_hosts.get());
-}
 
 /**
  * @brief Find an entry in the reference list
@@ -970,23 +912,6 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list,
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_resolve_hostnames() for an untyped caller
- *
- * @param this_list HR_Type list, checked; may be nullptr
- * @param answer_list AN_Type list
- * @param ignore_errors ignore if a host is not resolvable
- * @param introducing true when the members are being put into a list, false when
- *        they are being taken out
- * @param hgroup the host group the list belongs to (HGRP_Type), checked; may be nullptr
- *
- * @return as href_list_resolve_hostnames()
- */
-bool href_list_resolve_hostnames(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool ignore_errors,
-                                 bool introducing, const lListElem *hgroup) {
-   return href_list_resolve_hostnames(ocs::tom::List<ocs::tom::HR>(this_list), answer_list, ignore_errors,
-                                      introducing, ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup));
-}
 
 /**
  * @brief Print href-list to dstring
@@ -1067,22 +992,6 @@ bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_remove_existing() for an untyped caller
- *
- * @param this_list in-out: HR_Type list, checked; set to nullptr when it becomes empty; may be nullptr
- * @param answer_list AN_Type list
- * @param list HR_Type list, checked; may be nullptr
- *
- * @return as href_list_remove_existing()
- */
-bool href_list_remove_existing(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list) {
-   if (this_list == nullptr) {
-      return true;
-   }
-   ocs::UntypedHrefList target(this_list);
-   return href_list_remove_existing(*target.get(), answer_list, ocs::tom::ConstList<ocs::tom::HR>(list));
-}
 
 /**
  * @brief Prints HR_Type list into TOP_LAYER
@@ -1118,15 +1027,6 @@ void href_list_debug_print(const ocs::tom::ConstList<ocs::tom::HR> this_list, co
    DRETURN_VOID;
 }
 
-/**
- * @brief href_list_debug_print() for an untyped caller
- *
- * @param this_list HR_Type list, checked; may be nullptr
- * @param prefix prefix string
- */
-void href_list_debug_print(const lList *this_list, const char *prefix) {
-   href_list_debug_print(ocs::tom::ConstList<ocs::tom::HR>(this_list), prefix);
-}
 
 /**
  * @brief Remove repeated host and group names, keeping the first of each

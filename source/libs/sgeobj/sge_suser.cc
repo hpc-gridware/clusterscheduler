@@ -107,17 +107,6 @@ ocs::tom::Element<ocs::tom::SU> suser_list_find(const ocs::tom::ConstList<ocs::t
    DRETURN(ret);
 }
 
-/**
- * @brief suser_list_find() for an untyped caller
- *
- * @param suser_list SU_Type list, checked; may be nullptr
- * @param suser_name username
- *
- * @return as suser_list_find()
- */
-ocs::tom::Element<ocs::tom::SU> suser_list_find(const lList *suser_list, const char *suser_name) {
-   return suser_list_find(ocs::tom::ConstList<ocs::tom::SU>(suser_list), suser_name);
-}
 
 /**
  * @brief Increase the users job counter
@@ -234,19 +223,6 @@ int suser_check_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const ui
    DRETURN(ret);
 }
 
-/**
- * @brief suser_check_new_job() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param max_u_jobs maximum number of allowed jobs per user
- * @param master_suser_list the submit users to count in (SU_Type), checked; may be nullptr
- *
- * @return as suser_check_new_job()
- */
-int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master_suser_list) {
-   return suser_check_new_job(ocs::tom::ConstElement<ocs::tom::JB>(job), max_u_jobs,
-                              ocs::tom::List<ocs::tom::SU>(master_suser_list));
-}
 
 /**
  * @brief Try to register a new job
@@ -290,21 +266,6 @@ int suser_register_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const
    DRETURN(ret);
 }
 
-/**
- * @brief suser_register_new_job() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param max_u_jobs maximum number of allowed jobs per user
- * @param force_registration force job registration
- * @param master_suser_list the submit users to look in (SU_Type), checked; may be nullptr
- *
- * @return as suser_register_new_job()
- */
-int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs, int force_registration,
-                           lList *master_suser_list) {
-   return suser_register_new_job(ocs::tom::ConstElement<ocs::tom::JB>(job), max_u_jobs, force_registration,
-                                 ocs::tom::List<ocs::tom::SU>(master_suser_list));
-}
 
 /**
  * @brief Number of jobs for a given user
@@ -326,18 +287,6 @@ uint32_t suser_job_count(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DRETURN(ret);
 }
 
-/**
- * @brief suser_job_count() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param master_suser_list the submit users to look in (SU_Type), checked; may be nullptr
- *
- * @return as suser_job_count()
- */
-uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list) {
-   return suser_job_count(ocs::tom::ConstElement<ocs::tom::JB>(job),
-                          ocs::tom::ConstList<ocs::tom::SU>(master_suser_list));
-}
 
 /**
  * @brief Unregister a job
@@ -357,13 +306,3 @@ void suser_unregister_job(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DRETURN_VOID;
 }
 
-/**
- * @brief suser_unregister_job() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param master_suser_list the submit users to unregister from (SU_Type), checked; may be nullptr
- */
-void suser_unregister_job(const lListElem *job, const lList *master_suser_list) {
-   suser_unregister_job(ocs::tom::ConstElement<ocs::tom::JB>(job),
-                        ocs::tom::ConstList<ocs::tom::SU>(master_suser_list));
-}

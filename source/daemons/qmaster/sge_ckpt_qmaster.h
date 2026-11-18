@@ -62,8 +62,6 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 int
 sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CK> ep,
              ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
-                                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 const char *
 get_checkpoint_when(int bitmask);

@@ -86,5 +86,3 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
 int
 hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::HGRP> cep,
            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
-                                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);

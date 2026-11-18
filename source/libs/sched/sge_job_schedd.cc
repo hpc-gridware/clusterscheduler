@@ -98,17 +98,6 @@ bool job_get_duration(uint64_t *duration, const ocs::tom::ConstElement<ocs::tom:
    DRETURN(true);
 }
 
-/**
- * @brief job_get_duration() for an untyped caller
- *
- * @param duration Returns duration on success
- * @param jep The job (`JB_Type`), checked
- *
- * @return as job_get_duration()
- */
-bool job_get_duration(uint64_t *duration, const lListElem *jep) {
-   return job_get_duration(duration, ocs::tom::ConstElement<ocs::tom::JB>(jep));
-}
 
 /**
  * @brief Determin tasks effective runtime limit

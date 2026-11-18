@@ -105,9 +105,6 @@ sge_select_queue(ocs::tom::List<ocs::tom::CE> requested_attr, ocs::tom::ConstEle
                  ocs::tom::ConstList<ocs::tom::CE> centry_list, bool allow_non_requestable, int slots,
                  ocs::tom::ConstList<ocs::tom::ST> queue_user_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
                  ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList *exechost_list,
-                                       lList *centry_list, bool allow_non_requestable, int slots,
-                                       lList *queue_user_list, lList *acl_list, lListElem *job);
 
 /* --- is there a load alarm on this queue ---------------------------- */
 
@@ -115,10 +112,6 @@ int sge_load_alarm(char *reason, size_t reason_size, ocs::tom::ConstElement<ocs:
                    ocs::tom::ConstList<ocs::tom::CE> threshold, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
                    ocs::tom::ConstList<ocs::tom::CE> complex_list, ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
                    ocs::tom::ConstList<ocs::tom::CE> consumable_load_adjustments, bool is_check_consumable);
-OCS_TRANSITIONAL int sge_load_alarm(char *reason, size_t reason_size, const lListElem *queue, const lList *threshold,
-                                    const lList *exechost_list, const lList *complex_list,
-                                    const lList *load_adjustments, const lList *consumable_load_adjustments,
-                                    bool is_check_consumable);
 
 ocs::tom::ListPtr<ocs::tom::LDR>
 sge_create_load_list(ocs::tom::List<ocs::tom::QU> queue_list, ocs::tom::ConstList<ocs::tom::EH> host_list,
@@ -327,7 +320,6 @@ sge_sequential_assignment(sge_assignment_t *a);
 
 dispatch_t
 sge_select_parallel_environment(sge_assignment_t *best, ocs::tom::List<ocs::tom::PE> pe_list);
-OCS_TRANSITIONAL dispatch_t sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
 
 /* -------------------------------------------------------------------------------- */
 
@@ -353,9 +345,6 @@ int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, ocs::tom:
                          ocs::tom::ConstList<ocs::tom::EH> exechost_list,
                          ocs::tom::ConstList<ocs::tom::CE> centry_list,
                          ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
-OCS_TRANSITIONAL int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q,
-                                          const lList *exechost_list, const lList *complex_list,
-                                          const lList *load_adjustments);
 
 dispatch_t
 parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, ocs::tom::ConstList<ocs::tom::CE> total_list,

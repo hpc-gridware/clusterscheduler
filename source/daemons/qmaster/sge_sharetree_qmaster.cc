@@ -87,22 +87,6 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
    DRETURN(ret);
 }
 
-/** @brief sge_add_sharetree() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param ep the share tree (STN_Type)
- * @param lpp the master share tree list
- * @param alpp receives messages for the caller
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @return STATUS_OK on success
- */
-int
-sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp,
-                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
-   return sge_add_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep), lpp, alpp, ruser, rhost);
-}
 
 /** @brief Replace the share tree as a whole
  *

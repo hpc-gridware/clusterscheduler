@@ -379,20 +379,6 @@ int job_write_spool_file(const ocs::tom::Element<ocs::tom::JB> job, const uint32
    DRETURN(ret);
 }
 
-/**
- * @brief job_write_spool_file() for an untyped caller
- *
- * @param job full job (JB_Type), checked
- * @param ja_taskid 0 or a allowed array job task id
- * @param pe_task_id pe task id
- * @param flags where/how should we spool the object
- *
- * @return as job_write_spool_file()
- */
-int job_write_spool_file(lListElem *job, const uint32_t ja_taskid, const char *pe_task_id,
-                         const sge_spool_flags_t flags) {
-   return job_write_spool_file(ocs::tom::Element<ocs::tom::JB>(job), ja_taskid, pe_task_id, flags);
-}
 
 /**
  * @brief Whether a job is spooled as one file

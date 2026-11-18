@@ -56,8 +56,6 @@
 
 int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                const char *cell_root, const char *user, const char *host);
-OCS_TRANSITIONAL int path_alias_list_initialize(lList **path_alias_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                                const char *cell_root, const char *user, const char *host);
 
 int path_alias_list_get_path(ocs::tom::ConstList<ocs::tom::PA> path_aliases, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                              const char *inpath, const char *myhost,

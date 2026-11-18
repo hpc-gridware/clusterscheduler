@@ -121,16 +121,6 @@ ocs::tom::ConstElement<ocs::tom::PE> pe_list_find_matching(const ocs::tom::Const
    DRETURN(nullptr);
 }
 
-/**
- * @brief pe_list_find_matching() for an untyped caller
- *
- * @param pe_list PE_Type list, checked
- * @param wildcard Wildcard expression
- * @return as pe_list_find_matching()
- */
-const lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) {
-   return pe_list_find_matching(ocs::tom::ConstList<ocs::tom::PE>(pe_list), wildcard);
-}
 
 /**
  * @brief Locate a certain PE
@@ -149,16 +139,6 @@ ocs::tom::Element<ocs::tom::PE> pe_list_locate(const ocs::tom::ConstList<ocs::to
    return ocs::tom::find_first_rw<PE_name>(pe_list, pe_name);
 }
 
-/**
- * @brief pe_list_locate() for an untyped caller
- *
- * @param pe_list PE_Type list, checked
- * @param pe_name PE name
- * @return as pe_list_locate()
- */
-lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) {
-   return pe_list_locate(ocs::tom::ConstList<ocs::tom::PE>(pe_list), pe_name);
-}
 
 /**
  * @brief Is a given PE referenced in other objects?
@@ -215,21 +195,6 @@ bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::L
    DRETURN(ret);
 }
 
-/**
- * @brief pe_is_referenced() for an untyped caller
- *
- * @param pe PE_Type object, checked
- * @param answer_list AN_Type list
- * @param master_job_list JB_Type list, checked
- * @param master_cqueue_list CQ_Type list, checked
- * @return as pe_is_referenced()
- */
-bool pe_is_referenced(const lListElem *pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *master_job_list,
-                      const lList *master_cqueue_list) {
-   return pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE>(pe), answer_list,
-                           ocs::tom::ConstList<ocs::tom::JB>(master_job_list),
-                           ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
-}
 
 /**
  * @brief Validate a parallel environment
@@ -653,16 +618,6 @@ int pe_set_slots_used(const ocs::tom::Element<ocs::tom::PE> pe, const int slots)
    DRETURN(0);
 }
 
-/**
- * @brief pe_set_slots_used() for an untyped caller
- *
- * @param pe The pe object (PE_Type), checked
- * @param slots Number of slots.
- * @return as pe_set_slots_used()
- */
-int pe_set_slots_used(lListElem *pe, int slots) {
-   return pe_set_slots_used(ocs::tom::Element<ocs::tom::PE>(pe), slots);
-}
 
 
 /**
@@ -691,16 +646,6 @@ void pe_debit_slots(const ocs::tom::Element<ocs::tom::PE> pep, const int slots,
    DRETURN_VOID;
 }
 
-/**
- * @brief pe_debit_slots() for an untyped caller
- *
- * @param pep The PE (PE_Type), checked; may be nullptr
- * @param slots Pos/neg number of slots.
- * @param job_id Job id for monitoring purposes.
- */
-void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
-   pe_debit_slots(ocs::tom::Element<ocs::tom::PE>(pep), slots, job_id);
-}
 
 /**
  * @brief Do accounting summary?
@@ -731,12 +676,3 @@ bool pe_do_accounting_summary(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
    return ret;
 }
 
-/**
- * @brief pe_do_accounting_summary() for an untyped caller
- *
- * @param pe the parallel environment, checked; may be nullptr
- * @return as pe_do_accounting_summary()
- */
-bool pe_do_accounting_summary(const lListElem *pe) {
-   return pe_do_accounting_summary(ocs::tom::ConstElement<ocs::tom::PE>(pe));
-}

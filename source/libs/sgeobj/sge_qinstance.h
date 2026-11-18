@@ -80,17 +80,12 @@ enum {
 bool qinstance_validate(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                         ocs::tom::ConstList<ocs::tom::CE> centry_master_list);
-OCS_TRANSITIONAL bool qinstance_validate(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                         const lList *master_exechost_list, const lList *centry_master_list);
 
 bool qinstance_list_validate(ocs::tom::List<ocs::tom::QU> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                              ocs::tom::ConstList<ocs::tom::CE> centry_master_list);
-OCS_TRANSITIONAL bool qinstance_list_validate(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                              const lList *master_exechost_list, const lList *centry_master_list);
 
 void qinstance_set_full_name(ocs::tom::Element<ocs::tom::QU> this_elem);
-OCS_TRANSITIONAL void qinstance_set_full_name(lListElem *this_elem);
 
 ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(ocs::tom::ConstList<ocs::tom::QU> this_list, const char *hostname,
                                                       const char *cqueue_name);
@@ -99,7 +94,6 @@ ocs::tom::Element<ocs::tom::QU> qinstance_list_locate2(ocs::tom::ConstList<ocs::
                                                        const char *full_name);
 
 const char *qinstance_get_name(ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string_buffer);
-OCS_TRANSITIONAL const char *qinstance_get_name(const lListElem *this_elem, dstring *string_buffer);
 
 /**
  * @brief Tag a list of qinstances
@@ -121,10 +115,8 @@ void qinstance_list_set_tag(const ocs::tom::List<ocs::tom::QU> this_list, const 
 }
 
 void qinstance_increase_qversion(ocs::tom::Element<ocs::tom::QU> this_elem);
-OCS_TRANSITIONAL void qinstance_increase_qversion(lListElem *this_elem);
 
 bool qinstance_is_owner(const ocs::gdi::Packet *packet, ocs::tom::ConstElement<ocs::tom::QU> this_elem);
-OCS_TRANSITIONAL bool qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem);
 
 bool qinstance_is_pe_referenced(ocs::tom::ConstElement<ocs::tom::QU> this_elem,
                                 ocs::tom::ConstElement<ocs::tom::PE> pe);
@@ -142,26 +134,18 @@ bool qinstance_is_centry_a_complex_value(ocs::tom::ConstElement<ocs::tom::QU> th
 void qinstance_set_slots_used(ocs::tom::Element<ocs::tom::QU> this_elem, int new_slots);
 
 int qinstance_slots_used(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
-OCS_TRANSITIONAL int qinstance_slots_used(const lListElem *this_elem);
 
 uint32_t qinstance_slots_reserved(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
-OCS_TRANSITIONAL uint32_t qinstance_slots_reserved(const lListElem *this_elem);
 
 void qinstance_set_conf_slots_used(ocs::tom::Element<ocs::tom::QU> this_elem);
-OCS_TRANSITIONAL void qinstance_set_conf_slots_used(lListElem *this_elem);
 
 int qinstance_debit_consumable(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ConstElement<ocs::tom::JB> job,
                                ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                                int slots, bool is_master_task, bool do_per_host_booking, bool *just_check);
-OCS_TRANSITIONAL int qinstance_debit_consumable(lListElem *this_elem, const lListElem *job, const lListElem *pe,
-                                                const lList *centry_list, int slots, bool is_master_task,
-                                                bool do_per_host_booking, bool *just_check);
 
 bool qinstance_message_add(ocs::tom::Element<ocs::tom::QU> this_elem, uint32_t type, const char *message);
-OCS_TRANSITIONAL bool qinstance_message_add(lListElem *this_elem, uint32_t type, const char *message);
 
 bool qinstance_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::QU> this_elem, uint32_t type);
-OCS_TRANSITIONAL bool qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type);
 
 /// Instantiated for queue instances (QU_Type with QU_consumable_config_list, QU_resource_utilization) and
 /// execution hosts (EH_Type with EH_consumable_config_list, EH_resource_utilization); see sge_qinstance.cc
@@ -184,5 +168,4 @@ qinstance_verify_full_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const c
 
 void qinstance_set_error(ocs::tom::Element<ocs::tom::QU> qinstance, uint32_t type, const char *message,
                          bool set_error);
-OCS_TRANSITIONAL void qinstance_set_error(lListElem *qinstance, uint32_t type, const char *message, bool set_error);
 

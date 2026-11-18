@@ -111,18 +111,6 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(const ocs::tom::Element<
    DRETURN(container);
 }
 
-/**
- * @brief pe_task_sum_past_usage() for an untyped caller
- *
- * @param container container object to hold past usage (PET_Type), checked; may be nullptr
- * @param pe_task the pe task from which to copy usage (PET_Type), checked; may be nullptr
- *
- * @return as pe_task_sum_past_usage()
- */
-lListElem *pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
-   return pe_task_sum_past_usage(ocs::tom::Element<ocs::tom::PET>(container),
-                                 ocs::tom::ConstElement<ocs::tom::PET>(pe_task));
-}
 
 /**
  * @brief Sum up all pe tasks past usage
@@ -197,18 +185,6 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(const ocs::tom::Lis
    DRETURN(container);
 }
 
-/**
- * @brief pe_task_sum_past_usage_list() for an untyped caller
- *
- * @param pe_task_list list containing the container object (PET_Type), checked; may be nullptr
- * @param pe_task the pe task from which to copy usage (PET_Type), checked
- *
- * @return as pe_task_sum_past_usage_list()
- */
-lListElem *pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task) {
-   return pe_task_sum_past_usage_list(ocs::tom::List<ocs::tom::PET>(pe_task_list),
-                                      ocs::tom::ConstElement<ocs::tom::PET>(pe_task));
-}
 
 /**
  * @brief Verify a pe task request object

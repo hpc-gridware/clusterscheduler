@@ -95,8 +95,6 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
 int
 cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
-                                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 bool
 cqueue_del_all_orphaned(ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,

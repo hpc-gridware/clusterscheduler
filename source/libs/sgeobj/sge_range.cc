@@ -414,20 +414,6 @@ void range_list_print_to_string(const ocs::tom::ConstList<ocs::tom::RN> this_lis
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_print_to_string() for an untyped caller
- *
- * @param this_list RN_Type list, checked; may be nullptr
- * @param string dynamic string
- * @param ignore_step ignore step for printing
- * @param comma_as_separator use the format 1,2,3 instead of 1-2:
- * @param print_always_as_range even if the range has only one id
- */
-void range_list_print_to_string(const lList *this_list, dstring *string, bool ignore_step,
-                                bool comma_as_separator, bool print_always_as_range) {
-   range_list_print_to_string(ocs::tom::ConstList<ocs::tom::RN>(this_list), string, ignore_step,
-                              comma_as_separator, print_always_as_range);
-}
 
 /**
  * @brief First id contained in the list
@@ -1027,27 +1013,6 @@ void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_move_first_n_ids() for an untyped caller
- *
- * @param range_list pointer to a RN_Type list (source), checked
- * @param answer_list pointer to an AN_Type list
- * @param range_list2 pointer to a RN_Type list (destination), checked
- * @param n number of ids
- */
-void range_list_move_first_n_ids(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **range_list2,
-                                 uint32_t n) {
-   if (range_list != nullptr && range_list2 != nullptr) {
-      // both checked before either is taken over
-      const ocs::tom::List<ocs::tom::RN> checked_source(*range_list);
-      const ocs::tom::List<ocs::tom::RN> checked_destination(*range_list2);
-      auto source = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(checked_source);
-      auto destination = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(checked_destination);
-      range_list_move_first_n_ids(source, answer_list, destination, n);
-      *range_list = source.release();
-      *range_list2 = destination.release();
-   }
-}
 
 /**
  * @brief Insert an id into a range list

@@ -244,16 +244,6 @@ bool ja_task_clear_finished_pe_tasks(const ocs::tom::Element<ocs::tom::JAT> ja_t
    DRETURN(true);
 }
 
-/**
- * @brief ja_task_clear_finished_pe_tasks() for an untyped caller
- *
- * @param ja_task the ja_task to modify (JAT_Type), checked
- *
- * @return as ja_task_clear_finished_pe_tasks()
- */
-bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
-   return ja_task_clear_finished_pe_tasks(ocs::tom::Element<ocs::tom::JAT>(ja_task));
-}
 
 /**
  * @brief Parse array task ranges
@@ -378,18 +368,6 @@ bool ja_task_message_add(const ocs::tom::Element<ocs::tom::JAT> this_elem, const
    DRETURN(ret);
 }
 
-/**
- * @brief ja_task_message_add() for an untyped caller
- *
- * @param this_elem JAT_Type element, checked
- * @param type message type id
- * @param message message
- *
- * @return as ja_task_message_add()
- */
-bool ja_task_message_add(lListElem *this_elem, const uint32_t type, const char *message) {
-   return ja_task_message_add(ocs::tom::Element<ocs::tom::JAT>(this_elem), type, message);
-}
 
 /**
  * @brief Trash messages of certain type
@@ -411,17 +389,6 @@ bool ja_task_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::JAT> 
    DRETURN(ret);
 }
 
-/**
- * @brief ja_task_message_trash_all_of_type_X() for an untyped caller
- *
- * @param this_elem JAT_Type element, checked
- * @param type type id
- *
- * @return as ja_task_message_trash_all_of_type_X()
- */
-bool ja_task_message_trash_all_of_type_X(lListElem *this_elem, const uint32_t type) {
-   return ja_task_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::JAT>(this_elem), type);
-}
 
 /**
  * @brief Verify a ja_task object
@@ -637,18 +604,6 @@ bool ja_task_is_tightly_integrated(const ocs::tom::ConstElement<ocs::tom::JAT> j
    return ret;
 }
 
-/**
- * @brief ja_task_is_tightly_integrated() for an untyped caller
- *
- * @param ja_task the ja task to test (JAT_Type), checked; may be nullptr
- * @param master_pe_list the parallel environments, to look up the task's PE (PE_Type), checked
- *
- * @return as ja_task_is_tightly_integrated()
- */
-bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list) {
-   return ja_task_is_tightly_integrated(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
-                                        ocs::tom::ConstList<ocs::tom::PE>(master_pe_list));
-}
 
 /**
  * @brief Debit or undebit the RSMAP ids of one granted resource on a host
@@ -795,16 +750,6 @@ bool ja_task_is_running(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
    return is_running;
 }
 
-/**
- * @brief ja_task_is_running() for an untyped caller
- *
- * @param[in] ja_task The job array task element (JAT_Type) to check, checked
- *
- * @return as ja_task_is_running()
- */
-bool ja_task_is_running(const lListElem *ja_task) {
-   return ja_task_is_running(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task));
-}
 
 /**
  * @brief Record who deleted a job array task
@@ -819,15 +764,6 @@ void ja_task_set_deleted_by(const ocs::tom::Element<ocs::tom::JAT> ja_task, cons
    ocs::tom::set<JAT_deleted_by>(ja_task, deleted_by);
 }
 
-/**
- * @brief ja_task_set_deleted_by() for an untyped caller
- *
- * @param[in,out] ja_task the task to mark (JAT_Type), checked
- * @param deleted_by the name to record
- */
-void ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
-   ja_task_set_deleted_by(ocs::tom::Element<ocs::tom::JAT>(ja_task), deleted_by);
-}
 
 /**
  * @brief Who deleted this job array task?
@@ -840,12 +776,3 @@ const char *ja_task_get_deleted_by(const ocs::tom::ConstElement<ocs::tom::JAT> j
    return ocs::tom::get<JAT_deleted_by>(ja_task);
 }
 
-/**
- * @brief ja_task_get_deleted_by() for an untyped caller
- *
- * @param ja_task the task to ask about (JAT_Type), checked
- * @return as ja_task_get_deleted_by()
- */
-const char *ja_task_get_deleted_by(const lListElem *ja_task) {
-   return ja_task_get_deleted_by(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task));
-}

@@ -1014,22 +1014,3 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
    DRETURN(ret);
 }
 
-/**
- * @brief jsv_do_verify() for an untyped caller
- *
- * @param context JSV_CONTEXT_CLIENT or thread name
- * @param job pointer to the job (JB_Type), checked; replaced by the modified job when a JSV accepts it
- * @param answer_list answer_list for messages
- * @param holding_lock is the calling thread holding the global lock
- * @return as jsv_do_verify(); true if 'job' is nullptr
- */
-bool jsv_do_verify(const char *context, lListElem **job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                   const bool holding_lock) {
-   bool ret = true;
-   if (job != nullptr) {
-      ocs::tom::ElementPtr<ocs::tom::JB> typed_job(*job);
-      ret = jsv_do_verify(context, typed_job, answer_list, holding_lock);
-      *job = typed_job.release();
-   }
-   return ret;
-}

@@ -67,8 +67,6 @@ namespace ocs {
       /// Record the CPU hardware granted to a job on one host
       static void add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &granted_resources_list, const char *host_name,
                                      ocs::tom::ConstList<ocs::tom::ST> binding_touse_list);
-      OCS_TRANSITIONAL static void add_binding_to_use(lList **granted_resources_list, const char *host_name,
-                                                      ocs::tom::ConstList<ocs::tom::ST> binding_touse_list);
       /// Collect everything granted on one host into a single topology
       static void get_combined_binding_for_host(ocs::tom::ConstList<ocs::tom::GRU> gr_list, const char *hostname,
                                                 TopologyString &binding_to_use);

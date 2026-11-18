@@ -68,16 +68,6 @@ void qinstance_add_event(const ocs::tom::Element<ocs::tom::QU> this_elem, const 
    DRETURN_VOID;
 }
 
-/**
- * @brief qinstance_add_event() for an untyped caller
- *
- * @param this_elem the queue instance the event is about (QU_Type), owned by the master list
- * @param type the event type, one of the `sgeE_QINSTANCE_*` values
- * @param gdi_session the session the change belongs to, for read-after-write
- */
-void qinstance_add_event(lListElem *this_elem, const ev_event type, const uint64_t gdi_session) {
-   qinstance_add_event(ocs::tom::Element<ocs::tom::QU>(this_elem), type, gdi_session);
-}
 
 /**
  * @brief Queue an event about one cluster queue

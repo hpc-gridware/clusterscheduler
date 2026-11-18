@@ -56,5 +56,3 @@ bool is_host_expand(ocs::tom::ConstElement<ocs::tom::RQR> rule);
 bool sge_user_is_referenced_in_rqs(ocs::tom::ConstList<ocs::tom::RQS> rqs, const char *user, const char *group,
                                    ocs::tom::ConstList<ocs::tom::ST> grp_list,
                                    ocs::tom::ConstList<ocs::tom::US> acl_list);
-OCS_TRANSITIONAL bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group,
-                                                    const lList *grp_list, const lList *acl_list);

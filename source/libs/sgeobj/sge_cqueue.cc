@@ -344,18 +344,6 @@ ocs::tom::ConstList<ocs::tom::HR> cqueue_get_hostlist(const ocs::tom::ConstEleme
    return ocs::tom::get<HGRP_host_list>(hgroup);
 }
 
-/**
- * @brief cqueue_get_hostlist() for an untyped caller
- *
- * @param cqueue CQ_Type object, checked; may be nullptr
- * @param master_hgroup_list HGRP_Type master list, checked; may be nullptr
- *
- * @return the member list (HR_Type), or nullptr when the queue has no group yet
- */
-const lList *cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list) {
-   return cqueue_get_hostlist(ocs::tom::ConstElement<ocs::tom::CQ>(cqueue),
-                              ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list)).raw();
-}
 
 /**
  * @brief Put the host list onto a cluster queue, for a client that renders it
@@ -563,19 +551,6 @@ bool cqueue_is_a_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this
    DRETURN(ret);
 }
 
-/**
- * @brief cqueue_is_a_href_referenced() for an untyped caller
- *
- * @param this_elem CQ_Type object, checked; may be nullptr
- * @param href_list HR_Type list, checked; may be nullptr
- * @param only_hostlist check only hostlist and ignore all parameter lists
- *
- * @return as cqueue_is_a_href_referenced()
- */
-bool cqueue_is_a_href_referenced(const lListElem *this_elem, const lList *href_list, const bool only_hostlist) {
-   return cqueue_is_a_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ>(this_elem),
-                                      ocs::tom::ConstList<ocs::tom::HR>(href_list), only_hostlist);
-}
 
 /**
  * @brief Set an attribute list of a cluster queue to its default entry alone
@@ -740,17 +715,6 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
    DRETURN(ret);
 }
 
-/**
- * @brief cqueue_set_template_attributes() for an untyped caller
- *
- * @param this_elem CQ_Type, checked; may be nullptr
- * @param answer_list AN_Type
- *
- * @return as cqueue_set_template_attributes()
- */
-bool cqueue_set_template_attributes(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ>(this_elem), answer_list);
-}
 
 /**
  * @brief Find a cluster queue in list
@@ -797,17 +761,6 @@ ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstEle
    return qinstance_list_locate(qinstance_list, hostname, nullptr);
 }
 
-/**
- * @brief cqueue_locate_qinstance() for an untyped caller
- *
- * @param this_elem CQ_Type object, checked
- * @param hostname resolved hostname
- *
- * @return qinstance object or nullptr
- */
-lListElem *cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname) {
-   return cqueue_locate_qinstance(ocs::tom::ConstElement<ocs::tom::CQ>(this_elem), hostname).raw();
-}
 
 /**
  * @brief Check all cluster queue attributes
@@ -1059,35 +1012,6 @@ cqueue_list_find_all_matching_references(const ocs::tom::ConstList<ocs::tom::CQ>
    DRETURN(qref_list);
 }
 
-/**
- * @brief cqueue_list_find_all_matching_references() for an untyped caller
- *
- * Appends the matching names to "qref_list", creating it with the first
- * match, as the function did before it returned its result.
- *
- * @param this_list CQ_Type, checked; may be nullptr
- * @param answer_list AN_Type
- * @param cqueue_pattern fnmatch pattern
- * @param qref_list in-out: QR_Type list; nullptr makes the call a no-op
- *
- * @return always true
- */
-bool cqueue_list_find_all_matching_references(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                              const char *cqueue_pattern, lList **qref_list) {
-   if (qref_list != nullptr) {
-      auto found = cqueue_list_find_all_matching_references(ocs::tom::ConstList<ocs::tom::CQ>(this_list),
-                                                            answer_list, cqueue_pattern);
-      if (found) {
-         if (*qref_list == nullptr) {
-            *qref_list = found.release();
-         } else {
-            lList *found_raw = found.release();
-            lAddList(*qref_list, &found_raw);
-         }
-      }
-   }
-   return true;
-}
 
 /**
  * @brief Move the attribute values of one queue request into another of the same cluster queue
@@ -1263,17 +1187,6 @@ bool cqueue_is_used_in_subordinate(const char *cqueue_name, const ocs::tom::Cons
    DRETURN(ret);
 }
 
-/**
- * @brief cqueue_is_used_in_subordinate() for an untyped caller
- *
- * @param cqueue_name cq name to look for
- * @param cqueue cq to look in (CQ_Type), checked; may be nullptr
- *
- * @return as cqueue_is_used_in_subordinate()
- */
-bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue) {
-   return cqueue_is_used_in_subordinate(cqueue_name, ocs::tom::ConstElement<ocs::tom::CQ>(cqueue));
-}
 
 /**
  * @brief Find hgroup references
@@ -1358,17 +1271,6 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(const ocs::tom::Con
    return cqueue_list_locate_qinstance_msg(cqueue_list, full_name, true);
 }
 
-/**
- * @brief cqueue_list_locate_qinstance() for an untyped caller
- *
- * @param cqueue_list CQ_Type, checked; may be nullptr
- * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
- *
- * @return QU_Type element or nullptr
- */
-lListElem *cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name) {
-   return cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list), full_name, true).raw();
-}
 
 /**
  * @brief Finds a certain qinstance
@@ -1420,19 +1322,6 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
    DRETURN(ret);
 }
 
-/**
- * @brief cqueue_list_locate_qinstance_msg() for an untyped caller
- *
- * @param cqueue_list CQ_Type, checked; may be nullptr
- * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
- * @param raise_error true - show error messages - false - suppress error messages
- *
- * @return QU_Type element or nullptr
- */
-lListElem *cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, const bool raise_error) {
-   return cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list), full_name, raise_error)
-           .raw();
-}
 
 /**
  * @brief Purge attributes from queue
@@ -1506,21 +1395,6 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom
    DRETURN(ret);
 }
 
-/**
- * @brief cqueue_purge_host() for an untyped caller
- *
- * @param this_elem cqueue list element (CQ_Type), checked; may be nullptr
- * @param answer_list answer list
- * @param attr_list US_Type list, checked; may be nullptr
- * @param hgroup_or_hostname host group or hostname which should be purged
- *
- * @return as cqueue_purge_host()
- */
-bool cqueue_purge_host(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList *attr_list,
-                       const char *hgroup_or_hostname) {
-   return cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ>(this_elem), answer_list,
-                            ocs::tom::ConstList<ocs::tom::US>(attr_list), hgroup_or_hostname);
-}
 
 /**
  * @brief Report configuration settings that look wrong but are not errors

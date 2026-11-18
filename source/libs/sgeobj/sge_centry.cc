@@ -566,25 +566,6 @@ bool centry_is_referenced(const ocs::tom::ConstElement<ocs::tom::CE> centry,
    DRETURN(ret);
 }
 
-/**
- * @brief centry_is_referenced() for an untyped caller
- *
- * @param centry CE_Type element, checked
- * @param answer_list AN_Type list
- * @param master_cqueue_list CQ_Type list, checked; may be nullptr
- * @param master_exechost_list EH_Type list, checked; may be nullptr
- * @param master_rqs_list RQS_Type list, checked; may be nullptr
- *
- * @return as centry_is_referenced()
- */
-bool centry_is_referenced(const lListElem *centry, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                          const lList *master_cqueue_list,
-                          const lList *master_exechost_list, const lList *master_rqs_list) {
-   return centry_is_referenced(ocs::tom::ConstElement<ocs::tom::CE>(centry), answer_list,
-                               ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
-                               ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
-                               ocs::tom::ConstList<ocs::tom::RQS>(master_rqs_list));
-}
 
 /**
  * @brief Print to dstring
@@ -620,17 +601,6 @@ bool centry_print_resource_to_dstring(const ocs::tom::ConstElement<ocs::tom::CE>
    DRETURN(true);
 }
 
-/**
- * @brief centry_print_resource_to_dstring() for an untyped caller
- *
- * @param this_elem CE_Type element, checked; may be nullptr
- * @param string dynamic string
- *
- * @return as centry_print_resource_to_dstring()
- */
-bool centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
-   return centry_print_resource_to_dstring(ocs::tom::ConstElement<ocs::tom::CE>(this_elem), string);
-}
 
 /**
  * @brief Find Centry element
@@ -658,17 +628,6 @@ ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstList<ocs
    DRETURN(ret);
 }
 
-/**
- * @brief centry_list_locate() for an untyped caller
- *
- * @param this_list CE_Type list, checked; may be nullptr
- * @param name name or shortcut of a CE_Type entry, may be nullptr
- *
- * @return CE_Type element or nullptr
- */
-lListElem *centry_list_locate(const lList *this_list, const char *name) {
-   return centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>(this_list), name).raw();
-}
 
 /**
  * @brief Sort a CE_Type list by CE_name, ascending
@@ -684,16 +643,6 @@ bool centry_list_sort(const ocs::tom::List<ocs::tom::CE> this_list) {
    DRETURN(true);
 }
 
-/**
- * @brief centry_list_sort() for an untyped caller
- *
- * @param this_list CE_Type list, checked; may be nullptr
- *
- * @return as centry_list_sort()
- */
-bool centry_list_sort(lList *this_list) {
-   return centry_list_sort(ocs::tom::List<ocs::tom::CE>(this_list));
-}
 
 /**
  * @brief Initialize double from string
@@ -713,16 +662,6 @@ void centry_list_init_double(const ocs::tom::List<ocs::tom::CE> this_list) {
    DRETURN_VOID;
 }
 
-/**
- * @brief centry_list_init_double() for an untyped caller
- *
- * The elements have always been changed through the read-only list; the cast keeps that.
- *
- * @param this_list CE_Type list, checked; may be nullptr
- */
-void centry_list_init_double(const lList *this_list) {
-   centry_list_init_double(ocs::tom::List<ocs::tom::CE>(const_cast<lList *>(this_list)));
-}
 
 /**
  * @brief Keep one request of an attribute that is requested by its shortcut and by its full name
@@ -1031,17 +970,6 @@ int centry_list_append_to_string(const ocs::tom::List<ocs::tom::CE> this_list, c
    DRETURN(ret);
 }
 
-/**
- * @brief centry_list_append_to_string() for an untyped caller
- *
- * @param this_list the entries to render, CE_Type, checked; may be nullptr
- * @param[out] buff receives the text, may be nullptr
- * @param max_len the size of `buff`
- * @return as centry_list_append_to_string()
- */
-int centry_list_append_to_string(lList *this_list, char *buff, const uint32_t max_len) {
-   return centry_list_append_to_string(ocs::tom::List<ocs::tom::CE>(this_list), buff, max_len);
-}
 
 /**
  * @brief return the next "name=value" token of a resource request string
@@ -1733,19 +1661,6 @@ int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep
    DRETURN(ret);
 }
 
-/**
- * @brief ensure_attrib_available() for an untyped caller
- *
- * @param[out] alpp receives the name of the unknown resource
- * @param ep the object to check; may be nullptr
- * @param nm the attribute of `ep` holding the resource list (CE_Type)
- * @param master_centry_list the defined complex entries, CE_Type, checked; may be nullptr
- * @return as ensure_attrib_available()
- */
-int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, const int nm,
-                            const lList *master_centry_list) {
-   return ensure_attrib_available(alpp, ep, nm, ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
-}
 
 /** @brief Adds the slot complex to the complex values
  *
@@ -1790,16 +1705,6 @@ int host_ensure_slots_are_defined(const ocs::tom::Element<ocs::tom::EH> ehost, u
    DRETURN(0);
 }
 
-/**
- * @brief host_ensure_slots_are_defined() for an untyped caller
- *
- * @param ehost Host object (EH_Type), checked; may be nullptr
- * @param processors how many processors the host reported, used as the default slot count
- * @return as host_ensure_slots_are_defined()
- */
-int host_ensure_slots_are_defined(lListElem *ehost, const uint32_t processors) {
-   return host_ensure_slots_are_defined(ocs::tom::Element<ocs::tom::EH>(ehost), processors);
-}
 
 /**
  * @brief The function validates a load formula string
@@ -2061,21 +1966,6 @@ const char *sge_get_dominant_stringval(const ocs::tom::ConstElement<ocs::tom::CE
    DRETURN(s);
 }
 
-/**
- * @brief sge_get_dominant_stringval() for an untyped caller
- *
- * @param rep the resource element to read (CE_Type), checked
- * @param[out] dominant_p receives the `DOMINANT_*` bits
- * @param[out] resource_string_p receives the value as text
- * @param[out] dbl_value receives the value as a double, may be nullptr
- * @param[out] uint64_value receives the value as an unsigned integer, may be nullptr
- * @return as sge_get_dominant_stringval()
- */
-const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_p, dstring *resource_string_p,
-                                       double *dbl_value, uint64_t *uint64_value) {
-   return sge_get_dominant_stringval(ocs::tom::ConstElement<ocs::tom::CE>(rep), dominant_p, resource_string_p,
-                                     dbl_value, uint64_value);
-}
 
 /**
  * @brief The sign of a slot count

@@ -102,8 +102,6 @@ range_parse_get_ids(const char *value, int step_allowed, uint32_t &start, uint32
 
 void range_list_print_to_string(ocs::tom::ConstList<ocs::tom::RN> this_list, dstring *string, bool ignore_step,
                                 bool comma_as_separator, bool print_always_as_range);
-OCS_TRANSITIONAL void range_list_print_to_string(const lList *this_list, dstring *string, bool ignore_step,
-                                                 bool comma_as_separator, bool print_always_as_range);
 
 void range_to_dstring(uint32_t start, uint32_t end, int step,
                       dstring *dyn_taskrange_str, int ignore_step,
@@ -122,8 +120,6 @@ OCS_TRANSITIONAL void range_list_remove_id(lList **this_list, ocs::tom::ListPtr<
 void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  ocs::tom::ListPtr<ocs::tom::RN> &list, uint32_t n);
-OCS_TRANSITIONAL void range_list_move_first_n_ids(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                  lList **list, uint32_t n);
 
 bool range_list_is_id_within(ocs::tom::ConstList<ocs::tom::RN> this_list, uint32_t id);
 OCS_TRANSITIONAL bool range_list_is_id_within(const lList *this_list, uint32_t id);

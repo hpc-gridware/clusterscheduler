@@ -76,8 +76,6 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
 int
 ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::ID> ep,
        ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::List<ocs::tom::AR> master_ar_list, monitoring_t *monitor);
-OCS_TRANSITIONAL int ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
-                            ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **master_ar_list, monitoring_t *monitor);
 
 void
 sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor);

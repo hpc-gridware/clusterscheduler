@@ -962,47 +962,6 @@ bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_e
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_find_referencees() for an untyped caller
- *
- * @param this_elem HGRP_Type, checked; may be nullptr
- * @param answer_list AN_Type
- * @param master_hgroup_list HGRP_Type master list, checked
- * @param master_cqueue_list CQ_Type master list, checked
- * @param occupants_groups in-out: HR_Type list, or nullptr
- * @param occupants_queues in-out: ST_Type list, or nullptr
- *
- * @return as hgroup_find_referencees()
- */
-bool hgroup_find_referencees(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                             const lList *master_hgroup_list, const lList *master_cqueue_list, lList **occupants_groups,
-                             lList **occupants_queues) {
-   ocs::UntypedHrefList typed_occupants_groups(occupants_groups);
-
-   // the queue list is handed over for the call and back afterwards, also when the call throws
-   ocs::tom::ListPtr<ocs::tom::ST> typed_occupants_queues;
-   if (occupants_queues != nullptr) {
-      typed_occupants_queues = ocs::tom::ListPtr<ocs::tom::ST>(*occupants_queues);
-      *occupants_queues = nullptr;
-   }
-   bool ret;
-   try {
-      ret = hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list,
-                                    ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list),
-                                    ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
-                                    typed_occupants_groups.get(),
-                                    occupants_queues != nullptr ? &typed_occupants_queues : nullptr);
-   } catch (...) {
-      if (occupants_queues != nullptr) {
-         *occupants_queues = typed_occupants_queues.release();
-      }
-      throw;
-   }
-   if (occupants_queues != nullptr) {
-      *occupants_queues = typed_occupants_queues.release();
-   }
-   return ret;
-}
 
 /**
  * @brief Do hostgroups really exist
@@ -1041,19 +1000,6 @@ bool hgroup_list_exists(const ocs::tom::ConstList<ocs::tom::HGRP> this_list,
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_list_exists() for an untyped caller
- *
- * @param this_list HGRP_Type list, checked; may be nullptr
- * @param answer_list AN_Type
- * @param href_list HR_Type list, checked; may be nullptr
- *
- * @return as hgroup_list_exists()
- */
-bool hgroup_list_exists(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *href_list) {
-   return hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP>(this_list), answer_list,
-                             ocs::tom::ConstList<ocs::tom::HR>(href_list));
-}
 
 /**
  * @brief Finds hostnames

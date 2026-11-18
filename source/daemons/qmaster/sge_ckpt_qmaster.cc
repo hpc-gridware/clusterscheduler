@@ -337,21 +337,6 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
    DRETURN(STATUS_OK);
 }
 
-/** @brief sge_del_ckpt() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param ep element which should be deleted
- * @param alpp reference to an answer list.
- * @param ruser username of person who invoked this gdi request
- * @param rhost hostname of the host where someone initiated an gdi call
- * @return see the typed form
- */
-int
-sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-             char *ruser, char *rhost) {
-   return sge_del_ckpt(packet, task, ocs::tom::ConstElement<ocs::tom::CK>(ep), alpp, ruser, rhost);
-}
 
 /** @brief The `when` string of a checkpointing environment, from its bitmask
  *

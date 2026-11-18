@@ -86,5 +86,3 @@ bool
 attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::AR> new_ar,
                      ocs::tom::ConstElement<ocs::tom::AR> ar);
 
-OCS_TRANSITIONAL bool attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ar,
-                                           const lListElem *ar);

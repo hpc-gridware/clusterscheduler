@@ -82,10 +82,6 @@ namespace ocs {
                                       ocs::tom::ConstList<ocs::tom::UA> decay_list,
                                       ocs::tom::ConstList<ocs::tom::UA> usage_weight_list, u_long seqno,
                                       uint64_t curr_time);
-      OCS_TRANSITIONAL static void decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node,
-                                                       lListElem *user, lListElem *project, const lList *decay_list,
-                                                       const lList *usage_weight_list, u_long seqno,
-                                                       uint64_t curr_time);
 
       static void sum_usage(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                             ocs::tom::Element<ocs::tom::UU> user, ocs::tom::Element<ocs::tom::PR> project,

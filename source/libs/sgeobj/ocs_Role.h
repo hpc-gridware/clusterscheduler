@@ -83,8 +83,6 @@ namespace ocs {
       static void check_integrity(ocs::tom::ConstList<ocs::tom::RL> role_list,
                                   ocs::tom::ConstList<ocs::tom::US> userset_list,
                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-      OCS_TRANSITIONAL static void check_integrity(const lList *role_list, const lList *userset_list,
-                                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
       static bool parse_perm_list(const char *perm_list_str, PermRuleList &rules,
                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
@@ -95,8 +93,6 @@ namespace ocs {
 
       static bool would_create_cycle(const char *role_name, const char *candidate_parent,
                                      ocs::tom::ConstList<ocs::tom::RL> role_list);
-      OCS_TRANSITIONAL static bool would_create_cycle(const char *role_name, const char *candidate_parent,
-                                                      const lList *role_list);
 
       static void collect_perm_rules(const char *role_name, ocs::tom::ConstList<ocs::tom::RL> role_list,
                                      PermRuleList &rules);

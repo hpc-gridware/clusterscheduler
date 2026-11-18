@@ -277,21 +277,6 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_del_calendar() for an untyped caller
- * @param packet the client request
- * @param task the GDI task being answered
- * @param cep the calendar (CAL_Type), checked
- * @param alpp receives messages for the caller
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @return as sge_del_calendar()
- */
-int
-sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                 char *ruser, char *rhost) {
-   return sge_del_calendar(packet, task, ocs::tom::ConstElement<ocs::tom::CAL>(cep), alpp, ruser, rhost);
-}
 
 /**
  * @brief Calendar event handler

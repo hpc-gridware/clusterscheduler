@@ -656,14 +656,4 @@ ocs_spool_exechost_static_copy(const ocs::tom::ConstElement<ocs::tom::EH> object
    DRETURN(copy);
 }
 
-/**
- * @brief ocs_spool_exechost_static_copy() for an untyped caller
- *
- * @param object the exec host object (`EH_Type`), checked
- * @return the copy, owned by the caller
- */
-lListElem *
-ocs_spool_exechost_static_copy(const lListElem *object) {
-   return ocs_spool_exechost_static_copy(ocs::tom::ConstElement<ocs::tom::EH>(object)).release();
-}
 

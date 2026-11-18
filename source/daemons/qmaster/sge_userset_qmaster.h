@@ -52,9 +52,6 @@ int
 sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::US> ep,
                 ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                 ocs::tom::List<ocs::tom::US> userset_list, const char *ruser, const char *rhost);
-OCS_TRANSITIONAL int sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
-                                     ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                     lList **userset_list, char *ruser, char *rhost);
 
 int
 sge_verify_department_entries(ocs::tom::ConstList<ocs::tom::US> userset_list,

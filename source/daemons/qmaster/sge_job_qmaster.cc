@@ -448,24 +448,6 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_gdi_add_job() for an untyped caller
- * @param jep the submitted job (JB_Type); JSV may replace it, the caller keeps it in every case
- * @param alpp receives messages for the caller
- * @param lpp if not nullptr, receives a copy of the added job
- * @param packet the client request
- * @param task the GDI task being answered
- * @param monitor for monitoring qmaster threads
- * @return STATUS_OK on success, an error status otherwise
- */
-int
-sge_gdi_add_job(lListElem **jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp, ocs::gdi::Packet *packet,
-                ocs::gdi::Task *task, monitoring_t *monitor) {
-   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(*jep);
-   const int ret = sge_gdi_add_job(job, alpp, lpp, packet, task, monitor);
-   *jep = job.release();
-   return ret;
-}
 
 
 /**
@@ -652,23 +634,6 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_gdi_del_job() for an untyped caller
- * @param packet the client request
- * @param task the GDI task being answered
- * @param idep ID_Type element of the request
- * @param alpp receives messages for the caller
- * @param cmd the command being executed
- * @param sub_command sub command being part of the request
- * @param monitor for monitoring qmaster threads
- * @return STATUS_OK on success, an error status otherwise
- */
-int
-sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *idep,
-                ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
-   return sge_gdi_del_job(packet, task, ocs::tom::Element<ocs::tom::ID>(idep), alpp, cmd, sub_command, monitor);
-}
 
 /**
  * @brief Figures out, if all slaves have been notified
@@ -698,15 +663,6 @@ is_pe_master_task_send(const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DRETURN(all_slaves_arrived);
 }
 
-/**
- * @brief is_pe_master_task_send() for an untyped caller
- * @param jatep ja task in question
- * @return true, if all slaves have acknowledged slave notification
- */
-bool
-is_pe_master_task_send(const lListElem *jatep) {
-   return is_pe_master_task_send(ocs::tom::ConstElement<ocs::tom::JAT>(jatep));
-}
 
 /**
  * @brief Have all slave jobs finished?
@@ -750,15 +706,6 @@ all_slave_jobs_finished(const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DRETURN(all_slaves_finished);
 }
 
-/**
- * @brief all_slave_jobs_finished() for an untyped caller
- * @param jatep the ja task of the running pe job
- * @return true if all slave jobs finished, else false
- */
-bool
-all_slave_jobs_finished(const lListElem *jatep) {
-   return all_slave_jobs_finished(ocs::tom::ConstElement<ocs::tom::JAT>(jatep));
-}
 
 /**
  * @brief Tag all hosts of a parallel job
@@ -787,14 +734,6 @@ tag_all_host_gdil(const ocs::tom::Element<ocs::tom::JAT> jatep) {
    DRETURN_VOID;
 }
 
-/**
- * @brief tag_all_host_gdil() for an untyped caller
- * @param jatep the ja task of the parallel job
- */
-void
-tag_all_host_gdil(lListElem *jatep) {
-   tag_all_host_gdil(ocs::tom::Element<ocs::tom::JAT>(jatep));
-}
 
 /**
  * @brief Send an ACK to all slave hosts
@@ -841,17 +780,6 @@ ack_all_slaves(const uint32_t job_id, const uint32_t ja_task_id, const ocs::tom:
    DRETURN_VOID;
 }
 
-/**
- * @brief ack_all_slaves() for an untyped caller
- * @param job_id job id
- * @param ja_task_id job array task id
- * @param ja_task the job array task
- * @param type which ACK to send, e.g. ACK_SIGNAL_SLAVE
- */
-void
-ack_all_slaves(const uint32_t job_id, const uint32_t ja_task_id, const lListElem *ja_task, const uint32_t type) {
-   ack_all_slaves(job_id, ja_task_id, ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), type);
-}
 
 /**
  * @brief Report that a delete or modify request matched no job
@@ -1263,14 +1191,6 @@ void job_mark_job_as_deleted(const ocs::tom::Element<ocs::tom::JB> j, const ocs:
    DRETURN_VOID;
 }
 
-/**
- * @brief job_mark_job_as_deleted() for an untyped caller
- * @param j the job (`JB_Type`)
- * @param t the array task
- */
-void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
-   job_mark_job_as_deleted(ocs::tom::Element<ocs::tom::JB>(j), ocs::tom::Element<ocs::tom::JAT>(t));
-}
 
 /**
  * @brief Stores who deleted a job array task as "user@host" in its JAT_joker list.
@@ -1675,20 +1595,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_gdi_mod_job() for an untyped caller
- * @param packet the client request
- * @param task the GDI task being answered
- * @param jep the job as the client wants it to become
- * @param alpp receives messages for the caller
- * @param sub_command what kind of modification this is
- * @return STATUS_OK on success, an error status otherwise
- */
-int
-sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep,
-                ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::gdi::SubCommand sub_command) {
-   return sge_gdi_mod_job(packet, task, ocs::tom::Element<ocs::tom::JB>(jep), alpp, sub_command);
-}
 
 /** @brief Announce a change to a whole job to the event clients
  * @param type which event
@@ -1721,17 +1627,6 @@ void sge_add_job_event(const ev_event type, const ocs::tom::Element<ocs::tom::JB
    DRETURN_VOID;
 }
 
-/**
- * @brief sge_add_job_event() for an untyped caller
- * @param type which event
- * @param jep the job (`JB_Type`)
- * @param jatep the array task, or nullptr
- * @param gdi_request the request the change belongs to
- */
-void sge_add_job_event(const ev_event type, lListElem *jep, lListElem *jatep, const uint64_t gdi_request) {
-   sge_add_job_event(type, ocs::tom::Element<ocs::tom::JB>(jep), ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
-                     gdi_request);
-}
 
 /** @brief Announce a change to one array task to the event clients
  * @param type which event
@@ -1853,13 +1748,6 @@ void job_suc_pre(const ocs::tom::Element<ocs::tom::JB> jep) {
    DRETURN_VOID;
 }
 
-/**
- * @brief job_suc_pre() for an untyped caller
- * @param jep the dependent job
- */
-void job_suc_pre(lListElem *jep) {
-   job_suc_pre(ocs::tom::Element<ocs::tom::JB>(jep));
-}
 
 /**
  * @brief Build job array task depencency hold links
@@ -1882,13 +1770,6 @@ void job_suc_pre_ad(const ocs::tom::Element<ocs::tom::JB> jep) {
    DRETURN_VOID;
 }
 
-/**
- * @brief job_suc_pre_ad() for an untyped caller
- * @param jep the dependent job
- */
-void job_suc_pre_ad(lListElem *jep) {
-   job_suc_pre_ad(ocs::tom::Element<ocs::tom::JB>(jep));
-}
 
 /**
  * @brief Handle all per task attributes which are changeable from outside using gdi requests
@@ -3945,20 +3826,6 @@ int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
    DRETURN(ret);
 }
 
-/**
- * @brief sge_gdi_copy_job() for an untyped caller
- * @param jep the job to copy from, and the overrides
- * @param alpp receives messages for the caller
- * @param lpp receives the new job
- * @param packet the client request
- * @param task the GDI task being answered
- * @param monitor for monitoring qmaster threads
- * @return STATUS_OK on success, an error status otherwise
- */
-int sge_gdi_copy_job(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp, ocs::gdi::Packet *packet,
-                     ocs::gdi::Task *task, monitoring_t *monitor) {
-   return sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB>(jep), alpp, lpp, packet, task, monitor);
-}
 
 /**
  * @brief Write job script
@@ -4036,16 +3903,6 @@ bool spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint3
    DRETURN(ret);
 }
 
-/**
- * @brief spool_read_script() for an untyped caller
- * @param answer_list receives messages for the caller
- * @param jobid job id (needed for Dtrace only)
- * @param jep the job
- * @return true on success
- */
-bool spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t jobid, lListElem *jep) {
-   return spool_read_script(answer_list, jobid, ocs::tom::Element<ocs::tom::JB>(jep));
-}
 
 /**
  * @brief Delete job script
@@ -4079,16 +3936,6 @@ bool spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uin
    DRETURN(ret);
 }
 
-/**
- * @brief spool_delete_script() for an untyped caller
- * @param answer_list receives messages for the caller
- * @param jobid job id (needed for Dtrace only)
- * @param jep the job
- * @return true on success
- */
-bool spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t jobid, lListElem *jep) {
-   return spool_delete_script(answer_list, jobid, ocs::tom::Element<ocs::tom::JB>(jep));
-}
 
 /**
  * @brief Delete the requested tasks of a job, or the whole job

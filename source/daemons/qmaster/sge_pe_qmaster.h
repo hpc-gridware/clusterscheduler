@@ -66,8 +66,6 @@ pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
 int
 sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::PE> pep,
            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep,
-                                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 /* to do at qmasters startup */
 void
@@ -103,5 +101,3 @@ reverse_job_from_pe(lListElem *pep, int slots, uint32_t job_id);
 void
 pe_diff_usersets(ocs::tom::ConstElement<ocs::tom::PE> new_pe, ocs::tom::ConstElement<ocs::tom::PE> old_pe,
                  ocs::tom::ListPtr<ocs::tom::US> *new_acl, ocs::tom::ListPtr<ocs::tom::US> *old_acl);
-OCS_TRANSITIONAL void pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl,
-                                       lList **old_acl);

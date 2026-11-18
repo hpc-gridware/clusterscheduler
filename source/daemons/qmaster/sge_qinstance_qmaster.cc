@@ -1347,13 +1347,3 @@ qinstance_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::QU> th
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_reinit_consumable_actual_list() for an untyped caller
- * @param this_elem the queue instance (QU_Type), checked
- * @param answer_list AN_Type list
- * @return as qinstance_reinit_consumable_actual_list()
- */
-bool
-qinstance_reinit_consumable_actual_list(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return qinstance_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list);
-}

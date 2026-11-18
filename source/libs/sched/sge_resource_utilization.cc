@@ -153,17 +153,6 @@ bool utilization_print_to_dstring(const ocs::tom::ConstElement<ocs::tom::RUE> th
    return double_print_to_dstring(ocs::tom::get<RUE_utilized_now>(this_elem), string);
 }
 
-/**
- * @brief Print resource utilization to dstring, for a caller with an untyped entry (N-X-2)
- *
- * @param this_elem A RUE_Type element, checked
- * @param string The string
- *
- * @return error state true  - success false - error
- */
-bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string) {
-   return utilization_print_to_dstring(ocs::tom::ConstElement<ocs::tom::RUE>(this_elem), string);
-}
 
 
 /**
@@ -495,20 +484,6 @@ utilization_rsmap_max(const ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t n
    DRETURN(taken);
 }
 
-/**
- * @brief how much of each resource map instance is taken in a time window, for a caller with an untyped entry
- *        (N-X-2)
- *
- * @param cr         the resource utilization of the map (RUE_Type), checked
- * @param now        this moment
- * @param start_time when the window begins, DISPATCH_TIME_NOW for this moment
- * @param duration   how long it lasts
- * @return           the identifiers and how many of each are taken, to be freed by the caller
- */
-lList *
-utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time, uint64_t duration) {
-   return utilization_rsmap_max(ocs::tom::ConstElement<ocs::tom::RUE>(cr), now, start_time, duration).release();
-}
 
 /**
  * @brief the earliest time one group of a resource map has a number of instances free
@@ -2234,34 +2209,6 @@ prepare_resource_schedules(const ocs::tom::List<ocs::tom::JB> running_jobs,
    DRETURN_VOID;
 }
 
-/**
- * @brief prepare_resource_schedules() for an untyped caller
- *
- * @param running_jobs the running jobs (`JB_Type`)
- * @param suspended_jobs the suspended jobs (`JB_Type`)
- * @param pe_list the parallel environments (`PE_Type`)
- * @param host_list the execution hosts (`EH_Type`)
- * @param queue_list the queue instances (`QU_Type`)
- * @param rqs_list the resource quota sets (`RQS_Type`), may be nullptr
- * @param centry_list the system wide attribute configuration (`CE_Type`)
- * @param acl_list the access lists (`US_Type`)
- * @param hgroup_list the host groups (`HGRP_Type`)
- * @param ar_list the advance reservations (`AR_Type`), may be nullptr
- * @param for_job_scheduling prepare for job or for advance reservation
- * @param now now time of assignment
- */
-void
-prepare_resource_schedules(lList *running_jobs, lList *suspended_jobs, lList *pe_list, lList *host_list,
-                           lList *queue_list, lList *rqs_list, const lList *centry_list, const lList *acl_list,
-                           const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now) {
-   prepare_resource_schedules(ocs::tom::List<ocs::tom::JB>(running_jobs), ocs::tom::List<ocs::tom::JB>(suspended_jobs),
-                              ocs::tom::List<ocs::tom::PE>(pe_list), ocs::tom::List<ocs::tom::EH>(host_list),
-                              ocs::tom::List<ocs::tom::QU>(queue_list), ocs::tom::List<ocs::tom::RQS>(rqs_list),
-                              ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                              ocs::tom::ConstList<ocs::tom::US>(acl_list),
-                              ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list), ocs::tom::List<ocs::tom::AR>(ar_list),
-                              for_job_scheduling, now);
-}
 
 /**
  * @brief Addes the queue calendar to the resource
@@ -2446,14 +2393,3 @@ int qinstance_slots_reserved_now(const ocs::tom::ConstElement<ocs::tom::QU> this
    DRETURN(ret);
 }
 
-/**
- * @brief How many slots of a queue instance are reserved at this moment, for a caller with an untyped queue instance
- *        (N-X-2)
- *
- * @param[in] this_elem the queue instance (`QU_Type`), checked
- *
- * @return the number of slots currently reserved
- */
-int qinstance_slots_reserved_now(const lListElem *this_elem) {
-   return qinstance_slots_reserved_now(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
-}

@@ -213,32 +213,6 @@ ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(
    DRETURN_VOID;
 }
 
-/** @brief initialize_prj_uset_and_create_categories() for an untyped caller
- *
- * @param master_category_list location of the categories (`CT_Type`), created if it is still nullptr
- * @param master_job_list the jobs (`JB_Type`), checked
- * @param master_project_list the projects (`PR_Type`), checked
- * @param master_userset_list the user sets (`US_Type`), checked
- * @param master_rqs_list the resource quota sets (`RQS_Type`), checked
- * @param master_cqueue_list the cluster queues (`CQ_Type`), checked
- * @param master_pe_list the parallel environments (`PE_Type`), checked
- * @param master_host_list the execution hosts (`EH_Type`), checked
- */
-void
-ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(lList **master_category_list, lList *master_job_list,
-                                                                lList *master_project_list, lList *master_userset_list,
-                                                                const lList *master_rqs_list,
-                                                                const lList *master_cqueue_list,
-                                                                const lList *master_pe_list,
-                                                                const lList *master_host_list) {
-   initialize_prj_uset_and_create_categories(master_category_list, ocs::tom::List<ocs::tom::JB>(master_job_list),
-                                             ocs::tom::List<ocs::tom::PR>(master_project_list),
-                                             ocs::tom::List<ocs::tom::US>(master_userset_list),
-                                             ocs::tom::ConstList<ocs::tom::RQS>(master_rqs_list),
-                                             ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
-                                             ocs::tom::ConstList<ocs::tom::PE>(master_pe_list),
-                                             ocs::tom::ConstList<ocs::tom::EH>(master_host_list));
-}
 
 /** @brief Work out a job's category and attach it
  *
@@ -303,26 +277,6 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, const ocs::tom::E
    DRETURN(true);
 }
 
-/** @brief attach_job() for an untyped caller
- *
- * @param master_category_list location of the categories (`CT_Type`), created if it is still nullptr
- * @param job the job (`JB_Type`), checked
- * @param master_userset_list the user sets (`US_Type`), checked
- * @param master_project_list the projects (`PR_Type`), checked
- * @param master_rqs_list the resource quota sets (`RQS_Type`), checked
- * @param send_events whether to announce the category change to the event clients
- * @param gdi_session the session the change belongs to
- * @return as attach_job()
- */
-bool
-ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem *job, const lList *master_userset_list,
-                                 const lList *master_project_list, const lList *master_rqs_list,
-                                 const bool send_events, const uint32_t gdi_session) {
-   return attach_job(master_category_list, ocs::tom::Element<ocs::tom::JB>(job),
-                     ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
-                     ocs::tom::ConstList<ocs::tom::PR>(master_project_list),
-                     ocs::tom::ConstList<ocs::tom::RQS>(master_rqs_list), send_events, gdi_session);
-}
 
 /** @brief Detach a job from its category, dropping the category when it empties
  *
@@ -371,19 +325,6 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, const ocs::tom::E
    DRETURN(true);
 }
 
-/** @brief detach_job() for an untyped caller
- *
- * @param master_category_list location of the categories (`CT_Type`)
- * @param job the job (`JB_Type`), checked
- * @param send_events whether to announce the category change to the event clients
- * @param gdi_session the session the change belongs to
- * @return as detach_job()
- */
-bool
-ocs::CategoryQmaster::detach_job(lList **master_category_list, lListElem *job, const bool send_events,
-                                 const uint32_t gdi_session) {
-   return detach_job(master_category_list, ocs::tom::Element<ocs::tom::JB>(job), send_events, gdi_session);
-}
 
 /** @brief Recompute a job's category and move it if it changed
  *
@@ -471,24 +412,6 @@ ocs::CategoryQmaster::reattach_all_jobs(const ocs::tom::List<ocs::tom::JB> maste
    DRETURN_VOID;
 }
 
-/** @brief reattach_all_jobs() for an untyped caller
- *
- * @param master_job_list the jobs (`JB_Type`), checked
- * @param master_userset_list the user sets (`US_Type`), checked
- * @param master_project_list the projects (`PR_Type`), checked
- * @param master_rqs_list the resource quota sets (`RQS_Type`), checked
- * @param send_events whether to announce the category change to the event clients
- * @param gdi_session the session the change belongs to
- */
-void
-ocs::CategoryQmaster::reattach_all_jobs(lList *master_job_list, const lList *master_userset_list,
-                                        const lList *master_project_list, const lList *master_rqs_list,
-                                        const bool send_events, const uint32_t gdi_session) {
-   reattach_all_jobs(ocs::tom::List<ocs::tom::JB>(master_job_list),
-                     ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
-                     ocs::tom::ConstList<ocs::tom::PR>(master_project_list),
-                     ocs::tom::ConstList<ocs::tom::RQS>(master_rqs_list), send_events, gdi_session);
-}
 
 /**
  * @brief Resets the category temp information

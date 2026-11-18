@@ -2400,16 +2400,6 @@ bool calendar_parse_year(const ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::L
    DRETURN(ret);
 }
 
-/**
- * @brief calendar_parse_year() for an untyped caller
- *
- * @param[in,out] cal the calendar (CAL_Type), checked
- * @param[out] answer_list receives the syntax error
- * @return as calendar_parse_year()
- */
-bool calendar_parse_year(lListElem *cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return calendar_parse_year(ocs::tom::Element<ocs::tom::CAL>(cal), answer_list);
-}
 
 /**
  * @brief Parse a calendar's `week` specification
@@ -2432,16 +2422,6 @@ bool calendar_parse_week(const ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::L
    DRETURN(ret);
 }
 
-/**
- * @brief calendar_parse_week() for an untyped caller
- *
- * @param[in,out] cal the calendar (CAL_Type), checked
- * @param[out] answer_list receives the syntax error
- * @return as calendar_parse_week()
- */
-bool calendar_parse_week(lListElem *cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return calendar_parse_week(ocs::tom::Element<ocs::tom::CAL>(cal), answer_list);
-}
 
 /**
  * @brief Generates the TODO orders
@@ -2529,19 +2509,6 @@ bool calendar_is_referenced(const ocs::tom::ConstElement<ocs::tom::CAL> calendar
    DRETURN(ret);
 }
 
-/**
- * @brief calendar_is_referenced() for an untyped caller
- *
- * @param calendar the calendar (CAL_Type), checked
- * @param[out] answer_list receives the name of every queue using it
- * @param master_cqueue_list the cluster queues (CQ_Type), checked
- * @return as calendar_is_referenced()
- */
-bool calendar_is_referenced(const lListElem *calendar, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            const lList *master_cqueue_list) {
-   return calendar_is_referenced(ocs::tom::ConstElement<ocs::tom::CAL>(calendar), answer_list,
-                                 ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
-}
 
 /**
  * @brief A calendar object template, as `qconf -scal template` prints it

@@ -138,38 +138,6 @@ sge_task_depend_get_range([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp
    DRETURN(range);
 }
 
-/**
- * @brief sge_task_depend_get_range() for an untyped caller
- *
- * Fills an existing range or creates one, as the function did before it returned the range.
- *
- * @param range RN_Type pointer; an existing range is filled, else one is created
- * @param alpp AN_Type list pointer, not used
- * @param pre_jep const JB_Type element
- * @param suc_jep const JB_Type element
- * @param task_id a valid suc_jep task id
- * @return 0 on success, STATUS_EUNKNOWN if the range cannot be determined
- */
-int
-sge_task_depend_get_range(lListElem **range, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lListElem *pre_jep,
-                          const lListElem *suc_jep, const uint32_t task_id) {
-   if (range == nullptr) {
-      return STATUS_EUNKNOWN;
-   }
-   auto result = sge_task_depend_get_range(alpp, ocs::tom::ConstElement<ocs::tom::JB>(pre_jep),
-                                           ocs::tom::ConstElement<ocs::tom::JB>(suc_jep), task_id);
-   if (!result) {
-      return STATUS_EUNKNOWN;
-   }
-   if (*range == nullptr) {
-      *range = result.release();
-   } else {
-      uint32_t rmin, rmax, rstep;
-      range_get_all_ids(result.get(), &rmin, &rmax, &rstep);
-      range_set_all_ids(*range, rmin, rmax, rstep);
-   }
-   return 0;
-}
 
 /**
  * @brief Whether an array task counts as finished for array dependencies (-hold_jid_ad)
@@ -308,19 +276,6 @@ sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::List
    DRETURN(false);
 }
 
-/**
- * @brief sge_task_depend_update() for an untyped caller
- * @param jep JB_Type element
- * @param alpp AN_Type list pointer
- * @param task_id a task id in job jep
- * @param gdi_request the session the change belongs to
- * @return true if the job was modified, otherwise false
- */
-bool
-sge_task_depend_update(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint32_t task_id,
-                       const uint64_t gdi_request) {
-   return sge_task_depend_update(ocs::tom::Element<ocs::tom::JB>(jep), alpp, task_id, gdi_request);
-}
 
 /**
  * @brief Initialize job array task dependencies
@@ -375,17 +330,6 @@ sge_task_depend_init(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
    DRETURN(ret);
 }
 
-/**
- * @brief sge_task_depend_init() for an untyped caller
- * @param jep JB_Type element
- * @param alpp AN_Type list pointer
- * @param gdi_session the session the change belongs to
- * @return true if the job was modified, otherwise false
- */
-bool
-sge_task_depend_init(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint64_t gdi_session) {
-   return sge_task_depend_init(ocs::tom::Element<ocs::tom::JB>(jep), alpp, gdi_session);
-}
 
 /**
  * @brief Flush job array task dependencies
@@ -462,17 +406,6 @@ sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
    DRETURN(ret);
 }
 
-/**
- * @brief sge_task_depend_flush() for an untyped caller
- * @param jep JB_Type element
- * @param alpp AN_Type list pointer
- * @param gdi_session the session the change belongs to
- * @return true if the job was modified, otherwise false
- */
-bool
-sge_task_depend_flush(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint64_t gdi_session) {
-   return sge_task_depend_flush(ocs::tom::Element<ocs::tom::JB>(jep), alpp, gdi_session);
-}
 
 
 /**

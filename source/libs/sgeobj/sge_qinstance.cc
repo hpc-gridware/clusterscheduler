@@ -181,17 +181,6 @@ const char *qinstance_get_name(const ocs::tom::ConstElement<ocs::tom::QU> this_e
    return ret;
 }
 
-/**
- * @brief qinstance_get_name() for an untyped caller
- *
- * @param this_elem QU_Type element, checked; may be nullptr
- * @param string_buffer dynamic string buffer
- *
- * @return as qinstance_get_name()
- */
-const char *qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
-   return qinstance_get_name(ocs::tom::ConstElement<ocs::tom::QU>(this_elem), string_buffer);
-}
 
 /**
  * @brief Increase the qinstance queue version
@@ -208,14 +197,6 @@ void qinstance_increase_qversion(const ocs::tom::Element<ocs::tom::QU> this_elem
    DRETURN_VOID;
 }
 
-/**
- * @brief qinstance_increase_qversion() for an untyped caller
- *
- * @param this_elem QU_Type element, checked
- */
-void qinstance_increase_qversion(lListElem *this_elem) {
-   qinstance_increase_qversion(ocs::tom::Element<ocs::tom::QU>(this_elem));
-}
 
 /**
  * @brief check if the packet user is the owner of the qinstance
@@ -245,16 +226,6 @@ bool qinstance_is_owner(const ocs::gdi::Packet *packet, const ocs::tom::ConstEle
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_is_owner() for an untyped caller
- *
- * @param packet GDI packet containing the ownership information of the request creator
- * @param this_elem qinstance element to check (QU_Type), checked; may be nullptr
- * @return as qinstance_is_owner()
- */
-bool qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
-   return qinstance_is_owner(packet, ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
-}
 
 /**
  * @brief Is the PE object referenced
@@ -457,16 +428,6 @@ int qinstance_slots_used(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_slots_used() for an untyped caller
- *
- * @param this_elem QU_Type element, checked
- *
- * @return as qinstance_slots_used()
- */
-int qinstance_slots_used(const lListElem *this_elem) {
-   return qinstance_slots_used(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
-}
 
 /**
  * @brief The number of maximal reserved slots
@@ -492,16 +453,6 @@ uint32_t qinstance_slots_reserved(const ocs::tom::ConstElement<ocs::tom::QU> thi
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_slots_reserved() for an untyped caller
- *
- * @param this_elem QU_Type element, checked
- *
- * @return as qinstance_slots_reserved()
- */
-uint32_t qinstance_slots_reserved(const lListElem *this_elem) {
-   return qinstance_slots_reserved(ocs::tom::ConstElement<ocs::tom::QU>(this_elem));
-}
 
 /**
  * @brief Modifies the number of used slots
@@ -554,28 +505,6 @@ int qinstance_debit_consumable(const ocs::tom::Element<ocs::tom::QU> qep,
       jep, pe, qep, centry_list, slots, ocs::tom::get<QU_qname>(qep), is_master_task, do_per_host_booking, just_check);
 }
 
-/**
- * @brief qinstance_debit_consumable() for an untyped caller
- *
- * @param qep Qinstance resource container (QU_Type), checked
- * @param jep The job (JB_Type), checked; nullptr only initializes the booking
- * @param pe The job's parallel environment (PE_Type), checked; may be nullptr
- * @param centry_list The global complex list (CE_Type), checked
- * @param slots The number of slots for which we are debiting; negative ones undebit
- * @param is_master_task true when this booking includes the job's master task
- * @param do_per_host_booking true when a per host consumable still has to be booked on this host
- * @param just_check If != nullptr do not debit, only check whether debiting would exceed the resources
- *
- * @return as qinstance_debit_consumable()
- */
-int qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem *pe, const lList *centry_list,
-                               const int slots, const bool is_master_task, const bool do_per_host_booking,
-                               bool *just_check) {
-   return qinstance_debit_consumable(ocs::tom::Element<ocs::tom::QU>(qep), ocs::tom::ConstElement<ocs::tom::JB>(jep),
-                                     ocs::tom::ConstElement<ocs::tom::PE>(pe),
-                                     ocs::tom::ConstList<ocs::tom::CE>(centry_list), slots, is_master_task,
-                                     do_per_host_booking, just_check);
-}
 
 /**
  * @brief Adds a message to the qinstance structure
@@ -598,18 +527,6 @@ bool qinstance_message_add(const ocs::tom::Element<ocs::tom::QU> this_elem, cons
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_message_add() for an untyped caller
- *
- * @param this_elem QU_Type, checked
- * @param type message type
- * @param message message
- *
- * @return as qinstance_message_add()
- */
-bool qinstance_message_add(lListElem *this_elem, const uint32_t type, const char *message) {
-   return qinstance_message_add(ocs::tom::Element<ocs::tom::QU>(this_elem), type, message);
-}
 
 /**
  * @brief Trash messages
@@ -632,17 +549,6 @@ bool qinstance_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::QU>
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_message_trash_all_of_type_X() for an untyped caller
- *
- * @param this_elem QU_Type, checked
- * @param type message type
- *
- * @return as qinstance_message_trash_all_of_type_X()
- */
-bool qinstance_message_trash_all_of_type_X(lListElem *this_elem, const uint32_t type) {
-   return qinstance_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::QU>(this_elem), type);
-}
 
 /**
  * @brief Set the full name of the qinstance
@@ -665,14 +571,6 @@ void qinstance_set_full_name(const ocs::tom::Element<ocs::tom::QU> this_elem) {
    sge_dstring_free(&buffer);
 }
 
-/**
- * @brief qinstance_set_full_name() for an untyped caller
- *
- * @param this_elem QU_Type, checked
- */
-void qinstance_set_full_name(lListElem *this_elem) {
-   qinstance_set_full_name(ocs::tom::Element<ocs::tom::QU>(this_elem));
-}
 
 /**
  * @brief Validates and initializes qinstances
@@ -746,22 +644,6 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::to
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_validate() for an untyped caller
- *
- * @param this_elem QU_Type, checked
- * @param answer_list AN_Type
- * @param master_exechost_list the execution hosts (EH_Type), checked
- * @param master_centry_list the complex entries (CE_Type), checked
- *
- * @return as qinstance_validate()
- */
-bool qinstance_validate(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                        const lList *master_exechost_list, const lList *master_centry_list) {
-   return qinstance_validate(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list,
-                             ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
-                             ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
-}
 
 /**
  * @brief Validates and initializes qinstances
@@ -793,22 +675,6 @@ bool qinstance_list_validate(const ocs::tom::List<ocs::tom::QU> this_list, ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_list_validate() for an untyped caller
- *
- * @param this_list QU_Type list, checked; may be nullptr
- * @param answer_list AN_Type
- * @param master_exechost_list the execution hosts (EH_Type), checked
- * @param master_centry_list the complex entries (CE_Type), checked
- *
- * @return as qinstance_list_validate()
- */
-bool qinstance_list_validate(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                             const lList *master_exechost_list, const lList *master_centry_list) {
-   return qinstance_list_validate(ocs::tom::List<ocs::tom::QU>(this_list), answer_list,
-                                  ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
-                                  ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
-}
 
 /**
  * @brief Book an exclusive consumable that the job does not request
@@ -1105,14 +971,6 @@ void qinstance_set_conf_slots_used(const ocs::tom::Element<ocs::tom::QU> this_el
    DRETURN_VOID;
 }
 
-/**
- * @brief qinstance_set_conf_slots_used() for an untyped caller
- *
- * @param[in,out] this_elem the queue instance to update (QU_Type), checked
- */
-void qinstance_set_conf_slots_used(lListElem *this_elem) {
-   qinstance_set_conf_slots_used(ocs::tom::Element<ocs::tom::QU>(this_elem));
-}
 
 /**
  * @brief Verify a queue instance in execd
@@ -1250,14 +1108,3 @@ void qinstance_set_error(const ocs::tom::Element<ocs::tom::QU> qinstance, const 
    }
 }
 
-/**
- * @brief qinstance_set_error() for an untyped caller
- *
- * @param qinstance qinstance object (QU_Type), checked
- * @param type new state
- * @param message error message to set
- * @param set_error set or unset
- */
-void qinstance_set_error(lListElem *qinstance, const uint32_t type, const char *message, const bool set_error) {
-   qinstance_set_error(ocs::tom::Element<ocs::tom::QU>(qinstance), type, message, set_error);
-}

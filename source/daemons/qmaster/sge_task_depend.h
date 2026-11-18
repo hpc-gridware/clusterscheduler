@@ -51,20 +51,13 @@ sge_task_depend_is_same_range(ocs::tom::ConstElement<ocs::tom::JB> pre_jep,
 ocs::tom::ElementPtr<ocs::tom::RN>
 sge_task_depend_get_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstElement<ocs::tom::JB> pre_jep,
                           ocs::tom::ConstElement<ocs::tom::JB> suc_jep, uint32_t task_id);
-OCS_TRANSITIONAL int sge_task_depend_get_range(lListElem **range, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                               const lListElem *pre_jep, const lListElem *suc_jep, uint32_t task_id);
 
 bool
 sge_task_depend_update(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint32_t task_id,
                        uint64_t gdi_request);
-OCS_TRANSITIONAL bool sge_task_depend_update(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint32_t task_id,
-                                             uint64_t gdi_request);
 
 bool
 sge_task_depend_init(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint64_t gdi_session);
-OCS_TRANSITIONAL bool sge_task_depend_init(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint64_t gdi_session);
 
 bool
 sge_task_depend_flush(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint64_t gdi_session);
-OCS_TRANSITIONAL bool sge_task_depend_flush(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                            uint64_t gdi_session);

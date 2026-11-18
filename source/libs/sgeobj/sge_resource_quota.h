@@ -90,8 +90,6 @@ OCS_TRANSITIONAL bool rqs_parse_filter_from_string(lListElem **filter, const cha
 
 bool rqs_append_filter_to_dstring(ocs::tom::ConstElement<ocs::tom::RQRF> filter, dstring *buffer,
                                   ocs::tom::ListPtr<ocs::tom::AN> *alp);
-OCS_TRANSITIONAL bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer,
-                                                   ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
 ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(ocs::tom::Element<ocs::tom::RQS> rqs);
 
@@ -101,7 +99,6 @@ OCS_TRANSITIONAL bool rqs_verify_attributes(lListElem *rqs, ocs::tom::ListPtr<oc
                                             bool in_master, const lList *master_centry_list);
 
 ocs::tom::Element<ocs::tom::RQS> rqs_list_locate(ocs::tom::ConstList<ocs::tom::RQS> lp, const char *name);
-OCS_TRANSITIONAL lListElem *rqs_list_locate(lList *lp, const char *name);
 
 ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(ocs::tom::List<ocs::tom::RQR> lp, const char *name);
 
@@ -120,10 +117,6 @@ int rqs_debit_consumable(ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom::ConstEl
                          ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
                          ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list, int slots, bool is_master_task,
                          bool do_per_host_booking);
-OCS_TRANSITIONAL int rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted,
-                                          const lListElem *pe, const lList *centry_list, const lList *acl_list,
-                                          const lList *hgrp_list, int slots, bool is_master_task,
-                                          bool do_per_host_booking);
 
 ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(ocs::tom::ConstElement<ocs::tom::RQS> rqs, const char *user,
                                                        const char *group,
@@ -149,6 +142,3 @@ bool rqs_filter_match(ocs::tom::ConstElement<ocs::tom::RQRF> filter, int filter_
                       ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                       ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, const char *group,
                       ocs::tom::ConstList<ocs::tom::ST> grp_list);
-OCS_TRANSITIONAL bool rqs_filter_match(const lListElem *filter, int filter_type, const char *value,
-                                       const lList *master_userset_list, const lList *master_hgroup_list,
-                                       const char *group, const lList *grp_list);

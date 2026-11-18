@@ -314,15 +314,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_new_job_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param job the job (`JB_Type`), checked; may be nullptr
-    * @return as create_new_job_records()
-    */
-   bool ReportingFileWriter::create_new_job_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                    const lListElem *job) {
-      return create_new_job_records(answer_list, ocs::tom::ConstElement<ocs::tom::JB>(job));
-   }
 
    /** @brief Offer a change in a job's life: submitted, started, deleted, finished
     * @param answer_list receives error messages
@@ -359,30 +350,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_job_logs() for an untyped caller
-    * @param answer_list receives error messages
-    * @param event_time when it happened
-    * @param type which change it was
-    * @param user who caused it
-    * @param host the host it happened on
-    * @param job_report the job report the execution host sent (`JR_Type`), unchecked; may be nullptr
-    * @param job the job (`JB_Type`), checked; may be nullptr
-    * @param ja_task the array task (`JAT_Type`), checked; may be nullptr
-    * @param pe_task the PE task (`PET_Type`), checked; may be nullptr
-    * @param message a description of what happened
-    * @return as create_job_logs()
-    */
-   bool ReportingFileWriter::create_job_logs(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint64_t event_time,
-                                             const job_log_t type,
-                                             const char *user, const char *host, const lListElem *job_report,
-                                             const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
-                                             const char *message) {
-      // the job report comes from an execution host and no writer reads it here: taken unchecked
-      return create_job_logs(answer_list, event_time, type, user, host,
-                             ocs::tom::ConstElement<ocs::tom::JR>::from_typed(job_report),
-                             ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
-                             ocs::tom::ConstElement<ocs::tom::PET>(pe_task), message);
-   }
 
    /** @brief Offer a finished job, or an intermediate record for one still running to every writer
     * @param answer_list receives error messages
@@ -410,20 +377,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_acct_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param job_report the job report the execution host sent (`JR_Type`), checked
-    * @param job the job (`JB_Type`), checked
-    * @param ja_task the array task (`JAT_Type`), checked
-    * @param intermediate whether this is an interim record for a job that is still running
-    * @return as create_acct_records()
-    */
-   bool ReportingFileWriter::create_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *job_report,
-                                                 lListElem *job, lListElem *ja_task, const bool intermediate) {
-      return create_acct_records(answer_list, ocs::tom::Element<ocs::tom::JR>(job_report),
-                                 ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::Element<ocs::tom::JAT>(ja_task),
-                                 intermediate);
-   }
 
    /** @brief Offer the usage of a job that is still running to every writer
     *
@@ -467,25 +420,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_online_usage_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param job_report the job report the execution host sent (`JR_Type`), checked
-    * @param job the job (`JB_Type`), checked
-    * @param ja_task the array task (`JAT_Type`), checked
-    * @param pe_task the PE task (`PET_Type`), checked; may be nullptr
-    * @param aggregate_pe_tasks whether the PE tasks are summed rather than reported individually
-    * @return as create_online_usage_records()
-    */
-   bool ReportingFileWriter::create_online_usage_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                         lListElem *job_report, lListElem *job,
-                                                         lListElem *ja_task, lListElem *pe_task,
-                                                         const bool aggregate_pe_tasks) {
-      // the job report comes from an execution host and no writer reads it here: taken unchecked
-      return create_online_usage_records(answer_list, ocs::tom::ConstElement<ocs::tom::JR>::from_typed(job_report),
-                                         ocs::tom::ConstElement<ocs::tom::JB>(job),
-                                         ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
-                                         ocs::tom::ConstElement<ocs::tom::PET>(pe_task), aggregate_pe_tasks);
-   }
 
    /**
     * True iff `reporting_params=online_usage=...` is configured with at
@@ -530,16 +464,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_host_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param host the host (`EH_Type`), checked; may be nullptr
-    * @param report_time the time to stamp the record with
-    * @return as create_host_records()
-    */
-   bool ReportingFileWriter::create_host_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *host,
-                                                 const uint64_t report_time) {
-      return create_host_records(answer_list, ocs::tom::ConstElement<ocs::tom::EH>(host), report_time);
-   }
 
    /** @brief Offer the consumables a job took from a host to every writer
     * @param answer_list receives error messages
@@ -566,19 +490,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_host_consumable_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param host the host (`EH_Type`), checked; may be nullptr
-    * @param job the job (`JB_Type`), checked; may be nullptr
-    * @param report_time the time to stamp the record with
-    * @return as create_host_consumable_records()
-    */
-   bool ReportingFileWriter::create_host_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                            const lListElem *host,
-                                                            const lListElem *job, const uint64_t report_time) {
-      return create_host_consumable_records(answer_list, ocs::tom::ConstElement<ocs::tom::EH>(host),
-                                            ocs::tom::ConstElement<ocs::tom::JB>(job), report_time);
-   }
 
    /** @brief Offer a queue instance and its state to every writer
     * @param answer_list receives error messages
@@ -602,16 +513,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_queue_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param queue the queue instance (`QU_Type`), checked; may be nullptr
-    * @param report_time the time to stamp the record with
-    * @return as create_queue_records()
-    */
-   bool ReportingFileWriter::create_queue_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *queue,
-                                                  const uint64_t report_time) {
-      return create_queue_records(answer_list, ocs::tom::ConstElement<ocs::tom::QU>(queue), report_time);
-   }
 
    /** @brief Offer the consumables a job took from a queue instance to every writer
     * @param answer_list receives error messages
@@ -639,22 +540,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_queue_consumable_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param host the host (`EH_Type`), checked; may be nullptr
-    * @param queue the queue instance (`QU_Type`), checked; may be nullptr
-    * @param job the job (`JB_Type`), checked; may be nullptr
-    * @param report_time the time to stamp the record with
-    * @return as create_queue_consumable_records()
-    */
-   bool ReportingFileWriter::create_queue_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                             const lListElem *host,
-                                                             const lListElem *queue, const lListElem *job,
-                                                             const uint64_t report_time) {
-      return create_queue_consumable_records(answer_list, ocs::tom::ConstElement<ocs::tom::EH>(host),
-                                             ocs::tom::ConstElement<ocs::tom::QU>(queue),
-                                             ocs::tom::ConstElement<ocs::tom::JB>(job), report_time);
-   }
 
    /** @brief Offer an advance reservation that has just been created to every writer
     * @param answer_list receives error messages
@@ -678,16 +563,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_new_ar_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), checked; may be nullptr
-    * @param report_time the time to stamp the record with
-    * @return as create_new_ar_records()
-    */
-   bool ReportingFileWriter::create_new_ar_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *ar,
-                                                   const uint64_t report_time) {
-      return create_new_ar_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), report_time);
-   }
 
    /** @brief Offer the attributes of an advance reservation to every writer
     * @param answer_list receives error messages
@@ -712,16 +587,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_ar_attribute_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), checked; may be nullptr
-    * @param report_time the time to stamp the record with
-    * @return as create_ar_attribute_records()
-    */
-   bool ReportingFileWriter::create_ar_attribute_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                         const lListElem *ar, const uint64_t report_time) {
-      return create_ar_attribute_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), report_time);
-   }
 
    /** @brief Offer a change in an advance reservation's state to every writer
     * @param answer_list receives error messages
@@ -748,20 +613,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_ar_log_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), checked; may be nullptr
-    * @param state the state it moved to
-    * @param ar_description a description of the change
-    * @param report_time the time to stamp the record with
-    * @return as create_ar_log_records()
-    */
-   bool ReportingFileWriter::create_ar_log_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *ar,
-                                                   const ar_state_event_t state, const char *ar_description,
-                                                   const uint64_t report_time) {
-      return create_ar_log_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), state, ar_description,
-                                   report_time);
-   }
 
    /** @brief Offer the accounting record of an advance reservation to every writer
     * @param answer_list receives error messages
@@ -785,16 +636,6 @@ namespace ocs {
       return ret;
    }
 
-   /** @brief create_ar_acct_records() for an untyped caller
-    * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), checked; may be nullptr
-    * @param report_time the time to stamp the record with
-    * @return as create_ar_acct_records()
-    */
-   bool ReportingFileWriter::create_ar_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *ar,
-                                                    const uint64_t report_time) {
-      return create_ar_acct_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), report_time);
-   }
 
    /** @brief Offer a monitoring snapshot to every writer
     * @param json_data the snapshot, already rendered as JSON
@@ -925,18 +766,6 @@ namespace ocs {
       DRETURN(ret);
    }
 
-   /** @brief is_intermediate_acct_required() for an untyped caller
-    * @param job the job (`JB_Type`), checked; may be nullptr
-    * @param ja_task the array task (`JAT_Type`), checked; may be nullptr
-    * @param pe_task the PE task (`PET_Type`), checked; may be nullptr
-    * @return as is_intermediate_acct_required()
-    */
-   bool ReportingFileWriter::is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task,
-                                                           const lListElem *pe_task) {
-      return is_intermediate_acct_required(ocs::tom::ConstElement<ocs::tom::JB>(job),
-                                           ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
-                                           ocs::tom::ConstElement<ocs::tom::PET>(pe_task));
-   }
 
    /**
     * If there is data to write then flush it to file.

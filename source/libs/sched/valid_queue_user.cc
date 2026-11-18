@@ -117,20 +117,3 @@ bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief sge_ar_have_users_access() for an untyped caller
- * @param[out] alpp                as sge_ar_have_users_access()
- * @param[in]  ar                  advance reservation object (`AR_Type`)
- * @param[in]  name                as sge_ar_have_users_access()
- * @param[in]  acl_list            the access lists of the object (`US_Type`)
- * @param[in]  xacl_list           the deny lists of the object (`US_Type`)
- * @param[in]  master_userset_list master userset list (`US_Type`)
- * @return as sge_ar_have_users_access()
- */
-bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ar, const char *name,
-                              const lList *acl_list, const lList *xacl_list, const lList *master_userset_list) {
-   return sge_ar_have_users_access(alpp, ocs::tom::ConstElement<ocs::tom::AR>(ar), name,
-                                   ocs::tom::ConstList<ocs::tom::US>(acl_list),
-                                   ocs::tom::ConstList<ocs::tom::US>(xacl_list),
-                                   ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
-}

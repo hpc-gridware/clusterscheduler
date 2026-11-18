@@ -191,20 +191,6 @@ int userset_list_validate_access(const lList *acl_list, const int nm, ocs::tom::
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief userset_list_validate_access() for an untyped caller
- *
- * @param acl_list the acl list to check
- * @param nm field name
- * @param alpp answer list pointer
- * @param master_userset_list the defined usersets to check against (US_Type), checked
- *
- * @return as userset_list_validate_access()
- */
-int userset_list_validate_access(const lList *acl_list, const int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                 const lList *master_userset_list) {
-   return userset_list_validate_access(acl_list, nm, alpp, ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
-}
 
 /**
  * @brief Verify entries of a user set
@@ -485,18 +471,6 @@ int sge_contained_in_access_list(const char *user, const char *group, const lLis
    DRETURN(found ? 1 : 0);
 }
 
-/**
- * @brief sge_contained_in_access_list() for an untyped caller
- *
- * @param user the user name
- * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
- * @param acl the access list to check (US_Type), checked
- * @return as sge_contained_in_access_list()
- */
-int sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list, const lListElem *acl) {
-   return sge_contained_in_access_list(user, group, grp_list, ocs::tom::ConstElement<ocs::tom::US>(acl));
-}
 
 /**
  * @brief Is a user covered by any of several access lists?
@@ -528,21 +502,6 @@ int sge_contained_in_access_list_(const char *user, const char *group, const lLi
    DRETURN(0);
 }
 
-/**
- * @brief sge_contained_in_access_list_() for an untyped caller
- *
- * @param user the user name; may be nullptr
- * @param group the user's primary group; may be nullptr
- * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
- * @param acl the access lists to check, by name (US_Type), checked; may be nullptr
- * @param acl_list the defined usersets the names resolve against (US_Type), checked
- * @return as sge_contained_in_access_list_()
- */
-int sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list, const lList *acl,
-                                  const lList *acl_list) {
-   return sge_contained_in_access_list_(user, group, grp_list, ocs::tom::ConstList<ocs::tom::US>(acl),
-                                        ocs::tom::ConstList<ocs::tom::US>(acl_list));
-}
 
 /**
  * @brief Check if a user has access to a queue
@@ -559,21 +518,6 @@ int sge_has_access(const char *user, const char *group, const lList *grp_list,
    return sge_has_access_(user, group, grp_list, ocs::tom::get<QU_acl>(q), ocs::tom::get<QU_xacl>(q), acl_list);
 }
 
-/**
- * @brief sge_has_access() for an untyped caller
- *
- * @param user The user name
- * @param group The primary group name
- * @param grp_list The supplementary group list (ST_Type), checked; may be nullptr
- * @param q The queue instance (QU_Type), checked
- * @param acl_list The list of ACLs (US_Type), checked
- * @return as sge_has_access()
- */
-int sge_has_access(const char *user, const char *group, const lList *grp_list, const lListElem *q,
-                   const lList *acl_list) {
-   return sge_has_access(user, group, grp_list, ocs::tom::ConstElement<ocs::tom::QU>(q),
-                         ocs::tom::ConstList<ocs::tom::US>(acl_list));
-}
 
 /**
  * @brief Check if a user has access to an object
@@ -618,20 +562,4 @@ int sge_has_access_(const char *user, const char *group, const lList *grp_list,
    DRETURN(0);
 }
 
-/**
- * @brief sge_has_access_() for an untyped caller
- *
- * @param user The user name
- * @param group The primary group name
- * @param grp_list The supplementary group list (ST_Type), checked; may be nullptr
- * @param q_acl The ACL (US_Type), checked; may be nullptr
- * @param q_xacl The XACL (US_Type), checked; may be nullptr
- * @param acl_list The list of ACLs (US_Type), checked
- * @return as sge_has_access_()
- */
-int sge_has_access_(const char *user, const char *group, const lList *grp_list, const lList *q_acl,
-                    const lList *q_xacl, const lList *acl_list) {
-   return sge_has_access_(user, group, grp_list, ocs::tom::ConstList<ocs::tom::US>(q_acl),
-                          ocs::tom::ConstList<ocs::tom::US>(q_xacl), ocs::tom::ConstList<ocs::tom::US>(acl_list));
-}
 

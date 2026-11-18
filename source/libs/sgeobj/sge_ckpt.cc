@@ -118,21 +118,6 @@ bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::to
    DRETURN(ret);
 }
 
-/**
- * @brief ckpt_is_referenced() for an untyped caller
- *
- * @param ckpt CK_Type object, checked
- * @param answer_list AN_Type list
- * @param master_job_list JB_Type list, checked
- * @param master_cqueue_list CQ_Type list, checked
- * @return as ckpt_is_referenced()
- */
-bool ckpt_is_referenced(const lListElem *ckpt, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                        const lList *master_job_list, const lList *master_cqueue_list) {
-   return ckpt_is_referenced(ocs::tom::ConstElement<ocs::tom::CK>(ckpt), answer_list,
-                             ocs::tom::ConstList<ocs::tom::JB>(master_job_list),
-                             ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
-}
 
 /**
  * @brief Find a ckpt object in a list
@@ -150,16 +135,6 @@ ocs::tom::Element<ocs::tom::CK> ckpt_list_locate(const ocs::tom::ConstList<ocs::
    DRETURN(ocs::tom::find_first_rw<CK_name>(ckpt_list, ckpt_name));
 }
 
-/**
- * @brief ckpt_list_locate() for an untyped caller
- *
- * @param ckpt_list CK_Type list, checked
- * @param ckpt_name name of the ckpt object.
- * @return as ckpt_list_locate()
- */
-lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name) {
-   return ckpt_list_locate(ocs::tom::ConstList<ocs::tom::CK>(ckpt_list), ckpt_name);
-}
 
 /**
  * @brief Make "when" bitmask from string

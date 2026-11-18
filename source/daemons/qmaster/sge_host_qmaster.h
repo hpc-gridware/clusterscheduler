@@ -62,10 +62,6 @@ sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElem
              ocs::tom::ListPtr<ocs::tom::AN> *alpp,
              char *ruser, char *rhost, ocs::gdi::Target target, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
              monitoring_t *monitor);
-OCS_TRANSITIONAL int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
-                                  ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                  char *ruser, char *rhost, ocs::gdi::Target target, const lList *master_hgroup_list,
-                                  monitoring_t *monitor);
 
 int
 host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
@@ -106,10 +102,6 @@ int
 sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::EH> hep,
                     ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost, ocs::gdi::Target target,
                     monitoring_t *monitor, bool is_restart);
-OCS_TRANSITIONAL int sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
-                                         ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                         char *ruser, char *rhost, ocs::gdi::Target target, monitoring_t *monitor,
-                                         bool is_restart);
 
 uint32_t
 load_report_interval(ocs::tom::Element<ocs::tom::EH> hep);

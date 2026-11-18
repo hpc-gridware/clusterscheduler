@@ -41,4 +41,3 @@ ocs::tom::ConstElement<ocs::tom::GRU>
 gru_list_search(ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list, const char *name, const char *host_name);
 ocs::tom::Element<ocs::tom::GRU>
 gru_list_search(ocs::tom::List<ocs::tom::GRU> granted_resources_list, const char *name, const char *host_name);
-OCS_TRANSITIONAL lListElem *gru_list_search(lList *granted_resources_list, const char *name, const char *host_name);

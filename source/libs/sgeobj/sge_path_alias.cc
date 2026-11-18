@@ -309,24 +309,6 @@ int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
    DRETURN(0);
 }
 
-/**
- * @brief path_alias_list_initialize() for an untyped caller
- *
- * @param[in,out] path_alias_list PA_Type list pointer, checked
- * @param alpp AN_Type list pointer
- * @param cell_root the cell directory the common alias file lives under
- * @param user username
- * @param host hostname
- *
- * @return as path_alias_list_initialize()
- */
-int path_alias_list_initialize(lList **path_alias_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *cell_root,
-                               const char *user, const char *host) {
-   ocs::tom::ListPtr<ocs::tom::PA> list(*path_alias_list);
-   const int ret = path_alias_list_initialize(list, alpp, cell_root, user, host);
-   *path_alias_list = list.release();
-   return ret;
-}
 
 /**
  * @brief Map path according alias table

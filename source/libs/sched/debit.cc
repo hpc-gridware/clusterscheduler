@@ -494,28 +494,3 @@ static int debit_job_from_ar(const ocs::tom::Element<ocs::tom::AR> ar, const ocs
    DRETURN(0);
 }
 
-/**
- * @brief Books a job's consumables on a host, for a caller with untyped objects (N-X-2)
- *
- * @param[in]     jep                     the job (`JB_Type`), checked, or nullptr
- * @param[in]     jatep                   the array task (`JAT_Type`), checked, or nullptr
- * @param[in]     granted_resources_list  the granted resources (`GRU_Type`), checked, or nullptr
- * @param[in]     pe                      the granted PE (`PE_Type`), checked, or nullptr
- * @param[in,out] hep                     the host to debit on (`EH_Type`), checked
- * @param[in]     centry_list             the complex entries (`CE_Type`), checked
- * @param[in]     slots                   number of slots granted on this host
- * @param[in]     is_master_task          whether the master task runs here
- * @param[in]     do_per_host_booking     whether the per host consumables have to be booked in this call
- * @param[in,out] just_check              if given, nothing is booked and the flag reports whether it would fit
- *
- * @return the number of modifications made
- */
-int debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList *granted_resources_list,
-                          const lListElem *pe, lListElem *hep, const lList *centry_list, int slots, bool is_master_task,
-                          bool do_per_host_booking, bool *just_check) {
-   return debit_host_consumable(ocs::tom::ConstElement<ocs::tom::JB>(jep), ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
-                                ocs::tom::ConstList<ocs::tom::GRU>(granted_resources_list),
-                                ocs::tom::ConstElement<ocs::tom::PE>(pe), ocs::tom::Element<ocs::tom::EH>(hep),
-                                ocs::tom::ConstList<ocs::tom::CE>(centry_list), slots, is_master_task,
-                                do_per_host_booking, just_check);
-}

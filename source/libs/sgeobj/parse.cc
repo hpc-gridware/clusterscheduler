@@ -156,24 +156,6 @@ ocs::tom::Element<ocs::tom::SPA> sge_add_noarg(ocs::tom::ListPtr<ocs::tom::SPA> 
    DRETURN(ep);
 }
 
-/**
- * @brief sge_add_noarg() for an untyped caller
- *
- * @param[in,out] popt_list the parsed option list (`SPA_Type`), checked; created when it is nullptr
- * @param opt_number the switch's id
- * @param opt_switch the switch as it was written
- * @param opt_switch_arg the argument text, if the caller wants to keep it
- * @return the new element, or nullptr if "popt_list" is nullptr
- */
-lListElem *sge_add_noarg(lList **popt_list, const uint32_t opt_number, const char *opt_switch,
-                         const char *opt_switch_arg) {
-   if (popt_list == nullptr) {
-      return nullptr;
-   }
-   return ocs_parse_on_untyped_cmdline(popt_list, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
-      return sge_add_noarg(cmdline, opt_number, opt_switch, opt_switch_arg).raw();
-   });
-}
 
 /**
  * @brief Record a command line switch that takes an argument
@@ -208,25 +190,6 @@ ocs::tom::Element<ocs::tom::SPA> sge_add_arg(ocs::tom::ListPtr<ocs::tom::SPA> &o
    DRETURN(ep);
 }
 
-/**
- * @brief sge_add_arg() for an untyped caller
- *
- * @param[in,out] popt_list the parsed option list (`SPA_Type`), checked; created when it is nullptr
- * @param opt_number the switch's id
- * @param opt_type the argument's type
- * @param opt_switch the switch as it was written
- * @param opt_switch_arg the argument text
- * @return the new element, or nullptr if "popt_list" or "opt_switch" is nullptr
- */
-lListElem *sge_add_arg(lList **popt_list, const uint32_t opt_number, const uint32_t opt_type, const char *opt_switch,
-                       const char *opt_switch_arg) {
-   if (popt_list == nullptr) {
-      return nullptr;
-   }
-   return ocs_parse_on_untyped_cmdline(popt_list, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
-      return sge_add_arg(cmdline, opt_number, opt_type, opt_switch, opt_switch_arg).raw();
-   });
-}
 
 /**
  * @brief Parse a switch that takes no argument
@@ -253,22 +216,6 @@ char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::to
    DRETURN(sp);
 }
 
-/**
- * @brief parse_noopt() for an untyped caller
- *
- * @param sp the current argument
- * @param shortopt the short form of the switch
- * @param longopt the long form, or nullptr
- * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
- * @param[out] alpp receives the error message
- * @return as parse_noopt()
- */
-char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                   ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
-      return parse_noopt(sp, shortopt, longopt, cmdline, alpp);
-   });
-}
 
 /**
  * @brief Parse a switch and everything up to the next switch as its argument
@@ -311,22 +258,6 @@ char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt
    DRETURN(rp);
 }
 
-/**
- * @brief parse_until_next_opt() for an untyped caller
- *
- * @param sp the current argument
- * @param shortopt the short form of the switch
- * @param longopt the long form, or nullptr
- * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
- * @param[out] alpp receives the error message
- * @return as parse_until_next_opt()
- */
-char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                            ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
-      return parse_until_next_opt(sp, shortopt, longopt, cmdline, alpp);
-   });
-}
 
 /**
  * @brief Parse a switch and everything up to the next switch
@@ -360,22 +291,6 @@ char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longop
    DRETURN(rp);
 }
 
-/**
- * @brief parse_until_next_opt2() for an untyped caller
- *
- * @param sp the current argument
- * @param shortopt the short form of the switch
- * @param longopt the long form, or nullptr
- * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
- * @param[out] alpp not used
- * @return as parse_until_next_opt2()
- */
-char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                             ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
-      return parse_until_next_opt2(sp, shortopt, longopt, cmdline, alpp);
-   });
-}
 
 /**
  * @brief Parse the parameters up to the next switch as the argument of a pseudo switch
@@ -405,20 +320,6 @@ char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> 
    DRETURN(rp);
 }
 
-/**
- * @brief parse_param() for an untyped caller
- *
- * @param sp the current argument
- * @param opt the name the parameters are recorded under
- * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked; created when it is nullptr
- * @param[out] alpp not used
- * @return as parse_param()
- */
-char **parse_param(char **sp, const char *opt, lList **ppcmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
-      return parse_param(sp, opt, cmdline, alpp);
-   });
-}
 
 /**
  * @brief Take a flag switch out of the parsed option list
@@ -452,18 +353,6 @@ bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
    DRETURN(false);
 }
 
-/**
- * @brief parse_flag() for an untyped caller
- *
- * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked
- * @param opt the switch to look for
- * @param[out] ppal not used yet
- * @param[out] pflag set to 1 when the switch was present
- * @return as parse_flag()
- */
-bool parse_flag(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal, uint32_t *pflag) {
-   return parse_flag(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, ppal, pflag);
-}
 
 /**
  * @brief Take a switch and its list argument out of the parsed option list
@@ -578,22 +467,6 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
    DRETURN(ret);
 }
 
-/**
- * @brief parse_multi_jobtaskslist() for an untyped caller
- *
- * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked
- * @param opt the switch to look for
- * @param[out] alpp receives error messages
- * @param[in,out] ppdestlist receives the collected ids
- * @param include_names true to accept a job name where an id is expected
- * @param action what the caller intends to do with the jobs, recorded per entry
- * @return as parse_multi_jobtaskslist()
- */
-bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                              lList **ppdestlist, const bool include_names, const uint32_t action) {
-   return parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, alpp, ppdestlist, include_names,
-                                   action);
-}
 
 /**
  * @brief Take a switch and its string argument out of the parsed option list
@@ -632,18 +505,6 @@ int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
    DRETURN(false);
 }
 
-/**
- * @brief parse_string() for an untyped caller
- *
- * @param[in,out] ppcmdline the parsed option list (`SPA_Type`), checked
- * @param opt the switch to look for
- * @param[out] ppal not used
- * @param[out] str receives a freshly allocated copy of the argument
- * @return as parse_string()
- */
-int parse_string(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal, char **str) {
-   return parse_string(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, ppal, str);
-}
 
 /**
  * @brief Take a switch and its string argument out of the parsed option list

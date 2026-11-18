@@ -213,20 +213,3 @@ bool sge_user_is_referenced_in_rqs(const ocs::tom::ConstList<ocs::tom::RQS> rqs,
    DRETURN(ret);
 }
 
-/**
- * @brief sge_user_is_referenced_in_rqs() for an untyped caller
- *
- * @param rqs resource quota set list (RQS_Type), checked; may be nullptr
- * @param user user to search
- * @param group user's group
- * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
- * @param acl_list acl list for user resolving (US_Type), checked; may be nullptr
- *
- * @return as sge_user_is_referenced_in_rqs()
- */
-bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list,
-                                   const lList *acl_list) {
-   return sge_user_is_referenced_in_rqs(ocs::tom::ConstList<ocs::tom::RQS>(rqs), user, group,
-                                        ocs::tom::ConstList<ocs::tom::ST>(grp_list),
-                                        ocs::tom::ConstList<ocs::tom::US>(acl_list));
-}

@@ -54,4 +54,3 @@ void sge_do_urgency(uint64_t now, ocs::tom::List<ocs::tom::JB> running_jobs, ocs
                     scheduler_all_data_t *lists);
 
 int sge_job_slot_request(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::PE> pe_list);
-OCS_TRANSITIONAL int sge_job_slot_request(const lListElem *job, const lList *pe_list);

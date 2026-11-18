@@ -53,7 +53,6 @@ ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list, ocs::tom::Lis
                                                const char *suser_name);
 
 ocs::tom::Element<ocs::tom::SU> suser_list_find(ocs::tom::ConstList<ocs::tom::SU> suser_list, const char *suser_name);
-OCS_TRANSITIONAL ocs::tom::Element<ocs::tom::SU> suser_list_find(const lList *suser_list, const char *suser_name);
 
 void suser_increase_job_counter(ocs::tom::Element<ocs::tom::SU> suser);
 
@@ -63,16 +62,11 @@ uint32_t suser_get_job_counter(ocs::tom::ConstElement<ocs::tom::SU> suser);
 
 int suser_check_new_job(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t max_u_jobs,
                         ocs::tom::List<ocs::tom::SU> master_suser_list);
-OCS_TRANSITIONAL int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master_suser_list);
 
 uint32_t suser_job_count(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::SU> master_suser_list);
-OCS_TRANSITIONAL uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list);
 
 int suser_register_new_job(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t max_u_jobs, int force_registration,
                            ocs::tom::List<ocs::tom::SU> master_suser_list);
-OCS_TRANSITIONAL int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs, int force_registration,
-                                            lList *master_suser_list);
 
 void suser_unregister_job(ocs::tom::ConstElement<ocs::tom::JB> job,
                           ocs::tom::ConstList<ocs::tom::SU> master_suser_list);
-OCS_TRANSITIONAL void suser_unregister_job(const lListElem *job, const lList *master_suser_list);

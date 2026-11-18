@@ -105,7 +105,6 @@ typedef enum {
 
 ocs::tom::Element<ocs::tom::AR>
 ar_list_locate(ocs::tom::ConstList<ocs::tom::AR> ar_list, uint32_t ar_id);
-OCS_TRANSITIONAL lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id);
 
 bool
 ar_validate(ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool in_master, bool is_spool,
@@ -114,10 +113,6 @@ ar_validate(ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs::tom::AN> 
             ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
             ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
             ocs::tom::ConstList<ocs::tom::PE> master_pe_list, ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL bool ar_validate(lListElem *ar, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool in_master, bool is_spool,
-                                  const lList *master_cqueue_list, const lList *master_hgroup_list,
-                                  const lList *master_centry_list, const lList *master_ckpt_list,
-                                  const lList *master_pe_list, const lList *master_userset_list);
 
 ar_state_event_t 
 ar_get_event_from_string(const char *string);
@@ -128,4 +123,3 @@ ar_get_string_from_event(ar_state_event_t event);
 void ar_state2dstring(ar_state_t state, dstring *state_as_string);
 
 bool sge_ar_has_errors(ocs::tom::ConstElement<ocs::tom::AR> ar);
-OCS_TRANSITIONAL bool sge_ar_has_errors(const lListElem *ar);

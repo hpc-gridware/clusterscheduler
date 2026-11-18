@@ -767,24 +767,6 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElem
    DRETURN(0);
 }
 
-/**
- * @brief ar_del() for an untyped caller
- *
- * @param packet the client request, carrying the user and host that invoked it
- * @param task the GDI task being answered
- * @param ep element that should be removed (ID_Type), checked
- * @param alpp answer list
- * @param master_ar_list list from where the element should be removed (AR_Type), checked
- * @param monitor for monitoring qmaster threads
- *
- * @return as ar_del()
- */
-int
-ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-       lList **master_ar_list, monitoring_t *monitor) {
-   return ar_del(packet, task, ocs::tom::ConstElement<ocs::tom::ID>(ep), alpp,
-                 ocs::tom::List<ocs::tom::AR>(*master_ar_list), monitor);
-}
 
 /**
  * @brief Returns the next possible unused id

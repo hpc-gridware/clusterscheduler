@@ -928,21 +928,6 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
    DRETURN_VOID;
 }
 
-/**
- * @brief parse_list_hardsoft() for an untyped caller
- *
- * @param cmdline the parsed option list (`SPA_Type`), checked
- * @param option the switch to look for
- * @param[in,out] job the job (`JB_Type`), checked
- * @param scope which request set the entries belong to
- * @param hard_field the request set attribute the hard requests go into
- * @param soft_field the request set attribute the soft requests go into, 0 if the switch has no soft form
- */
-void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, const uint32_t scope,
-                         const int hard_field, const int soft_field) {
-   parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA>(cmdline), option, ocs::tom::Element<ocs::tom::JB>(job), scope,
-                       hard_field, soft_field);
-}
 
 /**
  * @brief Parse a switch's list argument into an attribute of an object
@@ -980,22 +965,6 @@ int parse_list_simple(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *o
    DRETURN(0);
 }
 
-/**
- * @brief parse_list_simple() for an untyped caller
- *
- * @param cmdline the parsed option list (`SPA_Type`), checked
- * @param option the switch to look for
- * @param[in,out] job the object the list is stored in
- * @param field the attribute the list is stored in
- * @param nm_var the attribute holding an entry's name
- * @param nm_value the attribute holding its value
- * @param flags one of the `FLG_LIST_*` values
- * @return as parse_list_simple()
- */
-int parse_list_simple(lList *cmdline, const char *option, lListElem *job, const int field, const int nm_var,
-                      const int nm_value, const uint32_t flags) {
-   return parse_list_simple(ocs::tom::List<ocs::tom::SPA>(cmdline), option, job, field, nm_var, nm_value, flags);
-}
 
 /**
  * @brief Like #parse_list_simple, but into a caller supplied list

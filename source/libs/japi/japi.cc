@@ -1334,23 +1334,6 @@ int japi_run_job(dstring *job_id, ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_te
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/**
- * @brief japi_run_job() for an untyped caller
- *
- * qsub still holds the job raw.
- *
- * @param job_id SGE jobid as string - on success
- * @param sge_job_template the job (JB_Type), checked; replaced as japi_run_job() replaces it
- * @param diag diagnosis information - on error
- *
- * @return DRMAA error codes
- */
-int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag) {
-   ocs::tom::ElementPtr<ocs::tom::JB> job(*sge_job_template);
-   const int ret = japi_run_job(job_id, job, diag);
-   *sge_job_template = job.release();
-   return ret;
-}
 
 
 /**
@@ -1448,27 +1431,6 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, ocs::tom::ElementPtr<ocs::
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/**
- * @brief japi_run_bulk_jobs() for an untyped caller
- *
- * qsub still holds the job raw.
- *
- * @param jobidsp a string array of jobids - on success
- * @param sge_job_template the job (JB_Type), checked; replaced as japi_run_bulk_jobs() replaces it
- * @param start array job start index
- * @param end array job end index
- * @param incr array job increment
- * @param diag diagnosis information - on error
- *
- * @return DRMAA error codes
- */
-int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_template, const int start, const int end,
-                       const int incr, dstring *diag) {
-   ocs::tom::ElementPtr<ocs::tom::JB> job(*sge_job_template);
-   const int ret = japi_run_bulk_jobs(jobidsp, job, start, end, incr, diag);
-   *sge_job_template = job.release();
-   return ret;
-}
 
 /**
  * @brief Helper function for composing GDI request

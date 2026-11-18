@@ -1327,19 +1327,3 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
    DRETURN(tmp_ret ? 0 : 1);
 }
 
-/**
- * @brief hgroup_del() for an untyped caller
- * @param packet the client request
- * @param task the GDI task being answered
- * @param this_elem the host group to delete (HGRP_Type), checked
- * @param answer_list receives messages for the caller
- * @param remote_user the requesting user
- * @param remote_host the requesting host
- * @return as hgroup_del()
- */
-int
-hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
-           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
-   return hgroup_del(packet, task, ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list, remote_user,
-                     remote_host);
-}

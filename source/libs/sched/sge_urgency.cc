@@ -316,14 +316,3 @@ int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DRETURN(n);
 }
 
-/**
- * @brief The number of slots assumed for a job's static urgency, for a caller with untyped objects (N-X-2)
- *
- * @param job     the job (JB_Type), checked
- * @param pe_list the parallel environments (PE_Type), checked
- *
- * @return the number of slots
- */
-int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
-   return sge_job_slot_request(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstList<ocs::tom::PE>(pe_list));
-}

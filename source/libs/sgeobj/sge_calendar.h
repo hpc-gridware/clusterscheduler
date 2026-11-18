@@ -58,10 +58,8 @@
 #include "sgeobj/sge_answer.h"
 
 bool calendar_parse_year(ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL bool calendar_parse_year(lListElem *cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool calendar_parse_week(ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL bool calendar_parse_week(lListElem *cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 [[nodiscard]] std::tuple<uint32_t, uint64_t, ocs::tom::ListPtr<ocs::tom::CQU>>
 calender_state_changes(ocs::tom::ConstElement<ocs::tom::CAL> cep, const uint64_t *now64);
@@ -71,8 +69,6 @@ OCS_TRANSITIONAL uint32_t calender_state_changes(const lListElem *cep, lList **s
 bool calendar_is_referenced(ocs::tom::ConstElement<ocs::tom::CAL> calendar,
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list);
-OCS_TRANSITIONAL bool calendar_is_referenced(const lListElem *calendar, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                             const lList *master_cqueue_list);
 
 [[nodiscard]] ocs::tom::ElementPtr<ocs::tom::CAL> sge_generic_cal(const char *cal_name);
 

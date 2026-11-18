@@ -69,17 +69,6 @@ ocs::tom::Element<ocs::tom::PR> prj_list_locate(const ocs::tom::ConstList<ocs::t
    DRETURN(ep);
 }
 
-/**
- * @brief prj_list_locate() for an untyped caller
- *
- * @param lp PR_Type list, checked; may be nullptr
- * @param name project name
- *
- * @return as prj_list_locate()
- */
-ocs::tom::Element<ocs::tom::PR> prj_list_locate(const lList *lp, const char *name) {
-   return prj_list_locate(ocs::tom::ConstList<ocs::tom::PR>(lp), name);
-}
 
 /**
  * @brief Find user in list
@@ -95,17 +84,6 @@ ocs::tom::Element<ocs::tom::UU> user_list_locate(const ocs::tom::ConstList<ocs::
    DRETURN(ep);
 }
 
-/**
- * @brief user_list_locate() for an untyped caller
- *
- * @param lp UU_Type list, checked; may be nullptr
- * @param name user name
- *
- * @return as user_list_locate()
- */
-ocs::tom::Element<ocs::tom::UU> user_list_locate(const lList *lp, const char *name) {
-   return user_list_locate(ocs::tom::ConstList<ocs::tom::UU>(lp), name);
-}
 
 /**
  * @brief Append prj from list to dstring

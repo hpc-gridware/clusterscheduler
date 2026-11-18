@@ -54,12 +54,9 @@ bool
 ckpt_is_referenced(ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                    ocs::tom::ConstList<ocs::tom::JB> master_job_list,
                    ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list);
-OCS_TRANSITIONAL bool ckpt_is_referenced(const lListElem *ckpt, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                         const lList *master_job_list, const lList *master_cqueue_list);
 
 ocs::tom::Element<ocs::tom::CK>
 ckpt_list_locate(ocs::tom::ConstList<ocs::tom::CK> ckpt_list, const char *ckpt_name);
-OCS_TRANSITIONAL lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name);
 
 int
 sge_parse_checkpoint_attr(const char *attr_str);

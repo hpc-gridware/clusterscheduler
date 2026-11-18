@@ -168,24 +168,6 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
    DRETURN(STATUS_OK);
 }
 
-/** @brief sge_del_userset() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param ep the user set to delete (US_Type)
- * @param alpp receives messages for the caller
- * @param userset_list the master user set list (US_Type)
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @return STATUS_OK on success
- */
-int
-sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                lList **userset_list, char *ruser, char *rhost) {
-   return sge_del_userset(packet, task, ocs::tom::ConstElement<ocs::tom::US>(ep), alpp,
-                          ocs::tom::List<ocs::tom::US>(userset_list != nullptr ? *userset_list : nullptr), ruser,
-                          rhost);
-}
 
 /** @brief Increase the version of all queue instances using a user set as access list
  *

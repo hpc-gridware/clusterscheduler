@@ -488,25 +488,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_del_host() for an untyped caller
- * @param packet the client request
- * @param task the GDI task being answered
- * @param hep the host (EH_Type), checked
- * @param alpp receives messages for the caller
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @param target which host list it belongs to
- * @param master_hgroup_list the host groups (HGRP_Type), checked
- * @param monitor for monitoring qmaster threads
- * @return as sge_del_host()
- */
-int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                 char *ruser, char *rhost, const ocs::gdi::Target target, const lList *master_hgroup_list,
-                 monitoring_t *monitor) {
-   return sge_del_host(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(hep), alpp, ruser, rhost, target,
-                       ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list), monitor);
-}
 
 /* ------------------------------------------------------------ */
 
@@ -2103,26 +2084,6 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::t
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_execd_startedup() for an untyped caller
- * @param packet the client request
- * @param task the GDI task being answered
- * @param host the execution host (EH_Type), checked
- * @param alpp receives messages for the caller
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @param target which host list the host belongs to
- * @param monitor for monitoring qmaster threads
- * @param is_restart whether the daemon is re-registering
- * @return as sge_execd_startedup()
- */
-int
-sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *host,
-                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser,
-                    char *rhost, const ocs::gdi::Target target, monitoring_t *monitor, const bool is_restart) {
-   return sge_execd_startedup(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(host), alpp, ruser, rhost, target,
-                              monitor, is_restart);
-}
 
 
 /** @brief Check that every load scaling of a host names a known complex attribute

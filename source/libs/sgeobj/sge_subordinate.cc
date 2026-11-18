@@ -115,17 +115,6 @@ bool tst_sos(const int used, const int total, const ocs::tom::ConstElement<ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief tst_sos() for an untyped caller
- *
- * @param used slots in use in the superordinate queue
- * @param total slots the superordinate queue has
- * @param so the subordinate relation (SO_Type), checked
- * @return as tst_sos()
- */
-bool tst_sos(const int used, const int total, const lListElem *so) {
-   return tst_sos(used, total, ocs::tom::ConstElement<ocs::tom::SO>(so));
-}
 
 /**
  * @brief Render a subordinate list as an administrator writes it
@@ -346,27 +335,3 @@ bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, ocs::tom::
    DRETURN(ret);
 }
 
-/**
- * @brief so_list_resolve() for an untyped caller
- *
- * @param so_list the list of subordinates to resolve (SO_Type), checked; may be nullptr
- * @param answer_list answer list for errors
- * @param[in,out] resolved_so_list the destination list (SO_Type), checked; nullptr resolves nothing into it
- * @param cq_name the queue name of the qinstance to which the subordinate list is subordinate
- * @param hostname the hostname for the queue to which the subordinate list is subordinate
- * @param master_cqueue_list the cluster queues a relation may name (CQ_Type), checked
- *
- * @return as so_list_resolve()
- */
-bool so_list_resolve(const lList *so_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **resolved_so_list,
-                     const char *cq_name, const char *hostname, const lList *master_cqueue_list) {
-   if (resolved_so_list == nullptr) {
-      // the old function added nothing to a missing list
-      return true;
-   }
-   ocs::tom::ListPtr<ocs::tom::SO> resolved(*resolved_so_list);
-   const bool ret = so_list_resolve(ocs::tom::ConstList<ocs::tom::SO>(so_list), answer_list, resolved, cq_name,
-                                    hostname, ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
-   *resolved_so_list = resolved.release();
-   return ret;
-}

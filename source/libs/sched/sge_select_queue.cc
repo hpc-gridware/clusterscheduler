@@ -933,17 +933,6 @@ sge_select_parallel_environment(sge_assignment_t *best, const ocs::tom::List<ocs
    DRETURN(best_result);
 }
 
-/**
- * @brief sge_select_parallel_environment() for an untyped caller
- * @param best as sge_select_parallel_environment()
- * @param pe_list the parallel environments (`PE_Type`); the list is const only by the old signature, the chosen
- *                PE is referenced and later changed by the assignment, as before
- * @return as sge_select_parallel_environment()
- */
-dispatch_t
-sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
-   return sge_select_parallel_environment(best, ocs::tom::List<ocs::tom::PE>(const_cast<lList *>(pe_list)));
-}
 
 /**
  * @brief Removes tags
@@ -1524,30 +1513,6 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
    DRETURN((ret == DISPATCH_OK) ? true : false);
 }
 
-/**
- * @brief sge_select_queue() for an untyped caller
- * @param requested_attr        the requested attributes (`CE_Type`)
- * @param queue                 the queue instance (`QU_Type`), or nullptr
- * @param host                  the execution host (`EH_Type`), or nullptr
- * @param exechost_list         the execution hosts (`EH_Type`)
- * @param centry_list           the complex entries (`CE_Type`)
- * @param allow_non_requestable as sge_select_queue()
- * @param slots                 as sge_select_queue()
- * @param queue_user_list       the queue users (`ST_Type`), or nullptr
- * @param acl_list              the user sets (`US_Type`), or nullptr
- * @param job                   the job (`JB_Type`), or nullptr
- * @return as sge_select_queue()
- */
-bool
-sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList *exechost_list, lList *centry_list,
-                 const bool allow_non_requestable, const int slots, lList *queue_user_list, lList *acl_list,
-                 lListElem *job) {
-   return sge_select_queue(ocs::tom::List<ocs::tom::CE>(requested_attr), ocs::tom::ConstElement<ocs::tom::QU>(queue),
-                           ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::List<ocs::tom::EH>(exechost_list),
-                           ocs::tom::ConstList<ocs::tom::CE>(centry_list), allow_non_requestable, slots,
-                           ocs::tom::ConstList<ocs::tom::ST>(queue_user_list),
-                           ocs::tom::ConstList<ocs::tom::US>(acl_list), ocs::tom::ConstElement<ocs::tom::JB>(job));
-}
 
 /**
  * @brief Checks weather all resource requests on one level
@@ -2764,28 +2729,6 @@ int sge_load_alarm(char *reason, const size_t reason_size, const ocs::tom::Const
    DRETURN(0);
 }
 
-/**
- * @brief sge_load_alarm() for an untyped caller
- * @param[out] reason              as sge_load_alarm()
- * @param[in]  reason_size         as sge_load_alarm()
- * @param[in]  qep                 the queue instance (`QU_Type`)
- * @param[in]  threshold           the thresholds to check (`CE_Type`)
- * @param[in]  exechost_list       the execution hosts (`EH_Type`)
- * @param[in]  centry_list         the complex entries (`CE_Type`)
- * @param[in]  load_adjustments    the load adjustments (`CE_Type`), or nullptr
- * @param[in]  consumable_load_adjustments as sge_load_alarm() (`CE_Type`)
- * @param[in]  is_check_consumable as sge_load_alarm()
- * @return as sge_load_alarm()
- */
-int sge_load_alarm(char *reason, const size_t reason_size, const lListElem *qep, const lList *threshold,
-                   const lList *exechost_list, const lList *centry_list, const lList *load_adjustments,
-                   const lList *consumable_load_adjustments, const bool is_check_consumable) {
-   return sge_load_alarm(reason, reason_size, ocs::tom::ConstElement<ocs::tom::QU>(qep),
-                         ocs::tom::ConstList<ocs::tom::CE>(threshold), ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
-                         ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                         ocs::tom::ConstList<ocs::tom::CE>(load_adjustments),
-                         ocs::tom::ConstList<ocs::tom::CE>(consumable_load_adjustments), is_check_consumable);
-}
 
 /**
  * @brief Renders the reasons a queue is in load alarm
@@ -6110,24 +6053,6 @@ int sge_get_string_qattr(char *dst, const int dst_len, const char *attrname,
    DRETURN(ret);
 }
 
-/**
- * @brief sge_get_string_qattr() for an untyped caller
- * @param[out] dst              as sge_get_string_qattr()
- * @param[in]  dst_len          as sge_get_string_qattr()
- * @param[in]  attrname         as sge_get_string_qattr()
- * @param[in]  q                the queue instance (`QU_Type`)
- * @param[in]  exechost_list    the execution hosts (`EH_Type`)
- * @param[in]  centry_list      the complex entries (`CE_Type`)
- * @param[in]  load_adjustments the job load adjustments (`CE_Type`), or nullptr
- * @return as sge_get_string_qattr()
- */
-int sge_get_string_qattr(char *dst, const int dst_len, const char *attrname, lListElem *q,
-                         const lList *exechost_list, const lList *centry_list, const lList *load_adjustments) {
-   return sge_get_string_qattr(dst, dst_len, attrname, ocs::tom::ConstElement<ocs::tom::QU>(q),
-                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
-                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments));
-}
 
 /**
  * @brief Determine availability time through slot number

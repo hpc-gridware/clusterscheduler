@@ -253,18 +253,3 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
    DRETURN(STATUS_OK);
 }
 
-/** @brief sge_del_role() for an untyped caller
- *
- * @param packet the GDI packet holding the request
- * @param task the GDI task within that packet
- * @param ep an element carrying at least the `RL_name` of the role to delete
- * @param alpp used to return error messages
- * @param ruser the user who requested the deletion
- * @param rhost the host the request came from
- * @return see the typed form
- */
-int
-sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-             char *ruser, char *rhost) {
-   return sge_del_role(packet, task, ocs::tom::ConstElement<ocs::tom::RL>(ep), alpp, ruser, rhost);
-}

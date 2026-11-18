@@ -99,8 +99,6 @@ OCS_TRANSITIONAL int userset_list_validate_acl_list(const lList *acl_list, ocs::
 
 int userset_list_validate_access(const lList *acl_list, int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL int userset_list_validate_access(const lList *acl_list, int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                                  const lList *master_userset_list);
 
 const char *userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US> userset,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
@@ -117,21 +115,13 @@ OCS_TRANSITIONAL const char *userset_list_append_to_dstring(const lList *this_li
 
 int sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list,
                                  ocs::tom::ConstElement<ocs::tom::US> acl);
-OCS_TRANSITIONAL int sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list,
-                                                  const lListElem *acl);
 
 int sge_has_access(const char *user, const char *group, const lList *grp_list, ocs::tom::ConstElement<ocs::tom::QU> q,
                    ocs::tom::ConstList<ocs::tom::US> acl_list);
-OCS_TRANSITIONAL int sge_has_access(const char *user, const char *group, const lList *grp_list, const lListElem *q,
-                                    const lList *acl_list);
 
 int sge_has_access_(const char *user, const char *group, const lList *grp_list,
                     ocs::tom::ConstList<ocs::tom::US> q_acl, ocs::tom::ConstList<ocs::tom::US> q_xacl,
                     ocs::tom::ConstList<ocs::tom::US> acl_list);
-OCS_TRANSITIONAL int sge_has_access_(const char *user, const char *group, const lList *grp_list, const lList *q_acl,
-                                     const lList *q_xacl, const lList *acl_list);
 
 int sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
                                   ocs::tom::ConstList<ocs::tom::US> acl, ocs::tom::ConstList<ocs::tom::US> acl_list);
-OCS_TRANSITIONAL int sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
-                                                   const lList *acl, const lList *acl_list);

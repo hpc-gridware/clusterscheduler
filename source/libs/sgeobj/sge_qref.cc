@@ -372,28 +372,6 @@ bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list,
    DRETURN(ret);
 }
 
-/**
- * @brief qref_list_resolve() for an untyped caller
- *
- * @param src_qref_list QR_Type list (input: pattern), checked; may be nullptr
- * @param answer_list AN_Type list
- * @param qref_list in-out: QR_Type list (output: resolved qrefs)
- * @param found_something a pattern matched? (output)
- * @param cqueue_list master CQ_Type list, checked
- * @param hgroup_list master HGRP_Type list, checked
- * @param resolve_cqueue resolve cqueue pattern?
- * @param resolve_qdomain resolve qdomain pattern?
- *
- * @return as qref_list_resolve()
- */
-bool qref_list_resolve(const lList *src_qref_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **qref_list,
-                       bool *found_something,
-                       const lList *cqueue_list, const lList *hgroup_list, const bool resolve_cqueue,
-                       const bool resolve_qdomain) {
-   return qref_list_resolve(ocs::tom::ConstList<ocs::tom::QR>(src_qref_list), answer_list, qref_list,
-                            found_something, ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list),
-                            ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list), resolve_cqueue, resolve_qdomain);
-}
 
 /**
  * @brief Check, if -q qref_list rejects (cluster) queue
@@ -538,20 +516,6 @@ bool qref_list_cq_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, co
    DRETURN(true);
 }
 
-/**
- * @brief qref_list_cq_rejected() for an untyped caller
- *
- * @param qref_list the queue references to check (QR_Type), checked; may be nullptr
- * @param cqname the cluster queue in question
- * @param hostname the host in question; nullptr checks the cluster queue alone
- * @param hgroup_list the host groups (HGRP_Type), checked; may be nullptr
- * @return as qref_list_cq_rejected()
- */
-bool qref_list_cq_rejected(const lList *qref_list, const char *cqname, const char *hostname,
-                           const lList *hgroup_list) {
-   return qref_list_cq_rejected(ocs::tom::ConstList<ocs::tom::QR>(qref_list), cqname, hostname,
-                                ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list));
-}
 
 /**
  * @brief Check if a hostgroup contains a host
@@ -780,25 +744,6 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief qref_list_is_valid() for an untyped caller
- *
- * @param this_list QR_Type list, checked; may be nullptr; changed in place
- * @param answer_list AN_Type
- * @param master_cqueue_list the cluster queues a reference may name (CQ_Type), checked
- * @param master_hgroup_list the host groups a reference may name (HGRP_Type), checked
- * @param master_centry_list the complex entries a reference may name (CE_Type), checked
- *
- * @return as qref_list_is_valid()
- */
-bool qref_list_is_valid(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                        const lList *master_cqueue_list,
-                        const lList *master_hgroup_list, const lList *master_centry_list) {
-   return qref_list_is_valid(ocs::tom::ConstList<ocs::tom::QR>(this_list), answer_list,
-                             ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
-                             ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list),
-                             ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
-}
 
 /**
  * @brief Resolve the host part of every queue reference in a list
@@ -828,14 +773,6 @@ void qref_list_resolve_hostname(const ocs::tom::List<ocs::tom::QR> this_list) {
    DRETURN_VOID;
 }
 
-/**
- * @brief qref_list_resolve_hostname() for an untyped caller
- *
- * @param[in,out] this_list the references to rewrite (QR_Type), checked; nullptr is accepted
- */
-void qref_list_resolve_hostname(lList *this_list) {
-   qref_list_resolve_hostname(ocs::tom::List<ocs::tom::QR>(this_list));
-}
 
 /**
  * @brief The name of a queue reference with its host part in its unique form

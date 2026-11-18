@@ -334,25 +334,6 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstEle
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief rqs_del() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param ep element which should be deleted (RQS_Type)
- * @param alpp reference to an answer list.
- * @param rqs_list reference to the master resource quota set list
- * @param ruser username of person who invoked this gdi request
- * @param rhost hostname of the host where someone initiated an gdi call
- *
- * @return STATUS_OK on success, STATUS_EUNKNOWN or STATUS_EEXIST if an error occurred
- */
-int
-rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-        lList **rqs_list, char *ruser, char *rhost) {
-   return rqs_del(packet, task, ocs::tom::ConstElement<ocs::tom::RQS>(ep), alpp,
-                  ocs::tom::List<ocs::tom::RQS>(*rqs_list), ruser, rhost);
-}
 
 /**
  * @brief Debit running jobs
@@ -676,41 +657,6 @@ rqs_diff_usersets(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
    DRETURN(ret);
 }
 
-/**
- * @brief rqs_diff_usersets() for an untyped caller
- *
- * @param new_rqs new resource quota set (RQS_Type)
- * @param old_rqs old resource quota set (RQS_Type)
- * @param new_list list of referenced usersets in new_rqs (US_Type), or nullptr
- * @param old_list list of referenced usersets in old_rqs (US_Type), or nullptr
- * @param master_userset_list the master userset list (US_Type)
- *
- * @return as rqs_diff_usersets()
- */
-bool
-rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
-                  const lList *master_userset_list) {
-   ocs::tom::ListPtr<ocs::tom::US> typed_new;
-   ocs::tom::ListPtr<ocs::tom::US> typed_old;
-   if (new_list != nullptr) {
-      typed_new = ocs::tom::ListPtr<ocs::tom::US>::from_typed(std::exchange(*new_list, nullptr));
-   }
-   if (old_list != nullptr) {
-      typed_old = ocs::tom::ListPtr<ocs::tom::US>::from_typed(std::exchange(*old_list, nullptr));
-   }
-   const bool ret = rqs_diff_usersets(ocs::tom::ConstElement<ocs::tom::RQS>(new_rqs),
-                                      ocs::tom::ConstElement<ocs::tom::RQS>(old_rqs),
-                                      new_list != nullptr ? &typed_new : nullptr,
-                                      old_list != nullptr ? &typed_old : nullptr,
-                                      ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
-   if (new_list != nullptr) {
-      *new_list = typed_new.release();
-   }
-   if (old_list != nullptr) {
-      *old_list = typed_old.release();
-   }
-   return ret;
-}
 
 /**
  * @brief Diff referenced projects in rqs
@@ -742,41 +688,6 @@ rqs_diff_projects(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
    DRETURN(ret);
 }
 
-/**
- * @brief rqs_diff_projects() for an untyped caller
- *
- * @param new_rqs new resource quota set (RQS_Type)
- * @param old_rqs old resource quota set (RQS_Type)
- * @param new_list list of referenced projects in new_rqs (PR_Type), or nullptr
- * @param old_list list of referenced projects in old_rqs (PR_Type), or nullptr
- * @param master_project_list the master project list (PR_Type)
- *
- * @return as rqs_diff_projects()
- */
-bool
-rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
-                  const lList *master_project_list) {
-   ocs::tom::ListPtr<ocs::tom::PR> typed_new;
-   ocs::tom::ListPtr<ocs::tom::PR> typed_old;
-   if (new_list != nullptr) {
-      typed_new = ocs::tom::ListPtr<ocs::tom::PR>::from_typed(std::exchange(*new_list, nullptr));
-   }
-   if (old_list != nullptr) {
-      typed_old = ocs::tom::ListPtr<ocs::tom::PR>::from_typed(std::exchange(*old_list, nullptr));
-   }
-   const bool ret = rqs_diff_projects(ocs::tom::ConstElement<ocs::tom::RQS>(new_rqs),
-                                      ocs::tom::ConstElement<ocs::tom::RQS>(old_rqs),
-                                      new_list != nullptr ? &typed_new : nullptr,
-                                      old_list != nullptr ? &typed_old : nullptr,
-                                      ocs::tom::ConstList<ocs::tom::PR>(master_project_list));
-   if (new_list != nullptr) {
-      *new_list = typed_new.release();
-   }
-   if (old_list != nullptr) {
-      *old_list = typed_old.release();
-   }
-   return ret;
-}
 
 /**
  * @brief Update categories after rqs change

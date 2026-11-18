@@ -115,7 +115,6 @@ int show_sharetree(std::ostream &os, ocs::tom::ConstElement<ocs::tom::STN> ep, c
 ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate();
 ocs::tom::Element<ocs::tom::STN> search_named_node_path(ocs::tom::Element<ocs::tom::STN> ep, const char *path,
                                                         ancestors_t *ancestors);
-OCS_TRANSITIONAL lListElem *search_named_node_path(lListElem *ep, const char *path, ancestors_t *ancestors);
 void free_ancestors( ancestors_t *ancestors);
 ocs::tom::Element<ocs::tom::STN> search_ancestors(ocs::tom::Element<ocs::tom::STN> ep, const char *name,
                                                   ancestors_t *ancestors, int depth);

@@ -59,7 +59,6 @@ namespace ocs {
 
       static void cull_show_job(std::ostream &os, ocs::tom::ConstList<ocs::tom::SME> ilp,
                                 ocs::tom::ConstElement<ocs::tom::JB> job, int flags);
-      OCS_TRANSITIONAL static void cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags);
       void show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;

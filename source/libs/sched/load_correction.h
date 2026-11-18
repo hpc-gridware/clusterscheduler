@@ -57,4 +57,3 @@ int correct_load(ocs::tom::ConstList<ocs::tom::JB> running_jobs, ocs::tom::Const
 
 int correct_capacities(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                        ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
-OCS_TRANSITIONAL int correct_capacities(lList *host_list, const lList *centry_list, const lList *load_adjustments);

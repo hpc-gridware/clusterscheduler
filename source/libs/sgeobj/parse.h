@@ -66,33 +66,21 @@
 
 char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
-OCS_TRANSITIONAL char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt,
                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
-OCS_TRANSITIONAL char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                                             ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt,
                              ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
-OCS_TRANSITIONAL char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                                              ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
-OCS_TRANSITIONAL char **parse_param(char **sp, const char *opt, lList **ppcmdline,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 ocs::tom::Element<ocs::tom::SPA> sge_add_arg(ocs::tom::ListPtr<ocs::tom::SPA> &opt_list, uint32_t opt_number,
                                              uint32_t opt_type, const char *opt_switch, const char *opt_switch_arg);
-OCS_TRANSITIONAL lListElem *sge_add_arg(lList **popt_list, uint32_t opt_number, uint32_t opt_type,
-                                        const char *opt_switch, const char *opt_switch_arg);
 
 ocs::tom::Element<ocs::tom::SPA> sge_add_noarg(ocs::tom::ListPtr<ocs::tom::SPA> &opt_list, uint32_t opt_number,
                                                const char *opt_switch, const char *opt_switch_arg);
-OCS_TRANSITIONAL lListElem *sge_add_noarg(lList **popt_list, uint32_t opt_number, const char *opt_switch,
-                                          const char *opt_switch_arg);
 
 /**
  * @brief Take a switch and its list argument out of the parsed option list
@@ -109,13 +97,9 @@ bool parse_multi_stringlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *o
 
 bool parse_flag(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                 uint32_t *pflag);
-OCS_TRANSITIONAL bool parse_flag(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
-                                 uint32_t *pflag);
 
 int parse_string(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                  char **str);
-OCS_TRANSITIONAL int parse_string(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
-                                  char **str);
 
 int parse_string_arg(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                      char **value);
@@ -126,9 +110,6 @@ parse_u_longlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::to
 bool parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
                               ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **ppdestlist,
                               bool include_names, uint32_t action);
-OCS_TRANSITIONAL bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt,
-                                               ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **ppdestlist,
-                                               bool include_names, uint32_t action);
 
 uint32_t parse_group_options(ocs::tom::ConstList<ocs::tom::ST> string_list,
                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

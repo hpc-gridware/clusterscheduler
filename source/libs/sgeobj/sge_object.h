@@ -89,15 +89,6 @@ inline void ocs_null_out_none(const ocs::tom::Element<typename ocs::tom::FieldTr
    }
 }
 
-/**
- * @brief ocs_null_out_none() for an untyped caller
- * @tparam F the string field
- * @param ep the element, of the field's object type, or nullptr
- */
-template <auto F>
-OCS_TRANSITIONAL inline void ocs_null_out_none(lListElem *ep) {
-   ocs_null_out_none<F>(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type>(ep));
-}
 
 /**
  * @brief The object and message types the master keeps a list of

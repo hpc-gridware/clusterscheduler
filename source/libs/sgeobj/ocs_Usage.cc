@@ -526,28 +526,6 @@ ocs::Usage::decay_and_sum_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DRETURN_VOID;
 }
 
-/**
- * @brief decay_and_sum_usage() for an untyped caller
- *
- * @param job the finished job (JB_Type), checked
- * @param ja_task the finished array task (JAT_Type), checked
- * @param node the job owner's share tree node; unused
- * @param user the submitting user's object (UU_Type), checked
- * @param project the job's project (PR_Type), checked
- * @param decay_list the decay constants (UA_Type), checked
- * @param usage_weight_list the weights each usage attribute is scaled by (UA_Type), checked
- * @param seqno the current usage sequence number, so usage is decayed only once
- * @param curr_time now, in seconds, as the base of the decay
- */
-void
-ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user,
-                                lListElem *project, const lList *decay_list, const lList *usage_weight_list,
-                                const u_long seqno, const uint64_t curr_time) {
-   decay_and_sum_usage(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
-                       ocs::tom::Element<ocs::tom::STN>(node), ocs::tom::Element<ocs::tom::UU>(user),
-                       ocs::tom::Element<ocs::tom::PR>(project), ocs::tom::ConstList<ocs::tom::UA>(decay_list),
-                       ocs::tom::ConstList<ocs::tom::UA>(usage_weight_list), seqno, curr_time);
-}
 
 /**
  * @brief Sum a finished job's scaled usage into UU_usage / PR_usage / UPP_usage

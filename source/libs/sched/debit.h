@@ -65,7 +65,3 @@ int debit_host_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Co
                           ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::Element<ocs::tom::EH> hep,
                           ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, bool is_master_task,
                           bool do_per_host_booking, bool *just_check);
-OCS_TRANSITIONAL int debit_host_consumable(const lListElem *jep, const lListElem *jatep,
-                                           const lList *granted_resources_list, const lListElem *pe, lListElem *hep,
-                                           const lList *centry_list, int slots, bool is_master_task,
-                                           bool do_per_host_booking, bool *just_check);

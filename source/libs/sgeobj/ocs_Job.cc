@@ -236,20 +236,6 @@ ocs::Job::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::JB> job,
    return Binding::binding_get_or_create_elem<JB_binding>(job, answer_list);
 }
 
-/**
- * @brief binding_get_or_create_elem() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @param[out] answer_list receives the reason on failure
- * @return as binding_get_or_create_elem()
- */
-lListElem *
-ocs::Job::binding_get_or_create_elem(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return Binding::binding_get_or_create_elem<JB_binding>(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                                                          answer_list);
-}
 
 /**
  * @brief Who applies the binding
@@ -262,18 +248,6 @@ ocs::Job::binding_get_type(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_type<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_type() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_type()
- */
-ocs::BindingType::Type
-ocs::Job::binding_get_type(const lListElem *job) {
-   return Binding::binding_get_type<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief The hardware unit the binding counts in
@@ -286,18 +260,6 @@ ocs::Job::binding_get_unit(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_unit<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_unit() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_unit()
- */
-ocs::BindingUnit::Unit
-ocs::Job::binding_get_unit(const lListElem *job) {
-   return Binding::binding_get_unit<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief How the selected hardware is ordered
@@ -310,18 +272,6 @@ ocs::Job::binding_get_sort(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_sort<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_sort() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_sort()
- */
-std::string
-ocs::Job::binding_get_sort(const lListElem *job) {
-   return Binding::binding_get_sort<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief Where on the topology the binding starts
@@ -334,18 +284,6 @@ ocs::Job::binding_get_start(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_start<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_start() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_start()
- */
-ocs::BindingStart::Start
-ocs::Job::binding_get_start(const lListElem *job) {
-   return Binding::binding_get_start<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief Where the binding stops
@@ -358,18 +296,6 @@ ocs::Job::binding_get_stop(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_end<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_stop() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_stop()
- */
-ocs::BindingStop::Stop
-ocs::Job::binding_get_stop(const lListElem *job) {
-   return Binding::binding_get_end<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief How the binding walks the topology
@@ -382,18 +308,6 @@ ocs::Job::binding_get_strategy(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_strategy<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_strategy() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_strategy()
- */
-ocs::BindingStrategy::Strategy
-ocs::Job::binding_get_strategy(const lListElem *job) {
-   return Binding::binding_get_strategy<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief Which instance of the job the binding applies to
@@ -406,18 +320,6 @@ ocs::Job::binding_get_instance(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_instance<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_instance() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_instance()
- */
-ocs::BindingInstance::Instance
-ocs::Job::binding_get_instance(const lListElem *job) {
-   return Binding::binding_get_instance<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief Which hardware the binding is restricted to
@@ -430,18 +332,6 @@ ocs::Job::binding_get_filter(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_filter<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_filter() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_filter()
- */
-std::string
-ocs::Job::binding_get_filter(const lListElem *job) {
-   return Binding::binding_get_filter<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief How many units the binding asks for
@@ -454,18 +344,6 @@ ocs::Job::binding_get_amount(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return Binding::binding_get_amount<JB_binding>(job);
 }
 
-/**
- * @brief binding_get_amount() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @return as binding_get_amount()
- */
-uint32_t
-ocs::Job::binding_get_amount(const lListElem *job) {
-   return Binding::binding_get_amount<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB>::from_typed(job));
-}
 
 /**
  * @brief Fill in the binding fields the request left out
@@ -479,16 +357,3 @@ ocs::Job::binding_set_missing_defaults(const ocs::tom::Element<ocs::tom::JB> job
    Binding::binding_set_missing_defaults<JB_binding>(job, answer_list);
 }
 
-/**
- * @brief binding_set_missing_defaults() for an untyped caller
- *
- * The job is passed on unchecked, as before.
- *
- * @param job the job (JB_Type)
- * @param[out] answer_list receives the reason on failure
- */
-void
-ocs::Job::binding_set_missing_defaults(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   Binding::binding_set_missing_defaults<JB_binding>(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
-                                                     answer_list);
-}

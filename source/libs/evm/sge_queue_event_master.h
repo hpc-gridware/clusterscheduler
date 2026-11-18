@@ -46,7 +46,6 @@
 
 void
 qinstance_add_event(ocs::tom::Element<ocs::tom::QU> this_elem, ev_event type, uint64_t gdi_session);
-OCS_TRANSITIONAL void qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session);
 
 void
 cqueue_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session);

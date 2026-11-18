@@ -237,18 +237,6 @@ bool rqs_append_filter_to_dstring(const ocs::tom::ConstElement<ocs::tom::RQRF> f
    DRETURN(ret);
 }
 
-/**
- * @brief rqs_append_filter_to_dstring() for an untyped caller
- *
- * @param filter Element to be converted (RQRF_Type), checked; may be nullptr
- * @param buffer buffer for the element string
- * @param alp answer_list
- *
- * @return as rqs_append_filter_to_dstring()
- */
-bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   return rqs_append_filter_to_dstring(ocs::tom::ConstElement<ocs::tom::RQRF>(filter), buffer, alp);
-}
 
 /**
  * @brief Set default values to given rqs
@@ -612,17 +600,6 @@ ocs::tom::Element<ocs::tom::RQS> rqs_list_locate(const ocs::tom::ConstList<ocs::
    DRETURN(ep);
 }
 
-/**
- * @brief rqs_list_locate() for an untyped caller
- *
- * @param lp rule set list to be searched in (RQS_Type), checked; may be nullptr
- * @param name rule set name of interest
- *
- * @return as rqs_list_locate()
- */
-lListElem *rqs_list_locate(lList *lp, const char *name) {
-   return rqs_list_locate(ocs::tom::ConstList<ocs::tom::RQS>(lp), name);
-}
 
 /**
  * @brief Locate a specific rule by name
@@ -850,32 +827,6 @@ int rqs_debit_consumable(const ocs::tom::Element<ocs::tom::RQS> rqs, const ocs::
    DRETURN(mods);
 }
 
-/**
- * @brief rqs_debit_consumable() for an untyped caller
- *
- * @param rqs resource quota set (RQS_Type), checked
- * @param job job request (JB_Type), checked
- * @param granted granted destination identifier (JG_Type), checked
- * @param pe granted pe (PE_Type), checked; may be nullptr
- * @param centry_list consumable resouces list (CE_Type), checked
- * @param acl_list the usersets a rule's filter may name (US_Type), checked
- * @param hgrp_list the host groups a rule's filter may name (HGRP_Type), checked
- * @param slots slot amount
- * @param is_master_task true when this booking includes the job's master task
- * @param do_per_host_booking true when a per host consumable still has to be booked on this host
- *
- * @return as rqs_debit_consumable()
- */
-int rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted, const lListElem *pe,
-                         const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
-                         bool is_master_task, bool do_per_host_booking) {
-   return rqs_debit_consumable(ocs::tom::Element<ocs::tom::RQS>(rqs), ocs::tom::ConstElement<ocs::tom::JB>(job),
-                               ocs::tom::ConstElement<ocs::tom::JG>(granted), ocs::tom::ConstElement<ocs::tom::PE>(pe),
-                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                               ocs::tom::ConstList<ocs::tom::US>(acl_list),
-                               ocs::tom::ConstList<ocs::tom::HGRP>(hgrp_list), slots, is_master_task,
-                               do_per_host_booking);
-}
 
 /**
  * @brief Found relevant rule for job request
@@ -1528,26 +1479,6 @@ bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const
    DRETURN(ret);
 }
 
-/**
- * @brief rqs_filter_match() for an untyped caller
- *
- * @param filter filter element (RQRF_Type), checked; may be nullptr
- * @param filter_type filter type
- * @param value value to match
- * @param master_userset_list master userset list (US_Type), checked; may be nullptr
- * @param master_hgroup_list master hostgroup list (HGRP_Type), checked; may be nullptr
- * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
- *
- * @return as rqs_filter_match()
- */
-bool rqs_filter_match(const lListElem *filter, int filter_type, const char *value, const lList *master_userset_list,
-                      const lList *master_hgroup_list, const char *group, const lList *grp_list) {
-   return rqs_filter_match(ocs::tom::ConstElement<ocs::tom::RQRF>(filter), filter_type, value,
-                           ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
-                           ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list), group,
-                           ocs::tom::ConstList<ocs::tom::ST>(grp_list));
-}
 
 /**
  * @brief Search for a centry reference in

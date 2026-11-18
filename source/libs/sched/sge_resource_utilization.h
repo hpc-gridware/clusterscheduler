@@ -71,7 +71,6 @@
 
 /* those are for treating resource utilization */
 bool utilization_print_to_dstring(ocs::tom::ConstElement<ocs::tom::RUE> this_elem, dstring *string);
-OCS_TRANSITIONAL bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);
 
 int
 utilization_add(ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_time, uint64_t duration, double utilization,
@@ -85,8 +84,6 @@ OCS_TRANSITIONAL int utilization_add(lListElem *cr, uint64_t start_time, uint64_
 
 ocs::tom::ListPtr<ocs::tom::RESL> utilization_rsmap_max(ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t now,
                                                         uint64_t start_time, uint64_t duration);
-OCS_TRANSITIONAL lList *utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time,
-                                              uint64_t duration);
 
 uint64_t
 utilization_rsmap_below(ocs::tom::ConstElement<ocs::tom::CE> definition, ocs::tom::ConstElement<ocs::tom::RUE> cr,
@@ -124,11 +121,5 @@ void prepare_resource_schedules(ocs::tom::List<ocs::tom::JB> running_jobs, ocs::
                                 ocs::tom::ConstList<ocs::tom::US> acl_list,
                                 ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, ocs::tom::List<ocs::tom::AR> ar_list,
                                 bool for_job_scheduling, uint64_t now);
-OCS_TRANSITIONAL void prepare_resource_schedules(lList *running_jobs, lList *suspended_jobs, lList *pe_list,
-                                                 lList *host_list, lList *queue_list, lList *rqs_list,
-                                                 const lList *centry_list, const lList *acl_list,
-                                                 const lList *hgroup_list, lList *ar_list, bool for_job_scheduling,
-                                                 uint64_t now);
 
 int qinstance_slots_reserved_now(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
-OCS_TRANSITIONAL int qinstance_slots_reserved_now(const lListElem *this_elem);

@@ -456,23 +456,6 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
    }
 }
 
-/**
- * @brief sge_del_centry() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param centry the complex entry (`CE_Type`), only its name is used
- * @param answer_list receives messages for the caller
- * @param remote_user the requesting user
- * @param remote_host the requesting host
- * @return as the typed sge_del_centry()
- */
-int
-sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry,
-               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
-   return sge_del_centry(packet, task, ocs::tom::ConstElement<ocs::tom::CE>(centry), answer_list, remote_user,
-                         remote_host);
-}
 
 /**
  * @brief Increase the version of every queue instance and announce it and every execution host

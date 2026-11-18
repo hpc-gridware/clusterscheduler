@@ -89,19 +89,6 @@ usage_list_get_int_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, con
    DRETURN(ret);
 }
 
-/**
- * @brief usage_list_get_int_usage() for an untyped caller
- *
- * @param usage_list the usage list (UA_Type), checked; may be nullptr
- * @param name name of the element to search
- * @param def default value
- *
- * @return as usage_list_get_int_usage()
- */
-int
-usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
-   return usage_list_get_int_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
-}
 
 /**
  * @brief Read a usage value as a 32 bit unsigned integer
@@ -127,18 +114,6 @@ usage_list_get_ulong_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, c
    DRETURN(ret);
 }
 
-/**
- * @brief usage_list_get_ulong_usage() for an untyped caller
- *
- * @param usage_list list to search (UA_Type), checked; may be nullptr
- * @param name name of the element to search
- * @param def default value returned when the list has no such element
- * @return as usage_list_get_ulong_usage()
- */
-uint32_t
-usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def) {
-   return usage_list_get_ulong_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
-}
 
 /**
  * @brief Read a usage value as a 64 bit unsigned integer
@@ -162,18 +137,6 @@ usage_list_get_ulong64_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list,
    DRETURN(ret);
 }
 
-/**
- * @brief usage_list_get_ulong64_usage() for an untyped caller
- *
- * @param usage_list list to search (UA_Type), checked; may be nullptr
- * @param name name of the element to search
- * @param def default value returned when the list has no such element
- * @return as usage_list_get_ulong64_usage()
- */
-uint64_t
-usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def) {
-   return usage_list_get_ulong64_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
-}
 
 /**
  * @brief Return double usage value
@@ -203,19 +166,6 @@ usage_list_get_double_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, 
    DRETURN(ret);
 }
 
-/**
- * @brief usage_list_get_double_usage() for an untyped caller
- *
- * @param usage_list the usage list (UA_Type), checked; may be nullptr
- * @param name name of the element to search
- * @param def default value
- *
- * @return as usage_list_get_double_usage()
- */
-double
-usage_list_get_double_usage(const lList *usage_list, const char *name, double def) {
-   return usage_list_get_double_usage(ocs::tom::ConstList<ocs::tom::UA>(usage_list), name, def);
-}
 
 /**
  * @brief Create/update a usage record
@@ -238,17 +188,6 @@ usage_list_set_ulong_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const 
    DRETURN_VOID;
 }
 
-/**
- * @brief usage_list_set_ulong_usage() for an untyped caller
- *
- * @param usage_list list containing the usage record to update (UA_Type), checked; may be nullptr
- * @param name name of the usage record to update
- * @param value the new value
- */
-void
-usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value) {
-   usage_list_set_ulong_usage(ocs::tom::List<ocs::tom::UA>(usage_list), name, value);
-}
 
 /**
  * @brief Create or update a usage record from a 64 bit unsigned integer
@@ -267,17 +206,6 @@ usage_list_set_ulong64_usage(const ocs::tom::List<ocs::tom::UA> usage_list, cons
    DRETURN_VOID;
 }
 
-/**
- * @brief usage_list_set_ulong64_usage() for an untyped caller
- *
- * @param usage_list list containing the usage record to update (UA_Type), checked; may be nullptr
- * @param name name of the usage record to update
- * @param value the new value
- */
-void
-usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value) {
-   usage_list_set_ulong64_usage(ocs::tom::List<ocs::tom::UA>(usage_list), name, value);
-}
 
 /**
  * @brief Find a usage record, creating it on request
@@ -327,18 +255,6 @@ usage_list_set_double_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const
    DRETURN_VOID;
 }
 
-/**
- * @brief usage_list_set_double_usage() for an untyped caller
- *
- * @param usage_list list containing the usage record to update (UA_Type), checked; may be nullptr
- * @param name name of the usage record to update
- * @param value the new value
- * @param create_usage create the usage element if it does not exist
- */
-void
-usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
-   usage_list_set_double_usage(ocs::tom::List<ocs::tom::UA>(usage_list), name, value, create_usage);
-}
 
 /**
  * @brief Set the maximum value for a usage record

@@ -61,6 +61,7 @@
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "sge_utility_qmaster.h"
 
 /** @brief Debug layer the cluster queue helpers log under */
 #define CQUEUE_LAYER TOP_LAYER
@@ -744,19 +745,6 @@ attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elem
    DRETURN(ret);
 }
 
-/**
- * @brief attr_mod_obj_binding() for an untyped caller
- *
- * @param alpp receives messages for the caller
- * @param new_ar the advance reservation as it is to become (AR_Type), checked
- * @param ar the reduced element the client sent (AR_Type), checked
- *
- * @return as attr_mod_obj_binding()
- */
-bool
-attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ar, const lListElem *ar) {
-   return attr_mod_obj_binding(alpp, ocs::tom::Element<ocs::tom::AR>(new_ar), ocs::tom::ConstElement<ocs::tom::AR>(ar));
-}
 
 
 /**

@@ -113,16 +113,3 @@ gru_list_search(const ocs::tom::List<ocs::tom::GRU> granted_resources_list, cons
    return ocs::tom::Element<ocs::tom::GRU>::from_typed(const_cast<lListElem *>(gru.raw()));
 }
 
-/**
- * @brief gru_list_search() for an untyped caller
- *
- * @param granted_resources_list the granted resources (GRU_Type), checked; may be nullptr
- * @param name the resource name
- * @param host_name the host name
- *
- * @return as gru_list_search()
- */
-lListElem *
-gru_list_search(lList *granted_resources_list, const char *name, const char *host_name) {
-   return gru_list_search(ocs::tom::List<ocs::tom::GRU>(granted_resources_list), name, host_name);
-}

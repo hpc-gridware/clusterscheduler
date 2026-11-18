@@ -163,10 +163,8 @@ bool
 host_is_configured_submit_host(const char *hostname);
 
 bool host_list_merge(ocs::tom::List<ocs::tom::EH> this_list);
-OCS_TRANSITIONAL bool host_list_merge(lList *this_list);
 
 bool host_merge(ocs::tom::Element<ocs::tom::EH> host, ocs::tom::ConstElement<ocs::tom::EH> global_host);
-OCS_TRANSITIONAL bool host_merge(lListElem *host, const lListElem *global_host);
 
 int host_debit_rsmap(ocs::tom::Element<ocs::tom::EH> host, const char *ce_name,
                      ocs::tom::ConstElement<ocs::tom::RESL> resl, int slots, bool *just_check);

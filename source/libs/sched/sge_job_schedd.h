@@ -58,7 +58,6 @@
 #include "sgeobj/tom/ocs_tom_JG.h"
 
 bool job_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JB> jep);
-OCS_TRANSITIONAL bool job_get_duration(uint64_t *duration, const lListElem *jep);
 bool task_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JAT> ja_task);
 
 void sge_inc_jc(ocs::tom::ListPtr<ocs::tom::JC> &jc_list, const char *name, int slots);

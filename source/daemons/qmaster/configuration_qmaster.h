@@ -60,13 +60,10 @@ sge_get_configuration_for_host(const char *aName);
 
 ocs::tom::ElementPtr<ocs::tom::CF>
 ocs_get_configuration_entry_by_name(const char *aHost, const char *anEntryName);
-OCS_TRANSITIONAL lListElem *sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName);
 
 int
 sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CONF> aConf,
                       ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, char *aUser, char *aHost);
-OCS_TRANSITIONAL int sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp,
-                                           ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 int
 sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
@@ -76,7 +73,6 @@ OCS_TRANSITIONAL int sge_mod_configuration(lListElem *aConf, ocs::tom::ListPtr<o
 
 int
 sge_compare_configuration(ocs::tom::ConstElement<ocs::tom::EH> aHost, ocs::tom::ConstList<ocs::tom::CONF> aConf);
-OCS_TRANSITIONAL int sge_compare_configuration(const lListElem *aHost, const lList *aConf);
 
 void
 sge_update_heard_from_timeout();

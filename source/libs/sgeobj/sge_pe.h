@@ -60,18 +60,14 @@ pe_is_matching(ocs::tom::ConstElement<ocs::tom::PE> pe, const char *wildcard);
 
 ocs::tom::ConstElement<ocs::tom::PE>
 pe_list_find_matching(ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *wildcard);
-OCS_TRANSITIONAL const lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard);
 
 ocs::tom::Element<ocs::tom::PE>
 pe_list_locate(ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *pe_name);
-OCS_TRANSITIONAL lListElem *pe_list_locate(const lList *pe_list, const char *pe_name);
 
 bool
 pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                  ocs::tom::ConstList<ocs::tom::JB> master_job_list,
                  ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list);
-OCS_TRANSITIONAL bool pe_is_referenced(const lListElem *pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                       const lList *master_job_list, const lList *master_cqueue_list);
 
 int
 pe_validate(ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int startup,
@@ -107,12 +103,9 @@ pe_get_slots_used(ocs::tom::ConstElement<ocs::tom::PE> pe);
 
 int
 pe_set_slots_used(ocs::tom::Element<ocs::tom::PE> pe, int slots);
-OCS_TRANSITIONAL int pe_set_slots_used(lListElem *pe, int slots);
 
 void
 pe_debit_slots(ocs::tom::Element<ocs::tom::PE> pep, int slots, uint32_t job_id);
-OCS_TRANSITIONAL void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id);
 
 bool
 pe_do_accounting_summary(ocs::tom::ConstElement<ocs::tom::PE> pe);
-OCS_TRANSITIONAL bool pe_do_accounting_summary(const lListElem *pe);

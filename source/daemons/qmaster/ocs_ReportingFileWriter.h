@@ -127,8 +127,6 @@ namespace ocs {
 
       static bool
       create_new_job_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::JB> job);
-      OCS_TRANSITIONAL static bool create_new_job_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                          const lListElem *job);
 
       static bool
       create_job_logs(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t event_time, job_log_t, const char *user,
@@ -136,19 +134,11 @@ namespace ocs {
                       ocs::tom::ConstElement<ocs::tom::JR> job_report, ocs::tom::ConstElement<ocs::tom::JB> job,
                       ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstElement<ocs::tom::PET> pe_task,
                       const char *message);
-      OCS_TRANSITIONAL static bool create_job_logs(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t event_time,
-                                                   job_log_t,
-                                                   const char *user, const char *host, const lListElem *job_report,
-                                                   const lListElem *job, const lListElem *ja_task,
-                                                   const lListElem *pe_task, const char *message);
 
       static bool
       create_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
                           ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
                           bool intermediate);
-      OCS_TRANSITIONAL static bool create_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                       lListElem *job_report, lListElem *job,
-                                                       lListElem *ja_task, bool intermediate);
 
       static bool
       create_online_usage_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -156,10 +146,6 @@ namespace ocs {
                                   ocs::tom::ConstElement<ocs::tom::JB> job,
                                   ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                   ocs::tom::ConstElement<ocs::tom::PET> pe_task, bool aggregate_pe_tasks);
-      OCS_TRANSITIONAL static bool create_online_usage_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                               lListElem *job_report,
-                                                               lListElem *job, lListElem *ja_task, lListElem *pe_task,
-                                                               bool aggregate_pe_tasks);
 
       static bool
       is_online_usage_required();
@@ -167,65 +153,42 @@ namespace ocs {
       static bool
       create_host_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
                           uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_host_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                       const lListElem *host, uint64_t report_time);
 
       static bool
       create_host_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                      ocs::tom::ConstElement<ocs::tom::EH> host,
                                      ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_host_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                                  const lListElem *host,
-                                                                  const lListElem *job, uint64_t report_time);
 
       static bool
       create_queue_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::QU> queue,
                            uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_queue_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                        const lListElem *queue, uint64_t report_time);
 
       static bool
       create_queue_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                       ocs::tom::ConstElement<ocs::tom::EH> host,
                                       ocs::tom::ConstElement<ocs::tom::QU> queue,
                                       ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_queue_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                                   const lListElem *host,
-                                                                   const lListElem *queue, const lListElem *job,
-                                                                   uint64_t report_time);
 
       static bool
       create_new_ar_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
                             uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_new_ar_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                         const lListElem *ar, uint64_t report_time);
 
       static bool
       create_ar_attribute_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
                                   uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_ar_attribute_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                               const lListElem *ar, uint64_t report_time);
 
       static bool
       create_ar_log_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
                             ar_state_event_t state, const char *ar_description, uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_ar_log_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                         const lListElem *ar,
-                                                         ar_state_event_t state, const char *ar_description,
-                                                         uint64_t report_time);
 
       static bool
       create_ar_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
                              uint64_t report_time);
-      OCS_TRANSITIONAL static bool create_ar_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                          const lListElem *ar, uint64_t report_time);
 
       static bool
       is_intermediate_acct_required(ocs::tom::ConstElement<ocs::tom::JB> job,
                                     ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                     ocs::tom::ConstElement<ocs::tom::PET> pe_task);
-      OCS_TRANSITIONAL static bool is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task,
-                                                                 const lListElem *pe_task);
 
       static bool
       create_monitoring_records(const char *json_data);

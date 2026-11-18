@@ -61,12 +61,10 @@
 
 ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(ocs::tom::Element<ocs::tom::PET> container,
                                                         ocs::tom::ConstElement<ocs::tom::PET> pe_task);
-OCS_TRANSITIONAL lListElem *pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task);
 
 ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_all(ocs::tom::List<ocs::tom::PET> pe_task_list);
 
 ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(ocs::tom::List<ocs::tom::PET> pe_task_list,
                                                              ocs::tom::ConstElement<ocs::tom::PET> pe_task);
-OCS_TRANSITIONAL lListElem *pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task);
 
 bool pe_task_verify_request(ocs::tom::ConstElement<ocs::tom::PETR> petr, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

@@ -119,24 +119,6 @@ ocs::GrantedResources::add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &gran
    DRETURN_VOID;
 }
 
-/**
- * @brief add_binding_to_use() for an untyped caller
- *
- * @param granted_resources_list List of granted resources (GRU_Type) to add to, created if *granted_resources_list
- *                               is nullptr; not nullptr itself
- * @param host_name Hostname to add the binding information for
- * @param binding_touse_list List of binding information to add (ST_Type), copied
- */
-void
-ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const char *host_name,
-                                          const ocs::tom::ConstList<ocs::tom::ST> binding_touse_list) {
-   if (granted_resources_list == nullptr) {
-      return;
-   }
-   auto list = ocs::tom::ListPtr<ocs::tom::GRU>::from_typed(std::exchange(*granted_resources_list, nullptr));
-   add_binding_to_use(list, host_name, binding_touse_list);
-   *granted_resources_list = list.release();
-}
 
 /**
  * @brief Collect everything granted on one host into a single topology

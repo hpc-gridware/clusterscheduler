@@ -50,8 +50,6 @@
 int
 sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CE> centry,
                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 int
 centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,

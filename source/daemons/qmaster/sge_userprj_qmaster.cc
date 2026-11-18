@@ -576,28 +576,6 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
    DRETURN(ret);
 }
 
-/** @brief sge_del_userprj() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param ep the user (UU_Type) or project (PR_Type)
- * @param alpp receives messages for the caller
- * @param upl the master list of the type
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @param user 1 for a user, 0 for a project
- * @return STATUS_OK on success
- */
-int
-sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                lList **upl, const char *ruser, const char *rhost, int user) {
-   if (user) {
-      return sge_del_userprj(packet, task, ocs::tom::ConstElement<ocs::tom::UU>(ep), alpp,
-                             ocs::tom::List<ocs::tom::UU>(*upl), ruser, rhost);
-   }
-   return sge_del_userprj(packet, task, ocs::tom::ConstElement<ocs::tom::PR>(ep), alpp,
-                          ocs::tom::List<ocs::tom::PR>(*upl), ruser, rhost);
-}
 
 /** @brief Check that every named project exists
  * @param alpp receives messages for the caller

@@ -126,16 +126,6 @@ int host_notify_about_new_conf(const ocs::tom::ConstElement<ocs::tom::EH> host) 
    DRETURN(ret);
 }
 
-/**
- * @brief host_notify_about_new_conf() for an untyped caller
- *
- * @param host EH_Type element, checked
- *
- * @return as host_notify_about_new_conf()
- */
-int host_notify_about_new_conf(lListElem *host) {
-   return host_notify_about_new_conf(ocs::tom::ConstElement<ocs::tom::EH>(host));
-}
 
 /**
  * @brief Send kill command to execd
@@ -155,17 +145,6 @@ int host_notify_about_kill(const ocs::tom::ConstElement<ocs::tom::EH> host, cons
    DRETURN(ret);
 }
 
-/**
- * @brief host_notify_about_kill() for an untyped caller
- *
- * @param host EH_Type element, checked
- * @param kill_command command
- *
- * @return as host_notify_about_kill()
- */
-int host_notify_about_kill(lListElem *host, int kill_command) {
-   return host_notify_about_kill(ocs::tom::ConstElement<ocs::tom::EH>(host), kill_command);
-}
 
 /**
  * @brief Ask an execution host to send its complete load report rather than a delta
@@ -180,14 +159,4 @@ int host_notify_about_full_load_report(const ocs::tom::ConstElement<ocs::tom::EH
    DRETURN(ret);
 }
 
-/**
- * @brief host_notify_about_full_load_report() for an untyped caller
- *
- * @param host EH_Type element, checked
- *
- * @return as host_notify_about_full_load_report()
- */
-int host_notify_about_full_load_report(lListElem *host) {
-   return host_notify_about_full_load_report(ocs::tom::ConstElement<ocs::tom::EH>(host));
-}
 

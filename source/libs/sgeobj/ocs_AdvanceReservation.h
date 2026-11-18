@@ -64,29 +64,16 @@ namespace ocs {
    public:
       static ocs::tom::Element<ocs::tom::BN> binding_get_or_create_elem(ocs::tom::Element<ocs::tom::AR> ar,
                                                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *ar,
-                                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       static BindingType::Type binding_get_type(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static BindingType::Type binding_get_type(const lListElem *ar);
       static BindingUnit::Unit binding_get_unit(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static BindingUnit::Unit binding_get_unit(const lListElem *ar);
       static std::string binding_get_sort(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static std::string binding_get_sort(const lListElem *ar);
       static BindingStart::Start binding_get_start(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static BindingStart::Start binding_get_start(const lListElem *ar);
       static BindingStop::Stop binding_get_stop(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static BindingStop::Stop binding_get_stop(const lListElem *ar);
       static BindingStrategy::Strategy binding_get_strategy(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static BindingStrategy::Strategy binding_get_strategy(const lListElem *ar);
       static std::string binding_get_filter(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static std::string binding_get_filter(const lListElem *ar);
       static uint32_t binding_get_amount(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static uint32_t binding_get_amount(const lListElem *ar);
       static BindingInstance::Instance binding_get_instance(ocs::tom::ConstElement<ocs::tom::AR> ar);
-      OCS_TRANSITIONAL static BindingInstance::Instance binding_get_instance(const lListElem *ar);
       static void binding_set_missing_defaults(ocs::tom::Element<ocs::tom::AR> ar,
                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *ar,
-                                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
    };
 }

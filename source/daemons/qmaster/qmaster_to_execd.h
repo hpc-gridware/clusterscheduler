@@ -45,14 +45,11 @@
 int
 host_notify_about_new_conf(ocs::tom::ConstElement<ocs::tom::EH> host);
 
-OCS_TRANSITIONAL int host_notify_about_new_conf(lListElem *host);
 
 int
 host_notify_about_kill(ocs::tom::ConstElement<ocs::tom::EH> host, int kill_command);
 
-OCS_TRANSITIONAL int host_notify_about_kill(lListElem *host, int kill_command);
 
 int
 host_notify_about_full_load_report(ocs::tom::ConstElement<ocs::tom::EH> host);
 
-OCS_TRANSITIONAL int host_notify_about_full_load_report(lListElem *host);

@@ -242,9 +242,6 @@ bool hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
                              ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                              ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups,
                              ocs::tom::ListPtr<ocs::tom::ST> *occupants_queues);
-OCS_TRANSITIONAL bool hgroup_find_referencees(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                              const lList *master_hgroup_list, const lList *master_cqueue_list,
-                                              lList **occupants_groups, lList **occupants_queues);
 
 /* --- */
 
@@ -254,8 +251,6 @@ OCS_TRANSITIONAL lListElem *hgroup_list_locate(const lList *this_list, const cha
 
 bool hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::HR> href_list);
-OCS_TRANSITIONAL bool hgroup_list_exists(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                         const lList *href_list);
 
 bool hgroup_list_find_matching_and_resolve(ocs::tom::ConstList<ocs::tom::HGRP> this_list,
                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,

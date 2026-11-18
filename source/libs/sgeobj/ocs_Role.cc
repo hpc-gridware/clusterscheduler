@@ -123,19 +123,6 @@ ocs::Role::check_integrity(const ocs::tom::ConstList<ocs::tom::RL> role_list,
    DRETURN_VOID;
 }
 
-/**
- * @brief check_integrity() for an untyped caller
- *
- * @param role_list the roles to scan (RL_Type), checked
- * @param userset_list the usersets the roles may refer to (US_Type), checked
- * @param[out] answer_list receives the warnings
- */
-void
-ocs::Role::check_integrity(const lList *role_list, const lList *userset_list,
-                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   check_integrity(ocs::tom::ConstList<ocs::tom::RL>(role_list), ocs::tom::ConstList<ocs::tom::US>(userset_list),
-                   answer_list);
-}
 
 /**
  * Parse and structurally validate a perm_list string.
@@ -641,18 +628,6 @@ ocs::Role::would_create_cycle(const char *role_name, const char *candidate_paren
    DRETURN(reachable(candidate_parent, role_name, role_list, visited));
 }
 
-/**
- * @brief would_create_cycle() for an untyped caller
- *
- * @param role_name the role being modified
- * @param candidate_parent the proposed new parent
- * @param role_list the master role list (RL_Type), checked
- * @return as would_create_cycle()
- */
-bool
-ocs::Role::would_create_cycle(const char *role_name, const char *candidate_parent, const lList *role_list) {
-   return would_create_cycle(role_name, candidate_parent, ocs::tom::ConstList<ocs::tom::RL>(role_list));
-}
 
 /**
  * @brief Transitively collect all PermRules from role_name and its ancestors

@@ -78,13 +78,9 @@
 
 int parse_list_simple(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, lListElem *job, int field, int nm_var,
                       int nm_value, uint32_t flags);
-OCS_TRANSITIONAL int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field, int nm_var,
-                                       int nm_value, uint32_t flags);
 
 void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job,
                          uint32_t scope, int hard_field, int soft_field);
-OCS_TRANSITIONAL void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uint32_t scope,
-                                          int hard_field, int soft_field);
 
 int cull_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
 

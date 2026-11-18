@@ -373,21 +373,6 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
    DRETURN(STATUS_OK);
 }
 
-/** @brief sge_del_pe() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param pep the parallel environment (`PE_Type`)
- * @param alpp receives messages for the caller
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @return see the typed form
- */
-int
-sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-           char *ruser, char *rhost) {
-   return sge_del_pe(packet, task, ocs::tom::ConstElement<ocs::tom::PE>(pep), alpp, ruser, rhost);
-}
 
 /** @brief Rebuild every parallel environment's slot booking from the running jobs
  *
@@ -498,26 +483,6 @@ pe_diff_usersets(const ocs::tom::ConstElement<ocs::tom::PE> new_pe, const ocs::t
    DRETURN_VOID;
 }
 
-/** @brief pe_diff_usersets() for an untyped caller
- *
- * @param new_pe New PE (PE_Type)
- * @param old_pe Old PE (PE_Type)
- * @param new_acl New userset references (US_Type), or nullptr
- * @param old_acl Old userset references (US_Type), or nullptr
- */
-void
-pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl, lList **old_acl) {
-   auto new_list = ocs::tom::ListPtr<ocs::tom::US>(new_acl != nullptr ? *new_acl : nullptr);
-   auto old_list = ocs::tom::ListPtr<ocs::tom::US>(old_acl != nullptr ? *old_acl : nullptr);
-   pe_diff_usersets(ocs::tom::ConstElement<ocs::tom::PE>(new_pe), ocs::tom::ConstElement<ocs::tom::PE>(old_pe),
-                    new_acl != nullptr ? &new_list : nullptr, old_acl != nullptr ? &old_list : nullptr);
-   if (new_acl != nullptr) {
-      *new_acl = new_list.release();
-   }
-   if (old_acl != nullptr) {
-      *old_acl = old_list.release();
-   }
-}
 
 
 /**

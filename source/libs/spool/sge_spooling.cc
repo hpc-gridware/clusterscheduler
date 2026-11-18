@@ -102,18 +102,6 @@ ocs_spool_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const cha
    DRETURN(context);
 }
 
-/**
- * @brief spool_create_context() for an untyped caller
- *
- * @param answer_list to return error messages
- * @param name name of the context
- *
- * @return as ocs_spool_create_context(), handed over raw (SPC_Type)
- */
-lListElem *
-spool_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
-   return ocs_spool_create_context(answer_list, name).release();
-}
 
 /**
  * @brief Free resources of a spooling context
@@ -653,50 +641,6 @@ spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
    DRETURN(ep);
 }
 
-/**
- * @brief spool_context_create_rule() for an untyped caller
- *
- * @param answer_list to return error messages
- * @param context the context to contain the new rule (SPC_Type), checked
- * @param name the name of the rule
- * @param url the name of the url
- * @param option_func function to set options for the rule
- * @param startup_func startup function for the rule
- * @param shutdown_func shutdown function
- * @param maintenance_func maintenance function (initialization, backup, etc.)
- * @param trigger_func function for recurring housekeeping
- * @param transaction_func function beginning, committing and rolling back
- * @param list_func function reading a list of objects
- * @param read_func function reading an individual object
- * @param read_keys_func function listing the keys below a key
- * @param write_func function writing an individual object
- * @param delete_func function deleting an individual object
- * @param validate_func function validating an individual object
- * @param validate_list_func function for validating the new list
- *
- * @return as the typed form
- */
-lListElem *
-spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context,
-                          const char *name, const char *url,
-                          spooling_option_func option_func,
-                          spooling_startup_func startup_func,
-                          spooling_shutdown_func shutdown_func,
-                          spooling_maintenance_func maintenance_func,
-                          spooling_trigger_func trigger_func,
-                          spooling_transaction_func transaction_func,
-                          spooling_list_func list_func,
-                          spooling_read_func read_func,
-                          spooling_read_keys_func read_keys_func,
-                          spooling_write_func write_func,
-                          spooling_delete_func delete_func,
-                          spooling_validate_func validate_func,
-                          spooling_validate_list_func validate_list_func) {
-   return spool_context_create_rule(answer_list, ocs::tom::Element<ocs::tom::SPC>(context), name, url, option_func,
-                                    startup_func, shutdown_func, maintenance_func, trigger_func, transaction_func,
-                                    list_func, read_func, read_keys_func, write_func, delete_func, validate_func,
-                                    validate_list_func);
-}
 
 /**
  * @brief Search an object type description
@@ -772,20 +716,6 @@ spool_context_create_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
    DRETURN(ep);
 }
 
-/**
- * @brief spool_context_create_type() for an untyped caller
- *
- * @param answer_list to return error messages
- * @param context the context to contain the new description (SPC_Type), checked
- * @param object_type the object type
- *
- * @return as the typed form
- */
-lListElem *
-spool_context_create_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context,
-                          const sge_object_type object_type) {
-   return spool_context_create_type(answer_list, ocs::tom::Element<ocs::tom::SPC>(context), object_type);
-}
 
 /**
  * @brief Search the default rule
@@ -866,22 +796,6 @@ spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom
    DRETURN(ep);
 }
 
-/**
- * @brief spool_type_add_rule() for an untyped caller
- *
- * @param answer_list to return error messages
- * @param spool_type the object type description (SPT_Type), checked
- * @param rule the rule to add (SPR_Type), checked
- * @param is_default is the rule the default rule?
- *
- * @return as the typed form
- */
-lListElem *
-spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *spool_type, const lListElem *rule,
-                    const lBool is_default) {
-   return spool_type_add_rule(answer_list, ocs::tom::Element<ocs::tom::SPT>(spool_type),
-                              ocs::tom::ConstElement<ocs::tom::SPR>(rule), is_default);
-}
 
 /**
  * @brief Read a list of objects from spooled data

@@ -131,16 +131,6 @@ void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const ocs::tom::Con
    DRETURN_VOID;
 }
 
-/**
- * @brief cull_show_job() for an untyped caller
- * @param os stream to write to
- * @param ilp the scheduler job info list (`SME_Type`), or nullptr
- * @param job the job (`JB_Type`), checked
- * @param flags which parts of the listing were requested
- */
-void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, const int flags) {
-   cull_show_job(os, ocs::tom::ConstList<ocs::tom::SME>(ilp), ocs::tom::ConstElement<ocs::tom::JB>(job), flags);
-}
 
 /**
  * @brief Report why the pending jobs are not running, as plain text

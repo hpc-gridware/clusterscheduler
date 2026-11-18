@@ -129,6 +129,5 @@ spool_default_validate_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const sge_object_type object_type);
 
 ocs::tom::ElementPtr<ocs::tom::EH> ocs_spool_exechost_static_copy(ocs::tom::ConstElement<ocs::tom::EH> object);
-OCS_TRANSITIONAL lListElem *ocs_spool_exechost_static_copy(const lListElem *object);
 
 /** @} */

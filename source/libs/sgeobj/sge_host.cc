@@ -712,16 +712,6 @@ bool host_list_merge(const ocs::tom::List<ocs::tom::EH> this_list) {
    DRETURN(ret);
 }
 
-/**
- * @brief host_list_merge() for an untyped caller
- *
- * @param this_list the exec host list to work on (EH_Type), checked; may be nullptr
- *
- * @return as host_list_merge()
- */
-bool host_list_merge(lList *this_list) {
-   return host_list_merge(ocs::tom::List<ocs::tom::EH>(this_list));
-}
 
 /**
  * @brief Merge global host settings into an exec host
@@ -768,17 +758,6 @@ bool host_merge(const ocs::tom::Element<ocs::tom::EH> host, const ocs::tom::Cons
    DRETURN(ret);
 }
 
-/**
- * @brief host_merge() for an untyped caller
- *
- * @param host the host object to hold the merged config (EH_Type), checked; may be nullptr
- * @param global_host the global host object (EH_Type), checked; may be nullptr
- *
- * @return as host_merge()
- */
-bool host_merge(lListElem *host, const lListElem *global_host) {
-   return host_merge(ocs::tom::Element<ocs::tom::EH>(host), ocs::tom::ConstElement<ocs::tom::EH>(global_host));
-}
 
 /**
  * @brief debit a certain RSMAP id from a host

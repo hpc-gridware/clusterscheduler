@@ -373,18 +373,6 @@ search_named_node_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *pa
    DRETURN(ret);
 }
 
-/**
- * @brief search_named_node_path() for an untyped caller
- *
- * @param ep root of the tree (STN_Type), checked
- * @param path the path to resolve
- * @param[out] ancestors receives the nodes from the root down to the match; may be nullptr
- * @return as search_named_node_path()
- */
-lListElem *
-search_named_node_path(lListElem *ep, const char *path, ancestors_t *ancestors) {
-   return search_named_node_path(ocs::tom::Element<ocs::tom::STN>(ep), path, ancestors);
-}
 
 
 /**

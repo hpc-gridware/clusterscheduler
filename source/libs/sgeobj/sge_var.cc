@@ -163,20 +163,6 @@ void var_list_set_int(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name, c
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_set_int() for an untyped caller
- *
- * @param[in,out] varl VA_Type list, checked; nothing happens for nullptr
- * @param name the name of the variable
- * @param value the (new) value of the variable
- */
-void var_list_set_int(lList **varl, const char *name, int value) {
-   if (varl != nullptr) {
-      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
-      var_list_set_int(list, name, value);
-      *varl = list.release();
-   }
-}
 
 /**
  * @brief Add/change a variable
@@ -199,20 +185,6 @@ void var_list_set_uint32t(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *nam
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_set_uint32t() for an untyped caller
- *
- * @param[in,out] varl VA_Type list, checked; nothing happens for nullptr
- * @param name the name of the variable
- * @param value the (new) value of the variable
- */
-void var_list_set_uint32t(lList **varl, const char *name, uint32_t value) {
-   if (varl != nullptr) {
-      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
-      var_list_set_uint32t(list, name, value);
-      *varl = list.release();
-   }
-}
 
 /**
  * @brief Set shared lib path
@@ -273,16 +245,6 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_set_sharedlib_path() for an untyped caller
- *
- * @param[in,out] varl list of environment variables (VA_Type), checked; must not be nullptr
- */
-void var_list_set_sharedlib_path(lList **varl) {
-   ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
-   var_list_set_sharedlib_path(list);
-   *varl = list.release();
-}
 
 /**
  * @brief Dump variables from list to file
@@ -322,15 +284,6 @@ void var_list_dump_to_file(const ocs::tom::ConstList<ocs::tom::VA> varl, FILE *f
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_dump_to_file() for an untyped caller
- *
- * @param varl list of variables (VA_Type), checked; may be nullptr
- * @param file filehandle of a previously opened (for writing) file
- */
-void var_list_dump_to_file(const lList *varl, FILE *file) {
-   var_list_dump_to_file(ocs::tom::ConstList<ocs::tom::VA>(varl), file);
-}
 
 /**
  * @brief Get value of certain variable
@@ -355,17 +308,6 @@ const char *var_list_get_string(const ocs::tom::ConstList<ocs::tom::VA> varl, co
    return ret;
 }
 
-/**
- * @brief var_list_get_string() for an untyped caller
- *
- * @param varl VA_Type list, checked; may be nullptr
- * @param variable variable name
- *
- * @return as var_list_get_string()
- */
-const char *var_list_get_string(const lList *varl, const char *variable) {
-   return var_list_get_string(ocs::tom::ConstList<ocs::tom::VA>(varl), variable);
-}
 
 /**
  * @brief Copy vars with certain prefix
@@ -412,21 +354,6 @@ void var_list_copy_prefix_vars(ocs::tom::ListPtr<ocs::tom::VA> &varl, const ocs:
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_copy_prefix_vars() for an untyped caller
- *
- * @param[in,out] varl VA_Type list the copies are added to, checked; created if *varl is nullptr
- * @param src_varl the list to copy from (VA_Type), checked; may be nullptr and may be *varl itself
- * @param prefix prefix string (e.g. VAR_PREFIX)
- * @param new_prefix new prefix string (e.g. "SGE_")
- */
-void var_list_copy_prefix_vars(lList **varl, const lList *src_varl, const char *prefix, const char *new_prefix) {
-   // the source is checked before the target is taken over
-   const ocs::tom::ConstList<ocs::tom::VA> src(src_varl);
-   ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
-   var_list_copy_prefix_vars(list, src, prefix, new_prefix);
-   *varl = list.release();
-}
 
 /**
  * @brief Copy vars with certain prefix
@@ -475,22 +402,6 @@ void var_list_copy_prefix_vars_undef(ocs::tom::ListPtr<ocs::tom::VA> &varl,
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_copy_prefix_vars_undef() for an untyped caller
- *
- * @param[in,out] varl VA_Type list the copies are added to, checked; created if *varl is nullptr
- * @param src_varl the list to copy from (VA_Type), checked; may be nullptr and may be *varl itself
- * @param prefix prefix string (e.g. VAR_PREFIX_NR)
- * @param new_prefix new prefix string (e.g. "SGE_")
- */
-void var_list_copy_prefix_vars_undef(lList **varl, const lList *src_varl, const char *prefix,
-                                     const char *new_prefix) {
-   // the source is checked before the target is taken over
-   const ocs::tom::ConstList<ocs::tom::VA> src(src_varl);
-   ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
-   var_list_copy_prefix_vars_undef(list, src, prefix, new_prefix);
-   *varl = list.release();
-}
 
 /**
  * @brief Copy env. vars
@@ -613,20 +524,6 @@ void var_list_split_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, ocs::to
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_split_prefix_vars() for an untyped caller
- *
- * @param varl pointer to the VA_Type list, checked; the list may be nullptr
- * @param pefix_vars pointer to the VA_Type list, checked; created if *pefix_vars is nullptr
- * @param prefix string (e.g. VAR_PREFIX)
- */
-void var_list_split_prefix_vars(lList **varl, lList **pefix_vars, const char *prefix) {
-   // the source is checked before the target is taken over
-   const ocs::tom::List<ocs::tom::VA> list(*varl);
-   ocs::tom::ListPtr<ocs::tom::VA> prefix_list(*pefix_vars);
-   var_list_split_prefix_vars(list, prefix_list, prefix);
-   *pefix_vars = prefix_list.release();
-}
 
 /**
  * @brief Concatenate two lists as sets
@@ -686,18 +583,6 @@ int var_list_add_as_set(const ocs::tom::List<ocs::tom::VA> lp0, ocs::tom::ListPt
    DRETURN(0);
 }
 
-/**
- * @brief var_list_add_as_set() for an untyped caller
- *
- * @param lp0 first list (VA_Type), checked; may be nullptr
- * @param lp1 second list, consumed, may be nullptr; adopted unchecked, because the typed form compares its
- *        descriptor with the one of @p lp0 and fails with -1 as before
- *
- * @return as var_list_add_as_set()
- */
-int var_list_add_as_set(lList *lp0, lList *lp1) {
-   return var_list_add_as_set(ocs::tom::List<ocs::tom::VA>(lp0), ocs::tom::ListPtr<ocs::tom::VA>::from_typed(lp1));
-}
 
 /**
  * @brief Verify contents of a variable list

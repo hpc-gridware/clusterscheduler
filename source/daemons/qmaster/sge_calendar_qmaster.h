@@ -67,8 +67,6 @@ calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLi
 int
 sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CAL> cep,
                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
-                                      ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 void
 sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);

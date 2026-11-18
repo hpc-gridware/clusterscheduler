@@ -305,16 +305,3 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
    DRETURN(0);
 }
 
-/**
- * @brief Corrects the capacities of the hosts by their load values, for a caller with untyped lists (N-X-2)
- *
- * @param[in,out] host_list        the execution hosts (`EH_Type`), checked
- * @param[in]     centry_list      the complex entries (`CE_Type`), checked
- * @param[in]     load_adjustments the job load adjustments (`CE_Type`), checked, or nullptr
- *
- * @return always 0
- */
-int correct_capacities(lList *host_list, const lList *centry_list, const lList *load_adjustments) {
-   return correct_capacities(ocs::tom::List<ocs::tom::EH>(host_list), ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                             ocs::tom::ConstList<ocs::tom::CE>(load_adjustments));
-}

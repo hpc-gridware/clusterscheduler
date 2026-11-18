@@ -334,23 +334,6 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_del_configuration() for an untyped caller
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param aConf the configuration to delete (`CONF_Type`)
- * @param anAnswer receives messages for the caller
- * @param aUser the requesting user
- * @param aHost the requesting host
- * @return as the typed sge_del_configuration()
- */
-int
-sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *aConf,
-                      ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, char *aUser, char *aHost) {
-   return sge_del_configuration(packet, task, ocs::tom::ConstElement<ocs::tom::CONF>(aConf), anAnswer, aUser,
-                                aHost);
-}
 
 
 /**
@@ -997,21 +980,6 @@ sge_compare_configuration(const ocs::tom::ConstElement<ocs::tom::EH> aHost,
    DRETURN(0);
 }
 
-/**
- * @brief sge_compare_configuration() for an untyped caller
- *
- * The list comes from the configuration report of an sge_execd, which holds CONF_Type elements; it is
- * wrapped without a check, every access to an element checks its type as the raw accessors did.
- *
- * @param aHost the execution host (`EH_Type`)
- * @param aConf the configurations the host currently holds
- * @return as the typed sge_compare_configuration()
- */
-int
-sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
-   return sge_compare_configuration(ocs::tom::ConstElement<ocs::tom::EH>(aHost),
-                                    ocs::tom::ConstList<ocs::tom::CONF>::from_typed(aConf));
-}
 
 
 /** @brief One entry of a host's effective configuration
@@ -1047,17 +1015,6 @@ ocs_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) 
    DRETURN(elem);
 }
 
-/**
- * @brief sge_get_configuration_entry_by_name() for an untyped caller
- *
- * @param aHost the execution host
- * @param anEntryName the entry to read
- * @return a copy of the entry, which the caller owns, or nullptr when it is not set
- */
-lListElem *
-sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) {
-   return ocs_get_configuration_entry_by_name(aHost, anEntryName).release();
-}
 
 /**
  * @brief A copy of one entry of a configuration

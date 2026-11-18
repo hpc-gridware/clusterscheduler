@@ -49,6 +49,3 @@ bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::C
                               const char *name,
                               ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ConstList<ocs::tom::US> xacl_list,
                               ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ar, const char *name,
-                                               const lList *acl_list,
-                                               const lList *xacl_list, const lList *master_userset_list);

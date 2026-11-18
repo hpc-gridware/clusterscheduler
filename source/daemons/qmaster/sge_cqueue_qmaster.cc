@@ -1369,22 +1369,6 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
    }
 }
 
-/**
- * @brief cqueue_del() for an untyped caller
- * @param packet the client request
- * @param task the GDI task being answered
- * @param this_elem the cluster queue to delete (CQ_Type), checked
- * @param answer_list receives messages for the caller
- * @param remote_user the requesting user
- * @param remote_host the requesting host
- * @return as cqueue_del()
- */
-int
-cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
-           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
-   return cqueue_del(packet, task, ocs::tom::ConstElement<ocs::tom::CQ>(this_elem), answer_list, remote_user,
-                     remote_host);
-}
 
 /** @brief Delete the orphaned instances of one cluster queue
  *
