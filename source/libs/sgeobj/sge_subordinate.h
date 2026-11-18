@@ -64,7 +64,6 @@
 bool tst_sos(int used, int total, ocs::tom::ConstElement<ocs::tom::SO> so);
 
 const char *so_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::SO> this_list, dstring *string);
-OCS_TRANSITIONAL const char *so_list_append_to_dstring(const lList *this_list, dstring *string);
 
 bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                  const char *so_name, uint32_t threshold, uint32_t slots_sum, uint32_t seq_no, uint32_t action);

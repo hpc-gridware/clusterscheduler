@@ -473,7 +473,8 @@ static int job_write_ja_task_part(const ocs::tom::Element<ocs::tom::JB> job, con
 
       if ((flags & SPOOL_WITHIN_EXECD) ||
          job_is_enrolled(job, ja_task.get<JAT_task_number>())) {
-         if (job_might_be_tight_parallel(job, *ocs::DataStore::get_master_list(SGE_TYPE_PE))) {
+         const ocs::tom::ConstList<ocs::tom::PE> pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+         if (job_might_be_tight_parallel(job, pe_list)) {
             flags = (sge_spool_flags_t)((int)flags | SPOOL_HANDLE_PARALLEL_TASKS);
          }
 

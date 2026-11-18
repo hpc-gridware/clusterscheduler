@@ -46,30 +46,36 @@
 extern char **environ;
 
 
+/** @brief Append the switches of a qrstat defaults file to the switch list
+ *
+ * A file that does not exist adds nothing and is no error.
+ *
+ * @param file the defaults file
+ * @param cmdline in-out: the switch list (SPA_Type), created when it is an empty handle and switches are found
+ * @param alpp receives the answer of the parser, or an error when the file cannot be read
+ * @return false when the file exists but cannot be read
+ */
 bool
-ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList **ppcmdline,
+ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
                                                        ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (ppcmdline == nullptr) {
-      ret = false;
+   if (!sge_is_file(file)) {
+      DPRINTF("file " SFQ " does not exist\n", file);
    } else {
-      if (!sge_is_file(file)) {
-         DPRINTF("file " SFQ " does not exist\n", file);
+      int file_as_string_length;
+      char *file_as_string = sge_file2string(file, &file_as_string_length);
+      if (file_as_string != nullptr) {
+         auto token = const_cast<const char **>(stra_from_str(file_as_string, " \n\t"));
+         *alpp = cull_parse_cmdline(QRSTAT, token, environ, cmdline, FLG_USE_PSEUDOS);
+         sge_free(&file_as_string);
+         sge_free(&token);
       } else {
-         int file_as_string_length;
-         char *file_as_string = sge_file2string(file, &file_as_string_length);
-         if (file_as_string != nullptr) {
-            auto token = const_cast<const char **>(stra_from_str(file_as_string, " \n\t"));
-            *alpp = cull_parse_cmdline(QRSTAT, token, environ, ppcmdline, FLG_USE_PSEUDOS);
-            sge_free(&file_as_string);
-            sge_free(&token);
-         } else {
-            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
-            ret = false;
-         }
+         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S,
+                                 file);
+         ret = false;
       }
    }
    DRETURN(ret);
@@ -179,7 +185,7 @@ bool
 ocs::QRStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char **argv,
                                              char **envp) {
    DENTER(TOP_LAYER);
-   lList *pcmdline = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
 
    dstring file = DSTRING_INIT;
    const char *user = component_get_username();
@@ -187,41 +193,40 @@ ocs::QRStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *an
 
    // Read switches from global file
    get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QRSTAT_FILE);
-   if (!sge_parse_from_file_qrstat(sge_dstring_get_string(&file), &pcmdline, answer_list)) {
+   if (!sge_parse_from_file_qrstat(sge_dstring_get_string(&file), pcmdline, answer_list)) {
       sge_dstring_free(&file);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       DRETURN(false);
    }
 
    // Read switches from user specific file
    if (!get_user_home_file_path(&file, SGE_HOME_DEF_QRSTAT_FILE, user, answer_list)) {
       sge_dstring_free(&file);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       DRETURN(false);
    }
 
-   if (!sge_parse_from_file_qrstat(sge_dstring_get_string(&file), &pcmdline, answer_list)) {
+   if (!sge_parse_from_file_qrstat(sge_dstring_get_string(&file), pcmdline, answer_list)) {
       sge_dstring_free(&file);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       DRETURN(false);
    }
 
    sge_dstring_free(&file);
 
-   *answer_list = cull_parse_cmdline(QRSTAT, argv+1, environ, &pcmdline, FLG_USE_PSEUDOS);
+   *answer_list = cull_parse_cmdline(QRSTAT, argv+1, environ, pcmdline, FLG_USE_PSEUDOS);
    if (*answer_list != nullptr) {
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       DRETURN(false);
    }
 
    // initialize (must be done before `goto error_exit`)
-   // the switch list is the out-parameter of the parsers above, which have no typed form; it is SPA_Type
-   if (!sge_parse_qrstat(answer_list, ocs::tom::List<ocs::tom::SPA>::from_typed(pcmdline))) {
-      lFreeList(&pcmdline);
+   if (!sge_parse_qrstat(answer_list, pcmdline)) {
+      pcmdline.reset();
       DRETURN(false);
    }
 
    // no longer needed
-   lFreeList(&pcmdline);
+   pcmdline.reset();
    DRETURN(true);
 }

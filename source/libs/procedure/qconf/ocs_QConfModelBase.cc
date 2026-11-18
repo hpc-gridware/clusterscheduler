@@ -497,8 +497,8 @@ ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
 
       dstring found_in = DSTRING_INIT;
       dstring matcher = DSTRING_INIT;
-      hgroup_why_.route = hgroup_why(hgroup, ocs::tom::get<HR_name>(probe), object_list_,
-                                     &found_in, &matcher);
+      hgroup_why_.route = hgroup_why(hgroup, ocs::tom::get<HR_name>(probe),
+                                     ocs::tom::ConstList<ocs::tom::HGRP>(object_list_), &found_in, &matcher);
       hgroup_why_.host = static_cast<const char *>(ocs::tom::get<HR_name>(probe));
 
       /* a cleared dstring hands back an empty string rather than nothing once it
@@ -762,7 +762,7 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
    /* CS-2677: the host list lives in the queue's own "@@<queue>" group since then,
     * so it has to be joined back on before "hostlist" can be matched against what
     * qconf -sq would print */
-   cqueue_list_fill_hostlist(object_list_, *hgroup_list_);
+   cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(object_list_), *hgroup_list_);
 
    for (const auto cqueue : ocs::tom::ConstList<ocs::tom::CQ>(object_list_)) {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
@@ -1634,7 +1634,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       /* the join itself, see above. A name that matched nothing leaves an empty
        * list here and the template path below builds the object - which owns no
        * group yet, so there is nothing to join on either way. */
-      cqueue_list_fill_hostlist(object_list_, *hgroup_list_);
+      cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(object_list_), *hgroup_list_);
    }
 
    if (kind_ == QConfReadKind::MEMBER_LIST) {

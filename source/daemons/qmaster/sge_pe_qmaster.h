@@ -70,7 +70,6 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElemen
 /* to do at qmasters startup */
 void
 debit_all_jobs_from_pes(ocs::tom::List<ocs::tom::PE> pe_list);
-OCS_TRANSITIONAL void debit_all_jobs_from_pes(lList *pe_list);
 
 /** @brief Book a job's slots against a parallel environment
  *

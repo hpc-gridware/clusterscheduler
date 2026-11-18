@@ -125,8 +125,9 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, uint3
    auto alp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
 
    if (action_flag & MASTER_KILL) {
+      ocs::tom::ListPtr<ocs::tom::ID> no_data;
       auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::MASTER_EVENT, ocs::gdi::Command::TRIGGER,
-                              ocs::gdi::SubCommand::NONE, nullptr, nullptr, nullptr);
+                                              ocs::gdi::SubCommand::NONE, no_data);
       alp->splice(std::move(tmpalp));
    }
 
@@ -370,34 +371,4 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
    DRETURN(std::make_tuple(0, std::move(global_conf), std::move(local_conf)));
 }
 
-/**
- * @brief gdi_get_configuration() for an untyped caller
- *
- * @param config_name name of the local configuration or "global"
- * @param[out] gepp receives the global configuration (CONF_Type); an element it points to is freed first
- * @param[out] lepp receives the host local one (CONF_Type), or nullptr when there is none; an element it
- *             points to is freed first; may be nullptr if the global configuration is requested
- * @return as the typed form, -3 for a local configuration requested with @p lepp nullptr
- */
-int
-ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp) {
-   if (config_name == nullptr || gepp == nullptr) {
-      return -1;
-   }
-
-   /* free elements referenced in gepp and lepp - we will overwrite them */
-   if (*gepp != nullptr) {
-      lFreeElem(gepp);
-   }
-   if (lepp != nullptr && *lepp) {
-      lFreeElem(lepp);
-   }
-
-   auto [ret, global_conf, local_conf] = gdi_get_configuration(config_name, lepp != nullptr);
-   *gepp = global_conf.release();
-   if (lepp != nullptr) {
-      *lepp = local_conf.release();
-   }
-   return ret;
-}
 

@@ -114,10 +114,9 @@ int main(int argc, char **argv) {
    ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
    ocs::tom::set<ID_force>(idep, 0);
 
-   /* sge_gdi() replaces the request list with the response, so it is handed over raw */
-   lList *ref_list = refs.release();
+   /* the request list is replaced by the response, if any */
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
-                                   ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
+                                   ocs::gdi::SubCommand::NONE, refs);
 
    bool ok = false;
    for_each_ep_lv(aep, alp) {
@@ -130,7 +129,7 @@ int main(int argc, char **argv) {
    }
 
    alp.reset();
-   lFreeList(&ref_list);
+   refs.reset();
 
    DRETURN(ok ? 0 : 1);
 }

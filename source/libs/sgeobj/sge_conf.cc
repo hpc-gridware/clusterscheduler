@@ -1841,11 +1841,11 @@ void sge_show_conf() {
    INFO(MSG_CONF_USING_SS, Master_Config.qmaster_params != nullptr ? Master_Config.qmaster_params : NONE_STR, "qmaster_params");
    INFO(MSG_CONF_USING_SS, Master_Config.execd_params != nullptr ? Master_Config.execd_params : NONE_STR, "execd_params");
 
-   userset_list_append_to_dstring(Master_Config.user_lists, &dstr);
+   userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US>(Master_Config.user_lists), &dstr);
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "user_lists");
    sge_dstring_clear(&dstr);
 
-   userset_list_append_to_dstring(Master_Config.xuser_lists, &dstr);
+   userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US>(Master_Config.xuser_lists), &dstr);
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xuser_lists");
    sge_dstring_clear(&dstr);
 

@@ -231,9 +231,6 @@ static uint32_t job_accumulate_hold_flags(const ocs::tom::ConstElement<ocs::tom:
 /**
  * @brief Intersection of two id range lists, owned
  *
- * range_list_calculate_intersection_set() writes its result into a raw
- * out-parameter; it is adopted right after the call.
- *
  * @param list1 the first list (RN_Type), may be an empty handle
  * @param list2 the second list (RN_Type), may be an empty handle
  * @return the intersection, an empty handle if it is empty
@@ -241,16 +238,13 @@ static uint32_t job_accumulate_hold_flags(const ocs::tom::ConstElement<ocs::tom:
 static ocs::tom::ListPtr<ocs::tom::RN> ocs_range_list_intersection(const ocs::tom::ConstList<ocs::tom::RN> list1,
                                                                    const ocs::tom::ConstList<ocs::tom::RN> list2) {
    DENTER(TOP_LAYER);
-   lList *result = nullptr;
-   range_list_calculate_intersection_set(&result, nullptr, list1, list2);
-   DRETURN(ocs::tom::ListPtr<ocs::tom::RN>::from_typed(result));
+   ocs::tom::ListPtr<ocs::tom::RN> result;
+   range_list_calculate_intersection_set(result, nullptr, list1, list2);
+   DRETURN(result);
 }
 
 /**
  * @brief Difference of two id range lists, owned
- *
- * range_list_calculate_difference_set() writes its result into a raw
- * out-parameter; it is adopted right after the call.
  *
  * @param list1 the list to subtract from (RN_Type), may be an empty handle
  * @param list2 the ids to subtract (RN_Type), may be an empty handle
@@ -259,9 +253,9 @@ static ocs::tom::ListPtr<ocs::tom::RN> ocs_range_list_intersection(const ocs::to
 static ocs::tom::ListPtr<ocs::tom::RN> ocs_range_list_difference(const ocs::tom::ConstList<ocs::tom::RN> list1,
                                                                  const ocs::tom::ConstList<ocs::tom::RN> list2) {
    DENTER(TOP_LAYER);
-   lList *result = nullptr;
-   range_list_calculate_difference_set(&result, nullptr, list1, list2);
-   DRETURN(ocs::tom::ListPtr<ocs::tom::RN>::from_typed(result));
+   ocs::tom::ListPtr<ocs::tom::RN> result;
+   range_list_calculate_difference_set(result, nullptr, list1, list2);
+   DRETURN(result);
 }
 
 /**
@@ -461,23 +455,17 @@ uint32_t job_get_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 uint32_t job_get_not_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
-   // out-parameters of range_list_calculate_union_set(), adopted right after
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   lList *uo_ids_raw = nullptr;
-   lList *uos_ids_raw = nullptr;
-   lList *uosa_ids_raw = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RN> uo_ids;
+   ocs::tom::ListPtr<ocs::tom::RN> uos_ids;
+   ocs::tom::ListPtr<ocs::tom::RN> uosa_ids;
    uint32_t ret = 0;
 
-   range_list_calculate_union_set(&uo_ids_raw, &answer_list,
+   range_list_calculate_union_set(uo_ids, &answer_list,
                                   ocs::tom::get<JB_ja_u_h_ids>(job),
                                   ocs::tom::get<JB_ja_o_h_ids>(job));
-   const auto uo_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(uo_ids_raw);
-   range_list_calculate_union_set(&uos_ids_raw, &answer_list, uo_ids.get(),
-                                  ocs::tom::get<JB_ja_s_h_ids>(job));
-   const auto uos_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(uos_ids_raw);
-   range_list_calculate_union_set(&uosa_ids_raw, &answer_list, uos_ids.get(),
-                                  ocs::tom::get<JB_ja_a_h_ids>(job));
-   const auto uosa_ids = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(uosa_ids_raw);
+   range_list_calculate_union_set(uos_ids, &answer_list, uo_ids, ocs::tom::get<JB_ja_s_h_ids>(job));
+   range_list_calculate_union_set(uosa_ids, &answer_list, uos_ids, ocs::tom::get<JB_ja_a_h_ids>(job));
 
    ret += range_list_get_number_of_ids(ocs::tom::get<JB_ja_n_h_ids>(job));
    ret += range_list_get_number_of_ids(uosa_ids.get());
@@ -584,15 +572,12 @@ void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<o
       DRETURN_VOID;
    }
 
-   // add the task id to the list of unenrolled tasks; range_list_insert_id() takes a raw in-out list
+   // add the task id to the list of unenrolled tasks; the list is taken out of the job and put back
    const uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ocs::tom::ConstElement<ocs::tom::JAT>(*ja_task));
-   lList *ids = ocs::tom::get<JB_ja_n_h_ids>(job);
-   const lList *before_ids = ids;
-   range_list_insert_id(&ids, answer_list, ja_task_id);
-   range_list_compress(ocs::tom::List<ocs::tom::RN>::from_typed(ids));
-   if (before_ids == nullptr) {
-      ocs::tom::set<JB_ja_n_h_ids>(job, ids);
-   }
+   auto ids = job.exchange<JB_ja_n_h_ids>(nullptr);
+   range_list_insert_id(ids, answer_list, ja_task_id);
+   range_list_compress(ids);
+   static_cast<void>(job.exchange<JB_ja_n_h_ids>(std::move(ids)));
 
    // remove and free the enrolled task, then clear the caller's pointer, as lRemoveElem() did
    ja_task_list.erase(ocs::tom::Element<ocs::tom::JAT>::from_typed(*ja_task));
@@ -712,13 +697,40 @@ bool job_has_soft_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 }
 
 /**
+ * @brief Adds an id to or removes it from one hold id list of a job
+ *
+ * The list is taken out of the job, changed, compressed and put back.
+ *
+ * @tparam F the hold id list field (JB_ja_n_h_ids, JB_ja_u_h_ids, ...)
+ * @param job JB_Type
+ * @param answer_list AN_Type
+ * @param ja_task_id the array task id
+ * @param insert true to insert the id, false to remove it
+ */
+template <auto F>
+static void ocs_job_change_hold_ids(const ocs::tom::Element<ocs::tom::JB> job,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                    const uint32_t ja_task_id, const bool insert) {
+   DENTER(TOP_LAYER);
+   auto range_list = job.exchange<F>(nullptr);
+   if (insert) {
+      range_list_insert_id(range_list, answer_list, ja_task_id);
+   } else {
+      range_list_remove_id(range_list, answer_list, ja_task_id);
+   }
+   range_list_compress(range_list);
+   static_cast<void>(job.exchange<F>(std::move(range_list)));
+   DRETURN_VOID;
+}
+
+/**
  * @brief Changes the hold state of a task
  *
  * This function changes the hold state of a job/array-task.
  *
- * The id lists of an unenrolled task are addressed by a table of field
- * numbers and changed through a table of range_remove_insert_t functions, so
- * that part stays raw.
+ * For an unenrolled task the id is removed from the "no hold" list and
+ * inserted into the list of each hold type set in new_hold_state, and the
+ * other way round for a cleared state.
  *
  * @param job JB_Type
  * @param answer_list AN_Type
@@ -730,37 +742,16 @@ void job_set_hold_state(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
                         const uint32_t new_hold_state) {
    DENTER(TOP_LAYER);
    if (!job_is_enrolled(job, ja_task_id)) {
-      const int lists = 5;
-      const uint32_t mask[] = {MINUS_H_TGT_ALL, MINUS_H_TGT_USER,
-                               MINUS_H_TGT_OPERATOR, MINUS_H_TGT_SYSTEM,
-                               MINUS_H_TGT_JA_AD};
-      const int attribute[] = {JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_o_h_ids,
-                               JB_ja_s_h_ids, JB_ja_a_h_ids};
-      const range_remove_insert_t if_function[] = {range_list_remove_id,
-                                                   range_list_insert_id,
-                                                   range_list_insert_id,
-                                                   range_list_insert_id,
-                                                   range_list_insert_id};
-      const range_remove_insert_t else_function[] = {range_list_insert_id,
-                                                     range_list_remove_id,
-                                                     range_list_remove_id,
-                                                     range_list_remove_id,
-                                                     range_list_remove_id};
-
-      for (int i = 0; i < lists; i++) {
-         lList *range_list = nullptr;
-
-         if (new_hold_state & mask[i]) {
-            lXchgList(job, attribute[i], &range_list);
-            if_function[i](&range_list, answer_list, ja_task_id);
-            lXchgList(job, attribute[i], &range_list);
-         } else {
-            lXchgList(job, attribute[i], &range_list);
-            else_function[i](&range_list, answer_list, ja_task_id);
-            lXchgList(job, attribute[i], &range_list);
-         }
-         range_list_compress(ocs::tom::List<ocs::tom::RN>::from_typed(lGetListRW(job, attribute[i])));
-      }
+      ocs_job_change_hold_ids<JB_ja_n_h_ids>(job, answer_list, ja_task_id,
+                                             (new_hold_state & MINUS_H_TGT_ALL) == 0);
+      ocs_job_change_hold_ids<JB_ja_u_h_ids>(job, answer_list, ja_task_id,
+                                             (new_hold_state & MINUS_H_TGT_USER) != 0);
+      ocs_job_change_hold_ids<JB_ja_o_h_ids>(job, answer_list, ja_task_id,
+                                             (new_hold_state & MINUS_H_TGT_OPERATOR) != 0);
+      ocs_job_change_hold_ids<JB_ja_s_h_ids>(job, answer_list, ja_task_id,
+                                             (new_hold_state & MINUS_H_TGT_SYSTEM) != 0);
+      ocs_job_change_hold_ids<JB_ja_a_h_ids>(job, answer_list, ja_task_id,
+                                             (new_hold_state & MINUS_H_TGT_JA_AD) != 0);
    } else {
       const auto ja_task = job_search_task(job, nullptr, ja_task_id);
 
@@ -1038,18 +1029,6 @@ bool job_might_be_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DRETURN(ret);
 }
 
-/**
- * @brief job_might_be_tight_parallel() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param pe_list PE_Type list with all existing PEs, checked
- *
- * @return as job_might_be_tight_parallel()
- */
-bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list) {
-   return job_might_be_tight_parallel(ocs::tom::ConstElement<ocs::tom::JB>(job),
-                                      ocs::tom::ConstList<ocs::tom::PE>(pe_list));
-}
 
 /**
  * @brief Submit time task specification
@@ -1073,17 +1052,6 @@ std::tuple<uint32_t, uint32_t, uint32_t> job_get_submit_task_ids(const ocs::tom:
    return {1, 1, 1};
 }
 
-/**
- * @brief job_get_submit_task_ids() for an untyped caller
- *
- * @param job JB_Type element, checked
- * @param[out] start first id
- * @param[out] end last id
- * @param[out] step step size (>=1)
- */
-void job_get_submit_task_ids(const lListElem *job, uint32_t *start, uint32_t *end, uint32_t *step) {
-   std::tie(*start, *end, *step) = job_get_submit_task_ids(ocs::tom::ConstElement<ocs::tom::JB>(job));
-}
 
 /**
  * @brief Store the initial range ids in "job"
@@ -1323,9 +1291,8 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
 
    dstring buffer = DSTRING_INIT;
 
-   // var_list_set_string() takes a raw in-out list
-   lList *env_list = nullptr;
-   ocs::tom::exchange<JB_env_list>(job, &env_list);
+   // the environment is taken out of the job and put back at the end
+   auto env_list = job.exchange<JB_env_list>(nullptr);
 
    // Copy specific environment variables into the job environment
    // as SGE_O_* variables.
@@ -1336,7 +1303,7 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
    while (env_name[++i] != nullptr) {
       const char *env_value = sge_getenv(env_name[i]);
       const char *env_var = sge_dstring_sprintf(&buffer, "%s%s%s", VAR_PREFIX, "O_", env_name[i]);
-      var_list_set_string(&env_list, env_var, env_value);
+      var_list_set_string(env_list, env_var, env_value);
    }
 
    // Add TERM to the job environment.
@@ -1345,7 +1312,7 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
    if (JOB_TYPE_IS_QLOGIN(job_type) || JOB_TYPE_IS_QRLOGIN(job_type) || JOB_TYPE_IS_QRSH(job_type)) {
       const char *term = sge_getenv("TERM");
       if (term != nullptr) {
-         var_list_set_string(&env_list, "TERM", term);
+         var_list_set_string(env_list, "TERM", term);
       }
    }
 
@@ -1355,7 +1322,7 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
    if (host == nullptr) {
       host = unqualified_hostname;
    }
-   var_list_set_string(&env_list, VAR_PREFIX "O_HOST", host);
+   var_list_set_string(env_list, VAR_PREFIX "O_HOST", host);
 
    // Add SGE_O_WORKDIR from the current working directory.
    char tmp_str[SGE_PATH_MAX + 1];
@@ -1363,11 +1330,11 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
       answer_list_add(answer_list, MSG_ANSWER_GETCWDFAILED, STATUS_EDISK, ANSWER_QUALITY_ERROR);
    } else {
       path_alias_list_get_path(path_alias_list, nullptr, tmp_str, qualified_hostname, &buffer);
-      var_list_set_string(&env_list, VAR_PREFIX "O_WORKDIR", sge_dstring_get_string(&buffer));
+      var_list_set_string(env_list, VAR_PREFIX "O_WORKDIR", sge_dstring_get_string(&buffer));
    }
 
    sge_dstring_free(&buffer);
-   ocs::tom::exchange<JB_env_list>(job, &env_list);
+   static_cast<void>(job.exchange<JB_env_list>(std::move(env_list)));
 
    DRETURN_VOID;
 }
@@ -2401,8 +2368,9 @@ sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_ele
  */
 bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, const int pos) {
    DENTER(TOP_LAYER);
-   lListElem *binding_elem = lGetPosObject(job, pos);
-   if (binding_elem != nullptr) {
+   // pos is the position of a binding field (BN_Type), the type is guaranteed
+   const ocs::tom::ConstElement<ocs::tom::BN> binding_elem(lGetPosObject(job, pos));
+   if (binding_elem) {
       std::string binding_switches_str;
       ocs::BindingIo::binding_print_to_string(binding_elem, binding_switches_str, true);
       sge_dstring_append(category_str, binding_switches_str.c_str());

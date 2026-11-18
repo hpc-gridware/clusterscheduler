@@ -66,4 +66,3 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
 
 void
 centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU> centries, uint64_t gdi_version);
-OCS_TRANSITIONAL void centry_redebit_consumables(const lList *centries, uint64_t gdi_version);

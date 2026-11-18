@@ -325,7 +325,7 @@ static int spool_object_list(const char *directory,
    dstring file = DSTRING_INIT;
 
    // the directory entries (ST_Type), freed when leaving the function
-   const auto direntries = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(sge_get_dirents(directory));
+   const auto direntries = ocs_get_dirents(directory);
    for (const auto direntry : *direntries) {
       name = ocs::tom::get<ST_name>(direntry);
       if (name[0] != '.') {

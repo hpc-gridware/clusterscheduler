@@ -128,13 +128,10 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   {
-      // sge_gdi() has no typed form yet; it replaces the request list with the response, which is freed
-      lList *id_lp = id_list.release();
-      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::AR_LIST, ocs::gdi::Command::DEL,
-                    ocs::gdi::SubCommand::NONE, &id_lp, nullptr, nullptr);
-      lFreeList(&id_lp);
-   }
+   // the request list is replaced by the response, if any; both are freed
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::AR_LIST, ocs::gdi::Command::DEL,
+                                   ocs::gdi::SubCommand::NONE, id_list);
+   id_list.reset();
    if (answer_list_has_error(&alp)) {
       answer_list_on_error_print_or_exit(&alp, stdout);
       goto error_exit;

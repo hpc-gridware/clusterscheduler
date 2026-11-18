@@ -133,7 +133,7 @@ sge_task_depend_get_range([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp
    }
 
    auto range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
-   range_set_all_ids(range.get(), rmin, rmax, sa);
+   range_set_all_ids(*range, rmin, rmax, sa);
 
    DRETURN(range);
 }

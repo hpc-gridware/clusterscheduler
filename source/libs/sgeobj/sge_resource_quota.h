@@ -95,8 +95,6 @@ ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(ocs::tom::Element<ocs::tom::RQ
 
 bool rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            bool in_master, ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
-OCS_TRANSITIONAL bool rqs_verify_attributes(lListElem *rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                            bool in_master, const lList *master_centry_list);
 
 ocs::tom::Element<ocs::tom::RQS> rqs_list_locate(ocs::tom::ConstList<ocs::tom::RQS> lp, const char *name);
 

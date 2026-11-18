@@ -122,8 +122,6 @@ bool hgroup_cache_contains_host(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, c
  * element without a cache, which on the permission path denies a GDI request. */
 bool hgroup_contains_host(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname,
                           ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
-OCS_TRANSITIONAL bool hgroup_contains_host(const lListElem *hgroup, const char *hostname,
-                                           const lList *master_hgroup_list);
 
 /**
  * @brief By which route is a host a member of a host group? (CS-2680, N-I-7)

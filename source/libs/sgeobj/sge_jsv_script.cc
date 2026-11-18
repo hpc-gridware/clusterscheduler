@@ -1861,16 +1861,14 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
     * TODO: EB: JSV: PARSING
     */  
    {
-      // the var_list_*() functions below have no typed form, so the copy is built in a raw list first
-      lList *copied_env_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::VA> env_list;
 
       /* make a copy of the environment */
-      var_list_copy_env_vars_and_value(&copied_env_list, ocs::tom::get<JB_env_list>(old_job));
+      var_list_copy_env_vars_and_value(env_list, ocs::tom::get<JB_env_list>(old_job));
 
       /* remove certain variables which don't come from the user environment */
-      var_list_remove_prefix_vars(&copied_env_list, VAR_PREFIX);
-      var_list_remove_prefix_vars(&copied_env_list, VAR_PREFIX_NR);
-      const auto env_list = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(copied_env_list);
+      var_list_remove_prefix_vars(env_list, VAR_PREFIX);
+      var_list_remove_prefix_vars(env_list, VAR_PREFIX_NR);
 
       /* 
        * if there is a DISPLAY variable and if the client is qsh/qrsh

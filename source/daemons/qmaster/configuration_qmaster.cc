@@ -562,21 +562,6 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::L
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_mod_configuration() for an untyped caller
- *
- * @param aConf CONF_Type element containing the modified conf
- * @param anAnswer answer list
- * @param aUser target user
- * @param aHost target host
- * @param gdi_session the session the change belongs to
- * @return as the typed sge_mod_configuration()
- */
-int
-sge_mod_configuration(lListElem *aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, const char *aUser, const char *aHost,
-                      const uint64_t gdi_session) {
-   return sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF>(aConf), anAnswer, aUser, aHost, gdi_session);
-}
 
 /**
  * @brief Tell commlib how long it has to remember the last message of an execd

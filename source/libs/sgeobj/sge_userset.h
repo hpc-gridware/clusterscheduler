@@ -90,28 +90,20 @@ extern const char *userset_types[];
 ocs::tom::ElementPtr<ocs::tom::US> userset_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name);
 
 int userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US> object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL int userset_validate_entries(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 int userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                    ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL int userset_list_validate_acl_list(const lList *acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                                    const lList *master_userset_list);
 
 int userset_list_validate_access(const lList *acl_list, int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  ocs::tom::ConstList<ocs::tom::US> master_userset_list);
 
 const char *userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US> userset,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
-OCS_TRANSITIONAL const char *userset_get_type_string(const lListElem *userset,
-                                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
 
 bool userset_set_type_string(ocs::tom::Element<ocs::tom::US> userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              const char *value);
-OCS_TRANSITIONAL bool userset_set_type_string(lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                              const char *value);
 
 const char *userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US> this_list, dstring *string);
-OCS_TRANSITIONAL const char *userset_list_append_to_dstring(const lList *this_list, dstring *string);
 
 int sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list,
                                  ocs::tom::ConstElement<ocs::tom::US> acl);

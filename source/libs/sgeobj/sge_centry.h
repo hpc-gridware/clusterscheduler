@@ -206,12 +206,10 @@ OCS_TRANSITIONAL int centry_list_fill_request(lList *this_list, ocs::tom::ListPt
 
 void centry_list_fill_config(ocs::tom::List<ocs::tom::CE> centry_list,
                              ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
-OCS_TRANSITIONAL void centry_list_fill_config(lList *centry_list, const lList *master_centry_list);
 
 bool centry_list_are_queues_requestable(ocs::tom::ConstList<ocs::tom::CE> this_list);
 
 const char *centry_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::CE> this_list, dstring *string);
-OCS_TRANSITIONAL const char *centry_list_append_to_dstring(const lList *this_list, dstring *string);
 
 int centry_list_append_to_string(ocs::tom::List<ocs::tom::CE> this_list, char *buff, uint32_t max_len);
 
@@ -234,7 +232,6 @@ int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep
                             ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
 
 int host_ensure_slots_are_defined(ocs::tom::Element<ocs::tom::EH> ehost, uint32_t processors);
-OCS_TRANSITIONAL int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors);
 
 bool validate_load_formula(const char *formula, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *name);

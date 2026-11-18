@@ -685,31 +685,6 @@ bool href_list_find_all_references(const ocs::tom::ConstList<ocs::tom::HR> this_
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_find_all_references() for an untyped caller
- *
- * @param this_list HR_Type list, checked; may be nullptr
- * @param answer_list AN_Type
- * @param master_list HGRP_Type list, checked; may be nullptr
- * @param used_hosts in-out: HR_Type list, or nullptr
- * @param used_groups in-out: HR_Type list, or nullptr
- * @param used_matchers in-out: HR_Type list receiving the matchers met, or nullptr
- * @param expand_matchers whether the hosts the matchers capture are added to 'used_hosts'
- *
- * @return as href_list_find_all_references()
- */
-bool href_list_find_all_references(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                   const lList *master_list,
-                                   lList **used_hosts, lList **used_groups, lList **used_matchers,
-                                   const bool expand_matchers) {
-   ocs::UntypedHrefList typed_used_hosts(used_hosts);
-   ocs::UntypedHrefList typed_used_groups(used_groups);
-   ocs::UntypedHrefList typed_used_matchers(used_matchers);
-
-   return href_list_find_all_references(ocs::tom::ConstList<ocs::tom::HR>(this_list), answer_list,
-                                        ocs::tom::ConstList<ocs::tom::HGRP>(master_list), typed_used_hosts.get(),
-                                        typed_used_groups.get(), typed_used_matchers.get(), expand_matchers);
-}
 
 /**
  * @brief Find occupying hosts and hgroups

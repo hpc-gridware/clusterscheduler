@@ -146,11 +146,6 @@ bool href_list_find_all_references(ocs::tom::ConstList<ocs::tom::HR> this_list,
                                    ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
                                    ocs::tom::ListPtr<ocs::tom::HR> *used_matchers = nullptr,
                                    bool expand_matchers = true);
-OCS_TRANSITIONAL bool href_list_find_all_references(const lList *this_list,
-                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                    const lList *master_list, lList **used_hosts,
-                                                    lList **used_groups, lList **used_matchers = nullptr,
-                                                    bool expand_matchers = true);
 
 bool href_list_find_referencees(ocs::tom::ConstList<ocs::tom::HR> this_list,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,

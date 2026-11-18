@@ -67,8 +67,6 @@
 /// The most slots a queue or a parallel environment may have; a slot range ending above it would mean infinity
 constexpr uint32_t OCS_MAX_SLOTS = RANGE_INFINITY;
 
-/// Callback that either removes an id from a range list or inserts it into one
-typedef void (*range_remove_insert_t)(lList **, ocs::tom::ListPtr<ocs::tom::AN> *, uint32_t);
 
 /*
  * range element
@@ -128,7 +126,6 @@ bool range_list_is_empty(ocs::tom::ConstList<ocs::tom::RN> this_list);
 OCS_TRANSITIONAL bool range_list_is_empty(const lList *this_list);
 
 void range_list_compress(ocs::tom::List<ocs::tom::RN> this_list);
-OCS_TRANSITIONAL void range_list_compress(lList *this_list);
 
 void range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    bool correct_end);
@@ -147,7 +144,6 @@ double range_list_get_average(ocs::tom::ConstList<ocs::tom::RN> this_list, uint3
 OCS_TRANSITIONAL double range_list_get_average(const lList *this_list, uint32_t upperbound);
 
 void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL void range_list_initialize(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 uint32_t range_list_get_number_of_ids(ocs::tom::ConstList<ocs::tom::RN> this_list);
 OCS_TRANSITIONAL uint32_t range_list_get_number_of_ids(const lList *this_list);

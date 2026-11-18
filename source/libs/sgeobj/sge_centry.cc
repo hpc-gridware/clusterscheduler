@@ -862,16 +862,6 @@ void centry_list_fill_config(const ocs::tom::List<ocs::tom::CE> centry_list,
    }
 }
 
-/**
- * @brief centry_list_fill_config() for an untyped caller
- *
- * @param centry_list CE_Type list to fill in, checked; may be nullptr
- * @param master_centry_list the complex definition, CE_Type, checked; may be nullptr
- */
-void centry_list_fill_config(lList *centry_list, const lList *master_centry_list) {
-   centry_list_fill_config(ocs::tom::List<ocs::tom::CE>(centry_list),
-                           ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
-}
 
 /**
  * @brief May a job request a specific queue?
@@ -931,16 +921,6 @@ const char *centry_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::CE
    DRETURN(ret);
 }
 
-/**
- * @brief centry_list_append_to_dstring() for an untyped caller
- *
- * @param this_list the entries to render, CE_Type, checked; may be nullptr
- * @param[out] string receives the text, appended
- * @return as centry_list_append_to_dstring()
- */
-const char *centry_list_append_to_dstring(const lList *this_list, dstring *string) {
-   return centry_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::CE>(this_list), string);
-}
 
 /**
  * @brief Render a complex entry list into a fixed size buffer

@@ -109,7 +109,6 @@ typedef struct {
 } ancestors_t;
 
 bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::STN> ep, int id);
-OCS_TRANSITIONAL bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, int id);
 int show_sharetree_path(std::ostream &os, ocs::tom::Element<ocs::tom::STN> root, const char *path);
 int show_sharetree(std::ostream &os, ocs::tom::ConstElement<ocs::tom::STN> ep, const char *indent, int level = 0);
 ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate();

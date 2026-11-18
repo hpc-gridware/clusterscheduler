@@ -226,13 +226,10 @@ int main(int argc, const char **argv) {
    }
 
    uint32_t sync_opt = SYNC_NO;
-   {
-      // cull_parse_job_parameter() has no typed form yet; it creates the job
-      lListElem *job_ep = nullptr;
-      alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, *opts_all,
-                                     &job_ep, &sync_opt);
-      job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(job_ep);
-   }
+   // the job is created by the parser
+   job.reset();
+   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, *opts_all,
+                                  job, &sync_opt);
 
    job_set_command_line(*job, argc, argv);
 

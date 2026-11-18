@@ -118,17 +118,6 @@ const char *prj_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::PR> t
    DRETURN(ret);
 }
 
-/**
- * @brief prj_list_append_to_dstring() for an untyped caller
- *
- * @param this_list PR_Type list, checked; may be nullptr
- * @param string dstring to append to
- *
- * @return as prj_list_append_to_dstring()
- */
-const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) {
-   return prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR>(this_list), string);
-}
 
 /**
  * @brief Is every project of a list defined?

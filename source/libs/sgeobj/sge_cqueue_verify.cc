@@ -141,7 +141,7 @@ bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
       ocs::tom::ConstList<ocs::tom::ST> ckpt_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (ckpt_list != nullptr) {
-         if (!ckpt_list_do_all_exist(master_ckpt_list, answer_list, ckpt_list)) {
+         if (!ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK>(master_ckpt_list), answer_list, ckpt_list)) {
             ret = false;
          }
       }
@@ -253,7 +253,7 @@ bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
       ocs::tom::ConstList<ocs::tom::ST> pe_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (pe_list != nullptr) {
-         if (!pe_list_do_all_exist(master_pe_list, answer_list, pe_list, true)) {
+         if (!pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE>(master_pe_list), answer_list, pe_list, true)) {
             ret = false;
          }
       }
@@ -522,7 +522,9 @@ bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
       ocs::tom::ConstList<ocs::tom::US> user_list = ocs::tom::get<AUSRLIST_value>(attr_elem);
 
       if (user_list != nullptr) {
-         if (userset_list_validate_acl_list(user_list, answer_list, master_userset_list) == STATUS_EUNKNOWN) {
+         if (userset_list_validate_acl_list(user_list, answer_list,
+                                            ocs::tom::ConstList<ocs::tom::US>(master_userset_list)) ==
+             STATUS_EUNKNOWN) {
             ret = false;
          }
       }

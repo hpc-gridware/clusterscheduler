@@ -137,20 +137,6 @@ int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_l
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief userset_list_validate_acl_list() for an untyped caller
- *
- * @param acl_list the acl list to check (US_Type), checked; may be nullptr
- * @param alpp answer list pointer
- * @param master_userset_list the defined usersets to check against (US_Type), checked
- *
- * @return as userset_list_validate_acl_list()
- */
-int userset_list_validate_acl_list(const lList *acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                                   const lList *master_userset_list) {
-   return userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US>(acl_list), alpp,
-                                         ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
-}
 
 
 /**
@@ -217,17 +203,6 @@ int userset_validate_entries(const ocs::tom::ConstElement<ocs::tom::US> userset,
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief userset_validate_entries() for an untyped caller
- *
- * @param userset the userset to check (US_Type), checked
- * @param alpp answer list pointer
- *
- * @return as userset_validate_entries()
- */
-int userset_validate_entries(const lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US>(userset), alpp);
-}
 
 /**
  * @brief Get readable type definition
@@ -265,19 +240,6 @@ const char *userset_get_type_string(const ocs::tom::ConstElement<ocs::tom::US> u
    DRETURN(sge_dstring_get_string(buffer));
 }
 
-/**
- * @brief userset_get_type_string() for an untyped caller
- *
- * @param userset the userset containing the requested information (US_Type), checked; may be nullptr
- * @param answer_list errors will be reported here
- * @param buffer string buffer to hold the result string
- *
- * @return as userset_get_type_string()
- */
-const char *userset_get_type_string(const lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                    dstring *buffer) {
-   return userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US>(userset), answer_list, buffer);
-}
 
 /**
  * @brief Set userset type from string
@@ -317,18 +279,6 @@ bool userset_set_type_string(const ocs::tom::Element<ocs::tom::US> userset,
    DRETURN(ret);
 }
 
-/**
- * @brief userset_set_type_string() for an untyped caller
- *
- * @param userset the userset to change (US_Type), checked; may be nullptr
- * @param answer_list errors will be reported here
- * @param value new value for userset type
- *
- * @return as userset_set_type_string()
- */
-bool userset_set_type_string(lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
-   return userset_set_type_string(ocs::tom::Element<ocs::tom::US>(userset), answer_list, value);
-}
 
 /**
  * @brief Render a userset list as a blank separated list of names
@@ -360,16 +310,6 @@ const char *userset_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::U
    DRETURN(ret);
 }
 
-/**
- * @brief userset_list_append_to_dstring() for an untyped caller
- *
- * @param this_list the usersets to render (US_Type), checked; may be nullptr
- * @param[out] string receives the text, appended
- * @return as userset_list_append_to_dstring()
- */
-const char *userset_list_append_to_dstring(const lList *this_list, dstring *string) {
-   return userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US>(this_list), string);
-}
 
 /**
  * @brief Find a group name in a userset's entry list

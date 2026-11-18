@@ -130,7 +130,6 @@ ocs::tom::Element<ocs::tom::PR> prj_list_locate(ocs::tom::ConstList<ocs::tom::PR
 ocs::tom::Element<ocs::tom::UU> user_list_locate(ocs::tom::ConstList<ocs::tom::UU> user_list, const char *user_name);
 
 const char *prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR> this_list, dstring *string);
-OCS_TRANSITIONAL const char *prj_list_append_to_dstring(const lList *this_list, dstring *string);
 
 bool prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            ocs::tom::ConstList<ocs::tom::PR> userprj_list);

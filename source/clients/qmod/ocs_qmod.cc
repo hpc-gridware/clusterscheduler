@@ -145,11 +145,9 @@ int main(int argc, char **argv) {
    }
 
    if (ref_list) {
-      // sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle
-      lList *ref_lp = ref_list.release();
+      // the request list is replaced by the response, if any, freed with the handle
       alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
-                    ocs::gdi::SubCommand::NONE, &ref_lp, nullptr, nullptr);
-      ref_list = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(ref_lp);
+                                      ocs::gdi::SubCommand::NONE, ref_list);
    }
 
    answ_list_has_err = answer_list_has_exit_code_error(&alp); 

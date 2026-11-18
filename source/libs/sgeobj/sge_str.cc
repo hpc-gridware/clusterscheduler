@@ -94,19 +94,6 @@ str_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::ST> this_list, ds
    DRETURN(ret);
 }
 
-/**
- * @brief str_list_append_to_dstring() for an untyped caller
- *
- * @param this_list ST_Type list, checked; may be nullptr
- * @param string dynamic string
- * @param delimiter delimiter
- *
- * @return as str_list_append_to_dstring()
- */
-const char *
-str_list_append_to_dstring(const lList *this_list, dstring *string, const char delimiter) {
-   return str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST>(this_list), string, delimiter);
-}
 
 /**
  * @brief Parse a list of strings

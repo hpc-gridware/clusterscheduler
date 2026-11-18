@@ -83,7 +83,5 @@
 
 ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp,
                                                    ocs::tom::ListPtr<ocs::tom::SPA> &pcmdline, uint32_t flags);
-OCS_TRANSITIONAL ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(uint32_t prog_number, const char **arg_list,
-                                                                    char **envp, lList **pcmdline, uint32_t flags);
 
 char *reroot_path(ocs::tom::ConstElement<ocs::tom::JB> pjob, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp);

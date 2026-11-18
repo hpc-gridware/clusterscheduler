@@ -178,11 +178,10 @@ qconf_control_clean_queues(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *
    for (const auto ep : *ids) {
       ocs::tom::set<ID_action>(ep, QI_DO_CLEAN);
    }
-   /* sge_gdi() replaces the request list with the response, so it is handed over raw */
-   lList *lp = ids.release();
+   /* the request list is replaced by the response, if any */
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-   lFreeList(&lp);
+                                        ocs::gdi::SubCommand::NONE, ids);
+   ids.reset();
    const int ret = qconf_answer_take(alpp, &alp);
 
    DRETURN(ret);

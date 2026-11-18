@@ -894,26 +894,26 @@ namespace {
       // Add the procedures output to the bundle, named and hashed as the free emplace_back() created it before
       auto output_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
       output_list->emplace_back<ST_name>(os.str().c_str());
-      ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::RESPONSE,
-                                                    output_list.release());
+      ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::RESPONSE,
+                                                    std::move(output_list));
 
       /* CS-2821: and what RBAC removed from it. A separate entry rather than a
        * field of the response, because the response is a text and this is about
        * the text. The bundle's sublist is CULL_ANY_SUBTYPE, so a ULNG entry
        * round-trips without a wire format change. */
-      ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::REDUCTION,
-                                                    ocs_ulong_parameter(outcome.reduction).release());
+      ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::REDUCTION,
+                                                    ocs_ulong_parameter(outcome.reduction));
 
       /* CS-2822: and what a write did, when this was one. Sent only then, so a
        * reading procedure's response is unchanged and the client can tell "no
        * write happened here" from "a write applied nothing". */
       if (outcome.has_write_result) {
-         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::WRITE_APPLIED,
-                                                       ocs_ulong_parameter(outcome.write.applied).release());
-         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::WRITE_PARSE_FAILED,
-                                                       ocs_ulong_parameter(outcome.write.parse_failed).release());
-         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::WRITE_ELEMENTS,
-                                                       ocs_ulong_parameter(outcome.write.elements).release());
+         ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::WRITE_APPLIED,
+                                                       ocs_ulong_parameter(outcome.write.applied));
+         ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::WRITE_PARSE_FAILED,
+                                                       ocs_ulong_parameter(outcome.write.parse_failed));
+         ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::WRITE_ELEMENTS,
+                                                       ocs_ulong_parameter(outcome.write.elements));
       }
 
       /* CS-2826: and the files an export rendered, as name/value pairs. Sent
@@ -923,8 +923,8 @@ namespace {
        * ProcedureModel::get_export_objects(). The bundle takes the list, so the
        * outcome gives up its ownership here. */
       if (outcome.has_export_result) {
-         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::EXPORT_OBJECTS,
-                                                       outcome.export_objects.release());
+         ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::EXPORT_OBJECTS,
+                                                       std::move(outcome.export_objects));
       }
 #if 0
       DPRINTF("response:\n %s", os.str().c_str());

@@ -296,19 +296,6 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief pe_validate() for an untyped caller
- *
- * @param pep the pe to check, checked
- * @param alpp answer list pointer or nullptr
- * @param startup are we in qmaster startup phase?
- * @param master_userset_list the defined usersets (US_Type), checked
- * @return as pe_validate()
- */
-int pe_validate(lListElem *pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int startup, const lList *master_userset_list) {
-   return pe_validate(ocs::tom::Element<ocs::tom::PE>(pep), alpp, startup,
-                      ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
-}
 
 /**
  * @brief Ensure urgency slot setting is valid
@@ -477,20 +464,6 @@ bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief pe_list_do_all_exist() for an untyped caller
- *
- * @param pe_list PE_Type list, checked
- * @param answer_list AN_Type list
- * @param pe_ref_list ST_Type list of PE names, checked
- * @param ignore_make_pe skip the PE named "make"
- * @return as pe_list_do_all_exist()
- */
-bool pe_list_do_all_exist(const lList *pe_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *pe_ref_list,
-                          bool ignore_make_pe) {
-   return pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE>(pe_list), answer_list,
-                               ocs::tom::ConstList<ocs::tom::ST>(pe_ref_list), ignore_make_pe);
-}
 
 /**
  * @brief Compute PEs urgency slot amount for a slot range

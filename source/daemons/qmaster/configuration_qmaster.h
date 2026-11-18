@@ -68,8 +68,6 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::
 int
 sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
                       const char *aUser, const char *aHost, uint64_t gdi_session);
-OCS_TRANSITIONAL int sge_mod_configuration(lListElem *aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
-                                           const char *aUser, const char *aHost, uint64_t gdi_session);
 
 int
 sge_compare_configuration(ocs::tom::ConstElement<ocs::tom::EH> aHost, ocs::tom::ConstList<ocs::tom::CONF> aConf);

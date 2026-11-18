@@ -120,6 +120,16 @@ static void qevent_dump_pid_file() {
    sge_write_pid("qevent.pid");
 }
 
+/**
+ * @brief Mirror callback printing every event it is handed
+ *
+ * @param evc the event client, unused
+ * @param type the object type of the event
+ * @param action the action of the event, unused
+ * @param event the event (ET_Type)
+ * @param clientdata the callback's client data, unused
+ * @return always SGE_EMA_OK
+ */
 static sge_callback_result
 print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
             [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata) {
@@ -130,7 +140,8 @@ print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   fprintf(stdout, "%s\n", event_text(event, &buffer_wrapper));
+   // the event client delivers ET_Type elements, so the event is wrapped unchecked
+   fprintf(stdout, "%s\n", event_text(ocs::tom::ConstElement<ocs::tom::ET>::from_typed(event), &buffer_wrapper));
    fflush(stdout);
 
    DRETURN(SGE_EMA_OK);
@@ -182,9 +193,9 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   DPRINTF("%s\n", event_text(event, &buffer_wrapper));
    // the event client delivers ET_Type elements, so the event is wrapped unchecked
    const auto et = ocs::tom::ConstElement<ocs::tom::ET>::from_typed(event);
+   DPRINTF("%s\n", event_text(et, &buffer_wrapper));
    if (ocs::tom::has<ET_type>(et)) {
       uint32_t event_type = ocs::tom::get<ET_type>(et);
       uint64_t timestamp = ocs::tom::get<ET_timestamp>(et);

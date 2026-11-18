@@ -2116,7 +2116,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       char buf[4096];
       char* key = nullptr;
       int ikey = 0;
-      lList *rlp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::RN> rlp;
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       const char *schedd_info = ocs::tom::get<SC_schedd_job_info>(ocs_sconf_elem());
 
@@ -2144,9 +2144,9 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
          /* check list of groups */
          if (ikey == SCHEDD_JOB_INFO_JOB_LIST) {
             key = sge_strtok_r(nullptr, "\n", &context);
-            range_list_parse_from_string(&rlp, &alp, key, false, false,
+            range_list_parse_from_string(rlp, &alp, key, false, false,
                                          INF_NOT_ALLOWED);
-            if (rlp == nullptr) {
+            if (!rlp) {
                alp.reset();
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDJOBLIST);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -2154,7 +2154,8 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
             }
             else{
                pos.c_is_schedd_job_info = ikey;
-               pos.c_schedd_job_info_range = rlp;
+               // the cache is a raw member of the process-wide configuration
+               pos.c_schedd_job_info_range = rlp.release();
             }
          }
          else{

@@ -856,36 +856,6 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    DRETURN(answer);
 }
 
-/**
- * @brief cull_parse_job_parameter() for an untyped caller
- *
- * @param uid the submitting user's uid
- * @param username the submitting user's name
- * @param cell_root the cell directory, for resolving the default files
- * @param unqualified_hostname the submit host, unqualified
- * @param qualified_hostname the submit host, fully qualified
- * @param cmdline the parsed options (`SPA_Type`), or `nullptr` for defaults only
- * @param pjob the job (`JB_Type`) to fill in; created if `*pjob` is nullptr
- * @param sync_options receives the `-sync` bits
- *
- * @return `nullptr` when everything was fine, otherwise an answer list, see the typed form
- */
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter(const uint32_t uid, const char *username,
-                                                         const char *cell_root, const char *unqualified_hostname,
-                                                         const char *qualified_hostname, lList *cmdline,
-                                                         lListElem **pjob, uint32_t *sync_options) {
-   if (pjob == nullptr) {
-      ocs::tom::ListPtr<ocs::tom::AN> answer;
-      answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      return answer;
-   }
-   // the option list is built by the option parsers with SPA_Type, the job by the callers with JB_Type
-   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(*pjob);
-   auto answer = cull_parse_job_parameter(uid, username, cell_root, unqualified_hostname, qualified_hostname,
-                                            ocs::tom::List<ocs::tom::SPA>::from_typed(cmdline), job, sync_options);
-   *pjob = job.release();
-   return answer;
-}
 
 /**
  * @brief Parse a job script or a job defaults file
@@ -1225,32 +1195,4 @@ FCLOSE_ERROR:
    DRETURN(answer);
 }
 
-/**
- * @brief parse_script_file() for an untyped caller
- *
- * @param prog_number the client being parsed for, which decides the option set
- * @param script_file the script or defaults file, see the typed form
- * @param directive_prefix the directive prefix, see the typed form
- * @param lpp_options the option list (`SPA_Type`) to store the recognized switches in; `*lpp_options` is
- *        created if it is nullptr but there are options to be returned
- * @param envp environment pointer
- * @param flags see the typed form
- *
- * @return answer list, AN_Type, or nullptr if everything was ok, see the typed form
- */
-ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, const char *script_file,
-                                                  const char *directive_prefix,
-                                                  lList **lpp_options, char **envp, const uint32_t flags) {
-   if (lpp_options == nullptr) {
-      /* no place where to put result */
-      ocs::tom::ListPtr<ocs::tom::AN> answer;
-      answer_list_add(&answer, MSG_ANSWER_CANTPROCESSNULLLIST, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      return answer;
-   }
-   // the callers hand in their option list, which is created by the option parsers with SPA_Type
-   auto options = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(*lpp_options);
-   auto answer = parse_script_file(prog_number, script_file, directive_prefix, options, envp, flags);
-   *lpp_options = options.release();
-   return answer;
-}
 

@@ -80,7 +80,6 @@ int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qrsub");
    ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lList *ar_lp = nullptr;
    ocs::tom::ElementPtr<ocs::tom::AR> ar;
 
    /* Set up the program information name */
@@ -102,18 +101,14 @@ int main(int argc, const char **argv) {
       const char *user = component_get_username();
       const char *cell_root = bootstrap_get_cell_root();
 
-      // parse_script_file() and cull_parse_cmdline() have no typed form yet; they append to (or create) the raw
-      // option list, which is taken over afterwards
-      lList *cmdline_lp = nullptr;
-
       /* arguments from SGE_ROOT/common/sge_ar_request file */
       get_root_file_path(&file, cell_root, SGE_COMMON_DEF_AR_REQ_FILE);
-      if ((alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &cmdline_lp, environ,
+      if ((alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", pcmdline, environ,
          FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE)) == nullptr) {
          /* arguments from $HOME/.sge_ar_request file */
          if (get_user_home_file_path(&file, SGE_HOME_DEF_AR_REQ_FILE, user, &alp)) {
             alp.reset();
-            alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &cmdline_lp, environ,
+            alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", pcmdline, environ,
             FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE);
          }
       }
@@ -121,12 +116,11 @@ int main(int argc, const char **argv) {
 
       if (alp) {
          answer_list_output(&alp);
-         lFreeList(&cmdline_lp);
+         pcmdline.reset();
          goto error_exit;
       }
 
-      alp = cull_parse_cmdline(QRSUB, argv+1, environ, &cmdline_lp, FLG_USE_PSEUDOS);
-      pcmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
+      alp = cull_parse_cmdline(QRSUB, argv+1, environ, pcmdline, FLG_USE_PSEUDOS);
    }
 
    if (answer_list_print_err_warn(&alp, nullptr, "qrsub: ", MSG_WARNING) > 0) {
@@ -155,16 +149,12 @@ int main(int argc, const char **argv) {
    pcmdline.reset();
 
    {
+      // the request list is replaced by the response; both are freed at the end of the block
       auto ars = ocs::tom::ListPtr<ocs::tom::AR>::create(nullptr);
       ars->push_back(std::move(ar));
-      /* sge_gdi() has no typed form yet; it replaces the request list with the response, so it is handed
-       * over raw */
-      ar_lp = ars.release();
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::AR_LIST, ocs::gdi::Command::ADD,
+                                      ocs::gdi::SubCommand::RETURN_NEW_VERSION, ars);
    }
-
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::AR_LIST, ocs::gdi::Command::ADD,
-                 ocs::gdi::SubCommand::RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
-   lFreeList(&ar_lp);
    answer_list_on_error_print_or_exit(&alp, stdout);
    if (answer_list_has_error(&alp)) {
       ocs::gdi::ClientBase::shutdown();

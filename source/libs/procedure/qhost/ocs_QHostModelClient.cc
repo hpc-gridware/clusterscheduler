@@ -42,8 +42,8 @@
 
 /** @brief The answer to one recorded GET request, as a typed list
  *
- * A GET of a target answers with a list of the target's type, so the list
- * is wrapped with a check of its type.
+ * A GET of a target answers with a list of the target's type (reduced to the
+ * selection), taken over as the typed get_response() takes it over.
  *
  * @tparam T the object type of the target
  * @param answer_list receives error messages
@@ -57,9 +57,9 @@ static ocs::tom::ListPtr<T>
 get_list_response(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::gdi::Request &request,
                   const ocs::gdi::Target target, const int id) {
    DENTER(TOP_LAYER);
-   lList *lp = nullptr;
-   request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, &lp);
-   DRETURN(ocs::tom::ListPtr<T>(lp));
+   ocs::tom::ListPtr<T> list;
+   request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, list);
+   DRETURN(list);
 }
 
 /** @brief Fetch the lists from qmaster with one multi GDI request
@@ -84,14 +84,13 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    gdi::Request gdi_multi{};
    int eh_id;
    {
-      lCondition *where = get_host_where(hostname_list);
-      lEnumeration *what = get_host_what();
+      // the condition and the selections below are built for the type of their target by the base class
+      const auto where = ocs::tom::Where<ocs::tom::EH>::from_typed(get_host_where(hostname_list));
+      const auto what = ocs::tom::What<ocs::tom::EH>::from_typed(get_host_what());
 
       eh_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::EH_LIST,
                                 gdi::Command::GET, gdi::SubCommand::NONE,
-                                nullptr, where, what, true);
-      lFreeWhat(&what);
-      lFreeWhere(&where);
+                                nullptr, where, what);
 
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);
@@ -101,12 +100,12 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Queues
    int q_id = 0;
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      lEnumeration *what = get_queue_what();
+      // the selection of all fields, built for QU_Type, takes all of a cluster queue
+      const auto what = ocs::tom::What<ocs::tom::CQ>::from_typed(get_queue_what());
 
       q_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CQ_LIST,
                                gdi::Command::GET, gdi::SubCommand::NONE,
-                               nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+                               nullptr, ocs::tom::Where<ocs::tom::CQ>(), what);
 
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);
@@ -116,13 +115,11 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Jobs
    int j_id = 0;
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
-      lCondition *where = get_job_where(user_name_list, show);
-      lEnumeration *what = get_job_what();
+      const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(get_job_where(user_name_list, show));
+      const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(get_job_what());
 
       j_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::JB_LIST, gdi::Command::GET,
-                               gdi::SubCommand::NONE, nullptr, where, what, true);
-      lFreeWhat(&what);
-      lFreeWhere(&where);
+                               gdi::SubCommand::NONE, nullptr, where, what);
 
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);
@@ -132,10 +129,9 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Complexes
    int ce_id;
    {
-      lEnumeration *what = get_centry_what();
+      const auto what = ocs::tom::What<ocs::tom::CE>::from_typed(get_centry_what());
       ce_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CE_LIST, gdi::Command::GET,
-                                gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+                                gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::CE>(), what);
 
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);
@@ -145,10 +141,9 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Parallel environments
    int pe_id;
    {
-      lEnumeration *what = get_pe_what();
+      const auto what = ocs::tom::What<ocs::tom::PE>::from_typed(get_pe_what());
       pe_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::PE_LIST, gdi::Command::GET,
-                                gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+                                gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::PE>(), what);
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);
       }
@@ -159,10 +154,9 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    */
    int acl_id;
    {
-      lEnumeration *what = get_user_set_what();
+      const auto what = ocs::tom::What<ocs::tom::US>::from_typed(get_user_set_what());
       acl_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::US_LIST, gdi::Command::GET,
-                                 gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+                                 gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::US>(), what);
 
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);
@@ -172,14 +166,12 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Configuration
    int gc_id;
    {
-      lCondition *where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
-      lEnumeration *what = lWhat("%T(ALL)", CONF_Type);
+      const auto where = ocs::tom::field<CONF_name>().equals_nocase(SGE_GLOBAL_NAME);
+      const auto what = ocs::tom::what_all<ocs::tom::CONF>();
 
       gc_id = gdi_multi.request(answer_list, gdi::Mode::SEND, gdi::Target::CONF_LIST, gdi::Command::GET,
-                                gdi::SubCommand::NONE, nullptr, where, what, true);
+                                gdi::SubCommand::NONE, nullptr, where, what);
       gdi_multi.wait();
-      lFreeWhat(&what);
-      lFreeWhere(&where);
 
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);

@@ -44,4 +44,3 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 
 ocs::tom::ListPtr<ocs::tom::ST> ocs_get_dirents(const char *path);
-OCS_TRANSITIONAL lList *sge_get_dirents(const char *path);

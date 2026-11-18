@@ -1611,15 +1611,13 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
    int ce_id = 0, eh_id = 0, q_id = 0, hgrp_id = 0;
    ocs::gdi::Request gdi_multi{};
 
-   // Request has no typed form yet; it does not change the condition and the selection
    /*
    ** GET SGE_CE_LIST
    */
    if (ppcentries) {
       const auto what = ocs::tom::what_all<ocs::tom::CE>();
       ce_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::CE_LIST, ocs::gdi::Command::GET,
-                                ocs::gdi::SubCommand::NONE, nullptr, nullptr,
-                                const_cast<lEnumeration *>(what.get()), true);
+                                ocs::gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::CE>(), what);
 
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
@@ -1632,8 +1630,7 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
       const auto where = ocs::tom::field<EH_name>() != SGE_TEMPLATE_NAME;
       const auto what = ocs::tom::what_all<ocs::tom::EH>();
       eh_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET,
-                                ocs::gdi::SubCommand::NONE, nullptr, const_cast<lCondition *>(where.get()),
-                                const_cast<lEnumeration *>(what.get()), true);
+                                ocs::gdi::SubCommand::NONE, nullptr, where, what);
 
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
@@ -1646,8 +1643,8 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
    if (hgrp_l) {
       const auto what = ocs::tom::what_all<ocs::tom::HGRP>();
       hgrp_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::HGRP_LIST,
-                                  ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr,
-                                  const_cast<lEnumeration *>(what.get()), true);
+                                  ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr,
+                                  ocs::tom::Where<ocs::tom::HGRP>(), what);
 
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
@@ -1657,11 +1654,10 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
    ** GET SGE_QUEUE_LIST
    */
    {
-      // the selection of every field is built for QU_Type, as it always was, and asks for all of a cluster queue
-      const auto what = ocs::tom::what_all<ocs::tom::QU>();
+      // the selection of every field does not depend on the type it is built for (it was built for QU_Type)
+      const auto what = ocs::tom::what_all<ocs::tom::CQ>();
       q_id = gdi_multi.request(alpp, ocs::gdi::Mode::SEND, ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::GET,
-                               ocs::gdi::SubCommand::NONE, nullptr, nullptr,
-                               const_cast<lEnumeration *>(what.get()), true);
+                               ocs::gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::CQ>(), what);
       gdi_multi.wait();
    }
 
@@ -1670,15 +1666,13 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
    }
 
    /*
-   ** handle results; get_response() has no typed form yet, it sets the raw list of the response, which is
-   ** taken over with the type of the request; a list held before is freed (it was leaked)
+   ** handle results; a list held before is freed (it was leaked)
    */
    /* --- complex */
    if (ppcentries) {
-      lList *lp = nullptr;
+      ppcentries->reset();
       gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::CE_LIST,
-                             ce_id, &lp);
-      *ppcentries = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(lp);
+                             ce_id, *ppcentries);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
@@ -1686,10 +1680,9 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
 
    /* --- exec host */
    if (ppexechosts) {
-      lList *lp = nullptr;
+      ppexechosts->reset();
       gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::EH_LIST,
-                             eh_id, &lp);
-      *ppexechosts = ocs::tom::ListPtr<ocs::tom::EH>::from_typed(lp);
+                             eh_id, *ppexechosts);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
@@ -1697,10 +1690,9 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
 
    /* --- queue */
    if (ppqueues) {
-      lList *lp = nullptr;
+      ppqueues->reset();
       gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::CQ_LIST,
-                             q_id, &lp);
-      *ppqueues = ocs::tom::ListPtr<ocs::tom::CQ>::from_typed(lp);
+                             q_id, *ppqueues);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
@@ -1708,10 +1700,9 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
 
    /* --- hgrp */
    if (hgrp_l) {
-      lList *lp = nullptr;
+      hgrp_l->reset();
       gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::HGRP_LIST,
-                             hgrp_id, &lp);
-      *hgrp_l = ocs::tom::ListPtr<ocs::tom::HGRP>::from_typed(lp);
+                             hgrp_id, *hgrp_l);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }

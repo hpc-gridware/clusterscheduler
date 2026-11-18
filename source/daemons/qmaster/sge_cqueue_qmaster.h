@@ -107,8 +107,6 @@ cqueue_list_del_all_orphaned(ocs::tom::List<ocs::tom::CQ> this_list, ocs::tom::L
 void
 cqueue_list_set_unknown_state(ocs::tom::List<ocs::tom::CQ> this_list, const char *hostname,
                               bool send_events, bool is_unknown, uint64_t gdi_session);
-OCS_TRANSITIONAL void cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
-                                                    bool send_events, bool is_unknown, uint64_t gdi_session);
 
 void cqueue_diff_projects(ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
                           ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, lList **new_prj, lList **old_prj);

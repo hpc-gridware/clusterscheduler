@@ -41,7 +41,8 @@ namespace ocs {
     */
    class QRStatParameterClient : public QRStatParameter {
 
-      bool sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
+      bool sge_parse_from_file_qrstat(const char *file, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *alpp);
       bool sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::List<ocs::tom::SPA> cmdline);
 
    public:

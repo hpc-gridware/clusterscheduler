@@ -101,13 +101,3 @@ ocs::tom::ListPtr<ocs::tom::ST> ocs_get_dirents(const char *path) {
    DRETURN(entries);
 }
 
-/**
- * @brief sge_get_dirents() for an untyped caller
- *
- * @param path the directory to read
- *
- * @return as ocs_get_dirents(), handed over raw (ST_Type), to be freed by the caller
- */
-lList *sge_get_dirents(const char *path) {
-   return ocs_get_dirents(path).release();
-}

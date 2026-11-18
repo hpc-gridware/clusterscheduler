@@ -1276,22 +1276,6 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
    DRETURN_VOID;
 }
 
-/**
- * @brief sge_update_load_values() for an untyped caller
- *
- * The list comes from a load report of an execution daemon (REP_list, a list field without a fixed
- * element type); a load report carries LR_Type elements, so it is taken without a check, as the
- * caller does for the same list.
- *
- * @param rhost the host as it identified itself
- * @param real_host its resolved name
- * @param lp the reported load values (LR_Type)
- * @param gdi_session the session the change belongs to
- */
-void
-sge_update_load_values(const char *rhost, const char *real_host, lList *lp, const uint64_t gdi_session) {
-   sge_update_load_values(rhost, real_host, ocs::tom::List<ocs::tom::LR>::from_typed(lp), gdi_session);
-}
 
 /* ----------------------------------------
 

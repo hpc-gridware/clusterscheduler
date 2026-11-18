@@ -121,15 +121,13 @@ ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstEle
 void ja_task_list_print_to_string(const ocs::tom::ConstList<ocs::tom::JAT> ja_task_list, dstring *range_string) {
    DENTER(TOP_LAYER);
 
-   // filled by range_list_insert_id(), which takes a raw in-out list
-   lList *range_list_raw = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RN> range_list;
 
    for (const auto ja_task : ja_task_list) {
       const uint32_t tid = ocs::tom::get<JAT_task_number>(ja_task);
 
-      range_list_insert_id(&range_list_raw, nullptr, tid);
+      range_list_insert_id(range_list, nullptr, tid);
    }
-   const auto range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(range_list_raw);
    range_list_sort_uniq_compress(*range_list, nullptr, true);
    range_list_print_to_string(*range_list, range_string, false, false, false);
    DRETURN_VOID;
@@ -277,8 +275,7 @@ sge_parse_jobtasks(lList **ipp, const char *str_jobtask, ocs::tom::ListPtr<ocs::
 
    char *token;
    char *job_str;
-   // filled by range_list_parse_from_string(), which takes a raw in-out list
-   lList *task_id_range_list_raw = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RN> task_id_range_list;
    int ret = 1;
    ocs::tom::Element<ocs::tom::ID> idp = nullptr;
 
@@ -300,9 +297,9 @@ sge_parse_jobtasks(lList **ipp, const char *str_jobtask, ocs::tom::ListPtr<ocs::
       if ((token = strchr(job_str, '.')) != nullptr) {
          token[0] = '\0';
          token++;
-         if (!range_list_parse_from_string(&task_id_range_list_raw, alpp, token,
+         if (!range_list_parse_from_string(task_id_range_list, alpp, token,
                                            false, true, INF_NOT_ALLOWED) ||
-             !task_id_range_list_raw) {
+             !task_id_range_list) {
             ret = -1;
          }
       }
@@ -316,7 +313,6 @@ sge_parse_jobtasks(lList **ipp, const char *str_jobtask, ocs::tom::ListPtr<ocs::
       }
    }
 
-   auto task_id_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(task_id_range_list_raw);
    if (arrayDefList) {
       if (!task_id_range_list) {
          task_id_range_list = arrayDefList.clone(arrayDefList.name());

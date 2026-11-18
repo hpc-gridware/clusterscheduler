@@ -123,24 +123,6 @@ void opt_list_append_opts_from_default_files(const uint32_t prog_number, const c
    DRETURN_VOID;
 }
 
-/**
- * @brief opt_list_append_opts_from_default_files() for an untyped caller
- *
- * @param prog_number the client reading the defaults, which decides which files are read
- * @param cell_root the cell directory, where the cluster-wide file lives
- * @param user the user whose home directory holds the second file
- * @param pcmdline the option list (`SPA_Type`) to append to, checked; created if it is
- *                 `nullptr` and the files hold any options
- * @param answer_list receives warnings, as the typed form writes them
- * @param envp environment pointer
- */
-void opt_list_append_opts_from_default_files(const uint32_t prog_number, const char *cell_root, const char *user,
-                                             lList **pcmdline, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                             char **envp) {
-   ocs::tom::ListPtr<ocs::tom::SPA> cmdline(*pcmdline);
-   opt_list_append_opts_from_default_files(prog_number, cell_root, user, cmdline, answer_list, envp);
-   *pcmdline = cmdline.release();
-}
 
 /**
  * @brief Get absolut path name to file in user
@@ -261,10 +243,7 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
       }
       DPRINTF("-- defaults file: %s\n", *pstr);
 
-      // parse_script_file() has no typed form yet; it appends to (or creates) the raw list
-      lList *cmdline_lp = cmdline.release();
-      auto alp = parse_script_file(prog_number, *pstr, "", &cmdline_lp, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
-      cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
+      auto alp = parse_script_file(prog_number, *pstr, "", cmdline, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
 
       for_each_ep_lv(aep, alp) {
          uint32_t status;
@@ -325,29 +304,10 @@ void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, ocs::tom
    if (answer_list != nullptr) {
       answer_list->reset();
    }
-   // cull_parse_cmdline() has no typed form yet; it appends to (or creates) the raw list
-   lList *cmdline_lp = opts_cmdline.release();
-   *answer_list = cull_parse_cmdline(prog_number, argv, envp, &cmdline_lp, FLG_USE_PSEUDOS);
-   opts_cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
+   *answer_list = cull_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS);
    DRETURN_VOID;
 }
 
-/**
- * @brief opt_list_append_opts_from_qsub_cmdline() for an untyped caller
- *
- * @param prog_number the client being parsed for, which decides the option set
- * @param opts_cmdline command line options (`SPA_Type`), checked; created if it is `nullptr`
- * @param answer_list AN_Type list
- * @param argv Argumente
- * @param envp Environment
- */
-void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, lList **opts_cmdline,
-                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                            const char **argv, char **envp) {
-   ocs::tom::ListPtr<ocs::tom::SPA> cmdline(*opts_cmdline);
-   opt_list_append_opts_from_qsub_cmdline(prog_number, cmdline, answer_list, argv, envp);
-   *opts_cmdline = cmdline.release();
-}
 
 /**
  * @brief Parse opts from cmd line
@@ -371,10 +331,7 @@ void opt_list_append_opts_from_qalter_cmdline(const uint32_t prog_number,
    if (answer_list != nullptr) {
       answer_list->reset();
    }
-   // cull_parse_cmdline() has no typed form yet; it appends to (or creates) the raw list
-   lList *cmdline_lp = opts_cmdline.release();
-   *answer_list = cull_parse_cmdline(prog_number, argv, envp, &cmdline_lp, FLG_USE_PSEUDOS | FLG_QALTER);
-   opts_cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
+   *answer_list = cull_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS | FLG_QALTER);
    DRETURN_VOID;
 }
 
@@ -412,30 +369,10 @@ void opt_list_append_opts_from_script(const uint32_t prog_number, ocs::tom::List
    if (answer_list != nullptr) {
       answer_list->reset();
    }
-   // parse_script_file() has no typed form yet; it appends to (or creates) the raw list
-   lList *scriptfile_lp = opts_scriptfile.release();
-   *answer_list = parse_script_file(prog_number, scriptfile, prefix, &scriptfile_lp, envp, FLG_DONT_ADD_SCRIPT);
-   opts_scriptfile = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(scriptfile_lp);
+   *answer_list = parse_script_file(prog_number, scriptfile, prefix, opts_scriptfile, envp, FLG_DONT_ADD_SCRIPT);
    DRETURN_VOID;
 }
 
-/**
- * @brief opt_list_append_opts_from_script() for an untyped caller
- *
- * @param prog_number the client being parsed for, which decides the option set
- * @param opts_scriptfile embedded command line options (`SPA_Type`), checked; created if it is `nullptr`
- * @param answer_list AN_Type list
- * @param opts_cmdline Argumente (`SPA_Type`), checked
- * @param envp Environment
- */
-void opt_list_append_opts_from_script(const uint32_t prog_number, lList **opts_scriptfile,
-                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                      const lList *opts_cmdline, char **envp) {
-   ocs::tom::ListPtr<ocs::tom::SPA> scriptfile(*opts_scriptfile);
-   opt_list_append_opts_from_script(prog_number, scriptfile, answer_list,
-                                    ocs::tom::ConstList<ocs::tom::SPA>(opts_cmdline), envp);
-   *opts_scriptfile = scriptfile.release();
-}
 
 /**
  * @brief Parse opts from scriptfile
@@ -492,33 +429,12 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
       answer_list->reset();
    }
 
-   // parse_script_file() has no typed form yet; it appends to (or creates) the raw list
-   lList *scriptfile_lp = opts_scriptfile.release();
-   *answer_list = parse_script_file(prog_number, scriptpath, prefix, &scriptfile_lp, envp, FLG_DONT_ADD_SCRIPT);
-   opts_scriptfile = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(scriptfile_lp);
+   *answer_list = parse_script_file(prog_number, scriptpath, prefix, opts_scriptfile, envp, FLG_DONT_ADD_SCRIPT);
 
    sge_free(&scriptpath);
    DRETURN_VOID;
 }
 
-/**
- * @brief opt_list_append_opts_from_script_path() for an untyped caller
- *
- * @param prog_number the client being parsed for, which decides the option set
- * @param opts_scriptfile embedded command line options (`SPA_Type`), checked; created if it is `nullptr`
- * @param path the root path for the script file
- * @param answer_list AN_Type list
- * @param opts_cmdline Argumente (`SPA_Type`), checked
- * @param envp Environment
- */
-void opt_list_append_opts_from_script_path(const uint32_t prog_number, lList **opts_scriptfile, const char *path,
-                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *opts_cmdline,
-                                           char **envp) {
-   ocs::tom::ListPtr<ocs::tom::SPA> scriptfile(*opts_scriptfile);
-   opt_list_append_opts_from_script_path(prog_number, scriptfile, path, answer_list,
-                                         ocs::tom::ConstList<ocs::tom::SPA>(opts_cmdline), envp);
-   *opts_scriptfile = scriptfile.release();
-}
 
 /**
  * @brief Merge commandlines together

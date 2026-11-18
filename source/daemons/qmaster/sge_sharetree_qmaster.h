@@ -54,8 +54,6 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Elem
 int
 sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::STN> ep, lList **lpp,
                   ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost);
-OCS_TRANSITIONAL int sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp,
-                                       ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost);
 
 int
 sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp,

@@ -124,7 +124,6 @@ void cqueue_fill_hostlist(ocs::tom::Element<ocs::tom::CQ> cqueue,
 
 void cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ> cqueue_list,
                                ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
-OCS_TRANSITIONAL void cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list);
 
 bool cqueue_is_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
                                ocs::tom::ConstElement<ocs::tom::HR> href, bool only_hostlist);
@@ -136,7 +135,6 @@ bool cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ> this_elem,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ> this_list, const char *name);
-OCS_TRANSITIONAL lListElem *cqueue_list_locate(const lList *this_list, const char *name);
 
 ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
                                                         const char *hostname);
@@ -166,13 +164,6 @@ bool cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::
                               ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
                               ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                               ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
-OCS_TRANSITIONAL bool cqueue_verify_attributes(lListElem *cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                               lListElem *reduced_elem,
-                                               bool in_master, const lList *master_calendar_list,
-                                               const lList *master_ckpt_list, const lList *master_pe_list,
-                                               const lList *master_userset_list, const lList *master_project_list,
-                                               const lList *master_centry_list, const lList *master_cqueue_list,
-                                               const lList *master_hgroup_list);
 
 bool cqueue_is_used_in_subordinate(const char *cqueue_name, ocs::tom::ConstElement<ocs::tom::CQ> cqueue);
 

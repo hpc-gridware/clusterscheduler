@@ -191,17 +191,6 @@ bool qinstance_print_qtype_to_dstring(const ocs::tom::ConstElement<ocs::tom::QU>
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_print_qtype_to_dstring() for an untyped caller
- *
- * @param this_elem the queue instance to read (QU_Type), checked; may be nullptr
- * @param[out] string receives the text, appended
- * @param only_first_char true for the one letter per type form, false for the names
- * @return as qinstance_print_qtype_to_dstring()
- */
-bool qinstance_print_qtype_to_dstring(const lListElem *this_elem, dstring *string, const bool only_first_char) {
-   return qinstance_print_qtype_to_dstring(ocs::tom::ConstElement<ocs::tom::QU>(this_elem), string, only_first_char);
-}
 
 /**
  * @brief Parse a queue type list and store it in the queue
@@ -232,18 +221,6 @@ bool qinstance_parse_qtype_from_string(const ocs::tom::Element<ocs::tom::QU> thi
    DRETURN(ret);
 }
 
-/**
- * @brief qinstance_parse_qtype_from_string() for an untyped caller
- *
- * @param[in,out] this_elem the queue instance to change (QU_Type), checked; may be nullptr
- * @param[out] answer_list receives the message naming the bad type
- * @param value the type names, as an administrator wrote them
- * @return as qinstance_parse_qtype_from_string()
- */
-bool qinstance_parse_qtype_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                       const char *value) {
-   return qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list, value);
-}
 
 /**
  * @brief Is this a batch queue?

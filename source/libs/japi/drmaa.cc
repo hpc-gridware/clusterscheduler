@@ -2306,12 +2306,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
    /*
     * read switches from the various defaults files
     */
-   {
-      // the option parsers of clients/common have no typed form yet; they build SPA_Type lists
-      lList *defaults_out = nullptr;
-      opt_list_append_opts_from_default_files(prog_number, cell_root, username, &defaults_out, &alp, environ);
-      opts_defaults = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(defaults_out);
-   }
+   opt_list_append_opts_from_default_files(prog_number, cell_root, username, opts_defaults, &alp, environ);
 
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);
@@ -2341,10 +2336,8 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
       if (num_args != 0) {
          sge_parse_args(value, args);
-         lList *native_out = nullptr;
-         opt_list_append_opts_from_qsub_cmdline(prog_number, &native_out, &alp,
+         opt_list_append_opts_from_qsub_cmdline(prog_number, opts_native, &alp,
                                                 (const char **)args, environ);
-         opts_native = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(native_out);
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
@@ -2417,18 +2410,16 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
          alp.reset();
       }
 
-      lList *scriptfile_out = nullptr;
       if (path != nullptr) {
          DPRINTF("Using \"%s\" for the working directory.\n", path);
-         opt_list_append_opts_from_script_path(prog_number, &scriptfile_out, path, &alp,
+         opt_list_append_opts_from_script_path(prog_number, opts_scriptfile, path, &alp,
                                                 *opts_drmaa, environ);
          sge_free(&path);
       } else {
          DPRINTF("Using current directory for the working directory.\n");
-         opt_list_append_opts_from_script(prog_number, &scriptfile_out, &alp, *opts_drmaa,
+         opt_list_append_opts_from_script(prog_number, opts_scriptfile, &alp, *opts_drmaa,
                                            environ);
       }
-      opts_scriptfile = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(scriptfile_out);
 
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
@@ -2498,10 +2489,8 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
       sge_free(&job_cat);
 
       if (args != nullptr) {
-         lList *job_cat_out = nullptr;
-         opt_list_append_opts_from_qsub_cmdline(prog_number, &job_cat_out, &alp,
+         opt_list_append_opts_from_qsub_cmdline(prog_number, opts_job_cat, &alp,
                                                 args, environ);
-         opts_job_cat = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(job_cat_out);
          /* free the args string array */
          char **argsf = (char **)args;
          sge_strafree(&argsf);
@@ -2541,10 +2530,8 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
                 * point will probably be to parse the job category before the
                 * script file and simply not allow the script file to set the
                 * job category.) */
-               lList *scriptfile_out = opts_scriptfile.release();
-               opt_list_append_opts_from_script(prog_number, &scriptfile_out, &alp,
+               opt_list_append_opts_from_script(prog_number, opts_scriptfile, &alp,
                                                  *opts_drmaa, environ);
-               opts_scriptfile = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(scriptfile_out);
 
                if (answer_list_has_error(&alp)) {
                   answer_list_to_dstring(alp, diag);
@@ -2579,13 +2566,8 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
    }
 
    uint32_t sync_option = SYNC_NO;
-   {
-      // cull_parse_job_parameter() of common/ has no typed form yet; it fills the job in place
-      lListElem *job_out = jt.release();
-      alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname,
-                                     *opts_all, &job_out, &sync_option);
-      jt = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(job_out);
-   }
+   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname,
+                                  *opts_all, jt, &sync_option);
 
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);

@@ -405,14 +405,6 @@ debit_all_jobs_from_pes(const ocs::tom::List<ocs::tom::PE> pe_list) {
    DRETURN_VOID;
 }
 
-/** @brief debit_all_jobs_from_pes() for an untyped caller
- *
- * @param pe_list the parallel environments
- */
-void
-debit_all_jobs_from_pes(lList *pe_list) {
-   debit_all_jobs_from_pes(ocs::tom::List<ocs::tom::PE>(pe_list));
-}
 
 /**
  * @brief Add the names of the usersets of a PE's user_lists and xuser_lists to a list, each once

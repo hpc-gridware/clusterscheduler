@@ -383,8 +383,7 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
          need_queues_ = true;
          if (argstr) {
             // frees the list it is handed and gives nullptr when the text cannot be parsed
-            q_resource_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(
-               centry_list_parse_from_string(q_resource_list_.release(), argstr, false));
+            q_resource_list_ = centry_list_parse_from_string(std::move(q_resource_list_), argstr, false);
             sge_free(&argstr);
          }
       }

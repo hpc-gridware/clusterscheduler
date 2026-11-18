@@ -63,11 +63,6 @@ bool qinstance_is_parallel_queue(ocs::tom::ConstElement<ocs::tom::QU> this_elem)
 
 bool qinstance_print_qtype_to_dstring(ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string,
                                       bool only_first_char);
-OCS_TRANSITIONAL bool qinstance_print_qtype_to_dstring(const lListElem *this_elem, dstring *string,
-                                                       bool only_first_char);
 
 bool qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU> this_elem,
                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);
-OCS_TRANSITIONAL bool qinstance_parse_qtype_from_string(lListElem *this_elem,
-                                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                        const char *value);

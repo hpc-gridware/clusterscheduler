@@ -239,12 +239,8 @@ int main(int argc, const char **argv) {
    if (all_users)
       sub_cmd = ocs::gdi::SubCommand::ALL_USERS;
 
-   {
-      // sge_gdi() has no typed form yet; it replaces the request list with the response
-      lList *request_lp = request_list.release();
-      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, gdi_cmd, sub_cmd, &request_lp, nullptr, nullptr);
-      request_list = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(request_lp);
-   }
+   // the request list is replaced by the response, if any
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, gdi_cmd, sub_cmd, request_list);
    for_each_ep_lv(aep, alp) {
       printf("%s\n", ocs::tom::get<AN_text>(aep));
       if (ret == STATUS_OK) {

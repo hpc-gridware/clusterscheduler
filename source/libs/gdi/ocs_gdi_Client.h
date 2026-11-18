@@ -86,7 +86,6 @@ namespace ocs::gdi {
                                          bool *is_admin_host, bool *is_submit_host);
       static std::tuple<int, ocs::tom::ElementPtr<ocs::tom::CONF>, ocs::tom::ElementPtr<ocs::tom::CONF>>
       gdi_get_configuration(const char *config_name, bool with_local);
-      OCS_TRANSITIONAL static int gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp);
    };
 
    /**

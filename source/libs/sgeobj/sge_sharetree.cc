@@ -109,17 +109,6 @@ bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element
    DRETURN(true);
 }
 
-/**
- * @brief id_sharetree() for an untyped caller
- *
- * @param[out] alpp receives error messages
- * @param ep the node to start at (STN_Type), checked; may be nullptr
- * @param id the id to give this node
- * @return as id_sharetree()
- */
-bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, int id) {
-   return id_sharetree(alpp, ocs::tom::Element<ocs::tom::STN>(ep), id);
-}
 
 /**
  * @brief printf's rendering of a `%s` argument, nullptr included

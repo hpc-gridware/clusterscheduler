@@ -53,7 +53,6 @@
 #include "sgeobj/sge_answer.h"
 
 const char *str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST> this_list, dstring *string, char delimiter);
-OCS_TRANSITIONAL const char *str_list_append_to_dstring(const lList *this_list, dstring *string, char delimiter);
 
 ocs::tom::ListPtr<ocs::tom::ST> str_list_parse_from_string(const char *string, const char *delimitor);
 

@@ -37,8 +37,8 @@
 
 /** @brief Fetch the advance reservations from qmaster with one GDI request
  *
- * A GET of the AR list answers with a list of that type, so the list is
- * wrapped with a check of its type.
+ * A GET of the AR list answers with a list of that type (reduced to the
+ * selection), taken over as the typed GDI call takes it over.
  *
  * @param answer_list receives error messages
  * @param parameter the parsed parameters
@@ -47,14 +47,13 @@
 bool ocs::QRStatModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
 
-   lEnumeration *what_ar = get_ar_what(parameter);
-   lCondition *where_ar = get_ar_where(parameter);
-   lList *ar_list = nullptr;
-   *answer_list = gdi::Client::sge_gdi(gdi::Target::AR_LIST, gdi::Command::GET, gdi::SubCommand::NONE, &ar_list,
+   // both are built for AR_Type by the base class
+   const auto what_ar = ocs::tom::What<ocs::tom::AR>::from_typed(get_ar_what(parameter));
+   const auto where_ar = ocs::tom::Where<ocs::tom::AR>::from_typed(get_ar_where(parameter));
+   ocs::tom::ListPtr<ocs::tom::AR> ar_list;
+   *answer_list = gdi::Client::sge_gdi(gdi::Target::AR_LIST, gdi::Command::GET, gdi::SubCommand::NONE, ar_list,
                                        where_ar, what_ar);
-   ar_list_ = ocs::tom::ListPtr<ocs::tom::AR>(ar_list);
-   lFreeWhere(&where_ar);
-   lFreeWhat(&what_ar);
+   ar_list_ = std::move(ar_list);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }

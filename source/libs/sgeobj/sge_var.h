@@ -57,7 +57,6 @@ void var_list_dump_to_file(ocs::tom::ConstList<ocs::tom::VA> varl, FILE *file);
 
 void var_list_copy_env_vars_and_value(ocs::tom::ListPtr<ocs::tom::VA> &varl,
                                       ocs::tom::ConstList<ocs::tom::VA> src_varl);
-OCS_TRANSITIONAL void var_list_copy_env_vars_and_value(lList **varl, ocs::tom::ConstList<ocs::tom::VA> src_varl);
 
 void var_list_copy_prefix_vars(ocs::tom::ListPtr<ocs::tom::VA> &varl, ocs::tom::ConstList<ocs::tom::VA> src_varl,
                                const char *prefix, const char *new_prefix);
@@ -69,7 +68,6 @@ void var_list_copy_prefix_vars_undef(ocs::tom::ListPtr<ocs::tom::VA> &varl,
 const char *var_list_get_string(ocs::tom::ConstList<ocs::tom::VA> varl, const char *name);
 
 void var_list_set_string(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name, const char *value);
-OCS_TRANSITIONAL void var_list_set_string(lList **varl, const char *name, const char *value);
 
 void var_list_set_int(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name, int value);
 
@@ -80,7 +78,6 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl);
 const char *var_get_sharedlib_path_name();
 
 void var_list_remove_prefix_vars(ocs::tom::List<ocs::tom::VA> varl, const char *prefix);
-OCS_TRANSITIONAL void var_list_remove_prefix_vars(lList **varl, const char *prefix);
 
 void var_list_split_prefix_vars(ocs::tom::List<ocs::tom::VA> varl, ocs::tom::ListPtr<ocs::tom::VA> &pefix_vars,
                                 const char *prefix);

@@ -844,6 +844,17 @@ static int read_SC_queue_sort_method(lListElem *ep, int nm,
    return 1;
 }
 
+/**
+ * @brief Read the load formula of the scheduler configuration
+ *
+ * The formula is stored without blanks once it is valid.
+ *
+ * @param ep the scheduler configuration (SC_Type)
+ * @param nm the field to read, always SC_load_formula
+ * @param load_formula the text of the value, may be nullptr
+ * @param alp receives the reason when the formula is not valid
+ * @return 1 on success, 0 for an invalid formula
+ */
 static int
 read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
@@ -853,7 +864,8 @@ read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, ocs::tom::
       if (copy != nullptr) {
          strcpy(copy, load_formula);
          sge_strip_blanks(copy);
-         if (!validate_load_formula(load_formula, alp, nullptr, SGE_ATTR_LOAD_FORMULA)) {
+         if (!validate_load_formula(load_formula, alp, ocs::tom::ConstList<ocs::tom::CE>(), SGE_ATTR_LOAD_FORMULA)) {
+            sge_free(&copy);
             DRETURN(0);
          }
          ocs::tom::set<SC_load_formula>(ep, copy);
@@ -914,12 +926,10 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
          if (!strcasecmp(value, NONE_STR)) {
             ocs::tom::set<CF_value>(ep, value);
          } else {
-            // out-parameter of range_list_parse_from_string(), which gives a range list (RN_Type)
-            lList *rlp_raw = nullptr;
+            ocs::tom::ListPtr<ocs::tom::RN> rlp;
 
-            range_list_parse_from_string(&rlp_raw, alp, value,
+            range_list_parse_from_string(rlp, alp, value,
                                          false, false, INF_NOT_ALLOWED);
-            const auto rlp = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(rlp_raw);
             if (!rlp) {
                WARNING(MSG_CONFIG_CONF_INCORRECTVALUEFORCONFIGATTRIB_SS, name, value);
    

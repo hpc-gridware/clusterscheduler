@@ -1146,13 +1146,11 @@ static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, u
                            component_get_username(), component_get_groupname(),
                            amount, grp_array);
 
-   /* use GDI to submit job for this session; sge_gdi() replaces the request list with the response, so it is
-      handed over raw */
-   lList *job_lp = request.release();
+   /* use GDI to submit job for this session; the request list is replaced by the response, which holds the
+      new version of the job (JB_Type) */
+   auto response = std::move(request);
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::ADD,
-                 ocs::gdi::SubCommand::RETURN_NEW_VERSION, &job_lp, nullptr, nullptr);
-   /* the response holds the new version of the job (JB_Type) */
-   auto response = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(job_lp);
+                                   ocs::gdi::SubCommand::RETURN_NEW_VERSION, response);
 
    /* reinitialize 'job' with pointer to new version from qmaster */
    sge_job_template.reset();
@@ -1611,17 +1609,18 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
          }
 
          if (ref_list) {
-            lList *id_list = nullptr;
+            lList *id_list_raw = nullptr;
 
-            // id_list_build_from_str_list() and sge_gdi() have no typed form yet; the id list stays raw
+            // id_list_build_from_str_list() has no typed form yet; it builds an ID_Type list, taken over below
             if (drmaa_action == DRMAA_CONTROL_SUSPEND) {
-               id_list_build_from_str_list(&id_list, &alp, *ref_list, QI_DO_SUSPEND, 0);
+               id_list_build_from_str_list(&id_list_raw, &alp, *ref_list, QI_DO_SUSPEND, 0);
             } else {
-               id_list_build_from_str_list(&id_list, &alp, *ref_list, QI_DO_UNSUSPEND, 0);
+               id_list_build_from_str_list(&id_list_raw, &alp, *ref_list, QI_DO_UNSUSPEND, 0);
             }
+            auto id_list = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(id_list_raw);
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
-                          ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
-            lFreeList(&id_list);
+                                            ocs::gdi::SubCommand::NONE, id_list);
+            id_list.reset();
             ref_list.reset();
 
             for_each_rw_lv(aep, alp) {
@@ -1714,11 +1713,9 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
          }
 
          if (request_list) {
-            // sge_gdi() has no typed form yet; it replaces the request with the response, freed here
-            lList *request_lp = request_list.release();
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::MOD,
-                          ocs::gdi::SubCommand::NONE, &request_lp, nullptr, nullptr);
-            lFreeList(&request_lp);
+                                            ocs::gdi::SubCommand::NONE, request_list);
+            request_list.reset();
 
             for_each_rw_lv(aep, alp) {
                if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
@@ -3018,17 +3015,14 @@ static std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>> japi_get_job(const uint3
       DRETURN(Result(DRMAA_ERRNO_NO_MEMORY, nullptr));
    }
 
-   // Request has no typed form yet; it does not change the condition and the selection
    jb_id = gdi_multi.request(&alp, ocs::gdi::Mode::SEND, ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
-                             ocs::gdi::SubCommand::NONE, nullptr, const_cast<lCondition *>(job_selection.get()),
-                             const_cast<lEnumeration *>(job_fields.get()), true);
+                             ocs::gdi::SubCommand::NONE, nullptr, job_selection, job_fields);
    gdi_multi.wait();
 
-   lList *jobs_out = nullptr;
-   gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE,
-                          ocs::gdi::Target::JB_LIST, jb_id, &jobs_out);
    /* the GDI GET answers with a job list (JB_Type, reduced to job_fields) */
-   auto retrieved_job_list = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(jobs_out);
+   ocs::tom::ListPtr<ocs::tom::JB> retrieved_job_list;
+   gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE,
+                          ocs::gdi::Target::JB_LIST, jb_id, retrieved_job_list);
    aep = lFirst(alp);
    if (aep == nullptr) {
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
@@ -4320,10 +4314,8 @@ static int japi_read_dynamic_attributes(dstring *diag) {
    int        drmaa_errno=DRMAA_ERRNO_SUCCESS;
    const char *pStr = nullptr;
 
-   lListElem *config_out = nullptr;
-   ret = ocs::gdi::Client::gdi_get_configuration(SGE_GLOBAL_NAME, &config_out, nullptr);
-   /* gdi_get_configuration() delivers the configuration as CONF_Type */
-   const auto config = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(config_out);
+   auto [conf_ret, config, no_local_config] = ocs::gdi::Client::gdi_get_configuration(SGE_GLOBAL_NAME, false);
+   ret = conf_ret;
 
    if (ret<0) {
       switch( ret ) {
@@ -4388,11 +4380,11 @@ static int do_gdi_delete(ocs::tom::ListPtr<ocs::tom::ID> &&id_list_in, const int
                          dstring *diag) {
    DENTER(TOP_LAYER);
 
-   // sge_gdi() has no typed form yet; it replaces the request with the response, freed here
-   lList *id_list = id_list_in.release();
+   // the request is replaced by the response, both freed here
+   auto id_list = std::move(id_list_in);
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
-                                          &id_list, nullptr, nullptr);
-   lFreeList(&id_list);
+                                        id_list);
+   id_list.reset();
 
    for_each_rw_lv(aep, alp) {
       int status = ocs::tom::get<AN_status>(aep);

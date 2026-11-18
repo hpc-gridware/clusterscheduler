@@ -51,7 +51,5 @@ namespace ocs {
    public:
       static void binding_print_to_string(ocs::tom::ConstElement<ocs::tom::BN> binding_elem,
                                           std::string &binding_string, bool as_switches = false);
-      OCS_TRANSITIONAL static void binding_print_to_string(const lListElem *binding_elem, std::string &binding_string,
-                                                           bool as_switches = false);
    };
 }

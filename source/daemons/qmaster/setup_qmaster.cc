@@ -999,7 +999,8 @@ setup_qmaster() {
     * result in HGRP_cached_hosts. From here on the caches are maintained
     * incrementally in hgroup_success(); this is the only full rebuild.
     */
-   if (!hgroup_list_update_caches(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), &answer_list)) {
+   if (!hgroup_list_update_caches(ocs::tom::List<ocs::tom::HGRP>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP)),
+                                  &answer_list)) {
       answer_list_output(&answer_list);
    }
 
@@ -1064,7 +1065,8 @@ setup_qmaster() {
    DPRINTF("cluster_queue_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
-   cqueue_list_set_unknown_state(*(ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), nullptr, false, true, ocs::SessionManager::GDI_SESSION_NONE);
+   cqueue_list_set_unknown_state(ocs::tom::List<ocs::tom::CQ>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)),
+                                 nullptr, false, true, ocs::SessionManager::GDI_SESSION_NONE);
 
    /*
     * CS-2677: every cluster queue owns the host group carrying its host list.
@@ -1255,7 +1257,7 @@ setup_qmaster() {
       parallel one
    */
    debit_all_jobs_from_qs();
-   debit_all_jobs_from_pes(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PE));
+   debit_all_jobs_from_pes(ocs::tom::List<ocs::tom::PE>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PE)));
 
    /*
     * Initialize cached values for each qinstance:

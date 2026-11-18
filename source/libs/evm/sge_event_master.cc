@@ -993,11 +993,13 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
 
       /* we have to rebuild the event client id range list */
       lFreeList(&Event_Master_Control.client_ids);
-      range_list_initialize(&Event_Master_Control.client_ids, &answer_list);
+      // the id range list is a raw member of the event master; it is built in an owning handle while the
+      // mutex is held and handed back to the member below
+      ocs::tom::ListPtr<ocs::tom::RN> client_ids;
+      range_list_initialize(client_ids, &answer_list);
       auto new_range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
       range_set_all_ids(*new_range, EV_ID_FIRST_DYNAMIC, max - 1 + EV_ID_FIRST_DYNAMIC, 1);
-      // the id range list is owned by the event master; the handle lives only while the mutex is held
-      ocs::tom::List<ocs::tom::RN>(Event_Master_Control.client_ids).push_back(std::move(new_range));
+      client_ids->push_back(std::move(new_range));
 
       /* and we have to remove the ids of our existing event clients from the range */
       for (const auto event_client : ocs::tom::ConstList<ocs::tom::EV>(Event_Master_Control.clients)) {
@@ -1008,14 +1010,15 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
              * the event clients id might not be in the new range,
              * if the number of dynamic event clients has been reduced
              */
-            if (range_list_is_id_within(Event_Master_Control.client_ids, event_client_id)) {
-               range_list_remove_id(&Event_Master_Control.client_ids, &answer_list, event_client_id);
+            if (range_list_is_id_within(client_ids, event_client_id)) {
+               range_list_remove_id(client_ids, &answer_list, event_client_id);
             }
          }
       }
 
       /* compress the range list to reduce fragmentation */
-      range_list_compress(Event_Master_Control.client_ids);
+      range_list_compress(client_ids);
+      Event_Master_Control.client_ids = client_ids.release();
 
       /* output any errors that might have occurred */
       answer_list_output(&answer_list);
@@ -1805,7 +1808,11 @@ sge_event_master_init() {
    /* Initialize the range list for event client ids */
    {
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-      range_list_initialize(&Event_Master_Control.client_ids, &answer_list);
+      // the id range list is a raw member of the event master, taken over for the call and handed back
+      ocs::tom::ListPtr<ocs::tom::RN> client_ids(Event_Master_Control.client_ids);
+      Event_Master_Control.client_ids = nullptr;
+      range_list_initialize(client_ids, &answer_list);
+      Event_Master_Control.client_ids = client_ids.release();
       answer_list_output(&answer_list);
    }
 
@@ -2650,7 +2657,8 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    /* chain in new event; ep is the event (ET_Type) or a copy of it, owned here */
    events.push_back(ocs::tom::ElementPtr<ocs::tom::ET>::from_typed(ep));
 
-   DPRINTF("%d %s\n", ocs::tom::get<EV_id>(event_client), event_text(ep, &buffer_wrapper));
+   DPRINTF("%d %s\n", ocs::tom::get<EV_id>(event_client),
+           event_text(ocs::tom::ConstElement<ocs::tom::ET>::from_typed(ep), &buffer_wrapper));
 
    /* check if event clients wants flushing */
    subscription = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
@@ -3046,30 +3054,51 @@ allocate_new_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
 
    uint32_t id = 0;
 
-   if (range_list_is_empty(Event_Master_Control.client_ids)) {
+   // the id range list is a raw member of the event master, taken over while the caller holds the mutex
+   // and handed back below
+   ocs::tom::ListPtr<ocs::tom::RN> client_ids(Event_Master_Control.client_ids);
+   Event_Master_Control.client_ids = nullptr;
+   if (range_list_is_empty(client_ids)) {
       ERROR(MSG_TO_MANY_DYNAMIC_EC_U, Event_Master_Control.max_event_clients);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
    } else {
-      id = range_list_get_first_id(Event_Master_Control.client_ids, answer_list);
+      id = range_list_get_first_id(client_ids, answer_list);
       if (id != 0) {
-         range_list_remove_id(&Event_Master_Control.client_ids, answer_list, id);
+         range_list_remove_id(client_ids, answer_list, id);
          /* compress the range list to reduce fragmentation
           * JG: TODO: do we need to compress here?
           */
-         range_list_compress(Event_Master_Control.client_ids);
+         range_list_compress(client_ids);
       }
    }
+   Event_Master_Control.client_ids = client_ids.release();
 
    DRETURN(id);
 }
 
+/**
+ * @brief Gives a dynamic event client id back
+ *
+ * The id is inserted into the range list of free ids again, unless it lies
+ * beyond the current maximum of dynamic event clients.
+ *
+ * @param answer_list AN_Type list receiving errors
+ * @param id the id to give back
+ *
+ * @note MT-NOTE: free_dynamic_id() is thread safe,
+ *       when the caller holds Event_Master_Control.mutex.
+ */
 static void
-free_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id) {
+free_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t id) {
    if (id < Event_Master_Control.max_event_clients + EV_ID_FIRST_DYNAMIC) {
-      range_list_insert_id(&Event_Master_Control.client_ids, answer_list, id);
+      // the id range list is a raw member of the event master, taken over while the caller holds the mutex
+      ocs::tom::ListPtr<ocs::tom::RN> client_ids(Event_Master_Control.client_ids);
+      Event_Master_Control.client_ids = nullptr;
+      range_list_insert_id(client_ids, answer_list, id);
 
       /* compress the range list to reduce fragmentation */
-      range_list_compress(Event_Master_Control.client_ids);
+      range_list_compress(client_ids);
+      Event_Master_Control.client_ids = client_ids.release();
    }
 }
 

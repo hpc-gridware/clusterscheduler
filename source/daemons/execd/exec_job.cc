@@ -1085,9 +1085,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    var_list_set_uint32t(environmentList, "JOB_ID", job_id);
 
    if (job_is_array(jep)) {
-      uint32_t start, end, step;
-
-      job_get_submit_task_ids(jep, &start, &end, &step);
+      const auto [start, end, step] = job_get_submit_task_ids(jep);
 
       var_list_set_uint32t(environmentList, VAR_PREFIX "TASK_ID", ja_task_id);
       var_list_set_uint32t(environmentList, VAR_PREFIX "TASK_FIRST", start);

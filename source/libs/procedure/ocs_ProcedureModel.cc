@@ -58,11 +58,10 @@ bool
 ocs::ProcedureModel::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ProcedureParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   // Fetch the SPP_Type list and pass it to qmaster
-   lList *request_and_response = parameter.get_bundle();
+   // Fetch the SPP_Type list and pass it to qmaster; the bundle is replaced by the response, which is SPP_Type too
+   auto request_and_response = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(parameter.get_bundle());
 
-   *answer_list = gdi::Client::sge_gdi(get_target(), get_command(), gdi::SubCommand::NONE,
-                                       &request_and_response, nullptr, nullptr);
+   *answer_list = gdi::Client::sge_gdi(get_target(), get_command(), gdi::SubCommand::NONE, request_and_response);
 
    /* CS-2820: the response is kept even when the answer list carries an error.
     * A procedure may legitimately render output *and* report a problem -
@@ -72,8 +71,8 @@ ocs::ProcedureModel::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
     * the text here discarded half of what the server had decided to send. A read
     * that really failed renders nothing, so its response is empty and the
     * caller prints nothing extra. */
-   procedure_response = request_and_response;
-   request_and_response = nullptr;
+   // the response stays a raw member, see the class
+   procedure_response = request_and_response.release();
 
    DRETURN(!answer_list_has_error(answer_list));
 }

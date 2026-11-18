@@ -86,8 +86,8 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    // the master list stays untyped: the generic merge below replaces elements through the pointer
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
-   // a cluster queue of the master list (CQ_Type), fetched with its fixed type
-   const auto cqueue = ocs::tom::Element<ocs::tom::CQ>(cqueue_list_locate(*list, name));
+   // a cluster queue of the master list (CQ_Type)
+   const auto cqueue = cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(*list), name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && cqueue) {
       /*
@@ -104,7 +104,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    }
 
    // the element the event brought in, or the old one if the merge failed
-   const auto new_cqueue = ocs::tom::Element<ocs::tom::CQ>(cqueue_list_locate(*list, name));
+   const auto new_cqueue = cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(*list), name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && new_cqueue) {
       /*
@@ -143,9 +143,9 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
    const char *name = ocs::tom::get<ET_strkey>(event);
    const char *hostname = ocs::tom::get<ET_strkey2>(event);
 
-   // a cluster queue of the master list (CQ_Type), fetched with its fixed type
-   const auto cqueue = ocs::tom::Element<ocs::tom::CQ>(
-           cqueue_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), name));
+   // a cluster queue of the master list (CQ_Type)
+   const auto cqueue = cqueue_list_locate(
+           ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), name);
 
    if (cqueue) {
       dstring key_buffer = DSTRING_INIT;

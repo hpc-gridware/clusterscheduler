@@ -122,8 +122,8 @@ attr_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *href, void
             const lDescr *descriptor, int href_nm, int value_nm);
 
 static bool 
-attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **attr, 
-              int flags, lList **ambiguous_href_list,
+attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **attr,
+              int flags, ocs::tom::ListPtr<ocs::tom::HR> *ambiguous_href_list,
               const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list);
 
 static bool
@@ -228,7 +228,7 @@ attr_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *href, void
  *          a certain host an ambiguous configuration is accepted. Otherwise
  *          it is rejected, and "ambiguous_href_list" is filled with the
  *          conflicting hostnames.
- * @param ambiguous_href_list HR_Type list
+ * @param ambiguous_href_list in-out: HR_Type list receiving the ambiguous hosts, or nullptr
  * @param descriptor CULL descriptor
  * @param href_nm CULL field name
  * @param value_nm CULL value name
@@ -240,7 +240,7 @@ attr_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *href, void
  */
 static bool
 attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **attr,
-              int flags, lList **ambiguous_href_list,
+              int flags, ocs::tom::ListPtr<ocs::tom::HR> *ambiguous_href_list,
               const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list) {
    DENTER(HOSTATTR_LAYER);
    bool ret = false;
@@ -289,9 +289,9 @@ attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, l
             ret = true;
          }
       } else {
-         lList *href_list = nullptr;
-         lList *host_list = nullptr;
-         lList *new_host_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::HR> href_list;
+         ocs::tom::ListPtr<ocs::tom::HR> host_list;
+         ocs::tom::ListPtr<ocs::tom::HR> new_host_list;
          bool lret = true;
        
          /*
@@ -313,7 +313,7 @@ attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, l
                   const char *href = lGetHost(attr_elem, href_nm);
 
                   if (strcmp(href, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href)) {
-                     lret &= href_list_add(&href_list, nullptr, href);
+                     lret &= href_list_add(href_list, nullptr, href);
                   }
                }
             }
@@ -322,25 +322,20 @@ attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, l
              * Find all directly or indirectly referenced hosts for all 
              * hostgroups
              */
-            if (lret && href_list != nullptr) {
-               lList *tmp_href_list = nullptr;
+            if (lret && href_list) {
+               const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list(master_hgroup_list);
+               ocs::tom::ListPtr<ocs::tom::HR> tmp_href_list;
 
-               lret &= href_list_find_all_references(href_list, nullptr,
-                                                     master_hgroup_list, &host_list, 
-                                                     nullptr);
-               lret &= href_list_add(&tmp_href_list, nullptr, href);
-               lret &= href_list_find_all_references(tmp_href_list, nullptr,
-                                                     master_hgroup_list, 
-                                                     &new_host_list, nullptr);
-               lFreeList(&tmp_href_list);
+               lret &= href_list_find_all_references(href_list, nullptr, hgroup_list, &host_list, nullptr);
+               lret &= href_list_add(tmp_href_list, nullptr, href);
+               lret &= href_list_find_all_references(tmp_href_list, nullptr, hgroup_list, &new_host_list, nullptr);
             }
 
             /*
              * Find all host references which already have a value attached.
              * For all these hosts the new value in ambiguious.
              */
-            if (lret && ambiguous_href_list != nullptr && host_list != nullptr &&
-                new_host_list != nullptr) {
+            if (lret && ambiguous_href_list != nullptr && host_list && new_host_list) {
                lret = href_list_compare(new_host_list, nullptr, host_list,
                                            nullptr, nullptr, ambiguous_href_list,
                                            nullptr);
@@ -348,7 +343,7 @@ attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, l
          } 
 
          if (ambiguous_href_list != nullptr &&
-               lGetNumberOfElem(*ambiguous_href_list) >= 1 &&
+               ambiguous_href_list->get().size() >= 1 &&
                !(flags & HOSTATTR_ALLOW_AMBIGUITY)) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTR_RESULTAMBIGUOUS);
             answer_list_add(answer_list, SGE_EVENT,
@@ -421,21 +416,17 @@ attr_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *an
           * Exit the loop as soon as possible! This will be the case if
           * an ambiguous value for the concerned host will be found.
           */
+         const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list(master_hroup_list);
          for_each_ep(href, this_list) {
             const char *href_name = lGetHost(href, href_nm);
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href_name)) {
-               // out-parameters of the host reference functions, which have no typed form yet
-               lList *tmp_href_list = nullptr;
-               lList *host_list = nullptr;
+               ocs::tom::ListPtr<ocs::tom::HR> tmp_href_list;
+               ocs::tom::ListPtr<ocs::tom::HR> host_list;
 
-               href_list_add(&tmp_href_list, nullptr, href_name);
-               href_list_find_all_references(tmp_href_list, nullptr,
-                                             master_hroup_list, &host_list,
-                                             nullptr);
-               // href_list_find_all_references() fills "host_list" with HR_Type elements
-               const auto tmp_href = href_list_locate(ocs::tom::ConstList<ocs::tom::HR>::from_typed(host_list),
-                                                      hostname);
+               href_list_add(tmp_href_list, nullptr, href_name);
+               href_list_find_all_references(tmp_href_list, nullptr, hgroup_list, &host_list, nullptr);
+               const auto tmp_href = href_list_locate(host_list, hostname);
                if (tmp_href != nullptr) {
                   if (!already_found) {
                      already_found = true;
@@ -448,13 +439,9 @@ attr_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *an
                      *matching_group = href_name;
                      DPRINTF("Found ambiguous value in domain " SFQ "\n", href_name);
                      ret = false;
-                     lFreeList(&host_list);
-                     lFreeList(&tmp_href_list);
                      break; /* leave for_each loop */
                   }
                }
-               lFreeList(&host_list);
-               lFreeList(&tmp_href_list);
             }
          }
          if (!ret) {

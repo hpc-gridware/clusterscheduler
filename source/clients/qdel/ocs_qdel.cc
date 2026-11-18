@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
          bool do_again;
          bool first_try = true;
          uint32_t MAX_DELETE_JOBS = 500;
-         lList *part_ref_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::ID> part_ref_list;
          const auto cp_refs = ref_list->clone("");
 
          for (const auto idep : *cp_refs) {
@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
          do {
             do_again = false;
 
-            if (part_ref_list == nullptr) {
+            if (!part_ref_list) {
                const auto max = std::min(cp_refs->size(), std::size_t{MAX_DELETE_JOBS});
 
                first_try = true;
@@ -230,12 +230,11 @@ int main(int argc, char **argv) {
                      break;
                   }   
                }
-               /* sge_gdi() has no typed form yet; it replaces the request list with the response, so it is
-                * handed over raw */
-               part_ref_list = part_refs.release();
+               part_ref_list = std::move(part_refs);
             }
+            // the request list is replaced by the response, if any
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
-                          ocs::gdi::SubCommand::NONE, &part_ref_list, nullptr, nullptr);
+                                            ocs::gdi::SubCommand::NONE, part_ref_list);
 
             for_each_ep_lv(aep, alp) {
                status = ocs::tom::get<AN_status>(aep);
@@ -258,7 +257,7 @@ int main(int argc, char **argv) {
             }
 
             if (!do_again){
-               lFreeList(&part_ref_list);
+               part_ref_list.reset();
             }
             alp.reset();
 

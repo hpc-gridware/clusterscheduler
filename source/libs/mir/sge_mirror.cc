@@ -120,7 +120,7 @@ sge_mirror_process_event(sge_evc_class_t *evc,
                          mirror_description *mirror_base,
                          sge_object_type type,
                          sge_event_action action,
-                         lListElem *event);
+                         ocs::tom::Element<ocs::tom::ET> event);
 
 static sge_callback_result
 sge_mirror_process_shutdown(sge_evc_class_t *evc,
@@ -1588,9 +1588,23 @@ mir_event_root_unmirrored(sge_object_type type, sge_event_action action, lListEl
    return root == nullptr;
 }
 
+/**
+ * @brief Apply one event to the mirrored lists
+ *
+ * Skips events of a filtered-out hierarchy root and calls the before, default
+ * and after callbacks of the event's object type.
+ *
+ * @param evc the event client the event arrived on
+ * @param mirror_base the callback table of the mirror
+ * @param type the object type the event concerns
+ * @param action the action of the event
+ * @param event the event (ET_Type)
+ * @return SGE_EM_OK, or SGE_EM_CALLBACK_FAILED when a callback failed
+ */
 static sge_mirror_error
 sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
-                         sge_object_type type, sge_event_action action, lListElem *event) {
+                         const sge_object_type type, const sge_event_action action,
+                         const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
    sge_callback_result ret;

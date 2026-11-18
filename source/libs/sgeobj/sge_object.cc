@@ -597,29 +597,29 @@ object_append_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::t
          quote_special_case = true;
          break;
       case QU_qtype:
-         qinstance_print_qtype_to_dstring(object, &string, false);
+         qinstance_print_qtype_to_dstring(ocs::tom::ConstElement<ocs::tom::QU>(object), &string, false);
          ret = sge_dstring_get_string(&string);
          quote_special_case = true;
          break;
       case US_type:
-         ret = userset_get_type_string(object, answer_list, &string);
+         ret = userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US>(object), answer_list, &string);
          quote_special_case = true;
          break;
 
       case ASTRLIST_value:
-         ret = str_list_append_to_dstring(lGetList(object, nm), &string, ' ');
+         ret = str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST>(lGetList(object, nm)), &string, ' ');
          break;
       case AUSRLIST_value:
-         ret = userset_list_append_to_dstring(lGetList(object, nm), &string);
+         ret = userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US>(lGetList(object, nm)), &string);
          break;
       case APRJLIST_value:
-         ret = prj_list_append_to_dstring(lGetList(object, nm), &string);
+         ret = prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR>(lGetList(object, nm)), &string);
          break;
       case ACELIST_value:
-         ret = centry_list_append_to_dstring(lGetList(object, nm), &string);
+         ret = centry_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::CE>(lGetList(object, nm)), &string);
          break;
       case ASOLIST_value:
-         ret = so_list_append_to_dstring(lGetList(object, nm), &string);
+         ret = so_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::SO>(lGetList(object, nm)), &string);
          break;
       case AQTLIST_value:
          ret = qtype_append_to_dstring(lGetUlong(object, nm), &string);
@@ -754,10 +754,10 @@ object_parse_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN
       }
          break;
       case QU_qtype:
-         ret = qinstance_parse_qtype_from_string(object, answer_list, value);
+         ret = qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU>(object), answer_list, value);
          break;
       case US_type:
-         ret = userset_set_type_string(object, answer_list, value);
+         ret = userset_set_type_string(ocs::tom::Element<ocs::tom::US>(object), answer_list, value);
          break;
       case AMEM_value:
          ret = object_parse_mem_from_string(object, answer_list, nm, value);
@@ -812,12 +812,16 @@ object_parse_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN
 void
 object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        int rnm, uint32_t id) {
-   lList *range_list = nullptr;
+   // rnm is a field number known only at run time, so the exchange itself stays raw
+   lList *raw_list = nullptr;
+   lXchgList(object, rnm, &raw_list);
 
-   lXchgList(object, rnm, &range_list);
-   range_list_remove_id(&range_list, answer_list, id);
+   ocs::tom::ListPtr<ocs::tom::RN> range_list(raw_list);
+   range_list_remove_id(range_list, answer_list, id);
    range_list_compress(range_list);
-   lXchgList(object, rnm, &range_list);
+
+   raw_list = range_list.release();
+   lXchgList(object, rnm, &raw_list);
 }
 
 /**

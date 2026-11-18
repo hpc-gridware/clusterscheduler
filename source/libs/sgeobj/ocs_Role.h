@@ -77,8 +77,6 @@ namespace ocs {
 
       static bool validate(ocs::tom::ConstElement<ocs::tom::RL> role, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            bool startup);
-      OCS_TRANSITIONAL static bool validate(const lListElem *role, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                            bool startup);
 
       static void check_integrity(ocs::tom::ConstList<ocs::tom::RL> role_list,
                                   ocs::tom::ConstList<ocs::tom::US> userset_list,

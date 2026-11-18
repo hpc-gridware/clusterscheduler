@@ -383,7 +383,6 @@ uint32_t job_count_pending_tasks(ocs::tom::ConstElement<ocs::tom::JB> job, bool 
 bool job_has_soft_requests(ocs::tom::ConstElement<ocs::tom::JB> job);
 
 bool job_is_ja_task_defined(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t ja_task_number);
-OCS_TRANSITIONAL bool job_is_ja_task_defined(const lListElem *job, uint32_t ja_task_number);
 
 void job_set_hold_state(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         uint32_t ja_task_id, uint32_t new_hold_state);
@@ -414,11 +413,9 @@ bool job_is_array(ocs::tom::ConstElement<ocs::tom::JB> job);
 bool job_is_tight_parallel(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::PE> pe_list);
 
 bool job_might_be_tight_parallel(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::PE> pe_list);
-OCS_TRANSITIONAL bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list);
 
 [[nodiscard]] std::tuple<uint32_t, uint32_t, uint32_t>
 job_get_submit_task_ids(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL void job_get_submit_task_ids(const lListElem *job, uint32_t *start, uint32_t *end, uint32_t *step);
 
 int job_set_submit_task_ids(ocs::tom::Element<ocs::tom::JB> job, uint32_t start, uint32_t end, uint32_t step);
 

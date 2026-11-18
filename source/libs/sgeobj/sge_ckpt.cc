@@ -278,16 +278,6 @@ int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief ckpt_validate() for an untyped caller
- *
- * @param this_elem element which should be verified, checked; may be nullptr
- * @param alpp answer list where the function stores error messages
- * @return as ckpt_validate()
- */
-int ckpt_validate(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK>(this_elem), alpp);
-}
 
 /**
  * @brief Do all ckpt's exist?
@@ -321,19 +311,6 @@ bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
    DRETURN(ret);
 }
 
-/**
- * @brief ckpt_list_do_all_exist() for an untyped caller
- *
- * @param ckpt_list CK_Type list, checked
- * @param answer_list AN_Type list
- * @param ckpt_ref_list ST_Type list containing ckpt names, checked
- * @return as ckpt_list_do_all_exist()
- */
-bool ckpt_list_do_all_exist(const lList *ckpt_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            const lList *ckpt_ref_list) {
-   return ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK>(ckpt_list), answer_list,
-                                 ocs::tom::ConstList<ocs::tom::ST>(ckpt_ref_list));
-}
 
 /**
  * @brief Build up a generic ckpt object

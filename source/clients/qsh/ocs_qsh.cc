@@ -912,13 +912,9 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
       config_name  = "qlogin_command";
    }
 
-   /* get configuration from qmaster; the configuration objects come as CONF_Type, so they are taken over
-    * unchecked */
-   lListElem *global_out = nullptr;
-   lListElem *local_out = nullptr;
-   bool failed = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global_out, &local_out);
-   const auto global = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(global_out);
-   const auto local = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(local_out);
+   /* get configuration from qmaster */
+   const auto [conf_ret, global, local] = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, true);
+   bool failed = conf_ret != 0;
    ocs::tom::ListPtr<ocs::tom::CF> conf_list;
    if (!failed) {
       int merge_ret;
@@ -1299,11 +1295,9 @@ static int do_qrsh_reconnect(const char *job_id_str,
    }
 #endif
 
-   /* sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle */
-   lList *ref_list = refs.release();
+   /* the request list is replaced by the response, if any, freed with the handle */
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
-                                          ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
-   refs = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(ref_list);
+                                        ocs::gdi::SubCommand::NONE, refs);
 
    // Look for the one STATUS_OK answer carrying "RECONNECT_OK <token> <exec_host>".
    char token[128] = {0};
@@ -1496,12 +1490,9 @@ int main(int argc, const char **argv) {
    /*
    ** append the commandline switches to the list
    */
-   {
-      // cull_parse_cmdline() has no typed form yet; it creates the option list
-      lList *cmdline_lp = nullptr;
-      alp = cull_parse_cmdline(my_who, argv + 1, environ, &cmdline_lp, FLG_USE_PSEUDOS);
-      opts_cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
-   }
+   // the option list is created by the parser
+   opts_cmdline.reset();
+   alp = cull_parse_cmdline(my_who, argv + 1, environ, opts_cmdline, FLG_USE_PSEUDOS);
    do_exit = parse_result_list(alp, &alp_error);
    alp.reset();
 
@@ -2004,14 +1995,9 @@ int main(int argc, const char **argv) {
       DPRINTF("B E F O R E     S E N D I N G! ! ! ! ! ! ! ! ! ! ! ! ! !\n");
       DPRINTF("=====================================================\n");
 
-      /* submit the job to the QMaster; sge_gdi() has no typed form yet, it replaces the request list with
-       * the response, a JB_Type list */
-      {
-         lList *jobs_lp = lp_jobs.release();
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::ADD,
-                       ocs::gdi::SubCommand::RETURN_NEW_VERSION, &jobs_lp, nullptr, nullptr);
-         lp_jobs = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(jobs_lp);
-      }
+      /* submit the job to the QMaster; the request list is replaced by the response, a JB_Type list */
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::ADD,
+                                      ocs::gdi::SubCommand::RETURN_NEW_VERSION, lp_jobs);
 
       /* the new version of the job from qmaster */
       if (const auto new_job = lp_jobs->front()) {
@@ -2246,14 +2232,10 @@ int main(int argc, const char **argv) {
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
          const auto what = ocs::tom::what<JB_ja_tasks>();
          const auto where = ocs::tom::field<JB_job_number>() == job_id;
-         // sge_gdi() has no typed form yet; it does not change the condition and the selection
-         lList *poll_lp = nullptr;
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
-                                         ocs::gdi::SubCommand::NONE, &poll_lp,
-                                         const_cast<lCondition *>(where.get()),
-                                         const_cast<lEnumeration *>(what.get()));
          /* the GDI GET answers with a job list (JB_Type, reduced to JB_ja_tasks) */
-         const auto lp_poll = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(poll_lp);
+         ocs::tom::ListPtr<ocs::tom::JB> lp_poll;
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
+                                         ocs::gdi::SubCommand::NONE, lp_poll, where, what);
 
          do_exit = parse_result_list(alp, &alp_error);
 
@@ -2384,11 +2366,9 @@ static void delete_job(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom
    auto idlp = ocs::tom::ListPtr<ocs::tom::ID>::create("job id list");
    idlp->emplace_back<ID_str>(job_str);
 
-   // sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle
-   lList *id_lp = idlp.release();
+   // the request list is replaced by the response, if any, freed with the handle
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
-                                          ocs::gdi::SubCommand::NONE, &id_lp, nullptr, nullptr);
-   idlp = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(id_lp);
+                                        ocs::gdi::SubCommand::NONE, idlp);
 
    /* no error handling here, we try to delete the job if we can */
    idlp.reset();

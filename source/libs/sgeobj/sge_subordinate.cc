@@ -184,16 +184,6 @@ const char *so_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::SO> th
    DRETURN(ret);
 }
 
-/**
- * @brief so_list_append_to_dstring() for an untyped caller
- *
- * @param this_list the subordinate relations to render (SO_Type), checked; may be nullptr
- * @param[out] string receives the text, appended
- * @return as so_list_append_to_dstring()
- */
-const char *so_list_append_to_dstring(const lList *this_list, dstring *string) {
-   return so_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::SO>(this_list), string);
-}
 
 /**
  * @brief Add one subordinate relation to a list

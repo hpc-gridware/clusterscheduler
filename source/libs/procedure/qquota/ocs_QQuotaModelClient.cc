@@ -36,8 +36,8 @@
 
 /** @brief The answer to one recorded GET request, as a typed list
  *
- * A GET of a target answers with a list of the target's type, so the list
- * is wrapped with a check of its type.
+ * A GET of a target answers with a list of the target's type (reduced to the
+ * selection), taken over as the typed get_response() takes it over.
  *
  * @tparam T the object type of the target
  * @param answer_list receives error messages
@@ -51,9 +51,9 @@ static ocs::tom::ListPtr<T>
 get_list_response(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::gdi::Request &request,
                   const ocs::gdi::Target target, const int id) {
    DENTER(TOP_LAYER);
-   lList *lp = nullptr;
-   request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, &lp);
-   DRETURN(ocs::tom::ListPtr<T>(lp));
+   ocs::tom::ListPtr<T> list;
+   request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, list);
+   DRETURN(list);
 }
 
 /** @brief Fetch the lists from qmaster with one multi GDI request
@@ -68,53 +68,48 @@ bool ocs::QQuotaModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    gdi::Request gdi_multi{};
 
    // RQS
-   lEnumeration *rqs_what = get_rqs_what();
+   // the selections and the condition below are built for the type of their target by the base class
+   const auto rqs_what = ocs::tom::What<ocs::tom::RQS>::from_typed(get_rqs_what());
    const int rqs_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::RQS_LIST,
                                         gdi::Command::GET, gdi::SubCommand::NONE,
-                                        nullptr, nullptr, rqs_what, true);
-   lFreeWhat(&rqs_what);
+                                        nullptr, ocs::tom::Where<ocs::tom::RQS>(), rqs_what);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
 
    // CEntry
-   lEnumeration *ce_what = get_centry_what();
+   const auto ce_what = ocs::tom::What<ocs::tom::CE>::from_typed(get_centry_what());
    const int ce_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CE_LIST,
                                        gdi::Command::GET, gdi::SubCommand::NONE,
-                                       nullptr, nullptr, ce_what, true);
-   lFreeWhat(&ce_what);
+                                       nullptr, ocs::tom::Where<ocs::tom::CE>(), ce_what);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
 
    // User Set
-   lEnumeration *user_set_what = get_user_set_what();
+   const auto user_set_what = ocs::tom::What<ocs::tom::US>::from_typed(get_user_set_what());
    const int userset_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::US_LIST,
                                             gdi::Command::GET, gdi::SubCommand::NONE,
-                                            nullptr, nullptr, user_set_what, true);
-   lFreeWhat(&user_set_what);
+                                            nullptr, ocs::tom::Where<ocs::tom::US>(), user_set_what);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
 
    // Hostgroup
-   lEnumeration *hgroup_what = get_hgroup_what();
+   const auto hgroup_what = ocs::tom::What<ocs::tom::HGRP>::from_typed(get_hgroup_what());
    const int hgroup_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::HGRP_LIST,
                                            gdi::Command::GET, gdi::SubCommand::NONE,
-                                           nullptr, nullptr, hgroup_what, true);
-   lFreeWhat(&hgroup_what);
+                                           nullptr, ocs::tom::Where<ocs::tom::HGRP>(), hgroup_what);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
 
 
    // Hosts (fetch all specified + global host but not the template host)
-   lCondition *eh_where = get_host_where(host_list);
-   lEnumeration *eh_what = get_host_what();
+   const auto eh_where = ocs::tom::Where<ocs::tom::EH>::from_typed(get_host_where(host_list));
+   const auto eh_what = ocs::tom::What<ocs::tom::EH>::from_typed(get_host_what());
    const int eh_id = gdi_multi.request(answer_list, gdi::Mode::SEND, gdi::Target::EH_LIST, gdi::Command::GET,
-                                       gdi::SubCommand::NONE, nullptr, eh_where, eh_what, true);
-   lFreeWhat(&eh_what);
-   lFreeWhere(&eh_where);
+                                       gdi::SubCommand::NONE, nullptr, eh_where, eh_what);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }

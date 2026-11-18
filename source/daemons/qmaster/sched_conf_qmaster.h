@@ -50,5 +50,3 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<o
 int
 sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::SC> confp,
                             ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp,
-                                                 ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);

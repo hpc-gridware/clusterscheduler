@@ -1510,20 +1510,6 @@ cqueue_list_set_unknown_state(const ocs::tom::List<ocs::tom::CQ> this_list, cons
    DRETURN_VOID;
 }
 
-/**
- * @brief cqueue_list_set_unknown_state() for an untyped caller
- * @param this_list the cluster queues (CQ_Type), checked
- * @param hostname the host, or nullptr for all hosts
- * @param send_events whether to announce the change to the event clients
- * @param is_unknown the state to set
- * @param gdi_session the session the change belongs to
- */
-void
-cqueue_list_set_unknown_state(lList *this_list, const char *hostname, const bool send_events, const bool is_unknown,
-                              const uint64_t gdi_session) {
-   cqueue_list_set_unknown_state(ocs::tom::List<ocs::tom::CQ>(this_list), hostname, send_events, is_unknown,
-                                 gdi_session);
-}
 
 /**
  * @brief Diff cluster queue sublists

@@ -109,7 +109,9 @@ static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool, bool *
  */
 static int
 qconf_pe_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return pe_validate(const_cast<lListElem *>(ep), alpp, 0, nullptr);
+   // the table row of the PE type hands in PE_Type elements only
+   return pe_validate(ocs::tom::Element<ocs::tom::PE>(const_cast<lListElem *>(ep)), alpp, 0,
+                      ocs::tom::ConstList<ocs::tom::US>());
 }
 
 /**
@@ -125,7 +127,7 @@ qconf_pe_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
  */
 static int
 qconf_role_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return ocs::Role::validate(ep, alpp, false) ? STATUS_OK : STATUS_ESEMANTIC;
+   return ocs::Role::validate(ocs::tom::ConstElement<ocs::tom::RL>(ep), alpp, false) ? STATUS_OK : STATUS_ESEMANTIC;
 }
 
 /**
@@ -161,10 +163,28 @@ qconf_eh_resolve(lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
  */
 static int
 qconf_cq_verify(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   lListElem *e = const_cast<lListElem *>(ep);
-   return cqueue_verify_attributes(e, alpp, e, false, nullptr, nullptr, nullptr, nullptr,
-                                   nullptr, nullptr, nullptr, nullptr)
+   const ocs::tom::Element<ocs::tom::CQ> cqueue(const_cast<lListElem *>(ep));
+   return cqueue_verify_attributes(cqueue, alpp, cqueue, false, ocs::tom::ConstList<ocs::tom::CAL>(),
+                                   ocs::tom::ConstList<ocs::tom::CK>(), ocs::tom::ConstList<ocs::tom::PE>(),
+                                   ocs::tom::ConstList<ocs::tom::US>(), ocs::tom::ConstList<ocs::tom::PR>(),
+                                   ocs::tom::ConstList<ocs::tom::CE>(), ocs::tom::ConstList<ocs::tom::CQ>(),
+                                   ocs::tom::ConstList<ocs::tom::HGRP>())
       ? STATUS_OK : STATUS_ESEMANTIC;
+}
+
+/**
+ * @brief Validate-hook adapter for checkpointing environments
+ *
+ * The generic validate hook hands in an untyped element; the table row of the
+ * CK type hands in CK_Type elements only.
+ *
+ * @param ep   the parsed checkpointing object to validate
+ * @param alpp answer list to receive validation messages
+ * @return STATUS_OK on success, another status on failure
+ */
+static int
+qconf_ck_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
+   return ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK>(ep), alpp);
 }
 
 /**
@@ -180,7 +200,7 @@ qconf_cq_verify(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
  */
 static int
 qconf_us_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return userset_validate_entries(const_cast<lListElem *>(ep), alpp);
+   return userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US>(ep), alpp);
 }
 
 /* ===== CS-2795: the object descriptor table ================================
@@ -326,7 +346,8 @@ qconf_template_RQS([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list
  */
 static int
 qconf_rqs_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
-   return rqs_verify_attributes(const_cast<lListElem *>(ep), alpp, false, nullptr)
+   return rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS>(const_cast<lListElem *>(ep)), alpp, false,
+                                ocs::tom::ConstList<ocs::tom::CE>())
       ? STATUS_OK : STATUS_ESEMANTIC;
 }
 
@@ -352,7 +373,8 @@ qconf_rqs_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
  */
 static lListElem *
 qconf_template_HGRP(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
-   return hgroup_create(answer_list, name, nullptr, false);
+   // the constructor of the attribute table returns an untyped element
+   return hgroup_create(answer_list, name, ocs::tom::ListPtr<ocs::tom::HR>(), false).release();
 }
 
 /** @brief The template of a cluster queue
@@ -593,7 +615,7 @@ qconf_stn_prepare(lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (qconf_stn_has_ids(ocs::tom::ConstElement<ocs::tom::STN>(ep))) {
       DRETURN(STATUS_OK);
    }
-   DRETURN(id_sharetree(answer_list, ep, 0) ? STATUS_OK : STATUS_EUNKNOWN);
+   DRETURN(id_sharetree(answer_list, ocs::tom::Element<ocs::tom::STN>(ep), 0) ? STATUS_OK : STATUS_EUNKNOWN);
 }
 
 /** @brief Does the bulk export of the exec hosts leave this one out? (CS-2826)
@@ -652,7 +674,7 @@ static const qconf_object_desc qconf_object_table[] = {
    /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,
               { .list_name = "calendar", .not_found_msg = MSG_CALENDAR_XISNOTACALENDAR_S,
                 .create_template = qconf_template_CAL } },
-   /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,
+   /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      qconf_ck_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,
               { .list_name = "ckpt interface definition", .not_found_msg = MSG_CKPT_XISNOTCHKPINTERFACEDEF_S,
                 .create_template = qconf_template_CK } },
    /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,
@@ -1079,17 +1101,20 @@ qconf_parse_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *d
  * @param obj       the object whose complex sublists should be filled (modified)
  * @param ce_fields the CE_Type sublist field ids to fill (e.g. EH_consumable_config_list)
  * @param n_fields  number of entries in @p ce_fields
+ * @param master_centry_list the complex entries (CE_Type) the types are resolved from
  */
-void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields,
+void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, const int n_fields,
                              const lList *master_centry_list) {
    if (obj == nullptr || master_centry_list == nullptr) {
       return;
    }
+   const ocs::tom::ConstList<ocs::tom::CE> centry_list(master_centry_list);
    for (int i = 0; i < n_fields; i++) {
-      lList *sub = lGetListRW(obj, ce_fields[i]);
-      if (sub != nullptr && lGetNumberOfElem(sub) > 0) {
+      // the fields are known only at run time; each of them holds a CE_Type sub-list
+      const ocs::tom::List<ocs::tom::CE> sub(lGetListRW(obj, ce_fields[i]));
+      if (sub && !sub.empty()) {
          ocs::tom::ListPtr<ocs::tom::AN> fill_alp;
-         centry_list_fill_request(sub, &fill_alp, master_centry_list, true, true, true);
+         centry_list_fill_request(sub, &fill_alp, centry_list, true, true, true);
          fill_alp.reset();
       }
    }
@@ -1136,7 +1161,7 @@ qconf_json_type_load_values(lListElem *host, const int load_list_nm, const lList
    }
 
    /* fill CE_valtype from the complex definitions (skips unknown load names) */
-   centry_list_fill_config(*ce_list, master_centry_list);
+   centry_list_fill_config(*ce_list, ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
 
    /* parse numeric values into CE_doubleval so the writer emits native numbers */
    for (const auto ce : *ce_list) {

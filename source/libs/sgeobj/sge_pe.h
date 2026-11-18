@@ -72,8 +72,6 @@ pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs:
 int
 pe_validate(ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int startup,
             ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL int pe_validate(lListElem *pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int startup,
-                                 const lList *master_userset_list);
 
 int
 pe_validate_slots(ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint32_t slots, bool warn_only);
@@ -92,8 +90,6 @@ pe_urgency_slots(ocs::tom::ConstElement<ocs::tom::PE> pe, const char *urgency_sl
 bool
 pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE> pe_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                      ocs::tom::ConstList<ocs::tom::ST> pe_ref_list, bool ignore_make_pe);
-OCS_TRANSITIONAL bool pe_list_do_all_exist(const lList *pe_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           const lList *pe_ref_list, bool ignore_make_pe);
 
 ocs::tom::ElementPtr<ocs::tom::PE>
 pe_create_template(const char *pe_name);

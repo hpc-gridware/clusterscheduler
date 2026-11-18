@@ -190,15 +190,3 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    DRETURN_VOID;
 }
 
-/**
- * @brief binding_print_to_string() for an untyped caller
- *
- * @param binding_elem the binding list element (BN_Type), checked; nullptr renders as "NONE"
- * @param[out] binding_string receives the rendered text and is overwritten
- * @param as_switches true to render including the `-binding` switch, false for the bare value
- */
-void
-ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::string &binding_string,
-                                        const bool as_switches) {
-   binding_print_to_string(ocs::tom::ConstElement<ocs::tom::BN>(binding_elem), binding_string, as_switches);
-}

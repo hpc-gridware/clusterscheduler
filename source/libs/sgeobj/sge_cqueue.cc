@@ -389,16 +389,6 @@ void cqueue_list_fill_hostlist(const ocs::tom::List<ocs::tom::CQ> cqueue_list,
    }
 }
 
-/**
- * @brief cqueue_list_fill_hostlist() for an untyped caller
- *
- * @param cqueue_list CQ_Type list, checked; modified in place; may be nullptr
- * @param master_hgroup_list HGRP_Type list, checked; may be nullptr
- */
-void cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list) {
-   cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(cqueue_list),
-                             ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
-}
 
 /**
  * @brief Is a host/hostgroup referenced in cqueue
@@ -731,17 +721,6 @@ ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(const ocs::tom::ConstList<ocs
    return ocs::tom::find_first_rw<CQ_name>(this_list, name);
 }
 
-/**
- * @brief cqueue_list_locate() for an untyped caller
- *
- * @param this_list CQ_Type list, checked; may be nullptr
- * @param name cluster queue name
- *
- * @return cluster queue object or nullptr
- */
-lListElem *cqueue_list_locate(const lList *this_list, const char *name) {
-   return cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(this_list), name).raw();
-}
 
 /**
  * @brief Returns one qinstance from a cqueue
@@ -936,40 +915,6 @@ bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue,
    DRETURN(ret);
 }
 
-/**
- * @brief cqueue_verify_attributes() for an untyped caller
- *
- * @param cqueue CQ_Type object to be verified, checked; may be nullptr
- * @param answer_list AN_Type list
- * @param reduced_elem reduced CQ_Type, checked; may be nullptr
- * @param in_master true if this function is called in the master code
- * @param master_calendar_list CAL_Type, checked; may be nullptr
- * @param master_ckpt_list CK_Type, checked; may be nullptr
- * @param master_pe_list PE_Type, checked; may be nullptr
- * @param master_userset_list US_Type, checked; may be nullptr
- * @param master_project_list PR_Type, checked; may be nullptr
- * @param master_centry_list CE_Type, checked; may be nullptr
- * @param master_cqueue_list CQ_Type, checked; may be nullptr
- * @param master_hgroup_list HGRP_Type, checked; may be nullptr
- *
- * @return as cqueue_verify_attributes()
- */
-bool cqueue_verify_attributes(lListElem *cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *reduced_elem,
-                              const bool in_master, const lList *master_calendar_list, const lList *master_ckpt_list,
-                              const lList *master_pe_list, const lList *master_userset_list,
-                              const lList *master_project_list, const lList *master_centry_list,
-                              const lList *master_cqueue_list, const lList *master_hgroup_list) {
-   return cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ>(cqueue), answer_list,
-                                   ocs::tom::ConstElement<ocs::tom::CQ>(reduced_elem), in_master,
-                                   ocs::tom::ConstList<ocs::tom::CAL>(master_calendar_list),
-                                   ocs::tom::ConstList<ocs::tom::CK>(master_ckpt_list),
-                                   ocs::tom::ConstList<ocs::tom::PE>(master_pe_list),
-                                   ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
-                                   ocs::tom::ConstList<ocs::tom::PR>(master_project_list),
-                                   ocs::tom::ConstList<ocs::tom::CE>(master_centry_list),
-                                   ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
-                                   ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
-}
 
 /**
  * @brief Find the cluster queues whose name matches a pattern

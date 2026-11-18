@@ -306,19 +306,6 @@ bool hgroup_contains_host(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, c
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_contains_host() for an untyped caller
- *
- * @param hgroup HGRP_Type object, checked; may be nullptr
- * @param hostname host to look for
- * @param master_hgroup_list HGRP_Type list the nested references resolve against, checked
- *
- * @return as hgroup_contains_host()
- */
-bool hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list) {
-   return hgroup_contains_host(ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup), hostname,
-                               ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
-}
 
 /// How deep hgroup_why() follows group references before it gives up
 static constexpr int HGROUP_WHY_MAX_NESTING = 32;

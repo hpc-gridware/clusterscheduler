@@ -125,20 +125,6 @@ void var_list_set_string(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_set_string() for an untyped caller
- *
- * @param[in,out] varl VA_Type list, checked; nothing happens for nullptr
- * @param name the name of the variable
- * @param value the (new) value of the variable
- */
-void var_list_set_string(lList **varl, const char *name, const char *value) {
-   if (varl != nullptr) {
-      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
-      var_list_set_string(list, name, value);
-      *varl = list.release();
-   }
-}
 
 /**
  * @brief Add/change an variable
@@ -429,19 +415,6 @@ void var_list_copy_env_vars_and_value(ocs::tom::ListPtr<ocs::tom::VA> &varl,
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_copy_env_vars_and_value() for an untyped caller
- *
- * @param[in,out] varl VA_Type list the copies are added to, checked; nothing happens for nullptr
- * @param src_varl source VA_Type list, may be an empty handle
- */
-void var_list_copy_env_vars_and_value(lList **varl, const ocs::tom::ConstList<ocs::tom::VA> src_varl) {
-   if (varl != nullptr) {
-      ocs::tom::ListPtr<ocs::tom::VA> list(*varl);
-      var_list_copy_env_vars_and_value(list, src_varl);
-      *varl = list.release();
-   }
-}
 
 /**
  * @brief Remove vars with certain prefix
@@ -474,15 +447,6 @@ void var_list_remove_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, const 
    DRETURN_VOID;
 }
 
-/**
- * @brief var_list_remove_prefix_vars() for an untyped caller
- *
- * @param varl pointer to the VA_Type list, checked; the list may be nullptr
- * @param prefix prefix string (e.g. VAR_PREFIX)
- */
-void var_list_remove_prefix_vars(lList **varl, const char *prefix) {
-   var_list_remove_prefix_vars(ocs::tom::List<ocs::tom::VA>(*varl), prefix);
-}
 
 /**
  * @brief Split a list of variables

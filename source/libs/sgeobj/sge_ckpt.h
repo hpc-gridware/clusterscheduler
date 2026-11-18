@@ -62,12 +62,9 @@ int
 sge_parse_checkpoint_attr(const char *attr_str);
 
 int ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
-OCS_TRANSITIONAL int ckpt_validate(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 bool
 ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK> ckpt_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        ocs::tom::ConstList<ocs::tom::ST> ckpt_ref_list);
-OCS_TRANSITIONAL bool ckpt_list_do_all_exist(const lList *ckpt_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                             const lList *ckpt_ref_list);
 
 ocs::tom::ElementPtr<ocs::tom::CK> sge_generic_ckpt(const char *ckpt_name);

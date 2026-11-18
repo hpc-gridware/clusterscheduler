@@ -2391,30 +2391,6 @@ DTRACE;
    DRETURN(answer);
 }
 
-/**
- * @brief cull_parse_cmdline() for an untyped caller
- *
- * @param prog_number the client being parsed for, which decides the option set
- * @param arg_list the arguments, not including `argv[0]`
- * @param envp the environment, for the options that read one
- * @param pcmdline the option list (`SPA_Type`) the parsed options are appended to; created if it is nullptr
- * @param flags see the typed form
- *
- * @return `nullptr` when everything was fine, otherwise an answer list, see the typed form
- */
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp,
-                                                   lList **pcmdline, const uint32_t flags) {
-   if (pcmdline == nullptr) {
-      ocs::tom::ListPtr<ocs::tom::AN> answer;
-      answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      return answer;
-   }
-   // the callers hand in their option list, which is created by the option parsers with SPA_Type
-   auto cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(*pcmdline);
-   auto answer = cull_parse_cmdline(prog_number, arg_list, envp, cmdline, flags);
-   *pcmdline = cmdline.release();
-   return answer;
-}
 
 /***************************************************************************/
 static int sge_parse_checkpoint_interval(

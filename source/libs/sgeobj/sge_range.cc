@@ -299,19 +299,6 @@ void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_initialize() for an untyped caller
- *
- * @param this_list Pointer to a RN_Type-list, checked; nothing happens for nullptr
- * @param answer_list Pointer to a AN_Type-list or nullptr
- */
-void range_list_initialize(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   if (this_list != nullptr) {
-      ocs::tom::ListPtr<ocs::tom::RN> list(*this_list);
-      range_list_initialize(list, answer_list);
-      *this_list = list.release();
-   }
-}
 
 /**
  * @brief Determines the number of ids
@@ -710,14 +697,6 @@ void range_list_compress(const ocs::tom::List<ocs::tom::RN> range_list) {
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_compress() for an untyped caller
- *
- * @param range_list RN_Type list, checked; may be nullptr
- */
-void range_list_compress(lList *range_list) {
-   range_list_compress(ocs::tom::List<ocs::tom::RN>(range_list));
-}
 
 /**
  * @brief Is id contained in range list?
@@ -952,8 +931,6 @@ void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, ocs::tom:
 /**
  * @brief range_list_remove_id() for an untyped caller
  *
- * Also the #range_remove_insert_t callback form.
- *
  * @param range_list pointer to a RN_Type list, checked; nothing happens for nullptr
  * @param answer_list pointer to a AN_Type list
  * @param id the id to remove
@@ -1047,8 +1024,6 @@ void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
 
 /**
  * @brief range_list_insert_id() for an untyped caller
- *
- * Also the #range_remove_insert_t callback form.
  *
  * @param range_list pointer to a RN_Type list, checked; must not be nullptr
  * @param answer_list pointer to a AN_Type list

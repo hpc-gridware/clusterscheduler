@@ -604,13 +604,3 @@ centry_redebit_consumables(const ocs::tom::ConstList<ocs::tom::STU> centries, co
    DRETURN_VOID;
 }
 
-/**
- * @brief centry_redebit_consumables() for an untyped caller
- *
- * @param centries the names (`STU_Type`) of the complex entries that changed
- * @param gdi_version the GDI session the change belongs to
- */
-void
-centry_redebit_consumables(const lList *centries, const uint64_t gdi_version) {
-   centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU>(centries), gdi_version);
-}

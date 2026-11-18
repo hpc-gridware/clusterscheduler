@@ -152,23 +152,3 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, cons
    DRETURN(STATUS_OK);
 }
 
-/**
- * @brief sge_mod_sched_configuration() for an untyped caller
- *
- * The element is wrapped without a type check: the typed function rejects an element of
- * another type with object_verify_cull() and STATUS_ESYNTAX, as the raw function did.
- *
- * @param packet the client request
- * @param task the GDI task being answered
- * @param confp the new configuration as sent by the client
- * @param alpp receives messages for the caller
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @return as the typed sge_mod_sched_configuration()
- */
-int
-sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp,
-                            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
-   return sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>::from_typed(confp), alpp,
-                                      ruser, rhost);
-}

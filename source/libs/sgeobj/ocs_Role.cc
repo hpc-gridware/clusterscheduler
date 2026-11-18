@@ -68,18 +68,6 @@ ocs::Role::validate(const ocs::tom::ConstElement<ocs::tom::RL> role, ocs::tom::L
    DRETURN(true);
 }
 
-/**
- * @brief validate() for an untyped caller
- *
- * @param role the role element to validate (RL_Type), checked
- * @param answer_list receives error messages
- * @param startup true when called during qmaster startup
- * @return as validate()
- */
-bool
-ocs::Role::validate(const lListElem *role, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const bool startup) {
-   return validate(ocs::tom::ConstElement<ocs::tom::RL>(role), answer_list, startup);
-}
 
 /**
  * @brief Post-startup integrity scan for dangling role references

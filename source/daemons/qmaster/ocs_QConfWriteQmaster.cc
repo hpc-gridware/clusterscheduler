@@ -221,15 +221,16 @@ qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *mo
          /* Upserts by itself, which is why "-aconf" and "-mconf" are one
           * operation in the client (CS-2311) and why the add/modify decision
           * above does not reach it. */
-         DRETURN(sge_mod_configuration(ep, answer_list, packet->user, packet->host,
-                                       packet->gdi_session));
+         DRETURN(sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF>(ep), answer_list, packet->user,
+                                       packet->host, packet->gdi_session));
 
       case ocs::gdi::Target::SC_LIST:
-         DRETURN(sge_mod_sched_configuration(packet, task, ep, answer_list, packet->user,
-                                             packet->host));
+         // qmaster parsed the element with SC_Type itself; unchecked as the former wrapper did, no throw here
+         DRETURN(sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>::from_typed(ep), answer_list,
+                                             packet->user, packet->host));
 
       case ocs::gdi::Target::STN_LIST:
-         DRETURN(sge_mod_sharetree(packet, task, ep,
+         DRETURN(sge_mod_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep),
                                    ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
                                    answer_list, packet->user, packet->host));
 
@@ -653,7 +654,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
              * the new definition, bumps the queue version, and dumps the
              * queue_consumable/host_consumable reporting records - all three of
              * which were silently skipped while the list was dropped. */
-            centry_redebit_consumables(post_list, packet->gdi_session);
+            centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU>(post_list), packet->gdi_session);
             break;
 
          default:

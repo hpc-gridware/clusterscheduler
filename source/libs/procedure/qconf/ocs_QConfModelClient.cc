@@ -77,12 +77,10 @@ bool
 ocs::QConfModelClient::fetch_hgroups(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
-   lList *hgroup_list = nullptr;
-   auto alp = gdi::Client::sge_gdi(gdi::Target::HGRP_LIST, gdi::Command::GET,
-                                     gdi::SubCommand::NONE, &hgroup_list, nullptr, what);
-   lFreeWhat(&what);
-   hgroup_list_ = ocs::tom::ListPtr<ocs::tom::HGRP>::from_typed(hgroup_list);
+   ocs::tom::ListPtr<ocs::tom::HGRP> hgroup_list;
+   auto alp = gdi::Client::sge_gdi(gdi::Target::HGRP_LIST, gdi::Command::GET, gdi::SubCommand::NONE, hgroup_list,
+                                   ocs::tom::Where<ocs::tom::HGRP>(), ocs::tom::what_all<ocs::tom::HGRP>());
+   hgroup_list_ = std::move(hgroup_list);
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);
@@ -131,12 +129,10 @@ bool
 ocs::QConfModelClient::fetch_centries(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   lEnumeration *what = lWhat("%T(ALL)", CE_Type);
-   lList *centry_list = nullptr;
-   auto alp = gdi::Client::sge_gdi(gdi::Target::CE_LIST, gdi::Command::GET,
-                                     gdi::SubCommand::NONE, &centry_list, nullptr, what);
-   lFreeWhat(&what);
-   centry_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(centry_list);
+   ocs::tom::ListPtr<ocs::tom::CE> centry_list;
+   auto alp = gdi::Client::sge_gdi(gdi::Target::CE_LIST, gdi::Command::GET, gdi::SubCommand::NONE, centry_list,
+                                   ocs::tom::Where<ocs::tom::CE>(), ocs::tom::what_all<ocs::tom::CE>());
+   centry_list_ = std::move(centry_list);
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);

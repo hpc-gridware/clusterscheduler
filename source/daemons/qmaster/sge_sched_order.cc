@@ -130,14 +130,16 @@ sge_schedd_add_gdi_order_request(order_t *orders, ocs::tom::ListPtr<ocs::tom::AN
       int order_id;
 
       // the batch is the order list of Master_Request_Queue, OR_Type by construction
-      orders->numberSendOrders +=
-              static_cast<uint32_t>(ocs::tom::ConstList<ocs::tom::OR>::from_typed(*order_list).size());
+      auto batch = ocs::tom::ListPtr<ocs::tom::OR>::from_typed(*order_list);
+      *order_list = nullptr;
+      orders->numberSendOrders += static_cast<uint32_t>(batch->size());
       orders->numberSendPackages++;
 
       /*
-       * order_list will be nullptr after the call of gdi_multi. This saves a copy operation.
+       * the request takes the batch over, which saves a copy operation; order_list is nullptr afterwards
        */
-      order_id = gdi_multi->request(answer_list, ocs::gdi::Mode::SEND, ocs::gdi::Target::ORDER_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, order_list, nullptr, nullptr, false);
+      order_id = gdi_multi->request(answer_list, ocs::gdi::Mode::SEND, ocs::gdi::Target::ORDER_LIST,
+                                    ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, std::move(batch));
 
       if (order_id != -1) {
          sge_sl_insert(Master_Request_Queue.request_list, gdi_multi, SGE_SL_BACKWARD);
@@ -176,7 +178,8 @@ sge_schedd_block_until_orders_processed(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    while ((current_elem = next_elem) != nullptr) {
       auto *gdi_multi = static_cast<ocs::gdi::Request *>(sge_sl_elem_data(current_elem));
       ocs::tom::ListPtr<ocs::tom::AN> request_answer_list;
-      lList *multi_answer_list = nullptr;
+      // an order request answers with no objects
+      ocs::tom::ListPtr<ocs::tom::OR> no_objects;
 
       /* get next element, dechain current and destroy it */
       sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
@@ -193,7 +196,8 @@ sge_schedd_block_until_orders_processed(ocs::tom::ListPtr<ocs::tom::AN> *answer_
        * now we have an answer. is it positive?
        */
       int order_id = 0;
-      gdi_multi->get_response(&request_answer_list, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::ORDER_LIST, order_id, nullptr);
+      gdi_multi->get_response(&request_answer_list, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE,
+                              ocs::gdi::Target::ORDER_LIST, order_id, no_objects);
       if (request_answer_list != nullptr) {
          answer_list_log(&request_answer_list, false, false);
          ret = false;
@@ -203,7 +207,6 @@ sge_schedd_block_until_orders_processed(ocs::tom::ListPtr<ocs::tom::AN> *answer_
        * memory cleanup
        */
       request_answer_list.reset();
-      lFreeList(&multi_answer_list);
       delete gdi_multi;
    }
    DRETURN(ret);

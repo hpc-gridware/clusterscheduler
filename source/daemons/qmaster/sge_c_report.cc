@@ -186,7 +186,10 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
                   is_pb_used = true;
                   init_packbuffer(&pb, 1024);
                }
-               sge_update_load_values(rhost, nullptr, ocs::tom::get<REP_list>(report), packet->gdi_session);
+               // REP_list names no sub-type in the model; a load report holds LR elements, unpacked with their
+               // descriptor, from_typed keeps the old tolerance
+               sge_update_load_values(rhost, nullptr, ocs::tom::List<ocs::tom::LR>::from_typed(
+                                         ocs::tom::get<REP_list>(report)), packet->gdi_session);
 
                if (mconf_get_simulate_execds()) {
                   const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list(
@@ -211,7 +214,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
                                  ocs::tom::set<LR_host>(clp, sim_host);
                               }
                            }
-                           sge_update_load_values(sim_host, real_host, ocs::tom::get<REP_list>(report), packet->gdi_session);
+                           sge_update_load_values(sim_host, real_host, load_list, packet->gdi_session);
                         }
                      }
                   }

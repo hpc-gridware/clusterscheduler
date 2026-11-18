@@ -563,21 +563,6 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
    DRETURN(ret);
 }
 
-/**
- * @brief rqs_verify_attributes() for an untyped caller
- *
- * @param rqs Object that should be verified (RQS_Type), checked
- * @param answer_list answer list in case of errors
- * @param in_master flag if called by qmaster or by qconf
- * @param master_centry_list the complex entries a limit may name (CE_Type), checked; may be nullptr
- *
- * @return as rqs_verify_attributes()
- */
-bool rqs_verify_attributes(lListElem *rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool in_master,
-                           const lList *master_centry_list) {
-   return rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS>(rqs), answer_list, in_master,
-                                ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
-}
 
 /**
  * @brief Locate a specific resource quota set by name
