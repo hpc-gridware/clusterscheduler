@@ -299,6 +299,10 @@ namespace ocs {
       bool collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *attr, const char *val);
       bool collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *spec, const char *attr,
                                   const char *val);
+      [[nodiscard]] bool has_template() const;
+      bool append_template(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name);
+      [[nodiscard]] bool has_show_prepare() const;
+      void show_prepare();
 
    public:
       virtual bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);

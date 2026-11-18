@@ -384,24 +384,118 @@ ocs::QConfModelBase::get_object_where(const lDescr *descr, int key_nm, const cha
  * the only place a predicate can be asked. The list it works on is this read's
  * own copy either way - in qmaster lSelect() has already copied the master list.
  *
- * @param list   the fetched objects, filtered in place
- * @param desc   the row of the object type
- * @param key_nm the field holding the name
+ * @param list   the fetched objects of type @p object, filtered in place; the
+ *               model holds them untyped because its type is the read's
+ * @param object the object type
  * @return none
  */
 static void
-drop_from_export(lList *list, const qconf_object_desc &desc, int key_nm) {
-   if (desc.export_exclude == nullptr || key_nm == NoName) {
-      return;
-   }
-   lListElem *ep = lFirstRW(list);
-   while (ep != nullptr) {
-      lListElem *next = lNextRW(ep);
-      if (desc.export_exclude(qconf_get_name(ep, key_nm))) {
-         lRemoveElem(list, &ep);
+drop_from_export(lList *list, const QConfObj object) {
+   DENTER(TOP_LAYER);
+   ocs_with_qconf_object(object, [list](const auto &entry) {
+      using E = ocs_qconf_object_entry_t<decltype(entry)>;
+      if constexpr (E::has_name_key) {
+         if (entry.desc.export_exclude == nullptr) {
+            return;
+         }
+         // the list was fetched with the descriptor of the read's object type
+         const auto objects = ocs::tom::List<typename E::type>::from_typed(list);
+         auto ep = objects.front();
+         while (ep != nullptr) {
+            const auto next = ep.next();
+            if (entry.desc.export_exclude(ocs_qconf_key_of<E>(ep))) {
+               objects.erase(ep);
+            }
+            ep = next;
+         }
       }
-      ep = next;
-   }
+   });
+   DRETURN_VOID;
+}
+
+/** @brief Whether the read's object type has a template for an edit read (CS-2823)
+ *
+ * See ocs_qconf_hooks::create_template.
+ *
+ * @return true when the type is created from a name
+ */
+bool
+ocs::QConfModelBase::has_template() const {
+   DENTER(TOP_LAYER);
+   const bool has = ocs_with_qconf_object(object_, [](const auto &entry) {
+      return entry.hooks.create_template != nullptr;
+   });
+   DRETURN(has);
+}
+
+/** @brief Answer an edit read with the template of the read's object type (CS-2823)
+ *
+ * The template is appended to the fetched objects, which are created as an
+ * empty list when the read found none. Called only when has_template() says
+ * there is a constructor.
+ *
+ * @param answer_list receives the reason when the constructor refuses the name
+ * @param name the name the template carries, nullptr for a singleton
+ * @return true when the template was appended; false when the constructor
+ *         refused the name, with the reason in @p answer_list
+ */
+bool
+ocs::QConfModelBase::append_template(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+   const bool appended = ocs_with_qconf_object(object_, [this, answer_list, name](const auto &entry) {
+      using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+      if (entry.hooks.create_template == nullptr) {
+         return false;   // has_template() is asked first, so this is unreachable
+      }
+      auto tmpl = entry.hooks.create_template(answer_list, name);
+      if (tmpl == nullptr) {
+         return false;
+      }
+      if (object_list_ == nullptr) {
+         // the model holds the objects untyped, because their type is the read's
+         object_list_ = ocs::tom::ListPtr<T>::create("").release();
+      }
+      // object_list_ was fetched or created with the descriptor of the read's object type
+      ocs::tom::List<T>::from_typed(object_list_).push_back(std::move(tmpl));
+      return true;
+   });
+   DRETURN(appended);
+}
+
+/** @brief Whether the read's object type is fixed up before it is rendered as JSON
+ *
+ * See ocs_qconf_hooks::show_prepare.
+ *
+ * @return true when the type has such a fixup
+ */
+bool
+ocs::QConfModelBase::has_show_prepare() const {
+   DENTER(TOP_LAYER);
+   const bool has = ocs_with_qconf_object(object_, [](const auto &entry) {
+      return entry.hooks.show_prepare != nullptr;
+   });
+   DRETURN(has);
+}
+
+/** @brief Fix up the first fetched object before it is rendered as JSON (CS-2313a)
+ *
+ * Runs the type's ocs_qconf_hooks::show_prepare with the complex entries,
+ * which the caller has fetched. Only the first object, because that is what a
+ * single-object read renders.
+ *
+ * @return none
+ */
+void
+ocs::QConfModelBase::show_prepare() {
+   DENTER(TOP_LAYER);
+   ocs_with_qconf_object(object_, [this](const auto &entry) {
+      using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+      if (entry.hooks.show_prepare != nullptr) {
+         // object_list_ was fetched with the descriptor of the read's object type
+         entry.hooks.show_prepare(ocs::tom::List<T>::from_typed(object_list_).front(), *centry_list_);
+      }
+   });
+   DRETURN_VOID;
 }
 
 /**
@@ -1225,7 +1319,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
    key_nm_ = desc_->name_nm;
 
    /* CS-2799 took the complex entries out of the render loop once already, for
-    * qconf_json_fill_complex(). The queue rendering has a second consumer of
+    * ocs_qconf_json_fill_complex(). The queue rendering has a second consumer of
     * them, the typed complex overrides, which fetched them itself per object -
     * so they are fetched once here, and only for JSON, which is the only format
     * either of the two does anything for. */
@@ -1337,8 +1431,6 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
     * matched and still exited non-zero. Every unmatched reference is still added
     * to the answer list, so show_answer() reports the last of them exactly as
     * before. */
-   static const int qu_ce[] = {QU_consumable_config_list, QU_load_thresholds,
-                               QU_suspend_thresholds};
    bool matched_all = true;
    for (const auto qref_pattern : *qref_pattern_list_) {
       dstring cqueue_name = DSTRING_INIT;
@@ -1376,7 +1468,8 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
                   ocs::tom::find_first<QU_qhostname>(qinstance_list, ocs::tom::get<HR_name>(href));
                if (qinstance != nullptr) {
                   auto qi_copy = qinstance.clone();
-                  qconf_json_fill_complex(*qi_copy, qu_ce, 3, *centry_list_);
+                  ocs_qconf_json_fill_complex<ocs::tom::QU, QU_consumable_config_list, QU_load_thresholds,
+                                              QU_suspend_thresholds>(*qi_copy, *centry_list_);
                   group.qinstances->push_back(std::move(qi_copy));
                }
             }
@@ -1395,7 +1488,8 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
                                        ocs::tom::get<QU_qhostname>(qinstance), nullptr,
                                        true, is_expr) == 0) {
                   auto qi_copy = qinstance.clone();
-                  qconf_json_fill_complex(*qi_copy, qu_ce, 3, *centry_list_);
+                  ocs_qconf_json_fill_complex<ocs::tom::QU, QU_consumable_config_list, QU_load_thresholds,
+                                              QU_suspend_thresholds>(*qi_copy, *centry_list_);
                   group.qinstances->push_back(std::move(qi_copy));
                }
             }
@@ -1653,7 +1747,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    }
 
    if (bulk_export) {
-      drop_from_export(object_list_, *desc_, key_nm_);
+      drop_from_export(object_list_, object_);
    }
 
    if (cqueue_in_full) {
@@ -1717,14 +1811,19 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
        * two complaints for one cause read as two causes (CS-2826). */
       if (kind_ == QConfReadKind::OBJECT_LIST && parameter.get_operation().arg_count() > 0 &&
           !parameter.get_for_export() &&
-          (desc_->read.not_found_noun != nullptr ||
-           (parameter.get_for_edit() && desc_->read.create_template != nullptr))) {
+          (desc_->read.not_found_noun != nullptr || (parameter.get_for_edit() && has_template()))) {
          const auto wanted = ocs_qconf_arg_names<ST_name>(parameter.get_operation(), "");
          bool all_found = true;
          bool template_refused = false;
          for (const auto name_elem : *wanted) {
             const char *name = ocs::tom::get<ST_name>(name_elem);
-            if (lGetElemStr(object_list_, key_nm_, name) != nullptr) {
+            const bool found = ocs_with_qconf_object(object_, [this, name](const auto &entry) {
+               using E = ocs_qconf_object_entry_t<decltype(entry)>;
+               // object_list_ was fetched with the descriptor of the read's object type
+               return ocs_qconf_name_in_list<E>(ocs::tom::ConstList<typename E::type>::from_typed(object_list_),
+                                                name);
+            });
+            if (found) {
                continue;
             }
 
@@ -1733,19 +1832,14 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
              * object - one template per name that matched nothing. That is what
              * makes "qconf -arqs a,b" the same operation as "-mrqs a,b", and
              * what the old switch did by building an element per name itself. */
-            if (parameter.get_for_edit() && desc_->read.create_template != nullptr) {
-               lListElem *tmpl = desc_->read.create_template(answer_list, name);
-               if (tmpl == nullptr) {
+            if (parameter.get_for_edit() && has_template()) {
+               if (!append_template(answer_list, name)) {
                   /* the constructor said why - a name it refuses must not reach
                    * the editor as a half built template */
                   all_found = false;
                   template_refused = true;
                   break;
                }
-               if (object_list_ == nullptr) {
-                  object_list_ = lCreateList("", desc_->descr);
-               }
-               lAppendElem(object_list_, tmpl);
                answered_with_template_ = true;
                continue;
             }
@@ -1791,21 +1885,15 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
        * has a template, the scheduler configuration has none, because a cluster
        * without one is broken rather than new. */
       if ((kind_ == QConfReadKind::SINGLE_OBJECT || kind_ == QConfReadKind::SINGLETON) &&
-          parameter.get_for_edit() && desc_->read.create_template != nullptr &&
+          parameter.get_for_edit() && has_template() &&
           (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0)) {
-         lListElem *tmpl = desc_->read.create_template(answer_list,
-                                                      (kind_ == QConfReadKind::SINGLETON)
-                                                      ? nullptr
-                                                      : parameter.get_operation().arg(0));
-         if (tmpl == nullptr) {
+         if (!append_template(answer_list, (kind_ == QConfReadKind::SINGLETON)
+                                           ? nullptr
+                                           : parameter.get_operation().arg(0))) {
             /* the constructor said why - a name it refuses must not reach the
              * editor as a half built template */
             DRETURN(false);
          }
-         if (object_list_ == nullptr) {
-            object_list_ = lCreateList("", desc_->descr);
-         }
-         lAppendElem(object_list_, tmpl);
          answered_with_template_ = true;
       }
 
@@ -1875,12 +1963,12 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
        * is not the place to find out. It would also run on the first object
        * only, because that is what a single-object read needs, so a directory of
        * exec hosts would come out typed in one file and untyped in the rest. */
-      if (desc_->read.prepare != nullptr && !parameter.get_for_export() &&
+      if (has_show_prepare() && !parameter.get_for_export() &&
           parameter.get_output_format() == ProcedureParameter::OutputFormat::JSON) {
          if (!fetch_centries(answer_list)) {
             DRETURN(false);
          }
-         desc_->read.prepare(lFirstRW(object_list_), *centry_list_);
+         show_prepare();
       }
    }
 

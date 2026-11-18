@@ -101,30 +101,34 @@ namespace {
     */
    bool
    object_exists(const QConfObj o, const char *name) {
-      const qconf_object_desc &d = qconf_desc(o);
-      const lList *list = *ocs::DataStore::get_master_list(qconf_master_list_type(o));
-      if (d.name_nm == NoName) {
-         return lGetNumberOfElem(list) > 0;
-      }
-      return qconf_name_is_host(d.descr, d.name_nm) ? lGetElemHost(list, d.name_nm, name) != nullptr
-                                                    : lGetElemStr(list, d.name_nm, name) != nullptr;
+      DENTER(TOP_LAYER);
+      const bool exists = ocs_with_qconf_object(o, [name](const auto &entry) {
+         using E = ocs_qconf_object_entry_t<decltype(entry)>;
+         // the entry names the master list holding objects of its type
+         const auto list =
+            ocs::tom::ConstList<typename E::type>::from_typed(*ocs::DataStore::get_master_list(entry.master_list));
+         if constexpr (E::has_key) {
+            return ocs_qconf_name_in_list<E>(list, name);
+         } else {
+            return !list.empty();
+         }
+      });
+      DRETURN(exists);
    }
 
    /** @brief Build the element a GDI delete of one named object carries
     *
-    * @param d the object type
+    * @tparam E the entry type of the object type
     * @param name the name
-    * @return the element, owned by the caller
+    * @return the element
     */
-   lListElem *
-   delete_element(const qconf_object_desc &d, const char *name) {
-      lListElem *ep = lCreateElem(d.descr);
-      if (qconf_name_is_host(d.descr, d.name_nm)) {
-         lSetHost(ep, d.name_nm, name);
-      } else {
-         lSetString(ep, d.name_nm, name);
-      }
-      return ep;
+   template <typename E>
+   ocs::tom::ElementPtr<typename E::type>
+   delete_element(const char *name) {
+      DENTER(TOP_LAYER);
+      auto ep = ocs::tom::ElementPtr<typename E::type>::create();
+      ocs_qconf_set_name<E>(*ep, name);
+      DRETURN(ep);
    }
 
    /** @brief What a missing object is called in a dry run of a name list
@@ -231,15 +235,17 @@ qconf_delete_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
       }
 
       /* a missing object of a name list is left to the delete, which words the refusal per type */
-      lListElem *ep = delete_element(d, name);
       ocs::tom::ListPtr<ocs::tom::AN> alp;
-      sge_c_gdi_del_element(packet, task, task->target, ep, &alp, ocs::gdi::Command::DEL,
-                            ocs::gdi::SubCommand::NONE, monitor);
+      ocs_with_qconf_object(type, [&](const auto &entry) {
+         auto ep = delete_element<ocs_qconf_object_entry_t<decltype(entry)>>(name);
+         // the delete serves every target, so its element is untyped
+         sge_c_gdi_del_element(packet, task, task->target, *ep, &alp, ocs::gdi::Command::DEL,
+                               ocs::gdi::SubCommand::NONE, monitor);
+      });
       if (answer_list_has_error(&alp)) {
          ok = false;
       }
       answer_list_append_list(answer_list, &alp);
-      lFreeElem(&ep);
    }
 
    DRETURN(ok);

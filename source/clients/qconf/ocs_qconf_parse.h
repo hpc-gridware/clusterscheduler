@@ -83,7 +83,7 @@ extern spool_flatfile_format qconf_opt_format;
 /* CS-2313a: fill the CE_valtype/CE_doubleval of an object's complex-value sublists
  * (e.g. QU_consumable_config_list, QU_load_thresholds) from the centry definitions
  * so the JSON writer can emit native numbers. No-op unless -fmt json. */
-/* qconf_json_fill_complex() moved to libs/procedure/qconf/ocs_QConfObject.h
+/* ocs_qconf_json_fill_complex() lives in libs/procedure/qconf/ocs_QConfObject.h
  * with the descriptor table that uses it (CS-2799). */
 
 

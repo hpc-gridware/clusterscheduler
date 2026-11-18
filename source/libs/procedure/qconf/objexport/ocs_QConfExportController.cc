@@ -54,7 +54,6 @@ ocs::QConfExportController::process_request([[maybe_unused]] QConfParameter &par
    DENTER(TOP_LAYER);
 
    const qconf_object_desc &desc = *model.get_desc();
-   const int name_nm = model.get_key_nm();
 
    /* Created up front, so that an export matching no object sends an entry
     * holding an empty list rather than no entry at all - the difference between
@@ -62,22 +61,28 @@ ocs::QConfExportController::process_request([[maybe_unused]] QConfParameter &par
     * be able to tell apart (see ProcedureModel::get_export_objects()). */
    objects_ = ocs::tom::ListPtr<ocs::tom::VA>::create("export objects");
 
-   for_each_ep_lv(ep, model.get_object_list()) {
-      std::ostringstream text;
+   ocs_with_qconf_object(model.get_object(), [this, &model, &view, &desc](const auto &entry) {
+      using E = ocs_qconf_object_entry_t<decltype(entry)>;
+      using T = typename E::type;
+      // the snapshot was fetched with the descriptor of the read's object type
+      for (const auto ep : ocs::tom::ConstList<T>::from_typed(model.get_object_list())) {
+         std::ostringstream text;
 
-      if (desc.read.write_as_list) {
-         lList *one = lCreateList("export object", lGetElemDescr(ep));
-         lAppendElem(one, lCopyElem(ep));
-         view.show_object_list(text, one, desc);
-         lFreeList(&one);
-      } else {
-         view.show_object(text, ep, desc);
+         if (desc.read.write_as_list) {
+            // the element's own descriptor, as the fetch may have reduced it
+            auto one = ocs::tom::ListPtr<T>::create("export object", lGetElemDescr(ep));
+            one->push_back(ep.clone());
+            view.show_object_list(text, *one, desc);
+            one.reset();
+         } else {
+            view.show_object(text, ep, desc);
+         }
+
+         const char *name = ocs_qconf_key_of<E>(ep);
+         const auto pair = objects_->emplace_back<VA_variable>((name != nullptr) ? name : "");
+         ocs::tom::set<VA_value>(pair, text.str().c_str());
       }
-
-      const char *name = (name_nm != NoName) ? qconf_get_name(ep, name_nm) : nullptr;
-      const auto pair = objects_->emplace_back<VA_variable>((name != nullptr) ? name : "");
-      ocs::tom::set<VA_value>(pair, text.str().c_str());
-   }
+   });
 
    DPRINTF("rendered %d object(s) for export\n", static_cast<int>(objects_->size()));
 

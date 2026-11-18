@@ -200,40 +200,39 @@ qconf_confirm(const char *prompt, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
  * @brief Read and validate a single object from an ASCII flatfile.
  *
  * A @p filename of "-" reads from stdin (CS-2299 H4). On any read or
- * unprocessed-field error the answer list is shown and nullptr is returned. When
- * @p validate is non-null it is run on the parsed object and a non-STATUS_OK
- * result is treated the same way (so -strict catches semantic errors during the
- * validation pass, before anything is sent).
+ * unprocessed-field error the answer list is shown and an empty handle is
+ * returned. When @p validate is non-null it is run on the parsed object and a
+ * non-STATUS_OK result is treated the same way (so -strict catches semantic
+ * errors during the validation pass, before anything is sent).
  *
- * @param descr    CULL descriptor of the object type
+ * @tparam T the object type
  * @param fields   spooling field list describing the file format
  * @param filename path to read, or "-" for stdin
  * @param validate optional object validator returning STATUS_OK on success, or nullptr
  * @param alpp     the answer list of the operation, receives what the parse reported
- * @param sfi      flatfile spooling instruction (defaults to qconf_sfi; complex
+ * @param sfi      flatfile spooling instruction (qconf_sfi for most types; complex
  *                 entries use qconf_ce_sfi - CS-2303)
  * @param prepare  optional transform run on the object after the read (e.g.
  *                 resolve a hostname), or nullptr - CS-2304
  * @param parse_values the parse_values flag of spool_flatfile_read_object()
- * @return the parsed object (caller owns) or nullptr on error
+ * @return the parsed object, or an empty handle on error
  */
-static lListElem *
-qconf_read_object_file(const lDescr *descr, spooling_field *fields,
-                       const char *filename,
-                       int (*validate)(const lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *),
-                       ocs::tom::ListPtr<ocs::tom::AN> *alpp, const spool_flatfile_instr *sfi = &qconf_sfi,
-                       int (*prepare)(lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *) = nullptr,
-                       const bool parse_values = true) {
-   /* The chain itself moved to qconf_parse_object() in the procedure library,
+template <ocs::tom::ObjectType T>
+static ocs::tom::ElementPtr<T>
+qconf_read_object_file(spooling_field *fields, const char *filename, const ocs_qconf_check_fn<T> validate,
+                       ocs::tom::ListPtr<ocs::tom::AN> *alpp, const spool_flatfile_instr *sfi,
+                       const ocs_qconf_check_fn<T> prepare, const bool parse_values) {
+   DENTER(TOP_LAYER);
+   /* The chain itself moved to ocs_qconf_parse_object() in the procedure library,
     * because qmaster needs the same one for a write procedure and two copies
     * would drift. What stays here is the client's half of it: the format comes
     * from this process's -fmt, and the messages are printed rather than carried
     * back to a caller. */
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = qconf_parse_object(&alp, descr, fields, qconf_opt_format, filename, nullptr,
-                                      validate, sfi, prepare, parse_values);
+   auto ep = ocs_qconf_parse_object<T>(&alp, fields, qconf_opt_format, filename, nullptr,
+                                       validate, sfi, prepare, parse_values);
    qconf_answer_take(alpp, &alp);
-   return ep;
+   DRETURN(ep);
 }
 
 int
@@ -264,25 +263,29 @@ qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), voi
 
 int
 qconf_collect_name(const char *filepath, void *vctx) {
+   DENTER(TOP_LAYER);
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   /* deletion only needs the name, so no object validator is applied here */
-   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, nullptr, ctx->alpp,
-                                          ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
-   if (ep == nullptr) {
-      ctx->n_fail++;
-      return 1;
-   }
-   const char *name = qconf_get_name(ep, ctx->desc->name_nm);
-   if (name != nullptr) {
-      /* CS-2299 H5: deleting is idempotent - whether the object still exists is
-       * qmaster's to decide, under the lock, which skips it with a warning
-       * naming this file (CS-2983) */
-      ctx->names->emplace_back(name);
-      ctx->sources->emplace_back(filepath);
-      ctx->n_ok++;
-   }
-   lFreeElem(&ep);
-   return 0;
+   const int failed = ocs_with_qconf_object(ctx->object, [ctx, filepath](const auto &entry) {
+      using E = ocs_qconf_object_entry_t<decltype(entry)>;
+      /* deletion only needs the name, so no object validator is applied here */
+      auto ep = qconf_read_object_file<typename E::type>(ctx->fields, filepath, nullptr, ctx->alpp,
+                                                         entry.desc.sfi, entry.hooks.prepare, ctx->parse_values);
+      if (ep == nullptr) {
+         ctx->n_fail++;
+         return 1;
+      }
+      const char *name = ocs_qconf_key_of<E>(*ep);
+      if (name != nullptr) {
+         /* CS-2299 H5: deleting is idempotent - whether the object still exists is
+          * qmaster's to decide, under the lock, which skips it with a warning
+          * naming this file (CS-2983) */
+         ctx->names->emplace_back(name);
+         ctx->sources->emplace_back(filepath);
+         ctx->n_ok++;
+      }
+      return 0;
+   });
+   DRETURN(failed);
 }
 
 /** @brief Read a stream to its end into a string

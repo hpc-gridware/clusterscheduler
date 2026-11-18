@@ -102,25 +102,6 @@ qconf_delete_send(const QConfObj o, const std::vector<std::string> &names, const
    DRETURN((!ok || shown != 0) ? 1 : 0);
 }
 
-/** @brief The names of a parsed name list
- * @param o   the object type, whose name field the elements carry
- * @param lpp the elements; consumed, set to nullptr
- * @return the names, in the order given
- */
-static std::vector<std::string>
-qconf_delete_names_of(const QConfObj o, lList **lpp) {
-   const qconf_object_desc &d = qconf_desc(o);
-   std::vector<std::string> names;
-   for_each_ep_lv(ep, *lpp) {
-      const char *name = qconf_get_name(ep, d.name_nm);
-      if (name != nullptr) {
-         names.emplace_back(name);
-      }
-   }
-   lFreeList(lpp);
-   return names;
-}
-
 /** @brief The names of a parsed name list of a known type
  * @tparam F the name field of the elements
  * @param list the elements
@@ -200,7 +181,7 @@ qconf_delete_obj(std::ostream &os, const QConfObj o, const char *path, ocs::tom:
    spooling_field *fields = d.build_fields(qconf_opt_format, false, &owned);
    std::vector<std::string> names;
    std::vector<std::string> sources;
-   qconf_file_ctx ctx = {&os, &d, fields, d.parse_values, &names, &sources, 0, 0, alpp};
+   qconf_file_ctx ctx = {&os, o, fields, d.parse_values, &names, &sources, 0, 0, alpp};
    qconf_for_each_file(path, qconf_collect_name, &ctx, alpp);
    if (owned) {
       sge_free(&fields);
@@ -473,12 +454,19 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::to
       failed = qconf_delete_obj(os, entry->object, op.args.front().c_str(), alpp);
    } else {
       /* a type without a name field is deleted as a whole, so there is nothing to name */
-      const qconf_object_desc &d = qconf_desc(entry->object);
-      lList *lp = nullptr;
-      if (d.name_nm != NoName && !op.args.empty()) {
-         lString2List(op.args.front().c_str(), &lp, const_cast<lDescr *>(d.descr), d.name_nm, ", ");
-      }
-      failed = qconf_delete_send(entry->object, qconf_delete_names_of(entry->object, &lp), {}, alpp);
+      const auto names = ocs_with_qconf_object(entry->object, [&op](const auto &object) {
+         using E = ocs_qconf_object_entry_t<decltype(object)>;
+         std::vector<std::string> list_names;
+         if constexpr (E::has_name_key) {
+            if (!op.args.empty()) {
+               const auto lp = ocs::tom::ListPtr<typename E::type>::template from_string<E::key>(
+                  op.args.front().c_str(), ", ");
+               list_names = qconf_delete_names_of<E::key>(lp);
+            }
+         }
+         return list_names;
+      });
+      failed = qconf_delete_send(entry->object, names, {}, alpp);
    }
 
    DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);

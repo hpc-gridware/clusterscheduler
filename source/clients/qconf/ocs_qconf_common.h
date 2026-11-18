@@ -104,7 +104,7 @@ qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), voi
 /** @brief Context shared by the per-file callbacks driven by qconf_for_each_file(). */
 struct qconf_file_ctx {
    std::ostream *os;               ///< where the per-file messages go (CS-1841)
-   const qconf_object_desc *desc;  ///< everything that identifies the object type (CS-2795)
+   QConfObj object;                ///< the object type, which the read is dispatched on (CS-2795)
    spooling_field *fields;    ///< spooling field list, resolved from the descriptor's provider
    bool parse_values;         ///< spool_flatfile_read_object parse_values flag; the delete path
                               ///< takes it from the descriptor, the apply path always parses

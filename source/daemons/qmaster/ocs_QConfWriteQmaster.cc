@@ -24,6 +24,7 @@
 
 #include <cstring>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -34,6 +35,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "uti/sge_dstring.h"
@@ -42,6 +44,7 @@
 
 #include "msg_common.h"
 #include "procedure/qconf/msg_qconf.h"
+#include "procedure/qconf/ocs_QConfObject.h"
 #include "ocs_QConfWriteQmaster.h"
 #include "configuration_qmaster.h"
 #include "sched_conf_qmaster.h"
@@ -109,19 +112,20 @@ qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi:
    DRETURN(ret == STATUS_OK);
 }
 
-/** @brief An object's name, or nullptr when its type is not addressed by name
+/** @brief A master list of the object type of a table entry
  *
- * The scheduler configuration and the share tree carry NoName as their key:
- * there is one object of the type and no name selects it. CULL has no field -1,
- * so the question is answered from the descriptor before it is asked (CS-2823).
+ * The data store hands out its lists untyped; the list of @p list_type holds
+ * the objects of the entry's type, see qconf_master_list_type().
  *
- * @param ep the object
- * @param key_nm the type's key field, NoName for a singleton
- * @return the name, owned by @p ep, or nullptr for a singleton
+ * @tparam E the entry type of the object type
+ * @param list_type the master list of the entry
+ * @return the list, an empty handle when there is none
  */
-static const char *
-qconf_key_of(const lListElem *ep, const int key_nm) {
-   return (key_nm == NoName) ? nullptr : qconf_get_name(ep, key_nm);
+template <typename E>
+static ocs::tom::ConstList<typename E::type>
+qconf_master_list_of(const sge_object_type list_type) {
+   // the entry names the master list holding objects of its type
+   return ocs::tom::ConstList<typename E::type>::from_typed(*ocs::DataStore::get_master_list(list_type));
 }
 
 /** @brief Whether storing this object would change nothing (CS-2823)
@@ -144,30 +148,36 @@ qconf_key_of(const lListElem *ep, const int key_nm) {
  * sgeE_CONFIG_MOD and so still makes the execution daemons reread it - and that
  * is a decision of its own, not a regression to undo.
  *
- * @param desc the descriptor of the type being written
+ * @tparam E the entry type of the object type being written
  * @param master_list the list the type is stored in
- * @param key_nm the field holding the object's name, NoName for a singleton
  * @param name the object's name, nullptr for a singleton
  * @param ep the object as the text holds it
  * @return true when an object of that name is stored and equal to @p ep
  */
+template <typename E>
 static bool
-qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list,
-                         const int key_nm, const char *name, const lListElem *ep) {
-   if (desc.target != ocs::gdi::Target::CE_LIST || key_nm == NoName || name == nullptr) {
-      return false;
-   }
+qconf_write_is_unchanged([[maybe_unused]] const ocs::tom::ConstList<typename E::type> master_list,
+                         [[maybe_unused]] const char *name,
+                         [[maybe_unused]] const ocs::tom::ConstElement<typename E::type> ep) {
+   DENTER(TOP_LAYER);
+   if constexpr (std::is_same_v<typename E::type, ocs::tom::CE>) {
+      if (name == nullptr) {
+         DRETURN(false);
+      }
 
-   // a complex entry is written here, so the master list is the one of the complex entries
-   const auto stored = centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>(master_list), name);
-   if (!stored) {
-      return false;
-   }
+      const auto stored = centry_list_locate(master_list, name);
+      if (!stored) {
+         DRETURN(false);
+      }
 
-   /* Argument order as the client had it: the element from the text first, the
-    * stored one second. The answer list stays out of it, because a difference is
-    * not a problem to report - it is the normal case. */
-   return !object_has_differences(ep, nullptr, stored);
+      /* Argument order as the client had it: the element from the text first, the
+       * stored one second. The answer list stays out of it, because a difference is
+       * not a problem to report - it is the normal case. object_has_differences()
+       * compares any two elements of one type and has no typed form. */
+      DRETURN(!object_has_differences(ep, nullptr, stored));
+   } else {
+      DRETURN(false);
+   }
 }
 
 /** @brief Hand one parsed object to the function that applies its type (CS-2823)
@@ -181,9 +191,11 @@ qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list
  * here rather than invented: one call each, the same function the GDI MOD of
  * that target performs.
  *
- * It is a switch here and not a hook on the descriptor for the reason
- * qconf_delete_one() is: these are qmaster functions and the descriptor lives in
- * a library, which cannot link against them.
+ * It is a choice on the object type here and not a hook on the descriptor for
+ * the reason qconf_delete_one() is: these are qmaster functions and the
+ * descriptor lives in a library, which cannot link against them. The object
+ * type decides what the target did before: each of the three targets belongs to
+ * exactly one entry of the table.
  *
  * The share tree needs no separate add. sge_add_sharetree() is a one-line
  * forwarder to sge_mod_sharetree(), which creates the master list when it is
@@ -199,6 +211,7 @@ qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list
  * to qconf_write_from_procedure(), which runs the post-processing once the whole
  * batch is applied, exactly as `sge_c_gdi_mod()` does for a GDI MOD.
  *
+ * @tparam E the entry type of the object type being written
  * @param packet the client request
  * @param task the GDI task being answered
  * @param monitor for monitoring qmaster threads
@@ -210,58 +223,60 @@ qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list
  * @param post collects what the type's `on_success` hook needs post-processed
  * @return STATUS_OK when the object was applied
  */
+template <typename E>
 static int
 qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                const qconf_object_desc &desc, gdi_object_t *object, lListElem *ep,
+                const qconf_object_desc &desc, gdi_object_t *object, const ocs::tom::Element<typename E::type> ep,
                 const bool exists, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs_gdi_post_processing *post) {
    DENTER(TOP_LAYER);
+   using T = typename E::type;
 
-   switch (desc.target) {
-      case ocs::gdi::Target::CONF_LIST:
-         /* Upserts by itself, which is why "-aconf" and "-mconf" are one
-          * operation in the client (CS-2311) and why the add/modify decision
-          * above does not reach it. */
-         DRETURN(sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF>(ep), answer_list, packet->user,
-                                       packet->host, packet->gdi_session));
-
-      case ocs::gdi::Target::SC_LIST:
-         // qmaster parsed the element with SC_Type itself; unchecked as the former wrapper did, no throw here
-         DRETURN(sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>::from_typed(ep), answer_list,
-                                             packet->user, packet->host));
-
-      case ocs::gdi::Target::STN_LIST:
-         DRETURN(sge_mod_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep),
-                                   ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
-                                   answer_list, packet->user, packet->host));
-
-      default:
-         /* add == 0 modifies and fails when the object is gone, add == 1 adds
-          * and fails when it is already there - sge_gdi_add_mod_generic()
-          * enforces both against the list it is about to change. */
-         DRETURN(sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1,
-                                         object, packet->user, packet->host,
-                                         ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
-                                         post, monitor));
+   if constexpr (std::is_same_v<T, ocs::tom::CONF>) {
+      /* Upserts by itself, which is why "-aconf" and "-mconf" are one
+       * operation in the client (CS-2311) and why the add/modify decision
+       * above does not reach it. */
+      DRETURN(sge_mod_configuration(ep, answer_list, packet->user, packet->host, packet->gdi_session));
+   } else if constexpr (std::is_same_v<T, ocs::tom::SC>) {
+      DRETURN(sge_mod_sched_configuration(packet, task, ep, answer_list, packet->user, packet->host));
+   } else if constexpr (std::is_same_v<T, ocs::tom::STN>) {
+      DRETURN(sge_mod_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
+                                answer_list, packet->user, packet->host));
+   } else {
+      /* add == 0 modifies and fails when the object is gone, add == 1 adds
+       * and fails when it is already there - sge_gdi_add_mod_generic()
+       * enforces both against the list it is about to change. Its element is
+       * untyped because it serves every row of the gdi_object_t table. */
+      DRETURN(sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1,
+                                      object, packet->user, packet->host,
+                                      ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
+                                      post, monitor));
    }
 }
 
-/** @brief Apply a set of objects, parsing each one first, see the header
+/** @brief Apply a set of objects of one type, parsing each one first
+ *
+ * The body of qconf_write_from_procedure(), compiled per object type: the
+ * parsed objects, the master list and the hooks are typed on the entry's type.
+ *
+ * @tparam E the entry type of the object type being written
  * @param packet the client request
  * @param task the GDI task being answered
  * @param monitor for monitoring qmaster threads
- * @param obj which object type is written
+ * @param type_entry the entry of the object type in #ocs_qconf_objects
  * @param parameter the items and the batch policy
  * @param answer_list receives one entry per item
  * @param result receives the two counts
  * @return true when the batch was applied as the policy demands
  */
-bool
-qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                           const QConfObj obj, const ocs::QConfWriteParameter &parameter,
-                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::QConfWriteResult *result) {
+template <typename E>
+static bool
+qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor, const E &type_entry,
+                  const ocs::QConfWriteParameter &parameter, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                  ocs::QConfWriteResult *result) {
    DENTER(TOP_LAYER);
+   using T = typename E::type;
 
-   const qconf_object_desc &desc = qconf_desc(obj);
+   const qconf_object_desc &desc = type_entry.desc;
 
    /* The dispatch entry declares the target and sge_c_gdi_procedure() refuses a
     * request that is addressed elsewhere, so the target reaching us is the one
@@ -295,15 +310,14 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       DRETURN(false);
    }
 
-   /* The key field and the master list come from the descriptor, not from the
+   /* The key field and the master list come from the entry, not from the
     * gdi_object_t row. That row carries both for the types whose modify is a
     * hook on it, and empties - key 0, SGE_TYPE_NONE - for the three whose
     * modify is a special case in sge_c_gdi_mod() instead: CONF, SC and STN. So
     * it knows these two facts for every type that never needed them. Taken from
-    * the descriptor, a key of 0 cannot silently turn the existence check, the
+    * the entry, a key of 0 cannot silently turn the existence check, the
     * name collection and the leftover report into no-ops (CS-2823). */
-   const int key_nm = desc.name_nm;
-   const sge_object_type list_type = qconf_master_list_type(obj);
+   const sge_object_type list_type = type_entry.master_list;
    if (list_type == SGE_TYPE_NONE) {
       /* A guard, not a reachable path: the one type without a master list is
        * the event clients, and they are read only. It exists so that a new
@@ -372,15 +386,15 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * *vector* of objects - one long for every other type, which is why phase 2
     * below needs no second shape (CS-2823). */
    struct ParsedItem {
-      std::string label;                 ///< what the caller called this item
-      std::vector<lListElem *> elements; ///< its objects, owned until phase 2 frees them
+      std::string label;                              ///< what the caller called this item
+      std::vector<ocs::tom::ElementPtr<T>> elements;  ///< its objects, owned until phase 2 frees them
    };
 
    /* Phase 1: read every item. Nothing is written yet, not even in the default
     * mode - the two phases are what makes -strict possible at all, and running
     * them for every mode keeps one code path instead of two. */
    std::vector<ParsedItem> parsed;
-   for (const lListElem *item = lFirst(parameter.get_items()); item != nullptr; item = lNext(item)) {
+   for (const auto item : parameter.get_items()) {
       const char *label = ocs::tom::get<VA_variable>(item);
       const char *text = ocs::tom::get<VA_value>(item);
 
@@ -416,10 +430,9 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
           * one instruction it has. */
          const spool_flatfile_instr *list_sfi =
             (desc.read.list_sfi != nullptr) ? desc.read.list_sfi : desc.sfi;
-         lList *lp = qconf_parse_list(answer_list, desc.descr, fields, format,
-                                      label, text, desc.validate, list_sfi, desc.prepare,
-                                      desc.parse_values);
-         if (lp == nullptr) {
+         auto lp = ocs_qconf_parse_list<T>(answer_list, fields, format, label, text, type_entry.hooks.validate,
+                                           list_sfi, type_entry.hooks.prepare, desc.parse_values);
+         if (!lp) {
             // the reader, the transform or the validator wrote the reason
             result->parse_failed++;
             continue;
@@ -430,9 +443,9 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
           * as it always was - a directory never compared across files and still
           * does not. A failure here fails the reading phase, which for a list
           * text is all-or-nothing, so the text is rejected whole. */
-         if (desc.write.verify_list != nullptr &&
-             desc.write.verify_list(lp, answer_list) != STATUS_OK) {
-            lFreeList(&lp);
+         if (type_entry.hooks.verify_list != nullptr &&
+             type_entry.hooks.verify_list(*lp, answer_list) != STATUS_OK) {
+            lp.reset();
             result->parse_failed++;
             continue;
          }
@@ -455,8 +468,12 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             bool all_found = true;
             for (const auto name_elem : *wanted) {
                const char *name = ocs::tom::get<ST_name>(name_elem);
-               lListElem *found = (name != nullptr)
-                                  ? lGetElemStrRW(lp, key_nm, name) : nullptr;
+               ocs::tom::Element<T> found;
+               if constexpr (E::has_name_key) {
+                  if (name != nullptr) {
+                     found = lp->template find_first<E::key>(ocs_qconf_key_value<E::key>(name));
+                  }
+               }
                if (found == nullptr) {
                   answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                           MSG_RQS_NOTFOUNDINFILE_SS,
@@ -465,36 +482,29 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
                   all_found = false;
                   break;
                }
-               lDechainElem(lp, found);
-               entry.elements.push_back(found);
+               entry.elements.push_back(lp->extract(found));
             }
-            lFreeList(&lp);          /* what was not named stays untouched */
+            lp.reset();          /* what was not named stays untouched */
             if (!all_found) {
-               for (lListElem *ep: entry.elements) {
-                  lListElem *tmp = ep;
-                  lFreeElem(&tmp);
-               }
+               // the objects taken so far are freed with the item
                result->parse_failed++;
                continue;
             }
          } else {
-            lListElem *ep;
-            while ((ep = lFirstRW(lp)) != nullptr) {
-               lDechainElem(lp, ep);
-               entry.elements.push_back(ep);
+            for (auto ep = lp->front(); ep != nullptr; ep = lp->front()) {
+               entry.elements.push_back(lp->extract(ep));
             }
-            lFreeList(&lp);
+            lp.reset();
          }
       } else {
-         lListElem *ep = qconf_parse_object(answer_list, desc.descr, fields, format,
-                                            label, text, desc.validate, desc.sfi, desc.prepare,
-                                            desc.parse_values);
+         auto ep = ocs_qconf_parse_object<T>(answer_list, fields, format, label, text, type_entry.hooks.validate,
+                                             desc.sfi, type_entry.hooks.prepare, desc.parse_values);
          if (ep == nullptr) {
             // the reader, the transform or the validator wrote the reason
             result->parse_failed++;
             continue;
          }
-         entry.elements.push_back(ep);
+         entry.elements.push_back(std::move(ep));
       }
 
       parsed.push_back(std::move(entry));
@@ -514,12 +524,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * inherently strict", as the client's own comment put it: a directory of
     * resource quota files with one unreadable file applied nothing. */
    if (result->parse_failed > 0 && (parameter.is_strict() || parameter.is_list())) {
-      for (auto &item: parsed) {
-         for (lListElem *ep: item.elements) {
-            lListElem *tmp = ep;
-            lFreeElem(&tmp);
-         }
-      }
+      parsed.clear();   // frees every object read
       DRETURN(false);
    }
 
@@ -557,7 +562,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * and `elements` counts the objects, which is what a summary over resource
     * quota sets prints. For every other type each item is one object and the
     * two are equal. */
-   const lList *master_list = *ocs::DataStore::get_master_list(list_type);
+   const auto master_list = qconf_master_list_of<E>(list_type);
    bool all_ok = (result->parse_failed == 0);
    std::vector<std::string> parsed_names;   ///< what the texts held, for the report below
    ocs_gdi_post_processing post;            ///< what the applied objects need post-processed
@@ -566,16 +571,16 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    for (auto &item: parsed) {
       size_t applied_here = 0;
 
-      for (lListElem *ep: item.elements) {
+      for (auto &ep: item.elements) {
          /* Named by the request, not by the text: the configuration's host is
           * the argument of "-mconf" or the basename of the "-Mconf" file, and
           * its text renders the host as a comment only. Set before the object is
           * read back, so everything below - the existence check, the messages -
           * sees the name the caller gave. */
-         if (!parameter.get_name().empty() && key_nm != NoName) {
-            qconf_set_name(ep, key_nm, parameter.get_name().c_str());
+         if (!parameter.get_name().empty()) {
+            ocs_qconf_set_name<E>(*ep, parameter.get_name().c_str());
          }
-         const char *name = qconf_key_of(ep, key_nm);
+         const char *name = ocs_qconf_key_of<E>(*ep);
          if (name != nullptr) {
             parsed_names.emplace_back(name);
          }
@@ -585,16 +590,14 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
           * the share tree exist, or the type is empty. Deciding it from the
           * master list here is what the client used to decide from its bulk
           * name GET, and it is now decided where the list actually is. */
-         const bool exists = (key_nm == NoName)
-                             ? (lGetNumberOfElem(master_list) > 0)
-                             : qconf_name_in_list(master_list, desc.descr, key_nm, name);
+         const bool exists = E::has_key ? ocs_qconf_name_in_list<E>(master_list, name) : !master_list.empty();
 
          /* An object already stored in exactly the state the text asks for is
           * not written at all, see qconf_write_is_unchanged(). It still counts
           * as applied: the item was understood and the store holds what was
           * asked for, which is what the caller wants to know. The dry run says
           * so rather than promising a modification that would not happen. */
-         const bool unchanged = exists && qconf_write_is_unchanged(desc, master_list, key_nm, name, ep);
+         const bool unchanged = exists && qconf_write_is_unchanged<E>(master_list, name, *ep);
 
          if (parameter.is_dry()) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
@@ -609,8 +612,8 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             result->elements++;
             left_objects++;
          } else {
-            const int ret = qconf_apply_one(packet, task, monitor, desc, object, ep, exists,
-                                            answer_list, &post);
+            const int ret = qconf_apply_one<E>(packet, task, monitor, desc, object, *ep, exists,
+                                               answer_list, &post);
             if (ret == STATUS_OK) {
                applied_here++;
                result->elements++;
@@ -620,8 +623,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             }
          }
 
-         lListElem *tmp = ep;
-         lFreeElem(&tmp);
+         ep.reset();
       }
 
       if (applied_here == item.elements.size()) {
@@ -645,7 +647,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * it. Nothing collects in a dry run, which never applies anything.
     *
     * It is spelled out here and not a hook on the descriptor for the reason
-    * qconf_apply_one() is a switch: these are qmaster functions and
+    * qconf_apply_one() is a choice on the type: these are qmaster functions and
     * the descriptor lives in a library that cannot link against them. */
    if (!post.redebit_centries->empty()) {
       /* Rebuilds the consumable debitation of every queue and host against
@@ -681,9 +683,9 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       dstring kept = DSTRING_INIT;
       int num_kept = 0;
 
-      for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(list_type));
-           ep != nullptr; ep = lNext(ep)) {
-         const char *name = qconf_key_of(ep, key_nm);
+      // asked again: phase 2 may have created or replaced the master list
+      for (const auto ep : qconf_master_list_of<E>(list_type)) {
+         const char *name = ocs_qconf_key_of<E>(ep);
          if (name == nullptr) {
             continue;
          }
@@ -698,7 +700,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             continue;
          }
 
-         if (desc.write.retain_on_replace != nullptr && desc.write.retain_on_replace(ep)) {
+         if (type_entry.hooks.retain_on_replace != nullptr && type_entry.hooks.retain_on_replace(ep)) {
             if (num_kept > 0) {
                sge_dstring_append(&kept, ", ");
             }
@@ -750,11 +752,9 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
        !parameter.is_dry() && result->parse_failed == 0) {
       ocs::tom::ListPtr<ocs::tom::ST> in_scope;
       if (parameter.get_select().empty()) {
-         // the object type is given at run time by the target, hence the untyped walk
-         for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(list_type));
-              ep != nullptr; ep = lNext(ep)) {
+         for (const auto ep : qconf_master_list_of<E>(list_type)) {
             // a nameless object adds nothing, as the untyped emplace_back() did not; the list comes with the first
-            const char *key = qconf_key_of(ep, key_nm);
+            const char *key = ocs_qconf_key_of<E>(ep);
             if (key != nullptr) {
                if (!in_scope) {
                   in_scope = ocs::tom::ListPtr<ocs::tom::ST>::create("");
@@ -778,9 +778,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
                break;
             }
          }
-         if (!in_text &&
-             qconf_name_in_list(*ocs::DataStore::get_master_list(list_type),
-                                desc.descr, key_nm, name)) {
+         if (!in_text && ocs_qconf_name_in_list<E>(qconf_master_list_of<E>(list_type), name)) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
                                     MSG_QCONF_WRITENOTREMOVED_S, name);
          }
@@ -809,4 +807,29 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    }
 
    DRETURN(all_ok);
+}
+
+/** @brief Apply a set of objects, parsing each one first, see the header
+ *
+ * Runs qconf_write_entry() for the entry of @p obj, so that the body works on
+ * the object type's handles and hooks.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ * @param obj which object type is written
+ * @param parameter the items and the batch policy
+ * @param answer_list receives one entry per item
+ * @param result receives the two counts
+ * @return true when the batch was applied as the policy demands
+ */
+bool
+qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                           const QConfObj obj, const ocs::QConfWriteParameter &parameter,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::QConfWriteResult *result) {
+   DENTER(TOP_LAYER);
+   const bool ok = ocs_with_qconf_object(obj, [&](const auto &type_entry) {
+      return qconf_write_entry(packet, task, monitor, type_entry, parameter, answer_list, result);
+   });
+   DRETURN(ok);
 }
