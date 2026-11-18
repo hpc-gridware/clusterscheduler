@@ -46,9 +46,9 @@
 #include "mir/sge_mirror.h"
 
 sge_callback_result 
-host_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
-                        sge_event_action action, lListElem *event, void *clientdata);
+host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
+                        sge_event_action action, ocs::tom::Element<ocs::tom::ET> event, void *clientdata);
 
 sge_callback_result
 hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                          sge_event_action action, lListElem *event, void *clientdata);
+                          sge_event_action action, ocs::tom::Element<ocs::tom::ET> event, void *clientdata);

@@ -448,13 +448,15 @@ free_what_and_where(sge_where_what_t *where_what) {
  * @param evc the event client
  * @param type the object type the event is about
  * @param action what happened to it
- * @param event the event
+ * @param event the event (ET_Type)
  * @param clientdata the scheduler's snapshot
  * @return whether the mirror should go on to apply the event
  */
 sge_callback_result
-sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
-                                 sge_event_action action, lListElem *event, void *clientdata) {
+sge_process_schedd_monitor_event(sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                                 [[maybe_unused]] const sge_event_action action,
+                                 [[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::ET> event,
+                                 [[maybe_unused]] void *clientdata) {
    DENTER(GDI_LAYER);
    DPRINTF("monitoring next scheduler run\n");
    evc->monitor_next_run = true;
@@ -466,13 +468,15 @@ sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
  * @param evc the event client
  * @param type the object type the event is about
  * @param action what happened to it
- * @param event the event
+ * @param event the event (ET_Type)
  * @param clientdata the scheduler's snapshot
  * @return whether the mirror should go on to apply the event
  */
 sge_callback_result
-sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
-                                sge_event_action action, lListElem *event, void *clientdata) {
+sge_process_global_config_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                                [[maybe_unused]] const sge_event_action action,
+                                [[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::ET> event,
+                                [[maybe_unused]] void *clientdata) {
    DENTER(GDI_LAYER);
    DPRINTF("notification about new global configuration\n");
    st_set_flag_new_global_conf(true);
@@ -484,13 +488,14 @@ sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
  * @param evc the event client
  * @param type the object type the event is about
  * @param action what happened to it
- * @param event the event
+ * @param event the event (ET_Type)
  * @param clientdata the scheduler's snapshot
  * @return whether the event was handled
  */
 sge_callback_result
-sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event,
-                            void *clientdata) {
+sge_process_job_event_after([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                            const sge_event_action action, const ocs::tom::ConstElement<ocs::tom::ET> event,
+                            [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    uint32_t job_id = 0;

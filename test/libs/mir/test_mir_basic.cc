@@ -62,12 +62,14 @@ uint32_t events_size;   ///< how many bytes they took on the wire, to show what 
  * @param evc the event client
  * @param type the object type of the event
  * @param action the action of the event
- * @param event the event
+ * @param event the event (ET_Type)
  * @param clientdata unused
  * @return SGE_EMA_OK
  */
 static sge_callback_result
-print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata) {
+print_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+            [[maybe_unused]] const sge_event_action action, const ocs::tom::ConstElement<ocs::tom::ET> event,
+            [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    char buffer[1024];
@@ -76,12 +78,12 @@ print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
 
    events++;
    init_packbuffer(&pb, 0, true, false);
-   cull_pack_elem(&pb, event);
+   event.pack(pb);
    events_size += pb.bytes_used;
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   printf("%s\n", event_text(ocs::tom::ConstElement<ocs::tom::ET>(event), &buffer_wrapper));
+   printf("%s\n", event_text(event, &buffer_wrapper));
 
    DRETURN(SGE_EMA_OK);
 }

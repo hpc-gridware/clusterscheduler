@@ -131,8 +131,9 @@ static void qevent_dump_pid_file() {
  * @return always SGE_EMA_OK
  */
 static sge_callback_result
-print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-            [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata) {
+print_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+            [[maybe_unused]] const sge_event_action action, const ocs::tom::ConstElement<ocs::tom::ET> event,
+            [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    char buffer[1024];
@@ -140,8 +141,7 @@ print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   // the event client delivers ET_Type elements, so the event is wrapped unchecked
-   fprintf(stdout, "%s\n", event_text(ocs::tom::ConstElement<ocs::tom::ET>::from_typed(event), &buffer_wrapper));
+   fprintf(stdout, "%s\n", event_text(event, &buffer_wrapper));
    fflush(stdout);
 
    DRETURN(SGE_EMA_OK);
@@ -178,14 +178,15 @@ get_current_jatask_status(const u_long job_id, const u_long ja_task_id) {
  * @param evc the event client
  * @param type the object type of the event
  * @param action the mirror action
- * @param event the event (ET_Type)
+ * @param et the event (ET_Type)
  * @param client_data unused
  *
  * @return SGE_EMA_OK
  */
 static sge_callback_result
-print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                   [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
+print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                   [[maybe_unused]] const sge_event_action action, const ocs::tom::ConstElement<ocs::tom::ET> et,
+                   [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
 
    char buffer[1024];
@@ -193,8 +194,6 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   // the event client delivers ET_Type elements, so the event is wrapped unchecked
-   const auto et = ocs::tom::ConstElement<ocs::tom::ET>::from_typed(event);
    DPRINTF("%s\n", event_text(et, &buffer_wrapper));
    if (ocs::tom::has<ET_type>(et)) {
       uint32_t event_type = ocs::tom::get<ET_type>(et);
@@ -259,21 +258,22 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
  * @param evc the event client
  * @param type the object type of the event
  * @param action the mirror action
- * @param event the event (ET_Type)
+ * @param et the event (ET_Type)
  * @param client_data unused
  *
  * @return SGE_EMA_OK
  */
 static sge_callback_result
-analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                     [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
+analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                     [[maybe_unused]] const sge_event_action action, const ocs::tom::ConstElement<ocs::tom::ET> et,
+                     [[maybe_unused]] void *client_data) {
+   DENTER(TOP_LAYER);
+
    char buffer[1024];
    dstring buffer_wrapper;
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   // the event client delivers ET_Type elements, so the event is wrapped unchecked
-   const auto et = ocs::tom::ConstElement<ocs::tom::ET>::from_typed(event);
    if (ocs::tom::has<ET_type>(et)) {
       uint32_t event_type = ocs::tom::get<ET_type>(et);
 
@@ -305,7 +305,7 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
 
    }
 
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 
 

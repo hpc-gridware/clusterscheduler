@@ -25,6 +25,7 @@
 #include <arpa/inet.h>
 #include <cstdio>
 #include <cstring>
+#include <type_traits>
 #include <vector>
 
 #include "uti/sge_rmon_macros.h"
@@ -38,9 +39,11 @@
 #include "cull/cull_where.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_object_type.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pack.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
@@ -265,6 +268,123 @@ static void test_object_type_get_descr_and_key() {
 
    // T31: role type (CS-2027 era) is registered and keyed by RL_name
    CHECK(31, "SGE_TYPE_RL key → RL_name",           object_type_get_key_nm(SGE_TYPE_RL) == RL_name);
+}
+
+// ---------------------------------------------------------------------------
+// ocs_object_types / ocs_with_object_type  [T67–T74]
+//
+// The compile-time table maps every sge_object_type to its object type and
+// key field; the dispatcher calls a generic callable with the entry of a type
+// known only at run time. The run-time table (object_type_get_descr(),
+// object_type_get_key_nm()) is generated from the same tuple, so these checks
+// make sure the dispatch picks the entry at the type's index.
+// ---------------------------------------------------------------------------
+
+static_assert(std::is_same_v<ocs_object_type_t<SGE_TYPE_JOB>::type, ocs::tom::JB>, "SGE_TYPE_JOB holds jobs");
+static_assert(ocs_object_type_t<SGE_TYPE_JOB>::key == JB_job_number, "jobs are keyed by JB_job_number");
+static_assert(ocs_object_type_t<SGE_TYPE_EXECHOST>::key == EH_name, "execution hosts are keyed by EH_name");
+static_assert(ocs_object_type_t<SGE_TYPE_SCHEDD_CONF>::has_object && !ocs_object_type_t<SGE_TYPE_SCHEDD_CONF>::has_key,
+              "the scheduler configuration has an object, but no key");
+static_assert(!ocs_object_type_t<SGE_TYPE_SHUTDOWN>::has_object, "the shutdown carries no object");
+static_assert(ocs_object_descriptions[SGE_TYPE_CQUEUE].descr == CQ_Type, "the run-time table is generated");
+
+/** @brief What the dispatch test's callable reports about the entry it was called with */
+struct DispatchedEntry {
+   sge_object_type value;   ///< the entry's sge_object_type value
+   const lDescr *descr;     ///< the descriptor of the entry's object type
+   int key_nm;              ///< the entry's key field, NoName without a key
+   const char *name;        ///< the entry's type name
+};
+
+/** @brief ocs_with_object_type() calls its callable with the entry of the type it is given [T67–T74] */
+static void test_object_type_dispatch() {
+   printf("\n--- ocs_with_object_type ---\n");
+
+   bool descr_agrees = true;
+   bool key_agrees = true;
+   bool value_and_name_agree = true;
+   bool key_in_descr = true;
+   bool not_called_without_object = true;
+
+   for (int i = SGE_TYPE_FIRST; i < SGE_TYPE_ALL; i++) {
+      const auto type = static_cast<sge_object_type>(i);
+      const auto dispatched = ocs_with_object_type(type, [](const auto &entry) {
+         using E = ocs_object_type_entry_t<decltype(entry)>;
+         return DispatchedEntry{E::value, E::type::descriptor.e, static_cast<int>(E::key), entry.name};
+      });
+      const lDescr *descr = object_type_get_descr(type);
+
+      if (descr == nullptr) {
+         if (dispatched) {
+            printf("      %s carries no object but was dispatched\n", object_type_get_name(type));
+            not_called_without_object = false;
+         }
+         continue;
+      }
+      if (!dispatched || dispatched->descr != descr) {
+         printf("      %s dispatched to another descriptor\n", object_type_get_name(type));
+         descr_agrees = false;
+         continue;
+      }
+      if (dispatched->key_nm != object_type_get_key_nm(type)) {
+         printf("      %s dispatched with another key field\n", object_type_get_name(type));
+         key_agrees = false;
+      }
+      if (dispatched->value != type || strcmp(dispatched->name, object_type_get_name(type)) != 0) {
+         printf("      %s dispatched to the entry of another value\n", object_type_get_name(type));
+         value_and_name_agree = false;
+      }
+      if (dispatched->key_nm != NoName && lGetPosInDescr(descr, dispatched->key_nm) < 0) {
+         printf("      %s: key field not in the descriptor\n", object_type_get_name(type));
+         key_in_descr = false;
+      }
+   }
+
+   // T67: every type with a descriptor dispatches to the object type of that descriptor
+   CHECK(67, "dispatch → object type of object_type_get_descr()", descr_agrees);
+
+   // T68: the dispatched key field is the one object_type_get_key_nm() names
+   CHECK(68, "dispatch → key field of object_type_get_key_nm()", key_agrees);
+
+   // T69: the dispatched entry is the one of the value, with its name
+   CHECK(69, "dispatch → entry of the same value and name", value_and_name_agree);
+
+   // T70: every key field is a field of its type's descriptor
+   CHECK(70, "key field is in the descriptor", key_in_descr);
+
+   // T71: a type without an object does not call the callable
+   CHECK(71, "no dispatch for a type without an object", not_called_without_object);
+
+   // T72: values outside the enumeration do not call the callable
+   const auto unused = [](const auto &) { return 1; };
+   CHECK(72, "no dispatch for SGE_TYPE_ALL and SGE_TYPE_NONE",
+         !ocs_with_object_type(SGE_TYPE_ALL, unused) && !ocs_with_object_type(SGE_TYPE_NONE, unused));
+
+   // T73: a callable returning nothing yields whether it was called
+   int calls = 0;
+   const auto count = [&calls](const auto &) { ++calls; };
+   const bool job_called = ocs_with_object_type(SGE_TYPE_JOB, count);
+   const bool shutdown_called = ocs_with_object_type(SGE_TYPE_SHUTDOWN, count);
+   CHECK(73, "void callable → true if called", job_called && !shutdown_called && calls == 1);
+
+   // T74: the typed body finds an element by the dispatched key field
+   lList *cqueue_list = nullptr;
+   ocs::tom::emplace_back<CQ_name>(&cqueue_list, "all.q");
+   const auto found = ocs_with_object_type(SGE_TYPE_CQUEUE, [cqueue_list](const auto &entry) {
+      using E = ocs_object_type_entry_t<decltype(entry)>;
+      // nested: the traits of the key exist only for a type that has a key
+      if constexpr (E::has_key) {
+         if constexpr (ocs::tom::FieldTraits<E::key>::type == ocs::tom::FieldType::String) {
+            return static_cast<bool>(ocs::tom::find_first<E::key>(cqueue_list, "all.q"));
+         } else {
+            return false;
+         }
+      } else {
+         return false;
+      }
+   });
+   CHECK(74, "typed lookup by the dispatched key field", found.value_or(false));
+   lFreeList(&cqueue_list);
 }
 
 // ---------------------------------------------------------------------------
@@ -659,6 +779,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_type_get_name();
    test_object_name_get_type();
    test_object_type_get_descr_and_key();
+   test_object_type_dispatch();
    test_object_verify_cull(*queue, st_list);
    test_object_list_verify_cull(st_list);
    test_object_name_get_type_extended();

@@ -81,14 +81,14 @@ typedef enum {
  * @param evc the event client the event arrived on
  * @param type the object type the event is about
  * @param action what the event asks for
- * @param event the event element
+ * @param event the event element (ET_Type), read-only: the mirror still takes its objects over afterwards
  * @param clientdata whatever was passed when the callback was installed
  * @return whether the mirror should apply the event
  */
 typedef sge_callback_result (*sge_mirror_callback)(sge_evc_class_t *evc,
-                                                   sge_object_type type, 
-                                                   sge_event_action action, 
-                                                   lListElem *event, 
+                                                   sge_object_type type,
+                                                   sge_event_action action,
+                                                   ocs::tom::ConstElement<ocs::tom::ET> event,
                                                    void *clientdata);
 
 /// What most of the event mirror functions return
@@ -135,27 +135,19 @@ bool sge_mirror_type_is_partial(sge_object_type type);
 /* Event Processing */
 
 sge_mirror_error
-sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list);
+sge_mirror_process_event_list(sge_evc_class_t *evc, ocs::tom::List<ocs::tom::ET> event_list);
 
 sge_mirror_error 
 sge_mirror_process_events(sge_evc_class_t *evc);
 
 sge_mirror_error 
 sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
-                              lListElem *ep, const char *key, 
-                              sge_event_action action, lListElem *event);
+                              lListElem *ep, const char *key,
+                              sge_event_action action, ocs::tom::Element<ocs::tom::ET> event);
 
-sge_mirror_error 
-sge_mirror_update_master_list_host_key(lList **list, const lDescr *list_descr, 
-                                       int key_nm, const char *key, 
-                                       sge_event_action action, 
-                                       lListElem *event);
-
-sge_mirror_error 
-sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr, 
-                                      int key_nm, const char *key, 
-                                      sge_event_action action, 
-                                      lListElem *event);
+sge_mirror_error
+ocs_mirror_update_master_list_by_type(sge_object_type type, sge_event_action action,
+                                      ocs::tom::Element<ocs::tom::ET> event);
 
 /* Error Handling */
 const char *sge_mirror_strerror(sge_mirror_error num);

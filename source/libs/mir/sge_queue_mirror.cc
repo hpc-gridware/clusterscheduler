@@ -67,16 +67,17 @@
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event (ET_Type); its object is taken over into the master list
  * @param clientdata client data
  *
- * @return whether the mirror should apply the event
+ * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
  *
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                          sge_event_action action, lListElem *event, void *clientdata) {
+cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                          const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event,
+                          [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
    sge_callback_result ret = SGE_EMA_OK;
    // the queue instances of the cluster queue, kept across the event
@@ -126,16 +127,17 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event (ET_Type); its object is taken over into the master list
  * @param clientdata client data
  *
- * @return whether the mirror should apply the event
+ * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
  *
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
-                             sge_event_action action, lListElem *event, void *clientdata) {
+qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                             const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event,
+                             [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    sge_callback_result ret = SGE_EMA_OK;

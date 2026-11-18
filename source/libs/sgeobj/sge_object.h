@@ -93,11 +93,11 @@ inline void ocs_null_out_none(const ocs::tom::Element<typename ocs::tom::FieldTr
 /**
  * @brief The object and message types the master keeps a list of
  *
- * The value is an index, not a name: `object_base` in `sge_object.cc` and
- * `dev_mirror_base` in `libs/mir/sge_mirror.cc` are both sized
- * `[SGE_TYPE_ALL]` and indexed by this enum. Inserting or removing a value
- * shifts every row below it in both tables, and the rows carry no type name to
- * grep for, so the mistake is silent. Count the rows after editing.
+ * The value is an index, not a name: `ocs_object_types` in `ocs_object_type.h`
+ * and `dev_mirror_base` in `libs/mir/sge_mirror.cc` are both indexed by this
+ * enum. `ocs_object_types` names the value in every entry and fails to compile
+ * when it is out of order; the rows of `dev_mirror_base` carry no type name to
+ * grep for, so a mistake there is silent. Count its rows after editing.
  */
 typedef enum {
    SGE_TYPE_FIRST = 0,                    ///< lowest valid value, for iteration
@@ -135,15 +135,16 @@ typedef enum {
     * Don't forget to edit
     *
     *    'dev_mirror_base' in libs/mir/sge_mirror.cc
-    *    'object_base' in libs/sgeobj/sge_object.cc
+    *    'ocs_object_types' in libs/sgeobj/ocs_object_type.h
     *
     *    'sge_mirror_unsubscribe_internal' libs/mir/sge_mirror.cc
     *    'sge_mirror_subscribe_internal' libs/mir/sge_mirror.cc
     * if something is changed here!
     *
-    * Both arrays are indexed BY THIS ENUM and are sized [SGE_TYPE_ALL], so a
-    * value added or removed here silently shifts every row below it -- the rows
-    * carry no type name to grep for. Count them after editing.
+    * Both tables are indexed BY THIS ENUM. ocs_object_types checks its order at
+    * compile time; the rows of dev_mirror_base carry no type name to grep for,
+    * so a value added or removed here silently shifts every row below it there.
+    * Count them after editing.
     */
 
    SGE_TYPE_ALL,                          ///< number of real types; must be the second to the last entry
@@ -151,7 +152,7 @@ typedef enum {
 } sge_object_type;
 
 
-/// One row of the type table: what a #sge_object_type value actually refers to
+/// One row of the type table: what a #sge_object_type value actually refers to; generated from `ocs_object_types`
 typedef struct {
    const char *type_name;                 ///< type name, e.g. "JOB"
    const lDescr *descr;                         ///< descriptor, e.g. JB_Type; nullptr for a type that carries no object

@@ -144,7 +144,8 @@ sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
 
 sge_callback_result
 sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
-                            sge_event_action action, lListElem *event, void *clientdata);
+                            sge_event_action action,
+                            ocs::tom::ConstElement<ocs::tom::ET> event, void *clientdata);
 
 /** @brief React to an array task change after the mirror applies it
  *
@@ -165,11 +166,13 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
 
 sge_callback_result
 sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
-                                sge_event_action action, lListElem *event, void *clientdata);
+                                sge_event_action action,
+                                ocs::tom::ConstElement<ocs::tom::ET> event, void *clientdata);
 
 sge_callback_result
 sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
-                                 sge_event_action action, lListElem *event, void *clientdata);
+                                 sge_event_action action,
+                                 ocs::tom::ConstElement<ocs::tom::ET> event, void *clientdata);
 
 /** @brief React to a category change before the mirror applies it
  *

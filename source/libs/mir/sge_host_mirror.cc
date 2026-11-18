@@ -65,41 +65,29 @@
  * Update the global master lists of hosts
  * based on an event.
  * The function is called from the event mirroring interface.
- * Updates admin, submit or execution host list depending
- * on the event received.
+ * Updates the execution host list or the list of configurations
+ * depending on the event received; the element is found by the
+ * host name key of the event's object type.
  *
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event; its object list is taken over into the master list
  * @param clientdata client data
  *
- * @return true, if update is successful, else false
+ * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
  *
  * @note The function should only be called from the event mirror interface.
  *
- * @see `sge_mirror_update_master_list()`, `sge_mirror_update_master_list_host_key()`
+ * @see `sge_mirror_update_master_list()`, `ocs_mirror_update_master_list_by_type()`
  */
 sge_callback_result
-host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                        sge_event_action action, lListElem *event, void *clientdata) {
+host_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type,
+                        const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event,
+                        [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
-   lList **list;
-   const lDescr *list_descr;
-   int     key_nm;
-
-   const char *key;
-
-   list = ocs::DataStore::get_master_list_rw(type);
-   list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
-   key_nm = object_type_get_key_nm(type); 
-
-   key = ocs::tom::get<ET_strkey>(event);
-
-   if (sge_mirror_update_master_list_host_key(list, list_descr, key_nm, key, 
-                                              action, event) != SGE_EM_OK) {
-
+   if (ocs_mirror_update_master_list_by_type(type, action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
@@ -129,7 +117,7 @@ host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
  * because the recomputation that follows every execution host movement leaves
  * the matchers alone and must not make the cache cold.
  *
- * The generic merge is left untouched. It is reached from four mirrors and nine
+ * The generic merge is left untouched. It is reached from several mirrors and
  * call sites, and it frees the old element before the new one is in place, so
  * the cache is taken aside before the call and handed over after it.
  *
@@ -141,7 +129,7 @@ host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
  * @param evc the event client the event arrived on
  * @param type event type; always `SGE_TYPE_HGROUP` here
  * @param action action to perform
- * @param event the raw event
+ * @param event the event; its object list is taken over into the master list
  * @param clientdata client data
  *
  * @return SGE_EMA_OK, or SGE_EMA_FAILURE if the merge failed
@@ -151,14 +139,13 @@ host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
  * @see `host_update_master_list()`, `ocs::MatchCache::detach()`, `ocs::MatchCache::adopt()`
  */
 sge_callback_result
-hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                          sge_event_action action, lListElem *event, void *clientdata) {
+hgroup_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type,
+                          const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event,
+                          [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    // the master list stays untyped: the generic merge below replaces it through the pointer
    lList **list = ocs::DataStore::get_master_list_rw(type);
-   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
-   const int key_nm = object_type_get_key_nm(type);
    const char *key = ocs::tom::get<ET_strkey>(event);
 
    // Both versions are in hand before the merge, which is what lets the decision
@@ -213,8 +200,8 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       cache = ocs::MatchCache::detach(before);
    }
 
-   if (sge_mirror_update_master_list_host_key(list, list_descr, key_nm, key,
-                                              action, event) != SGE_EM_OK) {
+   // the merge finds the element by the type's key field, HGRP_name, as the lookups here do
+   if (ocs_mirror_update_master_list_by_type(type, action, event) != SGE_EM_OK) {
       // a detached cache is freed with its handle
       DRETURN(SGE_EMA_FAILURE);
    }

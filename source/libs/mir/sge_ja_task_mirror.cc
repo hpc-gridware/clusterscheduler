@@ -87,14 +87,15 @@ ocs_ja_task_exchange_kept_list(const ocs::tom::Element<ocs::tom::JAT> ja_task,
  * of a non array job).
  *
  * @param job_list master job list (JB_Type)
- * @param event event object containing the new usage list
+ * @param event the event (ET_Type) containing the new usage list; the list is exchanged with the task's
  *
  * @return SGE_EMA_OK, if the operation succeeds, else SGE_EMA_FAILURE
  *
  * @see `job_update_master_list_usage()`, `pe_task_update_master_list_usage()`
  */
 sge_callback_result
-ja_task_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list, lListElem *event) {
+ja_task_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list,
+                                 const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
    // the event's list has no type of its own, so it goes through a raw list
@@ -142,18 +143,19 @@ ja_task_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list, lL
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event (ET_Type); its array task is taken over into the job
  * @param clientdata client data
  *
- * @return true, if update is successful, else false
+ * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
  *
  * @note The function should only be called from the event mirror interface.
  *
  * @see `sge_mirror_update_master_list()`
  */
 sge_callback_result
-ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                           sge_event_action action, lListElem *event, void *clientdata) {
+ja_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                           const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event,
+                           [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    // the lists of the array task kept across a modify event

@@ -59,16 +59,17 @@
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event (ET_Type); its share tree is taken over into the master list
  * @param clientdata client data
  *
- * @return true, if update is successful, else false
+ * @return always SGE_EMA_OK
  *
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
-                             lListElem *event, void *clientdata) {
+sharetree_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type,
+                             [[maybe_unused]] const sge_event_action action,
+                             const ocs::tom::Element<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    lList **list = nullptr;
@@ -82,7 +83,7 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
    if ((src = ocs::tom::get<ET_new_version>(event))) {
       
       /* install new one */
-      *list = lCreateList("share tree", lGetElemDescr(lFirst(ocs::tom::get<ET_new_version>(event))));
+      *list = lCreateList("share tree", lGetElemDescr(lFirst(src)));
       lAppendElem(*list, lDechainElem(src, lFirstRW(src)));
    }
 

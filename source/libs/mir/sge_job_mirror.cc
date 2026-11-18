@@ -59,7 +59,7 @@
 #include "mir/sge_ja_task_mirror.h"
 #include "mir/sge_pe_task_mirror.h"
 
-static bool job_update_master_list_usage(ocs::tom::List<ocs::tom::JB> job_list, lListElem *event);
+static bool job_update_master_list_usage(ocs::tom::List<ocs::tom::JB> job_list, ocs::tom::Element<ocs::tom::ET> event);
 
 /**
  * @brief Update usage for a jobs tasks
@@ -72,13 +72,14 @@ static bool job_update_master_list_usage(ocs::tom::List<ocs::tom::JB> job_list, 
  * information to the corresponding update functions.
  *
  * @param job_list master job list (JB_Type)
- * @param event event object containing the new usage list
+ * @param event the event (ET_Type) containing the new usage list, which is taken over
  *
  * @return true, if the operation succeeds, else false
  *
  * @see `pe_task_update_master_list_usage()`
  */
-static bool job_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list, lListElem *event) {
+static bool job_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list,
+                                         const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -121,18 +122,19 @@ static bool job_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event (ET_Type); its job is taken over into the master list
  * @param clientdata client data
  *
- * @return true, if update is successful, else false
+ * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
  *
  * @note The function should only be called from the event mirror interface.
  *
  * @see `sge_mirror_update_master_list()`, `job_update_master_list_usage`
  */
 sge_callback_result
-job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                       sge_event_action action, lListElem *event, void *clientdata) {
+job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                       const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event,
+                       [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
    // the array tasks of the job, kept across a modify event
    ocs::tom::ListPtr<ocs::tom::JAT> ja_tasks;
@@ -246,16 +248,17 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event (ET_Type); its scheduler job info is taken over into the master list
  * @param clientdata client data
  *
- * @return whether the mirror should apply the event
+ * @return always SGE_EMA_OK
  *
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                                   sge_event_action action, lListElem *event, void *clientdata) {
+job_schedd_info_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type,
+                                   [[maybe_unused]] const sge_event_action action,
+                                   const ocs::tom::Element<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    lList **list = nullptr;

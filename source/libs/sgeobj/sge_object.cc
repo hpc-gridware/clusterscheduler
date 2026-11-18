@@ -58,6 +58,7 @@
 #include "uti/sge.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_object_type.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/ocs_Role.h"
@@ -91,39 +92,8 @@
 /// Debug layer the generic object access traces are written to
 #define OBJECT_LAYER BASIS_LAYER
 
-/* One entry per event type */
-// TODO: CS-254 move object_base into cull namespace
-static object_description object_base[SGE_TYPE_ALL] = {
-        /* list               name                 descr      key */
-        {"CALENDAR",          CAL_Type,  CAL_name},
-        {"CKPT",              CK_Type,   CK_name},
-        {"CONFIG",            CONF_Type, CONF_name},
-        {"EXECHOST",          EH_Type,   EH_name},
-        {"JATASK",            JAT_Type,  JAT_task_number},
-        {"PETASK",            PET_Type,  PET_id},
-        {"JOB",               JB_Type,   JB_job_number},
-        {"JOB_SCHEDD_INFO",   SME_Type,  NoName},
-        {"SHARETREE",         STN_Type,  STN_name},
-        {"PE",                PE_Type,   PE_name},
-        {"PROJECT",           PR_Type,   PR_name},
-        {"CQUEUE",            CQ_Type,   CQ_name},
-        {"QINSTANCE",         QU_Type,   QU_qname},
-        {"SCHEDD_CONF",       SC_Type,   NoName},
-        {"SCHEDD_MONITOR",    nullptr,   NoName},
-        {"SHUTDOWN",          nullptr,   NoName},
-        {"QMASTER_GOES_DOWN", nullptr,   NoName},
-        {"USER",              UU_Type,   UU_name},
-        {"USERSET",           US_Type,   US_name},
-        {"HOSTGROUP",         HGRP_Type, HGRP_name},
-        {"COMPLEX_ENTRY",     CE_Type,   CE_name},
-        {"SUBMIT_USER",       SU_Type,   SU_name},
-        {"RQS",               RQS_Type,  RQS_name},
-        {"AR",                AR_Type,   AR_id},
-        {"JOBSCRIPT",         STU_Type,  STU_name},
-        {"CATEGORY",          CT_Type,   CT_id},
-        {"PROCEDURE",         nullptr,   NoName},
-        {"ROLE",              RL_Type,   RL_name},
-};
+/// The type table, indexed by #sge_object_type; generated from the compile-time table #ocs_object_types
+static constexpr const auto &object_base = ocs_object_descriptions;
 
 
 

@@ -259,8 +259,10 @@ static bool read_spooled_data() {
  * @param clientdata see the description above
   * @return `SGE_EMA_OK` to let the mirror carry on
  */
-sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                                       sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata) {
+sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type,
+                                       const sge_event_action action,
+                                       const ocs::tom::ConstElement<ocs::tom::ET> event,
+                                       [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -434,8 +436,8 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
   * @return `SGE_EMA_OK` to let the mirror carry on
  */
 sge_callback_result
-spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
-                  lListElem *event, [[maybe_unused]] void *clientdata) {
+spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type, const sge_event_action action,
+                  const ocs::tom::ConstElement<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    sge_callback_result ret = SGE_EMA_OK;

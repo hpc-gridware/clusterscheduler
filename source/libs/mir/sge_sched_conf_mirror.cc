@@ -62,16 +62,17 @@
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the raw event
+ * @param event the event (ET_Type); its scheduler configuration is taken over
  * @param clientdata client data
  *
- * @return true, if update is successful, else false
+ * @return always SGE_EMA_OK
  *
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                               sge_event_action action, lListElem *event, void *clientdata) {
+schedd_conf_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
+                               [[maybe_unused]] const sge_event_action action,
+                               const ocs::tom::Element<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
    // sconf_set_config() takes the list over on success
