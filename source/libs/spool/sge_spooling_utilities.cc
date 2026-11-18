@@ -153,9 +153,9 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * fulfils the selection given in `instr` (e.g. attribute property
  * CULL_SPOOL).
  * If `instr` contains an instruction for sublists, the function will
- * take the CULL object definition of the sublists from the typed code of
- * the list field (the sub-type object_get_subtype() names) and call itself
- * recursively. Every entry carries the typed code of its field in `ops`.
+ * take the CULL object definition of the sublists from the spooling record
+ * of the list field (the sub-type object_get_subtype() names) and call itself
+ * recursively. Every entry carries the spooling record of its field in `ops`.
  *
  * @param answer_list answer list to report errors
  * @param descr object type to analyze
@@ -188,9 +188,9 @@ spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lD
  * Takes the fields that have a value in the descriptor and match the
  * selection of the instructions, in descriptor order, and recurses into
  * sub-lists with the sub-instructions. The object type is looked up once per
- * descriptor; every entry gets the typed code of its field from it, the same
- * code the typed field tables carry, so the walkers treat it like a row of a
- * typed table.
+ * descriptor; every entry gets the spooling record of its field from it, made
+ * as the record the typed field tables carry, so the walkers treat it like a
+ * row of a typed table.
  *
  * @param answer_list receives error messages
  * @param descr the object type, checked by the caller
@@ -210,7 +210,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
     * (it's a static function)
     */
 
-   /* the typed code of the type's fields; every descriptor is derived from the
+   /* the spooling records of the type's fields; every descriptor is derived from the
     * model, so the lookup fails only for a descriptor made up by hand */
    const ocs_spool_type_ops *type_ops = ocs_spool_type_ops_of(descr);
    if (type_ops == nullptr) {
@@ -268,7 +268,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
          DPRINTF("field " SFQ " will be spooled\n", lNm2Str(descr[f.pos].nm));
 
          fields[j].nm = descr[f.pos].nm;
-         fields[j].ops = type_ops->ops[descr[f.pos].nm - type_ops->base];
+         fields[j].ops = &type_ops->ops[descr[f.pos].nm - type_ops->base];
 
          if (instr->copy_field_names) {
             const char *name;

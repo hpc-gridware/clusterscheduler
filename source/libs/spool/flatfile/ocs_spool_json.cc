@@ -171,7 +171,7 @@ spool_json_write_envelope(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
 static void
 spool_json_write_scalar_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                               const lListElem *object, const spooling_field &field) {
-   if (field.ops->get == nullptr) {
+   if (!field.ops->has_value()) {
       writer.Null();
       return;
    }
@@ -531,7 +531,7 @@ spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
          spool_json_write_symbolic_value(writer, ep, field.nm);
          break;
       case ocs_spool_render::avalue:
-         spool_json_write_avalue(writer, ops.get(ep).str, ops.avalue_type);
+         spool_json_write_avalue(writer, ops.get(ep).str, ocs_spool_avalue_type_of(ops));
          break;
       case ocs_spool_render::number:
          spool_json_write_number_value(writer, ops.get(ep).str);
@@ -1437,7 +1437,7 @@ spool_json_string_or_unset(const rapidjson::Value &v, dstring *out) {
  */
 static void
 spool_json_set_field(lListElem *ep, const spooling_field &field, const rapidjson::Value &v) {
-   if (field.ops->set == nullptr) {
+   if (!field.ops->has_value()) {
       return;
    }
    dstring s = DSTRING_INIT;

@@ -673,12 +673,12 @@ _spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lD
 
 static spooling_field *get_recursion_field_list (const spool_flatfile_instr *instr);
 
-/* The type dependent parts of the walkers below. Every row carries the typed
- * code of its field (ocs_spool_fields.h): a row generated from a typed field
- * table at compile time, a row built at run time - spool_get_fields_to_spool(),
- * the recursion row of the share tree - from ocs_spool_field_ops_of(). These
- * are called per field, so they have no DENTER, as the field callbacks have
- * none. */
+/* The type dependent parts of the walkers below. Every row carries the
+ * spooling record of its field (spool/ocs_spool_field_info.h): a row generated
+ * from a typed field table at compile time, a row built at run time -
+ * spool_get_fields_to_spool(), the recursion row of the share tree - from
+ * ocs_spool_field_ops_of(). These are called per field, so they have no
+ * DENTER, as the field callbacks have none. */
 
 /**
  * @brief Whether the field of a row is a list
@@ -703,8 +703,8 @@ ocs_spool_row_is_uint32(const spooling_field &field) {
 /**
  * @brief Append the value of a row's field that is no list
  *
- * A number, a bool, a string or a host name is read through the row's typed
- * code and formatted here as object_append_field_to_dstring() formats it
+ * A number, a bool, a string or a host name is read through the row's record
+ * and formatted here as object_append_field_to_dstring() formats it
  * without quotes. A field with a rendering of its own
  * (#ocs_spool_field_ops::flat is ocs_spool_render::by_name), a list, an object
  * or a reference field, and an element that lacks the field go through object_append_field_to_dstring(),
@@ -719,7 +719,7 @@ ocs_spool_row_is_uint32(const spooling_field &field) {
 static const char *
 ocs_spool_row_append(const spooling_field &field, const lListElem *object,
                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
-   if (field.ops->get == nullptr || field.ops->flat == ocs_spool_render::by_name ||
+   if (!field.ops->has_value() || field.ops->flat == ocs_spool_render::by_name ||
        lGetPosInDescr(lGetElemDescr(object), field.nm) < 0) {
       return object_append_field_to_dstring(object, answer_list, buffer, field.nm, '\0');
    }
@@ -2895,7 +2895,7 @@ FF_DEBUG("after parsing list");
  * @brief The rows a recursive list is written with: the id field of each element only
  *
  * The id field is known only at run time, from the layout; its row takes the
- * typed code of the field from ocs_spool_field_ops_of(), as every row has it.
+ * spooling record of the field from ocs_spool_field_ops_of(), as every row has it.
  *
  * @param instr the layout, whose #recursion_info::id_field names the id field, a field of the object model
  * @return the id row and the terminating row, to be freed with sge_free()

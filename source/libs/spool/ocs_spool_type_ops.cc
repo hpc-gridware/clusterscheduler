@@ -19,14 +19,15 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The typed spooling operations of every field of every object type, for rows built at run time
+ * @brief The spooling records of every field of every object type, for rows built at run time
  *
- * A row of a typed field table (ocs_spool_fields.h) gets the #ocs_spool_field_ops of its field at compile time.
- * The rows built at run time - from a descriptor by spool_get_fields_to_spool(), from a field number for the share
- * tree's recursion - know their object type only at run time. This file holds, per object type of the model, the
- * array of the ops constants of its fields, generated at compile time from the type's field table, and the lookups
- * that find the array of a descriptor or the constant of a field number. The constants are the same ones the typed
- * tables point at, so a row built at run time and a row of a typed table behave alike.
+ * A row of a typed field table (spool/flatfile/ocs_spool_fields.h) gets the #ocs_spool_field_ops record of its
+ * field at compile time. The rows built at run time - from a descriptor by spool_get_fields_to_spool(), from a
+ * field number for the share tree's recursion - know their object type only at run time. This file holds, per
+ * object type of the model, the array of the records of its fields, generated at compile time from the type's
+ * field table by the ocs_spool_make_ops() the typed tables use, and the lookups that find the array of a
+ * descriptor or the record of a field number. The arrays are data only: a record points at the accessor set of
+ * its field type (ocs_spool_field_info.cc), so nothing here instantiates code per field.
  */
 
 #include <array>
@@ -41,7 +42,7 @@
 #include "sgeobj/tom/ocs_tom_all.h"
 
 #include "spool/sge_spooling_utilities.h"
-#include "spool/flatfile/ocs_spool_fields.h"
+#include "spool/ocs_spool_field_info.h"
 
 namespace {
 
@@ -82,19 +83,19 @@ namespace {
                  "AllFields names one field enumeration per object type of the model");
 
    /**
-    * @brief The ops of every field of one object type, in the order of its field table
+    * @brief The records of every field of one object type, in the order of its field table
     * @tparam E the field enumeration of the type
     * @tparam I the indices 0 .. number of fields - 1
-    * @return one pointer per field, to the field's #ocs_spool_ops constant
+    * @return one record per field, made by ocs_spool_make_ops() as the field's #ocs_spool_ops is
     */
    template <typename E, std::size_t... I>
-   consteval std::array<const ocs_spool_field_ops *, sizeof...(I)> make_type_ops(std::index_sequence<I...>) {
+   consteval std::array<ocs_spool_field_ops, sizeof...(I)> make_type_ops(std::index_sequence<I...>) {
       using T = typename ocs::tom::TypeOf<E>::type;
-      return {&ocs_spool_ops<static_cast<E>(T::fields[I].nm)>...};
+      return {ocs_spool_make_ops<static_cast<E>(T::fields[I].nm)>()...};
    }
 
    /**
-    * @brief The ops of every field of one object type, one constant per type
+    * @brief The records of every field of one object type, one constant array per type
     * @tparam E the field enumeration of the type
     */
    template <typename E>
@@ -125,7 +126,7 @@ namespace {
       return {make_type_entry<I>()...};
    }
 
-   /// the ops of every field of every object type
+   /// the records of every field of every object type
    constexpr std::array<ocs_spool_type_ops, n_types> all_type_ops =
          make_all_type_ops(std::make_index_sequence<n_types>{});
 
@@ -147,13 +148,13 @@ namespace {
 } // namespace
 
 /**
- * @brief The typed spooling operations of the fields of the object type a descriptor describes
+ * @brief The spooling records of the fields of the object type a descriptor describes
  *
  * The type is found by the descriptor's first field, which a reduced descriptor keeps as well. No DENTER, as the
  * walkers' per field helpers have none.
  *
  * @param descr the descriptor, full or reduced
- * @return the operations of the type's fields, nullptr if the descriptor is nullptr or of no type of the model
+ * @return the records of the type's fields, nullptr if the descriptor is nullptr or of no type of the model
  */
 const ocs_spool_type_ops *
 ocs_spool_type_ops_of(const lDescr *descr) {
@@ -168,16 +169,16 @@ ocs_spool_type_ops_of(const lDescr *descr) {
 }
 
 /**
- * @brief The typed spooling operations of a field given by its number
+ * @brief The spooling record of a field given by its number
  *
  * No DENTER, as the walkers' per field helpers have none.
  *
  * @param nm the field number
- * @return the operations, the same constant a typed field table points at; nullptr if no type of the model has
- *         the field
+ * @return the record, equal to the #ocs_spool_ops a typed field table points at; nullptr if no type of the model
+ *         has the field
  */
 const ocs_spool_field_ops *
 ocs_spool_field_ops_of(const int nm) {
    const ocs_spool_type_ops *entry = type_ops_of_field(nm);
-   return entry != nullptr ? entry->ops[nm - entry->base] : nullptr;
+   return entry != nullptr ? &entry->ops[nm - entry->base] : nullptr;
 }
