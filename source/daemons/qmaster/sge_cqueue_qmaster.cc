@@ -102,37 +102,38 @@
 
 
 static bool
-cqueue_hgroup_create(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name);
+cqueue_hgroup_create(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *cqueue_name);
 
 static bool
-cqueue_hgroup_delete(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name);
+cqueue_hgroup_delete(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *cqueue_name);
 
 static bool
-cqueue_verify_hostlist(lList **answer_list, ocs::tom::List<ocs::tom::HR> href_list, ocs::gdi::SubCommand sub_command);
+cqueue_verify_hostlist(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::List<ocs::tom::HR> href_list,
+                       ocs::gdi::SubCommand sub_command);
 
 static bool
 cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *cqueue_name,
                       ocs::tom::ConstList<ocs::tom::HR> href_list, monitoring_t *monitor);
 
 static bool
-cqueue_mod_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+cqueue_mod_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                       ocs::tom::Element<ocs::tom::CQ> reduced_elem, ocs::gdi::Command command,
                       ocs::gdi::SubCommand sub_command);
 
 static bool
-cqueue_mark_qinstances(ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+cqueue_mark_qinstances(ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        ocs::tom::ConstList<ocs::tom::HR> del_hosts, uint64_t gdi_session);
 
 static bool
 cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
-                      lList **answer_list, ocs::tom::ConstList<ocs::tom::HR> add_hosts, monitoring_t *monitor,
-                      ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstList<ocs::tom::HR> add_hosts,
+                      monitoring_t *monitor, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                       ocs::tom::List<ocs::tom::CQ> master_cqueue_list);
 
 static ocs::tom::ElementPtr<ocs::tom::QU>
 qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
-                 lList **answer_list, const char *hostname, bool *is_ambiguous, monitoring_t *monitor,
-                 ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *hostname, bool *is_ambiguous,
+                 monitoring_t *monitor, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                  ocs::tom::List<ocs::tom::CQ> master_cqueue_list);
 
 static void
@@ -161,8 +162,8 @@ qinstance_check_unknown_state(ocs::tom::Element<ocs::tom::QU> this_elem,
  */
 static ocs::tom::ElementPtr<ocs::tom::QU>
 qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
-                 lList **answer_list, const char *hostname, bool *is_ambiguous, monitoring_t *monitor,
-                 const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *hostname, bool *is_ambiguous,
+                 monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                  const ocs::tom::List<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
    dstring buffer = DSTRING_INIT;
@@ -257,8 +258,8 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
  */
 static bool
 cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CQ> cqueue,
-                      lList **answer_list, const ocs::tom::ConstList<ocs::tom::HR> add_hosts, monitoring_t *monitor,
-                      const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstList<ocs::tom::HR> add_hosts,
+                      monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                       const ocs::tom::List<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
 
@@ -312,7 +313,7 @@ cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
  * @return true
  */
 static bool
-cqueue_mark_qinstances(const ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+cqueue_mark_qinstances(const ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        const ocs::tom::ConstList<ocs::tom::HR> del_hosts, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
@@ -355,7 +356,7 @@ cqueue_mark_qinstances(const ocs::tom::Element<ocs::tom::CQ> cqueue, lList **ans
  * @return true on success
  */
 static bool
-cqueue_mod_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+cqueue_mod_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                       const ocs::tom::Element<ocs::tom::CQ> reduced_elem, const ocs::gdi::Command command,
                       const ocs::gdi::SubCommand sub_command) {
    DENTER(TOP_LAYER);
@@ -405,7 +406,7 @@ cqueue_mod_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answ
  * @return true on success
  */
 static bool
-cqueue_hgroup_create(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name) {
+cqueue_hgroup_create(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *cqueue_name) {
    DENTER(TOP_LAYER);
 
    dstring name_buffer = DSTRING_INIT;
@@ -472,7 +473,7 @@ cqueue_hgroup_create(ocs::gdi::Packet *packet, lList **answer_list, const char *
  * @return true on success
  */
 static bool
-cqueue_hgroup_delete(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name) {
+cqueue_hgroup_delete(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *cqueue_name) {
    DENTER(TOP_LAYER);
 
    dstring name_buffer = DSTRING_INIT;
@@ -516,7 +517,7 @@ cqueue_hgroup_delete(ocs::gdi::Packet *packet, lList **answer_list, const char *
  * @return true when the input is acceptable
  */
 static bool
-cqueue_verify_hostlist(lList **answer_list, const ocs::tom::List<ocs::tom::HR> href_list,
+cqueue_verify_hostlist(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::List<ocs::tom::HR> href_list,
                        const ocs::gdi::SubCommand sub_command) {
    DENTER(TOP_LAYER);
 
@@ -581,7 +582,7 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
    const char *group_name = hgroup_queue_group_name(cqueue_name, &name_buffer);
    gdi_object_t *hgroup_object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
    auto instructions = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lList *tmp_list = nullptr;
 
    auto members = href_list.clone("");
@@ -601,7 +602,7 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
    if (status != STATUS_OK) {
       answer_list_log(&answer_list, false, true);
    }
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&tmp_list);
    instructions.reset();
    sge_dstring_free(&name_buffer);
@@ -625,8 +626,8 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
  */
 bool
 cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CQ> cqueue,
-                      lList **answer_list, const lListElem *reduced_elem, const bool refresh_all_values,
-                      const bool is_startup, monitoring_t *monitor,
+                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
+                      const bool refresh_all_values, const bool is_startup, monitoring_t *monitor,
                       const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                       const ocs::tom::List<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
@@ -815,7 +816,7 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
  */
 bool
 cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CQ> cqueue,
-                         lList **answer_list, const lListElem *reduced_elem,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
                          const ocs::tom::ConstList<ocs::tom::HR> add_hosts,
                          const ocs::tom::ConstList<ocs::tom::HR> rem_hosts, const bool refresh_all_values,
                          monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
@@ -856,7 +857,8 @@ cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const o
  * @return 0 on success
  */
 int
-cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *raw_cqueue,
+cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+           lListElem *raw_cqueue,
            lListElem *raw_reduced_elem, int add, const char *remote_user, const char *remote_host,
            gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -995,12 +997,12 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
     * remove, since N-O-2 refuses an administrative delete.
     */
    if (!ret && add) {
-      lList *rollback_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> rollback_answer_list;
 
       if (!cqueue_hgroup_delete(packet, &rollback_answer_list, ocs::tom::get<CQ_name>(cqueue))) {
          answer_list_output(&rollback_answer_list);
       }
-      lFreeList(&rollback_answer_list);
+      rollback_answer_list.reset();
    }
 
    if (ret) {
@@ -1197,8 +1199,8 @@ cqueue_commit(const ocs::tom::Element<ocs::tom::CQ> cqueue, const uint64_t gdi_s
  * @return 0 on success
  */
 int
-cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *raw_cqueue,
-             gdi_object_t *object) {
+cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+             lListElem *raw_cqueue, gdi_object_t *object) {
    DENTER(TOP_LAYER);
    // the signature is fixed by gdi_object_t::writer
    const ocs::tom::Element<ocs::tom::CQ> cqueue(raw_cqueue);
@@ -1206,7 +1208,7 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
    const char *name = ocs::tom::get<CQ_name>(cqueue);
    dstring key_dstring = DSTRING_INIT;
    bool dbret;
-   lList *spool_answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> spool_answer_list;
 
    dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), cqueue, name, SGE_TYPE_CQUEUE);
    answer_list_output(&spool_answer_list);
@@ -1250,7 +1252,7 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
  */
 int
 cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
-           lList **answer_list, char *remote_user, char *remote_host) {
+           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1378,8 +1380,8 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
  * @return as cqueue_del()
  */
 int
-cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list,
-           char *remote_user, char *remote_host) {
+cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
+           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
    return cqueue_del(packet, task, ocs::tom::ConstElement<ocs::tom::CQ>(this_elem), answer_list, remote_user,
                      remote_host);
 }
@@ -1393,8 +1395,8 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
  * @return true when anything was deleted
  */
 bool
-cqueue_del_all_orphaned(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list, const char *ehname,
-                        const uint64_t gdi_session) {
+cqueue_del_all_orphaned(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        const char *ehname, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1464,8 +1466,8 @@ cqueue_del_all_orphaned(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList *
  * @return true when anything was deleted
  */
 bool
-cqueue_list_del_all_orphaned(const ocs::tom::List<ocs::tom::CQ> this_list, lList **answer_list, const char *cqname,
-                             const char *ehname, const uint64_t gdi_session) {
+cqueue_list_del_all_orphaned(const ocs::tom::List<ocs::tom::CQ> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                             const char *cqname, const char *ehname, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

@@ -94,11 +94,11 @@ fetch_hgroup(const char *name) {
    lCondition *where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, name);
    lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
                                           ocs::gdi::SubCommand::NONE, &lp, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
-   lFreeList(&alp);
+   alp.reset();
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
    lListElem *found = ocs::tom::find_first_rw<HGRP_name>(lp, name);
@@ -114,10 +114,10 @@ delete_refused(const char *name) {
    lListElem *ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
    (void) ep;
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
    bool refused = answer_list_has_error(&alp);
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(&lp);
    return refused;
 }
@@ -129,10 +129,10 @@ modify_refused(const char *name, lList *new_host_list) {
    ocs::tom::Element<ocs::tom::HGRP> ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
    ocs::tom::set<HGRP_host_list>(ep, new_host_list);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
    bool refused = answer_list_has_error(&alp);
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(&lp);
    return refused;
 }
@@ -154,7 +154,7 @@ member_count(const char *name) {
 int
 main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_qmaster_hgroup_reserved");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();

@@ -79,7 +79,7 @@ print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
 
 int main() {
    DENTER_MAIN(TOP_LAYER, "test_sge_mirror");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    sge_evc_class_t *evc = nullptr;
 
    sge_setup_sig_handlers(QEVENT);

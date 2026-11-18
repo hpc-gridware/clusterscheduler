@@ -46,6 +46,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/sge_answer.h"
 
 /** @defgroup spool_utilities Spooling utilities
  * @brief Which attributes of an object are spooled, and under what name
@@ -102,26 +103,28 @@ typedef struct spooling_field {
    struct spooling_field *sub_fields;   ///< For a list attribute, the fields to spool per element
    bool free_sub_fields;      ///< `sub_fields` was built here and must be freed with the array
    const void *clientdata;    ///< Free for the backend; the flatfile writer keeps its format info here
-   int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp);   ///< Backend hook parsing this attribute out of `buffer`, instead of the default conversion
-   int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp);   ///< Backend hook rendering this attribute into `buffer`
+   /// Backend hook parsing this attribute out of `buffer`, instead of the default conversion
+   int (*read_func) (lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+   int (*write_func) (const lListElem *ep, int nm, dstring *buffer,
+                      ocs::tom::ListPtr<ocs::tom::AN> *alp);   ///< Backend hook rendering this attribute into `buffer`
 } spooling_field;
 
 spooling_field *
-spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
+spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                           const spool_instr_t *instr);
 
 spooling_field *
 spool_free_spooling_fields(spooling_field *fields);
 
 bool
-spool_default_validate_func(lList **answer_list,
+spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const lListElem *type,
                           const lListElem *rule,
                           lListElem *object,
                           const sge_object_type object_type);
 
 bool
-spool_default_validate_list_func(lList **answer_list,
+spool_default_validate_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const lListElem *type, const lListElem *rule,
                           const sge_object_type object_type);
 

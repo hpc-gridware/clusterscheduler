@@ -94,7 +94,7 @@
  * @return the number of objects that failed
  */
 static int
-qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path, lList **alpp,
+qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                            const char *select = nullptr, const uint32_t extra_mode = 0u,
                            const char *name = nullptr) {
    DENTER(TOP_LAYER);
@@ -144,7 +144,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
     * below, because an empty directory has always produced one. */
    if (n_items > 0) {
       ocs::QConfWriteModelClient model(qconf_desc(o).target);
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       model.make_snapshot(&alp, param);
 
       /* The counts come back typed rather than being inferred from the answers,
@@ -226,8 +226,8 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_apply_obj(std::ostream &os, const QConfObj o, const char *path, lList **alpp, const char *select = nullptr,
-                const uint32_t extra_mode = 0u, const char *name = nullptr) {
+qconf_apply_obj(std::ostream &os, const QConfObj o, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                const char *select = nullptr, const uint32_t extra_mode = 0u, const char *name = nullptr) {
    return qconf_apply_path_procedure(os, o, path, alpp, select, extra_mode, name);
 }
 
@@ -305,7 +305,8 @@ enum class QConfEditStatus {
  * @return OK, or the reason no text came back
  */
 static QConfEditStatus
-qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool unchanged_is_ok, lList **alpp) {
+qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool unchanged_is_ok,
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
@@ -376,7 +377,7 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
  * @param alpp the answer list of the operation, receives the message
  */
 static void
-qconf_edit_failure(const QConfEditStatus st, lList **alpp) {
+qconf_edit_failure(const QConfEditStatus st, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    switch (st) {
       case QConfEditStatus::WRITE_FAILED:
          /* qconf_edit_text() has said why */
@@ -424,8 +425,8 @@ qconf_edit_failure(const QConfEditStatus st, lList **alpp) {
  */
 static int
 qconf_edit_and_write_obj(const QConfObj o, std::string &text, const uid_t uid, const gid_t gid,
-                         const bool unchanged_is_ok, lList **alpp, const char *select = nullptr,
-                         const uint32_t extra_mode = 0u, const char *name = nullptr) {
+                         const bool unchanged_is_ok, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                         const char *select = nullptr, const uint32_t extra_mode = 0u, const char *name = nullptr) {
    DENTER(TOP_LAYER);
 
    const QConfEditStatus est = qconf_edit_text(text, uid, gid, unchanged_is_ok, alpp);
@@ -455,7 +456,7 @@ qconf_edit_and_write_obj(const QConfObj o, std::string &text, const uid_t uid, c
    mod_param.add_item(nullptr, text);
    ocs::QConfWriteModelClient model(qconf_desc(o).target);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool ok = model.make_snapshot(&alp, mod_param);
 
    /* No response text of our own: the message a write produces is the one
@@ -530,7 +531,7 @@ qconf_edit_and_write_obj(const QConfObj o, std::string &text, const uid_t uid, c
 static int
 qconf_edit_obj_procedure(ocs::QConfParameterClient &param, const QConfObj o,
                          const char *sw, const char *name, const uid_t uid, const gid_t gid,
-                         const bool unchanged_is_ok, lList **alpp) {
+                         const bool unchanged_is_ok, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -623,7 +624,7 @@ static int
 qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
                           const char *sw, const char *read_token, const char *read_sub,
                           const char *names, const uid_t uid, const gid_t gid, const uint32_t extra_mode,
-                          const bool unchanged_is_ok, lList **alpp) {
+                          const bool unchanged_is_ok, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -649,7 +650,7 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
 
    std::ostringstream rendered;
    uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    param.set_for_edit(true);
    const bool ok = qconf_dispatch_procedure(rendered, param, &alp, &reduction);
    param.set_for_edit(false);
@@ -666,7 +667,7 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
       qconf_answer_take(alpp, &alp);
       DRETURN(1);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
       /* What was asked for, which for the nameless form is the whole list - the
@@ -731,7 +732,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
  * @return the number of files that failed
  */
 static int
-qconf_conf_apply_path(std::ostream &os, const char *path, lList **alpp) {
+qconf_conf_apply_path(std::ostream &os, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    qconf_conf_ctx ctx = {&os, 0, 0, alpp};
    const bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_apply_one, &ctx, alpp);
@@ -759,7 +760,7 @@ enum class QConfWriteKind {
  * @return true when the file is missing and it was reported
  */
 static bool
-qconf_write_no_file(const qconf_op &op, lList **alpp) {
+qconf_write_no_file(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (!op.args.empty()) {
       return false;
    }
@@ -778,9 +779,11 @@ struct qconf_write_entry {
    uint32_t mode;             ///< EDIT_LIST/APPLY: write modes beyond the default, a mask of MODE_*
    const char *list_read;     ///< EDIT_LIST: the read of the list, nullptr for the type's OBJECT_LIST read
    const char *list_sub;      ///< EDIT_LIST: the sub-procedure of that read, or nullptr
-   bool (*missing)(const qconf_op &op, lList **alpp); ///< a report of its own for a missing argument, or nullptr
+   bool (*missing)(const qconf_op &op,
+                   ocs::tom::ListPtr<ocs::tom::AN> *alpp); ///< a report of its own for a missing argument, or nullptr
    bool blank_line_between;   ///< with names: the objects are separated by a blank line
-   int (*apply)(std::ostream &os, const char *path, lList **alpp); ///< APPLY: the reader of its own, nullptr for qconf_apply_obj()
+   int (*apply)(std::ostream &os, const char *path,
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp); ///< APPLY: the reader of its own, nullptr for qconf_apply_obj()
 };
 
 /** @brief The add and modify switches that are one engine call each (CS-2954)
@@ -895,7 +898,7 @@ qconf_write_honours_dry(const qconf_op &op) {
 
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                const uid_t uid, const gid_t gid, lList **alpp) {
+                const uid_t uid, const gid_t gid, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_write_entry *entry = nullptr;

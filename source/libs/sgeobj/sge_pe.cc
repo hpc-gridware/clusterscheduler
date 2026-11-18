@@ -175,7 +175,7 @@ lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) {
  *
  * @return true or false
  */
-bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, lList **answer_list,
+bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                       const ocs::tom::ConstList<ocs::tom::JB> master_job_list,
                       const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
@@ -224,7 +224,7 @@ bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, lList **ans
  * @param master_cqueue_list CQ_Type list, checked
  * @return as pe_is_referenced()
  */
-bool pe_is_referenced(const lListElem *pe, lList **answer_list, const lList *master_job_list,
+bool pe_is_referenced(const lListElem *pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *master_job_list,
                       const lList *master_cqueue_list) {
    return pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE>(pe), answer_list,
                            ocs::tom::ConstList<ocs::tom::JB>(master_job_list),
@@ -250,7 +250,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list, const lList *mas
  *
  * @note MT-NOTE: pe_validate() is not MT safe
  */
-int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, lList **alpp, const int startup,
+int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const int startup,
                 const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
 
@@ -340,7 +340,7 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, lList **alpp, const i
  * @param master_userset_list the defined usersets (US_Type), checked
  * @return as pe_validate()
  */
-int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list) {
+int pe_validate(lListElem *pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int startup, const lList *master_userset_list) {
    return pe_validate(ocs::tom::Element<ocs::tom::PE>(pep), alpp, startup,
                       ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
 }
@@ -360,7 +360,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
  *
  * @note MT-NOTE: pe_validate_slots() is MT safe
  */
-int pe_validate_slots(lList **alpp, const uint32_t slots, const bool warn_only) {
+int pe_validate_slots(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint32_t slots, const bool warn_only) {
    DENTER(TOP_LAYER);
 
    if (slots > OCS_MAX_SLOTS) {
@@ -395,7 +395,7 @@ int pe_validate_slots(lList **alpp, const uint32_t slots, const bool warn_only) 
  *
  * @note MT-NOTE: pe_validate_urgency_slots() is MT safe
  */
-int pe_validate_urgency_slots(lList **answer_list, const char *s) {
+int pe_validate_urgency_slots(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *s) {
    DENTER(TOP_LAYER);
 
    if (strcasecmp(s, SGE_ATTRVAL_MIN) &&
@@ -426,7 +426,8 @@ int pe_validate_urgency_slots(lList **answer_list, const char *s) {
  * @return true if the allocation rule is valid, else false
  */
 bool
-pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bool output_errors) {
+pe_validate_allocation_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *allocation_rule,
+                            bool output_errors) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -489,7 +490,7 @@ pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bo
  *
  * @note MT-NOTE: pe_list_do_all_exist() is MT safe
  */
-bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, lList **answer_list,
+bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const ocs::tom::ConstList<ocs::tom::ST> pe_ref_list, const bool ignore_make_pe) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -520,7 +521,8 @@ bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, lList
  * @param ignore_make_pe skip the PE named "make"
  * @return as pe_list_do_all_exist()
  */
-bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list, const lList *pe_ref_list, bool ignore_make_pe) {
+bool pe_list_do_all_exist(const lList *pe_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *pe_ref_list,
+                          bool ignore_make_pe) {
    return pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE>(pe_list), answer_list,
                                ocs::tom::ConstList<ocs::tom::ST>(pe_ref_list), ignore_make_pe);
 }

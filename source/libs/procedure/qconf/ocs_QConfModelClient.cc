@@ -47,18 +47,18 @@
  * @return true on success
  */
 bool
-ocs::QConfModelClient::fetch(lList **answer_list, gdi::Target target,
+ocs::QConfModelClient::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
                              lCondition *where, lEnumeration *what) {
    DENTER(TOP_LAYER);
 
-   lList *alp = gdi::Client::sge_gdi(target, gdi::Command::GET, gdi::SubCommand::NONE,
+   auto alp = gdi::Client::sge_gdi(target, gdi::Command::GET, gdi::SubCommand::NONE,
                                      &object_list_, where, what);
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);
       lFreeList(&object_list_);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(!failed);
 }
@@ -74,12 +74,12 @@ ocs::QConfModelClient::fetch(lList **answer_list, gdi::Target target,
  * @return true on success; false with @p answer_list filled otherwise
  */
 bool
-ocs::QConfModelClient::fetch_hgroups(lList **answer_list) {
+ocs::QConfModelClient::fetch_hgroups(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
    lList *hgroup_list = nullptr;
-   lList *alp = gdi::Client::sge_gdi(gdi::Target::HGRP_LIST, gdi::Command::GET,
+   auto alp = gdi::Client::sge_gdi(gdi::Target::HGRP_LIST, gdi::Command::GET,
                                      gdi::SubCommand::NONE, &hgroup_list, nullptr, what);
    lFreeWhat(&what);
    hgroup_list_ = ocs::tom::ListPtr<ocs::tom::HGRP>::from_typed(hgroup_list);
@@ -88,7 +88,7 @@ ocs::QConfModelClient::fetch_hgroups(lList **answer_list) {
       answer_list_append_list(answer_list, &alp);
       hgroup_list_.reset();
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(!failed);
 }
@@ -102,17 +102,17 @@ ocs::QConfModelClient::fetch_hgroups(lList **answer_list) {
  * @return true on success
  */
 bool
-ocs::QConfModelClient::fetch_thread_pools(lList **answer_list) {
+ocs::QConfModelClient::fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   lList *alp = gdi::Client::sge_gdi(gdi::Target::DUMMY_LIST, gdi::Command::GET,
+   auto alp = gdi::Client::sge_gdi(gdi::Target::DUMMY_LIST, gdi::Command::GET,
                                      gdi::SubCommand::NONE, &object_list_, nullptr, nullptr);
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);
       lFreeList(&object_list_);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(!failed);
 }
@@ -128,12 +128,12 @@ ocs::QConfModelClient::fetch_thread_pools(lList **answer_list) {
  * @return true on success
  */
 bool
-ocs::QConfModelClient::fetch_centries(lList **answer_list) {
+ocs::QConfModelClient::fetch_centries(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    lEnumeration *what = lWhat("%T(ALL)", CE_Type);
    lList *centry_list = nullptr;
-   lList *alp = gdi::Client::sge_gdi(gdi::Target::CE_LIST, gdi::Command::GET,
+   auto alp = gdi::Client::sge_gdi(gdi::Target::CE_LIST, gdi::Command::GET,
                                      gdi::SubCommand::NONE, &centry_list, nullptr, what);
    lFreeWhat(&what);
    centry_list_ = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(centry_list);
@@ -142,7 +142,7 @@ ocs::QConfModelClient::fetch_centries(lList **answer_list) {
       answer_list_append_list(answer_list, &alp);
       centry_list_.reset();
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(!failed);
 }

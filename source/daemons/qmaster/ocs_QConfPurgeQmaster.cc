@@ -82,7 +82,7 @@
  */
 bool
 qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                           const ocs::QConfActionParameter &parameter, lList **answer_list) {
+                           const ocs::QConfActionParameter &parameter, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const std::string queue_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_QUEUE);

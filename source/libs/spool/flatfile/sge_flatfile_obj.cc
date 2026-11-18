@@ -91,48 +91,55 @@ static void create_spooling_field (
    struct spooling_field *sub_fields,
    bool free_sub_fields,
    const void *clientdata, 
-   int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp), 
-   int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp)
+   int (*read_func) (lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp), 
+   int (*write_func) (const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp)
 );
-static int read_SC_queue_sort_method(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_SC_queue_sort_method(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CF_value(lListElem *ep, int nm, const char *buf, lList **alp);
-static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_ulng_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_mem_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_time_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_prjlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_solist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_usrlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_bool_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_strlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_qtlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_str_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_inter_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_celist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
-static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer, lList **alp);
-static int write_CQ_hostlist(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_SC_queue_sort_method(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_SC_queue_sort_method(const lListElem *ep, int nm, dstring *buffer,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CF_value(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_ulng_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_mem_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_time_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_prjlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_solist_attr_list(const lListElem *ep, int nm, dstring *buffer,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_usrlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_bool_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_strlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_qtlist_attr_list(const lListElem *ep, int nm, dstring *buffer,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_str_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_inter_attr_list(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_celist_attr_list(const lListElem *ep, int nm, dstring *buffer,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_CQ_hostlist(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
-                       lList **alp);
+                       ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
-                                    lList **alp);
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
-                       lList **alp);
+                       ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
 static int read_SC_load_formula(lListElem *ep, int nm,
-                                     const char *buffer, lList **alp);
-static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+                                     const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
 /* Field lists for context-independent spooling of sub-lists */
 static spooling_field AMEM_sub_fields[] = {
@@ -610,8 +617,8 @@ static void create_spooling_field(
         struct spooling_field *sub_fields,
         bool free_sub_fields,
         const void *clientdata,
-        int (*read_func)(lListElem *ep, int nm, const char *buffer, lList **alp),
-        int (*write_func)(const lListElem *ep, int nm, dstring *buffer, lList **alp)) {
+        int (*read_func)(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp),
+        int (*write_func)(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp)) {
    if (field != nullptr) {
       field->nm = nm;
       field->width = width;
@@ -827,7 +834,7 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
  * @return 1
  */
 static int read_SC_queue_sort_method(lListElem *ep, int nm,
-                                     const char *buffer, lList **alp) {
+                                     const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    if (!strncasecmp(buffer, "load", 4)) {
       ocs::tom::set<SC_queue_sort_method>(ep, QSM_LOAD);
    } else if (!strncasecmp(buffer, "seqno", 5)) {
@@ -838,7 +845,7 @@ static int read_SC_queue_sort_method(lListElem *ep, int nm,
 }
 
 static int
-read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, lList **alp) {
+read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
    if (load_formula != nullptr) {
       int n = strlen(load_formula);
@@ -870,7 +877,7 @@ read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, lList **al
  * @return 1
  */
 static int write_SC_queue_sort_method(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp) {
+                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    if (ocs::tom::get<SC_queue_sort_method>(ep) == QSM_SEQNUM) {
       sge_dstring_append(buffer, "seqno");
    } else {
@@ -894,7 +901,7 @@ static int write_SC_queue_sort_method(const lListElem *ep, int nm,
  * @return 1 on success, 0 if the value is rejected
  */
 static int read_CF_value(lListElem *ep, int nm, const char *buf,
-                         lList **alp) {
+                         ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
    const char *name = ocs::tom::get<CF_name>(ep);
@@ -1172,7 +1179,7 @@ spooling_field *sge_build_QU_field_list(bool to_stdout, bool to_file) {
    return fields;
 }
 
-static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp) {
+static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
 
    if (!ulng_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1190,14 +1197,14 @@ static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, lLi
 }
 
 static int write_CQ_ulng_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, lList **alp) {
+                                   dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    ulng_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    lList **alp) {
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
 
    if (!celist_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1215,14 +1222,14 @@ static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_celist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, lList **alp) {
+                                     dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    celist_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer,
-                                   lList **alp) {
+                                   ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!inter_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1240,14 +1247,14 @@ static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_inter_attr_list(const lListElem *ep, int nm,
-                                    dstring *buffer, lList **alp) {
+                                    dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    inter_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer,
-                                 lList **alp) {
+                                 ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!str_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1265,14 +1272,14 @@ static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_str_attr_list(const lListElem *ep, int nm,
-                                  dstring *buffer, lList **alp) {
+                                  dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    str_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    lList **alp) {
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!qtlist_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1290,14 +1297,14 @@ static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_qtlist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, lList **alp) {
+                                     dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    qtlist_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     lList **alp) {
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!strlist_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1315,14 +1322,14 @@ static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_strlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp) {
+                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    strlist_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer,
-                                  lList **alp) {
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!bool_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1340,14 +1347,14 @@ static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_bool_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, lList **alp) {
+                                   dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    bool_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     lList **alp) {
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!usrlist_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1365,14 +1372,14 @@ static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_usrlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp) {
+                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    usrlist_attr_list_append_to_dstring(lGetList (ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    lList **alp) {
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!solist_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1390,7 +1397,7 @@ static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_solist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, lList **alp) {
+                                     dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    const lList *lp = lGetList(ep, nm);
    
    solist_attr_list_append_to_dstring(lp, buffer);
@@ -1399,7 +1406,7 @@ static int write_CQ_solist_attr_list(const lListElem *ep, int nm,
 }
 
 static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     lList **alp) {
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!prjlist_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1417,14 +1424,14 @@ static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_prjlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp) {
+                                      dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    prjlist_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer,
-                                  lList **alp) {
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!time_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1442,14 +1449,14 @@ static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_time_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, lList **alp) {
+                                   dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    time_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
    
    return 1;
 }
 
 static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer,
-                                 lList **alp) {
+                                 ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    lList *lp = nullptr;
    
    if (!mem_attr_list_parse_from_string(&lp, alp, buffer,
@@ -1467,7 +1474,7 @@ static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer,
 }
 
 static int write_CQ_mem_attr_list(const lListElem *ep, int nm,
-                                  dstring *buffer, lList **alp) {
+                                  dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    mem_attr_list_append_to_dstring(lGetList(ep, nm), buffer);
    
    return 1;
@@ -1486,7 +1493,7 @@ static int write_CQ_mem_attr_list(const lListElem *ep, int nm,
  * @return 1
  */
 static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
-                            lList **alp) {
+                            ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    char delims[] = "\t \v\r,"; 
 
    auto lp = ocs::tom::ListPtr<ocs::tom::HR>::from_string<HR_name>(buffer, delims);
@@ -1513,7 +1520,7 @@ static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
  * @return 1
  */
 static int write_CQ_hostlist(const lListElem *ep, int nm,
-                             dstring *buffer, lList **alp) {
+                             dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    const auto lp = ocs::tom::get<CQ_hostlist>(ep);
    
    if (lp) {
@@ -1536,7 +1543,8 @@ static int write_CQ_hostlist(const lListElem *ep, int nm,
  * @param alp receives messages for the caller, unused here
  * @return 1 on success
  */
-static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer, lList **alp) {
+static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    const uint64_t auto_added_time = ocs::tom::get<EH_auto_added_time>(ep);
 
    if (auto_added_time == 0) {
@@ -1550,7 +1558,7 @@ static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer
 }
 
 static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
-                              lList **alp) {
+                              ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    const char *s;
 
    if ((s=ocs::tom::get<CE_stringval>(ep)) != nullptr) {
@@ -1580,7 +1588,7 @@ static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
  * @note MT-NOTE: read_RQR_obj() is MT safe
  */
 static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
-                             lList **alp) {
+                             ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
    int ret = 0;
@@ -1613,7 +1621,7 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
  * @note MT-NOTE: write_RQR_obj() is MT safe
  */
 static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
-                       lList **alp) {
+                       ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
    const auto filter = ocs::tom::ConstElement<ocs::tom::RQRF>::from_typed(lGetObject(ep, nm));
    const int ret = rqs_append_filter_to_dstring(filter, buffer, alp);

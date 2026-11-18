@@ -64,7 +64,8 @@
  * @return STATUS_OK on success
  */
 int
-sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, const uint64_t gdi_session) {
+sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+                             const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    // the spooling layer has no typed form yet; it reads SC_Type elements for SGE_TYPE_SCHEDD_CONF
@@ -113,7 +114,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, c
  */
 int
 sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::SC> confp,
-                            lList **alpp, char *ruser, char *rhost) {
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!confp || !ruser || !rhost) {
@@ -166,8 +167,8 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, cons
  * @return as the typed sge_mod_sched_configuration()
  */
 int
-sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp,
-                            char *ruser, char *rhost) {
+sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp,
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    return sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>::from_typed(confp), alpp,
                                       ruser, rhost);
 }

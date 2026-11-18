@@ -46,18 +46,21 @@
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/sge_answer.h"
 
 bool
 cqueue_list_x_on_subordinate_gdil(ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list, bool suspend,
                                   ocs::tom::ConstList<ocs::tom::JG> gdil, monitoring_t *monitor, uint64_t gdi_session);
 
 bool
-cqueue_list_x_on_subordinate_so(ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list, lList **answer_list, bool suspend,
+cqueue_list_x_on_subordinate_so(ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool suspend,
                                 ocs::tom::ConstList<ocs::tom::SO> resolved_so_list, monitoring_t *monitor,
                                 uint64_t gdi_session);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::SO>
-qinstance_find_suspended_subordinates(ocs::tom::ConstElement<ocs::tom::QU> this_elem, lList **answer_list,
+qinstance_find_suspended_subordinates(ocs::tom::ConstElement<ocs::tom::QU> this_elem,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                       ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list);
 
 bool
@@ -73,7 +76,8 @@ unsuspend_all_tasks_in_slotwise_sub_tree(ocs::tom::Element<ocs::tom::QU> qinstan
 
 bool
 check_new_slotwise_subordinate_tree(ocs::tom::Element<ocs::tom::QU> qinstance,
-                                    ocs::tom::ConstList<ocs::tom::SO> new_so_list, lList **answer_list);
+                                    ocs::tom::ConstList<ocs::tom::SO> new_so_list,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool do_slotwise_subordinate_lists_differ(ocs::tom::ConstList<ocs::tom::SO> old_so_list,
                                           ocs::tom::ConstList<ocs::tom::SO> new_so_list);

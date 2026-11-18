@@ -48,8 +48,8 @@
  */
 template <ocs::tom::ObjectType T>
 static ocs::tom::ListPtr<T>
-get_list_response(lList **answer_list, const ocs::gdi::Request &request, const ocs::gdi::Target target,
-                  const int id) {
+get_list_response(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::gdi::Request &request,
+                  const ocs::gdi::Target target, const int id) {
    DENTER(TOP_LAYER);
    lList *lp = nullptr;
    request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, &lp);
@@ -61,7 +61,8 @@ get_list_response(lList **answer_list, const ocs::gdi::Request &request, const o
  * @param host_list the hosts the user asked for; all hosts when empty
  * @return true when every list could be fetched
  */
-bool ocs::QQuotaModelClient::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> host_list) {
+bool ocs::QQuotaModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                        const ocs::tom::ConstList<ocs::tom::ST> host_list) {
    DENTER(TOP_LAYER);
 
    gdi::Request gdi_multi{};
@@ -121,32 +122,42 @@ bool ocs::QQuotaModelClient::fetch_data(lList **answer_list, const ocs::tom::Con
    gdi_multi.wait();
 
    /* --- resource quota sets */
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    rqs_list_ = get_list_response<ocs::tom::RQS>(answer_list, gdi_multi, gdi::Target::RQS_LIST, rqs_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
 
    /* --- complex attribute */
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    centry_list_ = get_list_response<ocs::tom::CE>(answer_list, gdi_multi, gdi::Target::CE_LIST, ce_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
    /* --- usersets */
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    user_set_list_ = get_list_response<ocs::tom::US>(answer_list, gdi_multi, gdi::Target::US_LIST, userset_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
    /* --- hostgroups */
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    hgroup_list_ = get_list_response<ocs::tom::HGRP>(answer_list, gdi_multi, gdi::Target::HGRP_LIST, hgroup_id);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
    /* --- exec hosts*/
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    exec_host_list_ = get_list_response<ocs::tom::EH>(answer_list, gdi_multi, gdi::Target::EH_LIST, eh_id);
 
    if (answer_list_has_error(answer_list)) {

@@ -32,6 +32,7 @@
 #include "gdi/ocs_gdi_Task.h"
 #include "procedure/qconf/write/ocs_QConfWriteServer.h"
 #include "uti/sge_monitor.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Apply a set of objects, parsing each one first
  *
@@ -53,4 +54,4 @@
 bool
 qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                            QConfObj obj, const ocs::QConfWriteParameter &parameter,
-                           lList **answer_list, ocs::QConfWriteResult *result);
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::QConfWriteResult *result);

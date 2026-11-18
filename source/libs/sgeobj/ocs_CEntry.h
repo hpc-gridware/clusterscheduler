@@ -27,6 +27,7 @@
 #include <cinttypes>
 
 #include "cull/cull.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -63,6 +64,7 @@ namespace ocs {
          TYPE_LOG  = 12,  ///< log level; used in the configuration, not on a complex
          TYPE_LAST = TYPE_LOG ///< highest value used at all, for iterating
       };
-      static bool has_duplicates(const lList *centry_list, lList **answer_list, const std::string& object_name);
+      static bool has_duplicates(const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 const std::string& object_name);
    };
 }

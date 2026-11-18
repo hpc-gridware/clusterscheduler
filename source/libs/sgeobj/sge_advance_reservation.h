@@ -52,6 +52,7 @@
 
 #include "sgeobj/cull/sge_advance_reservation_AR_L.h"
 #include "sgeobj/cull/sge_advance_reservation_ARA_L.h"
+#include "sgeobj/sge_answer.h"
 
 /// The `-w` letters an advance reservation accepts, in the order of the values below
 #define AR_OPTION_VERIFY_STR "ev"
@@ -107,13 +108,13 @@ ar_list_locate(ocs::tom::ConstList<ocs::tom::AR> ar_list, uint32_t ar_id);
 OCS_TRANSITIONAL lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id);
 
 bool
-ar_validate(ocs::tom::Element<ocs::tom::AR> ar, lList **alpp, bool in_master, bool is_spool,
+ar_validate(ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool in_master, bool is_spool,
             ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
             ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
             ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
             ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
             ocs::tom::ConstList<ocs::tom::PE> master_pe_list, ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool,
+OCS_TRANSITIONAL bool ar_validate(lListElem *ar, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool in_master, bool is_spool,
                                   const lList *master_cqueue_list, const lList *master_hgroup_list,
                                   const lList *master_centry_list, const lList *master_ckpt_list,
                                   const lList *master_pe_list, const lList *master_userset_list);

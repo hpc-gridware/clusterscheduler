@@ -42,16 +42,16 @@
  *
  * @code
  * void caller() {
- *    lList *answer_list = nullptr;
+ *    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
  *
  *    callee(&answer_list);
  *    if (answer_list_has_error(&answer_list)) {
  *       try_to_handle_error();
- *       lFreeList(&answer_list);
+ *       answer_list.reset();
  *    }
  * }
  *
- * void callee(lList **answer_list) {
+ * void callee(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
  *    char *s = sge_malloc(256);
  *
  *    if (s == nullptr) {
@@ -78,6 +78,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /// Debug layer the answer list traces are written to
 #define ANSWER_LAYER CULL_LAYER
@@ -96,7 +97,7 @@ static bool answer_log(ocs::tom::ConstElement<ocs::tom::AN> answer, bool show_in
  *
  * @note MT-NOTE: answer_has_quality() is MT safe
  */
-bool answer_has_quality(const lListElem *answer, answer_quality_t quality) {
+bool answer_has_quality(const ocs::tom::ConstElement<ocs::tom::AN> answer, answer_quality_t quality) {
    DENTER(ANSWER_LAYER);
 
    bool ret;
@@ -123,7 +124,7 @@ bool answer_has_quality(const lListElem *answer, answer_quality_t quality) {
  *
  * @note MT-NOTE: answer_is_recoverable() is MT safe
  */
-bool answer_is_recoverable(const lListElem *answer) {
+bool answer_is_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
    DENTER(ANSWER_LAYER);
 
    bool ret = true;
@@ -163,7 +164,7 @@ bool answer_is_recoverable(const lListElem *answer) {
  *
  *       MT-NOTE: answer_exit_if_not_recoverable() is MT safe
  */
-void answer_exit_if_not_recoverable(const lListElem *answer) {
+void answer_exit_if_not_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
    DENTER(ANSWER_LAYER);
    if (!answer_is_recoverable(answer)) {
       fprintf(stderr, "%s: %s\n", answer_get_quality_text(answer),
@@ -184,7 +185,7 @@ void answer_exit_if_not_recoverable(const lListElem *answer) {
  *
  * @note MT-NOTE: answer_get_quality_text() is MT safe
  */
-const char *answer_get_quality_text(const lListElem *answer) {
+const char *answer_get_quality_text(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
    DENTER(ANSWER_LAYER);
 
    const char *quality_text[] = {
@@ -213,7 +214,7 @@ const char *answer_get_quality_text(const lListElem *answer) {
  *
  * @note MT-NOTE: answer_get_status() is MT safe
  */
-uint32_t answer_get_status(const lListElem *answer) {
+uint32_t answer_get_status(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
    DENTER(ANSWER_LAYER);
 
    uint32_t ret;
@@ -235,7 +236,7 @@ uint32_t answer_get_status(const lListElem *answer) {
  *
  * @note MT-NOTE: answer_print_text() is MT safe
  */
-void answer_print_text(const lListElem *answer,
+void answer_print_text(const ocs::tom::ConstElement<ocs::tom::AN> answer,
                        FILE *stream,
                        const char *prefix,
                        const char *suffix) {
@@ -268,7 +269,7 @@ void answer_print_text(const lListElem *answer,
  *
  * @note MT-NOTE: answer_to_dstring() is MT safe
  */
-void answer_to_dstring(const lListElem *answer, dstring *diag) {
+void answer_to_dstring(const ocs::tom::ConstElement<ocs::tom::AN> answer, dstring *diag) {
    if (diag) {
       if (!answer) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
@@ -296,10 +297,10 @@ void answer_to_dstring(const lListElem *answer, dstring *diag) {
  *
  * @note MT-NOTE: answer_list_to_dstring() is MT safe
  */
-void answer_list_to_dstring(const lList *alp, dstring *diag) {
+void answer_list_to_dstring(const ocs::tom::ConstList<ocs::tom::AN> alp, dstring *diag) {
    DENTER(ANSWER_LAYER);
    if (diag) {
-      const ocs::tom::ConstList<ocs::tom::AN> answers(alp);
+      const ocs::tom::ConstList<ocs::tom::AN> answers = alp;
       if (answers.empty()) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
       } else {
@@ -343,7 +344,7 @@ void answer_list_to_dstring(const lList *alp, dstring *diag) {
  *
  * @see #answer_list_add
  */
-bool answer_list_add_sprintf(lList **answer_list, uint32_t status,
+bool answer_list_add_sprintf(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t status,
                              answer_quality_t quality, const char *fmt, ...) {
    DENTER(ANSWER_LAYER);
 
@@ -381,13 +382,13 @@ bool answer_list_add_sprintf(lList **answer_list, uint32_t status,
  *
  * @note MT-NOTE: answer_list_has_quality() is MT safe
  */
-bool answer_list_has_quality(lList **answer_list, answer_quality_t quality) {
+bool answer_list_has_quality(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list, answer_quality_t quality) {
    DENTER(ANSWER_LAYER);
 
    bool ret = false;
 
    if (answer_list != nullptr) {
-      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
+      for (const auto answer : answer_list->get()) {
          if (answer_has_quality(answer, quality)) {
             ret = true;
             break;
@@ -408,7 +409,7 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality) {
  *
  * @note MT-NOTE: answer_list_remove_quality() is MT safe
  */
-void answer_list_remove_quality(lList *answer_list, answer_quality_t quality) {
+void answer_list_remove_quality(const ocs::tom::List<ocs::tom::AN> answer_list, answer_quality_t quality) {
    DENTER(ANSWER_LAYER);
 
    const ocs::tom::List<ocs::tom::AN> answers(answer_list);
@@ -439,13 +440,13 @@ void answer_list_remove_quality(lList *answer_list, answer_quality_t quality) {
  *
  * @note MT-NOTE: answer_list_has_status() is MT safe
  */
-bool answer_list_has_status(lList **answer_list, uint32_t status) {
+bool answer_list_has_status(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t status) {
    DENTER(ANSWER_LAYER);
 
    bool ret = false;
 
    if (answer_list != nullptr) {
-      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
+      for (const auto answer : answer_list->get()) {
          if (answer_get_status(answer) == status) {
             ret = true;
             break;
@@ -467,7 +468,7 @@ bool answer_list_has_status(lList **answer_list, uint32_t status) {
  *
  * @note MT-NOTE: answer_list_has_error() is MT safe
  */
-bool answer_list_has_error(lList **answer_list) {
+bool answer_list_has_error(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(ANSWER_LAYER);
 
    bool ret = false;
@@ -491,9 +492,9 @@ bool answer_list_has_error(lList **answer_list) {
  *
  * @note MT-NOTE: answer_list_on_error_print_or_exit() is MT safe
  */
-void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream) {
+void answer_list_on_error_print_or_exit(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list, FILE *stream) {
    DENTER(ANSWER_LAYER);
-   for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
+   for (const auto answer : answer_list->get()) {
       answer_exit_if_not_recoverable(answer);
       answer_print_text(answer, stream, nullptr, nullptr);
    }
@@ -525,7 +526,7 @@ void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream) {
  *
  * @note MT-NOTE: answer_list_print_err_warn() is MT safe
  */
-int answer_list_print_err_warn(lList **answer_list,
+int answer_list_print_err_warn(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                const char *critical_prefix,
                                const char *err_prefix,
                                const char *warn_prefix) {
@@ -534,7 +535,7 @@ int answer_list_print_err_warn(lList **answer_list,
    int do_exit = 0;
    uint32_t status = 0;
 
-   for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
+   for (const auto answer : answer_list->get()) {
       if (answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
          answer_print_text(answer, stderr, critical_prefix, nullptr);
          if (do_exit == 0) {
@@ -554,7 +555,7 @@ int answer_list_print_err_warn(lList **answer_list,
          answer_print_text(answer, stdout, nullptr, nullptr);
       }
    }
-   lFreeList(answer_list);
+   answer_list->reset();
    DRETURN((int)status);
 }
 
@@ -574,13 +575,13 @@ int answer_list_print_err_warn(lList **answer_list,
  *
  * @note MT-NOTE: answer_list_handle_request_answer_list() is MT safe
  */
-int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
+int answer_list_handle_request_answer_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, FILE *stream) {
    DENTER(ANSWER_LAYER);
 
    int ret = STATUS_OK;
 
    if(answer_list != nullptr && *answer_list != nullptr) {
-      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
+      for (const auto answer : answer_list->get()) {
          if(answer_has_quality(answer, ANSWER_QUALITY_CRITICAL) ||
             answer_has_quality(answer, ANSWER_QUALITY_ERROR) ||
             answer_has_quality(answer, ANSWER_QUALITY_WARNING)) {
@@ -590,7 +591,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
             }
          }
       }
-      lFreeList(answer_list);
+      answer_list->reset();
    } else {
       fprintf(stream, "%s\n", MSG_ANSWER_NOANSWERLIST);
       DRETURN(STATUS_EUNKNOWN);
@@ -621,7 +622,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
  *
  * @see #answer_list_add_sprintf
  */
-bool answer_list_add(lList **answer_list, const char *text,
+bool answer_list_add(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *text,
                      uint32_t status, answer_quality_t quality) {
    DENTER(ANSWER_LAYER);
 
@@ -635,13 +636,12 @@ bool answer_list_add(lList **answer_list, const char *text,
       ocs::tom::set<AN_status>(answer, status);
       ocs::tom::set<AN_quality>(answer, quality);
 
-      // the answer list API hands raw lists to every module, so the list is created raw
       if (*answer_list == nullptr) {
-         *answer_list = lCreateList("", AN_Type);
+         *answer_list = ocs::tom::ListPtr<ocs::tom::AN>::create("");
       }
-
+      // without a list (no memory) the answer is dropped, as before; push_back() would throw
       if (*answer_list != nullptr) {
-         ocs::tom::List<ocs::tom::AN>(*answer_list).push_back(std::move(answer));
+         answer_list->get().push_back(std::move(answer));
          ret = true;
       }
    }
@@ -654,22 +654,24 @@ bool answer_list_add(lList **answer_list, const char *text,
  * The list is created when it does not exist yet.
  *
  * @param[in,out] answer_list the list to append to
- * @param answer the element to append; ownership passes to the list
+ * @param answer the element to append; the list takes it over, without a list (@p answer_list nullptr) the
+ *        caller keeps it
  * @return true when the element was appended
  *
  * @note MT-NOTE: answer_list_add_elem() is MT safe
  */
-bool answer_list_add_elem(lList **answer_list, lListElem *answer) {
+bool answer_list_add_elem(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementPtr<ocs::tom::AN> &&answer) {
    DENTER(ANSWER_LAYER);
 
    bool ret = false;
 
    if (answer_list != nullptr) {
       if (*answer_list == nullptr) {
-         *answer_list = lCreateList("", AN_Type);
+         *answer_list = ocs::tom::ListPtr<ocs::tom::AN>::create("");
       }
+      // without a list (no memory) the answer is dropped, as before; push_back() would throw
       if (*answer_list != nullptr) {
-         lAppendElem(*answer_list, answer);
+         answer_list->get().push_back(std::move(answer));
          ret = true;
       }
    }
@@ -686,16 +688,13 @@ bool answer_list_add_elem(lList **answer_list, lListElem *answer) {
  *
  * @note MT-NOTE: answer_list_replace() is MT safe
  */
-void answer_list_replace(lList **answer_list, lList **new_list) {
+void answer_list_replace(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::AN> *new_list) {
    DENTER(ANSWER_LAYER);
    if (answer_list != nullptr) {
-      lFreeList(answer_list);
-
       if (new_list != nullptr) {
-         *answer_list = *new_list; 
-         *new_list = nullptr;
+         *answer_list = std::move(*new_list);
       } else {
-         *answer_list = nullptr;
+         answer_list->reset();
       }
    }
    DRETURN_VOID;
@@ -709,14 +708,16 @@ void answer_list_replace(lList **answer_list, lList **new_list) {
  * @param answer_list AN_Type list
  * @param new_list AN_Type list
  */
-void answer_list_append_list(lList **answer_list, lList **new_list) {
+void answer_list_append_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::AN> *new_list) {
    DENTER(ANSWER_LAYER);
    if (answer_list != nullptr && new_list != nullptr) {
-      if (*answer_list == nullptr && *new_list != nullptr) {
-         *answer_list = lCreateList("", AN_Type);
-      }
       if (*new_list != nullptr) {
-         lAddList(*answer_list, new_list);
+         if (*answer_list == nullptr) {
+            *answer_list = ocs::tom::ListPtr<ocs::tom::AN>::create("");
+         }
+         if (*answer_list != nullptr) {
+            answer_list->get().splice(std::move(*new_list));
+         }
       }
    }
    DRETURN_VOID;
@@ -744,17 +745,17 @@ void answer_list_append_list(lList **answer_list, lList **new_list) {
  *
  * @note MT-NOTE: answer_list_print_err_warn() is MT safe
  */
-bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
+bool answer_list_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool is_free_list, bool show_info) {
    DENTER(ANSWER_LAYER);
 
    bool ret = false;
 
    if (answer_list != nullptr && *answer_list != nullptr) {
-      for (const auto answer : ocs::tom::ConstList<ocs::tom::AN>(*answer_list)) {
+      for (const auto answer : answer_list->get()) {
          ret = answer_log(answer, show_info);
       }
       if (is_free_list) {
-         lFreeList(answer_list);
+         answer_list->reset();
       }
    }
 
@@ -826,7 +827,7 @@ static bool answer_log(const ocs::tom::ConstElement<ocs::tom::AN> answer, const 
  *
  * @note MT-NOTE: answer_list_output() is MT safe
  */
-bool answer_list_output(lList **answer_list) {
+bool answer_list_output(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return answer_list_log(answer_list, true, true);
 }
 
@@ -839,13 +840,13 @@ bool answer_list_output(lList **answer_list) {
  * @param alp AN_Type list
  * @return 1 when any element carried a status other than `STATUS_OK`, else 0
  */
-int show_answer(lList *alp) {
+int show_answer(const ocs::tom::ConstList<ocs::tom::AN> alp) {
    DENTER(TOP_LAYER);
 
    int ret = 0;
    
    if (alp != nullptr) {
-      const ocs::tom::ConstList<ocs::tom::AN> answers(alp);
+      const ocs::tom::ConstList<ocs::tom::AN> answers = alp;
     
       for (const auto aep : answers) {
          answer_exit_if_not_recoverable(aep);
@@ -870,13 +871,13 @@ int show_answer(lList *alp) {
  * @param alp AN_Type list
  * @return 1 when any element carried a status other than `STATUS_OK`, else 0
  */
-int show_answer_list(lList *alp) {
+int show_answer_list(const ocs::tom::ConstList<ocs::tom::AN> alp) {
    DENTER(TOP_LAYER);
 
    int ret = 0;
    
    if (alp != nullptr) {
-      for (const auto aep : ocs::tom::ConstList<ocs::tom::AN>(alp)) {
+      for (const auto aep : alp) {
          if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_END) {
             continue;
          }
@@ -899,7 +900,7 @@ int show_answer_list(lList *alp) {
  * @param[out] alpp receives one element per error; nullptr is ignored
  * @param clear_errors true to drop the errors from `eh` afterwards
  */
-void answer_list_from_sge_error(sge_error_class_t *eh, lList **alpp, bool clear_errors) {
+void answer_list_from_sge_error(sge_error_class_t *eh, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool clear_errors) {
    sge_error_iterator_class_t *iter = nullptr;
    
    if (eh == nullptr || alpp == nullptr) {

@@ -93,7 +93,7 @@ static lListElem *sge_get_configuration_for_host(const char *aName) {
    DRETURN(conf.release());
 }
 
-static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswer) {
+static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer) {
    DENTER(TOP_LAYER);
 
    lListElem *local = nullptr;
@@ -104,9 +104,9 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
    uint32_t progid = component_get_component_id();
    lList *cluster_config = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
-   spool_read_list(&anAnswer, aSpoolContext, &cluster_config, SGE_TYPE_CONFIG);
+   spool_read_list(anAnswer, aSpoolContext, &cluster_config, SGE_TYPE_CONFIG);
 
-   answer_list_output(&anAnswer);
+   answer_list_output(anAnswer);
 
    DPRINTF("qualified_hostname: '%s'\n", qualified_hostname);
    local = sge_get_configuration_for_host(qualified_hostname);
@@ -115,9 +115,9 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
       DRETURN(-1);
    }
 
-   ret = merge_configuration(&anAnswer, progid, cell_root, ocs::tom::ConstElement<ocs::tom::CONF>(global),
+   ret = merge_configuration(anAnswer, progid, cell_root, ocs::tom::ConstElement<ocs::tom::CONF>(global),
                              ocs::tom::ConstElement<ocs::tom::CONF>(local)).first;
-   answer_list_output(&anAnswer);
+   answer_list_output(anAnswer);
 
    lFreeElem(&local);
    lFreeElem(&global);
@@ -154,7 +154,7 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
 static bool read_spooled_data() {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context;
    lList *master_list = nullptr;
    lList **cluster_configuration = ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
@@ -162,7 +162,7 @@ static bool read_spooled_data() {
    context = spool_get_default_context();
 
    /* cluster configuration */
-   sge_read_configuration(context, answer_list);
+   sge_read_configuration(context, &answer_list);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master config list\n", lGetNumberOfElem(*cluster_configuration));
 
@@ -267,7 +267,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                                        sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context, *ep;
    const lList **master_list;
    const lList *new_list;
@@ -443,7 +443,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
    DENTER(TOP_LAYER);
 
    sge_callback_result ret = SGE_EMA_OK;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context, *ep;
    const lList **master_list;
    const lList *master_job_list;
@@ -589,7 +589,7 @@ int main(int argc, char *argv[]) {
 
    lListElem *spooling_context;
    time_t next_prof_output = 0;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    sge_evc_class_t *evc = nullptr;
 
    /* parse commandline parameters */

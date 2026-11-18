@@ -43,6 +43,7 @@
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/sge_answer.h"
 
 /** @name The default-request files, in the order they are read
  *
@@ -69,31 +70,37 @@
 /** @} */
 
 void opt_list_append_opts_from_default_files(uint32_t prog_number, const char *cell_root, const char *username,
-                                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **answer_list,
-                                             char **envp);
+                                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **envp);
 OCS_TRANSITIONAL void opt_list_append_opts_from_default_files(uint32_t prog_number, const char *cell_root,
                                                               const char *username, lList **pcmdline,
-                                                              lList **answer_list, char **envp);
+                                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                              char **envp);
 
 void opt_list_append_opts_from_qsub_cmdline(uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &opts_cmdline,
-                                            lList **answer_list, const char **argv, char **envp);
+                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char **argv,
+                                            char **envp);
 OCS_TRANSITIONAL void opt_list_append_opts_from_qsub_cmdline(uint32_t prog_number, lList **opts_cmdline,
-                                                             lList **answer_list, const char **argv, char **envp);
+                                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                             const char **argv, char **envp);
 
 void opt_list_append_opts_from_qalter_cmdline(uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &opts_cmdline,
-                                              lList **answer_list, const char **argv, char **envp);
+                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char **argv,
+                                              char **envp);
 
 void opt_list_append_opts_from_script(uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &opts_scriptfile,
-                                      lList **answer_list, ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline,
-                                      char **envp);
+                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                      ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline, char **envp);
 OCS_TRANSITIONAL void opt_list_append_opts_from_script(uint32_t prog_number, lList **opts_scriptfile,
-                                                       lList **answer_list, const lList *opts_cmdline, char **envp);
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                       const lList *opts_cmdline, char **envp);
 
 void opt_list_append_opts_from_script_path(uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &opts_scriptfile,
-                                           const char *path, lList **answer_list,
+                                           const char *path, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                            ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline, char **envp);
 OCS_TRANSITIONAL void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_scriptfile,
-                                                            const char *path, lList **answer_list,
+                                                            const char *path,
+                                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                             const lList *opts_cmdline, char **envp);
 
 void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
@@ -105,10 +112,11 @@ bool opt_list_has_X(ocs::tom::ConstList<ocs::tom::SPA> opts, const char *option)
 
 bool opt_list_is_X_true(ocs::tom::ConstList<ocs::tom::SPA> opts, const char *option);
 
-void opt_list_verify_scope(ocs::tom::ConstList<ocs::tom::SPA> opts, lList **alpp);
+void opt_list_verify_scope(ocs::tom::ConstList<ocs::tom::SPA> opts, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
-bool get_user_home_file_path(dstring *absolut_filename, const char *filename, const char *user, lList **answer_list);
+bool get_user_home_file_path(dstring *absolut_filename, const char *filename, const char *user,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 const char *get_root_file_path(dstring *absolut_filename, const char *cell_root, const char *filename);
 
-bool get_user_home(dstring *home_dir, const char *user, lList **answer_list);
+bool get_user_home(dstring *home_dir, const char *user, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

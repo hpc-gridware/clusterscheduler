@@ -56,7 +56,7 @@
  * @return true if the role is valid
  */
 bool
-ocs::Role::validate(const ocs::tom::ConstElement<ocs::tom::RL> role, lList **answer_list,
+ocs::Role::validate(const ocs::tom::ConstElement<ocs::tom::RL> role, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                     [[maybe_unused]] const bool startup) {
    DENTER(TOP_LAYER);
 
@@ -77,7 +77,7 @@ ocs::Role::validate(const ocs::tom::ConstElement<ocs::tom::RL> role, lList **ans
  * @return as validate()
  */
 bool
-ocs::Role::validate(const lListElem *role, lList **answer_list, const bool startup) {
+ocs::Role::validate(const lListElem *role, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const bool startup) {
    return validate(ocs::tom::ConstElement<ocs::tom::RL>(role), answer_list, startup);
 }
 
@@ -94,7 +94,8 @@ ocs::Role::validate(const lListElem *role, lList **answer_list, const bool start
  */
 void
 ocs::Role::check_integrity(const ocs::tom::ConstList<ocs::tom::RL> role_list,
-                           const ocs::tom::ConstList<ocs::tom::US> userset_list, lList **answer_list) {
+                           const ocs::tom::ConstList<ocs::tom::US> userset_list,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    for (const auto role : role_list) {
@@ -130,7 +131,8 @@ ocs::Role::check_integrity(const ocs::tom::ConstList<ocs::tom::RL> role_list,
  * @param[out] answer_list receives the warnings
  */
 void
-ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list) {
+ocs::Role::check_integrity(const lList *role_list, const lList *userset_list,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    check_integrity(ocs::tom::ConstList<ocs::tom::RL>(role_list), ocs::tom::ConstList<ocs::tom::US>(userset_list),
                    answer_list);
 }
@@ -148,7 +150,8 @@ ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lL
  * @return               True on success, false if the syntax is invalid.
  */
 bool
-ocs::Role::parse_perm_list(const char *perm_list_str, PermRuleList &rules, lList **answer_list) {
+ocs::Role::parse_perm_list(const char *perm_list_str, PermRuleList &rules,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    rules.clear();
@@ -560,10 +563,10 @@ static void collect_recursive(const char *role_name, const ocs::tom::ConstList<o
    // append this role's own rules first
    const char *perm_str = ocs::tom::get<RL_perm_list>(role);
    if (perm_str != nullptr && strcmp(perm_str, "NONE") != 0) {
-      lList *dummy_al = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> dummy_al;
       ocs::Role::PermRuleList own_rules;
       ocs::Role::parse_perm_list(perm_str, own_rules, &dummy_al);
-      lFreeList(&dummy_al);
+      dummy_al.reset();
       rules.insert(rules.end(), own_rules.begin(), own_rules.end());
    }
 

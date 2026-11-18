@@ -59,7 +59,8 @@ ocs::set_qconf_write_provider(const qconf_write_provider provider) {
  * @return true when the batch was applied as the policy demands
  */
 bool
-ocs::QConfWriteModelServer::make_snapshot(lList **answer_list, QConfWriteParameter &parameter) {
+ocs::QConfWriteModelServer::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                          QConfWriteParameter &parameter) {
    DENTER(TOP_LAYER);
 
    if (qconf_write_provider_fn == nullptr) {

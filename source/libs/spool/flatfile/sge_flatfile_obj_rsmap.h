@@ -25,6 +25,7 @@
 
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
+#include "sgeobj/sge_answer.h"
 
 /** @name The grammar of an RSMAP characteristics block
  *
@@ -49,7 +50,7 @@
 /** @} */
 
 int read_CE_stringval_host(lListElem *ep, int nm, const char *buf,
-                           lList **alp);
+                           ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
 int write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer,
-                            lList **alp);
+                            ocs::tom::ListPtr<ocs::tom::AN> *alp);

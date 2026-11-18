@@ -58,6 +58,7 @@
 #include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "sgeobj/cull/sge_qinstance_QU_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Values for `QU_qtype`
@@ -76,17 +77,17 @@ enum {
    GDI_DO_LATER = 0x01       ///< apply the change when the queue next becomes idle, not now
 };
 
-bool qinstance_validate(ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+bool qinstance_validate(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                         ocs::tom::ConstList<ocs::tom::CE> centry_master_list);
-OCS_TRANSITIONAL bool qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
-                                         const lList *centry_master_list);
+OCS_TRANSITIONAL bool qinstance_validate(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                         const lList *master_exechost_list, const lList *centry_master_list);
 
-bool qinstance_list_validate(ocs::tom::List<ocs::tom::QU> this_list, lList **answer_list,
+bool qinstance_list_validate(ocs::tom::List<ocs::tom::QU> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                              ocs::tom::ConstList<ocs::tom::CE> centry_master_list);
-OCS_TRANSITIONAL bool qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list,
-                                              const lList *centry_master_list);
+OCS_TRANSITIONAL bool qinstance_list_validate(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                              const lList *master_exechost_list, const lList *centry_master_list);
 
 void qinstance_set_full_name(ocs::tom::Element<ocs::tom::QU> this_elem);
 OCS_TRANSITIONAL void qinstance_set_full_name(lListElem *this_elem);
@@ -173,13 +174,13 @@ int rc_debit_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Cons
 //explicit_job_request(lListElem *jep, const char *name);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(ocs::tom::ConstList<ocs::tom::QU> this_list,
-                                                                         lList **answer_list,
+                                                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                                          const char *hostname_pattern);
 
-bool qinstance_verify(ocs::tom::ConstElement<ocs::tom::QU> qep, lList **answer_list);
+bool qinstance_verify(ocs::tom::ConstElement<ocs::tom::QU> qep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool
-qinstance_verify_full_name(lList **answer_list, const char *full_name);
+qinstance_verify_full_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *full_name);
 
 void qinstance_set_error(ocs::tom::Element<ocs::tom::QU> qinstance, uint32_t type, const char *message,
                          bool set_error);

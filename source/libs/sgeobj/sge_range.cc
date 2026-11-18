@@ -280,7 +280,8 @@ static bool range_is_overlapping(const ocs::tom::ConstElement<ocs::tom::RN> this
  * @param answer_list Pointer to a AN_Type-list or nullptr; unused since creating the list throws on a lack
  *                    of memory instead of failing
  */
-void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list, [[maybe_unused]] lList **answer_list) {
+void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
+                           [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(RANGE_LAYER);
    if (this_list) {
       const auto list = *this_list;
@@ -304,7 +305,7 @@ void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list, [[maybe_u
  * @param this_list Pointer to a RN_Type-list, checked; nothing happens for nullptr
  * @param answer_list Pointer to a AN_Type-list or nullptr
  */
-void range_list_initialize(lList **this_list, lList **answer_list) {
+void range_list_initialize(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (this_list != nullptr) {
       ocs::tom::ListPtr<ocs::tom::RN> list(*this_list);
       range_list_initialize(list, answer_list);
@@ -445,7 +446,8 @@ void range_list_print_to_string(const lList *this_list, dstring *string, bool ig
  *
  * @see #range_list_get_last_id
  */
-uint32_t range_list_get_first_id(const ocs::tom::ConstList<ocs::tom::RN> range_list, lList **answer_list) {
+uint32_t range_list_get_first_id(const ocs::tom::ConstList<ocs::tom::RN> range_list,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(RANGE_LAYER);
 
    uint32_t start = 0;
@@ -470,7 +472,7 @@ uint32_t range_list_get_first_id(const ocs::tom::ConstList<ocs::tom::RN> range_l
  *
  * @return as range_list_get_first_id()
  */
-uint32_t range_list_get_first_id(const lList *range_list, lList **answer_list) {
+uint32_t range_list_get_first_id(const lList *range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return range_list_get_first_id(ocs::tom::ConstList<ocs::tom::RN>(range_list), answer_list);
 }
 
@@ -489,7 +491,8 @@ uint32_t range_list_get_first_id(const lList *range_list, lList **answer_list) {
  *
  * @see #range_list_get_first_id
  */
-uint32_t range_list_get_last_id(const ocs::tom::ConstList<ocs::tom::RN> range_list, lList **answer_list) {
+uint32_t range_list_get_last_id(const ocs::tom::ConstList<ocs::tom::RN> range_list,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(RANGE_LAYER);
 
    uint32_t end = 0;
@@ -513,7 +516,7 @@ uint32_t range_list_get_last_id(const ocs::tom::ConstList<ocs::tom::RN> range_li
  *
  * @return as range_list_get_last_id()
  */
-uint32_t range_list_get_last_id(const lList *range_list, lList **answer_list) {
+uint32_t range_list_get_last_id(const lList *range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return range_list_get_last_id(ocs::tom::ConstList<ocs::tom::RN>(range_list), answer_list);
 }
 
@@ -582,8 +585,8 @@ double range_list_get_average(const lList *this_list, uint32_t upperbound) {
  *
  * @note MT-NOTE: range_list_sort_uniq_compress() is MT safe
  */
-void range_list_sort_uniq_compress(const ocs::tom::List<ocs::tom::RN> range_list, lList **answer_list,
-                                   const bool correct_end) {
+void range_list_sort_uniq_compress(const ocs::tom::List<ocs::tom::RN> range_list,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const bool correct_end) {
    DENTER(RANGE_LAYER);
    if (range_list) {
       /*
@@ -650,7 +653,7 @@ void range_list_sort_uniq_compress(const ocs::tom::List<ocs::tom::RN> range_list
  * @param answer_list Pointer to an AN_Type list
  * @param correct_end if true, range_list is treated as id enumeration
  */
-void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool correct_end) {
+void range_list_sort_uniq_compress(lList *range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool correct_end) {
    range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN>(range_list), answer_list, correct_end);
 }
 
@@ -912,7 +915,8 @@ bool range_is_id_within(const ocs::tom::ConstElement<ocs::tom::RN> range, const 
  *
  * @note range_list and answer_list may be modified
  */
-void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list, const uint32_t id) {
+void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          const uint32_t id) {
    DENTER(RANGE_LAYER);
 
    if (range_list) {
@@ -968,7 +972,7 @@ void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **a
  * @param answer_list pointer to a AN_Type list
  * @param id the id to remove
  */
-void range_list_remove_id(lList **range_list, lList **answer_list, uint32_t id) {
+void range_list_remove_id(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id) {
    if (range_list != nullptr) {
       ocs::tom::ListPtr<ocs::tom::RN> list(*range_list);
       range_list_remove_id(list, answer_list, id);
@@ -995,7 +999,8 @@ void range_list_remove_id(lList **range_list, lList **answer_list, uint32_t id) 
  *       loop, so the outer loop continues with the next range and n wraps
  *       around; kept unchanged here.
  */
-void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list,
+void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  ocs::tom::ListPtr<ocs::tom::RN> &range_list2, uint32_t n) {
    DENTER(RANGE_LAYER);
    if (range_list) {
@@ -1030,7 +1035,8 @@ void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lL
  * @param range_list2 pointer to a RN_Type list (destination), checked
  * @param n number of ids
  */
-void range_list_move_first_n_ids(lList **range_list, lList **answer_list, lList **range_list2, uint32_t n) {
+void range_list_move_first_n_ids(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **range_list2,
+                                 uint32_t n) {
    if (range_list != nullptr && range_list2 != nullptr) {
       // both checked before either is taken over
       const ocs::tom::List<ocs::tom::RN> checked_source(*range_list);
@@ -1064,8 +1070,8 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list, lList 
  *
  * @see #range_list_compress, range_list_sort_uniq_compress()
  */
-void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, [[maybe_unused]] lList **answer_list,
-                          const uint32_t id) {
+void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
+                          [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t id) {
    DENTER(RANGE_LAYER);
    if (!range_list) {
       range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("task_id_range");
@@ -1083,7 +1089,7 @@ void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, [[maybe_u
  * @param answer_list pointer to a AN_Type list
  * @param id new id
  */
-void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) {
+void range_list_insert_id(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id) {
    ocs::tom::ListPtr<ocs::tom::RN> list(*range_list);
    range_list_insert_id(list, answer_list, id);
    *range_list = list.release();
@@ -1299,7 +1305,8 @@ void range_set_all_ids(lListElem *range, uint32_t min, uint32_t max, uint32_t st
  *
  * @note range_list and answer_list may be modified
  */
-void range_list_calculate_union_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list,
+void range_list_calculate_union_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     const ocs::tom::ConstList<ocs::tom::RN> range_list1,
                                     const ocs::tom::ConstList<ocs::tom::RN> range_list2) {
    DENTER(RANGE_LAYER);
@@ -1344,7 +1351,7 @@ void range_list_calculate_union_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
  * @param range_list1 first source RN_Type list, checked; may be nullptr
  * @param range_list2 second source RN_Type list, checked; may be nullptr
  */
-void range_list_calculate_union_set(lList **range_list, lList **answer_list,
+void range_list_calculate_union_set(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     const lList *range_list1, const lList *range_list2) {
    if (range_list != nullptr) {
       // the sources are checked before the result is taken over
@@ -1368,7 +1375,8 @@ void range_list_calculate_union_set(lList **range_list, lList **answer_list,
  * @param range_list1 first source RN_Type list, may be an empty handle
  * @param range_list2 second source RN_Type list, may be an empty handle
  */
-void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list, lList **answer_list,
+void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                          const ocs::tom::ConstList<ocs::tom::RN> range_list1,
                                          const ocs::tom::ConstList<ocs::tom::RN> range_list2) {
    DENTER(RANGE_LAYER);
@@ -1412,7 +1420,7 @@ void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &range_
  * @param range_list1 first source RN_Type list, checked; may be nullptr
  * @param range_list2 second source RN_Type list, checked; may be nullptr
  */
-void range_list_calculate_difference_set(lList **range_list, lList **answer_list,
+void range_list_calculate_difference_set(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                          const lList *range_list1, const lList *range_list2) {
    if (range_list != nullptr) {
       // the sources are checked before the result is taken over
@@ -1438,7 +1446,7 @@ void range_list_calculate_difference_set(lList **range_list, lList **answer_list
  * @param range_list2 second source RN_Type list, may be an empty handle
  */
 void range_list_calculate_intersection_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
-                                           [[maybe_unused]] lList **answer_list,
+                                           [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                            const ocs::tom::ConstList<ocs::tom::RN> range_list1,
                                            const ocs::tom::ConstList<ocs::tom::RN> range_list2) {
    DENTER(RANGE_LAYER);
@@ -1472,7 +1480,7 @@ void range_list_calculate_intersection_set(ocs::tom::ListPtr<ocs::tom::RN> &rang
  * @param range_list1 first source RN_Type list, checked; may be nullptr
  * @param range_list2 second source RN_Type list, checked; may be nullptr
  */
-void range_list_calculate_intersection_set(lList **range_list, lList **answer_list,
+void range_list_calculate_intersection_set(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                            const lList *range_list1, const lList *range_list2) {
    // the sources are checked before the result is taken over
    const ocs::tom::ConstList<ocs::tom::RN> list1(range_list1);
@@ -1543,7 +1551,8 @@ void range_to_dstring(uint32_t start, uint32_t end, int step,
  * @note MT-NOTE: range_parse_from_string() is MT safe
  */
 ocs::tom::ElementPtr<ocs::tom::RN>
-range_parse_from_string(lList **answer_list, const char *rstr, const int step_allowed, const int inf_allowed) {
+range_parse_from_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *rstr, const int step_allowed,
+                        const int inf_allowed) {
    DENTER(TOP_LAYER);
 
    const char *old_str;
@@ -1744,7 +1753,7 @@ range_parse_get_ids(const char *value, const int step_allowed, uint32_t &start, 
  * @note MT-NOTE: range_list_parse_from_string() is MT safe
  */
 bool
-range_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::RN> &this_list, lList **answer_list,
+range_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::RN> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              const char *string, const bool just_parse,
                              const bool step_allowed, const bool inf_allowed) {
    DENTER(TOP_LAYER);
@@ -1802,8 +1811,8 @@ range_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::RN> &this_list, lList *
  * @param inf_allowed whether an open upper bound may appear
  * @return as range_list_parse_from_string()
  */
-bool range_list_parse_from_string(lList **this_list, lList **answer_list, const char *string, bool just_parse,
-                                  bool step_allowed, bool inf_allowed) {
+bool range_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string,
+                                  bool just_parse, bool step_allowed, bool inf_allowed) {
    // a list built without a target is not handed out, the handle frees it
    ocs::tom::ListPtr<ocs::tom::RN> list(this_list != nullptr ? *this_list : nullptr);
    const bool ret = range_list_parse_from_string(list, answer_list, string, just_parse, step_allowed, inf_allowed);

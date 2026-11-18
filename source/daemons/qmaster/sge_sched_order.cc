@@ -86,8 +86,8 @@ schedd_order_destroy() {
  * @return true on success
  */
 bool
-sge_schedd_send_orders(order_t *orders, ocs::tom::ListPtr<ocs::tom::OR> &order_list, lList **answer_list,
-                       const char *name) {
+sge_schedd_send_orders(order_t *orders, ocs::tom::ListPtr<ocs::tom::OR> &order_list,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -121,7 +121,7 @@ sge_schedd_send_orders(order_t *orders, ocs::tom::ListPtr<ocs::tom::OR> &order_l
  * @return true on success
  */
 bool
-sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list) {
+sge_schedd_add_gdi_order_request(order_t *orders, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **order_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    auto *gdi_multi = new ocs::gdi::Request();
@@ -163,7 +163,7 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
  * @return true when every outstanding request was applied
  */
 bool
-sge_schedd_block_until_orders_processed(lList **answer_list) {
+sge_schedd_block_until_orders_processed(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    sge_sl_elem_t *next_elem = nullptr;
@@ -175,7 +175,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
    sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
    while ((current_elem = next_elem) != nullptr) {
       auto *gdi_multi = static_cast<ocs::gdi::Request *>(sge_sl_elem_data(current_elem));
-      lList *request_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> request_answer_list;
       lList *multi_answer_list = nullptr;
 
       /* get next element, dechain current and destroy it */
@@ -202,7 +202,7 @@ sge_schedd_block_until_orders_processed(lList **answer_list) {
       /*
        * memory cleanup
        */
-      lFreeList(&request_answer_list);
+      request_answer_list.reset();
       lFreeList(&multi_answer_list);
       delete gdi_multi;
    }

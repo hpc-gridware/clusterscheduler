@@ -26,6 +26,7 @@
 #include "cull/cull.h"
 
 #include "ocs_QRStatModelBase.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief QRStat model for the client execution context.
@@ -38,7 +39,7 @@ namespace ocs {
     */
    class QRStatModelClient : public QRStatModelBase {
    protected:
-      bool fetch_data(lList **answer_list, QRStatParameter& parameter) override;
+      bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) override;
    public:
       QRStatModelClient() = default;
       ~QRStatModelClient() override = default;

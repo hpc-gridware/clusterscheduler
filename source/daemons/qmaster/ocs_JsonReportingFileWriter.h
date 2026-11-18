@@ -32,6 +32,7 @@
 #include "sgeobj/tom/ocs_tom_STU.h"
 
 #include "ocs_BaseReportingFileWriter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
 
@@ -47,54 +48,61 @@ namespace ocs {
       create_record(rapidjson::StringBuffer &stringBuffer);
 
       bool
-      create_new_job_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      create_new_job_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            ocs::tom::ConstElement<ocs::tom::JB> job) override;
 
       bool
-      create_job_log(lList **answer_list, uint64_t event_time, job_log_t, const char *user, const char *host,
+      create_job_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t event_time, job_log_t, const char *user,
+                     const char *host,
                      ocs::tom::ConstElement<ocs::tom::JR> job_report, ocs::tom::ConstElement<ocs::tom::JB> job,
                      ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstElement<ocs::tom::PET> pe_task,
                      const char *message) override;
 
       bool
-      create_acct_record(lList **answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
+      create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
                          ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
                          bool intermediate) override;
 
       bool
-      create_online_usage_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JR> job_report,
+      create_online_usage_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 ocs::tom::ConstElement<ocs::tom::JR> job_report,
                                  ocs::tom::ConstElement<ocs::tom::JB> job,
                                  ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                  ocs::tom::ConstElement<ocs::tom::PET> pe_task, bool aggregate_pe_tasks) override;
 
       bool
-      create_host_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host, uint64_t report_time) override;
+      create_host_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+                         uint64_t report_time) override;
 
       bool
-      create_host_consumable_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+      create_host_consumable_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                    ocs::tom::ConstElement<ocs::tom::EH> host,
                                     ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time) override;
 
       bool
-      create_queue_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::QU> queue,
+      create_queue_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::QU> queue,
                           uint64_t report_time) override;
 
       bool
-      create_queue_consumable_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+      create_queue_consumable_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                     ocs::tom::ConstElement<ocs::tom::EH> host,
                                      ocs::tom::ConstElement<ocs::tom::QU> queue,
                                      ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time) override;
 
       bool
-      create_new_ar_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time) override;
+      create_new_ar_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
+                           uint64_t report_time) override;
 
       bool
-      create_ar_attribute_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
+      create_ar_attribute_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
                                  uint64_t report_time) override;
 
       bool
-      create_ar_log_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, ar_state_event_t state,
-                           const char *ar_description, uint64_t report_time) override;
+      create_ar_log_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
+                           ar_state_event_t state, const char *ar_description, uint64_t report_time) override;
 
       bool
-      create_ar_acct_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
+      create_ar_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar,
                             uint64_t report_time) override;
 
       void

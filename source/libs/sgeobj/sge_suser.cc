@@ -49,6 +49,7 @@
 
 #include <cinttypes>
 #include "msg_qmaster.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Add a new entry (uniq) entry into a list
@@ -67,7 +68,8 @@
  *
  * @return SU_Type element or an empty handle
  */
-ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list, [[maybe_unused]] lList **answer_list,
+ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list,
+                                               [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                const char *suser_name) {
    DENTER(TOP_LAYER);
 

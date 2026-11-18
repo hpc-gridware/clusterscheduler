@@ -26,6 +26,7 @@
 #include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_QHostModelBase.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief QHost model for the server execution context.
@@ -43,7 +44,7 @@ namespace ocs {
       
    protected:
 
-      bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+      bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstList<ocs::tom::ST> hostname_list,
                       ocs::tom::ConstList<ocs::tom::ST> user_name_list, uint32_t show) override;
 
    public:

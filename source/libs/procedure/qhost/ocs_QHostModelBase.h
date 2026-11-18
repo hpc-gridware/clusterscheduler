@@ -36,6 +36,7 @@
 
 #include "ocs_QHostParameter.h"
 #include "procedure/ocs_ProcedureModel.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
 
@@ -136,16 +137,17 @@ namespace ocs {
 
       static lEnumeration *get_user_set_what();
 
-      virtual bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+      virtual bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                              ocs::tom::ConstList<ocs::tom::ST> hostname_list,
                               ocs::tom::ConstList<ocs::tom::ST> user_name_list, uint32_t show);
 
-      virtual bool prepare_data(lList **answer_list, ocs::tom::List<ocs::tom::CE> resource_match_list,
-                                uint32_t show) const;
+      virtual bool prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                ocs::tom::List<ocs::tom::CE> resource_match_list, uint32_t show) const;
 
       virtual void filter_data(ocs::tom::ConstList<ocs::tom::CE> resource_match_list);
       virtual void sort_data();
    public:
-      virtual bool make_snapshot(lList **answer_list, QHostParameter &parameter);
+      virtual bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QHostParameter &parameter);
 #pragma endregion
 
 #pragma region Constructors/Destructors

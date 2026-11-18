@@ -61,7 +61,8 @@ struct qconf_attr_entry {
    int nm_name;                              ///< the CULL field holding the object's name, its key
    spooling_field *fields;                   ///< which fields the attribute text is read with
    const struct spool_flatfile_instr *instr; ///< how the attribute text is laid out
-   bool (*pre_gdi_function)(lList *list, lList **answer_list);   ///< validation to run before sending, or `nullptr`
+   /// validation to run before sending, or `nullptr`
+   bool (*pre_gdi_function)(lList *list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 };
 
 /** @brief Write one attribute line "name<delimiter>value" into a new temporary file
@@ -127,8 +128,8 @@ FCLOSE_ERROR:
  * @return 1 when the request was not sent, 0 otherwise
  */
 static int
-qconf_modify_attribute(lList **alpp, const qconf_op &op, const bool from_file, const ocs::gdi::SubCommand sub_command,
-                       const qconf_attr_entry *info_entry) {
+qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op, const bool from_file,
+                       const ocs::gdi::SubCommand sub_command, const qconf_attr_entry *info_entry) {
    DENTER(TOP_LAYER);
 
    int fields[150];
@@ -303,7 +304,7 @@ qconf_modify_attribute(lList **alpp, const qconf_op &op, const bool from_file, c
 }
 
 QConfOpResult
-qconf_run_attr(const qconf_op &op, lList **alpp) {
+qconf_run_attr(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const std::string &t = op.token;
@@ -367,18 +368,18 @@ qconf_run_attr(const qconf_op &op, lList **alpp) {
       DRETURN(QConfOpResult::FAILED);
    }
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const int ret = qconf_modify_attribute(&alp, op, from_file, sub_command, entry);
    sge_free(&eh_fields);
 
    /* these switches report a success on stdout, so the list is printed here,
     * with the informations on stdout (CS-2971) */
    bool failed = false;
-   if (ret != 0 || lGetNumberOfElem(alp) > 0) {
+   if (ret != 0 || alp->size() > 0) {
       failed = qconf_answer_take(alpp, &alp) != 0;
       qconf_answer_print(alpp, stdout);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(failed ? QConfOpResult::FAILED : QConfOpResult::OK);
 }

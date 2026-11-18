@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
    ocs::TerminationManager::install_terminate_handler();
 
    // prepare gdi client and enroll at qmaster
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    if (ocs::gdi::ClientBase::setup_and_enroll(QHOST, MAIN_THREAD, &answer_list) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&answer_list);
       sge_exit(1);

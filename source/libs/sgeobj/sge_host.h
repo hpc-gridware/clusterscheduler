@@ -58,6 +58,7 @@
 #include "sgeobj/cull/sge_host_HL_L.h"
 #include "sgeobj/cull/sge_host_HS_L.h"
 #include "sgeobj/cull/sge_host_RESL_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @name Standard load value names
@@ -123,10 +124,10 @@
 #define LOAD_ATTR_DEVICES        "devices"
 /** @} */
 
-bool host_is_referenced(const lListElem *host, lList **answer_list, ocs::tom::ConstList<ocs::tom::CQ> queue_list,
-                        ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list);
-OCS_TRANSITIONAL bool host_is_referenced(const lListElem *host, lList **answer_list, const lList *queue_list,
-                                         const lList *hgrp_list);
+bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        ocs::tom::ConstList<ocs::tom::CQ> queue_list, ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list);
+OCS_TRANSITIONAL bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                         const lList *queue_list, const lList *hgrp_list);
 
 int sge_resolve_host(lListElem *ep, int nm);
 

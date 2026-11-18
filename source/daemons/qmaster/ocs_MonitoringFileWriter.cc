@@ -32,6 +32,7 @@
 
 #include "ocs_MonitoringFileWriter.h"
 #include "ocs_JsonUtil.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Accounting records are not part of the monitoring file: does nothing
@@ -42,7 +43,8 @@ namespace ocs {
     * @param intermediate whether this is an interim record, unused
     * @return true
     */
-   bool MonitoringFileWriter::create_acct_record(lList **answer_list, const ocs::tom::Element<ocs::tom::JR> job_report,
+   bool MonitoringFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const ocs::tom::Element<ocs::tom::JR> job_report,
                                                  const ocs::tom::Element<ocs::tom::JB> job,
                                                  const ocs::tom::Element<ocs::tom::JAT> ja_task, bool intermediate) {
       return true;

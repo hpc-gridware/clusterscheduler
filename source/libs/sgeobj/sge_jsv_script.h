@@ -44,9 +44,10 @@
 #include "sgeobj/tom/ocs_tom_JSV.h"
 
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
+#include "sgeobj/sge_answer.h"
 
 bool
-jsv_do_communication(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list);
+jsv_do_communication(ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool
-jsv_is_modify_rejected(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JB> job);
+jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::JB> job);

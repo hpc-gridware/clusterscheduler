@@ -47,6 +47,7 @@
 #include "spool/classic/read_write_job.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "sgeobj/sge_answer.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -84,10 +85,10 @@ make_array_job(const uint32_t job_id) {
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    job->set<JB_job_number>(job_id);
    job->set<JB_job_name>("cs3120");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lList *structure = nullptr;
    range_list_parse_from_string(&structure, &alp, "1-2", false, true, INF_NOT_ALLOWED);
-   lFreeList(&alp);
+   alp.reset();
    ocs::tom::set<JB_ja_structure>(*job, structure);
    auto tasks = ocs::tom::ListPtr<ocs::tom::JAT>::create("ja_tasks");
    for (uint32_t task_id = 1; task_id <= 2; task_id++) {

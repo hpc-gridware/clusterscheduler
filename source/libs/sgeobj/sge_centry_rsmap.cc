@@ -67,7 +67,7 @@
  * @param attrname the resource's name, for the message
  * @return true when the combination is allowed
  */
-bool centry_check_rsmap(lList **answer_list, uint32_t consumable, const char *attrname) {
+bool centry_check_rsmap(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t consumable, const char *attrname) {
    bool ret = true;
 
    if (consumable == CONSUMABLE_NO) {
@@ -108,7 +108,8 @@ bool centry_check_rsmap(lList **answer_list, uint32_t consumable, const char *at
  *                             the answer_list — the function does not stop
  *                             on the first error within a single centry)
  */
-bool centry_check_rsmap_characteristics(lList **answer_list, const ocs::tom::Element<ocs::tom::CE> centry,
+bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                        const ocs::tom::Element<ocs::tom::CE> centry,
                                         const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -177,7 +178,7 @@ bool centry_check_rsmap_characteristics(lList **answer_list, const ocs::tom::Ele
          // numeric types and returns -1 on parse failure (with its own answer_list
          // entry). We wrap that with our own message so the host/RSMAP/id context
          // is preserved in the error.
-         lList *sub_answers = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> sub_answers;
          if (centry_fill_and_check(prop, &sub_answers, false, false) != 0) {
             const char *sub_msg = "";
             const lListElem *first = lFirst(sub_answers);   // answer lists stay untyped
@@ -190,11 +191,11 @@ bool centry_check_rsmap_characteristics(lList **answer_list, const ocs::tom::Ele
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_CHARACTERISTIC_PARSE_SSSS,
                                     rsmap_name, id != nullptr ? id : "", pname, sub_msg);
-            lFreeList(&sub_answers);
+            sub_answers.reset();
             ret = false;
             continue;
          }
-         lFreeList(&sub_answers);
+         sub_answers.reset();
 
          // The "devices" characteristic is the one the execd reads itself: it becomes the
          // DeviceAllow of the systemd scope of a job which is granted the instance, and systemd
@@ -243,7 +244,8 @@ bool centry_check_rsmap_characteristics(lList **answer_list, const ocs::tom::Ele
  * @param master_centry_list   the master complex-list (CE_Type), checked; may be nullptr
  * @return                     as centry_check_rsmap_characteristics()
  */
-bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry, const lList *master_centry_list) {
+bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *centry,
+                                        const lList *master_centry_list) {
    return centry_check_rsmap_characteristics(answer_list, ocs::tom::Element<ocs::tom::CE>(centry),
                                              ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
 }
@@ -379,7 +381,8 @@ centry_rsmap_split_params(const char *open, const char *close,
  * @param master_centry_list complex list (CE_Type), used to resolve a parameter which is not reserved
  * @return                   true if the request carries no parameter list or a valid one
  */
-bool centry_rsmap_check_request_params(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::CE> centry,
+bool centry_rsmap_check_request_params(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       const ocs::tom::ConstElement<ocs::tom::CE> centry,
                                        const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    const char *name = ocs::tom::get<CE_name>(centry);
@@ -687,9 +690,9 @@ centry_rsmap_resolve_request_properties(const ocs::tom::ConstElement<ocs::tom::C
       // parse the value as the type of the complex, so that a numeric comparison has an amount
       // to work with. A value which does not parse was refused at submission; here it simply
       // compares as the zero centry_fill_and_check leaves behind.
-      lList *sub_answers = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> sub_answers;
       centry_fill_and_check(req_ep, &sub_answers, false, false);
-      lFreeList(&sub_answers);
+      sub_answers.reset();
    }
 
    return resolved;
@@ -1649,8 +1652,8 @@ const char *centry_rsmap_best_free_id(const lListElem *resource_definition, cons
  * @return             true if nothing had to be done or the ids were created,
  *                     false if the amount exceeds max_ids
  */
-bool centry_rsmap_expand_implicit_ids(lList **answer_list, const ocs::tom::Element<ocs::tom::CE> centry,
-                                      const uint32_t max_ids) {
+bool centry_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                      const ocs::tom::Element<ocs::tom::CE> centry, const uint32_t max_ids) {
    DENTER(TOP_LAYER);
    if (!centry ||
        static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)) != ocs::CEntry::Type::RSMAP) {
@@ -1701,7 +1704,8 @@ bool centry_rsmap_expand_implicit_ids(lList **answer_list, const ocs::tom::Eleme
  * @param max_ids      upper bound for the number of ids to create, 0 disables the implicit ids
  * @return             as centry_rsmap_expand_implicit_ids()
  */
-bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, const uint32_t max_ids) {
+bool centry_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *centry,
+                                      const uint32_t max_ids) {
    return centry_rsmap_expand_implicit_ids(answer_list, ocs::tom::Element<ocs::tom::CE>(centry), max_ids);
 }
 
@@ -1716,7 +1720,8 @@ bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, co
  * @param centry_list  CE_Type list of an exec host (EH_consumable_config_list), may be an empty handle
  * @return             true if no entry was rejected
  */
-bool centry_list_rsmap_expand_implicit_ids(lList **answer_list, const ocs::tom::List<ocs::tom::CE> centry_list) {
+bool centry_list_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           const ocs::tom::List<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    const auto max_ids = static_cast<uint32_t>(mconf_get_max_rsmap_ids());

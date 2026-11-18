@@ -45,6 +45,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @name Queue instance states
@@ -117,11 +118,11 @@
 
 /// Is this a transition a queue instance accepts?
 bool
-transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list);
+transition_is_valid_for_qinstance(uint32_t transition, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 /// Is this a transition option a queue instance accepts?
 bool
-transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list);
+transition_option_is_valid_for_qinstance(uint32_t option, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 #ifdef __SGE_QINSTANCE_STATE_DEBUG__
 #  define QI_DO_SETERROR               0x00100000
@@ -131,7 +132,7 @@ bool qinstance_has_state(ocs::tom::ConstElement<ocs::tom::QU> this_elem, uint32_
 
 const char *qinstance_state_as_string(uint32_t bit);
 
-uint32_t qinstance_state_from_string(const char *state, lList **answer_list, uint32_t filter);
+uint32_t qinstance_state_from_string(const char *state, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t filter);
 
 bool qinstance_state_set_alarm(ocs::tom::Element<ocs::tom::QU> this_elem, bool set_state);
 

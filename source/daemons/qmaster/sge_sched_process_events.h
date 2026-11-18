@@ -41,6 +41,7 @@
 #include "mir/sge_mirror.h"
 #include "sge_sched_prepare_data.h"
 #include "sge_sched_thread.h"
+#include "sgeobj/sge_answer.h"
 
 void st_set_flag_new_global_conf(bool new_value);
 
@@ -48,6 +49,6 @@ bool st_get_flag_new_global_conf();
 
 int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 
-void event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void * arg);
+void event_update_func(uint32_t ec_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list, void * arg);
 
 void set_job_flushing(sge_evc_class_t *evc);

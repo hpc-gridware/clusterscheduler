@@ -48,6 +48,7 @@
 #include "sgeobj/cull/sge_pe_task_PET_L.h"
 #include "sgeobj/cull/sge_pe_task_PETR_L.h"
 #include "sgeobj/cull/sge_pe_task_FPET_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Name of the element collecting the usage of already finished parallel tasks
@@ -68,4 +69,4 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(ocs::tom::List<ocs:
                                                              ocs::tom::ConstElement<ocs::tom::PET> pe_task);
 OCS_TRANSITIONAL lListElem *pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task);
 
-bool pe_task_verify_request(ocs::tom::ConstElement<ocs::tom::PETR> petr, lList **answer_list);
+bool pe_task_verify_request(ocs::tom::ConstElement<ocs::tom::PETR> petr, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

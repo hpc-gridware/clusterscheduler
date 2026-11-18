@@ -80,13 +80,13 @@ namespace ocs {
                { EV_host, 0, "host", false, nullptr, false, nullptr, nullptr, nullptr },
                { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr }
             };
-            lList *alp = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> alp;
             dstring out = DSTRING_INIT;
             spool_json_write_typed_list(&alp, list, ev_fields, "event_clients", &out);
             const char *text = sge_dstring_get_string(&out);
             os << ((text != nullptr) ? text : "");
             sge_dstring_free(&out);
-            lFreeList(&alp);
+            alp.reset();
             return;
          }
 

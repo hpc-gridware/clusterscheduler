@@ -39,6 +39,7 @@
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
 #include "msg_common.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief One calendar definition to parse and check */
 typedef struct {
@@ -303,7 +304,7 @@ static void printDateError(time_t *when, struct tm *expected) {
 static lListElem *createCalObject(cal_entry_t *calendar) {
    monitoring_t monitor;
    lListElem *destCal = nullptr;
-   lList *answerList = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answerList;
 
    sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR, nullptr);
 
@@ -316,9 +317,9 @@ static lListElem *createCalObject(cal_entry_t *calendar) {
 
    if (0 != calendar_mod(nullptr, nullptr, &answerList, destCal, *sourceCal, 1, "", "", nullptr,
                          ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, &monitor)) {
-      lWriteListTo(answerList, stdout);
+      lWriteListTo(*answerList, stdout);
       lFreeElem(&destCal);
-      lFreeList(&answerList);
+      answerList.reset();
    }
 
    sourceCal.reset();

@@ -38,6 +38,7 @@
 #include "uti/sge_monitor.h"
 
 #include "ocs_QConfActionParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
 
@@ -51,7 +52,8 @@ namespace ocs {
     * @return true when the action did not fail
     */
    using qconf_action_provider = bool (*)(gdi::Packet *packet, gdi::Task *task, monitoring_t *monitor,
-                                          const QConfActionParameter &parameter, lList **answer_list);
+                                          const QConfActionParameter &parameter,
+                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
    /** @brief Register the function of one action, called by qmaster at startup
     *
@@ -93,7 +95,7 @@ namespace ocs {
        * @param parameter the action and its arguments
        * @return true when the action did not fail
        */
-      bool make_snapshot(lList **answer_list, QConfActionParameter &parameter);
+      bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfActionParameter &parameter);
 
       /// @return nothing; an action has no output, only answers
       [[nodiscard]] const char *get_output_text() const { return ""; }

@@ -42,6 +42,9 @@
 #include "uti/sge_error_class.h"
 #include "sgeobj/cull/sge_multi_MA_L.h"
 #include "sgeobj/cull/sge_answer_AN_L.h"
+#include "sgeobj/tom/ocs_tom_AN.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /// How severe an answer element is; also selects the stream and macro it is printed with
 typedef enum {
@@ -90,63 +93,63 @@ typedef enum {
 } an_status_t;
 
 
-bool answer_has_quality(const lListElem *answer, answer_quality_t quality);
+bool answer_has_quality(const ocs::tom::ConstElement<ocs::tom::AN> answer, answer_quality_t quality);
 
-bool answer_is_recoverable(const lListElem *answer);
+bool answer_is_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> answer);
 
-void answer_exit_if_not_recoverable(const lListElem *answer);
+void answer_exit_if_not_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> answer);
 
-const char *answer_get_quality_text(const lListElem *answer);
+const char *answer_get_quality_text(const ocs::tom::ConstElement<ocs::tom::AN> answer);
 
-uint32_t answer_get_status(const lListElem *answer);
+uint32_t answer_get_status(const ocs::tom::ConstElement<ocs::tom::AN> answer);
 
-void answer_print_text(const lListElem *answer, 
+void answer_print_text(const ocs::tom::ConstElement<ocs::tom::AN> answer, 
                        FILE *stream,
                        const char *prefix,
                        const char *suffix);
 
-void answer_to_dstring(const lListElem *answer, dstring *diag);
+void answer_to_dstring(const ocs::tom::ConstElement<ocs::tom::AN> answer, dstring *diag);
 
-void answer_list_to_dstring(const lList *alp, dstring *diag);
+void answer_list_to_dstring(const ocs::tom::ConstList<ocs::tom::AN> alp, dstring *diag);
 
-bool answer_list_add_sprintf(lList **answer_list, uint32_t status,
+bool answer_list_add_sprintf(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t status,
                              answer_quality_t quality, const char *fmt, ...);
 
-bool answer_list_has_quality(lList **answer_list, 
+bool answer_list_has_quality(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                              answer_quality_t quality);
 
-void answer_list_remove_quality(lList *answer_list, answer_quality_t quality);
+void answer_list_remove_quality(const ocs::tom::List<ocs::tom::AN> answer_list, answer_quality_t quality);
 
 
-bool answer_list_has_status(lList **answer_list, 
+bool answer_list_has_status(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                             uint32_t status);
 
-bool answer_list_has_error(lList **answer_list);
+bool answer_list_has_error(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream);
+void answer_list_on_error_print_or_exit(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list, FILE *stream);
 
-int answer_list_print_err_warn(lList **answer_list,
+int answer_list_print_err_warn(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                const char *critical_prefix,
                                const char *err_prefix,
                                const char *warn_prefix);
 
-bool answer_list_output(lList **answer_list);
+bool answer_list_output(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info);
+bool answer_list_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool is_free_list, bool show_info);
 
-int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream);
+int answer_list_handle_request_answer_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, FILE *stream);
 
-bool answer_list_add(lList **answer_list, const char *text,
+bool answer_list_add(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *text,
                      uint32_t status, answer_quality_t quality);
 
-bool answer_list_add_elem(lList **answer_list, lListElem *answer);
+bool answer_list_add_elem(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementPtr<ocs::tom::AN> &&answer);
 
-void answer_list_replace(lList **answer_list, lList **new_list);
+void answer_list_replace(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::AN> *new_list);
 
-void answer_list_append_list(lList **answer_list, lList **new_list);
+void answer_list_append_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::AN> *new_list);
 
-int show_answer(lList *alp);
+int show_answer(const ocs::tom::ConstList<ocs::tom::AN> alp);
 
-int show_answer_list(lList *alp);
+int show_answer_list(const ocs::tom::ConstList<ocs::tom::AN> alp);
 
-void answer_list_from_sge_error(sge_error_class_t *eh, lList **alpp, bool clear_errors);
+void answer_list_from_sge_error(sge_error_class_t *eh, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool clear_errors);

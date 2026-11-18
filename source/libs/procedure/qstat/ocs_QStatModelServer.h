@@ -28,6 +28,7 @@
 #include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_QStatModelBase.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief QStat model for the server execution context.
@@ -44,7 +45,7 @@ namespace ocs {
       [[maybe_unused]] gdi::Task *task = nullptr;
 
    protected:
-      bool fetch_data(lList **answer_list, QStatParameter &parameter) override;
+      bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) override;
    public:
       /** @brief Build the server side model
        * @param packet the originating client packet, so permission checks see the real caller

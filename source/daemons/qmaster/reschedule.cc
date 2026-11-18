@@ -140,7 +140,7 @@ clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t
 void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr; /* AN_Type */
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list; /* AN_Type */
    ocs::tom::Element<ocs::tom::EH> hep;
    uint64_t timeout = sge_gmt32_to_gmt64(te_get_first_numeric_key(anEvent));
    uint64_t new_timeout;
@@ -206,7 +206,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
     * a sublist of the exechost object
     */
    reschedule_jobs(hep, 0, &answer_list, monitor, false, nullptr, nullptr, ocs::SessionManager::GDI_SESSION_NONE);
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    Error:
    sge_free(&hostname);
@@ -238,7 +238,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
  * @return 0 on success; 1 if one of the parameters was invalid
  */
 int
-reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *monitor,
+reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor,
                 bool is_manual, const char *caller_user, const char *caller_host, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    int ret = 1;
@@ -310,8 +310,8 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
  * @return 0 on success
  */
 int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
-                   const uint32_t force, lList **answer, monitoring_t *monitor, const bool is_manual,
-                   const char *caller_user, const char *caller_host, const uint64_t gdi_session) {
+                   const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor,
+                   const bool is_manual, const char *caller_user, const char *caller_host, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    // the callers pass a job and array task of the master job list, checked here once
@@ -661,7 +661,7 @@ add_to_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, const
       ocs::tom::set<RU_task_number>(ruep, task_number);
       ocs::tom::set<RU_state>(ruep, state);
       {
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                          0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr, host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
@@ -742,7 +742,7 @@ delete_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, 
          }
       }
       if (changed) {
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
                          0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
@@ -776,7 +776,7 @@ reschedule_clear_deferred_start(const ocs::tom::Element<ocs::tom::JB> jep, const
       CLEARBIT(JDEFERRED_REQ, state);
       ocs::tom::set<JAT_state>(jatep, state);
 
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr,
                       nullptr, jep, jatep, nullptr, true, true, gdi_session);
       answer_list_output(&answer_list);
@@ -905,7 +905,7 @@ update_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, const
       }
 
       if (changed) {
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD, 0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
                          host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);

@@ -31,6 +31,7 @@
 
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_Target.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs::gdi {
    /**
@@ -48,7 +49,7 @@ namespace ocs::gdi {
 
       Target target;           ///< which object list to act on
       lList *data_list;        ///< the objects to write, or the ones read back
-      lList *answer_list;      ///< qmaster's answer for this task
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list; ///< qmaster's answer for this task
       lCondition *condition;   ///< which objects to act on, from `lWhere()`
       lEnumeration *enumeration; ///< which fields to transfer, from `lWhat()`
 
@@ -81,7 +82,7 @@ namespace ocs::gdi {
       bool exec_hostgroup_out_of_sync;
    public:
       Task(Target target, Command command, SubCommand sub_cmd, lList **lp,
-           lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
+           ocs::tom::ListPtr<ocs::tom::AN> *a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
       Task();  ///< Build an empty task
       ~Task(); ///< Release the lists this task owns
 

@@ -880,7 +880,7 @@ void ocs::QStatModelBase::prepare_filter(QStatParameter &parameter) {
  * @param parameter the parsed parameters
  * @return true when everything could be fetched
  */
-bool ocs::QStatModelBase::fetch_data(lList **answer_list, QStatParameter &parameter) {
+bool ocs::QStatModelBase::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    // has to be overridden by derived class
    DRETURN(true);
@@ -895,7 +895,7 @@ bool ocs::QStatModelBase::fetch_data(lList **answer_list, QStatParameter &parame
  * @param parameter the parsed parameters
  * @return true when the lists could be prepared
  */
-bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &parameter) {
+bool ocs::QStatModelBase::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // report an error if response does not contain all information for the job view
@@ -1239,7 +1239,8 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
  * @param parameter the parsed parameters
  * @return 1 when queue instances remain, 0 when none do, -1 on an error
  */
-int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter &parameter) const {
+int ocs::QStatModelBase::filter_queues(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       const QStatParameter &parameter) const {
    DENTER(TOP_LAYER);
 
    centry_list_init_double(*centry_list_);
@@ -1703,7 +1704,7 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
  * @param parameter the parsed parameters
  * @return true when the filters could be applied
  */
-bool ocs::QStatModelBase::filter_data(lList **alpp, QStatParameter &parameter) {
+bool ocs::QStatModelBase::filter_data(ocs::tom::ListPtr<ocs::tom::AN> *alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // filter queues according to given parameters
@@ -1727,7 +1728,7 @@ bool ocs::QStatModelBase::filter_data(lList **alpp, QStatParameter &parameter) {
  * @param parameter    Parsed qstat parameters.
  * @return true if all pipeline steps succeeded.
  */
-bool ocs::QStatModelBase::make_snapshot(lList **answer_list, QStatParameter &parameter) {
+bool ocs::QStatModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    prepare_filter(parameter);

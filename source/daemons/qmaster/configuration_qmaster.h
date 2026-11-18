@@ -46,9 +46,11 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/sge_answer.h"
 
 int
-sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList **answer_list);
+sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 lList *
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration);
@@ -62,15 +64,15 @@ OCS_TRANSITIONAL lListElem *sge_get_configuration_entry_by_name(const char *aHos
 
 int
 sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CONF> aConf,
-                      lList **anAnswer, char *aUser, char *aHost);
+                      ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, char *aUser, char *aHost);
 OCS_TRANSITIONAL int sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp,
-                                           lList **alpp, char *ruser, char *rhost);
+                                           ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 int
-sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF> aConf, lList **anAnswer, const char *aUser, const char *aHost,
-                      uint64_t gdi_session);
-OCS_TRANSITIONAL int sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost,
-                                           uint64_t gdi_session);
+sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+                      const char *aUser, const char *aHost, uint64_t gdi_session);
+OCS_TRANSITIONAL int sge_mod_configuration(lListElem *aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+                                           const char *aUser, const char *aHost, uint64_t gdi_session);
 
 int
 sge_compare_configuration(ocs::tom::ConstElement<ocs::tom::EH> aHost, ocs::tom::ConstList<ocs::tom::CONF> aConf);

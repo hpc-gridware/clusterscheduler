@@ -228,7 +228,7 @@ static void
 test_amount_split() {
    lList *centries = make_centry_list();
    lList *lp;
-   lList *answer_list;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* the amount in front of the bracket is what CE_doubleval holds */
    lp = parse("gpu=4[same=id]");
@@ -240,7 +240,7 @@ test_amount_split() {
    check_int("T20b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep), 4);
    check_str("T20c", "CE_stringval still carries the parameters",
              ocs::tom::get<CE_stringval>(ep), "4[same=id]");
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
 
    /* no bracket, unchanged behaviour */
@@ -250,7 +250,7 @@ test_amount_split() {
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
    ocs::tom::ConstElement<ocs::tom::CE> ep_ce = ocs::tom::find_first<CE_name>(lp, "gpu");
    check_int("T21b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep_ce), 4);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
 
    /* a bracket with no amount in front of it is not a number */
@@ -258,7 +258,7 @@ test_amount_split() {
    answer_list = nullptr;
    check_int("T22", "a parameter list without an amount is rejected",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), -1);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
 
    /* the split is for resource maps only; another type keeps rejecting a bracket */
@@ -266,7 +266,7 @@ test_amount_split() {
    answer_list = nullptr;
    check_int("T23", "a parameter list on a non resource map is rejected",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), -1);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
 
    /* The checks that follow the parse apply to a resource map like to any other numeric
@@ -277,14 +277,14 @@ test_amount_split() {
    answer_list = nullptr;
    check_int("T25", "a negative amount is rejected",
              centry_list_fill_request(lp, &answer_list, centries, true, false, false), -1);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
 
    lp = parse("gpu=-1[same=id]");
    answer_list = nullptr;
    check_int("T26", "a negative amount is rejected with a parameter list too",
              centry_list_fill_request(lp, &answer_list, centries, true, false, false), -1);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
 
    /* a memory amount is still parsed with its multiplier */
@@ -295,7 +295,7 @@ test_amount_split() {
    ocs::tom::ConstElement<ocs::tom::CE> ep_ce_2 = ocs::tom::find_first<CE_name>(lp, "mem");
    check_int("T24b", "the multiplier is applied",
              (int)(ocs::tom::get<CE_doubleval>(ep_ce_2) / (1024 * 1024)), 2048);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
 
    lFreeList(&centries);
@@ -308,9 +308,9 @@ test_amount_split() {
 static int
 fill(const char *request, lList *centries) {
    lList *lp = parse(request);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    int ret = centry_list_fill_request(lp, &answer_list, centries, true, false, true);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&lp);
    return ret;
 }
@@ -446,7 +446,7 @@ make_complex(const char *name, const char *shortcut) {
 static void
 test_reserved_names() {
    lListElem *ep;
-   lList *answer_list;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* every reserved name is refused, by name and by shortcut */
    const char *reserved[] = {"id", "same", "scope", "distinct", "bind"};
@@ -458,7 +458,7 @@ test_reserved_names() {
       answer_list = nullptr;
       check_int(id, "a reserved name is refused when a complex is created",
                 centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
-      lFreeList(&answer_list);
+      answer_list.reset();
       lFreeElem(&ep);
    }
 
@@ -466,7 +466,7 @@ test_reserved_names() {
    answer_list = nullptr;
    check_int("T55", "a reserved shortcut is refused too",
              centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeElem(&ep);
 
    /* an ordinary complex is unaffected */
@@ -474,7 +474,7 @@ test_reserved_names() {
    answer_list = nullptr;
    check_int("T56", "an ordinary complex is accepted",
              centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 1);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeElem(&ep);
 
    /* read from the spool it is kept, so that a qmaster which has one still starts */
@@ -482,8 +482,8 @@ test_reserved_names() {
    answer_list = nullptr;
    check_int("T57", "a reserved name found in the spool is kept",
              centry_elem_validate(ep, nullptr, &answer_list, true) ? 1 : 0, 1);
-   check_int("T57b", "and is reported", (int)lGetNumberOfElem(answer_list), 1);
-   lFreeList(&answer_list);
+   check_int("T57b", "and is reported", (int)answer_list->size(), 1);
+   answer_list.reset();
    lFreeElem(&ep);
 }
 
@@ -491,7 +491,7 @@ static void
 test_parameter_values_and_defaults() {
    lList *centries = make_centry_list();
    lListElem *ep;
-   lList *answer_list;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* bind= is reserved and validated now, although nothing reads it until CS-2706 */
    check_int("T60", "bind=no is accepted" PARAM_LIST_NOTE,
@@ -513,7 +513,7 @@ test_parameter_values_and_defaults() {
    answer_list = nullptr;
    check_int("T64", "a numeric default is accepted",
              centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 1);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeElem(&ep);
 
    ep = make_complex("gpu2", "g2");
@@ -524,7 +524,7 @@ test_parameter_values_and_defaults() {
    answer_list = nullptr;
    check_int("T65", "a default carrying a parameter list is refused",
              centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeElem(&ep);
 
    lFreeList(&centries);
@@ -1030,9 +1030,9 @@ set_characteristic(lListElem *def, const char *id, const char *pname, ocs::CEntr
    ocs::tom::Element<ocs::tom::CE> prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, pname);
    ocs::tom::set<CE_valtype>(prop, static_cast<uint32_t>(type));
    ocs::tom::set<CE_stringval>(prop, value);
-   lList *answers = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answers;
    centry_fill_and_check(prop, &answers, false, false);
-   lFreeList(&answers);
+   answers.reset();
 }
 
 /** A map of two instances, each carrying the characteristics the cases below ask about. */

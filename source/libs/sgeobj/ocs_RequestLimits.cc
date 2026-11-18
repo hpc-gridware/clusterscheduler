@@ -56,7 +56,7 @@ ocs::RequestLimits::get_instance() {
 }
 
 bool
-ocs::RequestLimits::parse(const std::string &request_limits, lList **answer_list) {
+ocs::RequestLimits::parse(const std::string &request_limits, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    if (strcasecmp(request_limits.c_str(), "none") != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ELIMIT, ANSWER_QUALITY_ERROR, MSG_REQLIMIT_NOTSUPPORTED);
@@ -67,7 +67,7 @@ ocs::RequestLimits::parse(const std::string &request_limits, lList **answer_list
 }
 
 bool
-ocs::RequestLimits::parse_from_config(lList **answer_list) {
+ocs::RequestLimits::parse_from_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    DRETURN(false);
 }
@@ -79,7 +79,7 @@ ocs::RequestLimits::parse_from_config(lList **answer_list) {
  * @return true when the request has to be rejected
  */
 bool
-ocs::RequestLimits::will_exceed_limit(const gdi::Packet *packet, lList **answer_list) {
+ocs::RequestLimits::will_exceed_limit(const gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    DRETURN(false);
 }

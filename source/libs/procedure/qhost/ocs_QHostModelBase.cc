@@ -44,6 +44,7 @@
 
 #include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostModelBase.h"
+#include "sgeobj/sge_answer.h"
 
 
 /** @brief Fetch raw CULL lists into the member variables.
@@ -56,7 +57,8 @@
  * @param show which of queues, jobs and resources were requested
  * @return true when everything could be fetched
  */
-bool ocs::QHostModelBase::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+bool ocs::QHostModelBase::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                     const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
                                      const ocs::tom::ConstList<ocs::tom::ST> user_name_list, const uint32_t show) {
    DENTER(TOP_LAYER);
    // Nothing common to do
@@ -71,7 +73,8 @@ bool ocs::QHostModelBase::fetch_data(lList **answer_list, const ocs::tom::ConstL
  * @param show which of queues, jobs and resources were requested
  * @return true when the lists could be prepared
  */
-bool ocs::QHostModelBase::prepare_data(lList **answer_list, const ocs::tom::List<ocs::tom::CE> resource_match_list,
+bool ocs::QHostModelBase::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       const ocs::tom::List<ocs::tom::CE> resource_match_list,
                                        const uint32_t show) const {
    DENTER(TOP_LAYER);
    // tag jobs for printing if they should be shown
@@ -199,7 +202,7 @@ void ocs::QHostModelBase::sort_data() {
  * @return true if all pipeline steps succeeded.
  */
 bool
-ocs::QHostModelBase::make_snapshot(lList **answer_list, QHostParameter &parameter) {
+ocs::QHostModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QHostParameter &parameter) {
    DENTER(TOP_LAYER);
 
    const auto hostname_list = parameter.get_hostname_list();

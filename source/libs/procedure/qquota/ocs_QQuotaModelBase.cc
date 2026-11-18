@@ -36,6 +36,7 @@
 
 #include "ocs_QQuotaModelBase.h"
 #include "ocs_QQuotaParameterClient.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Fetch raw CULL lists into the member variables.
  *
@@ -45,7 +46,8 @@
  * @param host_list the hosts the user asked for; all hosts when empty
  * @return true when everything could be fetched
  */
-bool ocs::QQuotaModelBase::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> host_list) {
+bool ocs::QQuotaModelBase::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                      const ocs::tom::ConstList<ocs::tom::ST> host_list) {
    DENTER(TOP_LAYER);
    // Nothing to do here. Implemented in child classes.
    DRETURN(true);
@@ -57,7 +59,7 @@ bool ocs::QQuotaModelBase::fetch_data(lList **answer_list, const ocs::tom::Const
  * @param parameter    Parsed qquota parameters.
  * @return true if fetch_data succeeded.
  */
-bool ocs::QQuotaModelBase::make_snapshot(lList **answer_list, QQuotaParameter &parameter) {
+bool ocs::QQuotaModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QQuotaParameter &parameter) {
    DENTER(TOP_LAYER);
 
    if (!fetch_data(answer_list, parameter.get_host_list())) {

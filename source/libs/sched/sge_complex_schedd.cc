@@ -82,6 +82,7 @@
 #include "sge_complex_schedd.h"
 #include "sge_resource_utilization.h"
 #include "msg_schedd.h"
+#include "sgeobj/sge_answer.h"
 
 static int resource_cmp(uint32_t relop, double req_all_slots, double src_dl);
 
@@ -1282,7 +1283,7 @@ gcc -Wall -DLINUX -DTEST -o complex complex.c ../LINUX/sge_parse_num_par.o ../LI
 
 int main(int argc, char *argv[], char *envp[]) {
    lListElem *l;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
   
 #ifdef __SGE_COMPILE_WITH_GETTEXT__   
    /* init language output for gettext() , it will use the right language */
@@ -1314,7 +1315,7 @@ int main(int argc, char *argv[], char *envp[]) {
       DRETURN(1);
    }
 
-   lFreeList(&alp);
+   alp.reset();
    DRETURN(0);
 }
 #endif

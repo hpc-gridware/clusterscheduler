@@ -32,6 +32,7 @@
 
 #include "ocs_CEntry.h"
 #include "ocs_ObjectContainer.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Check a CE_Type list for duplicate names
 
@@ -41,7 +42,8 @@
  *  @return true if duplicates were found, false otherwise
  */
 bool
-ocs::CEntry::has_duplicates(const lList *centry_list, lList **answer_list, const std::string& object_name) {
+ocs::CEntry::has_duplicates(const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const std::string& object_name) {
    DENTER(TOP_LAYER);
    DRETURN(ocs::ObjectContainer::has_duplicates<CE_name>(ocs::tom::ConstList<ocs::tom::CE>(centry_list), answer_list,
                                                          object_name));

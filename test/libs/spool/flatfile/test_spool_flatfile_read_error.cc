@@ -93,10 +93,10 @@ write_tmp_file(const char *content, char *path) {
  * @return the host group element, nullptr if the file could not be read
  */
 static lListElem *
-read_hgroup(lList **alp, const char *path, const char *what) {
-   lList *own_alp = nullptr;
-   lList **use_alp = alp != nullptr ? alp : &own_alp;
-   int before = static_cast<int>(lGetNumberOfElem(*use_alp));
+read_hgroup(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char *path, const char *what) {
+   ocs::tom::ListPtr<ocs::tom::AN> own_alp;
+   ocs::tom::ListPtr<ocs::tom::AN> *use_alp = alp != nullptr ? alp : &own_alp;
+   int before = static_cast<int>((*use_alp)->size());
 
    lListElem *ep = spool_flatfile_read_object(use_alp, HGRP_Type, nullptr, HGRP_fields, nullptr,
                                               true, &qconf_sfi, SP_FORM_ASCII, nullptr, path);
@@ -107,7 +107,7 @@ read_hgroup(lList **alp, const char *path, const char *what) {
          printf("      %s: %s\n", what, ocs::tom::get<AN_text>(aep));
       }
    }
-   lFreeList(&own_alp);
+   own_alp.reset();
    return ep;
 }
 
@@ -183,7 +183,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    // one answer list for the whole directory, as spool_read_list() does it
    {
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
 
       ep = read_hgroup(&alp, intact, "shared list, intact before the broken one");
       CHECK(id, "shared answer list: intact file before a broken one reads", has_single_member(ep, "@exec_hosts")); id++;
@@ -201,7 +201,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(id, "shared answer list: second intact file after a broken one reads", ep != nullptr); id++;
       lFreeElem(&ep);
 
-      lFreeList(&alp);
+      alp.reset();
    }
 
    sge_unlink(nullptr, broken);

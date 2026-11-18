@@ -347,7 +347,7 @@ static void test_object_name_get_type_extended() {
 static void test_object_has_differences() {
    printf("\n--- object_has_differences ---\n");
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    auto a = ocs::tom::ElementPtr<ocs::tom::UE>::create();
    auto b = ocs::tom::ElementPtr<ocs::tom::UE>::create();
 
@@ -367,7 +367,7 @@ static void test_object_has_differences() {
 
    a.reset();
    b.reset();
-   lFreeList(&alp);
+   alp.reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -380,7 +380,7 @@ static void test_object_has_differences() {
 static void test_object_list_has_differences() {
    printf("\n--- object_list_has_differences ---\n");
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lList *l1 = nullptr;
    lList *l2 = nullptr;
    ocs::tom::emplace_back<UE_name>(&l1, "alice");
@@ -398,7 +398,7 @@ static void test_object_list_has_differences() {
 
    lFreeList(&l1);
    lFreeList(&l2);
-   lFreeList(&alp);
+   alp.reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -415,46 +415,46 @@ static void test_object_list_has_differences() {
 static void test_object_verify_field_constraints() {
    printf("\n--- object_verify_{string,ulong,double}_null/not_null ---\n");
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    auto ep = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    // T51: string field has a value → passes
    ocs::tom::set<JB_job_name>(ep, "test_job");
    CHECK(51, "string field set → string_not_null passes",   object_verify_string_not_null(*ep, &alp, JB_job_name) == true);
-   lFreeList(&alp);
+   alp.reset();
 
    // T52: string field is nullptr → fails and populates answer_list
    ocs::tom::set<JB_job_name>(ep, nullptr);
    CHECK(52, "string field nullptr → string_not_null fails", object_verify_string_not_null(*ep, &alp, JB_job_name) == false);
-   lFreeList(&alp);
+   alp.reset();
 
    // T53: ulong field is non-zero → passes
    ocs::tom::set<JB_job_number>(ep, 1);
    CHECK(53, "ulong field 1 → ulong_not_null passes",       object_verify_ulong_not_null(*ep, &alp, JB_job_number) == true);
-   lFreeList(&alp);
+   alp.reset();
 
    // T54: ulong field is 0 (default) → fails
    ocs::tom::set<JB_job_number>(ep, 0);
    CHECK(54, "ulong field 0 → ulong_not_null fails",        object_verify_ulong_not_null(*ep, &alp, JB_job_number) == false);
-   lFreeList(&alp);
+   alp.reset();
 
    // T55: ulong field is 0 → ulong_null passes
    CHECK(55, "ulong field 0 → ulong_null passes",           object_verify_ulong_null(*ep, &alp, JB_job_number) == true);
-   lFreeList(&alp);
+   alp.reset();
 
    // T56: ulong field non-zero → ulong_null fails
    ocs::tom::set<JB_job_number>(ep, 42);
    CHECK(56, "ulong field 42 → ulong_null fails",           object_verify_ulong_null(*ep, &alp, JB_job_number) == false);
-   lFreeList(&alp);
+   alp.reset();
 
    // T57: double field is 0.0 (default) → double_null passes
    CHECK(57, "double field 0.0 → double_null passes",       object_verify_double_null(*ep, &alp, JB_urg) == true);
-   lFreeList(&alp);
+   alp.reset();
 
    // T58: double field non-zero → double_null fails
    ocs::tom::set<JB_urg>(ep, 0.5);
    CHECK(58, "double field 0.5 → double_null fails",        object_verify_double_null(*ep, &alp, JB_urg) == false);
-   lFreeList(&alp);
+   alp.reset();
 
 }
 
@@ -468,18 +468,18 @@ static void test_object_verify_field_constraints() {
 static void test_object_verify_name() {
    printf("\n--- object_verify_name ---\n");
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    auto ep = ocs::tom::ElementPtr<ocs::tom::QU>::create();
 
    // T59: alphanumeric name with embedded punctuation is accepted
    ocs::tom::set<QU_qname>(ep, "all.q");
    CHECK(59, "valid name → 0",                         object_verify_name(*ep, &alp, QU_qname) == 0);
-   lFreeList(&alp);
+   alp.reset();
 
    // T60: name starting with a digit is always rejected regardless of other characters
    ocs::tom::set<QU_qname>(ep, "1bad");
    CHECK(60, "leading digit → STATUS_EUNKNOWN",        object_verify_name(*ep, &alp, QU_qname) == STATUS_EUNKNOWN);
-   lFreeList(&alp);
+   alp.reset();
 
 }
 

@@ -317,11 +317,11 @@ job_get_next_task(const ocs::tom::Element<ocs::tom::JB> job) {
    auto ja_task = ocs::tom::get<JB_ja_tasks>(job).front();
    if (ja_task == nullptr) {
       // range_list_get_first_id() reports through a raw answer list
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       ja_task_id = range_list_get_first_id(ocs::tom::get<JB_ja_n_h_ids>(job), &answer_list);
       if (answer_list_has_error(&answer_list)) {
-         lFreeList(&answer_list);
+         answer_list.reset();
          DRETURN(std::nullopt);
       }
       ja_task = job_get_ja_task_template_pending(job, ja_task_id);

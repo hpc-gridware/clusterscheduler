@@ -90,6 +90,7 @@
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/ocs_TopologyString.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * Minimum number of jobs in a category before the caches that are shared per
@@ -241,7 +242,7 @@ struct sge_assignment_base_t {
    int        slots;            ///< total number of slots we do matching against
    uint64_t   start;            ///< jobs start time
    int        soft_violations;  ///< number of soft request violations
-   lList      **monitor_alpp;   ///< place scheduler diagnosis here if non-nullptr
+   ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp;   ///< place scheduler diagnosis here if non-nullptr
    bool       monitor_next_run; ///< controls qconf -tsm scheduler diagnosis
    bool       filter_first_core; ///< globals binding filter: true if first core of first socket should not be used
    // -------------------- scheduler profiling index as picky pack data -------------------------

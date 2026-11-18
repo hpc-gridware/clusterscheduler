@@ -47,8 +47,10 @@
 #include "sgeobj/tom/ocs_tom_SU.h"
 
 #include "sgeobj/cull/sge_suser_SU_L.h"
+#include "sgeobj/sge_answer.h"
 
-ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list, lList **answer_list, const char *suser_name);
+ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                               const char *suser_name);
 
 ocs::tom::Element<ocs::tom::SU> suser_list_find(ocs::tom::ConstList<ocs::tom::SU> suser_list, const char *suser_name);
 OCS_TRANSITIONAL ocs::tom::Element<ocs::tom::SU> suser_list_find(const lList *suser_list, const char *suser_name);

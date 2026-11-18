@@ -64,7 +64,8 @@
  * @return the binding sub-object, or nullptr on error
  */
 ocs::tom::Element<ocs::tom::BN>
-ocs::AdvanceReservation::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::AR> ar, lList **answer_list) {
+ocs::AdvanceReservation::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::AR> ar,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    // AR_binding holds a BN_Type object
    DRETURN(Binding::binding_get_or_create_elem<AR_binding>(ar, answer_list));
@@ -80,7 +81,7 @@ ocs::AdvanceReservation::binding_get_or_create_elem(const ocs::tom::Element<ocs:
  * @return as binding_get_or_create_elem()
  */
 lListElem *
-ocs::AdvanceReservation::binding_get_or_create_elem(lListElem *ar, lList **answer_list) {
+ocs::AdvanceReservation::binding_get_or_create_elem(lListElem *ar, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return Binding::binding_get_or_create_elem<AR_binding>(ocs::tom::Element<ocs::tom::AR>::from_typed(ar),
                                                           answer_list);
 }
@@ -317,7 +318,7 @@ ocs::AdvanceReservation::binding_get_amount(const lListElem *ar) {
  * @param[out] answer_list receives the reason on failure
  */
 void ocs::AdvanceReservation::binding_set_missing_defaults(const ocs::tom::Element<ocs::tom::AR> ar,
-                                                           lList **answer_list) {
+                                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    Binding::binding_set_missing_defaults<AR_binding>(ar, answer_list);
    DRETURN_VOID;
@@ -331,7 +332,8 @@ void ocs::AdvanceReservation::binding_set_missing_defaults(const ocs::tom::Eleme
  * @param ar the advance reservation (AR_Type)
  * @param[out] answer_list receives the reason on failure
  */
-void ocs::AdvanceReservation::binding_set_missing_defaults(lListElem *ar, lList **answer_list) {
+void ocs::AdvanceReservation::binding_set_missing_defaults(lListElem *ar,
+                                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    Binding::binding_set_missing_defaults<AR_binding>(ocs::tom::Element<ocs::tom::AR>::from_typed(ar),
                                                      answer_list);
 }

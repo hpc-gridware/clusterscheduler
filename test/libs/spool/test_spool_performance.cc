@@ -133,7 +133,7 @@ static bool update_jobs() {
 }
 
 static bool spool_data() {
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context;
    lListElem *job;
    dstring key_ds = DSTRING_INIT;
@@ -169,7 +169,7 @@ static bool spool_data() {
 }
 #endif
 static bool read_spooled_data() {
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context;
 
    context = spool_get_default_context();
@@ -182,7 +182,7 @@ static bool read_spooled_data() {
 }
 
 static bool delete_spooled_data() {
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lListElem *job;
    const lListElem *context;
    char key[100];
@@ -275,7 +275,7 @@ int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_performance");
 
    lListElem *spooling_context;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
 #define NM10 "%I%I%I%I%I%I%I%I%I%I"
 #define NM5  "%I%I%I%I%I"

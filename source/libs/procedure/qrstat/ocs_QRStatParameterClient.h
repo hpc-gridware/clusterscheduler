@@ -29,6 +29,7 @@
 #include "tom/ocs_List.h"
 
 #include "ocs_QRStatParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief The `qrstat` parameters as the client builds them, from argv and the environment
@@ -40,12 +41,12 @@ namespace ocs {
     */
    class QRStatParameterClient : public QRStatParameter {
 
-      bool sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp);
-      bool sge_parse_qrstat(lList **answer_list, ocs::tom::List<ocs::tom::SPA> cmdline);
+      bool sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
+      bool sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::List<ocs::tom::SPA> cmdline);
 
    public:
 
-      bool parse_parameters(lList **answer_list, const char **argv, char **envp);
+      bool parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char **argv, char **envp);
 
 #pragma region Constructor/Destructor
       /** @brief Build empty client side parameters

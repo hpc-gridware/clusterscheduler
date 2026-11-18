@@ -43,6 +43,7 @@
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
+#include "sgeobj/sge_answer.h"
 
 /** @defgroup spool_berkeleydb Berkeley DB spooling backend
  * @brief The master lists in a Berkeley DB database
@@ -69,11 +70,11 @@ const char *get_berkeleydb_spooling_method();
 #endif
 
 lListElem *
-spool_berkeleydb_create_context(lList **answer_list, const char *args);
+spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args);
 }
 
 bool 
-spool_berkeleydb_default_startup_func(lList **answer_list, 
+spool_berkeleydb_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                     const lListElem *rule, bool check);
 
 /** @brief The part of the startup that master and clients share
@@ -84,48 +85,48 @@ spool_berkeleydb_default_startup_func(lList **answer_list,
  * @return true on success, else false
  */
 bool 
-spool_berkeleydb_common_startup_func(lList **answer_list, 
+spool_berkeleydb_common_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                    const lListElem *rule);
 
 bool 
-spool_berkeleydb_default_shutdown_func(lList **answer_list, 
+spool_berkeleydb_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                      const lListElem *rule);
 bool 
-spool_berkeleydb_default_maintenance_func(lList **answer_list, 
+spool_berkeleydb_default_maintenance_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                         const lListElem *rule,
                                         const spooling_maintenance_command cmd,
                                         const char *args);
 
 bool
-spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
+spool_berkeleydb_trigger_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule,
                               uint64_t trigger, uint64_t *next_trigger);
 
 bool
-spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule, 
+spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
                                   spooling_transaction_command cmd);
 bool 
-spool_berkeleydb_default_list_func(lList **answer_list, 
+spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                  const lListElem *type, 
                                  const lListElem *rule, lList **list, 
                                  const sge_object_type object_type);
 lListElem *
-spool_berkeleydb_default_read_func(lList **answer_list, 
+spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                  const lListElem *type, 
                                  const lListElem *rule, const char *key, 
                                  const sge_object_type object_type);
 bool
-spool_berkeleydb_default_read_keys_func(lList **answer_list, 
+spool_berkeleydb_default_read_keys_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                         const lListElem *rule,
                                         lList **list,
                                         const char *key);
 bool 
-spool_berkeleydb_default_write_func(lList **answer_list, 
+spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                   const lListElem *type, 
                                   const lListElem *rule, 
                                   const lListElem *object, const char *key, 
                                   const sge_object_type object_type);
 bool 
-spool_berkeleydb_default_delete_func(lList **answer_list, 
+spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                    const lListElem *type, 
                                    const lListElem *rule, 
                                    const char *key, 

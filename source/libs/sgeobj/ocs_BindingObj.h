@@ -49,6 +49,7 @@
 #include "ocs_BindingStop.h"
 #include "ocs_BindingStrategy.h"
 #include "ocs_BindingInstance.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -66,7 +67,7 @@ namespace ocs {
 
       template <auto F>
       static ocs::tom::Element<ocs::tom::BN> binding_get_or_create_elem(ocs::tom::Element<Parent<F>> parent,
-                                                                        lList **answer_list);
+                                                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       template <auto F>
       static void clear(ocs::tom::Element<Parent<F>> parent);
       template <auto F>
@@ -88,6 +89,7 @@ namespace ocs {
       template <auto F>
       static BindingInstance::Instance binding_get_instance(ocs::tom::ConstElement<Parent<F>> parent);
       template <auto F>
-      static void binding_set_missing_defaults(ocs::tom::Element<Parent<F>> parent, lList **answer_list);
+      static void binding_set_missing_defaults(ocs::tom::Element<Parent<F>> parent,
+                                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
    };
 }

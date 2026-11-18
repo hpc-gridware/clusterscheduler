@@ -114,16 +114,16 @@ static lListElem *make_role(const char *name, bool enabled, const char *perm_lis
 
 static void test_parse_perm_list() {
    printf("\n--- parse_perm_list ---\n");
-   lList *al = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> al;
    ocs::Role::PermRuleList rules;
 
    // T01: "NONE" is the canonical empty rule set sentinel
    CHECK(1, "NONE yields empty rules", ocs::Role::parse_perm_list("NONE", rules, &al) && rules.empty());
-   lFreeList(&al);
+   al.reset();
 
    // T02: nullptr input is treated the same as NONE
    CHECK(2, "nullptr yields empty rules", ocs::Role::parse_perm_list(nullptr, rules, &al) && rules.empty());
-   lFreeList(&al);
+   al.reset();
 
    // T03: a well-formed single rule with all six fields is parsed correctly
    rules.clear();
@@ -133,7 +133,7 @@ static void test_parse_perm_list() {
    CHECK(3, "rule source field is *",              ok && rules[0].source == "*");
    CHECK(3, "rule operation field is ADD",         ok && rules[0].operation == "ADD");
    CHECK(3, "rule object_type field is JOB",       ok && rules[0].object_type == "JOB");
-   lFreeList(&al);
+   al.reset();
 
    // T04: a rule with only five colon-separated fields is rejected
    rules.clear();
@@ -143,7 +143,7 @@ static void test_parse_perm_list() {
       restore_stderr(saved);
       CHECK(4, "five fields returns false", !res);
    }
-   lFreeList(&al);
+   al.reset();
 
    // T05: a rule with an empty (zero-length) field is rejected
    rules.clear();
@@ -153,7 +153,7 @@ static void test_parse_perm_list() {
       restore_stderr(saved);
       CHECK(5, "empty field returns false", !res);
    }
-   lFreeList(&al);
+   al.reset();
 
    // T06: two comma-separated rules are parsed into two independent PermRule structs
    rules.clear();
@@ -162,7 +162,7 @@ static void test_parse_perm_list() {
    CHECK(6, "two rules produces 2 rules",          ok && rules.size() == 2);
    CHECK(6, "first rule operation is ADD",         ok && rules[0].operation == "ADD");
    CHECK(6, "second rule operation is DEL",        ok && rules[1].operation == "DEL");
-   lFreeList(&al);
+   al.reset();
 }
 
 // ---------------------------------------------------------------------------

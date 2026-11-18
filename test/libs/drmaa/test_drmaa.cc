@@ -713,14 +713,14 @@ int main(int argc, char *argv[]) {
    ** since drmaa doesn't give an explicit handle to the context and ocs::gdi::Client::sge_gdi
    ** is used below, we provide our own context here
    */
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::gdi::ErrorValue gdi_errno = ocs::gdi::ClientBase::setup_and_enroll(JAPI, MAIN_THREAD, &alp);
    if ((gdi_errno != ocs::gdi::ErrorValue::AE_OK) && (gdi_errno != ocs::gdi::ErrorValue::AE_ALREADY_SETUP)) {
       DPRINTF("gdi_errno = %d", gdi_errno);
       answer_list_output(&alp);
       sge_exit(1);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    while (argc > 1) {
       /* map test name to test number */
@@ -2902,7 +2902,8 @@ static int test(int *argc, char **argv[], int parse_args) {
          const char *job_argv[4];
          char jobid[1024], new_jobid[1024];
          char buffer[100];
-         lList *alp, *job_lp;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
+         lList *job_lp;
          const lListElem *job_ep;
          FILE *fp;
          const char *mirror_text = "thefoxjumps...";
@@ -3045,7 +3046,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                   failed_test = 1;
                }
             }
-            lFreeList(&alp);
+            alp.reset();
 
             if (job_ep == nullptr) {
                printf ("No such job number.\n");
@@ -3528,7 +3529,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                   continue;
                }
             }
-            lFreeList(&alp);         
+            alp.reset();         
 
             if (job_ep == nullptr) {
                printf ("No such job number.\n");
@@ -3632,7 +3633,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                   failed_test = 1;
                }
             }
-            lFreeList(&alp);         
+            alp.reset();         
 
             if (job_ep == nullptr) {
                printf ("No such job number.\n");
@@ -3754,7 +3755,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                   continue;
                }
             }
-            lFreeList(&alp);         
+            alp.reset();         
 
             if (job_ep == nullptr) {
                printf ("No such job number.\n");
@@ -3858,7 +3859,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                   failed_test = 1;
                }
             }
-            lFreeList(&alp);         
+            alp.reset();         
 
             if (job_ep == nullptr) {
                printf ("No such job number.\n");

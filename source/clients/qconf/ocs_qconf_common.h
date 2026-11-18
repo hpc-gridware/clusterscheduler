@@ -82,7 +82,7 @@ qconf_info(std::ostream &os, const char *fmt, ...) __attribute__((format(printf,
  *       nothing to ask once this runs inside qmaster.
  */
 bool
-qconf_confirm(const char *prompt, lList **alpp);
+qconf_confirm(const char *prompt, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /**
  * @brief Apply a callback to a file, or to every file in a directory (CS-2298 C3/C5).
@@ -98,7 +98,8 @@ qconf_confirm(const char *prompt, lList **alpp);
  * @return the total number of failures (an opendir error counts as one)
  */
 int
-qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx, lList **alpp);
+qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx,
+                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief Context shared by the per-file callbacks driven by qconf_for_each_file(). */
 struct qconf_file_ctx {
@@ -111,7 +112,7 @@ struct qconf_file_ctx {
    std::vector<std::string> *sources; ///< for each name the file it was read from (CS-2983)
    int n_ok;                  ///< names collected (CS-2299 H1)
    int n_fail;                ///< files that failed (CS-2299 H1)
-   lList **alpp;              ///< the answer list of the operation (CS-2971)
+   ocs::tom::ListPtr<ocs::tom::AN> *alpp;              ///< the answer list of the operation (CS-2971)
 };
 
 /**
@@ -132,7 +133,7 @@ qconf_collect_name(const char *filepath, void *vctx);
 struct qconf_text_ctx {
    ocs::QConfWriteParameter *param;   ///< the batch being filled
    int n_fail;                        ///< files this side could not read at all
-   lList **alpp;                      ///< the answer list of the operation (CS-2971)
+   ocs::tom::ListPtr<ocs::tom::AN> *alpp;                      ///< the answer list of the operation (CS-2971)
 };
 
 /** @brief qconf_for_each_file() callback: hand one file's text to the batch
@@ -176,7 +177,7 @@ struct qconf_conf_ctx {
    std::ostream *os;   ///< where the per-file messages go (CS-1841)
    int n_ok;         ///< files applied (CS-2299 H1)
    int n_fail;       ///< files that failed
-   lList **alpp;     ///< the answer list of the operation (CS-2971)
+   ocs::tom::ListPtr<ocs::tom::AN> *alpp;     ///< the answer list of the operation (CS-2971)
 };
 
 /** @brief Report an operation whose command line ended before its mandatory arguments (CS-2969)
@@ -194,7 +195,7 @@ struct qconf_conf_ctx {
  * @return true when an argument is missing and the operation has been reported
  */
 bool
-qconf_missing_argument(const qconf_op &op, lList **alpp);
+qconf_missing_argument(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief What one of the table driven dispatchers made of an operation
  *
@@ -244,7 +245,8 @@ qconf_format(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
  * @param ...     arguments for @p fmt
  */
 void
-qconf_answer(lList **alpp, answer_quality_t quality, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+qconf_answer(ocs::tom::ListPtr<ocs::tom::AN> *alpp, answer_quality_t quality, const char *fmt,
+             ...) __attribute__((format(printf, 3, 4)));
 
 /** @brief Move an answer list qmaster sent into the answer list of an operation (CS-2971)
  *
@@ -257,7 +259,7 @@ qconf_answer(lList **alpp, answer_quality_t quality, const char *fmt, ...) __att
  * @return 1 when one of the moved answers has a failing status, 0 otherwise
  */
 int
-qconf_answer_take(lList **alpp, lList **from);
+qconf_answer_take(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::tom::AN> *from);
 
 /** @brief Print the answer list of an operation, the one way qconf reports (CS-2971)
  *
@@ -269,7 +271,7 @@ qconf_answer_take(lList **alpp, lList **from);
  * @param info_stream where an information goes
  */
 void
-qconf_answer_print(lList **alpp, FILE *info_stream = stderr);
+qconf_answer_print(ocs::tom::ListPtr<ocs::tom::AN> *alpp, FILE *info_stream = stderr);
 
 /** @brief Turn the argument of a switch into the names it is served for, one call each (CS-2967)
  *
@@ -284,7 +286,8 @@ qconf_answer_print(lList **alpp, FILE *info_stream = stderr);
  * @param failed set when a name had to be left out
  * @param alpp the answer list of the operation, receives the reason a name was left out
  */
-using qconf_names_hook = void (*)(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+using qconf_names_hook = void (*)(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-ae [host]": the template when no name is given, the resolved host otherwise
  *
@@ -297,7 +300,8 @@ using qconf_names_hook = void (*)(const qconf_op &op, std::vector<std::string> &
  * @param alpp the answer list of the operation
  */
 void
-qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+               ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-se host": the one host, resolved
  * @param op the operation
@@ -306,7 +310,8 @@ qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed
  * @param alpp the answer list of the operation
  */
 void
-qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                     ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-me host,...": every host of the list, each resolved; one that does not is left out
  * @param op the operation
@@ -316,7 +321,8 @@ qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &
  * @return none
  */
 void
-qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                      ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-mu userset,...": every userset of the list
  *
@@ -330,7 +336,8 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
  * @return none
  */
 void
-qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-suser user,...": every user of the list
  * @param op the operation
@@ -340,7 +347,8 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, bo
  * @return none
  */
 void
-qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                      ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-sconf"/"-aconf": the host list, a host that does not resolve left out
  * @param op the operation
@@ -349,7 +357,8 @@ qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, bool 
  * @param alpp the answer list of the operation
  */
 void
-qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                        ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-mconf": the host list, a host that does not resolve kept under its name as typed
  * @param op the operation
@@ -358,7 +367,8 @@ qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, boo
  * @param alpp the answer list of the operation
  */
 void
-qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief "-Aconf"/"-Mconf": the file or directory list, "global" when none is given
  *
@@ -371,4 +381,5 @@ qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bo
  * @param alpp the answer list of the operation
  */
 void
-qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
+qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                       ocs::tom::ListPtr<ocs::tom::AN> *alpp);

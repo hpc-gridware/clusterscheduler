@@ -26,6 +26,7 @@
 #include "rapidjson/stringbuffer.h"
 
 #include "ocs_BaseAccountingFileWriter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Writes the accounting records as one JSON object per line
@@ -38,7 +39,7 @@ namespace ocs {
       JsonAccountingFileWriter() : BaseAccountingFileWriter(std::string{bootstrap_get_acct_file()} + ".jsonl", false) {
       }
 
-      bool create_acct_record(lList **answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
+      bool create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
                               ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
                               bool intermediate) override;
    };

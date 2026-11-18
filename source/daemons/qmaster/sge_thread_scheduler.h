@@ -38,6 +38,7 @@
  */
 
 #include <pthread.h>
+#include "sgeobj/sge_answer.h"
 
 /** @brief Whether the scheduler thread is running, and how to restart it
  *
@@ -52,10 +53,10 @@ struct master_scheduler_class_t {
 };
 
 void
-sge_scheduler_initialize(lList **answer_list);
+sge_scheduler_initialize(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 void
-sge_scheduler_terminate(lList **answer_list);
+sge_scheduler_terminate(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 [[noreturn]] void *
 sge_scheduler_main(void *arg);

@@ -102,7 +102,7 @@ static lList *jsv_list = nullptr;   /* JSV_Type; process lifetime, read through 
  * @note MT-NOTE: jsv_create() is MT safe
  */
 static ocs::tom::Element<ocs::tom::JSV>
-jsv_create(const char *name, const char *context, lList **answer_list, const char *jsv_url,
+jsv_create(const char *name, const char *context, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *jsv_url,
            const char *type, const char *user, const char *scriptfile) {
    DENTER(TOP_LAYER);
 
@@ -205,7 +205,7 @@ jsv_is_started(const ocs::tom::ConstElement<ocs::tom::JSV> jsv) {
  * @return true if data can be sent
  */
 static bool
-jsv_is_send_ready(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, lList **answer_list) {
+jsv_is_send_ready(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -246,8 +246,8 @@ jsv_is_send_ready(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, lList **answe
  * @return true if all data was written
  */
 static bool
-jsv_send_data(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, lList **answer_list, const char *buffer,
-              const size_t size) {
+jsv_send_data(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+              const char *buffer, const size_t size) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -285,7 +285,7 @@ jsv_send_data(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, lList **answer_li
  *
  * @note MT-NOTE: jsv_start() is not MT safe
  */
-bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list) {
+bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -356,7 +356,8 @@ bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list) 
  * @see #jsv_start
  */
 bool
-jsv_stop(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const bool try_soft_quit) {
+jsv_stop(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+         const bool try_soft_quit) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -425,7 +426,7 @@ jsv_stop(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const 
  *
  * @note MT-NOTE: jsv_url_parse() is MT safe
  */
-bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
+bool jsv_url_parse(dstring *jsv_url, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *type,
                    dstring *user, dstring *path, bool in_client) {
    DENTER(TOP_LAYER);
 
@@ -521,7 +522,8 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
  *
  * @note MT-NOTE: jsv_send_command() is MT safe
  */
-bool jsv_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const char *message) {
+bool jsv_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                      const char *message) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -559,7 +561,8 @@ bool jsv_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer
  *
  * @note MT-NOTE: jsv_list_add() is MT safe
  */
-bool jsv_list_add(const char *name, const char *context, lList **answer_list, const char *jsv_url) {
+bool jsv_list_add(const char *name, const char *context, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                  const char *jsv_url) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -710,7 +713,7 @@ bool jsv_list_remove_all() {
  * @note MT-NOTE: jsv_list_update() is not MT safe
  */
 bool jsv_list_update(const char *name, const char *context,
-                     lList **answer_list, const char *jsv_url) {
+                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *jsv_url) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -864,8 +867,8 @@ bool jsv_list_update(const char *name, const char *context,
  *
  * @note MT-NOTE: jsv_do_verify() is MT safe
  */
-bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job, lList **answer_list,
-                   const bool holding_lock) {
+bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
+                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const bool holding_lock) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1020,7 +1023,8 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
  * @param holding_lock is the calling thread holding the global lock
  * @return as jsv_do_verify(); true if 'job' is nullptr
  */
-bool jsv_do_verify(const char *context, lListElem **job, lList **answer_list, const bool holding_lock) {
+bool jsv_do_verify(const char *context, lListElem **job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                   const bool holding_lock) {
    bool ret = true;
    if (job != nullptr) {
       ocs::tom::ElementPtr<ocs::tom::JB> typed_job(*job);

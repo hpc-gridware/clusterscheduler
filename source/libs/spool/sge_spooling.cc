@@ -83,7 +83,7 @@ static lList *Default_Spool_Context_List;
  * @see #spool_free_context
  */
 ocs::tom::ElementPtr<ocs::tom::SPC>
-ocs_spool_create_context(lList **answer_list, const char *name) {
+ocs_spool_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::SPC> context;
@@ -111,7 +111,7 @@ ocs_spool_create_context(lList **answer_list, const char *name) {
  * @return as ocs_spool_create_context(), handed over raw (SPC_Type)
  */
 lListElem *
-spool_create_context(lList **answer_list, const char *name) {
+spool_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    return ocs_spool_create_context(answer_list, name).release();
 }
 
@@ -136,7 +136,7 @@ spool_create_context(lList **answer_list, const char *name) {
  * @see #ocs_spool_create_context, #spool_shutdown_context
  */
 void
-spool_free_context(lList **answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&context) {
+spool_free_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&context) {
    DENTER(TOP_LAYER);
    auto owned_context = std::move(context);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
@@ -166,7 +166,7 @@ spool_free_context(lList **answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&co
  *
  * @return true if no rule rejected the option, else false
  */
-bool spool_set_option(lList **answer_list, lListElem *context, const char *option) {
+bool spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, const char *option) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -221,7 +221,7 @@ bool spool_set_option(lList **answer_list, lListElem *context, const char *optio
  *
  * @see #spool_shutdown_context
  */
-bool spool_startup_context(lList **answer_list, lListElem *context, bool check) {
+bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, bool check) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -335,7 +335,7 @@ error:
  *
  * @see #spool_startup_context
  */
-bool spool_maintain_context(lList **answer_list, lListElem *context,
+bool spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context,
                             const spooling_maintenance_command cmd,
                             const char *args) {
    DENTER(TOP_LAYER);
@@ -388,7 +388,7 @@ bool spool_maintain_context(lList **answer_list, lListElem *context,
  *
  * @see #spool_startup_context
  */
-bool spool_shutdown_context(lList **answer_list, const lListElem *context) {
+bool spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -436,7 +436,7 @@ bool spool_shutdown_context(lList **answer_list, const lListElem *context) {
  *
  * @return true if every trigger callback succeeded, else false
  */
-bool spool_trigger_context(lList **answer_list, const lListElem *context,
+bool spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                            uint64_t trigger, uint64_t *next_trigger) {
    DENTER(TOP_LAYER);
 
@@ -484,7 +484,7 @@ bool spool_trigger_context(lList **answer_list, const lListElem *context,
  *       in transactions regardless of the configured spooling method. Only a
  *       transactional backend actually makes them atomic.
  */
-bool spool_transaction(lList **answer_list, const lListElem *context,
+bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                        spooling_transaction_command cmd) {
    DENTER(TOP_LAYER);
 
@@ -595,7 +595,7 @@ spool_get_default_context() {
  * @return the new rule, if it could be created, else an empty handle
  */
 ocs::tom::Element<ocs::tom::SPR>
-spool_context_create_rule(lList **answer_list, const ocs::tom::Element<ocs::tom::SPC> context,
+spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::Element<ocs::tom::SPC> context,
                           const char *name, const char *url,
                           spooling_option_func option_func,
                           spooling_startup_func startup_func,
@@ -677,7 +677,7 @@ spool_context_create_rule(lList **answer_list, const ocs::tom::Element<ocs::tom:
  * @return as the typed form
  */
 lListElem *
-spool_context_create_rule(lList **answer_list, lListElem *context,
+spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context,
                           const char *name, const char *url,
                           spooling_option_func option_func,
                           spooling_startup_func startup_func,
@@ -746,7 +746,7 @@ spool_context_search_type(const ocs::tom::ConstElement<ocs::tom::SPC> context,
  * @return the new object type description, or an empty handle if @p context is empty
  */
 ocs::tom::Element<ocs::tom::SPT>
-spool_context_create_type(lList **answer_list, const ocs::tom::Element<ocs::tom::SPC> context,
+spool_context_create_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::Element<ocs::tom::SPC> context,
                           const sge_object_type object_type) {
    DENTER(TOP_LAYER);
 
@@ -782,7 +782,8 @@ spool_context_create_type(lList **answer_list, const ocs::tom::Element<ocs::tom:
  * @return as the typed form
  */
 lListElem *
-spool_context_create_type(lList **answer_list, lListElem *context, const sge_object_type object_type) {
+spool_context_create_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context,
+                          const sge_object_type object_type) {
    return spool_context_create_type(answer_list, ocs::tom::Element<ocs::tom::SPC>(context), object_type);
 }
 
@@ -829,7 +830,7 @@ spool_type_search_default_rule(const ocs::tom::ConstElement<ocs::tom::SPT> spool
  * @see #spool_context_create_type, #spool_context_create_rule
  */
 ocs::tom::Element<ocs::tom::SPTR>
-spool_type_add_rule(lList **answer_list, const ocs::tom::Element<ocs::tom::SPT> spool_type,
+spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::Element<ocs::tom::SPT> spool_type,
                     const ocs::tom::ConstElement<ocs::tom::SPR> rule, const lBool is_default) {
    DENTER(TOP_LAYER);
 
@@ -876,7 +877,8 @@ spool_type_add_rule(lList **answer_list, const ocs::tom::Element<ocs::tom::SPT> 
  * @return as the typed form
  */
 lListElem *
-spool_type_add_rule(lList **answer_list, lListElem *spool_type, const lListElem *rule, const lBool is_default) {
+spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *spool_type, const lListElem *rule,
+                    const lBool is_default) {
    return spool_type_add_rule(answer_list, ocs::tom::Element<ocs::tom::SPT>(spool_type),
                               ocs::tom::ConstElement<ocs::tom::SPR>(rule), is_default);
 }
@@ -901,7 +903,7 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type, const lListElem 
  *
  * @return true, on success, false, if an error occurred
  */
-bool spool_read_list(lList **answer_list, const lListElem *context,
+bool spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                      lList **list, const sge_object_type object_type) {
    DENTER(TOP_LAYER);
 
@@ -972,7 +974,7 @@ bool spool_read_list(lList **answer_list, const lListElem *context,
  * @return the object, if it could be read, else nullptr
  */
 lListElem *
-spool_read_object(lList **answer_list, const lListElem *context,
+spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                   const sge_object_type object_type, const char *key) {
    DENTER(TOP_LAYER);
 
@@ -1044,7 +1046,7 @@ spool_read_object(lList **answer_list, const lListElem *context,
  *          return, with `list` left empty.
  */
 bool
-spool_read_keys(lList **answer_list, const lListElem *context,
+spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                 lList **list, const char *key) {
    DENTER(TOP_LAYER);
 
@@ -1097,7 +1099,7 @@ spool_read_keys(lList **answer_list, const lListElem *context,
  *
  * @return true, if writing was successful, else false
  */
-bool spool_write_object(lList **answer_list, const lListElem *context,
+bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                         const lListElem *object, const char *key,
                         const sge_object_type object_type) {
    DENTER(TOP_LAYER);
@@ -1180,7 +1182,7 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
  *
  * @return true, if all rules reported success, else false
  */
-bool spool_delete_object(lList **answer_list, const lListElem *context,
+bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                          const sge_object_type object_type, const char *key) {
    DENTER(TOP_LAYER);
 
@@ -1265,7 +1267,7 @@ bool spool_delete_object(lList **answer_list, const lListElem *context,
  *       First the attributes to be spooled have to be defined in the
  *       object definitions (libs/gdi/sge_*L.h).
  */
-bool spool_compare_objects(lList **answer_list, const lListElem *context,
+bool spool_compare_objects(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                            const sge_object_type object_type,
                            const lListElem *ep1, const lListElem *ep2) {
    DENTER(TOP_LAYER);

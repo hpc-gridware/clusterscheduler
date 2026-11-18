@@ -124,7 +124,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_flatfile_usage");
    lInit(nmv);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    int id = 1;
 
    const auto sconf = sconf_create_default();
@@ -134,7 +134,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
                                                    SC_fields, &qconf_comma_sfi,
                                                    SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
    CHECK(id, "scheduler config write returns non-null", file1 != nullptr); id++;
-   lFreeList(&alp);
+   alp.reset();
 
    if (file1 != nullptr) {
       std::string line = get_attribute_line(read_unwrapped(file1), "usage_weight_list");
@@ -161,7 +161,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
       sge_unlink(nullptr, file1);
       sge_free(&file1);
-      lFreeList(&alp);
+      alp.reset();
    }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

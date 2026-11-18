@@ -46,6 +46,7 @@
 
 #include "ocs_QConfObject.h"
 #include "ocs_QConfParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief What a read switch produces */
@@ -276,30 +277,31 @@ namespace ocs {
        * @param answer_list used to return error messages
        * @return true on success
        */
-      virtual bool fetch_thread_pools(lList **answer_list) = 0;
+      virtual bool fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) = 0;
 
-      virtual bool fetch_centries(lList **answer_list) = 0;
+      virtual bool fetch_centries(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) = 0;
 
-      virtual bool fetch_hgroups(lList **answer_list) = 0;
+      virtual bool fetch_hgroups(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) = 0;
 
-      virtual bool fetch(lList **answer_list, gdi::Target target,
+      virtual bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
                          lCondition *where, lEnumeration *what) = 0;
 
    protected:
-      bool make_list_snapshot(lList **answer_list, QConfObj object);
-      bool make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter);
-      bool make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter);
-      bool make_sick_snapshot(lList **answer_list);
-      bool make_sobjl_snapshot(lList **answer_list, QConfParameter &parameter);
-      bool make_eventclient_snapshot(lList **answer_list);
-      bool make_processor_snapshot(lList **answer_list);
-      bool make_sharetree_snapshot(lList **answer_list, QConfParameter &parameter);
-      bool make_threadpool_snapshot(lList **answer_list);
-      bool collect_exechost_matches(lList **answer_list, const char *attr, const char *val);
-      bool collect_cqueue_matches(lList **answer_list, const char *spec, const char *attr, const char *val);
+      bool make_list_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfObj object);
+      bool make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);
+      bool make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);
+      bool make_sick_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      bool make_sobjl_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);
+      bool make_eventclient_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      bool make_processor_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      bool make_sharetree_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);
+      bool make_threadpool_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      bool collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *attr, const char *val);
+      bool collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *spec, const char *attr,
+                                  const char *val);
 
    public:
-      virtual bool make_snapshot(lList **answer_list, QConfParameter &parameter);
+      virtual bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);
 #pragma endregion
 
 #pragma region Constructors/Destructors

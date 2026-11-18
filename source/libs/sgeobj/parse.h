@@ -49,6 +49,7 @@
 #include "sgeobj/tom/ocs_tom_ULNG.h"
 
 #include "sgeobj/cull/sge_parse_SPA_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @name Group option constants
@@ -64,22 +65,24 @@
 /** @} */
 
 char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                   lList **alpp);
+                   ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 OCS_TRANSITIONAL char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                                    lList **alpp);
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt,
-                            ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp);
+                            ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 OCS_TRANSITIONAL char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                                             lList **alpp);
+                                             ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt,
-                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp);
+                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 OCS_TRANSITIONAL char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
-                                              lList **alpp);
+                                              ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
-char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp);
-OCS_TRANSITIONAL char **parse_param(char **sp, const char *opt, lList **ppcmdline, lList **alpp);
+char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                   ocs::tom::ListPtr<ocs::tom::AN> *alpp);
+OCS_TRANSITIONAL char **parse_param(char **sp, const char *opt, lList **ppcmdline,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 ocs::tom::Element<ocs::tom::SPA> sge_add_arg(ocs::tom::ListPtr<ocs::tom::SPA> &opt_list, uint32_t opt_number,
                                              uint32_t opt_type, const char *opt_switch, const char *opt_switch_arg);
@@ -100,26 +103,35 @@ OCS_TRANSITIONAL lListElem *sge_add_noarg(lList **popt_list, uint32_t opt_number
  * @see the definition in parse.cc
  */
 template <auto F>
-bool parse_multi_stringlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal,
+bool parse_multi_stringlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                            ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                             ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> &dest);
 
-bool parse_flag(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, uint32_t *pflag);
-OCS_TRANSITIONAL bool parse_flag(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *pflag);
+bool parse_flag(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
+                uint32_t *pflag);
+OCS_TRANSITIONAL bool parse_flag(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
+                                 uint32_t *pflag);
 
-int parse_string(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, char **str);
-OCS_TRANSITIONAL int parse_string(lList **ppcmdline, const char *opt, lList **ppal, char **str);
+int parse_string(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
+                 char **str);
+OCS_TRANSITIONAL int parse_string(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
+                                  char **str);
 
-int parse_string_arg(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal, char **value);
+int parse_string_arg(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
+                     char **value);
 
 std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>>
-parse_u_longlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal);
+parse_u_longlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal);
 
-bool parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **alpp, lList **ppdestlist,
+bool parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                              ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **ppdestlist,
                               bool include_names, uint32_t action);
-OCS_TRANSITIONAL bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **alpp, lList **ppdestlist,
+OCS_TRANSITIONAL bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt,
+                                               ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **ppdestlist,
                                                bool include_names, uint32_t action);
 
-uint32_t parse_group_options(ocs::tom::ConstList<ocs::tom::ST> string_list, lList **answer_list);
+uint32_t parse_group_options(ocs::tom::ConstList<ocs::tom::ST> string_list,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool sge_parse_bitfield_str(const char *str, const char *set_specifier[],
-                           uint32_t *value, const char *name, lList **alpp,  bool none_allowed);
+                           uint32_t *value, const char *name, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool none_allowed);

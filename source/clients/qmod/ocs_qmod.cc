@@ -67,13 +67,14 @@
 #include "msg_qmod.h"
 
 
-static lList *sge_parse_cmdline_qmod(char **argv, char **envp, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline);
-static lList *sge_parse_qmod(ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
-                             uint32_t *pforce);
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_qmod(char **argv, char **envp,
+                                                              ocs::tom::ListPtr<ocs::tom::SPA> &cmdline);
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_qmod(ocs::tom::List<ocs::tom::SPA> cmdline,
+                                                      ocs::tom::ListPtr<ocs::tom::ID> &reflist, uint32_t *pforce);
 
 static int qmod_usage(FILE *fp, char *what);
 
-static bool answer_list_has_exit_code_error(lList **answer_list);
+static bool answer_list_has_exit_code_error(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 /** @brief The process environment, as the C library defines it
  *
@@ -93,7 +94,7 @@ int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qmod");
    uint32_t force = 0;
    ocs::tom::ListPtr<ocs::tom::ID> ref_list;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    bool answ_list_has_err = false;
 
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
       for_each_ep_lv(aep, alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       pcmdline.reset();
       sge_exit(1);
    }
@@ -133,7 +134,7 @@ int main(int argc, char **argv) {
       for_each_ep_lv(aep, alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       pcmdline.reset();
       ref_list.reset();
       sge_exit(1);
@@ -160,7 +161,7 @@ int main(int argc, char **argv) {
       fprintf(stdout, "%s\n", ocs::tom::get<AN_text>(aep));
    }
 
-   lFreeList(&alp);
+   alp.reset();
    ref_list.reset();
    pcmdline.reset();
 
@@ -186,7 +187,7 @@ int main(int argc, char **argv) {
  *
  * @note MT-NOTE: answer_list_has_exit_code_error() is not MT safe
  */
-static bool answer_list_has_exit_code_error(lList **answer_list) {
+static bool answer_list_has_exit_code_error(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -220,13 +221,13 @@ static bool answer_list_has_exit_code_error(lList **answer_list) {
  * @param cmdline receives the parsed options (`SPA_Type`), created with the first option
  * @return the answer list with the parse errors, nullptr if there were none
  */
-static lList *sge_parse_cmdline_qmod(char **argv, [[maybe_unused]] char **envp,
-                                     ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_qmod(char **argv, [[maybe_unused]] char **envp,
+                                                              ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
    DENTER(TOP_LAYER);
 
 char **sp;
 char **rp;
-lList *alp = nullptr;
+ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    rp = argv;
 
@@ -369,11 +370,11 @@ error:
  * @param pforce receives the -f flag
  * @return the answer list with the errors, nullptr if there were none
  */
-static lList *sge_parse_qmod(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
-                             uint32_t *pforce) {
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_qmod(const ocs::tom::List<ocs::tom::SPA> cmdline,
+                                                      ocs::tom::ListPtr<ocs::tom::ID> &reflist, uint32_t *pforce) {
    DENTER(TOP_LAYER);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    /* parse_multi_jobtaskslist() and id_list_build_from_str_list() have no typed form for the destination list
     * yet; they create it with ID_Type */
    lList *refs = reflist.release();

@@ -26,11 +26,13 @@
 #include <string>
 
 #include "cull/cull.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /// Validation helpers for resource quota sets (RQS)
    class ResourceQuota {
    public:
-      static bool has_duplicates(const lList *centry_list, lList **answer_list, const std::string& object_name);
+      static bool has_duplicates(const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 const std::string& object_name);
    };
 }

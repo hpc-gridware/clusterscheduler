@@ -105,7 +105,7 @@ static int init_framework() {
    DENTER(TOP_LAYER);
    int ret = EXIT_FAILURE;
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lListElem *spooling_context = nullptr;
    const char *spooling_method = ocs::Bootstrap::get_spooling_method();
    const char *spooling_lib = ocs::Bootstrap::get_spooling_lib();
@@ -146,7 +146,7 @@ static int spool_configuration(int argc, char *argv[]) {
    DENTER(TOP_LAYER);
 
    int ret = EXIT_SUCCESS;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    spooling_field *fields = sge_build_CONF_field_list(true);
 
    // read with the CONF_Type descriptor, so the element is of that type; freed when leaving the function
@@ -188,7 +188,7 @@ static int spool_local_conf(int argc, char *argv[]) {
       usage(argv[0]);
       ret = EXIT_FAILURE;
    } else {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       spooling_field *fields = sge_build_CONF_field_list(true);
 
       // read with the CONF_Type descriptor, so the element is of that type; freed when leaving the block
@@ -218,7 +218,7 @@ static int spool_local_conf(int argc, char *argv[]) {
          }
          answer_list_output(&answer_list);
       }
-      lFreeList(&answer_list);
+      answer_list.reset();
    }
 
    DRETURN(ret);
@@ -247,7 +247,7 @@ static int spool_ckpts(int argc, char *argv[]) {
 }
 
 static int spool_cqueues(int argc, char *argv[]) {
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    spool_read_list(&answer_list, spool_get_default_context(), 
                    ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
    spool_read_list(&answer_list, spool_get_default_context(), 
@@ -258,7 +258,7 @@ static int spool_cqueues(int argc, char *argv[]) {
 }
 
 static int spool_exechosts(int argc, char *argv[]) {
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const spooling_field *fields = sge_build_EH_field_list(true, false, false, false);
    int ret; 
 
@@ -319,7 +319,7 @@ static int spool_object_list(const char *directory,
    DENTER(TOP_LAYER);
 
    int ret = EXIT_SUCCESS;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lListElem *ep;
    const char *name;
    dstring file = DSTRING_INIT;
@@ -346,7 +346,7 @@ static int spool_object_list(const char *directory,
    }
    sge_dstring_free(&file);
 
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    DRETURN(ret);
 }
@@ -354,14 +354,14 @@ static int spool_object_list(const char *directory,
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "spooldefaults");
    int ret = EXIT_SUCCESS;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
 
    if (ocs::gdi::ClientBase::setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != ocs::gdi::ErrorValue::AE_OK) {
       show_answer(answer_list);
-      lFreeList(&answer_list);
+      answer_list.reset();
       sge_exit(EXIT_FAILURE);
    }
 

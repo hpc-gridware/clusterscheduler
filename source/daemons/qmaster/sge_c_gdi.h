@@ -55,6 +55,7 @@
 
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/ocs_gdi_Packet.h"
+#include "sgeobj/sge_answer.h"
 
 typedef struct _gdi_object_t gdi_object_t;   ///< @copybrief _gdi_object_t
 
@@ -65,8 +66,7 @@ typedef struct _gdi_object_t gdi_object_t;   ///< @copybrief _gdi_object_t
 typedef int (*modifier_func_t)(
         ocs::gdi::Packet *packet,
         ocs::gdi::Task *task,
-        lList **alpp,
-        lListElem *new_cal,   /* destination */
+        ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_cal,   /* destination */
         lListElem *cep,       /* reduced element */
         int add,              /* 1 for add/0 for mod */
         const char *ruser,
@@ -81,8 +81,7 @@ typedef int (*modifier_func_t)(
 typedef int (*writer_func_t)(
         ocs::gdi::Packet *packet,
         ocs::gdi::Task *task,
-        lList **alpp,
-        lListElem *ep,      /* new modified element */
+        ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,      /* new modified element */
         gdi_object_t *thiz   /* some kind of "this" */
 );
 
@@ -121,7 +120,7 @@ gdi_object_t *get_gdi_object(ocs::gdi::Target);
 
 bool
 sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                              lList **answer_list, monitoring_t *monitor, bool has_next);
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *monitor, bool has_next);
 
 bool
 sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
@@ -137,7 +136,7 @@ sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *t
  * @return true when the user may modify the list
  */
 bool
-sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target);
+sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Target target);
 
 /** @brief Check that the host of a request may modify objects of a list
  *
@@ -151,7 +150,8 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
  * @return true when the host may modify the list
  */
 bool
-sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target, ocs::gdi::Command command);
+sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Target target,
+                       ocs::gdi::Command command);
 
 /** @brief Delete one object, or the whole share tree, the way a GDI delete does
  *
@@ -170,15 +170,16 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
  */
 void
 sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Target target, lListElem *ep,
-                      lList **alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+                      ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
                       monitoring_t *monitor);
 
 void
-sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list,
-                            monitoring_t *monitor, bool has_next);
+sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *monitor, bool has_next);
 
 int
-sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object,
+sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                        lListElem *instructions, int add, gdi_object_t *object,
                         const char *ruser, const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **ppList, monitoring_t *monitor);
 
 void sge_clean_lists();

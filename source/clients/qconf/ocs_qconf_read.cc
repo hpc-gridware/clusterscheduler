@@ -126,7 +126,7 @@
  */
 static std::optional<ocs::tom::ConstList<ocs::tom::VA>>
 qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const char *name,
-                       const char *label, ocs::ProcedureModel &model, lList **alpp) {
+                       const char *label, ocs::ProcedureModel &model, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -143,7 +143,7 @@ qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const c
    param.set_sub_procedure_name(ocs::QConfParameter::OBJECT_EXPORT);
    param.set_for_export(true);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool ok = model.make_snapshot(&alp, param);
 
    param.set_for_export(false);
@@ -153,7 +153,7 @@ qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const c
       qconf_answer_take(alpp, &alp);
       DRETURN(std::nullopt);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    if (model.get_reduction() != ocs::ProcedureParameter::REDUCTION_NONE) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_REDUCEDNOTEXPORTABLE_SS, sw, label);
@@ -219,7 +219,7 @@ qconf_name_is_fs_safe(const char *name) {
  * @return 0 on success or a (non-fatal) skip, 1 on a write/relocate failure.
  */
 static int
-qconf_export_write_one(std::ostream &os, const char *text, const char *dest, lList **alpp) {
+qconf_export_write_one(std::ostream &os, const char *text, const char *dest, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (text == nullptr) {
       text = "";
    }
@@ -298,7 +298,7 @@ qconf_export_is_bulk(const char *path) {
  * @return true when the directory exists afterwards
  */
 static bool
-qconf_export_make_dir(char *dir, const size_t size, const char *path, lList **alpp) {
+qconf_export_make_dir(char *dir, const size_t size, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    sge_strlcpy(dir, path, size);
    const size_t dl = strlen(dir);
    if (dl > 1 && dir[dl - 1] == '/') {
@@ -339,7 +339,7 @@ qconf_export_make_dir(char *dir, const size_t size, const char *path, lList **al
  */
 static int
 qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
-                  const char *sw, const char *path, lList **alpp) {
+                  const char *sw, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
@@ -426,7 +426,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
  */
 static int
 qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
-                       const char *sw, const char *path, lList **alpp) {
+                       const char *sw, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (qconf_export_is_bulk(path)) {
@@ -454,7 +454,7 @@ qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
 }
 
 bool
-qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lList **alpp,
+qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                          uint32_t *reduction) {
    DENTER(TOP_LAYER);
 
@@ -582,7 +582,7 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
 
 QConfShowStatus
 qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, const QConfObj o, const char *name,
-                  lList **alpp, uint32_t *reduction, const bool report_errors) {
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint32_t *reduction, const bool report_errors) {
    DENTER(TOP_LAYER);
 
    /* CS-2799: the body of this function is a stored procedure call now. The
@@ -615,10 +615,10 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, const QCon
    }
    param.set_operation(op);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool ok = qconf_dispatch_procedure(os, param, &alp, reduction);
    if (ok) {
-      lFreeList(&alp);
+      alp.reset();
       DRETURN(QConfShowStatus::OK);
    }
 
@@ -633,13 +633,13 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, const QCon
    if (report_errors) {
       qconf_answer_take(alpp, &alp);
    }
-   lFreeList(&alp);
+   alp.reset();
    DRETURN(not_found ? QConfShowStatus::NOT_FOUND : QConfShowStatus::GDI_FAILED);
 }
 
 QConfOpResult
 qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                         lList **alpp) {
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
@@ -664,7 +664,7 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
    }
 
    param.set_operation(op);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool ok = qconf_dispatch_procedure(os, param, &alp, nullptr);
 
    if (!ok) {
@@ -674,7 +674,7 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
        * is simply reported like any other. */
       qconf_answer_take(alpp, &alp);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(ok ? QConfOpResult::OK : QConfOpResult::FAILED);
 }
@@ -757,14 +757,14 @@ static constexpr qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
  */
 static bool
 qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, const qconf_sub_procedure_entry &entry,
-                         const qconf_op &op, lList **alpp) {
+                         const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    param.set_operation(op);
    if (entry.sub_procedure != nullptr) {
       param.set_sub_procedure_name(entry.sub_procedure);
    }
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool ok = qconf_dispatch_procedure(os, param, &alp);
    param.set_sub_procedure_name("");
 
@@ -777,9 +777,8 @@ qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, con
             status = 1;
          }
       }
-      while (lGetNumberOfElem(alp) > 1) {
-         lListElem *first = lFirstRW(alp);
-         lRemoveElem(alp, &first);
+      while (alp->size() > 1) {
+         alp->erase(alp->front());
       }
       qconf_answer_take(alpp, &alp);
       return status;
@@ -806,7 +805,7 @@ qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, con
          failed = (take_last() != 0);
          break;
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(failed);
 }
@@ -826,7 +825,7 @@ qconf_read_changes_nothing(const qconf_op &op) {
 
 QConfOpResult
 qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                        lList **alpp) {
+                        ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_sub_procedure_entry *entry = nullptr;

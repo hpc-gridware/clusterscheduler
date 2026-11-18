@@ -56,6 +56,7 @@
 
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_CEntry.h"   /* ocs::CEntry::Type for config_param_value_type */
+#include "sgeobj/sge_answer.h"
 
 /// Lowest group id the `gid_range` may hand out; ids below it belong to the system
 #define GID_RANGE_NOT_ALLOWED_ID 100
@@ -113,7 +114,7 @@ typedef int (*tDaemonizeFunc)(void *ctx);
 extern lList *Execd_Config_List;
 
 std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
-merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root,
+merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t progid, const char *cell_root,
                     ocs::tom::ConstElement<ocs::tom::CONF> global, ocs::tom::ConstElement<ocs::tom::CONF> local);
 void conf_sort_entries(ocs::tom::Element<ocs::tom::CONF> conf);
 void sge_show_conf();
@@ -235,10 +236,11 @@ bool mconf_get_old_reporting();
 int mconf_get_sharelog_time();
 int mconf_get_log_consumables();
 std::vector<std::pair<std::string, std::string>> mconf_get_usage_patterns();
-bool parse_usage_patterns_value(lList **answer_list, const char *value,
+bool parse_usage_patterns_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value,
                                 std::vector<std::pair<std::string, std::string>> &out_patterns);
 std::vector<std::string> mconf_get_online_usage_vars();
-bool parse_online_usage_value(lList **answer_list, const char *value, std::vector<std::string> &out_vars);
+bool parse_online_usage_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value,
+                              std::vector<std::string> &out_vars);
 bool mconf_get_enable_forced_qdel();
 bool mconf_get_enable_sup_grp_eval();
 void mconf_set_enable_sup_grp_eval(bool value);

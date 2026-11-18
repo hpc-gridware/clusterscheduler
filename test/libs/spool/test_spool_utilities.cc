@@ -50,6 +50,7 @@
 #include "sgeobj/sge_object.h"
 
 #include "spool/sge_spooling_utilities.h"
+#include "sgeobj/sge_answer.h"
 
 static int s_fail = 0;
 
@@ -79,14 +80,14 @@ int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    int id = 1;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    // --- spool_get_fields_to_spool ---
    printf("\n--- spool_get_fields_to_spool ---\n");
 
    // T01: valid call returns a non-null field array
    spooling_field *fields = spool_get_fields_to_spool(&alp, QU_Type, &spool_config_instr);
-   lFreeList(&alp);
+   alp.reset();
    CHECK(id, "spool_get_fields_to_spool(QU_Type) returns non-null", fields != nullptr); id++;
 
    // T02: the returned array contains at least one field
@@ -101,7 +102,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    // T03: null descriptor is rejected, returns null
    spooling_field *null_fields = spool_get_fields_to_spool(&alp, nullptr, &spool_config_instr);
-   lFreeList(&alp);
+   alp.reset();
    CHECK(id, "spool_get_fields_to_spool(null descriptor) returns null", null_fields == nullptr); id++;
 
    // --- field-value round-trip ---
@@ -122,14 +123,14 @@ int main(int /*argc*/, char * /*argv*/[]) {
          sge_dstring_clear(&copy_str);
 
          const char *value = object_append_field_to_dstring(elem, &alp, &elem_str, nm, '\0');
-         lFreeList(&alp);
+         alp.reset();
          const char *reread_value = nullptr;
 
          if (value != nullptr) {
             object_parse_field_from_string(copy, &alp, nm, value);
-            lFreeList(&alp);
+            alp.reset();
             reread_value = object_append_field_to_dstring(copy, &alp, &copy_str, nm, '\0');
-            lFreeList(&alp);
+            alp.reset();
          }
 
          if (sge_strnullcmp(value, reread_value) != 0) {

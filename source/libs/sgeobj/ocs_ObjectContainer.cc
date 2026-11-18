@@ -51,7 +51,7 @@
 template <auto F>
 bool
 ocs::ObjectContainer::has_duplicates(const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> obj_list,
-                                     lList **answer_list, const std::string& object_name) {
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const std::string& object_name) {
    DENTER(TOP_LAYER);
 
    // early exit if there is nothing to do
@@ -93,6 +93,8 @@ ocs::ObjectContainer::has_duplicates(const ocs::tom::ConstList<typename ocs::tom
 }
 
 template bool ocs::ObjectContainer::has_duplicates<CE_name>(ocs::tom::ConstList<ocs::tom::CE> obj_list,
-                                                            lList **answer_list, const std::string &object_name);
+                                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                            const std::string &object_name);
 template bool ocs::ObjectContainer::has_duplicates<RQRL_name>(ocs::tom::ConstList<ocs::tom::RQRL> obj_list,
-                                                              lList **answer_list, const std::string &object_name);
+                                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                              const std::string &object_name);

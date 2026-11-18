@@ -68,9 +68,10 @@
 #include "msg_clients_common.h"
 
 static bool sge_parse_cmdline_qdel(char **argv, char **envp, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                                   lList **alpp);
+                                   ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool sge_parse_qdel(ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
-                           uint32_t *pforce, ocs::tom::ListPtr<ocs::tom::ST> &userlist, lList **alpp);
+                           uint32_t *pforce, ocs::tom::ListPtr<ocs::tom::ST> &userlist,
+                           ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief The process environment, as the C library defines it
  *
@@ -89,7 +90,7 @@ extern char **environ;
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qdel");
    int ret = 0;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    ocs::tom::ListPtr<ocs::tom::ID> ref_list;
    ocs::tom::ListPtr<ocs::tom::ST> user_list;
@@ -162,7 +163,7 @@ int main(int argc, char **argv) {
    have_master_privileges = false;
    if (force == 1) {
       ocs::gdi::Client::sge_gdi_get_permission(&alp, &have_master_privileges, nullptr, nullptr, nullptr);
-      lFreeList(&alp);
+      alp.reset();
    }
    /* delete the job */
    {
@@ -259,7 +260,7 @@ int main(int argc, char **argv) {
             if (!do_again){
                lFreeList(&part_ref_list);
             }
-            lFreeList(&alp);
+            alp.reset();
 
             first_try = false;
          } while (do_again || !cp_refs->empty());
@@ -284,14 +285,14 @@ int main(int argc, char **argv) {
       }
    }
 
-   lFreeList(&alp);
+   alp.reset();
    ref_list.reset();
    ocs::gdi::ClientBase::shutdown();
    sge_exit(ret);
    return ret;
 
 error_exit:
-   lFreeList(&alp);
+   alp.reset();
    ref_list.reset();
    ocs::gdi::ClientBase::shutdown();
    sge_exit(1);
@@ -310,7 +311,7 @@ error_exit:
  * @return true on success, false on a parse error
  */
 static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
-                                   ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp) {
+                                   ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -427,7 +428,8 @@ error:
  * @return true on success, false on a parse error
  */
 static bool sge_parse_qdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
-                           uint32_t *pforce, ocs::tom::ListPtr<ocs::tom::ST> &userlist, lList **alpp) {
+                           uint32_t *pforce, ocs::tom::ListPtr<ocs::tom::ST> &userlist,
+                           ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    uint32_t helpflag;

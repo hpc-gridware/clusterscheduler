@@ -56,7 +56,7 @@
  */
 static bool
 auto_add_hosts_parse_rule(const char *rule_str, std::vector<ocs::AutoAddHosts::Rule> &rules,
-                          lList **answer_list) {
+                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    ocs::AutoAddHosts::Rule rule{};
@@ -138,7 +138,7 @@ auto_add_hosts_parse_rule(const char *rule_str, std::vector<ocs::AutoAddHosts::R
  * @return true if all rules are valid, false otherwise
  */
 bool
-ocs::AutoAddHosts::parse(const char *value, std::vector<Rule> &rules, lList **answer_list) {
+ocs::AutoAddHosts::parse(const char *value, std::vector<Rule> &rules, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    if (value == nullptr || *value == '\0' || strcasecmp(value, NONE_STR) == 0) {

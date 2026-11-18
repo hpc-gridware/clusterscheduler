@@ -102,7 +102,7 @@ check_conf(const char *test, lListElem *conf, const char *expected[]) {
 static int
 check_usage_patterns(const char *test, const char *value, bool expected_valid,
                      const char *expected_groups, int expected_errors) {
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    std::vector<std::pair<std::string, std::string>> groups;
    const bool valid = parse_usage_patterns_value(&answer_list, value, groups);
 
@@ -113,7 +113,7 @@ check_usage_patterns(const char *test, const char *value, bool expected_valid,
       }
       got_groups += group.first + ":" + group.second;
    }
-   const int errors = static_cast<int>(lGetNumberOfElem(answer_list));
+   const int errors = static_cast<int>(answer_list->size());
 
    int ret = 0;
    if (valid != expected_valid || got_groups != expected_groups || errors != expected_errors) {
@@ -124,7 +124,7 @@ check_usage_patterns(const char *test, const char *value, bool expected_valid,
       answer_list_output(&answer_list);
       ret = 1;
    }
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    return ret;
 }

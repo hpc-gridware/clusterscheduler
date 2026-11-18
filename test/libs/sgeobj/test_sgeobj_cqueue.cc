@@ -78,12 +78,12 @@ static int s_fail = 0;
  */
 static ocs::tom::ElementPtr<ocs::tom::CQ>
 make_template_queue(const char *name) {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    auto cqueue = cqueue_create(&alp, name);
    if (cqueue && !cqueue_set_template_attributes(*cqueue, &alp)) {
       cqueue.reset();
    }
-   lFreeList(&alp);
+   alp.reset();
    return cqueue;
 }
 
@@ -124,7 +124,7 @@ test_purge_default_entry() {
 
    // a host that is in no list changes nothing
    auto patterns = ocs::tom::ListPtr<ocs::tom::US>::from_string<US_name>("*", ",");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool purged_unknown = cqueue_purge_host(*cqueue, &alp, *patterns, "no_such_host");
    CHECK(3, "purging an unknown host reports nothing deleted", !purged_unknown);
    CHECK(4, "purging an unknown host keeps every list", count_attribute_lists(*cqueue) == lists_before);
@@ -139,7 +139,7 @@ test_purge_default_entry() {
    CHECK(7, "a second purge of @/ finds nothing to delete", !purged_again);
    CHECK(8, "a second purge leaves every field nullptr", count_attribute_lists(*cqueue) == 0);
 
-   lFreeList(&alp);
+   alp.reset();
 }
 
 /**
@@ -157,23 +157,23 @@ test_slots_limit() {
    ocs::tom::set<CQ_name>(cqueue, "all.q");
    lListElem *attr = lCreateElem(AULNG_Type);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lSetUlong(attr, AULNG_value, OCS_MAX_SLOTS);
    CHECK(9, "a queue with OCS_MAX_SLOTS slots is accepted", cqueue_verify_job_slots(*cqueue, &alp, attr, nullptr));
    lSetUlong(attr, AULNG_value, OCS_MAX_SLOTS + 1);
    CHECK(10, "a queue with more slots is refused", !cqueue_verify_job_slots(*cqueue, &alp, attr, nullptr));
    CHECK(11, "the refusal is an error", answer_list_has_error(&alp));
-   lFreeList(&alp);
+   alp.reset();
    lFreeElem(&attr);
 
    CHECK(12, "a PE with OCS_MAX_SLOTS slots is accepted", pe_validate_slots(&alp, OCS_MAX_SLOTS, false) == STATUS_OK);
    CHECK(13, "a PE with more slots is refused", pe_validate_slots(&alp, OCS_MAX_SLOTS + 1, false) != STATUS_OK);
-   lFreeList(&alp);
+   alp.reset();
    CHECK(14, "at startup a PE with more slots is accepted",
          pe_validate_slots(&alp, OCS_MAX_SLOTS + 1, true) == STATUS_OK);
    CHECK(15, "and only warned about", alp != nullptr && !answer_list_has_error(&alp) &&
                                          answer_list_has_quality(&alp, ANSWER_QUALITY_WARNING));
-   lFreeList(&alp);
+   alp.reset();
 }
 
 /**

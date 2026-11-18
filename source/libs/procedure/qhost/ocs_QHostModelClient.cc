@@ -54,8 +54,8 @@
  */
 template <ocs::tom::ObjectType T>
 static ocs::tom::ListPtr<T>
-get_list_response(lList **answer_list, const ocs::gdi::Request &request, const ocs::gdi::Target target,
-                  const int id) {
+get_list_response(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::gdi::Request &request,
+                  const ocs::gdi::Target target, const int id) {
    DENTER(TOP_LAYER);
    lList *lp = nullptr;
    request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, &lp);
@@ -70,7 +70,8 @@ get_list_response(lList **answer_list, const ocs::gdi::Request &request, const o
  * @return true when every list could be fetched
  */
 bool
-ocs::QHostModelClient::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                  const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
                                   const ocs::tom::ConstList<ocs::tom::ST> user_name_list, const uint32_t show) {
    DENTER(TOP_LAYER);
 
@@ -186,7 +187,9 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const ocs::tom::ConstList
    }
 
    // Delete the ok message
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
 
    /*
    ** handle results
@@ -263,8 +266,8 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const ocs::tom::ConstList
  * @return true when the lists could be prepared
  */
 bool
-ocs::QHostModelClient::prepare_data(lList **answer_list, const ocs::tom::List<ocs::tom::CE> resource_match_list,
-                                    const uint32_t show) const {
+ocs::QHostModelClient::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                    const ocs::tom::List<ocs::tom::CE> resource_match_list, const uint32_t show) const {
    DENTER(TOP_LAYER);
 
    // Common things that need to be done on client and server side

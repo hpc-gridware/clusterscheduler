@@ -81,7 +81,7 @@ qconf_delete_join(const std::vector<std::string> &lines) {
  */
 static int
 qconf_delete_send(const QConfObj o, const std::vector<std::string> &names, const std::vector<std::string> &sources,
-                  lList **alpp) {
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    ocs::QConfActionParameter action(ocs::QConfActionParameter::OBJECT_DELETE);
@@ -95,7 +95,7 @@ qconf_delete_send(const QConfObj o, const std::vector<std::string> &names, const
    }
 
    ocs::QConfWriteModelClient model(qconf_desc(o).target);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const bool ok = model.make_snapshot(&answer_list, action);
    const int shown = qconf_answer_take(alpp, &answer_list);
 
@@ -156,7 +156,8 @@ qconf_delete_names_of(const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F
  */
 static int
 qconf_delete_collected(std::ostream &os, const QConfObj o, const char *path, const std::vector<std::string> &names,
-                       const std::vector<std::string> &sources, const int n_fail, lList **alpp) {
+                       const std::vector<std::string> &sources, const int n_fail,
+                       ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    const bool is_dir = sge_is_directory(path);
    const int n_names = static_cast<int>(names.size());
 
@@ -191,7 +192,7 @@ qconf_delete_collected(std::ostream &os, const QConfObj o, const char *path, con
  * @return the number of files that failed, plus one when a delete failed
  */
 static int
-qconf_delete_obj(std::ostream &os, const QConfObj o, const char *path, lList **alpp) {
+qconf_delete_obj(std::ostream &os, const QConfObj o, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    const qconf_object_desc &d = qconf_desc(o);
    bool owned = false;
    /* the write field list, which a diagnostic attribute has no business in: the file is
@@ -217,7 +218,7 @@ struct qconf_names_ctx {
    std::vector<std::string> *names;   ///< the names of the rule sets of every file
    std::vector<std::string> *sources; ///< for each name the file it was read from
    int n_fail;                        ///< files that failed to read
-   lList **alpp;                      ///< the answer list of the operation (CS-2971)
+   ocs::tom::ListPtr<ocs::tom::AN> *alpp;                      ///< the answer list of the operation (CS-2971)
 };
 
 /** @brief qconf_for_each_file callback: read one file's resource quota sets and
@@ -234,7 +235,7 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
    DENTER(TOP_LAYER);
 
    auto *ctx = static_cast<qconf_names_ctx *>(vctx);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lList *read_out = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
                                               &qconf_rqs_sfi, qconf_opt_format, nullptr, filepath);
    const auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::from_typed(read_out);
@@ -282,7 +283,7 @@ qconf_conf_collect_host(const char *filepath, void *vctx) {
  */
 static int
 qconf_delete_path_collected(std::ostream &os, const QConfObj o, const char *path,
-                            int (*collect)(const char *, void *), lList **alpp) {
+                            int (*collect)(const char *, void *), ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    std::vector<std::string> names;
    std::vector<std::string> sources;
    qconf_names_ctx ctx = {&names, &sources, 0, alpp};
@@ -301,7 +302,8 @@ struct qconf_delete_entry {
    const char *switch_name;   ///< the switch as typed
    QConfObj object;           ///< the object type it deletes
    QConfDeleteKind kind;      ///< names or file
-   int (*run)(std::ostream &os, const qconf_op &op, lList **alpp); ///< a delete of its own instead of the kind's engine, or nullptr
+   int (*run)(std::ostream &os, const qconf_op &op,
+              ocs::tom::ListPtr<ocs::tom::AN> *alpp); ///< a delete of its own instead of the kind's engine, or nullptr
 };
 
 /** @brief "-dhgrp group,...": the host groups of the list (CS-2306 C4)
@@ -314,7 +316,7 @@ struct qconf_delete_entry {
  * @return the status of qconf_delete_send()
  */
 static int
-qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op, lList **alpp) {
+qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    std::string arg = op.args[0];
    const auto groups = parse_name_list_to_cull<HGRP_name>("host groups to del", arg.data());
    return qconf_delete_send(QConfObj::HGRP, qconf_delete_names_of<HGRP_name>(*groups), {}, alpp);
@@ -331,7 +333,8 @@ qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op, 
  * @return the status of qconf_delete_send()
  */
 static int
-qconf_delete_exechost_list([[maybe_unused]] std::ostream &os, const qconf_op &op, lList **alpp) {
+qconf_delete_exechost_list([[maybe_unused]] std::ostream &os, const qconf_op &op,
+                           ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    std::string arg = op.args[0];
    const auto hosts = parse_name_list_to_cull<EH_name>("host to del", arg.data());
    return qconf_delete_send(QConfObj::EH, qconf_delete_names_of<EH_name>(*hosts), {}, alpp);
@@ -348,7 +351,7 @@ qconf_delete_exechost_list([[maybe_unused]] std::ostream &os, const qconf_op &op
  * @return 0 when every configuration was deleted, 1 otherwise
  */
 static int
-qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, lList **alpp) {
+qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (op.args.empty()) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, "%s", MSG_ANSWER_NEEDHOSTNAMETODELLOCALCONFIG);
       return 1;
@@ -380,7 +383,7 @@ qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, l
  * @return the status of qconf_delete_path_collected()
  */
 static int
-qconf_delete_conf_path(std::ostream &os, const qconf_op &op, lList **alpp) {
+qconf_delete_conf_path(std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return qconf_delete_path_collected(os, QConfObj::CONF, op.args[0].c_str(), qconf_conf_collect_host, alpp);
 }
 
@@ -391,7 +394,7 @@ qconf_delete_conf_path(std::ostream &os, const qconf_op &op, lList **alpp) {
  * @return the status of qconf_delete_path_collected()
  */
 static int
-qconf_delete_rqs_path(std::ostream &os, const qconf_op &op, lList **alpp) {
+qconf_delete_rqs_path(std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return qconf_delete_path_collected(os, QConfObj::RQS, op.args[0].c_str(), qconf_rqs_collect, alpp);
 }
 
@@ -446,7 +449,7 @@ qconf_delete_honours_dry(const qconf_op &op) {
 }
 
 QConfOpResult
-qconf_run_delete(std::ostream &os, const qconf_op &op, lList **alpp) {
+qconf_run_delete(std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_delete_entry *entry = nullptr;

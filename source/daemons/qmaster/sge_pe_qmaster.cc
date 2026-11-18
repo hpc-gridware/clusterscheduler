@@ -100,7 +100,8 @@ static void pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE> new_pe,
  * @return 0 on success
  */
 int
-pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_pe,
+       lListElem *pe, /* reduced */
        int add, const char *ruser, const char *rhost, gdi_object_t *object,
        ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
        monitoring_t *monitor) {
@@ -244,10 +245,11 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
  * @return 0 on success
  */
 int
-pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
+pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *pep,
+         gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), pep,
@@ -303,7 +305,7 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
  */
 int
 sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::PE> pep,
-           lList **alpp, char *ruser, char *rhost) {
+           ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
@@ -340,7 +342,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
     * Try to find references in other objects
     */
    {
-      lList *local_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
 
       if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
          const lListElem *answer = lFirst(local_answer_list);
@@ -348,7 +350,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
-         lFreeList(&local_answer_list);
+         local_answer_list.reset();
          DRETURN(STATUS_EUNKNOWN);
       }
    }
@@ -382,7 +384,8 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
  * @return see the typed form
  */
 int
-sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           char *ruser, char *rhost) {
    return sge_del_pe(packet, task, ocs::tom::ConstElement<ocs::tom::PE>(pep), alpp, ruser, rhost);
 }
 

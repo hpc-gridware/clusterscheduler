@@ -41,12 +41,14 @@
 #include "sgeobj/tom/ocs_tom_SC.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/sge_answer.h"
 
 int
-sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, uint64_t gdi_session);
+sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+                             uint64_t gdi_session);
 
 int
 sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::SC> confp,
-                            lList **alpp, char *ruser, char *rhost);
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 OCS_TRANSITIONAL int sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp,
-                                                 lList **alpp, char *ruser, char *rhost);
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);

@@ -120,7 +120,7 @@ namespace ocs::spool::classic {
          const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*DataStore::get_master_list(SGE_TYPE_PE));
          const auto master_userset_list =
             ocs::tom::ConstList<ocs::tom::US>(*DataStore::get_master_list(SGE_TYPE_USERSET));
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
          const auto ars = ocs::tom::List<ocs::tom::AR>(*ar_list);
 

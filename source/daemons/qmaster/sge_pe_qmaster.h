@@ -45,16 +45,18 @@
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/sge_answer.h"
 
 /* funtions called from within gdi framework in qmaster */
 int
-pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, int add,
-       const char *ruser, const char *rhost, gdi_object_t *object,
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_pe,
+       lListElem *pe, int add, const char *ruser, const char *rhost, gdi_object_t *object,
        ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
        monitoring_t *monitor);
 
 int
-pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object);
+pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *pep,
+         gdi_object_t *object);
 
 int
 pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
@@ -62,10 +64,10 @@ pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::PE> pep, lList **alpp,
-           char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp,
-                                char *ruser, char *rhost);
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::PE> pep,
+           ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep,
+                                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 /* to do at qmasters startup */
 void

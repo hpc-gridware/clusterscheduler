@@ -123,10 +123,10 @@ static char parse_error[MAX_STRING_SIZE];
 
 /* parsing */
 static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
-disabled_year_list(lList **alpp, const char *s, const char *cal_name);
+disabled_year_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *s, const char *cal_name);
 
 static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
-disabled_week_list(lList **alpp, const char *s, const char *cal_name);
+disabled_week_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *s, const char *cal_name);
 
 static std::pair<int, time_t>
 state_at(time_t now, ocs::tom::ConstList<ocs::tom::CA> ycal, ocs::tom::ConstList<ocs::tom::CA> wcal);
@@ -1108,7 +1108,7 @@ static int in_range(const ocs::tom::ConstElement<ocs::tom::TM> tm, const ocs::to
  * @return the parsed calendar (CA_Type), an empty handle for no calendar, std::nullopt on a syntax error
  */
 static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
-disabled_year_list(lList **alpp, const char *s, const char *cal_name) {
+disabled_year_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *s, const char *cal_name) {
    DENTER(TOP_LAYER);
 
    static token_set_t token_set[] = {
@@ -1682,7 +1682,7 @@ static int action(int *sp) {
  * @return the parsed calendar (CA_Type), an empty handle for no calendar, std::nullopt on a syntax error
  */
 static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
-disabled_week_list(lList **alpp, const char *s, const char *cal_name) {
+disabled_week_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *s, const char *cal_name) {
    DENTER(TOP_LAYER);
 
    static token_set_t token_set[] = {
@@ -2385,7 +2385,7 @@ void uncullify_tm(const ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *t
  * @param[out] answer_list receives the syntax error
  * @return true when the specification was understood
  */
-bool calendar_parse_year(const ocs::tom::Element<ocs::tom::CAL> cal, lList **answer_list) {
+bool calendar_parse_year(const ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -2407,7 +2407,7 @@ bool calendar_parse_year(const ocs::tom::Element<ocs::tom::CAL> cal, lList **ans
  * @param[out] answer_list receives the syntax error
  * @return as calendar_parse_year()
  */
-bool calendar_parse_year(lListElem *cal, lList **answer_list) {
+bool calendar_parse_year(lListElem *cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return calendar_parse_year(ocs::tom::Element<ocs::tom::CAL>(cal), answer_list);
 }
 
@@ -2418,7 +2418,7 @@ bool calendar_parse_year(lListElem *cal, lList **answer_list) {
  * @param[out] answer_list receives the syntax error
  * @return true when the specification was understood
  */
-bool calendar_parse_week(const ocs::tom::Element<ocs::tom::CAL> cal, lList **answer_list) {
+bool calendar_parse_week(const ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -2439,7 +2439,7 @@ bool calendar_parse_week(const ocs::tom::Element<ocs::tom::CAL> cal, lList **ans
  * @param[out] answer_list receives the syntax error
  * @return as calendar_parse_week()
  */
-bool calendar_parse_week(lListElem *cal, lList **answer_list) {
+bool calendar_parse_week(lListElem *cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return calendar_parse_week(ocs::tom::Element<ocs::tom::CAL>(cal), answer_list);
 }
 
@@ -2498,7 +2498,8 @@ calendar_get_current_state_and_end(const ocs::tom::ConstElement<ocs::tom::CAL> c
  * @param master_cqueue_list the cluster queues to search
  * @return true when at least one queue refers to it
  */
-bool calendar_is_referenced(const ocs::tom::ConstElement<ocs::tom::CAL> calendar, lList **answer_list,
+bool calendar_is_referenced(const ocs::tom::ConstElement<ocs::tom::CAL> calendar,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
 
@@ -2536,7 +2537,8 @@ bool calendar_is_referenced(const ocs::tom::ConstElement<ocs::tom::CAL> calendar
  * @param master_cqueue_list the cluster queues (CQ_Type), checked
  * @return as calendar_is_referenced()
  */
-bool calendar_is_referenced(const lListElem *calendar, lList **answer_list, const lList *master_cqueue_list) {
+bool calendar_is_referenced(const lListElem *calendar, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const lList *master_cqueue_list) {
    return calendar_is_referenced(ocs::tom::ConstElement<ocs::tom::CAL>(calendar), answer_list,
                                  ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
 }

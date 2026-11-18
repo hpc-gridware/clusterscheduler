@@ -112,35 +112,36 @@ signal_slave_tasks_of_job(int how, ocs::tom::Element<ocs::tom::JB> jep, ocs::tom
 
 static int
 sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::QU> qep,
-                       uint32_t action, uint32_t force, lList **answer, monitoring_t *monitor);
+                       uint32_t action, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor);
 
 static int
 sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::JB> jep,
                      ocs::tom::Element<ocs::tom::JAT> jatep, uint32_t task_id, uint32_t action, uint32_t force,
-                     lList **answer, monitoring_t *monitor);
+                     ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor);
 
 static int
 qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::QU> qep,
-                     uint32_t force, lList **answer, int isoperator, int isowner, monitoring_t *monitor);
+                     uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, int isoperator, int isowner,
+                     monitoring_t *monitor);
 
 static int
 qmod_queue_clean(const ocs::gdi::Packet *packet, ocs::tom::ConstElement<ocs::tom::QU> qep, uint32_t force,
-                 lList **answer, int isoperator, int isowner, monitoring_t *monitor);
+                 ocs::tom::ListPtr<ocs::tom::AN> *answer, int isoperator, int isowner, monitoring_t *monitor);
 
 static void
 qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::JB> jep,
                  ocs::tom::Element<ocs::tom::JAT> jatep, ocs::tom::Element<ocs::tom::QU> queueep, uint32_t force,
-                 lList **answer, monitoring_t *monitor);
+                 ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor);
 
 static void
 qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::JB> jep,
                    ocs::tom::Element<ocs::tom::JAT> jatep, ocs::tom::Element<ocs::tom::QU> queueep, uint32_t force,
-                   lList **answer, monitoring_t *monitor);
+                   ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor);
 
 static void
 qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::JB> jep,
                     ocs::tom::Element<ocs::tom::JAT> jatep, ocs::tom::Element<ocs::tom::QU> queueep, uint32_t force,
-                    lList **answer, monitoring_t *monitor);
+                    ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor);
 
 /*-------------------------------------------------------------------------*/
 
@@ -153,7 +154,7 @@ qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::El
 void
 sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    bool found;
    uint32_t jobid;
    uint32_t start = 0, end = 0, step = 0;
@@ -458,7 +459,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
    sge_dstring_free(&cqueue_buffer);
    sge_dstring_free(&hostname_buffer);
 
-   task->answer_list = alp;
+   task->answer_list = std::move(alp);
 
    DRETURN_VOID;
 }
@@ -480,7 +481,8 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
  */
 static int
 sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::QU> qep,
-                       const uint32_t action, const uint32_t force, lList **answer, monitoring_t *monitor) {
+                       const uint32_t action, const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer,
+                       monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int result = 0;
@@ -588,7 +590,7 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs
 static int
 sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::JB> jep,
                      const ocs::tom::Element<ocs::tom::JAT> jatep, uint32_t task_id, const uint32_t action,
-                     const uint32_t force, lList **answer, monitoring_t *monitor) {
+                     const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    uint32_t job_id = ocs::tom::get<JB_job_number>(jep);
@@ -711,8 +713,8 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
  */
 static int
 qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::QU> qep,
-                     const uint32_t force, lList **answer, const int isoperator, const int isowner,
-                     monitoring_t *monitor) {
+                     const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, const int isoperator,
+                     const int isowner, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    if (!isoperator && !isowner) {
@@ -741,7 +743,8 @@ qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const
  */
 static int
 qmod_queue_clean(const ocs::gdi::Packet *packet, const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t force,
-                 lList **answer, const int isoperator, const int isowner, monitoring_t *monitor) {
+                 ocs::tom::ListPtr<ocs::tom::AN> *answer, const int isoperator, const int isowner,
+                 monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *qname = nullptr;
@@ -797,7 +800,7 @@ qmod_queue_clean(const ocs::gdi::Packet *packet, const ocs::tom::ConstElement<oc
 static void
 qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::JB> jep,
                     const ocs::tom::Element<ocs::tom::JAT> jatep, const ocs::tom::Element<ocs::tom::QU> queueep,
-                    const uint32_t force, lList **answer, monitoring_t *monitor) {
+                    const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    reschedule_job(jep, jatep, queueep, force, answer, monitor, true, packet->user, packet->host, packet->gdi_session);
@@ -819,7 +822,7 @@ qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::t
 static void
 qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::JB> jep,
                  const ocs::tom::Element<ocs::tom::JAT> jatep, const ocs::tom::Element<ocs::tom::QU> queueep,
-                 const uint32_t force, lList **answer, monitoring_t *monitor) {
+                 const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int i;
@@ -959,7 +962,7 @@ qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
 static void
 qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::JB> jep,
                    const ocs::tom::Element<ocs::tom::JAT> jatep, const ocs::tom::Element<ocs::tom::QU> queueep,
-                   const uint32_t force, lList **answer, monitoring_t *monitor) {
+                   const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int i;

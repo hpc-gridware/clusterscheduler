@@ -29,6 +29,7 @@
 
 #include "uti/ocs_Exception.h"
 #include "cull/cull.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -65,18 +66,18 @@ namespace ocs {
 
       /**
        * @brief Find the message of an answer list
-       * @param answer_list an AN_Type list, may be nullptr
+       * @param answer_list an answer list, may be an empty handle
        * @return the text of the last entry of quality error or critical, or a
        *         fixed text if there is none
        */
-      static std::string get_last_error_message(const lList *answer_list);
+      static std::string get_last_error_message(ocs::tom::ConstList<ocs::tom::AN> answer_list);
 
    public:
       /**
        * @brief Take ownership of an answer list and carry it up to the catching code
        * @param[in,out] answer_list the list to carry; the caller's pointer is cleared
        */
-      explicit AnswerException(lList **answer_list);
+      explicit AnswerException(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
       /**
        * @brief Hand out the answer list
@@ -85,9 +86,9 @@ namespace ocs {
        * the caller owns it from then on. Every later call, on this copy or
        * another, returns nullptr.
        *
-       * @return the answer list, or nullptr if it was already taken
+       * @return the answer list, or an empty handle if it was already taken
        */
-      lList *take_answer_list() noexcept;
+      ocs::tom::ListPtr<ocs::tom::AN> take_answer_list() noexcept;
 
       /** @brief Destroy this copy; the last copy frees the list unless it was taken */
       ~AnswerException() override;

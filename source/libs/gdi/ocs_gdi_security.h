@@ -42,7 +42,9 @@
 #include "uti/sge_security.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/sge_answer.h"
 
 
 
-int set_sec_cred(const char *sge_root, const char *mastername, ocs::tom::Element<ocs::tom::JB> job, lList **alpp);
+int set_sec_cred(const char *sge_root, const char *mastername, ocs::tom::Element<ocs::tom::JB> job,
+                 ocs::tom::ListPtr<ocs::tom::AN> *alpp);

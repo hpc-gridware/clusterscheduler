@@ -29,6 +29,7 @@
 #include "spool/flatfile/sge_flatfile.h"
 
 #include "ocs_QConfTableView.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Write every complex entry as an aligned table
  *
@@ -63,7 +64,7 @@ ocs::QConfTableView::show_table(std::ostream &os, const lList *list,
       sge_free(&shared);
    }
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    /* aligned unconditionally, as the hand written code did - the widths are
     * meaningless for JSON, but computing them changes nothing there */
    spool_flatfile_align_list(&alp, list, fields, 3);
@@ -86,7 +87,7 @@ ocs::QConfTableView::show_table(std::ostream &os, const lList *list,
       sge_free(&filename);
    }
    sge_free(&fields);
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN_VOID;
 }

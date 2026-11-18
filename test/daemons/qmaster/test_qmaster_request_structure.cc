@@ -92,7 +92,7 @@ static int s_fail = 0;
  */
 static bool
 refused(const ocs::gdi::Target target, const ocs::gdi::Command command, lList **lp, const bool syntax_only = true) {
-   lList *alp = ocs::gdi::Client::sge_gdi(target, command, ocs::gdi::SubCommand::NONE, lp, nullptr, nullptr);
+   auto alp = ocs::gdi::Client::sge_gdi(target, command, ocs::gdi::SubCommand::NONE, lp, nullptr, nullptr);
    bool error = false;
    for (const lListElem *aep = lFirst(alp); aep != nullptr; aep = lNext(aep)) {
       if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR &&
@@ -103,7 +103,7 @@ refused(const ocs::gdi::Target target, const ocs::gdi::Command command, lList **
    if (!error) {
       answer_list_output(&alp);
    }
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(lp);
    return error;
 }
@@ -130,11 +130,11 @@ calendar_readable() {
    lList *lp = nullptr;
    lCondition *where = lWhere("%T(%I==%s)", CAL_Type, CAL_name, CAL_NAME);
    lEnumeration *what = lWhat("%T(ALL)", CAL_Type);
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
                                           ocs::gdi::SubCommand::NONE, &lp, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
-   lFreeList(&alp);
+   alp.reset();
    const bool found = ocs::tom::find_first<CAL_name>(lp, CAL_NAME) != nullptr;
    lFreeList(&lp);
    return found;
@@ -168,7 +168,7 @@ global_host_with_acl(lList *acl) {
 int
 main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_qmaster_request_structure");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();

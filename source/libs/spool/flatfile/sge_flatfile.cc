@@ -611,53 +611,53 @@ static bool is_delimiter(int token) {
 
 
 static bool 
-spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
+spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                    dstring *buffer, 
                                    const spool_flatfile_instr *instr,
                                    const spooling_field *fields, bool recurse,
                                    bool root);
 
 static bool
-spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
+spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                                  dstring *buffer,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, bool recurse, const char *list_name);
 
 #ifdef USE_FOPEN
 static FILE *
-spool_flatfile_open_file(lList **answer_list,
+spool_flatfile_open_file(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          const spool_flatfile_destination destination,
                          const char *filepath_in,
                          const char **filepath_out);
 
 static bool
-spool_flatfile_close_file(lList **answer_list, FILE *fd, const char *filepath,
+spool_flatfile_close_file(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, FILE *fd, const char *filepath,
                           const spool_flatfile_destination destination);
 #else
 int
-spool_flatfile_open_file(lList **answer_list,
+spool_flatfile_open_file(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          const spool_flatfile_destination destination,
                          const char *filepath_in,
                          const char **filepath_out);
 
 static bool
-spool_flatfile_close_file(lList **answer_list, int fd, const char *filepath,
+spool_flatfile_close_file(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int fd, const char *filepath,
                           const spool_flatfile_destination destination);
 #endif
 
 static const char *
-spool_flatfile_write_data(lList **answer_list, const void *data, int data_len, 
+spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const void *data, int data_len, 
                           const spool_flatfile_destination destination, 
                           const char *filepath, std::ostream *stream);
 
 static lListElem *
-_spool_flatfile_read_object(lList **answer_list, const lDescr *descr, lListElem *root,
+_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, lListElem *root,
                             const spool_flatfile_instr *instr,
                             const spooling_field *fields, int fields_out[], int *token,
                             const char *end_token, bool parse_values);
 
 static void
-_spool_flatfile_read_live_object(lList **answer_list, lListElem **object,
+_spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **object,
                                  const lDescr *descr, lListElem *root,
                                  const spool_flatfile_instr *instr, 
                                  const spooling_field *fields, int fields_out[],
@@ -665,7 +665,7 @@ _spool_flatfile_read_live_object(lList **answer_list, lListElem **object,
                                  bool parse_values);
 
 static lList *
-_spool_flatfile_read_list(lList **answer_list, const lDescr *descr, 
+_spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, 
                           const spool_flatfile_instr *instr,
                           const spooling_field *fields, int fields_out[], int *token,
                           const char *end_token, bool parse_values, const char *list_name);
@@ -686,7 +686,7 @@ static spooling_field *get_recursion_field_list (const spool_flatfile_instr *ins
  *
  * @see #spool_flatfile_align_list
  */
-bool spool_flatfile_align_object(lList **answer_list, spooling_field *fields) {
+bool spool_flatfile_align_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, spooling_field *fields) {
    DENTER(FLATFILE_LAYER);
 
    int i;
@@ -724,7 +724,7 @@ bool spool_flatfile_align_object(lList **answer_list, spooling_field *fields) {
  *
  * @see #spool_flatfile_align_object
  */
-bool spool_flatfile_align_list(lList **answer_list, const lList *list,
+bool spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                                spooling_field *fields, int padding) {
    DENTER(FLATFILE_LAYER);
    dstring buffer = DSTRING_INIT;
@@ -786,7 +786,7 @@ bool spool_flatfile_align_list(lList **answer_list, const lList *list,
  * @see #spool_flatfile_write_object
  */
 const char *
-spool_flatfile_write_list(lList **answer_list,
+spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const lList *list,
                           const spooling_field *fields_in,
                           const spool_flatfile_instr *instr,
@@ -963,7 +963,7 @@ spool_flatfile_write_list(lList **answer_list,
  * @see #spool_flatfile_write_list, #spool_flatfile_read_object
  */
 const char *
-spool_flatfile_write_object(lList **answer_list, const lListElem *object,
+spool_flatfile_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                             bool is_root, const spooling_field *fields_in,
                             const spool_flatfile_instr *instr,
                             const spool_flatfile_destination destination,
@@ -1113,7 +1113,7 @@ static FILE *
 #else
 int
 #endif
-spool_flatfile_open_file(lList **answer_list,
+spool_flatfile_open_file(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          const spool_flatfile_destination destination,
                          const char *filepath_in,
                          const char **filepath_out) {
@@ -1257,11 +1257,11 @@ spool_flatfile_open_file(lList **answer_list,
  */
 #ifdef USE_FOPEN
 static bool 
-spool_flatfile_close_file(lList **answer_list, FILE *fd, const char *filepath,
+spool_flatfile_close_file(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, FILE *fd, const char *filepath,
                           const spool_flatfile_destination destination)
 #else
 static bool 
-spool_flatfile_close_file(lList **answer_list, int fd, const char *filepath,
+spool_flatfile_close_file(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int fd, const char *filepath,
                           const spool_flatfile_destination destination)
 #endif
 {
@@ -1318,7 +1318,7 @@ spool_flatfile_close_file(lList **answer_list, int fd, const char *filepath,
  *         has to free, else nullptr
  */
 static const char *
-spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
+spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const void *data, int data_len,
                           const spool_flatfile_destination destination,
                           const char *filepath, std::ostream *stream) {
    DENTER(FLATFILE_LAYER);
@@ -1388,7 +1388,7 @@ spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
 }
 
 static bool
-spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
+spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                    dstring *buffer,
                                    const spool_flatfile_instr *instr,
                                    const spooling_field *fields, bool recurse,
@@ -1571,7 +1571,7 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
 }
 
 static bool
-spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
+spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                                  dstring *buffer,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, bool recurse, const char *list_name) {
@@ -1755,7 +1755,7 @@ namespace {
  * @see #spool_flatfile_write_object, #spool_flatfile_read_list
  */
 lListElem *
-spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
+spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                            lListElem *root, const spooling_field *fields_in,
                            int fields_out[], bool parse_values,
                            const spool_flatfile_instr *instr,
@@ -1927,14 +1927,14 @@ FCLOSE_ERROR:
  * @return the object, nullptr if it could not be read
  */
 static lListElem *
-_spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
+_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                             lListElem *root, const spool_flatfile_instr *instr,
                             const spooling_field *fields, int fields_out[],
                             int *token, const char *end_token,
                             bool parse_values) {
    lListElem *object = nullptr;
    int *my_fields_out = nullptr;
-   lList *read_answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> read_answer_list;
 
    /* BUGFIX: Issuezilla #732
     * If we're not given a fields_out array, create one for internal use. */
@@ -1955,7 +1955,7 @@ _spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
       lFreeElem(&object);
    }
    answer_list_append_list(answer_list, &read_answer_list);
-   lFreeList(&read_answer_list);
+   read_answer_list.reset();
 
    if (fields_out == nullptr) {
       sge_free(&my_fields_out);
@@ -1965,7 +1965,7 @@ _spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
 }
 
 static void
-_spool_flatfile_read_live_object(lList **answer_list, lListElem **object,
+_spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **object,
                                  const lDescr *descr, lListElem *root,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, int fields_out[],
@@ -2464,7 +2464,7 @@ FF_DEBUG("after parsing object");
  * @see #spool_flatfile_write_list, #spool_flatfile_read_object
  */
 lList *
-spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
+spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                          const spooling_field *fields_in, int fields_out[],
                          bool parse_values, const spool_flatfile_instr *instr,
                          const spool_flatfile_format format,
@@ -2610,7 +2610,7 @@ FCLOSE_ERROR:
 }
 
 static lList *
-_spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
+_spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                           const spool_flatfile_instr *instr,
                           const spooling_field *fields, int fields_out[],
                           int *token, const char *end_token, bool parse_values, const char *list_name) {
@@ -2773,7 +2773,7 @@ static spooling_field *get_recursion_field_list(const spool_flatfile_instr *inst
  * @return the cull attribute number of the first field of `in` that is not in
  *         `out`, or `NoName` if the input was complete
  */
-int spool_get_unprocessed_field(spooling_field in[], int out[], lList **alpp) {
+int spool_get_unprocessed_field(spooling_field in[], int out[], ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    int count = 0;
    
    while (in[count].nm != NoName) {

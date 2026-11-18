@@ -61,6 +61,7 @@
 #include "tom/ocs_List.h"
 
 #include "uti/sge.h"
+#include "sgeobj/sge_answer.h"
 
 /* -----------------------------------------------
 
@@ -221,7 +222,8 @@ const char *so_list_append_to_dstring(const lList *this_list, dstring *string) {
  * @param action one of the `SO_ACTION_*` values
  * @return true when the relation was added
  */
-bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list, [[maybe_unused]] lList **answer_list,
+bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list,
+                 [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                  const char *so_name, const uint32_t threshold, const uint32_t slots_sum, const uint32_t seq_no,
                  const uint32_t action) {
    DENTER(TOP_LAYER);
@@ -288,7 +290,7 @@ bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list, [[maybe_unused]] lL
  *
  * @return error state true  - success false - error
  */
-bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, lList **answer_list,
+bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                      ocs::tom::ListPtr<ocs::tom::SO> &resolved_so_list, const char *cq_name, const char *hostname,
                      const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
@@ -356,8 +358,8 @@ bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, lList **an
  *
  * @return as so_list_resolve()
  */
-bool so_list_resolve(const lList *so_list, lList **answer_list, lList **resolved_so_list, const char *cq_name,
-                     const char *hostname, const lList *master_cqueue_list) {
+bool so_list_resolve(const lList *so_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **resolved_so_list,
+                     const char *cq_name, const char *hostname, const lList *master_cqueue_list) {
    if (resolved_so_list == nullptr) {
       // the old function added nothing to a missing list
       return true;

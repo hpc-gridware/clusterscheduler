@@ -42,6 +42,7 @@
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs::gdi {
    /// Communication errors that are remembered until a caller asks for them
@@ -78,12 +79,14 @@ namespace ocs::gdi {
       static int get_qm_name(char *master_host, const char *master_file, char *err_str, size_t err_str_size);
       static int write_qm_name(const char *master_host, const char *master_file, char *err_str, size_t err_str_size);
       static const char *gdi_get_act_master_host(bool reread);
-      static int gdi_is_alive(lList **answer_list);
+      static int gdi_is_alive(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
       // connect to qmaster
-      static int prepare_enroll(lList **answer_list);
-      static ErrorValue setup(ProgName component_id, ThreadName thread_id, lList **answer_list, bool is_qmaster_intern_client);
-      static ErrorValue setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list,
+      static int prepare_enroll(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      static ErrorValue setup(ProgName component_id, ThreadName thread_id, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                              bool is_qmaster_intern_client);
+      static ErrorValue setup_and_enroll(ProgName component_id, ThreadName thread_id,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                          const char *display_name = nullptr);
       static int shutdown();
    };

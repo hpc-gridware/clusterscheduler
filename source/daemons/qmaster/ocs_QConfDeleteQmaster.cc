@@ -169,7 +169,7 @@ namespace {
  */
 bool
 qconf_delete_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                            const ocs::QConfActionParameter &parameter, lList **answer_list) {
+                            const ocs::QConfActionParameter &parameter, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    QConfObj type;
@@ -194,7 +194,7 @@ qconf_delete_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
          answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          DRETURN(true);
       }
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       sge_c_gdi_del_element(packet, task, task->target, nullptr, &alp, ocs::gdi::Command::DEL,
                             ocs::gdi::SubCommand::NONE, monitor);
       const bool ok = !answer_list_has_error(&alp);
@@ -232,7 +232,7 @@ qconf_delete_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
 
       /* a missing object of a name list is left to the delete, which words the refusal per type */
       lListElem *ep = delete_element(d, name);
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       sge_c_gdi_del_element(packet, task, task->target, ep, &alp, ocs::gdi::Command::DEL,
                             ocs::gdi::SubCommand::NONE, monitor);
       if (answer_list_has_error(&alp)) {

@@ -113,7 +113,7 @@ qconf_info(std::ostream &os, const char *fmt, ...) {
 }
 
 void
-qconf_answer(lList **alpp, const answer_quality_t quality, const char *fmt, ...) {
+qconf_answer(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const answer_quality_t quality, const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
    const std::string text = qconf_vformat(fmt, ap);
@@ -124,10 +124,10 @@ qconf_answer(lList **alpp, const answer_quality_t quality, const char *fmt, ...)
 }
 
 int
-qconf_answer_take(lList **alpp, lList **from) {
+qconf_answer_take(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::tom::AN> *from) {
    int failed = 0;
    bool fatal = false;
-   for_each_ep_lv(aep, *from) {
+   for (const auto aep : from->get()) {
       if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_END) {
          continue;
       }
@@ -140,9 +140,9 @@ qconf_answer_take(lList **alpp, lList **from) {
    }
    if (*from != nullptr) {
       if (*alpp == nullptr) {
-         *alpp = lCreateList("answers", AN_Type);
+         *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answers");
       }
-      lAddList(*alpp, from);
+      (*alpp)->splice(std::move(*from));
    }
    if (fatal) {
       /* prints up to the answer that cannot be recovered from, and exits there */
@@ -152,7 +152,7 @@ qconf_answer_take(lList **alpp, lList **from) {
 }
 
 void
-qconf_answer_print(lList **alpp, FILE *info_stream) {
+qconf_answer_print(ocs::tom::ListPtr<ocs::tom::AN> *alpp, FILE *info_stream) {
    for_each_ep_lv(aep, *alpp) {
       const uint32_t quality = ocs::tom::get<AN_quality>(aep);
       if (quality == ANSWER_QUALITY_END) {
@@ -178,11 +178,13 @@ qconf_answer_print(lList **alpp, FILE *info_stream) {
             break;
       }
    }
-   lFreeList(alpp);
+   if (alpp != nullptr) {
+      alpp->reset();
+   }
 }
 
 bool
-qconf_confirm(const char *prompt, lList **alpp) {
+qconf_confirm(const char *prompt, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    qconf_answer_print(alpp);
    printf("%s", prompt);
    fflush(stdout);
@@ -218,17 +220,16 @@ qconf_confirm(const char *prompt, lList **alpp) {
 static lListElem *
 qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        const char *filename,
-                       int (*validate)(const lListElem *, lList **),
-                       lList **alpp,
-                       const spool_flatfile_instr *sfi = &qconf_sfi,
-                       int (*prepare)(lListElem *, lList **) = nullptr,
+                       int (*validate)(const lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *),
+                       ocs::tom::ListPtr<ocs::tom::AN> *alpp, const spool_flatfile_instr *sfi = &qconf_sfi,
+                       int (*prepare)(lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *) = nullptr,
                        const bool parse_values = true) {
    /* The chain itself moved to qconf_parse_object() in the procedure library,
     * because qmaster needs the same one for a write procedure and two copies
     * would drift. What stays here is the client's half of it: the format comes
     * from this process's -fmt, and the messages are printed rather than carried
     * back to a caller. */
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = qconf_parse_object(&alp, descr, fields, qconf_opt_format, filename, nullptr,
                                       validate, sfi, prepare, parse_values);
    qconf_answer_take(alpp, &alp);
@@ -236,7 +237,8 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
 }
 
 int
-qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx, lList **alpp) {
+qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx,
+                    ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (!sge_is_directory(path)) {
       return per_file(path, ctx);
    }
@@ -355,7 +357,7 @@ qconf_conf_host_of(const char *filepath, const ocs::tom::Element<ocs::tom::EH> h
 }
 
 bool
-qconf_missing_argument(const qconf_op &op, lList **alpp) {
+qconf_missing_argument(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (op.spec == nullptr || op.args.size() >= static_cast<size_t>(op.spec->min_args)) {
       return false;
    }
@@ -371,7 +373,7 @@ qconf_missing_argument(const qconf_op &op, lList **alpp) {
  * @return true when it resolved; false after the message
  */
 static bool
-qconf_resolve_one_host(const char *name, std::string &resolved, lList **alpp) {
+qconf_resolve_one_host(const char *name, std::string &resolved, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    ocs::tom::set<EH_name>(host_ep, name);
    const bool ok = (sge_resolve_host(*host_ep, EH_name) == CL_RETVAL_OK);
@@ -384,7 +386,8 @@ qconf_resolve_one_host(const char *name, std::string &resolved, lList **alpp) {
 }
 
 void
-qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+               ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (op.args.empty()) {
       names.emplace_back(SGE_TEMPLATE_NAME);
       return;
@@ -398,7 +401,8 @@ qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed
 }
 
 void
-qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                     ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    std::string resolved;
    if (qconf_resolve_one_host(op.args[0].c_str(), resolved, alpp)) {
       names.push_back(resolved);
@@ -408,7 +412,8 @@ qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &
 }
 
 void
-qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                      ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    std::string arg = op.args[0];
@@ -428,7 +433,7 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
 
 void
 qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
-                         [[maybe_unused]] lList **alpp) {
+                         [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    std::string arg = op.args[0];
@@ -443,7 +448,7 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[
 
 void
 qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
-                      [[maybe_unused]] lList **alpp) {
+                      [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const auto users = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(op.args[0].c_str(), ", ");
@@ -469,8 +474,8 @@ qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[may
  * @param keep_unresolved serve a host that does not resolve under its name as typed
  */
 static void
-qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp,
-                       const bool keep_unresolved) {
+qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                       ocs::tom::ListPtr<ocs::tom::AN> *alpp, const bool keep_unresolved) {
    std::string list = op.args.empty() ? SGE_GLOBAL_NAME : op.args[0];
    auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
@@ -490,18 +495,20 @@ qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool
 }
 
 void
-qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                        ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    qconf_names_conf_hosts(op, names, failed, alpp, false);
 }
 
 void
-qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    qconf_names_conf_hosts(op, names, failed, alpp, true);
 }
 
 void
 qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
-                       [[maybe_unused]] lList **alpp) {
+                       [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    std::string list = op.args.empty() ? SGE_GLOBAL_NAME : op.args[0];
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {

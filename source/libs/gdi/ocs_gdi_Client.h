@@ -49,6 +49,7 @@
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_Target.h"
+#include "sgeobj/sge_answer.h"
 
 /* from gdi_tsm.h */
 #define MASTER_KILL       (1<<0) ///< `gdi_kill()` target: shut the qmaster down
@@ -66,20 +67,23 @@ namespace ocs::gdi {
     */
    class Client : public ClientBase {
    public:
-      OCS_TRANSITIONAL static lList *sge_gdi(Target target, Command cmd, SubCommand, lList **lpp, lCondition *cp,
-                                             lEnumeration *enp);
+      OCS_TRANSITIONAL static ocs::tom::ListPtr<ocs::tom::AN> sge_gdi(Target target, Command cmd, SubCommand,
+                                                                      lList **lpp, lCondition *cp,
+                                                               lEnumeration *enp);
 
       template <ocs::tom::ObjectType T>
-      static lList *sge_gdi(Target target, Command cmd, SubCommand sub_cmd, ocs::tom::ListPtr<T> &data,
-                            const ocs::tom::Where<T> &where, const ocs::tom::What<T> &what);
+      static ocs::tom::ListPtr<ocs::tom::AN> sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
+                                                     ocs::tom::ListPtr<T> &data,
+                                              const ocs::tom::Where<T> &where, const ocs::tom::What<T> &what);
 
       template <ocs::tom::ObjectType T>
-      static lList *sge_gdi(Target target, Command cmd, SubCommand sub_cmd, ocs::tom::ListPtr<T> &data);
+      static ocs::tom::ListPtr<ocs::tom::AN> sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
+                                                     ocs::tom::ListPtr<T> &data);
 
-      static lList *gdi_tsm();
-      static lList *gdi_kill(lList *id_list, uint32_t action_flag);
-      static bool sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator, bool *is_admin_host,
-                                         bool *is_submit_host);
+      static ocs::tom::ListPtr<ocs::tom::AN> gdi_tsm();
+      static ocs::tom::ListPtr<ocs::tom::AN> gdi_kill(lList *id_list, uint32_t action_flag);
+      static bool sge_gdi_get_permission(ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool *is_manager, bool *is_operator,
+                                         bool *is_admin_host, bool *is_submit_host);
       static std::tuple<int, ocs::tom::ElementPtr<ocs::tom::CONF>, ocs::tom::ElementPtr<ocs::tom::CONF>>
       gdi_get_configuration(const char *config_name, bool with_local);
       OCS_TRANSITIONAL static int gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp);
@@ -103,13 +107,13 @@ namespace ocs::gdi {
     * @return the answer list; the caller owns it
     */
    template <ocs::tom::ObjectType T>
-   lList *Client::sge_gdi(const Target target, const Command cmd, const SubCommand sub_cmd,
-                          ocs::tom::ListPtr<T> &data, const ocs::tom::Where<T> &where,
-                          const ocs::tom::What<T> &what) {
+   ocs::tom::ListPtr<ocs::tom::AN> Client::sge_gdi(const Target target, const Command cmd, const SubCommand sub_cmd,
+                                            ocs::tom::ListPtr<T> &data, const ocs::tom::Where<T> &where,
+                                            const ocs::tom::What<T> &what) {
       lList *const request = data.get();
       lList *lp = request;
       // the request copies the condition and the selection, it does not change them
-      lList *alp = sge_gdi(target, cmd, sub_cmd, &lp, const_cast<lCondition *>(where.get()),
+      auto alp = sge_gdi(target, cmd, sub_cmd, &lp, const_cast<lCondition *>(where.get()),
                            const_cast<lEnumeration *>(what.get()));
       if (lp != request) {
          // the answer of a task is a list of the target's type (reduced by the selection) that qmaster packed;
@@ -131,8 +135,8 @@ namespace ocs::gdi {
     * @return the answer list; the caller owns it
     */
    template <ocs::tom::ObjectType T>
-   lList *Client::sge_gdi(const Target target, const Command cmd, const SubCommand sub_cmd,
-                          ocs::tom::ListPtr<T> &data) {
+   ocs::tom::ListPtr<ocs::tom::AN> Client::sge_gdi(const Target target, const Command cmd, const SubCommand sub_cmd,
+                                            ocs::tom::ListPtr<T> &data) {
       return sge_gdi(target, cmd, sub_cmd, data, ocs::tom::Where<T>(), ocs::tom::What<T>());
    }
 }

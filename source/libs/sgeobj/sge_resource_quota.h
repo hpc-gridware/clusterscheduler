@@ -58,6 +58,7 @@
 #include "sgeobj/cull/sge_resource_quota_RQRF_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQRL_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQL_L.h"
+#include "sgeobj/sge_answer.h"
 
 /// The five things a resource quota rule can filter on
 enum {
@@ -82,25 +83,29 @@ enum {
    RQR_QUEUEI    ///< one limit per queue instance
 };
 
-ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *buffer, lList **alp);
-OCS_TRANSITIONAL bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer, lList **alp);
+ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *buffer,
+                                                                  ocs::tom::ListPtr<ocs::tom::AN> *alp);
+OCS_TRANSITIONAL bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer,
+                                                   ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
-bool rqs_append_filter_to_dstring(ocs::tom::ConstElement<ocs::tom::RQRF> filter, dstring *buffer, lList **alp);
-OCS_TRANSITIONAL bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lList **alp);
+bool rqs_append_filter_to_dstring(ocs::tom::ConstElement<ocs::tom::RQRF> filter, dstring *buffer,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alp);
+OCS_TRANSITIONAL bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer,
+                                                   ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
 ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(ocs::tom::Element<ocs::tom::RQS> rqs);
 
-bool rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS> rqs, lList **answer_list, bool in_master,
-                           ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
-OCS_TRANSITIONAL bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master,
-                                            const lList *master_centry_list);
+bool rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           bool in_master, ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
+OCS_TRANSITIONAL bool rqs_verify_attributes(lListElem *rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                            bool in_master, const lList *master_centry_list);
 
 ocs::tom::Element<ocs::tom::RQS> rqs_list_locate(ocs::tom::ConstList<ocs::tom::RQS> lp, const char *name);
 OCS_TRANSITIONAL lListElem *rqs_list_locate(lList *lp, const char *name);
 
 ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(ocs::tom::List<ocs::tom::RQR> lp, const char *name);
 
-bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list);
+bool rqs_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool rqs_get_rue_string(dstring *name, ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *user,
                         const char *project, const char *host, const char *queue, const char *pe);

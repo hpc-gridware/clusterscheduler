@@ -36,6 +36,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sgeobj/cull/sge_role_RL_L.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -74,15 +75,19 @@ namespace ocs {
          std::vector<std::string> required_value_constraints; ///< elevated permissions required by the request
       };
 
-      static bool validate(ocs::tom::ConstElement<ocs::tom::RL> role, lList **answer_list, bool startup);
-      OCS_TRANSITIONAL static bool validate(const lListElem *role, lList **answer_list, bool startup);
+      static bool validate(ocs::tom::ConstElement<ocs::tom::RL> role, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           bool startup);
+      OCS_TRANSITIONAL static bool validate(const lListElem *role, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                            bool startup);
 
       static void check_integrity(ocs::tom::ConstList<ocs::tom::RL> role_list,
-                                  ocs::tom::ConstList<ocs::tom::US> userset_list, lList **answer_list);
+                                  ocs::tom::ConstList<ocs::tom::US> userset_list,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       OCS_TRANSITIONAL static void check_integrity(const lList *role_list, const lList *userset_list,
-                                                   lList **answer_list);
+                                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-      static bool parse_perm_list(const char *perm_list_str, PermRuleList &rules, lList **answer_list);
+      static bool parse_perm_list(const char *perm_list_str, PermRuleList &rules,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
       [[nodiscard]] static ocs::tom::ElementPtr<ocs::tom::RL> create_template();
 

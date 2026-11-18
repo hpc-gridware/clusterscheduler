@@ -440,8 +440,8 @@ static lListElem* elem_select(subscription_t*, lListElem*, const int[], const lC
 static ocs::tom::Element<ocs::tom::EV> eventclient_list_locate_by_adress(const char*, const char*, uint32_t);
 static const lDescr* getDescriptorL(subscription_t*, const lList*, int);
 static ocs::tom::Element<ocs::tom::EV> get_event_client(uint32_t id);
-static uint32_t   allocate_new_dynamic_id(lList **answer_list);
-static void       free_dynamic_id(lList **answer_list, uint32_t id);
+static uint32_t   allocate_new_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+static void       free_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
 
 static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock);
 
@@ -534,8 +534,8 @@ static void sge_event_master_process_add_event_client(const lListElem *request, 
  * @note MT-NOTE: sge_add_event_client() is MT safe, it uses the global lock and
  *       internal ones.
  */
-int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList **alpp, lList **eclpp,
-                         event_client_update_func_t update_func, void *update_func_arg) {
+int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                         lList **eclpp, event_client_update_func_t update_func, void *update_func_arg) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::EV> ep;
@@ -720,7 +720,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
  *
  * @note MT-NOTE: sge_mod_event_client() is MT safe, uses internal locks
  */
-int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost) {
+int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
 
@@ -983,7 +983,7 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
 
    /* check max again - it might have changed due to commlib max_file_handles restrictions */
    if (max != Event_Master_Control.max_event_clients) {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       /* If the new max is lower than the old max, then lowering the maximum
        * prevents new event clients, but allows the old ones there to drain off naturally.
@@ -1137,7 +1137,8 @@ sge_select_event_clients(const char *list_name, const lCondition *where, const l
  *       and internal ones.
  */
 int
-sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_id, lList **alpp) {
+sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_id,
+                          ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::EV> client;
@@ -1199,7 +1200,8 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_
  * @note MT-NOTES: sge_shutdown_dynamic_event_clients() is MT safe, it uses the
  *       global_lock and internal ones.
  */
-int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **alpp, monitoring_t *monitor) {
+int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                       monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    uint32_t id = 0;
 
@@ -1802,7 +1804,7 @@ sge_event_master_init() {
 
    /* Initialize the range list for event client ids */
    {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       range_list_initialize(&Event_Master_Control.client_ids, &answer_list);
       answer_list_output(&answer_list);
    }
@@ -1912,7 +1914,7 @@ remove_event_client(const ocs::tom::Element<ocs::tom::EV> client, const bool loc
    // the client list is owned by the event master; the handle lives only while the mutex is held
    ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients).erase(client);
    if (event_client_id >= EV_ID_FIRST_DYNAMIC) {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       free_dynamic_id(&answer_list, event_client_id);
       answer_list_output(&answer_list);
    }
@@ -3039,7 +3041,7 @@ static ocs::tom::Element<ocs::tom::EV> get_event_client(const uint32_t id) {
  *       when the caller holds Event_Master_Control.mutex.
  */
 static uint32_t
-allocate_new_dynamic_id(lList **answer_list) {
+allocate_new_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    uint32_t id = 0;
@@ -3062,7 +3064,7 @@ allocate_new_dynamic_id(lList **answer_list) {
 }
 
 static void
-free_dynamic_id(lList **answer_list, uint32_t id) {
+free_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id) {
    if (id < Event_Master_Control.max_event_clients + EV_ID_FIRST_DYNAMIC) {
       range_list_insert_id(&Event_Master_Control.client_ids, answer_list, id);
 

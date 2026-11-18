@@ -80,7 +80,7 @@
  */
 int
 sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::STN> ep,
-                  lList **lpp, lList **alpp, const char *ruser, const char *rhost) {
+                  lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
    const int ret = sge_mod_sharetree(packet, task, ep, lpp, alpp, ruser, rhost);
@@ -99,8 +99,8 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
  * @return STATUS_OK on success
  */
 int
-sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp,
-                  const char *ruser, const char *rhost) {
+sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp,
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
    return sge_add_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep), lpp, alpp, ruser, rhost);
 }
 
@@ -121,7 +121,7 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
  */
 int
 sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::STN> ep,
-                  lList **lpp, lList **alpp, const char *ruser, const char *rhost) {
+                  lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
    int prev_version;
@@ -205,8 +205,8 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
  * @return STATUS_OK on success
  */
 int
-sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp,
-                  const char *ruser, const char *rhost) {
+sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp,
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
    return sge_mod_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep), lpp, alpp, ruser, rhost);
 }
 
@@ -223,7 +223,8 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
  * @return STATUS_OK on success
  */
 int
-sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                  char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    if (ocs::tom::ConstList<ocs::tom::STN>(*lpp).empty()) {
@@ -270,7 +271,7 @@ sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, l
  * @return 0 when the subtree is valid, -1 otherwise
  */
 int
-check_sharetree(lList **alpp, const ocs::tom::Element<ocs::tom::STN> node,
+check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<ocs::tom::STN> node,
                 const ocs::tom::ConstList<ocs::tom::UU> user_list, const ocs::tom::ConstList<ocs::tom::PR> project_list,
                 ocs::tom::ConstElement<ocs::tom::PR> project, ocs::tom::ListPtr<ocs::tom::STN> &found) {
    DENTER(TOP_LAYER);

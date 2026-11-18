@@ -28,6 +28,7 @@
 #include "gdi/ocs_gdi_Request.h"
 
 #include "ocs_QQuotaModelBase.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief QQuota model for the server execution context.
@@ -50,6 +51,7 @@ namespace ocs {
       QQuotaModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {};
       ~QQuotaModelServer() override = default;
 
-      bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> host_list) override;
+      bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                      ocs::tom::ConstList<ocs::tom::ST> host_list) override;
    };
 }

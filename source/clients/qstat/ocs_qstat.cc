@@ -92,7 +92,7 @@ extern char **environ;
 
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qstat");
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QSTAT);

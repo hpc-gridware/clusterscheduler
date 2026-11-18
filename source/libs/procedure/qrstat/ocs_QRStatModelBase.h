@@ -28,6 +28,7 @@
 #include "sgeobj/tom/ocs_tom_AR.h"
 
 #include "qrstat/ocs_QRStatParameterClient.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Base model for qrstat that holds the advance reservation (AR) list.
@@ -57,7 +58,7 @@ namespace ocs {
 
       static lCondition *get_ar_where(QRStatParameter& parameter);
 
-      virtual bool fetch_data(lList **answer_list, QRStatParameter& parameter);
+      virtual bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter);
 
    public:
       /** @brief The advance reservations being reported
@@ -69,6 +70,6 @@ namespace ocs {
       QRStatModelBase() = default;
       virtual ~QRStatModelBase() = default;
 
-      bool make_snapshot(lList **answer_list, QRStatParameter &parameter);
+      bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter &parameter);
    };
 }

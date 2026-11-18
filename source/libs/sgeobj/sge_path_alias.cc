@@ -84,8 +84,8 @@
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 
-static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list, lList **alpp,
-                                     const char *file_name);
+static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *file_name);
 
 /**
  * @brief Read file content to list
@@ -112,8 +112,8 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
  *
  * @note MT-NOTE: path_alias_read_from_file() is MT safe
  */
-static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list, lList **alpp,
-                                     const char *file_name) {
+static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *file_name) {
    DENTER(GDI_LAYER);
 
    FILE *fd;
@@ -231,8 +231,7 @@ FCLOSE_ERROR:
  * @note MT-NOTE: path_alias_list_initialize() is MT safe
  */
 int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
-                               lList **alpp,
-                               const char *cell_root,
+                               ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *cell_root,
                                const char *user,
                                const char *host) {
    DENTER(TOP_LAYER);
@@ -321,8 +320,8 @@ int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
  *
  * @return as path_alias_list_initialize()
  */
-int path_alias_list_initialize(lList **path_alias_list, lList **alpp, const char *cell_root, const char *user,
-                               const char *host) {
+int path_alias_list_initialize(lList **path_alias_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *cell_root,
+                               const char *user, const char *host) {
    ocs::tom::ListPtr<ocs::tom::PA> list(*path_alias_list);
    const int ret = path_alias_list_initialize(list, alpp, cell_root, user, host);
    *path_alias_list = list.release();
@@ -349,7 +348,8 @@ int path_alias_list_initialize(lList **path_alias_list, lList **alpp, const char
  *
  * @note MT-NOTE: path_alias_list_get_path() is MT safe
  */
-int path_alias_list_get_path(const ocs::tom::ConstList<ocs::tom::PA> path_aliases, [[maybe_unused]] lList **alpp,
+int path_alias_list_get_path(const ocs::tom::ConstList<ocs::tom::PA> path_aliases,
+                             [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                              const char *inpath, const char *myhost,
                              dstring *outpath) {
    DENTER(TOP_LAYER);
@@ -430,7 +430,7 @@ int path_alias_list_get_path(const ocs::tom::ConstList<ocs::tom::PA> path_aliase
  *
  * @note MT-NOTE: path_verify() is MT safe
  */
-bool path_verify(const char *path, lList **answer_list, const char *name, bool absolute) {
+bool path_verify(const char *path, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name, bool absolute) {
    bool ret = true;
 
    if (path == nullptr || *path == '\0') {
@@ -482,7 +482,8 @@ bool path_verify(const char *path, lList **answer_list, const char *name, bool a
  *
  * @see #path_verify
  */
-bool path_alias_verify(const ocs::tom::ConstList<ocs::tom::PA> path_aliases, lList **answer_list) {
+bool path_alias_verify(const ocs::tom::ConstList<ocs::tom::PA> path_aliases,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    bool ret = true;
 
    for (const auto ep : path_aliases) {
@@ -530,7 +531,8 @@ bool path_alias_verify(const ocs::tom::ConstList<ocs::tom::PA> path_aliases, lLi
  *
  * @note MT-NOTE: path_list_verify() is MT safe
  */
-bool path_list_verify(const ocs::tom::ConstList<ocs::tom::PN> path_list, lList **answer_list, const char *name) {
+bool path_list_verify(const ocs::tom::ConstList<ocs::tom::PN> path_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                      const char *name) {
    bool ret = true;
 
    for (const auto ep : path_list) {

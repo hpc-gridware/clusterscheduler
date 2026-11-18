@@ -91,9 +91,9 @@
 static ocs::tom::ListPtr<ocs::tom::VA> var_list_parse_from_environment(char **envp);
 static int sge_parse_checkpoint_interval(const char *time_str);
 static int set_yn_option(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_t opt, const char *arg, const char *value,
-                         lList **alpp);
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static int ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_t opt, const char *arg,
-                                 const char *value, lList **alpp);
+                                 const char *value, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 
 /** @brief Turn an argument vector into a list of options
@@ -122,12 +122,12 @@ static int ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_
  *
  * @note MT-NOTE: cull_parse_cmdline() is MT safe
  */
-lList *cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp,
-                          ocs::tom::ListPtr<ocs::tom::SPA> &pcmdline, const uint32_t flags) {
+ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp,
+                                                   ocs::tom::ListPtr<ocs::tom::SPA> &pcmdline, const uint32_t flags) {
    DENTER(TOP_LAYER);
 
    const char **sp;
-   lList *answer = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer;
    char str[MAX_STRING_SIZE];
    ocs::tom::Element<ocs::tom::SPA> ep_opt;
    int i_ret;
@@ -2171,7 +2171,7 @@ DTRACE;
 
          DPRINTF("\"-@ %s\"\n", *sp);
 
-         lList *alp = parse_script_file(prog_number, *sp, "", pcmdline, envp, FLG_USE_NO_PSEUDOS); /* MT-NOTE: !!!! */
+         auto alp = parse_script_file(prog_number, *sp, "", pcmdline, envp, FLG_USE_NO_PSEUDOS); /* MT-NOTE: !!!! */
          if (answer_list_has_error(&alp)) {
             do_exit = 1;
          }
@@ -2402,16 +2402,16 @@ DTRACE;
  *
  * @return `nullptr` when everything was fine, otherwise an answer list, see the typed form
  */
-lList *cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp, lList **pcmdline,
-                          const uint32_t flags) {
+ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp,
+                                                   lList **pcmdline, const uint32_t flags) {
    if (pcmdline == nullptr) {
-      lList *answer = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer;
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       return answer;
    }
    // the callers hand in their option list, which is created by the option parsers with SPA_Type
    auto cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(*pcmdline);
-   lList *answer = cull_parse_cmdline(prog_number, arg_list, envp, cmdline, flags);
+   auto answer = cull_parse_cmdline(prog_number, arg_list, envp, cmdline, flags);
    *pcmdline = cmdline.release();
    return answer;
 }
@@ -2502,7 +2502,7 @@ static ocs::tom::ListPtr<ocs::tom::VA> var_list_parse_from_environment(char **en
  * @note MT-NOTES: set_yn_option() is MT safe
  */
 static int set_yn_option(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t opt, const char *arg,
-                         const char *value, lList **alpp) {
+                         const char *value, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    ocs::tom::Element<ocs::tom::SPA> ep_opt;
    
    if ((strcasecmp("y", value) == 0) || (strcasecmp("yes", value) == 0)) {
@@ -2545,7 +2545,7 @@ static int set_yn_option(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t 
  */
 static int
 ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t opt, const char *arg, const char *value,
-                      lList **alpp) {
+                      ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    uint32_t sync_bits = SYNC_UNINITIALIZED;
 
@@ -2608,7 +2608,8 @@ ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t opt
  *       process. Acceptable because it is only reached through `-cwd`, which
  *       DRMAA can forbid.
  */
-char *reroot_path(const ocs::tom::ConstElement<ocs::tom::JB> pjob, const char *path, lList **alpp) {
+char *reroot_path(const ocs::tom::ConstElement<ocs::tom::JB> pjob, const char *path,
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const char *home = nullptr;

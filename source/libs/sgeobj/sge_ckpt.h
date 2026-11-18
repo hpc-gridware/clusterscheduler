@@ -48,13 +48,14 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "sgeobj/cull/sge_ckpt_CK_L.h"
+#include "sgeobj/sge_answer.h"
 
 bool
-ckpt_is_referenced(ocs::tom::ConstElement<ocs::tom::CK> ckpt, lList **answer_list,
+ckpt_is_referenced(ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                    ocs::tom::ConstList<ocs::tom::JB> master_job_list,
                    ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list);
-OCS_TRANSITIONAL bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list, const lList *master_job_list,
-                                         const lList *master_cqueue_list);
+OCS_TRANSITIONAL bool ckpt_is_referenced(const lListElem *ckpt, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                         const lList *master_job_list, const lList *master_cqueue_list);
 
 ocs::tom::Element<ocs::tom::CK>
 ckpt_list_locate(ocs::tom::ConstList<ocs::tom::CK> ckpt_list, const char *ckpt_name);
@@ -63,12 +64,13 @@ OCS_TRANSITIONAL lListElem *ckpt_list_locate(const lList *ckpt_list, const char 
 int
 sge_parse_checkpoint_attr(const char *attr_str);
 
-int ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK> this_elem, lList **alpp);
-OCS_TRANSITIONAL int ckpt_validate(const lListElem *this_elem, lList **alpp);
+int ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
+OCS_TRANSITIONAL int ckpt_validate(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 bool
-ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK> ckpt_list, lList **answer_list,
+ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK> ckpt_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        ocs::tom::ConstList<ocs::tom::ST> ckpt_ref_list);
-OCS_TRANSITIONAL bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list, const lList *ckpt_ref_list);
+OCS_TRANSITIONAL bool ckpt_list_do_all_exist(const lList *ckpt_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                             const lList *ckpt_ref_list);
 
 ocs::tom::ElementPtr<ocs::tom::CK> sge_generic_ckpt(const char *ckpt_name);

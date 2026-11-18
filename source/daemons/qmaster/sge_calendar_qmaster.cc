@@ -84,7 +84,7 @@ void
 calendar_initalize_timer(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const ocs::tom::List<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR));
 
    for (const auto cep : master_calendar_list) {
@@ -98,7 +98,7 @@ calendar_initalize_timer(monitoring_t *monitor) {
       calendar_update_queue_states(&packet, &task, cep, nullptr, monitor);
    }
 
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    DRETURN_VOID;
 }
@@ -122,7 +122,8 @@ calendar_initalize_timer(monitoring_t *monitor) {
  * @return 0 on success
  */
 int
-calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *raw_new_cal, lListElem *raw_cep,
+calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             lListElem *raw_new_cal, lListElem *raw_cep,
              int add, const char *ruser, const char *rhost, gdi_object_t *object,
              ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -189,11 +190,12 @@ DRETURN(STATUS_EUNKNOWN);
  * @return 0 on success
  */
 int
-calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *cep,
+               gdi_object_t *object) {
    // the signature is fixed by gdi_object_t::writer; spool_write_object() is generic over the object type
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
                                    ocs::tom::get<CAL_name>(cep), SGE_TYPE_CALENDAR);
@@ -219,7 +221,7 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
  */
 int
 sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::CAL> cep,
-                 lList **alpp, char *ruser, char *rhost) {
+                 ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    const char *cal_name;
@@ -248,7 +250,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
 
    /* prevent deletion of a still referenced calendar */
    {
-      lList *local_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
 
       if (calendar_is_referenced(cep, &local_answer_list, master_cqueue_list)) {
          // the answer list API stays raw by design
@@ -258,7 +260,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                          ANSWER_QUALITY_ERROR);
-         lFreeList(&local_answer_list);
+         local_answer_list.reset();
          DRETURN(STATUS_ESEMANTIC);
       }
    }
@@ -286,8 +288,8 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
  * @return as sge_del_calendar()
  */
 int
-sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser,
-                 char *rhost) {
+sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                 char *ruser, char *rhost) {
    return sge_del_calendar(packet, task, ocs::tom::ConstElement<ocs::tom::CAL>(cep), alpp, ruser, rhost);
 }
 

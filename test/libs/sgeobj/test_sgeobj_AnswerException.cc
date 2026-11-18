@@ -41,9 +41,9 @@ static const std::string no_details = "No error details available";
  * @brief Build an answer list holding an error followed by a warning
  * @return the new list; the caller owns it
  */
-static lList *
+static ocs::tom::ListPtr<ocs::tom::AN>
 error_and_warning() {
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    answer_list_add(&answer_list, error_text.c_str(), STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    answer_list_add(&answer_list, warning_text.c_str(), STATUS_OK, ANSWER_QUALITY_WARNING);
    return answer_list;
@@ -55,15 +55,15 @@ error_and_warning() {
  */
 static void
 test_message() {
-   lList *answer_list = error_and_warning();
+   auto answer_list = error_and_warning();
    ocs::AnswerException e(&answer_list);
    CHECK(1, "the constructor takes the list and clears the caller's pointer", answer_list == nullptr);
    CHECK(2, "what() is the text of the last error entry, not of the warning after it", e.what() == error_text);
 
-   lList *warning_only = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> warning_only;
    answer_list_add(&warning_only, warning_text.c_str(), STATUS_OK, ANSWER_QUALITY_WARNING);
    ocs::AnswerException w(&warning_only);
-   lList *no_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> no_list;
    ocs::AnswerException n(&no_list);
    CHECK(3, "a list without an error and no list give the fixed text",
          w.what() == no_details && n.what() == no_details && n.take_answer_list() == nullptr);
@@ -75,7 +75,7 @@ test_message() {
  */
 static void
 test_copies() {
-   lList *answer_list = error_and_warning();
+   auto answer_list = error_and_warning();
    std::exception_ptr captured;
    ocs::AnswerException copy(&answer_list);
    try {
@@ -88,7 +88,7 @@ test_copies() {
    }
    CHECK(4, "the thrown copy is captured in a std::exception_ptr", captured != nullptr);
 
-   lList *taken = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> taken;
    std::string rethrown_what;
    try {
       std::rethrow_exception(captured);
@@ -99,12 +99,11 @@ test_copies() {
    }
    CHECK(5, "the rethrown copy keeps the message", rethrown_what == error_text);
    CHECK(6, "the first take returns the whole list with both entries",
-         taken != nullptr && lGetNumberOfElem(taken) == 2
-         && ocs::tom::get<AN_text>(lFirst(taken)) == error_text
-         && ocs::tom::get<AN_text>(lLast(taken)) == warning_text);
+         taken != nullptr && taken->size() == 2
+         && ocs::tom::get<AN_text>(taken->front()) == error_text
+         && ocs::tom::get<AN_text>(taken->back()) == warning_text);
    CHECK(7, "a later take on another copy returns nullptr, and the message stays",
          copy.take_answer_list() == nullptr && copy.what() == error_text);
-   lFreeList(&taken);
 }
 
 /**

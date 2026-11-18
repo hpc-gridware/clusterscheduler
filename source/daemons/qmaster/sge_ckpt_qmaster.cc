@@ -95,8 +95,8 @@
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EUNKNOWN - an error occurred
  */
 int
-ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add,
-         const char *ruser, const char *rhost, gdi_object_t *object,
+ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ckpt,
+         lListElem *ckpt, int add, const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -198,10 +198,11 @@ DRETURN(STATUS_EUNKNOWN);
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
  */
-int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+               gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    ocs::tom::get<CK_name>(ep), SGE_TYPE_CKPT);
@@ -269,7 +270,7 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  */
 int
 sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::CK> ep,
-             lList **alpp, char *ruser, char *rhost) {
+             ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::List<ocs::tom::CK> ckpt_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT));
@@ -305,7 +306,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
     * Try to find references in other objects
     */
    {
-      lList *local_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
 
       if (ckpt_is_referenced(found, &local_answer_list,
                              ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
@@ -315,7 +316,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
-         lFreeList(&local_answer_list);
+         local_answer_list.reset();
          DRETURN(STATUS_EUNKNOWN);
       }
    }
@@ -347,7 +348,8 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
  * @return see the typed form
  */
 int
-sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             char *ruser, char *rhost) {
    return sge_del_ckpt(packet, task, ocs::tom::ConstElement<ocs::tom::CK>(ep), alpp, ruser, rhost);
 }
 

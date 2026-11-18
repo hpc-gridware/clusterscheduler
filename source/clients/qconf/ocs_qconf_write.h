@@ -31,6 +31,7 @@
 
 #include "procedure/qconf/ocs_QConfParameterClient.h"
 #include "ocs_qconf_common.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Run one add or modify operation from qconf_write_table, if it is one
@@ -49,7 +50,7 @@
  */
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                uid_t uid, gid_t gid, lList **alpp);
+                uid_t uid, gid_t gid, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /**
  * @brief Whether an add or modify switch previews under "-dry" (CS-2984)

@@ -169,11 +169,9 @@ struct cmplx_tmp {
 static void
 process_cmdline(char **);
 
-static lList *
-parse_cmdline_qmaster(char **, ocs::tom::ListPtr<ocs::tom::SPA> &);
+static ocs::tom::ListPtr<ocs::tom::AN> parse_cmdline_qmaster(char **, ocs::tom::ListPtr<ocs::tom::SPA> &);
 
-static lList *
-parse_qmaster(ocs::tom::List<ocs::tom::SPA>, uint32_t *);
+static ocs::tom::ListPtr<ocs::tom::AN> parse_qmaster(ocs::tom::List<ocs::tom::SPA>, uint32_t *);
 
 static void
 qmaster_init();
@@ -204,7 +202,7 @@ static void
 clear_deferred_starts(ocs::tom::Element<ocs::tom::JB> jep);
 
 static bool
-ocs_qmaster_check_unique_keys(lList **answer_list);
+ocs_qmaster_check_unique_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 
 /**
@@ -283,7 +281,7 @@ sge_qmaster_thread_init(ProgName prog_id, ThreadName thread_id, bool switch_to_a
    DENTER(TOP_LAYER);
 
    const char *admin_user;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    // install signal handler for synchronous signals that will only be delivered to the thread that caused it.
    ocs::TerminationManager::install_signal_handler();
@@ -390,7 +388,7 @@ sge_process_qmaster_cmdline(char **anArgv) {
 static void
 process_cmdline(char **anArgv) {
    DENTER(TOP_LAYER);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    uint32_t help = 0;
 
@@ -402,7 +400,7 @@ process_cmdline(char **anArgv) {
       for_each_ep_lv(aep, alp) {
          fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       pcmdline.reset();
       sge_exit(1);
    }
@@ -415,7 +413,7 @@ process_cmdline(char **anArgv) {
       for_each_ep_lv(aep, alp) {
          fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       pcmdline.reset();
       sge_exit(1);
    }
@@ -441,14 +439,13 @@ process_cmdline(char **anArgv) {
  *
  * @note MT-NOTE: parse_cmdline_qmaster() is MT safe.
  */
-static lList *
-parse_cmdline_qmaster(char **argv, ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline) {
+static ocs::tom::ListPtr<ocs::tom::AN> parse_cmdline_qmaster(char **argv, ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline) {
    DENTER(TOP_LAYER);
 
    char **sp;
    char **rp;
    stringT str;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    rp = argv;
    while (*(sp = rp)) {
@@ -477,11 +474,10 @@ parse_cmdline_qmaster(char **argv, ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline) 
  *
  * @note MT-NOTE: parse_qmaster() is not MT safe.
  */
-static lList *
-parse_qmaster(const ocs::tom::List<ocs::tom::SPA> ppcmdline, uint32_t *help) {
+static ocs::tom::ListPtr<ocs::tom::AN> parse_qmaster(const ocs::tom::List<ocs::tom::SPA> ppcmdline, uint32_t *help) {
    DENTER(TOP_LAYER);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    int usageshowed = 0;
 
    /* Loop over all options. Only valid options can be in the
@@ -780,7 +776,7 @@ setup_qmaster() {
    DENTER(TOP_LAYER);
    static bool first = true;
    ocs::tom::ConstElement<ocs::tom::SPC> spooling_context;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    time_t time_start, time_end;
    monitoring_t monitor;
 
@@ -1315,12 +1311,12 @@ setup_qmaster() {
    answer_list_output(&answer_list);
    const auto ep = ocs::tom::List<ocs::tom::STN>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE)).front();
    if (ep) {
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       ocs::tom::ListPtr<ocs::tom::STN> found;
       check_sharetree(&alp, ep, ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER)),
                       ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT)),
                       nullptr, found);
-      lFreeList(&alp);
+      alp.reset();
    }
 
    DPRINTF("post init of prj/uset and create of categories--------------------\n");
@@ -1342,7 +1338,7 @@ setup_qmaster() {
    // duplicate keys in unique attributes, written by earlier versions: repair what the input paths repair, stop on
    // the rest (N-H-18)
    {
-      lList *unique_answers = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> unique_answers;
       const bool unique = ocs_qmaster_check_unique_keys(&unique_answers);
       answer_list_output(&unique_answers);
       if (!unique) {
@@ -1352,12 +1348,12 @@ setup_qmaster() {
 
    // post-load integrity scan: warn about dangling role references (does not abort startup)
    {
-      lList *integrity_answers = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> integrity_answers;
       ocs::Role::check_integrity(ocs::tom::ConstList<ocs::tom::RL>(*ocs::DataStore::get_master_list(SGE_TYPE_RL)),
                                  ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET)),
                                  &integrity_answers);
       answer_list_output(&integrity_answers);
-      lFreeList(&integrity_answers);
+      integrity_answers.reset();
    }
 
    DRETURN(0);
@@ -1420,7 +1416,7 @@ ocs_qmaster_repair_spooled_object(lListElem *ep, const sge_object_type type, con
 
    const std::string name = std::string(object_type_get_name(type)) + " " + spool_key;
    std::string repairs;
-   lList *errors = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> errors;
    lList *skipped = nullptr;
    if (skip_nm != NoName) {
       lXchgList(ep, skip_nm, &skipped);
@@ -1431,14 +1427,14 @@ ocs_qmaster_repair_spooled_object(lListElem *ep, const sge_object_type type, con
    }
    if (!repairs.empty()) {
       WARNING(MSG_QMASTER_REPAIREDREPEATEDKEYS_SS, name.c_str(), repairs.c_str());
-      lList *spool_answers = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> spool_answers;
       spool_write_object(&spool_answers, spool_get_default_context(), ep, spool_key.c_str(), type);
       answer_list_output(&spool_answers);
    }
    for_each_ep_lv(error, errors) {
       ocs_qmaster_append_entry(unrepaired, ocs::tom::get<AN_text>(error));
    }
-   lFreeList(&errors);
+   errors.reset();
 
    DRETURN(repaired);
 }
@@ -1459,7 +1455,7 @@ ocs_qmaster_repair_spooled_object(lListElem *ep, const sge_object_type type, con
  * @return true if the qmaster may continue, false if it has to stop
  */
 static bool
-ocs_qmaster_check_unique_keys(lList **answer_list) {
+ocs_qmaster_check_unique_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    std::string unrepaired;
@@ -1550,7 +1546,7 @@ remove_invalid_job_references(const sge_object_type object_type, const char *obj
       }
 
       if (spool_me) {
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          spool_write_object(&answer_list, spool_get_default_context(), up, ocs::tom::get<NameF>(up), object_type);
          answer_list_output(&answer_list);
       }
@@ -1592,7 +1588,7 @@ remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::
          }
 
          if (changed) {
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
             spool_write_object(&answer_list, spool_get_default_context(), up, ocs::tom::get<UU_name>(up),
                                SGE_TYPE_USER);
             answer_list_output(&answer_list);
@@ -1606,7 +1602,7 @@ remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::
          changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<PR_long_term_usage>(up), usage_weight_list);
 
          if (changed) {
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
             spool_write_object(&answer_list, spool_get_default_context(), up, ocs::tom::get<PR_name>(up),
                                SGE_TYPE_PROJECT);
             answer_list_output(&answer_list);

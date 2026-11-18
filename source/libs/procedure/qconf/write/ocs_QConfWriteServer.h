@@ -43,6 +43,7 @@
 
 #include "../ocs_QConfObject.h"
 #include "ocs_QConfWriteParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
 
@@ -91,7 +92,7 @@ namespace ocs {
     */
    using qconf_write_provider = bool (*)(gdi::Packet *packet, gdi::Task *task, monitoring_t *monitor,
                                          QConfObj obj, const QConfWriteParameter &parameter,
-                                         lList **answer_list, QConfWriteResult *result);
+                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfWriteResult *result);
 
    /** @brief Install the writing code, called once by qmaster at startup
     * @param provider the function that applies a set of objects
@@ -153,7 +154,7 @@ namespace ocs {
        * @param parameter the items and the batch policy
        * @return true when the batch was applied as the policy demands
        */
-      bool make_snapshot(lList **answer_list, QConfWriteParameter &parameter);
+      bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfWriteParameter &parameter);
 
       /// @return nothing; a write has no output, only a verdict
       [[nodiscard]] const char *get_output_text() const { return ""; }

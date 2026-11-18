@@ -126,7 +126,7 @@ spool_dynamic_get_shlib_path(const char *shlib_fullname) {
  *         symbols, or implements another method
  */
 lListElem *
-spool_dynamic_create_context(lList **answer_list, const char *method,
+spool_dynamic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args) {
    DENTER(TOP_LAYER);
 

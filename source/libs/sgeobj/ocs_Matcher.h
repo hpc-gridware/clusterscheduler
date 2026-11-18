@@ -31,6 +31,7 @@
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief What a matcher means, as opposed to how it is recognised
@@ -73,10 +74,10 @@ namespace ocs {
       };
 
       static bool prepare(const char *member, ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, bool introducing,
-                          dstring *out, lList **answer_list);
+                          dstring *out, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
       static bool expand(ocs::tom::ConstList<ocs::tom::HR> member_list, ocs::tom::ConstList<ocs::tom::HR> candidates,
-                         ocs::tom::ListPtr<ocs::tom::HR> &hosts, lList **answer_list);
+                         ocs::tom::ListPtr<ocs::tom::HR> &hosts, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
       static bool admits(ocs::tom::Element<ocs::tom::HGRP> hgroup, const char *hostname,
                          ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
@@ -87,6 +88,7 @@ namespace ocs {
       static Route why(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname,
                        ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *group, dstring *detail);
 
-      static bool report_ineffective(ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, lList **answer_list);
+      static bool report_ineffective(ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
    };
 }

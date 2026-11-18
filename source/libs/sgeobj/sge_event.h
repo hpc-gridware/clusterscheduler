@@ -54,6 +54,7 @@
 #include "sgeobj/cull/sge_event_EV_L.h"
 #include "sgeobj/cull/sge_event_EVS_L.h"
 #include "sgeobj/cull/sge_event_ET_L.h"
+#include "sgeobj/sge_answer.h"
 
 /// What an event master request asks for
 typedef enum {
@@ -99,7 +100,7 @@ typedef enum {
  */
 typedef void (*event_client_update_func_t)(
    uint32_t id,                /* event client id */
-   lList **alpp,               /* answer list */
+   ocs::tom::ListPtr<ocs::tom::AN> *alpp,               /* answer list */
    lList *event_list,          /* list of new events stored in the report list */
    void *arg                   ///< argument passed via sge_mirror_initialize
 );
@@ -117,7 +118,7 @@ typedef void (*event_client_update_func_t)(
  */
 typedef int (*evm_mod_func_t)(
    lListElem *clio,  /* the new event client structure with a set update_func */
-   lList** alpp,     /* a answer list */
+   ocs::tom::ListPtr<ocs::tom::AN> *alpp,     /* a answer list */
    char* ruser,      /* calling user */
    char* rhost       /* calling host */
 );
@@ -138,7 +139,7 @@ typedef int (*evm_mod_func_t)(
 typedef int (*evm_add_func_t)(
    const ocs::gdi::Packet *packet,
    lListElem *clio,                        /* the new event client */
-   lList **alpp,                           /* the answer list */
+   ocs::tom::ListPtr<ocs::tom::AN> *alpp,                           /* the answer list */
    lList **eclpp,                          /* list with added event client elem */
    event_client_update_func_t update_func, /* the event client update_func */
    void *update_func_arg                   /* additional argument passed to update_func */
@@ -363,4 +364,5 @@ typedef bool (*evm_ack_func_t)(
 const char *event_text(ocs::tom::ConstElement<ocs::tom::ET> event, dstring *buffer);
 OCS_TRANSITIONAL const char *event_text(const lListElem *event, dstring *buffer);
 
-bool event_client_verify(ocs::tom::ConstElement<ocs::tom::EV> event_client, lList **answer_list, bool add);
+bool event_client_verify(ocs::tom::ConstElement<ocs::tom::EV> event_client,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool add);

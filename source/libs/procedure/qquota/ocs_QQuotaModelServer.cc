@@ -32,6 +32,7 @@
 #include "sgeobj/tom/ocs_tom_SC.h"
 
 #include "ocs_QQuotaModelServer.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Fetch the lists from the master lists of qmaster
  *
@@ -42,7 +43,7 @@
  * @param host_name_list the hosts the user asked for; all hosts when empty
  * @return true
  */
-bool ocs::QQuotaModelServer::fetch_data(lList **answer_list,
+bool ocs::QQuotaModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                         const ocs::tom::ConstList<ocs::tom::ST> host_name_list) {
    DENTER(TOP_LAYER);
 

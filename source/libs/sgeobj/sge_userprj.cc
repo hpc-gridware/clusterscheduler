@@ -160,7 +160,8 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) 
  * @param prj_list the projects to look for (PR_Type), may be an empty handle
  * @return true when all of them exist
  */
-bool prj_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PR> this_list, lList **answer_list,
+bool prj_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PR> this_list,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            const ocs::tom::ConstList<ocs::tom::PR> prj_list) {
    DENTER(TOP_LAYER);
    bool ret = true;

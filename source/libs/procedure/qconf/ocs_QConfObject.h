@@ -43,6 +43,7 @@
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Builds the field list one call renders or parses with
  *
@@ -118,7 +119,7 @@ struct qconf_read_desc {
    qconf_build_fields_fn fields;   ///< field list for -s<obj>, nullptr to use build_fields
    const char *list_name;          ///< object name in the "no X defined" message of -s<obj>l
    const char *not_found_msg;      ///< format string of the "X is not a Y" message of -s<obj>
-   lListElem *(*create_template)(lList **, const char *);
+   lListElem *(*create_template)(ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
                                    ///< SINGLE_OBJECT: build the type's template, for a read
                                    ///< that feeds an editor and found no object of that name
                                    ///< (CS-2823). It is what makes "-m<obj> <unknown>" offer
@@ -184,7 +185,7 @@ struct qconf_read_desc {
  * the whole struct empty.
  */
 struct qconf_write_desc {
-   int (*verify_list)(const lList *, lList **);
+   int (*verify_list)(const lList *, ocs::tom::ListPtr<ocs::tom::AN> *);
                              ///< MODE_LIST: the checks that need the whole list in
                              ///< hand, run in the reading phase so that a text
                              ///< failing them is rejected as a whole. Per-element
@@ -215,8 +216,8 @@ struct qconf_object_desc {
    qconf_build_fields_fn build_fields;               ///< field list provider (may allocate)
    const spool_flatfile_instr *sfi;                  ///< flatfile spooling instruction
    const char *json_type_name;                       ///< explicit JSON $id, nullptr derives it
-   int (*validate)(const lListElem *, lList **);     ///< semantic check, nullptr for none
-   int (*prepare)(lListElem *, lList **);            ///< pre-send fixup, nullptr for none
+   int (*validate)(const lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *);     ///< semantic check, nullptr for none
+   int (*prepare)(lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *);            ///< pre-send fixup, nullptr for none
    ocs::gdi::SubCommand sub_cmd;                     ///< GDI sub-command of an upsert
    bool as_list;                                     ///< file holds a list, not one object
    bool parse_values;                                ///< parse attribute values when reading a file
@@ -270,19 +271,17 @@ void qconf_set_name(lListElem *ep, int name_nm, const char *name);
 
 bool qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const char *name);
 
-lList *qconf_parse_list(lList **answer_list, const lDescr *descr, spooling_field *fields,
+lList *qconf_parse_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, spooling_field *fields,
                         spool_flatfile_format format, const char *filename, const char *content,
-                        int (*validate)(const lListElem *, lList **),
+                        int (*validate)(const lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *),
                         const spool_flatfile_instr *sfi,
-                        int (*prepare)(lListElem *, lList **),
-                        bool parse_values);
+                        int (*prepare)(lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *), bool parse_values);
 
-lListElem *qconf_parse_object(lList **answer_list, const lDescr *descr, spooling_field *fields,
+lListElem *qconf_parse_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, spooling_field *fields,
                               spool_flatfile_format format, const char *filename, const char *content,
-                              int (*validate)(const lListElem *, lList **),
+                              int (*validate)(const lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *),
                               const spool_flatfile_instr *sfi,
-                              int (*prepare)(lListElem *, lList **),
-                              bool parse_values);
+                              int (*prepare)(lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *), bool parse_values);
 
 /** @brief A private copy of a field list, for a renderer that mutates widths
  *

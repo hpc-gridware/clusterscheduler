@@ -121,7 +121,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
    if (from_qmaster) {
       // raw out parameters of object_unpack_elem_verify() and of the answer list functions
       lListElem *job_raw = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
 
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job_raw, JB_Type)) {
@@ -156,7 +156,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
       /* start a pe task */
       // raw out parameters of object_unpack_elem_verify() and of the answer list functions
       lListElem *petrep_raw = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &petrep_raw, PETR_Type)) {
          answer_list_output(&answer_list);
@@ -197,7 +197,7 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
    // raw out parameters of object_unpack_elem_verify() and of the answer list functions
    lListElem *jelem_raw = nullptr;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /*
    ** the check if the request has admin/root credentials is done by
@@ -211,7 +211,7 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       ERROR(SFNMAX, MSG_COM_UNPACKJOB);
       DRETURN(0);
    }
-   lFreeList(&answer_list);
+   answer_list.reset();
    // freed on return, unless handle_job() put it into the job list; a failure keeps it here
    ocs::tom::ElementPtr<ocs::tom::JB> jelem(jelem_raw);
 
@@ -285,7 +285,7 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
    /* initialize job */
    for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
       // raw out parameter of qinstance_verify()
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       int slots;
 
       const ocs::tom::Element<ocs::tom::QU> qep(ocs::tom::get<JG_queue>(gdil_ep));
@@ -306,7 +306,7 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
          report_job_error = false;
          goto Error;
       }
-      lFreeList(&answer_list);
+      answer_list.reset();
 
       /* clear any queue state that might be set from qmaster */
       ocs::tom::set<QU_state>(qep, 0);
@@ -817,7 +817,7 @@ Error:
  *
  * @see `job_verify()`
  */
-bool job_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
+bool job_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 

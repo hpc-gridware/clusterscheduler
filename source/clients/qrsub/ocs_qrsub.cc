@@ -79,7 +79,7 @@ extern char **environ;
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qrsub");
    ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lList *ar_lp = nullptr;
    ocs::tom::ElementPtr<ocs::tom::AR> ar;
 
@@ -112,7 +112,7 @@ int main(int argc, const char **argv) {
          FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE)) == nullptr) {
          /* arguments from $HOME/.sge_ar_request file */
          if (get_user_home_file_path(&file, SGE_HOME_DEF_AR_REQ_FILE, user, &alp)) {
-            lFreeList(&alp);
+            alp.reset();
             alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &cmdline_lp, environ,
             FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE);
          }
@@ -169,15 +169,15 @@ int main(int argc, const char **argv) {
    if (answer_list_has_error(&alp)) {
       ocs::gdi::ClientBase::shutdown();
       if (answer_list_has_status(&alp, STATUS_NOTOK_DOAGAIN)) {
-         lFreeList(&alp);
+         alp.reset();
          DRETURN(25);
       } else {
-         lFreeList(&alp);
+         alp.reset();
          DRETURN(1);
       }
    }
 
-   lFreeList(&alp);
+   alp.reset();
    ocs::gdi::ClientBase::shutdown();
    DRETURN(0);
 

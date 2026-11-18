@@ -85,7 +85,7 @@
 #include "msg_qmaster.h"
 
 static bool
-rqs_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::RQS> rqs, lList **answer_list);
+rqs_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 static void
 rqs_update_categories(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::ConstElement<ocs::tom::RQS> old_rqs,
@@ -122,8 +122,8 @@ rqs_update_categories(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::C
  * @note MT-NOTE: rqs_mod() is MT safe
  */
 int
-rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add,
-        const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_rqs,
+        lListElem *rqs, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
         ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -212,11 +212,12 @@ DRETURN(STATUS_EUNKNOWN);
  * @note MT-NOTE: rqs_spool() is MT safe
  */
 int
-rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+          gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstElement<ocs::tom::RQS> rqs(ep);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), rqs,
                                          ocs::tom::get<RQS_name>(rqs), SGE_TYPE_RQS);
@@ -285,7 +286,8 @@ rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList
  * @note MT-NOTE: rqs_del() is MT safe
  */
 int
-rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::RQS> ep, lList **alpp,
+rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::RQS> ep,
+        ocs::tom::ListPtr<ocs::tom::AN> *alpp,
         const ocs::tom::List<ocs::tom::RQS> rqs_list, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
@@ -346,8 +348,8 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstEle
  * @return STATUS_OK on success, STATUS_EUNKNOWN or STATUS_EEXIST if an error occurred
  */
 int
-rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser,
-        char *rhost) {
+rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+        lList **rqs_list, char *ruser, char *rhost) {
    return rqs_del(packet, task, ocs::tom::ConstElement<ocs::tom::RQS>(ep), alpp,
                   ocs::tom::List<ocs::tom::RQS>(*rqs_list), ruser, rhost);
 }
@@ -366,7 +368,8 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **a
  * @note MT-NOTE: rqs_reinit_consumable_actual_list() is not MT safe
  */
 static bool
-rqs_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::RQS> rqs, lList **answer_list) {
+rqs_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::RQS> rqs,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

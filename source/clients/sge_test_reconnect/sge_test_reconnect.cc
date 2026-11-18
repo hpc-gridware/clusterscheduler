@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    if (ocs::gdi::ClientBase::setup_and_enroll(QMOD, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
       answer_list_output(&alp);
       DRETURN(1);
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
       }
    }
 
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(&ref_list);
 
    DRETURN(ok ? 0 : 1);

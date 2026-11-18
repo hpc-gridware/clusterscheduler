@@ -119,8 +119,8 @@ lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id) {
  *
  * @note MT-NOTE: ar_validate() is MT safe
  */
-bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, lList **alpp, const bool in_master, const bool is_spool,
-                 const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const bool in_master,
+                 const bool is_spool, const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                  const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                  const ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
                  const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
@@ -341,7 +341,8 @@ ERROR:
  * @param master_userset_list the usersets (US_Type), checked
  * @return as ar_validate()
  */
-bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list,
+bool ar_validate(lListElem *ar, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool in_master, bool is_spool,
+                 const lList *master_cqueue_list,
                  const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
                  const lList *master_pe_list, const lList *master_userset_list) {
    return ar_validate(ocs::tom::Element<ocs::tom::AR>(ar), alpp, in_master, is_spool,

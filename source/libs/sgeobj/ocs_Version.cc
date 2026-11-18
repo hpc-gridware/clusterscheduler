@@ -240,7 +240,8 @@ ocs::Version::get_version_token() {
  * @return false if the versions do not match. true otherwise
  */
 bool
-ocs::Version::do_versions_match(lList **alpp, const uint32_t version, const char *host, const char *commproc, const int id) {
+ocs::Version::do_versions_match(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint32_t version, const char *host,
+                                const char *commproc, const int id) {
    DENTER(TOP_LAYER);
 
    // Do the clients version match the servers version?

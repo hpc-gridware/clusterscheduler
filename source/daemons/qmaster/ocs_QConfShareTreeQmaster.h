@@ -31,6 +31,7 @@
 #include "gdi/ocs_gdi_Task.h"
 #include "procedure/qconf/action/ocs_QConfActionServer.h"
 #include "uti/sge_monitor.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Add, modify or delete share tree nodes
  *
@@ -45,4 +46,5 @@
  */
 bool
 qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                                     const ocs::QConfActionParameter &parameter, lList **answer_list);
+                                     const ocs::QConfActionParameter &parameter,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

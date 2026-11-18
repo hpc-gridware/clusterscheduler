@@ -61,7 +61,7 @@
  * @return true when the command line was usable, false after its message
  */
 static bool
-qconf_action_purge_args(const qconf_op &op, ocs::QConfActionParameter &action, lList **alpp) {
+qconf_action_purge_args(const qconf_op &op, ocs::QConfActionParameter &action, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    /* "queue" is the only object type -purge knows */
    if (op.args[0] != SGE_OBJ_CQUEUE) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, op.args[0].c_str());
@@ -143,7 +143,7 @@ qconf_action_stnode_args(const qconf_op &op, ocs::QConfActionParameter &action, 
  * @return true when it was reported here, false to report it the generic way
  */
 static bool
-qconf_action_members_missing(const qconf_op &op, lList **alpp) {
+qconf_action_members_missing(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (op.args.size() != 1) {
       return false;
    }
@@ -185,8 +185,10 @@ struct qconf_action_entry {
    const char *switch_name;                                         ///< the switch as typed
    const char *action;                                              ///< the qconf action it runs
    ocs::gdi::Target target;                                         ///< the object list it changes
-   bool (*args)(const qconf_op &op, ocs::QConfActionParameter &action, lList **alpp); ///< builds the arguments, or nullptr
-   bool (*missing)(const qconf_op &op, lList **alpp);               ///< a message of its own for a short command line, or nullptr
+   /// builds the arguments, or nullptr
+   bool (*args)(const qconf_op &op, ocs::QConfActionParameter &action, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
+   /// a message of its own for a short command line, or nullptr
+   bool (*missing)(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
    bool (*failed)(const qconf_op &op);                              ///< whether the usage follows a failure, or nullptr
 };
 
@@ -201,31 +203,49 @@ static constexpr qconf_action_entry qconf_action_table[] = {
    {"-purge", ocs::QConfActionParameter::QUEUE_PURGE, ocs::gdi::Target::CQ_LIST,
     qconf_action_purge_args, nullptr, nullptr},
    {"-au", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_members_args(op, a, true); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_members_args(op, a, true);
+    },
     qconf_action_members_missing, nullptr},
    {"-du", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_members_args(op, a, false); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_members_args(op, a, false);
+    },
     qconf_action_members_missing, nullptr},
    {"-am", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, MANAGER_USERSET, true); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_manop_args(op, a, MANAGER_USERSET, true);
+    },
     nullptr, nullptr},
    {"-ao", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, true); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_manop_args(op, a, OPERATOR_USERSET, true);
+    },
     nullptr, nullptr},
    {"-dm", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, MANAGER_USERSET, false); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_manop_args(op, a, MANAGER_USERSET, false);
+    },
     nullptr, nullptr},
    {"-do", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, false); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_manop_args(op, a, OPERATOR_USERSET, false);
+    },
     nullptr, nullptr},
    {"-astnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_ADD); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_ADD);
+    },
     nullptr, qconf_action_stnode_failed},
    {"-mstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_MODIFY); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_MODIFY);
+    },
     nullptr, qconf_action_stnode_failed},
    {"-dstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST,
-    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_DELETE); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, ocs::tom::ListPtr<ocs::tom::AN> *) {
+       return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_DELETE);
+    },
     nullptr, nullptr},
    {"-clearusage", ocs::QConfActionParameter::USAGE_CLEAR, ocs::gdi::Target::UU_LIST, nullptr, nullptr, nullptr},
 };
@@ -274,7 +294,7 @@ static constexpr qconf_reserved_hgroup_entry qconf_reserved_hgroup_table[] = {
  */
 static QConfOpResult
 qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op,
-                          const qconf_reserved_hgroup_entry &entry, lList **alpp) {
+                          const qconf_reserved_hgroup_entry &entry, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (qconf_missing_argument(op, alpp)) {
@@ -324,7 +344,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
    action.set_arg(ocs::QConfActionParameter::ARG_ADD, entry.add ? ocs::QConfActionParameter::ARG_TRUE : "0");
 
    ocs::QConfWriteModelClient model(ocs::gdi::Target::HGRP_LIST);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const bool changed = model.make_snapshot(&answer_list, action);
    if (qconf_answer_take(alpp, &answer_list) != 0 || !changed) {
       DRETURN(QConfOpResult::FAILED);
@@ -341,7 +361,8 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
 }
 
 QConfOpResult
-qconf_run_action(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp) {
+qconf_run_action(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op,
+                 ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    for (const qconf_reserved_hgroup_entry &e : qconf_reserved_hgroup_table) {
@@ -380,7 +401,7 @@ qconf_run_action(std::ostream &os, const ocs::QConfParameterClient &param, const
    }
 
    ocs::QConfWriteModelClient model(entry->target);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const bool ok = model.make_snapshot(&answer_list, action);
    const int shown = qconf_answer_take(alpp, &answer_list);
 

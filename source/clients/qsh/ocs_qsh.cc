@@ -134,7 +134,7 @@ static int wait_for_qrsh_socket(int sock, int timeout);
 static char *read_from_qrsh_socket(int msgsock);
 static int get_remote_exit_code(int sock);
 static const char *quote_argument(const char *arg);
-static int parse_result_list(lList *alp, int *alp_error);
+static int parse_result_list(ocs::tom::ConstList<ocs::tom::AN> alp, int *alp_error);
 static int start_client_program(const char *client_name,
                                 ocs::tom::ConstList<ocs::tom::SPA> opts_qrsh,
                                 const char *host,
@@ -578,13 +578,13 @@ static const char *quote_argument(const char *arg) {
  *
  * @return 0, if no error was contained in list 1, if an error was contained in list alp_error - 1, if alp contains an error condition, else 0 ***************************************************************************
  */
-static int parse_result_list(lList *alp, int *alp_error) {
+static int parse_result_list(const ocs::tom::ConstList<ocs::tom::AN> alp, int *alp_error) {
    DENTER(TOP_LAYER);
    int do_exit = 0;
 
    *alp_error = 0;
 
-   for_each_ep_lv(aep, alp) {
+   for (const auto aep : alp) {
       uint32_t status  = ocs::tom::get<AN_status>(aep);
       uint32_t quality = ocs::tom::get<AN_quality>(aep);
       if (quality == ANSWER_QUALITY_ERROR) {
@@ -1247,11 +1247,11 @@ static int do_qrsh_reconnect(const char *job_id_str,
 
    // Build port_range_list from cluster config (same as the normal startup path).
    char *port_range_str = mconf_get_port_range();
-   lList *alp_pr = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp_pr;
    ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
       range_list_parse_from_string(port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
-      lFreeList(&alp_pr);
+      alp_pr.reset();
    }
    sge_free(&port_range_str);
 
@@ -1301,7 +1301,7 @@ static int do_qrsh_reconnect(const char *job_id_str,
 
    /* sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle */
    lList *ref_list = refs.release();
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
                                           ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
    refs = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(ref_list);
 
@@ -1320,7 +1320,7 @@ static int do_qrsh_reconnect(const char *job_id_str,
          ERROR("qrsh -reconnect: %s", text);
       }
    }
-   lFreeList(&alp);
+   alp.reset();
    refs.reset();
 
    if (!ok) {
@@ -1373,8 +1373,8 @@ int main(int argc, const char **argv) {
    ocs::tom::ListPtr<ocs::tom::SPA> opts_qrsh;
    ocs::tom::ElementPtr<ocs::tom::JB> job;
    ocs::tom::ListPtr<ocs::tom::JB> lp_jobs;
-   lList *alp = nullptr;
-   lList *answer = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   ocs::tom::ListPtr<ocs::tom::AN> answer;
    uint32_t status = STATUS_OK;
    uint32_t quality;
    uint32_t job_id = 0;
@@ -1487,7 +1487,7 @@ int main(int argc, const char **argv) {
    */
    opt_list_append_opts_from_default_files(my_who, cell_root, username, opts_defaults, &alp, environ);
    do_exit = parse_result_list(alp, &alp_error);
-   lFreeList(&alp);
+   alp.reset();
 
    if (alp_error) {
       sge_exit(1);
@@ -1503,7 +1503,7 @@ int main(int argc, const char **argv) {
       opts_cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
    }
    do_exit = parse_result_list(alp, &alp_error);
-   lFreeList(&alp);
+   alp.reset();
 
    if (alp_error) {
       sge_exit(1);
@@ -1516,7 +1516,7 @@ int main(int argc, const char **argv) {
       answer_list_add(&answer, SGE_EVENT,
                       STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       do_exit = parse_result_list(alp, &alp_error);
-      lFreeList(&answer);
+      answer.reset();
 
       if (alp_error) {
          sge_exit(1);
@@ -1684,7 +1684,7 @@ int main(int argc, const char **argv) {
          /* read scriptfile and parse script options */
          opt_list_append_opts_from_script(my_who, opts_scriptfile, &alp, *opts_qrsh, environ);
          do_exit = parse_result_list(alp, &alp_error);
-         lFreeList(&alp);
+         alp.reset();
 
          if (alp_error) {
             sge_exit(1);
@@ -1735,7 +1735,7 @@ int main(int argc, const char **argv) {
    alp = cull_parse_qsh_parameter(my_who, myuid, username, cell_root, unqualified_hostname, qualified_hostname,
                                   *opts_all, *job);
    do_exit = parse_result_list(alp, &alp_error);
-   lFreeList(&alp);
+   alp.reset();
    opts_all.reset();
    if (alp_error) {
       sge_exit(1);
@@ -1794,11 +1794,11 @@ int main(int argc, const char **argv) {
    char *port_range_str = mconf_get_port_range();
    // fetch IJS escape character (default '~', '\0' = disabled via ijs_escape_char=none)
    char ijs_escape_char = mconf_get_ijs_escape_char();
-   lList *alp_pr = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp_pr;
    ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
       range_list_parse_from_string(port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
-      lFreeList(&alp_pr);
+      alp_pr.reset();
    }
    sge_free(&port_range_str);
 
@@ -2043,7 +2043,7 @@ int main(int argc, const char **argv) {
          }
       }
 
-      lFreeList(&alp);
+      alp.reset();
 
       if (just_verify)
          do_exit = 1;
@@ -2257,7 +2257,7 @@ int main(int argc, const char **argv) {
 
          do_exit = parse_result_list(alp, &alp_error);
 
-         lFreeList(&alp);
+         alp.reset();
 
          do_shut = shut_me_down;
          if (do_shut || do_exit) {
@@ -2386,13 +2386,13 @@ static void delete_job(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom
 
    // sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle
    lList *id_lp = idlp.release();
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
                                           ocs::gdi::SubCommand::NONE, &id_lp, nullptr, nullptr);
    idlp = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(id_lp);
 
    /* no error handling here, we try to delete the job if we can */
    idlp.reset();
-   lFreeList(&alp);
+   alp.reset();
    DRETURN_VOID;
 }
 

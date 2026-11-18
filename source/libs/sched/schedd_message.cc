@@ -63,6 +63,7 @@
 #include "schedd_monitor.h"
 #include "sge_schedd_text.h"
 #include "msg_schedd.h"
+#include "sgeobj/sge_answer.h"
 
 static ocs::tom::ListPtr<ocs::tom::ULNG>
 schedd_mes_get_same_category_jids(lRef category, ocs::tom::ConstList<ocs::tom::JB> job_list, int ignore_category);
@@ -324,7 +325,8 @@ ocs::tom::ElementPtr<ocs::tom::SME> schedd_mes_obtain_package(int *global_mes_co
  *
  * @see #schedd_mes_commit, #schedd_mes_rollback
  */
-void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id, uint32_t message_number, ...) {
+void schedd_mes_add(ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool monitor_next_run, uint32_t job_id,
+                    uint32_t message_number, ...) {
    DENTER(TOP_LAYER);
 
    uint32_t schedd_job_info = sconf_get_schedd_job_info();
@@ -488,7 +490,8 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
  *
  * @note MT-NOTE: schedd_mes_add_global() is MT safe
  */
-void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t message_number, ...) {
+void schedd_mes_add_global(ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool monitor_next_run,
+                           uint32_t message_number, ...) {
    DENTER(TOP_LAYER);
 
    if (monitor_alpp != nullptr || monitor_next_run ||

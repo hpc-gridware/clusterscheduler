@@ -47,6 +47,7 @@
 #include "sgeobj/tom/ocs_tom_STN.h"
 
 #include "sgeobj/cull/sge_sharetree_STN_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief The position of each share tree node attribute within `STN_Type`
@@ -107,8 +108,8 @@ typedef struct {
    ocs::tom::Element<ocs::tom::STN> *nodes;   ///< the nodes, root first; allocated with sge_malloc()
 } ancestors_t;
 
-bool id_sharetree(lList **alpp, ocs::tom::Element<ocs::tom::STN> ep, int id);
-OCS_TRANSITIONAL bool id_sharetree(lList **alpp, lListElem *ep, int id);
+bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::STN> ep, int id);
+OCS_TRANSITIONAL bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, int id);
 int show_sharetree_path(std::ostream &os, ocs::tom::Element<ocs::tom::STN> root, const char *path);
 int show_sharetree(std::ostream &os, ocs::tom::ConstElement<ocs::tom::STN> ep, const char *indent, int level = 0);
 ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate();

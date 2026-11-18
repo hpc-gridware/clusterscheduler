@@ -225,7 +225,7 @@ bool sge_mailopt_to_dstring(uint32_t opt, dstring *string) {
  * @param prog_number the calling program, since not every client accepts every letter
  * @return the mail option bit field
  */
-int sge_parse_mail_options(lList **alpp, const char *mail_str, uint32_t prog_number) {
+int sge_parse_mail_options(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *mail_str, uint32_t prog_number) {
    DENTER(TOP_LAYER);
 
    int i, j;

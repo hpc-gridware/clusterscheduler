@@ -49,8 +49,8 @@
  * @return 0 on success, 1 when qmaster reported an error
  */
 static int
-qconf_control_kill(lList *lp, const int action_flag, lList **alpp) {
-   lList *alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
+qconf_control_kill(lList *lp, const int action_flag, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
+   auto alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
    return qconf_answer_take(alpp, &alp);
 }
 
@@ -60,7 +60,7 @@ qconf_control_kill(lList *lp, const int action_flag, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_kill_scheduler([[maybe_unused]] const qconf_op &op, lList **alpp) {
+qconf_control_kill_scheduler([[maybe_unused]] const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return qconf_control_kill(nullptr, SCHEDD_KILL, alpp);
 }
 
@@ -70,7 +70,7 @@ qconf_control_kill_scheduler([[maybe_unused]] const qconf_op &op, lList **alpp) 
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_kill_master([[maybe_unused]] const qconf_op &op, lList **alpp) {
+qconf_control_kill_master([[maybe_unused]] const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return qconf_control_kill(nullptr, MASTER_KILL, alpp);
 }
 
@@ -80,7 +80,7 @@ qconf_control_kill_master([[maybe_unused]] const qconf_op &op, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_kill_event_clients(const qconf_op &op, lList **alpp) {
+qconf_control_kill_event_clients(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (op.args[0] == "all") {
@@ -99,7 +99,7 @@ qconf_control_kill_event_clients(const qconf_op &op, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_thread(const qconf_op &op, const uint32_t trigger, lList **alpp) {
+qconf_control_thread(const qconf_op &op, const uint32_t trigger, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const auto ids = ocs::tom::ListPtr<ocs::tom::ID>::from_string<ID_str>(op.args[0].c_str(), ", ");
@@ -117,7 +117,7 @@ qconf_control_thread(const qconf_op &op, const uint32_t trigger, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_start_thread(const qconf_op &op, lList **alpp) {
+qconf_control_start_thread(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return qconf_control_thread(op, SGE_THREAD_TRIGGER_START, alpp);
 }
 
@@ -127,7 +127,7 @@ qconf_control_start_thread(const qconf_op &op, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_stop_thread(const qconf_op &op, lList **alpp) {
+qconf_control_stop_thread(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return qconf_control_thread(op, SGE_THREAD_TRIGGER_STOP, alpp);
 }
 
@@ -141,7 +141,7 @@ qconf_control_stop_thread(const qconf_op &op, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_kill_execds(const qconf_op &op, lList **alpp) {
+qconf_control_kill_execds(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    int action_flag = EXECD_KILL;
@@ -171,7 +171,7 @@ qconf_control_kill_execds(const qconf_op &op, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_clean_queues(const qconf_op &op, lList **alpp) {
+qconf_control_clean_queues(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    auto ids = ocs::tom::ListPtr<ocs::tom::ID>::from_string<ID_str>(op.args[0].c_str(), ", ");
@@ -180,7 +180,7 @@ qconf_control_clean_queues(const qconf_op &op, lList **alpp) {
    }
    /* sge_gdi() replaces the request list with the response, so it is handed over raw */
    lList *lp = ids.release();
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
    lFreeList(&lp);
    const int ret = qconf_answer_take(alpp, &alp);
@@ -194,15 +194,16 @@ qconf_control_clean_queues(const qconf_op &op, lList **alpp) {
  * @return 0 on success, 1 otherwise
  */
 static int
-qconf_control_trigger_monitoring([[maybe_unused]] const qconf_op &op, lList **alpp) {
-   lList *alp = ocs::gdi::Client::gdi_tsm();
+qconf_control_trigger_monitoring([[maybe_unused]] const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
+   auto alp = ocs::gdi::Client::gdi_tsm();
    return qconf_answer_take(alpp, &alp);
 }
 
 /** @brief One switch served by qconf_run_control() */
 struct qconf_control_entry {
    const char *spec_name;                             ///< the row of the option table it is matched by
-   int (*run)(const qconf_op &op, lList **alpp);      ///< 0 on success, 1 on failure, -1 when the usage follows
+   int (*run)(const qconf_op &op,
+              ocs::tom::ListPtr<ocs::tom::AN> *alpp);      ///< 0 on success, 1 on failure, -1 when the usage follows
 };
 
 /** @brief The control switches (CS-2986)
@@ -223,7 +224,7 @@ static constexpr qconf_control_entry qconf_control_table[] = {
 };
 
 QConfOpResult
-qconf_run_control(const qconf_op &op, lList **alpp) {
+qconf_run_control(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (op.spec == nullptr) {

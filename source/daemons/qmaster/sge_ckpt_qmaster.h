@@ -43,25 +43,27 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/sge_answer.h"
 
 int
-ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add,
-         const char *ruser, const char *rhost, gdi_object_t *object,
+ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ckpt,
+         lListElem *ckpt, int add, const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor);
 
 int
-ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object);
+ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+           gdi_object_t *object);
 
 int
 ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
              lList **ppList, monitoring_t *monitor);
 
 int
-sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CK> ep, lList **alpp,
-             char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp,
-                                  char *ruser, char *rhost);
+sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CK> ep,
+             ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 const char *
 get_checkpoint_when(int bitmask);

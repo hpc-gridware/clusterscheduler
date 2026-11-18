@@ -90,7 +90,7 @@ static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
    for (int i = 0; settings[i].test_value != nullptr; i++, (*id)++) {
       auto schedd_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_conf");
       const auto schedd_conf = schedd_list->push_back(sconf_create_default());
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       bool passed = false;
 
       if (schedd_conf) {
@@ -114,7 +114,7 @@ static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
 
       CHECK(*id, settings[i].desc, passed);
       schedd_list.reset();
-      lFreeList(&answer_list);
+      answer_list.reset();
    }
 }
 

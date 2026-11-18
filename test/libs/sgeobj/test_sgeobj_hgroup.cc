@@ -460,25 +460,25 @@ test_host_is_referenced_reserved() {
    for (int i = 0; i < 3; i++) {
       const char *reserved[] = {ADMIN_HOSTGROUP, SUBMIT_HOSTGROUP, EXEC_HOSTGROUP};
       lList *hgrp_list = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       add_hgroup(&hgrp_list, reserved[i], {"hosta"});
       bool referenced = host_is_referenced(*host, &answer_list, nullptr, hgrp_list);
 
       CHECK(41 + i, reserved[i], !referenced);
-      lFreeList(&answer_list);
+      answer_list.reset();
       lFreeList(&hgrp_list);
    }
 
    /* the skip must not swallow real references */
    {
       lList *hgrp_list = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       add_hgroup(&hgrp_list, "@userowned", {"hosta"});
       CHECK(44, "a user group still counts as a reference",
             host_is_referenced(*host, &answer_list, nullptr, hgrp_list));
-      lFreeList(&answer_list);
+      answer_list.reset();
       lFreeList(&hgrp_list);
    }
 
@@ -488,13 +488,13 @@ test_host_is_referenced_reserved() {
     * counts, and there is no deadlock. */
    {
       lList *hgrp_list = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       add_hgroup(&hgrp_list, ADMIN_HOSTGROUP, {"hosta"});
       add_hgroup(&hgrp_list, "@wraps_admin", {ADMIN_HOSTGROUP});
       CHECK(45, "a user group referencing a reserved group still counts",
             host_is_referenced(*host, &answer_list, nullptr, hgrp_list));
-      lFreeList(&answer_list);
+      answer_list.reset();
       lFreeList(&hgrp_list);
    }
 
@@ -646,7 +646,7 @@ test_member_classes() {
       lList *after = nullptr;
       lList *add_hosts = nullptr;
       lList *add_groups = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       ocs::tom::emplace_back<HR_name>(&before, "node001");
       ocs::tom::emplace_back<HR_name>(&after, "node001");
@@ -665,7 +665,7 @@ test_member_classes() {
       CHECK(82, "and not among the groups either",
             href_list_locate(add_groups, "host:gpu*") == nullptr);
 
-      lFreeList(&answer_list);
+      answer_list.reset();
       lFreeList(&add_hosts);
       lFreeList(&add_groups);
       lFreeList(&before);
@@ -680,7 +680,7 @@ test_member_classes() {
    {
       const ocs::tom::UniqueCheckSuspension suspension;
       lList *members = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       ocs::tom::emplace_back<HR_name>(&members, "host:gpu*");
       ocs::tom::emplace_back<HR_name>(&members, "node001");
@@ -691,11 +691,11 @@ test_member_classes() {
       CHECK(83, "the duplicate matcher is gone, case notwithstanding",
             lGetNumberOfElem(members) == 2);
       CHECK(84, "the collapse is reported",
-            lGetNumberOfElem(answer_list) == 1);
+            answer_list->size() == 1);
       CHECK(85, "and the report cannot fail the client",
             ocs::tom::get<AN_status>(lFirst(answer_list)) == STATUS_OK);
 
-      lFreeList(&answer_list);
+      answer_list.reset();
       lFreeList(&members);
    }
 
@@ -703,7 +703,7 @@ test_member_classes() {
    // name normaliser truncated them at their first dot, as it does a host name.
    {
       lList *members = nullptr;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       ocs::tom::emplace_back<HR_name>(&members, "host:gpu*.a.example.com");
       ocs::tom::emplace_back<HR_name>(&members, "host:gpu*.b.example.com");
@@ -716,21 +716,21 @@ test_member_classes() {
             href_list_locate(members, "host:gpu*.a.example.com") != nullptr &&
             href_list_locate(members, "host:gpu*.b.example.com") != nullptr);
 
-      lFreeList(&answer_list);
+      answer_list.reset();
       lFreeList(&members);
    }
 
    // A host group member may be a matcher; the name of a host never may.
    {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       CHECK(88, "a host may not be named after a matcher",
             !verify_host_name(&answer_list, "host:gpu*"));
-      lFreeList(&answer_list);
+      answer_list.reset();
 
       CHECK(89, "an ordinary host name is still accepted",
             verify_host_name(&answer_list, "node001.example.com"));
-      lFreeList(&answer_list);
+      answer_list.reset();
    }
 }
 
@@ -784,7 +784,7 @@ test_walk_three_classes() {
    lList *hosts = nullptr;
    lList *groups = nullptr;
    lList *matchers = nullptr;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    CHECK(90, "the walk succeeds",
          hgroup_find_all_references(top, &answer_list, hgroup_list, &hosts, &groups, &matchers));
@@ -829,7 +829,7 @@ test_walk_three_classes() {
       lFreeList(&named);
    }
 
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&hosts);
    lFreeList(&groups);
    lFreeList(&matchers);
@@ -1017,9 +1017,9 @@ test_generated_trees() {
          ocs::tom::set<HGRP_host_list>(hgroup, members);
       }
 
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       hgroup_list_update_caches(hgroup_list, &answer_list);
-      lFreeList(&answer_list);
+      answer_list.reset();
 
       const ocs::tom::ConstList<ocs::tom::HGRP> groups(hgroup_list);
 
@@ -1509,7 +1509,7 @@ test_find_all_referencees() {
    add_group(&hgroup_list, "@top", top_members);
 
    lList *referencees = nullptr;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    CHECK(129, "the referencee walk succeeds",
          hgroup_find_all_referencees(x, &answer_list, hgroup_list, &referencees));
@@ -1538,7 +1538,7 @@ test_find_all_referencees() {
          href_list_locate(referencees, "@top") != nullptr);
 
    lFreeList(&referencees);
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&hgroup_list);
 }
 

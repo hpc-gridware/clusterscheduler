@@ -108,7 +108,7 @@ static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool, bool *
  * @return STATUS_OK on success, another status on failure
  */
 static int
-qconf_pe_validate(const lListElem *ep, lList **alpp) {
+qconf_pe_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return pe_validate(const_cast<lListElem *>(ep), alpp, 0, nullptr);
 }
 
@@ -124,7 +124,7 @@ qconf_pe_validate(const lListElem *ep, lList **alpp) {
  * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
  */
 static int
-qconf_role_validate(const lListElem *ep, lList **alpp) {
+qconf_role_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return ocs::Role::validate(ep, alpp, false) ? STATUS_OK : STATUS_ESEMANTIC;
 }
 
@@ -140,7 +140,7 @@ qconf_role_validate(const lListElem *ep, lList **alpp) {
  * @return STATUS_OK on success, STATUS_ESEMANTIC if the host cannot be resolved
  */
 static int
-qconf_eh_resolve(lListElem *ep, lList **alpp) {
+qconf_eh_resolve(lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_SGETEXT_CANTRESOLVEHOST_S, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
@@ -160,7 +160,7 @@ qconf_eh_resolve(lListElem *ep, lList **alpp) {
  * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
  */
 static int
-qconf_cq_verify(const lListElem *ep, lList **alpp) {
+qconf_cq_verify(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    lListElem *e = const_cast<lListElem *>(ep);
    return cqueue_verify_attributes(e, alpp, e, false, nullptr, nullptr, nullptr, nullptr,
                                    nullptr, nullptr, nullptr, nullptr)
@@ -179,7 +179,7 @@ qconf_cq_verify(const lListElem *ep, lList **alpp) {
  * @return STATUS_OK on success, another status on failure
  */
 static int
-qconf_us_validate(const lListElem *ep, lList **alpp) {
+qconf_us_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return userset_validate_entries(const_cast<lListElem *>(ep), alpp);
 }
 
@@ -215,7 +215,7 @@ qconf_us_validate(const lListElem *ep, lList **alpp) {
  * @return the template
  */
 static lListElem *
-qconf_template_CAL([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_CAL([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    return sge_generic_cal(name).release();
 }
 
@@ -225,7 +225,7 @@ qconf_template_CAL([[maybe_unused]] lList **answer_list, const char *name) {
  * @return the template
  */
 static lListElem *
-qconf_template_CK([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_CK([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    return sge_generic_ckpt(name).release();
 }
 
@@ -235,7 +235,7 @@ qconf_template_CK([[maybe_unused]] lList **answer_list, const char *name) {
  * @return the template
  */
 static lListElem *
-qconf_template_PE([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_PE([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    return pe_create_template(name).release();
 }
 
@@ -245,7 +245,7 @@ qconf_template_PE([[maybe_unused]] lList **answer_list, const char *name) {
  * @return the template, or nullptr when the name was refused
  */
 static lListElem *
-qconf_template_CE(lList **answer_list, const char *name) {
+qconf_template_CE(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    return centry_create(answer_list, name).release();
 }
 
@@ -255,7 +255,7 @@ qconf_template_CE(lList **answer_list, const char *name) {
  * @return the template
  */
 static lListElem *
-qconf_template_RL([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_RL([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    auto ep = ocs::Role::create_template();
    ocs::tom::set<RL_name>(ep, name);
    return ep.release();
@@ -267,7 +267,7 @@ qconf_template_RL([[maybe_unused]] lList **answer_list, const char *name) {
  * @return the template
  */
 static lListElem *
-qconf_template_UU([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_UU([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    auto ep = getUserTemplate();
    ocs::tom::set<UU_name>(ep, name);
    // the template table takes a raw constructor
@@ -280,7 +280,7 @@ qconf_template_UU([[maybe_unused]] lList **answer_list, const char *name) {
  * @return the template
  */
 static lListElem *
-qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_PR([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    auto ep = getPrjTemplate();
    ocs::tom::set<PR_name>(ep, name);
    // the template table takes a raw constructor
@@ -298,7 +298,7 @@ qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
  * @return the template
  */
 static lListElem *
-qconf_template_RQS([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_RQS([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
    auto ep = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
    ocs::tom::set<RQS_name>(ep, name);
@@ -325,7 +325,7 @@ qconf_template_RQS([[maybe_unused]] lList **answer_list, const char *name) {
  * @return STATUS_OK, or STATUS_ESEMANTIC with the reason in @p alpp
  */
 static int
-qconf_rqs_validate(const lListElem *ep, lList **alpp) {
+qconf_rqs_validate(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return rqs_verify_attributes(const_cast<lListElem *>(ep), alpp, false, nullptr)
       ? STATUS_OK : STATUS_ESEMANTIC;
 }
@@ -351,7 +351,7 @@ qconf_rqs_validate(const lListElem *ep, lList **alpp) {
  * @return the template
  */
 static lListElem *
-qconf_template_HGRP(lList **answer_list, const char *name) {
+qconf_template_HGRP(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    return hgroup_create(answer_list, name, nullptr, false);
 }
 
@@ -365,7 +365,7 @@ qconf_template_HGRP(lList **answer_list, const char *name) {
  * @return the template, or nullptr
  */
 static lListElem *
-qconf_template_CQ(lList **answer_list, const char *name) {
+qconf_template_CQ(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
    auto ep = cqueue_create(answer_list, name);
    if (ep != nullptr && !cqueue_set_template_attributes(*ep, answer_list)) {
@@ -380,7 +380,7 @@ qconf_template_CQ(lList **answer_list, const char *name) {
  * @return the template, or nullptr
  */
 static lListElem *
-qconf_template_US(lList **answer_list, const char *name) {
+qconf_template_US(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    return userset_create(answer_list, name).release();
 }
 
@@ -396,7 +396,7 @@ qconf_template_US(lList **answer_list, const char *name) {
  * @return the template
  */
 static lListElem *
-qconf_template_STN([[maybe_unused]] lList **answer_list, [[maybe_unused]] const char *name) {
+qconf_template_STN([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, [[maybe_unused]] const char *name) {
    // the template table takes a raw constructor
    return getSNTemplate().release();
 }
@@ -418,7 +418,7 @@ qconf_template_STN([[maybe_unused]] lList **answer_list, [[maybe_unused]] const 
  * @return the template
  */
 static lListElem *
-qconf_template_CONF([[maybe_unused]] lList **answer_list, const char *name) {
+qconf_template_CONF([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CONF>::create();
    if (ep != nullptr && name != nullptr) {
       ocs::tom::set<CONF_name>(ep, name);
@@ -439,7 +439,7 @@ qconf_template_CONF([[maybe_unused]] lList **answer_list, const char *name) {
  * @return STATUS_OK, or STATUS_ERROR1 with the reason in @p alpp
  */
 static int
-qconf_rqs_verify_list(const lList *lp, lList **alpp) {
+qconf_rqs_verify_list(const lList *lp, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    const ocs::tom::ConstList<ocs::tom::RQS> rule_sets(lp);
    for (auto a = rule_sets.front(); a != nullptr; a = a.next()) {
@@ -485,7 +485,7 @@ qconf_rqs_verify_list(const lList *lp, lList **alpp) {
  * @return STATUS_OK, or STATUS_EUNKNOWN with the reason in @p alpp
  */
 static int
-qconf_ce_verify_list(const lList *lp, lList **alpp) {
+qconf_ce_verify_list(const lList *lp, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    const ocs::tom::ConstList<ocs::tom::CE> entries(lp);
    for (auto a = entries.front(); a != nullptr; a = a.next()) {
@@ -588,7 +588,7 @@ qconf_stn_has_ids(const ocs::tom::ConstElement<ocs::tom::STN> ep) {
  * @return STATUS_OK when the tree is numbered
  */
 static int
-qconf_stn_prepare(lListElem *ep, lList **answer_list) {
+qconf_stn_prepare(lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    if (qconf_stn_has_ids(ocs::tom::ConstElement<ocs::tom::STN>(ep))) {
       DRETURN(STATUS_OK);
@@ -959,15 +959,13 @@ qconf_name_in_list(const lList *names, const lDescr *descr, const int name_nm, c
  * @return the list, which the caller owns, or nullptr when it could not be read
  */
 lList *
-qconf_parse_list(lList **answer_list, const lDescr *descr, spooling_field *fields,
+qconf_parse_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, spooling_field *fields,
                  const spool_flatfile_format format, const char *filename, const char *content,
-                 int (*validate)(const lListElem *, lList **),
-                 const spool_flatfile_instr *sfi,
-                 int (*prepare)(lListElem *, lList **),
-                 const bool parse_values) {
+                 int (*validate)(const lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *), const spool_flatfile_instr *sfi,
+                 int (*prepare)(lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *), const bool parse_values) {
    DENTER(TOP_LAYER);
 
-   lList *local = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> local;
    lList *lp = spool_flatfile_read_list(&local, descr, fields, nullptr,
                                         parse_values, sfi, format,
                                         nullptr, filename, content);
@@ -1026,15 +1024,14 @@ qconf_parse_list(lList **answer_list, const lDescr *descr, spooling_field *field
  * @return the parsed object, which the caller owns, or nullptr when it could not be read
  */
 lListElem *
-qconf_parse_object(lList **answer_list, const lDescr *descr, spooling_field *fields,
+qconf_parse_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, spooling_field *fields,
                    const spool_flatfile_format format, const char *filename, const char *content,
-                   int (*validate)(const lListElem *, lList **),
+                   int (*validate)(const lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *),
                    const spool_flatfile_instr *sfi,
-                   int (*prepare)(lListElem *, lList **),
-                   const bool parse_values) {
+                   int (*prepare)(lListElem *, ocs::tom::ListPtr<ocs::tom::AN> *), const bool parse_values) {
    DENTER(TOP_LAYER);
 
-   lList *local = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> local;
    int fields_out[MAX_NUM_FIELDS];
    fields_out[0] = NoName;
 
@@ -1091,9 +1088,9 @@ void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields,
    for (int i = 0; i < n_fields; i++) {
       lList *sub = lGetListRW(obj, ce_fields[i]);
       if (sub != nullptr && lGetNumberOfElem(sub) > 0) {
-         lList *fill_alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> fill_alp;
          centry_list_fill_request(sub, &fill_alp, master_centry_list, true, true, true);
-         lFreeList(&fill_alp);
+         fill_alp.reset();
       }
    }
 }

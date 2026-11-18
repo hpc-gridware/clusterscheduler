@@ -91,7 +91,7 @@ const char* userset_types[] = {
  * @return US_Type object, or an empty handle with the reason in the answer list
  */
 ocs::tom::ElementPtr<ocs::tom::US>
-userset_create(lList **answer_list, const char *name) {
+userset_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::US> ret;
@@ -120,7 +120,8 @@ userset_create(lList **answer_list, const char *name) {
  *
  * @return STATUS_OK, if everything is OK
  */
-int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_list, lList **alpp,
+int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_list,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                    const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
 
@@ -145,7 +146,8 @@ int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_l
  *
  * @return as userset_list_validate_acl_list()
  */
-int userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list) {
+int userset_list_validate_acl_list(const lList *acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                   const lList *master_userset_list) {
    return userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US>(acl_list), alpp,
                                          ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
 }
@@ -169,7 +171,7 @@ int userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lL
  *
  * @note MT-NOTE: userset_list_validate_access() is not MT safe
  */
-int userset_list_validate_access(const lList *acl_list, const int nm, lList **alpp,
+int userset_list_validate_access(const lList *acl_list, const int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
 
@@ -199,7 +201,7 @@ int userset_list_validate_access(const lList *acl_list, const int nm, lList **al
  *
  * @return as userset_list_validate_access()
  */
-int userset_list_validate_access(const lList *acl_list, const int nm, lList **alpp,
+int userset_list_validate_access(const lList *acl_list, const int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  const lList *master_userset_list) {
    return userset_list_validate_access(acl_list, nm, alpp, ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
 }
@@ -214,7 +216,8 @@ int userset_list_validate_access(const lList *acl_list, const int nm, lList **al
  *
  * @return STATUS_OK, if everything is OK
  */
-int userset_validate_entries(const ocs::tom::ConstElement<ocs::tom::US> userset, lList **alpp) {
+int userset_validate_entries(const ocs::tom::ConstElement<ocs::tom::US> userset,
+                             ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    for (const auto ep : ocs::tom::get<US_entries>(userset)) {
@@ -236,7 +239,7 @@ int userset_validate_entries(const ocs::tom::ConstElement<ocs::tom::US> userset,
  *
  * @return as userset_validate_entries()
  */
-int userset_validate_entries(const lListElem *userset, lList **alpp) {
+int userset_validate_entries(const lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US>(userset), alpp);
 }
 
@@ -253,8 +256,8 @@ int userset_validate_entries(const lListElem *userset, lList **alpp) {
  *
  * @see #userset_set_type_string
  */
-const char *userset_get_type_string(const ocs::tom::ConstElement<ocs::tom::US> userset, lList **answer_list,
-                                    dstring *buffer) {
+const char *userset_get_type_string(const ocs::tom::ConstElement<ocs::tom::US> userset,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
    DENTER(TOP_LAYER);
 
    SGE_CHECK_POINTER_NULL(userset, answer_list);
@@ -285,7 +288,8 @@ const char *userset_get_type_string(const ocs::tom::ConstElement<ocs::tom::US> u
  *
  * @return as userset_get_type_string()
  */
-const char *userset_get_type_string(const lListElem *userset, lList **answer_list, dstring *buffer) {
+const char *userset_get_type_string(const lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                    dstring *buffer) {
    return userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US>(userset), answer_list, buffer);
 }
 
@@ -302,7 +306,8 @@ const char *userset_get_type_string(const lListElem *userset, lList **answer_lis
  *
  * @see #userset_get_type_string
  */
-bool userset_set_type_string(const ocs::tom::Element<ocs::tom::US> userset, lList **answer_list, const char *value) {
+bool userset_set_type_string(const ocs::tom::Element<ocs::tom::US> userset,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
    DENTER(TOP_LAYER);
 
    SGE_CHECK_POINTER_FALSE(userset, answer_list);
@@ -335,7 +340,7 @@ bool userset_set_type_string(const ocs::tom::Element<ocs::tom::US> userset, lLis
  *
  * @return as userset_set_type_string()
  */
-bool userset_set_type_string(lListElem *userset, lList **answer_list, const char *value) {
+bool userset_set_type_string(lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
    return userset_set_type_string(ocs::tom::Element<ocs::tom::US>(userset), answer_list, value);
 }
 

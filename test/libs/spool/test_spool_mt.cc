@@ -80,7 +80,7 @@ pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;   ///< serialises the threads w
 static bool add_job(int job_id) {
    bool write_ok;
    lListElem *job;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    const char *key;
@@ -115,7 +115,7 @@ static bool add_job(int job_id) {
 
 static bool del_job(int job_id) {
    bool del_ok;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    const char *key;
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
    pthread_t *t;
    int *args;
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lListElem *spooling_context;
 
    /* parse commandline parameters */

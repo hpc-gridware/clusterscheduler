@@ -49,6 +49,7 @@
 
 #include "ocs_ReportingFileWriter.h"
 #include "ocs_MirrorDataStore.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * Constructor.
@@ -131,7 +132,8 @@ ocs::MirrorDataStore::thread_cleanup_data_store(void *arg) {
  * @param arg Passthrough argument - here it is the instance of a MirrorDataStore subclass
  */
 void
-ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] uint32_t ec_id, [[maybe_unused]] lList **answer_list,
+ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] uint32_t ec_id,
+                                               [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                lList *event_list, void *arg) {
    DENTER(TOP_LAYER);
    auto *mirror_thread = static_cast<MirrorDataStore *>(arg);
@@ -298,7 +300,7 @@ ocs::MirrorDataStore::unlock() {
 [[noreturn]] void *
 ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
    DENTER(TOP_LAYER);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    auto thread_name = to_cstr(EVENT_MIRROR_THREAD);
    auto thread_id = data_store_id;

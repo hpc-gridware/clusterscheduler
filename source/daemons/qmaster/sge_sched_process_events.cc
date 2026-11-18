@@ -59,6 +59,7 @@
 
 #include "sge_sched_process_events.h"
 #include "sge_sched_prepare_data.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Hand a batch of freshly delivered events to the scheduler thread
@@ -78,7 +79,7 @@
  *
  * @note MT-NOTE: is MT safe.
  */
-void event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg) {
+void event_update_func(uint32_t ec_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list, void *arg) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);

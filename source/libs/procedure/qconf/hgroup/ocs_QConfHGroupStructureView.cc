@@ -37,6 +37,7 @@
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 
 #include "ocs_QConfHGroupStructureView.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief What `qconf_cstr()` does in the client, for the library side
  *
@@ -131,7 +132,7 @@ ocs::QConfHGroupStructureView::show_resolved(std::ostream &os, const ocs::tom::C
                                              const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;   // as in show_object(): a view has none to report into
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;   // as in show_object(): a view has none to report into
    ocs::tom::ListPtr<ocs::tom::HR> sub_host_list;
    ocs::tom::ListPtr<ocs::tom::HR> sub_hgroup_list;
    ocs::tom::ListPtr<ocs::tom::HR> sub_matcher_list;
@@ -155,7 +156,7 @@ ocs::QConfHGroupStructureView::show_resolved(std::ostream &os, const ocs::tom::C
    }
 
    sge_dstring_free(&string);
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    DRETURN_VOID;
 }

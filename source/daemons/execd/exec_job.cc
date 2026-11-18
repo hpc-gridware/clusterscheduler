@@ -807,7 +807,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       host_slots = 0;
       for (ocs::tom::ConstElement<ocs::tom::JG> gdil_ep : gdil) {
          // raw out parameter of range_list_parse_from_string()
-         lList *alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
 
          // get processor set configuration (used when available and thread binding is not used
          const char *q_set = ocs::tom::get<JG_processors>(gdil_ep);
@@ -825,7 +825,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
             if (q_set && strcasecmp(q_set, "UNDEFINED")) {
                range_list_parse_from_string(processor_set, &alp, q_set, false, false, INF_ALLOWED);
                /* TODO: should we not print the answerlist in case of an error? */
-               lFreeList(&alp);
+               alp.reset();
             }
          }
       }
@@ -1332,15 +1332,13 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    if (ocs::execd::execd_use_pdc_for_usage_collection() || mconf_get_enable_addgrp_kill()) {
       // parse range and create list
       ocs::tom::ListPtr<ocs::tom::RN> rlp;
-      // the answer list, filled through an lList ** by range_list_parse_from_string()
-      lList *alp_raw = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       gid_t temp_id;
       char *gid_range = mconf_get_gid_range();
       DPRINTF("gid_range = %s\n", gid_range);
-      range_list_parse_from_string(rlp, &alp_raw, gid_range,
+      range_list_parse_from_string(rlp, &alp, gid_range,
                                    0, 0, INF_NOT_ALLOWED);
       sge_free(&gid_range);
-      const ocs::tom::ListPtr<ocs::tom::AN> alp(alp_raw);
       if (!rlp) {
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
          environmentList.reset();
@@ -1976,7 +1974,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       /* check DISPLAY variable for qsh jobs */
       if (JOB_TYPE_IS_QSH(jb_now)) {
          // raw out parameter of job_check_qsh_display()
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
          if (job_check_qsh_display(jep, &answer_list, false) == STATUS_OK) {
             env = ocs::tom::get<JB_env_list>(jep).find_first<VA_variable>("DISPLAY");
@@ -1989,7 +1987,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
             if (error_string != nullptr) {
                snprintf(err_str, err_length, SFNMAX, error_string);
             }
-            lFreeList(&answer_list);
+            answer_list.reset();
             environmentList.reset();
             FCLOSE(fp);
             sge_dstring_free(&core_binding_strategy_string);

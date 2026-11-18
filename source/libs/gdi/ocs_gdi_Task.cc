@@ -29,6 +29,7 @@
 
 #include "gdi/ocs_gdi_Command.h"
 #include "ocs_gdi_Task.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Build a task
@@ -43,8 +44,9 @@
  * @param do_copy true to copy the arguments instead of taking them over
  */
 ocs::gdi::Task::Task(Target target, Command command, SubCommand sub_cmd,
-                     lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy)
-      : command(command), sub_command(sub_cmd), target(target), data_list(nullptr), answer_list(nullptr), condition(nullptr),
+                     lList **lp, ocs::tom::ListPtr<ocs::tom::AN> *a_list, lCondition **condition,
+                     lEnumeration **enumeration, bool do_copy)
+      : command(command), sub_command(sub_cmd), target(target), data_list(nullptr), condition(nullptr),
         enumeration(nullptr), do_select_pack_simultaneous(false), exec_hostgroup_out_of_sync(false) {
    DENTER(TOP_LAYER);
 
@@ -54,7 +56,9 @@ ocs::gdi::Task::Task(Target target, Command command, SubCommand sub_cmd,
       } else {
          this->data_list = (((lp != nullptr) && (*lp != nullptr)) ? lCopyList("", *lp) : nullptr);
       }
-      this->answer_list = (((a_list != nullptr) && (*a_list != nullptr)) ? lCopyList("", *a_list) : nullptr);
+      if (a_list != nullptr) {
+         this->answer_list = a_list->get().clone();
+      }
       this->condition = (((condition != nullptr) && (*condition != nullptr)) ? lCopyWhere(*condition) : nullptr);
       this->enumeration = (((enumeration != nullptr) && (*enumeration != nullptr)) ? lCopyWhat(*enumeration) : nullptr);
    } else {
@@ -64,11 +68,8 @@ ocs::gdi::Task::Task(Target target, Command command, SubCommand sub_cmd,
       } else {
          this->data_list = nullptr;
       }
-      if ((a_list != nullptr) && (*a_list != nullptr)) {
-         this->answer_list = *a_list;
-         *a_list = nullptr;
-      } else {
-         this->answer_list = nullptr;
+      if (a_list != nullptr) {
+         this->answer_list = std::move(*a_list);
       }
       if ((condition != nullptr) && (*condition != nullptr)) {
          this->condition = *condition;
@@ -87,7 +88,7 @@ ocs::gdi::Task::Task(Target target, Command command, SubCommand sub_cmd,
 
 ocs::gdi::Task::Task()
        : command(Command::NONE), sub_command(SubCommand::NONE), target(Target::NO_TARGET), data_list(nullptr),
-         answer_list(nullptr), condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false),
+         condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false),
          exec_hostgroup_out_of_sync(false) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
@@ -96,7 +97,6 @@ ocs::gdi::Task::Task()
 ocs::gdi::Task::~Task() {
    DENTER(TOP_LAYER);
    lFreeList(&data_list);
-   lFreeList(&answer_list);
    lFreeWhat(&enumeration);
    lFreeWhere(&condition);
    DRETURN_VOID;
@@ -109,7 +109,7 @@ ocs::gdi::Task::debug_print() {
    DPRINTF("target = " sge_u32 "\n", static_cast<uint32_t>(target));
    DPRINTF("data_list = %p\n", data_list);
    lWriteListTo(data_list, stderr);
-   DPRINTF("answer_list = %p\n", answer_list);
+   DPRINTF("answer_list = %p\n", answer_list.get().raw());
    DPRINTF("condition = %p\n", condition);
    DPRINTF("enumeration = %p\n", enumeration);
    DRETURN_VOID;

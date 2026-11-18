@@ -42,6 +42,7 @@
 #include "sgeobj/tom/ocs_tom_SPA.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Build an advance reservation from the parsed `qrsub` command line
  *
@@ -50,4 +51,5 @@
  * @param ar the advance reservation the options are written into
  * @return true on success; false with `alpp` filled otherwise
  */
-bool sge_parse_qrsub(ocs::tom::List<ocs::tom::SPA> pcmdline, lList **alpp, ocs::tom::Element<ocs::tom::AR> ar);
+bool sge_parse_qrsub(ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                     ocs::tom::Element<ocs::tom::AR> ar);

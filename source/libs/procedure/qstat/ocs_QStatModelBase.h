@@ -42,6 +42,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "ocs_QStatParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Base model for qstat that holds all CULL data lists needed for rendering.
@@ -260,19 +261,19 @@ namespace ocs {
 
       void filter_jobs(const QStatParameter &parameter);
 
-      int filter_queues(lList **answer_list, const QStatParameter &parameter) const;
+      int filter_queues(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const QStatParameter &parameter) const;
 
    protected:
       virtual void prepare_filter(QStatParameter &parameter);
 
-      virtual bool fetch_data(lList **answer_list, QStatParameter &parameter);
+      virtual bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter);
 
-      virtual bool prepare_data(lList **answer_list, QStatParameter &parameter);
+      virtual bool prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter);
 
-      virtual bool filter_data(lList **answer_list, QStatParameter &parameter);
+      virtual bool filter_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter);
 
    public:
-      virtual bool make_snapshot(lList **answer_list, QStatParameter &parameter);
+      virtual bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter);
 
       void calc_longest_queue_length(QStatParameter &parameter) const;
 

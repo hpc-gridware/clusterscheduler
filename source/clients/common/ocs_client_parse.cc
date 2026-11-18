@@ -60,9 +60,9 @@
 #include "parse_qsub.h"
 #include "sge_options.h"
 
-static char *get_cwd_defaults_file_path(lList **answer_list);
+static char *get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 static void append_opts_from_default_files(uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                                           lList **answer_list, char **envp, char **def_files);
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **envp, char **def_files);
 
 /**
  * @brief Parse default files
@@ -86,11 +86,13 @@ static void append_opts_from_default_files(uint32_t prog_number, ocs::tom::ListP
  * @note MT-NOTE: opt_list_append_opts_from_default_files() is MT safe
  */
 void opt_list_append_opts_from_default_files(const uint32_t prog_number, const char *cell_root, const char *user,
-                                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **answer_list,
-                                             char **envp) {
+                                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **envp) {
    DENTER(TOP_LAYER);
 
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
 
    /* the sge root defaults file */
    dstring req_file = DSTRING_INIT;
@@ -133,7 +135,8 @@ void opt_list_append_opts_from_default_files(const uint32_t prog_number, const c
  * @param envp environment pointer
  */
 void opt_list_append_opts_from_default_files(const uint32_t prog_number, const char *cell_root, const char *user,
-                                             lList **pcmdline, lList **answer_list, char **envp) {
+                                             lList **pcmdline, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                             char **envp) {
    ocs::tom::ListPtr<ocs::tom::SPA> cmdline(*pcmdline);
    opt_list_append_opts_from_default_files(prog_number, cell_root, user, cmdline, answer_list, envp);
    *pcmdline = cmdline.release();
@@ -159,7 +162,8 @@ void opt_list_append_opts_from_default_files(const uint32_t prog_number, const c
  *
  * @note MT-NOTE: get_user_home_file_path() is MT safe
  */
-bool get_user_home_file_path(dstring *absolut_filename, const char *filename, const char *user, lList **answer_list) {
+bool get_user_home_file_path(dstring *absolut_filename, const char *filename, const char *user,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    if (absolut_filename == nullptr || filename == nullptr) {
@@ -190,7 +194,7 @@ bool get_user_home_file_path(dstring *absolut_filename, const char *filename, co
  *                    `STATUS_EUNKNOWN` (from #parse_script_file, which may
  *                    return others as well)
  */
-static char *get_cwd_defaults_file_path(lList **answer_list) {
+static char *get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    char cwd[SGE_PATH_MAX + 1];
    if (!getcwd(cwd, sizeof(cwd))) {
@@ -231,7 +235,8 @@ static char *get_cwd_defaults_file_path(lList **answer_list) {
  * @param def_files paths to default files
  */
 static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                                           lList **answer_list, char **envp, char **def_files) {
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **envp,
+                                           char **def_files) {
    DENTER(TOP_LAYER);
    char **pstr;
    SGE_STRUCT_STAT buf{};
@@ -258,7 +263,7 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
 
       // parse_script_file() has no typed form yet; it appends to (or creates) the raw list
       lList *cmdline_lp = cmdline.release();
-      lList *alp = parse_script_file(prog_number, *pstr, "", &cmdline_lp, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
+      auto alp = parse_script_file(prog_number, *pstr, "", &cmdline_lp, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
       cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
 
       for_each_ep_lv(aep, alp) {
@@ -283,7 +288,7 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
          }
          answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), status, quality);
       }
-      lFreeList(&alp);
+      alp.reset();
 
       if (do_exit) {
          for (pstr = def_files; *pstr; pstr++) {
@@ -314,9 +319,12 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
  * @param envp Environment
  */
 void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &opts_cmdline,
-                                            lList **answer_list, const char **argv, char **envp) {
+                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char **argv,
+                                            char **envp) {
    DENTER(TOP_LAYER);
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    // cull_parse_cmdline() has no typed form yet; it appends to (or creates) the raw list
    lList *cmdline_lp = opts_cmdline.release();
    *answer_list = cull_parse_cmdline(prog_number, argv, envp, &cmdline_lp, FLG_USE_PSEUDOS);
@@ -333,7 +341,8 @@ void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, ocs::tom
  * @param argv Argumente
  * @param envp Environment
  */
-void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, lList **opts_cmdline, lList **answer_list,
+void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, lList **opts_cmdline,
+                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                             const char **argv, char **envp) {
    ocs::tom::ListPtr<ocs::tom::SPA> cmdline(*opts_cmdline);
    opt_list_append_opts_from_qsub_cmdline(prog_number, cmdline, answer_list, argv, envp);
@@ -355,10 +364,13 @@ void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, lList **
  * @param envp Environment
  */
 void opt_list_append_opts_from_qalter_cmdline(const uint32_t prog_number,
-                                              ocs::tom::ListPtr<ocs::tom::SPA> &opts_cmdline, lList **answer_list,
+                                              ocs::tom::ListPtr<ocs::tom::SPA> &opts_cmdline,
+                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                               const char **argv, char **envp) {
    DENTER(TOP_LAYER);
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    // cull_parse_cmdline() has no typed form yet; it appends to (or creates) the raw list
    lList *cmdline_lp = opts_cmdline.release();
    *answer_list = cull_parse_cmdline(prog_number, argv, envp, &cmdline_lp, FLG_USE_PSEUDOS | FLG_QALTER);
@@ -384,8 +396,8 @@ void opt_list_append_opts_from_qalter_cmdline(const uint32_t prog_number,
  * @param envp Environment
  */
 void opt_list_append_opts_from_script(const uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &opts_scriptfile,
-                                      lList **answer_list, const ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline,
-                                      char **envp) {
+                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                      const ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline, char **envp) {
    DENTER(TOP_LAYER);
    const char *scriptfile = nullptr;
    if (const auto script_option = opts_cmdline.find_first<SPA_switch_val>(STR_PSEUDO_SCRIPT)) {
@@ -397,7 +409,9 @@ void opt_list_append_opts_from_script(const uint32_t prog_number, ocs::tom::List
    } else {
       prefix = default_prefix;
    }
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
    // parse_script_file() has no typed form yet; it appends to (or creates) the raw list
    lList *scriptfile_lp = opts_scriptfile.release();
    *answer_list = parse_script_file(prog_number, scriptfile, prefix, &scriptfile_lp, envp, FLG_DONT_ADD_SCRIPT);
@@ -414,7 +428,8 @@ void opt_list_append_opts_from_script(const uint32_t prog_number, ocs::tom::List
  * @param opts_cmdline Argumente (`SPA_Type`), checked
  * @param envp Environment
  */
-void opt_list_append_opts_from_script(const uint32_t prog_number, lList **opts_scriptfile, lList **answer_list,
+void opt_list_append_opts_from_script(const uint32_t prog_number, lList **opts_scriptfile,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                       const lList *opts_cmdline, char **envp) {
    ocs::tom::ListPtr<ocs::tom::SPA> scriptfile(*opts_scriptfile);
    opt_list_append_opts_from_script(prog_number, scriptfile, answer_list,
@@ -443,8 +458,8 @@ void opt_list_append_opts_from_script(const uint32_t prog_number, lList **opts_s
  */
 void opt_list_append_opts_from_script_path(const uint32_t prog_number,
                                            ocs::tom::ListPtr<ocs::tom::SPA> &opts_scriptfile, const char *path,
-                                           lList **answer_list, const ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline,
-                                           char **envp) {
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           const ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline, char **envp) {
    DENTER(TOP_LAYER);
    char *scriptpath = nullptr;
 
@@ -473,7 +488,9 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
       prefix = default_prefix;
    }
 
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
 
    // parse_script_file() has no typed form yet; it appends to (or creates) the raw list
    lList *scriptfile_lp = opts_scriptfile.release();
@@ -495,7 +512,8 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
  * @param envp Environment
  */
 void opt_list_append_opts_from_script_path(const uint32_t prog_number, lList **opts_scriptfile, const char *path,
-                                           lList **answer_list, const lList *opts_cmdline, char **envp) {
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *opts_cmdline,
+                                           char **envp) {
    ocs::tom::ListPtr<ocs::tom::SPA> scriptfile(*opts_scriptfile);
    opt_list_append_opts_from_script_path(prog_number, scriptfile, path, answer_list,
                                          ocs::tom::ConstList<ocs::tom::SPA>(opts_cmdline), envp);
@@ -613,7 +631,7 @@ bool opt_list_is_X_true(const ocs::tom::ConstList<ocs::tom::SPA> opts, const cha
  * @param opts the parsed options (`SPA_Type`)
  * @param alpp receives `STATUS_ESEMANTIC` when both were given
  */
-void opt_list_verify_scope(const ocs::tom::ConstList<ocs::tom::SPA> opts, lList **alpp) {
+void opt_list_verify_scope(const ocs::tom::ConstList<ocs::tom::SPA> opts, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    if (opts.find_first<SPA_switch_val>("-masterq") && opts.find_first<SPA_switch_val>("-scope")) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_EITHERSCOPEORMASTERX);
@@ -653,7 +671,7 @@ const char *get_root_file_path(dstring *absolut_filename, const char *cell_root,
  *
  * @note MT-NOTE: get_user_home() is MT safe
  */
-bool get_user_home(dstring *home_dir, const char *user, lList **answer_list) {
+bool get_user_home(dstring *home_dir, const char *user, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    if (home_dir == nullptr) {

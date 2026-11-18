@@ -45,91 +45,94 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "spool/berkeleydb/sge_bdb_types.h"
 #include <cinttypes>
+#include "sgeobj/sge_answer.h"
 
 bool
-spool_berkeleydb_check_version(lList **answer_list);
+spool_berkeleydb_check_version(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool 
-spool_berkeleydb_create_environment(lList **answer_list, 
+spool_berkeleydb_create_environment(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                     bdb_info info);
 
 bool 
-spool_berkeleydb_open_database(lList **answer_list, bdb_info info, 
+spool_berkeleydb_open_database(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info, 
                                bool create);
 
 bool 
-spool_berkeleydb_check_reopen_database(lList **answer_list, 
+spool_berkeleydb_check_reopen_database(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                        bdb_info info);
 
 bool 
-spool_berkeleydb_close_database(lList **answer_list, bdb_info info);
+spool_berkeleydb_close_database(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info);
 
 bool
-spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info);
+spool_berkeleydb_start_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info);
 
 bool
-spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info, 
+spool_berkeleydb_end_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info, 
                                  bool commit);
 
 bool 
-spool_berkeleydb_trigger(lList **answer_list, bdb_info info, 
+spool_berkeleydb_trigger(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info, 
                          uint64_t trigger, uint64_t *next_trigger);
 
 bool 
-spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
+spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                            const bdb_database database,
                            lList **list, const lDescr *descr,
                            const char *key);
 bool 
-spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
+spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                               const bdb_database database,
                               const lListElem *object, const char *key);
 
-bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_write_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                               const bdb_database database,
                               const char *key, const char *str);
                               
 bool
-spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::PET> object,
+spool_berkeleydb_write_pe_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
+                               ocs::tom::ConstElement<ocs::tom::PET> object,
                                uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id);
 bool
-spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::JAT> object,
-                               uint32_t job_id, uint32_t ja_task_id);
+spool_berkeleydb_write_ja_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
+                               ocs::tom::ConstElement<ocs::tom::JAT> object, uint32_t job_id, uint32_t ja_task_id);
 bool
-spool_berkeleydb_write_job(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::JB> object,
+spool_berkeleydb_write_job(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
+                           ocs::tom::ConstElement<ocs::tom::JB> object,
                            uint32_t job_id, uint32_t ja_task_id, bool only_job);
 bool
-spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info, ocs::tom::ConstElement<ocs::tom::CQ> object,
-                              const char *key);
+spool_berkeleydb_write_cqueue(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
+                              ocs::tom::ConstElement<ocs::tom::CQ> object, const char *key);
 
 bool
-spool_berkeleydb_delete_object(lList **answer_list, bdb_info info, 
+spool_berkeleydb_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info, 
                                const bdb_database database,
                                const char *key, bool sub_objects);
 bool
-spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
+spool_berkeleydb_delete_pe_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                 const char *key, bool sub_objects);
 bool
-spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
+spool_berkeleydb_delete_ja_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                 const char *key, bool sub_objects);
 bool
-spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
+spool_berkeleydb_delete_job(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                             const char *key, bool sub_objects);
 bool
-spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
+spool_berkeleydb_delete_cqueue(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                const char *key);
 
 bool
-spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
+spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                            const bdb_database database,
                            lList **list, const char *key);
 
 lListElem *
-spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
+spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                              const bdb_database database,
                              const char *key);
 
 char *
-spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
+spool_berkeleydb_read_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                              const bdb_database database,
                              const char *key);

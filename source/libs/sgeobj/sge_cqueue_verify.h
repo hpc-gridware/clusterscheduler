@@ -40,48 +40,55 @@
  */
 
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_answer.h"
 
-bool cqueue_verify_calendar(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_calendar(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_ckpt_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_ckpt_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_consumable_config_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_consumable_config_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                           lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_initial_state(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_initial_state(ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_pe_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_pe_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_priority(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_priority(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_processors(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_processors(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_project_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_project_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_shell_start_mode(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_shell_start_mode(ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_shell(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_shell(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_subordinate_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_subordinate_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_user_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_user_list(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_job_slots(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_job_slots(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_memory_value(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_memory_value(ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 lListElem *attr_elem, const lList *master_list);
 
-bool cqueue_verify_time_value(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_time_value(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               lListElem *attr_elem, const lList *master_list);

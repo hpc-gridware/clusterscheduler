@@ -62,6 +62,7 @@
 
 #include "ocs_JsonReportingFileWriter.h"
 #include "ocs_JsonUtil.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Write the accounting record of a job as a JSON acct record to the reporting file
@@ -77,7 +78,7 @@ namespace ocs {
     * @param intermediate whether this is an interim record for a job that is still running
     * @return true on success
     */
-   bool JsonReportingFileWriter::create_acct_record(lList **answer_list,
+   bool JsonReportingFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                     const ocs::tom::Element<ocs::tom::JR> job_report,
                                                     const ocs::tom::Element<ocs::tom::JB> job,
                                                     const ocs::tom::Element<ocs::tom::JAT> ja_task, bool intermediate) {
@@ -147,7 +148,7 @@ namespace ocs {
     * @see ReportingFileWriter::create_online_usage_records()
     */
    bool
-   JsonReportingFileWriter::create_online_usage_record(lList **answer_list,
+   JsonReportingFileWriter::create_online_usage_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                        const ocs::tom::ConstElement<ocs::tom::JR> job_report,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                        const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
@@ -267,7 +268,8 @@ namespace ocs {
     * @return true on success
     */
    bool
-   JsonReportingFileWriter::create_new_job_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   JsonReportingFileWriter::create_new_job_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                  const ocs::tom::ConstElement<ocs::tom::JB> job) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -322,7 +324,8 @@ namespace ocs {
     * @return true on success
     */
    bool
-   JsonReportingFileWriter::create_job_log(lList **answer_list, uint64_t event_time, job_log_t type, const char *user,
+   JsonReportingFileWriter::create_job_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t event_time,
+                                           job_log_t type, const char *user,
                                            const char *host, const ocs::tom::ConstElement<ocs::tom::JR> job_report,
                                            const ocs::tom::ConstElement<ocs::tom::JB> job,
                                            const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
@@ -414,8 +417,8 @@ namespace ocs {
     * @return true on success
     */
    bool
-   JsonReportingFileWriter::create_host_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::EH> host,
-                                               uint64_t report_time) {
+   JsonReportingFileWriter::create_host_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                               const ocs::tom::ConstElement<ocs::tom::EH> host, uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -455,7 +458,7 @@ namespace ocs {
     * @return true on success
     */
    bool
-   JsonReportingFileWriter::create_host_consumable_record(lList **answer_list,
+   JsonReportingFileWriter::create_host_consumable_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                           const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                           const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                           uint64_t report_time) {
@@ -495,7 +498,8 @@ namespace ocs {
     * @return true on success, false for an empty handle
     */
    bool
-   JsonReportingFileWriter::create_queue_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::QU> queue,
+   JsonReportingFileWriter::create_queue_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                const ocs::tom::ConstElement<ocs::tom::QU> queue,
                                                 uint64_t report_time) {
       DENTER(TOP_LAYER);
 
@@ -540,7 +544,7 @@ namespace ocs {
     * @return true on success, false for an empty host or queue handle
     */
    bool
-   JsonReportingFileWriter::create_queue_consumable_record(lList **answer_list,
+   JsonReportingFileWriter::create_queue_consumable_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                            const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                            const ocs::tom::ConstElement<ocs::tom::QU> queue,
                                                            const ocs::tom::ConstElement<ocs::tom::JB> job,
@@ -588,8 +592,8 @@ namespace ocs {
     * @return true on success, false for an empty handle
     */
    bool
-   JsonReportingFileWriter::create_new_ar_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
-                                                 uint64_t report_time) {
+   JsonReportingFileWriter::create_new_ar_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -622,7 +626,7 @@ namespace ocs {
     * @return true on success, false for an empty handle
     */
    bool
-   JsonReportingFileWriter::create_ar_attribute_record(lList **answer_list,
+   JsonReportingFileWriter::create_ar_attribute_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                        const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                        uint64_t report_time) {
       DENTER(TOP_LAYER);
@@ -674,7 +678,8 @@ namespace ocs {
     * @return true on success, false for an empty handle
     */
    bool
-   JsonReportingFileWriter::create_ar_log_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+   JsonReportingFileWriter::create_ar_log_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                  ar_state_event_t event, const char *ar_description,
                                                  uint64_t report_time) {
       DENTER(TOP_LAYER);
@@ -716,8 +721,8 @@ namespace ocs {
     * @return true on success, false for an empty handle or an unparsable queue instance name
     */
    bool
-   JsonReportingFileWriter::create_ar_acct_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
-                                                  uint64_t report_time) {
+   JsonReportingFileWriter::create_ar_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                  const ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time) {
       DENTER(TOP_LAYER);
       bool ret = true;
 

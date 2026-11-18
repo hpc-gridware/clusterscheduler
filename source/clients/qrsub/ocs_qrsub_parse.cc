@@ -78,7 +78,7 @@
  * @param ar the advance reservation the options are written into
  * @return true on success; false with `alpp` filled otherwise
  */
-bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, lList **alpp,
+bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                      const ocs::tom::Element<ocs::tom::AR> ar) {
    DENTER(TOP_LAYER);
 

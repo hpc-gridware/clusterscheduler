@@ -84,13 +84,13 @@ namespace ocs {
             name_list->emplace_back<ST_name>(name.c_str());
          }
 
-         lList *alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
          dstring out = DSTRING_INIT;
          spool_json_write_name_list_ex(&alp, *name_list, ST_name, OBJECT_FILTER_TYPE_NAME, &out);
          const char *text = sge_dstring_get_string(&out);
          os << ((text != nullptr) ? text : "");
          sge_dstring_free(&out);
-         lFreeList(&alp);
+         alp.reset();
       }
 
    private:

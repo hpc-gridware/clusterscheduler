@@ -45,6 +45,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/sge_answer.h"
 
 /// The queue type names, indexed by their `QU_qtype` bit; see sge_qinstance_type.cc
 extern const char *queue_types[];
@@ -65,7 +66,8 @@ bool qinstance_print_qtype_to_dstring(ocs::tom::ConstElement<ocs::tom::QU> this_
 OCS_TRANSITIONAL bool qinstance_print_qtype_to_dstring(const lListElem *this_elem, dstring *string,
                                                        bool only_first_char);
 
-bool qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
-                                       const char *value);
-OCS_TRANSITIONAL bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
+bool qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU> this_elem,
+                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);
+OCS_TRANSITIONAL bool qinstance_parse_qtype_from_string(lListElem *this_elem,
+                                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                         const char *value);

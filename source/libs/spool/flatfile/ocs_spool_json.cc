@@ -78,23 +78,23 @@ ocs_json_value_format ocs_json_value_format_opt = OCS_JSON_VALUES_COMPACT;
 
 /* forward declarations (mutually recursive sublist handling) */
 static bool
-spool_json_write_object_members(lList **answer_list, const lListElem *object,
+spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                 rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                 const spooling_field *fields);
 static bool
-spool_json_write_list_array(lList **answer_list, const lList *list,
+spool_json_write_list_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                             const spooling_field *fields);
 static bool
-spool_json_write_object_braced(lList **answer_list, const lListElem *object,
+spool_json_write_object_braced(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                const spooling_field *fields);
 static bool
-spool_json_write_positional_array(lList **answer_list, const lList *list,
+spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                                   const spooling_field *fields,
                                   rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer);
 static bool
-spool_json_write_list_value(lList **answer_list, const lList *sub_list,
+spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *sub_list,
                             const spooling_field *sub_fields,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer);
 static lUlong
@@ -724,7 +724,7 @@ spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_positional_array(lList **answer_list, const lList *list,
+spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                                   const spooling_field *fields,
                                   rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer) {
    int nfields = 0;
@@ -772,7 +772,7 @@ spool_json_write_positional_array(lList **answer_list, const lList *list,
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_list_value(lList **answer_list, const lList *sub_list,
+spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *sub_list,
                             const spooling_field *sub_fields,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer) {
    if (sub_list == nullptr || lGetNumberOfElem(sub_list) == 0) {
@@ -978,7 +978,7 @@ spool_json_write_perm_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wri
  * @return true on success (@p out set), false if @p v is not a JSON array
  */
 static bool
-spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, lList **answer_list) {
+spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    sge_dstring_clear(out);
    if (!v.IsArray()) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1025,7 +1025,7 @@ spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, lList *
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_object_members(lList **answer_list, const lListElem *object,
+spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                 rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                 const spooling_field *fields) {
    DENTER(JSON_LAYER);
@@ -1150,7 +1150,7 @@ spool_json_write_object_members(lList **answer_list, const lListElem *object,
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_object_braced(lList **answer_list, const lListElem *object,
+spool_json_write_object_braced(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                const spooling_field *fields) {
    writer.StartObject();
@@ -1169,7 +1169,7 @@ spool_json_write_object_braced(lList **answer_list, const lListElem *object,
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_list_array(lList **answer_list, const lList *list,
+spool_json_write_list_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                             const spooling_field *fields) {
    DENTER(JSON_LAYER);
@@ -1195,7 +1195,7 @@ spool_json_write_list_array(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_object(lList **answer_list, const lListElem *object,
+bool spool_json_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                              const spooling_field *fields, dstring *out) {
    return spool_json_write_object_ex(answer_list, object, fields, nullptr, out);
 }
@@ -1217,7 +1217,7 @@ bool spool_json_write_object(lList **answer_list, const lListElem *object,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_object_ex(lList **answer_list, const lListElem *object,
+bool spool_json_write_object_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                 const spooling_field *fields,
                                 const ocs_json_derived_list *derived, dstring *out) {
    DENTER(JSON_LAYER);
@@ -1263,7 +1263,7 @@ bool spool_json_write_object_ex(lList **answer_list, const lListElem *object,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_list(lList **answer_list, const lList *list,
+bool spool_json_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                            const spooling_field *fields, dstring *out) {
    DENTER(JSON_LAYER);
 
@@ -1307,7 +1307,7 @@ bool spool_json_write_list(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_typed_object(lList **answer_list, const lListElem *object,
+bool spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                                    const spooling_field *fields, const char *type_name, dstring *out) {
    DENTER(JSON_LAYER);
 
@@ -1345,7 +1345,7 @@ bool spool_json_write_typed_object(lList **answer_list, const lListElem *object,
  * @param out            dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_typed_list_ex(lList **answer_list, const lList *list,
+bool spool_json_write_typed_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                                     const spooling_field *fields, const char *id_name,
                                     const char *envelope_name, dstring *out) {
    DENTER(JSON_LAYER);
@@ -1380,7 +1380,7 @@ bool spool_json_write_typed_list_ex(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_typed_list(lList **answer_list, const lList *list,
+bool spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
                                  const spooling_field *fields, const char *type_name, dstring *out) {
    return spool_json_write_typed_list_ex(answer_list, list, fields, type_name, type_name, out);
 }
@@ -1398,7 +1398,8 @@ bool spool_json_write_typed_list(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success
  */
-bool spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, dstring *out) {
+bool spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list, int keynm,
+                                dstring *out) {
    return spool_json_write_name_list_ex(answer_list, list, keynm, nullptr, out);
 }
 
@@ -1418,7 +1419,7 @@ bool spool_json_write_name_list(lList **answer_list, const lList *list, int keyn
  * @param out          dstring the JSON document is appended to
  * @return true on success
  */
-bool spool_json_write_name_list_ex(lList **answer_list, const lList *list, int keynm,
+bool spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list, int keynm,
                                    const char *type_name, dstring *out) {
    DENTER(JSON_LAYER);
 
@@ -1656,7 +1657,7 @@ spool_json_set_positional_name(lListElem *ep, int pos, int type, const rapidjson
 /* forward */
 static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
                                         const spooling_field *fields, int fields_out[],
-                                        lList **answer_list, const rapidjson::Value &obj);
+                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const rapidjson::Value &obj);
 
 /**
  * @brief Build a sublist from a JSON array, mirroring the writer's shape decisions.
@@ -1671,7 +1672,7 @@ static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
  * @return the populated list, or nullptr for an empty/unreadable array
  */
 static lList *
-spool_json_read_sublist(int nm, const spooling_field *fields, lList **answer_list,
+spool_json_read_sublist(int nm, const spooling_field *fields, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const rapidjson::Value &arr) {
    const lDescr *sub_descr = object_get_subtype(nm);
    if (sub_descr == nullptr || fields == nullptr || !arr.IsArray() || arr.Size() == 0) {
@@ -1846,7 +1847,7 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
 static bool
 spool_json_populate_members(lListElem *ep, const lDescr *descr,
                             const spooling_field *fields, int fields_out[],
-                            lList **answer_list, const rapidjson::Value &obj) {
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const rapidjson::Value &obj) {
    const spooling_field *flatten = nullptr;
    for (int i = 0; fields[i].nm != NoName; i++) {
       const int nm = fields[i].nm;
@@ -1938,7 +1939,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
  * @return the parsed element, or nullptr on a JSON syntax error (answer_list set)
  */
 lListElem *
-spool_json_read_object(lList **answer_list, const lDescr *descr,
+spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                        const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
 
@@ -1972,7 +1973,7 @@ spool_json_read_object(lList **answer_list, const lDescr *descr,
  * @return the parsed list, or nullptr on a JSON syntax error (answer_list set)
  */
 lList *
-spool_json_read_list(lList **answer_list, const lDescr *descr,
+spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                      const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
 

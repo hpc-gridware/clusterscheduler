@@ -251,7 +251,8 @@ static ScThreadInit sc_obj{};
  *
  * @see `sconf_eval_set_profiling`
  */
-typedef bool (*setParam_func)(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
+typedef bool (*setParam_func)(ocs::tom::List<ocs::tom::PARA> param_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                              const char *param);
 
 /**
  * specifies an array of valid parameters and its validation functions
@@ -304,16 +305,20 @@ static ocs::tom::ConstList<ocs::tom::CE> get_job_load_adjustments();
 static const char* get_load_formula();
 
 static bool
-sconf_eval_set_profiling(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
+sconf_eval_set_profiling(ocs::tom::List<ocs::tom::PARA> param_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                         const char *param);
 
 static bool
-sconf_eval_set_monitoring(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
+sconf_eval_set_monitoring(ocs::tom::List<ocs::tom::PARA> param_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          const char *param);
 
 static bool
-sconf_eval_set_duration_offset(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
+sconf_eval_set_duration_offset(ocs::tom::List<ocs::tom::PARA> param_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                               const char *param);
 
 static bool
-sconf_eval_set_pe_range_alg(ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list, const char *param);
+sconf_eval_set_pe_range_alg(ocs::tom::List<ocs::tom::PARA> param_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const char *param);
 
 static char policy_hierarchy_enum2char(policy_type_t value);
 
@@ -420,7 +425,7 @@ static ocs::tom::Element<ocs::tom::SC> ocs_sconf_elem_rw() {
  *
  * @note MT-NOTE: is MT-safe, uses LOCK_SCHED_CONF(write)
  */
-bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, lList **answer_list) {
+bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -468,7 +473,7 @@ bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, lList **answer_li
  *
  * @return as sconf_set_config()
  */
-bool sconf_set_config(lList **config, lList **answer_list) {
+bool sconf_set_config(lList **config, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (config == nullptr) {
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       ocs_sconf_reset_cache();
@@ -492,7 +497,8 @@ bool sconf_set_config(lList **config, lList **answer_list) {
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_is_valid_load_formula(lList **answer_list, const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
+bool sconf_is_valid_load_formula(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1998,7 +2004,7 @@ void sconf_reset_new_config() {
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read/write)
  */
-bool sconf_validate_config_(lList **answer_list) {
+bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    char tmp_buffer[1024], tmp_error[1024];
@@ -2110,7 +2116,8 @@ bool sconf_validate_config_(lList **answer_list) {
       char buf[4096];
       char* key = nullptr;
       int ikey = 0;
-      lList *rlp=nullptr, *alp=nullptr;
+      lList *rlp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       const char *schedd_info = ocs::tom::get<SC_schedd_job_info>(ocs_sconf_elem());
 
       if (schedd_info == nullptr){
@@ -2140,7 +2147,7 @@ bool sconf_validate_config_(lList **answer_list) {
             range_list_parse_from_string(&rlp, &alp, key, false, false,
                                          INF_NOT_ALLOWED);
             if (rlp == nullptr) {
-               lFreeList(&alp);
+               alp.reset();
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDJOBLIST);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
@@ -2304,7 +2311,7 @@ bool sconf_validate_config_(lList **answer_list) {
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
  */
-bool sconf_validate_config(lList **answer_list, const ocs::tom::List<ocs::tom::SC> config) {
+bool sconf_validate_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::List<ocs::tom::SC> config) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -2542,8 +2549,8 @@ static char policy_hierarchy_enum2char(policy_type_t value) {
  *
  * @return true when the setting was understood
  */
-static bool sconf_eval_set_profiling(const ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list,
-                                     const char *param) {
+static bool sconf_eval_set_profiling(const ocs::tom::List<ocs::tom::PARA> param_list,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *param) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -2589,8 +2596,8 @@ static bool sconf_eval_set_profiling(const ocs::tom::List<ocs::tom::PARA> param_
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
  */
-static bool sconf_eval_set_monitoring(const ocs::tom::List<ocs::tom::PARA> param_list, lList **answer_list,
-                                      const char *param) {
+static bool sconf_eval_set_monitoring(const ocs::tom::List<ocs::tom::PARA> param_list,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *param) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -2640,7 +2647,8 @@ static bool sconf_eval_set_monitoring(const ocs::tom::List<ocs::tom::PARA> param
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
  */
 static bool sconf_eval_set_duration_offset([[maybe_unused]] const ocs::tom::List<ocs::tom::PARA> param_list,
-                                           [[maybe_unused]] lList **answer_list, const char *param) {
+                                           [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           const char *param) {
    DENTER(TOP_LAYER);
 
    uint32_t uval;
@@ -2668,7 +2676,8 @@ static bool sconf_eval_set_duration_offset([[maybe_unused]] const ocs::tom::List
  * @note MT-NOTE: sconf_eval_set_pe_range_alg() is not MT safe, caller needs LOCK_SCHED_CONF(write)
  */
 static bool sconf_eval_set_pe_range_alg([[maybe_unused]] const ocs::tom::List<ocs::tom::PARA> param_list,
-                                        [[maybe_unused]] lList **answer_list, const char *param) {
+                                        [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                        const char *param) {
    DENTER(TOP_LAYER);
 
    char *s;

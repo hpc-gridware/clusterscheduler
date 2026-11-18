@@ -57,8 +57,8 @@
  * @return true when the switch was found
  */
 static bool
-parse_multi_stringlist_into(const ocs::tom::List<ocs::tom::SPA> switch_list, const char *opt, lList **answer_list,
-                            ocs::tom::ListPtr<ocs::tom::ST> &list) {
+parse_multi_stringlist_into(const ocs::tom::List<ocs::tom::SPA> switch_list, const char *opt,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::ST> &list) {
    DENTER(TOP_LAYER);
    const bool found = parse_multi_stringlist<ST_name>(switch_list, opt, answer_list, list);
    DRETURN(found);
@@ -111,7 +111,7 @@ ocs::QQuotaParameterClient::show_usage(FILE *fp) {
  */
 bool
 ocs::QQuotaParameterClient::parse_cmdline_and_env(char *argv[], ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
-                                                  lList **answer_list) {
+                                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    if (argv == nullptr) {
@@ -179,7 +179,7 @@ ocs::QQuotaParameterClient::parse_cmdline_and_env(char *argv[], ocs::tom::ListPt
  */
 bool
 ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
-                                                    lList **answer_list) {
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    if (!sge_is_file(file)) {
@@ -206,7 +206,8 @@ ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, ocs::tom::
  * @return true when the switches are usable
  */
 bool
-ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA> switch_list, lList **answer_list) {
+ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA> switch_list,
+                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    uint32_t helpflag = 0;
    char *argstr = nullptr;
@@ -305,7 +306,8 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
  * @param envp the environment
  * @return true when the parameters are usable
  */
-bool ocs::QQuotaParameterClient::parse_parameters(lList **answer_list, char **argv, char **envp) {
+bool ocs::QQuotaParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **argv,
+                                                  char **envp) {
    DENTER(TOP_LAYER);
    ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
 

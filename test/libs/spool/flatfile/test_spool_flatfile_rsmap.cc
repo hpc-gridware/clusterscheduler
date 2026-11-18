@@ -45,6 +45,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_unistd.h"
+#include "sgeobj/sge_answer.h"
 
 namespace {
 
@@ -83,7 +84,7 @@ make_rsmap_ce(const char *name) {
 /* read_CE_stringval_host expects a mutable buffer (sge_strtok_r modifies it),
  * so hand it a strdup and free after. */
 static int
-run_reader(lListElem *ce, const char *input, lList **alp) {
+run_reader(lListElem *ce, const char *input, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    char *buf = strdup(input);
    int rc = read_CE_stringval_host(ce, CE_stringval, buf, alp);
    free(buf);
@@ -95,11 +96,11 @@ run_reader(lListElem *ce, const char *input, lList **alp) {
 static std::string
 run_writer(const lListElem *ce) {
    dstring buffer = DSTRING_INIT;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    write_CE_stringval_host(ce, CE_stringval, &buffer, &alp);
    std::string out{sge_dstring_get_string(&buffer) == nullptr ? "" : sge_dstring_get_string(&buffer)};
    sge_dstring_free(&buffer);
-   lFreeList(&alp);
+   alp.reset();
    return out;
 }
 
@@ -108,15 +109,15 @@ run_writer(const lListElem *ce) {
 static std::string
 round_trip(const char *input) {
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    if (run_reader(ce, input, &alp) != 1) {
       lFreeElem(&ce);
-      lFreeList(&alp);
+      alp.reset();
       return "<reader rejected>";
    }
    std::string out = run_writer(ce);
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return out;
 }
 
@@ -168,7 +169,7 @@ static int
 test_bare_ids() {
    T_START("bare_ids");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(A B)", &alp) == 1);
    T_ASSERT(alp == nullptr);
@@ -185,7 +186,7 @@ test_bare_ids() {
    T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r_b)) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -193,7 +194,7 @@ static int
 test_range_only() {
    T_START("range_only");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "3(1-3)", &alp) == 1);
    T_ASSERT(alp == nullptr);
@@ -206,7 +207,7 @@ test_range_only() {
    T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "3")) != nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -214,7 +215,7 @@ static int
 test_mixed_range_and_names() {
    T_START("mixed_range_and_names");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "4(A B 1-2)", &alp) == 1);
    T_ASSERT(alp == nullptr);
@@ -228,7 +229,7 @@ test_mixed_range_and_names() {
    T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "2")) != nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -246,7 +247,7 @@ static int
 test_single_characteristic() {
    T_START("single_characteristic");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 1);
    T_ASSERT(alp == nullptr);
@@ -263,7 +264,7 @@ test_single_characteristic() {
    T_ASSERT(ocs::tom::get<CE_valtype>(dev) == 0);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -271,7 +272,7 @@ static int
 test_multiple_characteristics() {
    T_START("multiple_characteristics");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce,
                        "1(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc])",
@@ -293,7 +294,7 @@ test_multiple_characteristics() {
    T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r)) == 3);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -301,7 +302,7 @@ static int
 test_mixed_with_and_without_characteristics() {
    T_START("mixed_with_and_without_characteristics");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce,
                        "3(gpu0[device=/dev/nvidia0] gpu1 gpu2[device=/dev/nvidia2,memory=40G])",
@@ -321,7 +322,7 @@ test_mixed_with_and_without_characteristics() {
    T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r2)) == 2);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -333,7 +334,7 @@ static int
 test_reject_unclosed_bracket() {
    T_START("reject_unclosed_bracket");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0)", &alp) == 0);
    T_ASSERT(alp != nullptr);
@@ -342,7 +343,7 @@ test_reject_unclosed_bracket() {
    T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -350,14 +351,14 @@ static int
 test_reject_missing_eq() {
    T_START("reject_missing_eq");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "1(gpu0[device])", &alp) == 0);
    T_ASSERT(alp != nullptr);
    T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -365,14 +366,14 @@ static int
 test_reject_characteristics_on_range() {
    T_START("reject_characteristics_on_range");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(1-2[device=/dev/nvidia0])", &alp) == 0);
    T_ASSERT(alp != nullptr);
    T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -384,7 +385,7 @@ static int
 test_characteristics_on_numeric_id() {
    T_START("characteristics_on_numeric_id");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(0[device=/dev/nvidia0] 1[device=/dev/nvidia1])", &alp) == 1);
    T_ASSERT(lGetNumberOfElem(ocs::tom::get<CE_resource_map_list>(ce)) == 2);
@@ -396,7 +397,7 @@ test_characteristics_on_numeric_id() {
                    "/dev/nvidia0") == 0);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
 
    /* a range of one written as a range is still a single instance */
    ce = make_rsmap_ce("gpu");
@@ -404,7 +405,7 @@ test_characteristics_on_numeric_id() {
    T_ASSERT((static_cast<const lListElem *>(ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(ce, "3"))) != nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -419,7 +420,7 @@ static int
 test_duplicate_bare() {
    T_START("duplicate_bare");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(gpu0 gpu0)", &alp) == 1);
    T_ASSERT(alp == nullptr);
@@ -432,7 +433,7 @@ test_duplicate_bare() {
    T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r)) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -445,7 +446,7 @@ static int
 test_duplicate_matching_characteristics() {
    T_START("duplicate_matching_characteristics");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0[memory=80G])", &alp) == 1);
    T_ASSERT(alp == nullptr);
@@ -461,7 +462,7 @@ test_duplicate_matching_characteristics() {
    T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -471,7 +472,7 @@ static int
 test_duplicate_matching_reordered() {
    T_START("duplicate_matching_reordered");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(gpu0[a=1,b=2] gpu0[b=2,a=1])", &alp) == 1);
    T_ASSERT(alp == nullptr);
@@ -481,7 +482,7 @@ test_duplicate_matching_reordered() {
    T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r)) == 2);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -490,14 +491,14 @@ static int
 test_reject_duplicate_conflict() {
    T_START("reject_duplicate_conflict");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0[memory=40G])", &alp) == 0);
    T_ASSERT(alp != nullptr);
    T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -509,7 +510,7 @@ static int
 test_whitespace_inside_brackets() {
    T_START("whitespace_inside_brackets");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /* Simulate what the flatfile scanner delivers after resolving a
     * '\' + newline continuation:
@@ -530,7 +531,7 @@ test_whitespace_inside_brackets() {
    T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -539,14 +540,14 @@ static int
 test_reject_duplicate_bare_vs_annotated() {
    T_START("reject_duplicate_bare_vs_annotated");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0)", &alp) == 0);
    T_ASSERT(alp != nullptr);
    T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 
@@ -565,14 +566,14 @@ static int
 test_characteristics_rejected_in_ocs() {
    T_START("characteristics_rejected_in_ocs");
    lListElem *ce = make_rsmap_ce("gpu");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 0);
    T_ASSERT(alp != nullptr);
    T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
 
    /* the plain grammar keeps working in OCS */
    ce = make_rsmap_ce("gpu");
@@ -582,7 +583,7 @@ test_characteristics_rejected_in_ocs() {
    T_ASSERT(lGetNumberOfElem(lGetList(ce, CE_resource_map_list)) == 2);
 
    lFreeElem(&ce);
-   lFreeList(&alp);
+   alp.reset();
    return 0;
 }
 #endif /* !WITH_EXTENSIONS */

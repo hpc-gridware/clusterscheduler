@@ -36,14 +36,14 @@ ocs::AnswerException::Holder::~Holder() {
 
 /**
  * @brief Find the message of an answer list
- * @param answer_list an AN_Type list, may be nullptr
+ * @param answer_list an answer list, may be an empty handle
  * @return the text of the last entry of quality error or critical, or a
  *         fixed text if there is none
  */
 std::string
-ocs::AnswerException::get_last_error_message(const lList *answer_list) {
+ocs::AnswerException::get_last_error_message(const ocs::tom::ConstList<ocs::tom::AN> answer_list) {
    DENTER(TOP_LAYER);
-   for (auto answer = ocs::tom::ConstList<ocs::tom::AN>(answer_list).back(); answer; answer = answer.prev()) {
+   for (auto answer = answer_list.back(); answer; answer = answer.prev()) {
       if (answer_has_quality(answer, ANSWER_QUALITY_ERROR) || answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
          const char *message = ocs::tom::get<AN_text>(answer);
          if (message != nullptr) {
@@ -54,15 +54,15 @@ ocs::AnswerException::get_last_error_message(const lList *answer_list) {
    DRETURN("No error details available");
 }
 
-ocs::AnswerException::AnswerException(lList **answer_list)
-   : RuntimeException(get_last_error_message(*answer_list)), m_holder(std::make_shared<Holder>(*answer_list)) {
+ocs::AnswerException::AnswerException(ocs::tom::ListPtr<ocs::tom::AN> *answer_list)
+   : RuntimeException(get_last_error_message(*answer_list)),
+     m_holder(std::make_shared<Holder>(answer_list->release())) {
    // the holder owns the list from here on
-   *answer_list = nullptr;
 }
 
-lList *
+ocs::tom::ListPtr<ocs::tom::AN>
 ocs::AnswerException::take_answer_list() noexcept {
-   return m_holder->answer_list.exchange(nullptr);
+   return ocs::tom::ListPtr<ocs::tom::AN>::from_typed(m_holder->answer_list.exchange(nullptr));
 }
 
 ocs::AnswerException::~AnswerException() = default;

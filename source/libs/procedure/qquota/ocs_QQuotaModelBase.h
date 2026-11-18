@@ -33,6 +33,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "ocs_QQuotaParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Base model for qquota that holds the CULL lists needed for resource quota rendering.
@@ -120,9 +121,10 @@ namespace ocs {
 
       static lCondition *get_host_where(ocs::tom::ConstList<ocs::tom::ST> host_list);
 
-      virtual bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> host_list);
+      virtual bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                              ocs::tom::ConstList<ocs::tom::ST> host_list);
    public:
-      virtual bool make_snapshot(lList **answer_list, QQuotaParameter &parameter);
+      virtual bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QQuotaParameter &parameter);
 #pragma endregion
 
 #pragma region Constructors/Destructors

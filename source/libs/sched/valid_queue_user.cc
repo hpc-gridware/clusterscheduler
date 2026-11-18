@@ -74,8 +74,8 @@
  *
  * @note MT-NOTE: sge_ar_have_users_access() is MT safe
  */
-bool sge_ar_have_users_access(lList **alpp, const ocs::tom::ConstElement<ocs::tom::AR> ar, const char *name,
-                              const ocs::tom::ConstList<ocs::tom::US> acl_list,
+bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                              const char *name, const ocs::tom::ConstList<ocs::tom::US> acl_list,
                               const ocs::tom::ConstList<ocs::tom::US> xacl_list,
                               const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
@@ -127,8 +127,8 @@ bool sge_ar_have_users_access(lList **alpp, const ocs::tom::ConstElement<ocs::to
  * @param[in]  master_userset_list master userset list (`US_Type`)
  * @return as sge_ar_have_users_access()
  */
-bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list,
-                              const lList *xacl_list, const lList *master_userset_list) {
+bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ar, const char *name,
+                              const lList *acl_list, const lList *xacl_list, const lList *master_userset_list) {
    return sge_ar_have_users_access(alpp, ocs::tom::ConstElement<ocs::tom::AR>(ar), name,
                                    ocs::tom::ConstList<ocs::tom::US>(acl_list),
                                    ocs::tom::ConstList<ocs::tom::US>(xacl_list),

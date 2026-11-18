@@ -406,7 +406,7 @@ bool ocs::gdi::ClientBase::sge_get_com_error_flag(uint32_t progid, sge_gdi_store
  * @param[out] answer_list receives the reason on failure
  * @return CL_RETVAL_OK on success
  */
-int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
+int ocs::gdi::ClientBase::prepare_enroll(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    cl_host_resolve_method_t resolve_method = CL_SHORT;
@@ -729,7 +729,8 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
  * @return #AE_OK, or #AE_ALREADY_SETUP when this thread was already set up
  */
 ocs::gdi::ErrorValue
-ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, lList **answer_list, bool is_qmaster_intern_client) {
+ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            bool is_qmaster_intern_client) {
    DENTER(TOP_LAYER);
 
    lInit(nmv);
@@ -772,8 +773,8 @@ ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, lList *
  * @return #AE_OK on success
  */
 ocs::gdi::ErrorValue
-ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list,
-                                       const char *display_name) {
+ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_id,
+                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *display_name) {
    DENTER(TOP_LAYER);
 
    if (gdi_data_is_setup()) {
@@ -1016,7 +1017,7 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
                // (see CS-2258 and gdi_setup_tls_config()).
                bool client_cert_pending = gdi_data_get_tls_client_cert_pending();
                if (master_host_changed || certificate_updated || client_cert_pending) {
-                  lList *answer_list = nullptr;
+                  ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                   int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
                   if (cl_ret != CL_RETVAL_OK) {
                      answer_list_output(&answer_list);
@@ -1030,7 +1031,7 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
                         DRETURN(nullptr);
                      }
                   } else {
-                     lFreeList(&answer_list);
+                     answer_list.reset();
                   }
                }
             }
@@ -1050,7 +1051,7 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
  * @return CL_RETVAL_OK when qmaster answered
  */
 int
-ocs::gdi::ClientBase::gdi_is_alive(lList **answer_list) {
+ocs::gdi::ClientBase::gdi_is_alive(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);

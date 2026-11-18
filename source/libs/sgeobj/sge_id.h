@@ -44,6 +44,7 @@
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/cull/sge_id_ID_L.h"
+#include "sgeobj/sge_answer.h"
 
-bool id_list_build_from_str_list(lList **id_list, lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> str_list,
-                                 uint32_t transition, uint32_t option);
+bool id_list_build_from_str_list(lList **id_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 ocs::tom::ConstList<ocs::tom::ST> str_list, uint32_t transition, uint32_t option);

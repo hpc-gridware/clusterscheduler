@@ -47,21 +47,23 @@
 #include "sgeobj/tom/ocs_tom_PN.h"
 
 #include "sgeobj/cull/sge_path_alias_PA_L.h"
+#include "sgeobj/sge_answer.h"
 
 /// The cluster wide path alias file, below the cell directory
 #define PATH_ALIAS_COMMON_FILE    "common/sge_aliases"
 /// The per user path alias file, in the submitting user's home directory
 #define PATH_ALIAS_HOME_FILE      ".sge_aliases"
 
-int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list, lList **alpp, const char *cell_root,
-                               const char *user, const char *host);
-OCS_TRANSITIONAL int path_alias_list_initialize(lList **path_alias_list, lList **alpp, const char *cell_root,
-                                                const char *user, const char *host);
+int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                               const char *cell_root, const char *user, const char *host);
+OCS_TRANSITIONAL int path_alias_list_initialize(lList **path_alias_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                                const char *cell_root, const char *user, const char *host);
 
-int path_alias_list_get_path(ocs::tom::ConstList<ocs::tom::PA> path_aliases, lList **alpp,
+int path_alias_list_get_path(ocs::tom::ConstList<ocs::tom::PA> path_aliases, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                              const char *inpath, const char *myhost,
                              dstring *outpath);
 
-bool path_verify(const char *path, lList **answer_list, const char *name, bool absolute);
-bool path_list_verify(ocs::tom::ConstList<ocs::tom::PN> path_list, lList **answer_list, const char *name);
-bool path_alias_verify(ocs::tom::ConstList<ocs::tom::PA> path_aliases, lList **answer_list);
+bool path_verify(const char *path, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name, bool absolute);
+bool path_list_verify(ocs::tom::ConstList<ocs::tom::PN> path_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                      const char *name);
+bool path_alias_verify(ocs::tom::ConstList<ocs::tom::PA> path_aliases, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

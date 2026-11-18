@@ -48,6 +48,7 @@
 #include "sgeobj/cull/sge_userset_US_L.h"
 #include "sgeobj/cull/sge_userset_UE_L.h"
 #include "sgeobj/cull/sge_userset_JC_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @name Userset types, stored in `US_type`
@@ -86,27 +87,30 @@
 /// The userset type names, indexed by their `US_type` bit
 extern const char *userset_types[];
 
-ocs::tom::ElementPtr<ocs::tom::US> userset_create(lList **answer_list, const char *name);
+ocs::tom::ElementPtr<ocs::tom::US> userset_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name);
 
-int userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US> object, lList **answer_list);
-OCS_TRANSITIONAL int userset_validate_entries(const lListElem *object, lList **answer_list);
+int userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US> object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+OCS_TRANSITIONAL int userset_validate_entries(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-int userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US> acl_list, lList **alpp,
+int userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                    ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL int userset_list_validate_acl_list(const lList *acl_list, lList **alpp,
+OCS_TRANSITIONAL int userset_list_validate_acl_list(const lList *acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                                     const lList *master_userset_list);
 
-int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp,
+int userset_list_validate_access(const lList *acl_list, int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp,
+OCS_TRANSITIONAL int userset_list_validate_access(const lList *acl_list, int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                                   const lList *master_userset_list);
 
-const char *userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US> userset, lList **answer_list,
-                                    dstring *buffer);
-OCS_TRANSITIONAL const char *userset_get_type_string(const lListElem *userset, lList **answer_list, dstring *buffer);
+const char *userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US> userset,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
+OCS_TRANSITIONAL const char *userset_get_type_string(const lListElem *userset,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
 
-bool userset_set_type_string(ocs::tom::Element<ocs::tom::US> userset, lList **answer_list, const char *value);
-OCS_TRANSITIONAL bool userset_set_type_string(lListElem *userset, lList **answer_list, const char *value);
+bool userset_set_type_string(ocs::tom::Element<ocs::tom::US> userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                             const char *value);
+OCS_TRANSITIONAL bool userset_set_type_string(lListElem *userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                              const char *value);
 
 const char *userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US> this_list, dstring *string);
 OCS_TRANSITIONAL const char *userset_list_append_to_dstring(const lList *this_list, dstring *string);

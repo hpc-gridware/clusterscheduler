@@ -95,14 +95,14 @@ static void
 spool_berkeleydb_error_close(bdb_info info);
 
 static void
-spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info,
+spool_berkeleydb_handle_bdb_error(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                   int bdb_errno);
 
 static bool
-spool_berkeleydb_clear_log(lList **answer_list, bdb_info info);
+spool_berkeleydb_clear_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info);
 
 static bool
-spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info);
+spool_berkeleydb_checkpoint(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info);
 
 /**
  * @brief Check version of shared libs
@@ -118,7 +118,7 @@ spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info);
  *
  * @note MT-NOTE: spool_berkeleydb_check_version() is MT safe
  */
-bool spool_berkeleydb_check_version(lList **answer_list) {
+bool spool_berkeleydb_check_version(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
@@ -159,7 +159,7 @@ bool spool_berkeleydb_check_version(lList **answer_list) {
  *       document has not been a parameter for a long time.
  * @note MT-NOTE: spool_berkeleydb_create_environment() is not MT safe
  */
-bool spool_berkeleydb_create_environment(lList **answer_list,
+bool spool_berkeleydb_create_environment(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                          bdb_info info) {
    DENTER(BDB_LAYER);
 
@@ -345,7 +345,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
  *               `spoolinit init` passes true
  * @return true on success, else false
  */
-bool spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_open_database(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                     bool create) {
    DENTER(BDB_LAYER);
 
@@ -460,7 +460,7 @@ bool spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
  * @param info the handle
  * @return true on success, else false
  */
-bool spool_berkeleydb_close_database(lList **answer_list, bdb_info info) {
+bool spool_berkeleydb_close_database(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
@@ -552,7 +552,7 @@ bool spool_berkeleydb_close_database(lList **answer_list, bdb_info info) {
  *
  * @see #spool_berkeleydb_end_transaction
  */
-bool spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info) {
+bool spool_berkeleydb_start_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
@@ -611,7 +611,7 @@ bool spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info) {
  * @param commit true to commit, false to roll back
  * @return true on success, else false
  */
-bool spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_end_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                       bool commit) {
    DENTER(BDB_LAYER);
 
@@ -686,7 +686,7 @@ bool spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
  *                     #BERKELEYDB_MIN_INTERVAL away
  * @return true on success, else false
  */
-bool spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_trigger(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                               uint64_t trigger, uint64_t *next_trigger) {
    DENTER(BDB_LAYER);
 
@@ -724,7 +724,7 @@ bool spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
  * @param key the key prefix, e.g. the object type name
  * @return true on success, else false
  */
-bool spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                 const bdb_database database,
                                 lList **list, const lDescr *descr,
                                 const char *key) {
@@ -864,7 +864,7 @@ bool spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
  * @param key the full key to write it under
  * @return true on success, else false
  */
-bool spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                    const bdb_database database,
                                    const lListElem *object, const char *key) {
    DENTER(BDB_LAYER);
@@ -968,7 +968,7 @@ bool spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
  * @param str the string
  * @return true on success, else false
  */
-bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_write_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                    const bdb_database database,
                                    const char *key, const char *str) {
    DENTER(BDB_LAYER);
@@ -1036,7 +1036,7 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
  * @param pe_task_id the task's own id
  * @return true on success, else false
  */
-bool spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_write_pe_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                     const ocs::tom::ConstElement<ocs::tom::PET> object,
                                     const uint32_t job_id, const uint32_t ja_task_id,
                                     const char *pe_task_id) {
@@ -1073,7 +1073,7 @@ bool spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
  * @param ja_task_id the task's own number
  * @return true on success, else false
  */
-bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_write_ja_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                     const ocs::tom::ConstElement<ocs::tom::JAT> object,
                                     const uint32_t job_id, const uint32_t ja_task_id) {
    bool ret = true;
@@ -1117,7 +1117,7 @@ bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
  * @param only_job write the job alone and leave `ja_task_id` alone
  * @return true on success, else false
  */
-bool spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_write_job(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                 const ocs::tom::ConstElement<ocs::tom::JB> object,
                                 const uint32_t job_id, const uint32_t ja_task_id, const bool only_job) {
    bool ret = true;
@@ -1164,7 +1164,7 @@ bool spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
  * @param key the queue name
  * @return true on success, else false
  */
-bool spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_write_cqueue(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                    const ocs::tom::ConstElement<ocs::tom::CQ> object, const char *key) {
    bool ret = true;
    dstring dbkey_dstring;
@@ -1208,7 +1208,7 @@ bool spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
  *
  * @note MT-NOTE: spool_berkeleydb_delete_object() is MT safe
  */
-bool spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                     const bdb_database database,
                                     const char *key, bool sub_objects) {
    DENTER(BDB_LAYER);
@@ -1365,7 +1365,7 @@ bool spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object
  */
-bool spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_delete_pe_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                      const char *key, bool sub_objects) {
    bool ret = true;
 
@@ -1403,7 +1403,7 @@ bool spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object, #spool_berkeleydb_delete_pe_task
  */
-bool spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_delete_ja_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                      const char *key, bool sub_objects) {
    bool ret = true;
 
@@ -1445,7 +1445,7 @@ bool spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object, #spool_berkeleydb_delete_ja_task
  */
-bool spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_delete_job(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                  const char *key, bool sub_objects) {
    bool ret = true;
 
@@ -1482,7 +1482,7 @@ bool spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object
  */
-bool spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_delete_cqueue(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                     const char *key) {
    bool ret = true;
 
@@ -1540,7 +1540,7 @@ spool_berkeleydb_error_close(bdb_info info) {
 }
 
 static void
-spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info,
+spool_berkeleydb_handle_bdb_error(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                   int bdb_errno) {
    if (bdb_errno == DB_RUNRECOVERY) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -1557,7 +1557,7 @@ spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info,
  * @param info the handle
  * @return true if the databases are usable afterwards, else false
  */
-bool spool_berkeleydb_check_reopen_database(lList **answer_list,
+bool spool_berkeleydb_check_reopen_database(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                             bdb_info info) {
    DENTER(BDB_LAYER);
 
@@ -1591,7 +1591,7 @@ bool spool_berkeleydb_check_reopen_database(lList **answer_list,
  * @param key the key prefix
  * @return true on success, else false
  */
-bool spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
+bool spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                 const bdb_database database,
                                 lList **list, const char *key) {
    DENTER(BDB_LAYER);
@@ -1686,7 +1686,7 @@ bool spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
  * @return the object, or nullptr if it is not there or cannot be parsed
  */
 lListElem *
-spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
+spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                              const bdb_database database,
                              const char *key) {
    DENTER(BDB_LAYER);
@@ -1774,7 +1774,7 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
  * @return the string, which the caller frees, or nullptr
  */
 char *
-spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
+spool_berkeleydb_read_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                              const bdb_database database,
                              const char *key) {
    DENTER(BDB_LAYER);
@@ -1822,7 +1822,7 @@ spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
 }
 
 static bool
-spool_berkeleydb_clear_log(lList **answer_list, bdb_info info) {
+spool_berkeleydb_clear_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
@@ -1885,7 +1885,7 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info) {
 }
 
 static bool
-spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info) {
+spool_berkeleydb_checkpoint(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info) {
    DENTER(BDB_LAYER);
 
    bool ret = true;

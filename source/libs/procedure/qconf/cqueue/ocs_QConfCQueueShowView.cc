@@ -79,7 +79,7 @@ cqueue_text(const char *s) noexcept {
  */
 static int
 write_QU_consumable_config_list(const lListElem *ep, const int nm, dstring *buffer,
-                                [[maybe_unused]] lList **alp) {
+                                [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
    const ocs::tom::ConstList<ocs::tom::CE> lp(lGetList(ep, nm));
    bool first = true;
@@ -153,7 +153,7 @@ insert_custom_complex_values_writer(spooling_field *fields) {
  * @return true on success; false with @p answer_list filled otherwise
  */
 bool
-ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, lList **answer_list,
+ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                               const ocs::tom::ConstList<ocs::tom::QU> qi_list) {
    DENTER(TOP_LAYER);
 
@@ -198,7 +198,7 @@ ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, lList **answer_
  * @return true on success; false with @p answer_list filled otherwise
  */
 bool
-ocs::QConfCQueueShowView::write_cqueue(std::ostream &os, lList **answer_list,
+ocs::QConfCQueueShowView::write_cqueue(std::ostream &os, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                        const ocs::tom::ConstElement<ocs::tom::CQ> cqueue) {
    DENTER(TOP_LAYER);
 
@@ -226,7 +226,7 @@ ocs::QConfCQueueShowView::write_cqueue(std::ostream &os, lList **answer_list,
  * @return true on success; false with @p answer_list filled otherwise
  */
 bool
-ocs::QConfCQueueShowView::show_queues(std::ostream &os, lList **answer_list,
+ocs::QConfCQueueShowView::show_queues(std::ostream &os, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                       const QConfModelBase &model) {
    DENTER(TOP_LAYER);
 

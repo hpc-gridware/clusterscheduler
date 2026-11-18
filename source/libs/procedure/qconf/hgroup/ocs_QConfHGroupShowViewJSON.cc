@@ -32,6 +32,7 @@
 #include "spool/flatfile/ocs_spool_json.h"
 
 #include "ocs_QConfHGroupShowViewJSON.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Write one host group as JSON, with its member classes split out
  *
@@ -80,7 +81,7 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
    bool owned = false;
    spooling_field *fields = provider(SP_FORM_JSON, more_info_, &owned);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    dstring document = DSTRING_INIT;
    if (spool_json_write_object_ex(&alp, ep, fields, derived, &document)) {
       const char *text = sge_dstring_get_string(&document);
@@ -92,7 +93,7 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
    if (owned) {
       sge_free(&fields);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN_VOID;
 }

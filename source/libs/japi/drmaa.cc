@@ -155,17 +155,17 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
                                                 ocs::tom::ConstList<ocs::tom::NSV> vattrs, int is_bulk,
                                                 dstring *diag);
 static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag);
-static char *drmaa_get_home_directory(const char *username, lList **answer_list);
-static char *drmaa_expand_wd_path(const char *username, const char *path, lList **answer_list);
+static char *drmaa_get_home_directory(const char *username, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+static char *drmaa_expand_wd_path(const char *username, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 static int drmaa_set_bulk_range(ocs::tom::ListPtr<ocs::tom::SPA> &opts, int start, int end, int step,
-                                lList **alp);
+                                ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *diag);
 static drmaa_attr_names_t *drmaa_fill_supported_vector_attributes(dstring *diag);
 static int drmaa_parse_contact_string(const char *contact, char **session);
 
 /** @brief Printf like callback used to report the usage of a job category */
 typedef void (*print_func_t)(const char *fmt, ...);
-static char** sge_get_qtask_args(char *taskname, lList **answer_list);
+static char** sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 /**
  * The non-vector job template attributes this implementation supports. Every
@@ -232,7 +232,7 @@ static int mode_verbose = 0;
  *
  * @note Not MT safe: it replaces #task_config, the caller holds qtask_mutex.
  */
-static int init_qtask_config(lList **alpp, print_func_t ostream) {
+static int init_qtask_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, print_func_t ostream) {
    DENTER(TOP_LAYER);
 
    struct passwd *pwd;
@@ -406,7 +406,7 @@ Error:
  *       init_qtask_config() function or accessing the
  *       task_config global variable.
  */
-static char **sge_get_qtask_args(char *taskname, lList **answer_list) {
+static char **sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    int num_args = 0;
@@ -2258,7 +2258,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
    ocs::tom::ConstElement<ocs::tom::VA> ep;
    int drmaa_errno;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::SPA> opts_drmaa;
    ocs::tom::ListPtr<ocs::tom::SPA> opts_native;
    ocs::tom::ListPtr<ocs::tom::SPA> opts_default;
@@ -2315,10 +2315,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);
-      lFreeList(&alp);
+      alp.reset();
       DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
    }
-   lFreeList(&alp);
+   alp.reset();
 
    /*
     * append the native spec switches to the list if they exist
@@ -2348,7 +2348,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
-            lFreeList(&alp);
+            alp.reset();
             DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
          }
       }
@@ -2363,7 +2363,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
       sge_free(&args);
    }
 
-   lFreeList(&alp);
+   alp.reset();
 
    if ((drmaa_errno = opt_list_append_opts_from_drmaa_attr(opts_drmaa,
                            ocs::tom::ConstList<ocs::tom::VA>(drmaa_jt->strings),
@@ -2404,17 +2404,17 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
          if (path == nullptr) {
             answer_list_to_dstring(alp, diag);
-            lFreeList(&alp);
+            alp.reset();
             DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
          }
-         lFreeList(&alp);
+         alp.reset();
       }
       /* -cwd could also theoretically appear in opts_default, but since I
        * control what goes into opts_default, I know it isn't. */
       else if ((!(opt_list_has_X(*opts_native, "-cwd"))) &&
                (!(opt_list_has_X(*opts_defaults, "-cwd")))){
          path = drmaa_get_home_directory(username, &alp);
-         lFreeList(&alp);
+         alp.reset();
       }
 
       lList *scriptfile_out = nullptr;
@@ -2432,10 +2432,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
-         lFreeList(&alp);
+         alp.reset();
          DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
-      lFreeList(&alp);
+      alp.reset();
 
       /* Note that we parsed the script file for command line options so that
        * we can reneg on it later if we need to. */
@@ -2490,10 +2490,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
-         lFreeList(&alp);
+         alp.reset();
          DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
-      lFreeList(&alp);
+      alp.reset();
 
       sge_free(&job_cat);
 
@@ -2508,10 +2508,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
-            lFreeList(&alp);
+            alp.reset();
             DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
          }
-         lFreeList(&alp);
+         alp.reset();
 
          /* Now, since the job category can affect whether the script files
           * get parsed for options, we have to step back a bit and make sure
@@ -2548,10 +2548,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
                if (answer_list_has_error(&alp)) {
                   answer_list_to_dstring(alp, diag);
-                  lFreeList(&alp);
+                  alp.reset();
                   DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
                }
-               lFreeList(&alp);
+               alp.reset();
             }
          }
       } else {
@@ -2572,10 +2572,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
    if (is_bulk) {
       if (drmaa_set_bulk_range(opts_all, start, end, step, &alp) != 0) {
          answer_list_to_dstring(alp, diag);
-         lFreeList(&alp);
+         alp.reset();
          DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
       }
-      lFreeList(&alp);
+      alp.reset();
    }
 
    uint32_t sync_option = SYNC_NO;
@@ -2589,10 +2589,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);
-      lFreeList(&alp);
+      alp.reset();
       DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
    }
-   lFreeList(&alp);
+   alp.reset();
    job_set_command_line(*jt, "drmaa");
 
    DRETURN(Result(DRMAA_ERRNO_SUCCESS, std::move(jt)));
@@ -3473,7 +3473,8 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
  *
  * @note MT-NOTE: drmaa_expand_wd_path() is MT safe except on FreeBSD
  */
-static char *drmaa_expand_wd_path(const char *username, const char *path, lList **answer_list) {
+static char *drmaa_expand_wd_path(const char *username, const char *path,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    char *file = nullptr;
@@ -3529,7 +3530,7 @@ static char *drmaa_expand_wd_path(const char *username, const char *path, lList 
  *
  * @note MT-NOTE: drmaa_get_home_directory() is MT safe except on FreeBSD
  */
-static char *drmaa_get_home_directory(const char *username, lList **answer_list) {
+static char *drmaa_get_home_directory(const char *username, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    struct passwd *pwd = nullptr;
@@ -3575,7 +3576,7 @@ static char *drmaa_get_home_directory(const char *username, lList **answer_list)
  * @note MT-NOTE: drmaa_set_bulk_range() is MT safe
  */
 static int drmaa_set_bulk_range(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const int start, const int end,
-                                const int step, lList **alp) {
+                                const int step, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
    char str[128];

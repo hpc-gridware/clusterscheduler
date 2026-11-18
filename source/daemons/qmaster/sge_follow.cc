@@ -711,7 +711,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
 
          /* now send events and spool the job */
          {
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
             const char *session = ocs::tom::get<JB_session>(jep);
 
             /* spool job and ja_task in one transaction, send job mod event */
@@ -1129,7 +1129,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
 
          /* if ja task doesn't exist yet, create it */
          if (!jatp) {
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
             jatp = job_create_task(jep, nullptr, task_number);
 
@@ -1247,7 +1247,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
             ocs::tom::set<JAT_state>(jatp, state);
 
             {
-               lList *answer_list = nullptr;
+               ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                const char *session = ocs::tom::get<JB_session>(jep);
                sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, task_number, nullptr, nullptr, session,
                                jep, jatp, nullptr, true, true, gdi_session);
@@ -1298,7 +1298,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
             CLEARBIT(JSUSPENDED_ON_THRESHOLD, state);
             ocs::tom::set<JAT_state>(jatp, state);
             {
-               lList *answer_list = nullptr;
+               ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                const char *session = ocs::tom::get<JB_session>(jep);
                sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, task_number, nullptr, nullptr, session,
                                jep, jatp, nullptr, true, true, gdi_session);

@@ -33,6 +33,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Fetch the lists from the master lists of qmaster
  *
@@ -44,7 +45,7 @@
  * @return true
  */
 bool
-ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter) {
+ocs::QStatModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    is_manager_ = manop_is_manager(packet);
    const lList *master_job_list = *DataStore::get_master_list(SGE_TYPE_JOB);

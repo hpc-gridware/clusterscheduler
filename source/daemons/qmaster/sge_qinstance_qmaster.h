@@ -48,9 +48,11 @@
 #include "sgeobj/tom/ocs_tom_CQU.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/sge_answer.h"
 
 bool
-qinstance_change_state_on_command(ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+qinstance_change_state_on_command(ocs::tom::Element<ocs::tom::QU> this_elem,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                   uint32_t transition, bool force_transition, const char *user, const char *host,
                                   bool is_operator, bool is_owner, monitoring_t *monitor, uint64_t gdi_session);
 
@@ -60,7 +62,7 @@ qinstance_change_state_on_calendar(ocs::tom::Element<ocs::tom::QU> this_elem,
                                    uint64_t gdi_session);
 
 bool
-qinstance_modify_attribute(ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+qinstance_modify_attribute(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                            int attribute_name, int cqueue_attibute_name, int sub_host_name, int sub_value_name,
                            int subsub_key, const char **matching_host_or_group, const char **matching_group,
@@ -113,5 +115,7 @@ bool
 sge_qmaster_qinstance_set_initial_state(ocs::tom::Element<ocs::tom::QU> this_elem, uint64_t gdi_session);
 
 bool
-qinstance_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list);
-OCS_TRANSITIONAL bool qinstance_reinit_consumable_actual_list(lListElem *this_elem, lList **answer_list);
+qinstance_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::QU> this_elem,
+                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+OCS_TRANSITIONAL bool qinstance_reinit_consumable_actual_list(lListElem *this_elem,
+                                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

@@ -301,7 +301,7 @@ bool double_print_to_dstring(double value, dstring *string, ocs::CEntry::Type ty
  * @return true on success, false on error (NULL/empty/too long/malformed)
  */
 bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
-                                       lList **answer_list, const char *string) {
+                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
    DENTER(TOP_LAYER);
 
    int i;
@@ -536,7 +536,7 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
  * @return true when the text was understood
  */
 bool ulong_parse_centry_type_from_string(uint32_t *this_ulong,
-                                         lList **answer_list, const char *string) {
+                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -568,7 +568,7 @@ bool ulong_parse_centry_type_from_string(uint32_t *this_ulong,
  * @return true when the text was understood
  */
 bool ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
-                                          lList **answer_list, const char *string) {
+                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -597,7 +597,7 @@ bool ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
  * @return true when the text was understood
  */
 bool ulong_parse_from_string(uint32_t *this_ulong,
-                             lList **answer_list, const char *string) {
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -626,7 +626,7 @@ bool ulong_parse_from_string(uint32_t *this_ulong,
  *         "delimitor" is nullptr or no value was read
  */
 std::pair<bool, ocs::tom::ListPtr<ocs::tom::ULNG>>
-ulong_list_parse_from_string(lList **answer_list, const char *string, const char *delimitor) {
+ulong_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string, const char *delimitor) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -668,7 +668,7 @@ ulong_list_parse_from_string(lList **answer_list, const char *string, const char
  * @param priority_str the text to parse
  * @return true when the text was understood
  */
-bool ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str) {
+bool ulong_parse_priority(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int *valp, const char *priority_str) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -693,7 +693,7 @@ bool ulong_parse_priority(lList **answer_list, int *valp, const char *priority_s
  * @param bamount_str the text to parse
  * @return true when the text was understood
  */
-bool ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_str) {
+bool ulong_parse_binding_amount(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int *valp, const char *bamount_str) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -720,7 +720,7 @@ bool ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamo
  * @return true when the text was understood
  */
 bool ulong_parse_value_from_string(uint32_t *this_ulong,
-                                   lList **answer_list, const char *string) {
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -746,7 +746,8 @@ bool ulong_parse_value_from_string(uint32_t *this_ulong,
  * @param task_concurrency_str the text to parse
  * @return true when the text was understood
  */
-bool ulong_parse_task_concurrency(lList **answer_list, int *valp, const char *task_concurrency_str) {
+bool ulong_parse_task_concurrency(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int *valp,
+                                  const char *task_concurrency_str) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

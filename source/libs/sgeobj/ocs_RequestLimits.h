@@ -32,6 +32,7 @@
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Packet.h"
+#include "sgeobj/sge_answer.h"
 
 using namespace std;
 
@@ -50,8 +51,8 @@ namespace ocs {
    public:
       static RequestLimits &get_instance();
 
-      bool parse(const std::string &request_limit_string, lList **answer_list);
-      bool parse_from_config(lList **answer_list);
-      bool will_exceed_limit(const gdi::Packet *packet, lList **answer_list);
+      bool parse(const std::string &request_limit_string, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      bool parse_from_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      bool will_exceed_limit(const gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
    };
 }

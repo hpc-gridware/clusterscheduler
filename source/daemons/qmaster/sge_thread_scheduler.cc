@@ -282,7 +282,7 @@ sge_scheduler_wait_for_event(sge_evc_class_t *evc, ocs::tom::ListPtr<ocs::tom::E
  * @see #sge_scheduler_initialize, #sge_scheduler_cleanup_thread, #sge_scheduler_terminate, #sge_scheduler_main
  */
 void
-sge_scheduler_initialize(lList **answer_list) {
+sge_scheduler_initialize(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    // initialize the condition variable used in waiting for events triggering a scheduling run
@@ -419,7 +419,7 @@ sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
  * @see #sge_scheduler_initialize, #sge_scheduler_cleanup_thread, #sge_scheduler_terminate, #sge_scheduler_main
  */
 void
-sge_scheduler_terminate(lList **answer_list) {
+sge_scheduler_terminate(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
@@ -480,7 +480,7 @@ sge_scheduler_main(void *arg) {
    uint64_t next_prof_output = 0;
    monitoring_t monitor;
    sge_evc_class_t *evc = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    sge_where_what_t where_what;
 #ifdef WITH_GPERF
    sge_gperf_per_thread_t gperf_data;
@@ -610,7 +610,7 @@ sge_scheduler_main(void *arg) {
 
       /* if we actually got events, start the scheduling run and further event processing */
       if (handled_events) {
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          // the snapshot owns its copies; they are freed at the end of the run, see below
          scheduler_all_data_t copy{};
          // the mirror's lists; the cluster queue, job, host and pe lists hold the reduced elements of the subscription

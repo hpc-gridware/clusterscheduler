@@ -51,25 +51,29 @@
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_LR.h"
+#include "sgeobj/sge_answer.h"
 
 void
 sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::EH> hep, lList **alpp,
+sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::EH> hep,
+             ocs::tom::ListPtr<ocs::tom::AN> *alpp,
              char *ruser, char *rhost, ocs::gdi::Target target, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
              monitoring_t *monitor);
-OCS_TRANSITIONAL int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp,
+OCS_TRANSITIONAL int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                   char *ruser, char *rhost, ocs::gdi::Target target, const lList *master_hgroup_list,
                                   monitoring_t *monitor);
 
 int
-host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object);
+host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+           gdi_object_t *object);
 
 int
-host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_host, lListElem *ep,
-         int add, const char *ruser, const char *rhost, gdi_object_t *object,
+host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_host,
+         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
@@ -100,9 +104,10 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
 sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::EH> hep,
-                    lList **alpp, char *ruser, char *rhost, ocs::gdi::Target target, monitoring_t *monitor,
-                    bool is_restart);
-OCS_TRANSITIONAL int sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp,
+                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost, ocs::gdi::Target target,
+                    monitoring_t *monitor, bool is_restart);
+OCS_TRANSITIONAL int sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                          char *ruser, char *rhost, ocs::gdi::Target target, monitoring_t *monitor,
                                          bool is_restart);
 
@@ -114,7 +119,8 @@ host_unheard_timeout(ocs::tom::Element<ocs::tom::EH> hep);
 
 bool
 host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstList<ocs::tom::EH> this_list,
-                           lList **answer_list, ocs::tom::ConstList<ocs::tom::HR> href_list, monitoring_t *monitor);
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstList<ocs::tom::HR> href_list,
+                           monitoring_t *monitor);
 
 void
 host_diff_projects(ocs::tom::ConstElement<ocs::tom::EH> new_host, ocs::tom::ConstElement<ocs::tom::EH> old,

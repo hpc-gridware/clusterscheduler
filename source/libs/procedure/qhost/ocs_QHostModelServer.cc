@@ -35,6 +35,7 @@
 #include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostModelBase.h"
 #include "ocs_QHostModelServer.h"
+#include "sgeobj/sge_answer.h"
 
 
 /** @brief Fetch the lists from the master lists of qmaster
@@ -48,7 +49,8 @@
  * @param show which of queues, jobs and resources were requested
  * @return true
  */
-bool ocs::QHostModelServer::fetch_data(lList **answer_list, const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+bool ocs::QHostModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       const ocs::tom::ConstList<ocs::tom::ST> hostname_list,
                                        const ocs::tom::ConstList<ocs::tom::ST> user_name_list, const uint32_t show) {
    DENTER(TOP_LAYER);
 

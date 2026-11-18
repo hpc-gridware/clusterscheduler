@@ -169,7 +169,7 @@ static void print_full(int length, const char* string);
 static void print_full_ulong(int length, uint32_t value);
 static void calc_column_sizes(ocs::tom::ConstElement<ocs::tom::QAJ> ep, sge_qacct_columns *column_size_data);
 static void showjob(sge_rusage_type *dusage);
-static bool get_qacct_lists(lList **alpp, ocs::tom::ListPtr<ocs::tom::CE> *ppcentries,
+static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::tom::CE> *ppcentries,
                             ocs::tom::ListPtr<ocs::tom::CQ> *ppqueues, ocs::tom::ListPtr<ocs::tom::EH> *ppexechosts,
                             ocs::tom::ListPtr<ocs::tom::HGRP> *hgrp_l);
 static void free_qacct_lists(ocs::tom::ListPtr<ocs::tom::CE> &ppcentries, ocs::tom::ListPtr<ocs::tom::CQ> &ppqueues,
@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
    uint32_t line = 0;
    const char *acct_file = nullptr;
    std::string filename{};
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    std::ifstream acct_file_stream;
    std::string acct_file_line{};
@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
                options.hostflag = 1;
             } else {
                char unique[CL_MAXHOSTNAMELEN + 1];
-               lList *answer_list = nullptr;
+               ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                ocs::gdi::ClientBase::prepare_enroll(&answer_list);
                if (getuniquehostname(argv[++ii], unique, 0) != CL_RETVAL_OK) {
                    /*
@@ -356,12 +356,12 @@ int main(int argc, char **argv) {
             DRETURN(1);
          } else {
             ocs::tom::ListPtr<ocs::tom::RN> task_id_ranges;
-            lList* answer = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer;
 
             ii++;
             range_list_parse_from_string(task_id_ranges, &answer, argv[ii], false, true, INF_NOT_ALLOWED);
             if (task_id_ranges == nullptr) {
-               lFreeList(&answer);
+               answer.reset();
                fprintf(stderr, MSG_HISTORY_INVALIDLISTOFTASKIDRANGES_S , argv[ii]);
                fprintf(stderr, "\n");
                qacct_usage(stderr);
@@ -1603,7 +1603,7 @@ static void showjob(sge_rusage_type *dusage) {
  *
  * @return true on success, false with @p alpp filled otherwise
  */
-static bool get_qacct_lists(lList **alpp, ocs::tom::ListPtr<ocs::tom::CE> *ppcentries,
+static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::tom::CE> *ppcentries,
                             ocs::tom::ListPtr<ocs::tom::CQ> *ppqueues, ocs::tom::ListPtr<ocs::tom::EH> *ppexechosts,
                             ocs::tom::ListPtr<ocs::tom::HGRP> *hgrp_l) {
    DENTER(TOP_LAYER);

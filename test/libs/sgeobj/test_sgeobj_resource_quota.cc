@@ -40,6 +40,7 @@
 #include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief The six filter parts of a resource quota rule, as written in the configuration
  *
@@ -547,7 +548,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
          auto rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
          auto rules = ocs::tom::ListPtr<ocs::tom::RQR>::create("");
          lListElem *filter = nullptr;
-         lList *alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
 
          ocs::tom::set<RQS_name>(rqs, "cs2687");
          auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
@@ -560,9 +561,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
          const bool ret = rqs_verify_attributes(*rqs, &alp, true, ocs::tom::ConstList<ocs::tom::CE>());
 
          CHECK(id++, t.label, ret == t.acceptable &&
-               (t.acceptable || lGetNumberOfElem(alp) > 0));
+               (t.acceptable || alp->size() > 0));
 
-         lFreeList(&alp);
+         alp.reset();
       }
    }
 

@@ -50,21 +50,24 @@
 #include "sgeobj/tom/ocs_tom_QR.h"
 
 #include "sgeobj/cull/sge_qref_QR_L.h"
+#include "sgeobj/sge_answer.h"
 
-bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_string);
+bool qref_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *qref_string);
 
-bool qref_list_resolve(ocs::tom::ConstList<ocs::tom::QR> src_qref_list, lList **answer_list, lList **qref_list,
-                       bool *found_something, ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+bool qref_list_resolve(ocs::tom::ConstList<ocs::tom::QR> src_qref_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       lList **qref_list, bool *found_something, ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
                        ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, bool resolve_cqueue, bool resolve_qdomain);
-OCS_TRANSITIONAL bool qref_list_resolve(const lList *src_qref_list, lList **answer_list, lList **qref_list,
+OCS_TRANSITIONAL bool qref_list_resolve(const lList *src_qref_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                        lList **qref_list,
                                         bool *found_something, const lList *cqueue_list, const lList *hgroup_list,
                                         bool resolve_cqueue, bool resolve_qdomain);
 
-bool qref_list_is_valid(ocs::tom::ConstList<ocs::tom::QR> this_list, lList **answer_list,
+bool qref_list_is_valid(ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                         ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                         ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
-OCS_TRANSITIONAL bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list,
+OCS_TRANSITIONAL bool qref_list_is_valid(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                         const lList *master_cqueue_list,
                                          const lList *master_hgroup_list, const lList *master_centry_list);
 
 std::string ocs_qref_resolved_name(const char *name);

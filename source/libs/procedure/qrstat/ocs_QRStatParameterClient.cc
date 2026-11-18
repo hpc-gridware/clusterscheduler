@@ -47,7 +47,8 @@ extern char **environ;
 
 
 bool
-ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp) {
+ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList **ppcmdline,
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -80,7 +81,8 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList *
  * @return true when the switches are usable
  */
 bool
-ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, const ocs::tom::List<ocs::tom::SPA> cmdline) {
+ocs::QRStatParameterClient::sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                             const ocs::tom::List<ocs::tom::SPA> cmdline) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -174,7 +176,8 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, const ocs::tom
  * @return true when the parameters are usable
  */
 bool
-ocs::QRStatParameterClient::parse_parameters(lList **answer_list, const char **argv, char **envp) {
+ocs::QRStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char **argv,
+                                             char **envp) {
    DENTER(TOP_LAYER);
    lList *pcmdline = nullptr;
 

@@ -339,6 +339,15 @@ namespace ocs::tom {
       constexpr ConstList(std::nullptr_t) noexcept {}
 
       /**
+       * @brief View the list an owning handle holds, as std::string_view views a std::string
+       * @param lp the owning handle; it must outlive this handle
+       */
+      ConstList(const ListPtr<T> &lp) noexcept;
+
+      /** @brief No view of a temporary owning handle: it would dangle */
+      ConstList(const ListPtr<T> &&) = delete;
+
+      /**
        * @brief Take a list whose type is known only at run time, and check it
        * @param lp the list, or nullptr for an empty handle
        * @throw FieldException if the list holds elements of another type
@@ -713,6 +722,15 @@ namespace ocs::tom {
 
       /** @brief An empty handle, from nullptr */
       constexpr List(std::nullptr_t) noexcept {}
+
+      /**
+       * @brief View the list an owning handle holds, as std::string_view views a std::string
+       * @param lp the owning handle; it must outlive this handle
+       */
+      List(const ListPtr<T> &lp) noexcept : ConstList<T>(lp) {}
+
+      /** @brief No view of a temporary owning handle: it would dangle */
+      List(const ListPtr<T> &&) = delete;
 
       /**
        * @brief Take a list whose type is known only at run time, and check it
@@ -1532,6 +1550,13 @@ namespace ocs::tom {
    private:
       lList *lp_ = nullptr;   ///< the list owned, or nullptr
    };
+
+   /**
+    * @brief View the list an owning handle holds
+    * @param lp the owning handle; it must outlive this handle
+    */
+   template <ObjectType T>
+   ConstList<T>::ConstList(const ListPtr<T> &lp) noexcept : lp_(lp.get().raw()) {}
 
 } // namespace ocs::tom
 

@@ -299,7 +299,7 @@ sge_job_exit(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom::Element<o
 
    if (queueep) {
       bool found_host = false;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       /*
       ** in this case we have to halt all queues on this host
       */

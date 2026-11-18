@@ -108,7 +108,7 @@ int main(int argc, const char **argv) {
    ocs::tom::ListPtr<ocs::tom::SPA> opts_scriptfile;
    ocs::tom::ListPtr<ocs::tom::SPA> opts_all;
    ocs::tom::ElementPtr<ocs::tom::JB> job;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    int exit_status = 0;
    int just_verify;
    int tmp_ret;
@@ -487,7 +487,7 @@ int main(int argc, const char **argv) {
 
 Error:
    sge_free(&jobid_string);
-   lFreeList(&alp);
+   alp.reset();
    opts_all.reset();
    job.reset();
 

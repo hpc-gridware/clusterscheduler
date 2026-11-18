@@ -33,6 +33,7 @@
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Target.h"
 #include "gdi/ocs_gdi_Mode.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs::gdi {
    /**
@@ -54,23 +55,23 @@ namespace ocs::gdi {
       /// Wait until the answer to a request sent asynchronously has arrived
       void wait();
 
-      OCS_TRANSITIONAL int request(lList **alpp, Mode mode, Target target, Command cmd,
+      OCS_TRANSITIONAL int request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, Command cmd,
                                    SubCommand, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
 
       template <ocs::tom::ObjectType T>
-      int request(lList **alpp, Mode mode, Target target, Command cmd, SubCommand sub_cmd,
+      int request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, Command cmd, SubCommand sub_cmd,
                   std::type_identity_t<ocs::tom::ConstList<T>> data, const ocs::tom::Where<T> &where,
                   const ocs::tom::What<T> &what);
 
       template <ocs::tom::ObjectType T>
-      int request(lList **alpp, Mode mode, Target target, Command cmd, SubCommand sub_cmd,
+      int request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, Command cmd, SubCommand sub_cmd,
                   ocs::tom::ListPtr<T> &&data);
 
-      OCS_TRANSITIONAL bool get_response(lList **alpp, Command cmd, SubCommand, Target target, int id,
-                                         lList **list) const;
+      OCS_TRANSITIONAL bool get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Command cmd, SubCommand, Target target,
+                                         int id, lList **list) const;
 
       template <ocs::tom::ObjectType T>
-      bool get_response(lList **alpp, Command cmd, SubCommand sub_cmd, Target target, int id,
+      bool get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Command cmd, SubCommand sub_cmd, Target target, int id,
                         ocs::tom::ListPtr<T> &list) const;
    };
 
@@ -91,7 +92,7 @@ namespace ocs::gdi {
     * @return the task id to pass to #get_response, or -1 if sending failed
     */
    template <ocs::tom::ObjectType T>
-   int Request::request(lList **alpp, const Mode mode, const Target target, const Command cmd,
+   int Request::request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Mode mode, const Target target, const Command cmd,
                         const SubCommand sub_cmd, const std::type_identity_t<ocs::tom::ConstList<T>> data,
                         const ocs::tom::Where<T> &where, const ocs::tom::What<T> &what) {
       // with do_copy the task copies the list, the condition and the selection and changes none of them
@@ -113,7 +114,7 @@ namespace ocs::gdi {
     * @return the task id to pass to #get_response, or -1 if sending failed
     */
    template <ocs::tom::ObjectType T>
-   int Request::request(lList **alpp, const Mode mode, const Target target, const Command cmd,
+   int Request::request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Mode mode, const Target target, const Command cmd,
                         const SubCommand sub_cmd, ocs::tom::ListPtr<T> &&data) {
       ocs::tom::ListPtr<T> taken = std::move(data);
       lList *lp = taken.release();
@@ -134,8 +135,8 @@ namespace ocs::gdi {
     * @return true when the task succeeded
     */
    template <ocs::tom::ObjectType T>
-   bool Request::get_response(lList **alpp, const Command cmd, const SubCommand sub_cmd, const Target target,
-                              const int id, ocs::tom::ListPtr<T> &list) const {
+   bool Request::get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Command cmd, const SubCommand sub_cmd,
+                              const Target target, const int id, ocs::tom::ListPtr<T> &list) const {
       lList *const before = list.get();
       lList *lp = before;
       const bool ret = get_response(alpp, cmd, sub_cmd, target, id, &lp);

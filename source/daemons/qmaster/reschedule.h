@@ -47,6 +47,7 @@
 #include "sge_qmaster_timed_event.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/sge_answer.h"
 
 /** @name What to do with the job report of a job that is being rescheduled
  *
@@ -71,12 +72,12 @@ skip_restarted_job(ocs::tom::Element<ocs::tom::EH> host, ocs::tom::ConstElement<
                    uint32_t job_number, uint32_t task_number);
 
 int
-reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *monitor,
+reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor,
                 bool is_manual, const char *caller_user, const char *caller_host, uint64_t gdi_session);
 
 int
 reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep, uint32_t force,
-               lList **answer, monitoring_t *monitor, bool is_manual,
+               ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor, bool is_manual,
                const char *caller_user, const char *caller_host, uint64_t gdi_session);
 
 ocs::tom::Element<ocs::tom::RU>

@@ -49,6 +49,7 @@
 #include "sgeobj/sge_event.h"
 
 #include "gdi/ocs_gdi_Request.h"
+#include "sgeobj/sge_answer.h"
 
 /** @defgroup evc Event Client Interface
  * @brief Connect to qmaster and receive object changes as events
@@ -106,11 +107,11 @@ struct sge_evc_class_str {
    local_t ec_local;       ///< event master entry points, used by internal clients only
 
    /// register at the event server, (re)connecting if necessary
-   bool (*ec_register)(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList **alpp);
+   bool (*ec_register)(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
    /// deregister at the event server, so it stops spooling events for this client
    bool (*ec_deregister)(sge_evc_class_t *thiz);
    /// send pending configuration changes to the event server
-   bool (*ec_commit)(sge_evc_class_t *thiz, lList **alpp);
+   bool (*ec_commit)(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
    /// acknowledge all events received so far
    bool (*ec_ack)(sge_evc_class_t *thiz);
    /// true once the client has been set up, i.e. its event client object exists
@@ -176,7 +177,7 @@ struct sge_evc_class_str {
    bool (*ec_need_new_registration)(sge_evc_class_t *thiz);
 
    /// hand newly produced events to an internal client and wake it up
-   int (*ec_signal)(sge_evc_class_t *thiz, lList **alpp, lList *event_list);
+   int (*ec_signal)(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list);
    /// release the busy state after the client finished processing a batch
    void (*ec_wait)(sge_evc_class_t *thiz);
 
@@ -195,10 +196,11 @@ struct sge_evc_class_str {
 /** @} */
 
 sge_evc_class_t *
-sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name);
+sge_evc_class_create(ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name);
 
 void
 sge_evc_class_destroy(sge_evc_class_t **pst);
 
 bool
-sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList **alpp, const char * name);
+sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                   const char * name);

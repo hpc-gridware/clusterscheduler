@@ -79,7 +79,7 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
    bool owned = false;
    spooling_field *fields = provider(format, more_info_, &owned);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    if (desc.read.write_as_list) {
       const char *filename = spool_flatfile_write_list(&alp, list, fields, desc.sfi,
                                                        SP_DEST_STREAM, format, nullptr, false,
@@ -101,7 +101,7 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
    if (owned) {
       sge_free(&fields);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN_VOID;
 }
@@ -150,7 +150,7 @@ ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
    bool owned = false;
    spooling_field *fields = provider(format, more_info_, &owned);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *filename = spool_flatfile_write_object(&alp, ep, desc.is_root, fields, desc.sfi,
                                                       SP_DEST_STREAM, format, nullptr, false,
                                                       desc.json_type_name, &os, line_breaks_);
@@ -158,7 +158,7 @@ ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
    if (owned) {
       sge_free(&fields);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN_VOID;
 }

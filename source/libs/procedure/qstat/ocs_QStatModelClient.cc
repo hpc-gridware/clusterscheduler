@@ -62,8 +62,8 @@
  */
 template <ocs::tom::ObjectType T>
 static ocs::tom::ListPtr<T>
-get_list_response(lList **answer_list, const ocs::gdi::Request &request, const ocs::gdi::Target target,
-                  const int id) {
+get_list_response(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::gdi::Request &request,
+                  const ocs::gdi::Target target, const int id) {
    DENTER(TOP_LAYER);
    lList *lp = nullptr;
    request.get_response(answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, target, id, &lp);
@@ -75,7 +75,7 @@ get_list_response(lList **answer_list, const ocs::gdi::Request &request, const o
  * @param parameter the parsed parameters
  * @return true when every list could be fetched
  */
-bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &parameter) {
+bool ocs::QStatModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    gdi::Request gdi_multi{};
@@ -314,7 +314,7 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
  * @param parameter the parsed parameters
  * @return true when the lists could be prepared
  */
-bool ocs::QStatModelClient::prepare_data(lList **answer_list, QStatParameter &parameter) {
+bool ocs::QStatModelClient::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // init the sconf module; it takes the list over on success and leaves it untouched otherwise

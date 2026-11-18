@@ -94,7 +94,7 @@
  * @note MT-NOTE: set_sec_cred() is MT safe (major assumptions!)
  */
 int set_sec_cred(const char *sge_root, const char *mastername, const ocs::tom::Element<ocs::tom::JB> job,
-                 lList **alpp) {
+                 ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    pid_t command_pid;

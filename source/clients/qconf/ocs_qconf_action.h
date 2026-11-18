@@ -30,6 +30,7 @@
 #include <ostream>
 
 #include "ocs_qconf_common.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Run one operation from qconf_action_table, if it is one
@@ -49,4 +50,5 @@
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_action(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp);
+qconf_run_action(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op,
+                 ocs::tom::ListPtr<ocs::tom::AN> *alpp);

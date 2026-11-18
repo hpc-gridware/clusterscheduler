@@ -401,9 +401,9 @@ static std::string build_mem_cat(const char *val) {
    ocs::tom::set<CE_valtype>(e, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
    ocs::tom::set<CE_consumable>(e, CONSUMABLE_NO);
    lAppendElem(*req, e);
-   lList *al = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> al;
    centry_fill_and_check(e, &al, false, false);
-   lFreeList(&al);
+   al.reset();
    dstring cat = DSTRING_INIT;
    sge_unparse_resource_list_dstring(&cat, *req, "-scope global -hard -l");
    std::string result(sge_dstring_get_string(&cat) ? sge_dstring_get_string(&cat) : "");

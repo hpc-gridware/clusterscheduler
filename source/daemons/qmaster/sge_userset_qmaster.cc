@@ -86,11 +86,12 @@
 
 static void sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *acl_name);
 
-static int verify_userset_deletion(lList **alpp, const char *userset_name);
+static int verify_userset_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *userset_name);
 
-static int dept_is_valid_defaultdepartment(ocs::tom::ConstElement<ocs::tom::US> dept, lList **answer_list);
+static int dept_is_valid_defaultdepartment(ocs::tom::ConstElement<ocs::tom::US> dept,
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-static int acl_is_valid_acl(ocs::tom::ConstElement<ocs::tom::US> acl, lList **answer_list);
+static int acl_is_valid_acl(ocs::tom::ConstElement<ocs::tom::US> acl, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 /** @brief Delete a user set from the master list
  *
@@ -110,7 +111,8 @@ static int acl_is_valid_acl(ocs::tom::ConstElement<ocs::tom::US> acl, lList **an
  */
 int
 sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::US> ep,
-                lList **alpp, const ocs::tom::List<ocs::tom::US> userset_list, const char *ruser, const char *rhost) {
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::List<ocs::tom::US> userset_list,
+                const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
@@ -178,8 +180,8 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
  * @return STATUS_OK on success
  */
 int
-sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list,
-                char *ruser, char *rhost) {
+sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                lList **userset_list, char *ruser, char *rhost) {
    return sge_del_userset(packet, task, ocs::tom::ConstElement<ocs::tom::US>(ep), alpp,
                           ocs::tom::List<ocs::tom::US>(userset_list != nullptr ? *userset_list : nullptr), ruser,
                           rhost);
@@ -207,7 +209,7 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
          const bool is_used = acl || xacl;
 
          if (is_used) {
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
             DPRINTF("increasing version of queue " SFQ " because acl " SFQ
                     " changed\n", ocs::tom::get<QU_full_name>(qinstance), acl_name);
@@ -235,7 +237,8 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
  */
 int
 sge_verify_department_entries(const ocs::tom::ConstList<ocs::tom::US> userset_list,
-                              const ocs::tom::ConstElement<ocs::tom::US> new_userset, lList **alpp) {
+                              const ocs::tom::ConstElement<ocs::tom::US> new_userset,
+                              ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if (!strcmp(ocs::tom::get<US_name>(new_userset), DEFAULT_DEPARTMENT)) {
@@ -262,7 +265,8 @@ sge_verify_department_entries(const ocs::tom::ConstList<ocs::tom::US> userset_li
  * @return 0 or 1
  */
 static int
-dept_is_valid_defaultdepartment(const ocs::tom::ConstElement<ocs::tom::US> dept, lList **answer_list) {
+dept_is_valid_defaultdepartment(const ocs::tom::ConstElement<ocs::tom::US> dept,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
@@ -294,7 +298,7 @@ dept_is_valid_defaultdepartment(const ocs::tom::ConstElement<ocs::tom::US> dept,
  * @return 0 or 1
  */
 static int
-acl_is_valid_acl(const ocs::tom::ConstElement<ocs::tom::US> acl, lList **answer_list) {
+acl_is_valid_acl(const ocs::tom::ConstElement<ocs::tom::US> acl, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
@@ -325,8 +329,8 @@ acl_is_valid_acl(const ocs::tom::ConstElement<ocs::tom::US> acl, lList **answer_
  * @return true if the owner is a member of `dept_name`
  */
 bool
-job_is_valid_department(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **alpp, const char *dept_name,
-                        const ocs::tom::ConstList<ocs::tom::US> userset_list) {
+job_is_valid_department(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                        const char *dept_name, const ocs::tom::ConstList<ocs::tom::US> userset_list) {
    DENTER(TOP_LAYER);
 
    // Do we have a department name?
@@ -386,7 +390,7 @@ job_is_valid_department(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **
  * @return true if a department could be assigned
  */
 bool
-job_set_department(const ocs::tom::Element<ocs::tom::JB> job, lList **alpp,
+job_set_department(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                    const ocs::tom::ConstList<ocs::tom::US> userset_list) {
    DENTER(TOP_LAYER);
 
@@ -425,7 +429,7 @@ job_set_department(const ocs::tom::Element<ocs::tom::JB> job, lList **alpp,
  * @return STATUS_OK if unreferenced, STATUS_EUNKNOWN or STATUS_EEXIST (exec host reference) otherwise
  */
 static int
-verify_userset_deletion(lList **alpp, const char *userset_name) {
+verify_userset_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *userset_name) {
    DENTER(TOP_LAYER);
    int ret = STATUS_OK;
    const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
@@ -672,8 +676,8 @@ userset_update_categories(const ocs::tom::ConstList<ocs::tom::US> added,
  *
  * @note MT-NOTE: userset_mod() is not MT safe, needs global lock
  */
-int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_userset,
-                lListElem *userset, int add, const char *ruser,
+int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                lListElem *new_userset, lListElem *userset, int add, const char *ruser,
                 const char *rhost, gdi_object_t *object,
                 ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
                 monitoring_t *monitor) {
@@ -845,12 +849,12 @@ DRETURN(STATUS_EUNKNOWN);
  *
  * @note MT-NOTE: userset_spool() is not MT safe
  */
-int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset,
-                  gdi_object_t *object) {
+int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                  lListElem *userset, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstElement<ocs::tom::US> us(userset);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), us,
                                          ocs::tom::get<US_name>(us), SGE_TYPE_USERSET);

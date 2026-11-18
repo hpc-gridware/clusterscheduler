@@ -74,11 +74,11 @@
  * @param enp which fields to transfer, from `lWhat()`
  * @return the answer list; the caller owns it
  */
-lList *
+ocs::tom::ListPtr<ocs::tom::AN>
 ocs::gdi::Client::sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
                           lList **lpp, lCondition *cp, lEnumeration *enp) {
    DENTER(GDI_LAYER);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    Request gdi_multi{};
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
@@ -97,11 +97,11 @@ ocs::gdi::Client::sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
  *
  * @note MT-NOTE: gdi_tsm() is MT safe (assumptions)
  */
-lList *ocs::gdi::Client::gdi_tsm() {
+ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_tsm() {
    DENTER(GDI_LAYER);
    ocs::tom::ListPtr<ocs::tom::SC> no_data;
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::TRIGGER,
-                                          ocs::gdi::SubCommand::NONE, no_data);
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::TRIGGER,
+                                        ocs::gdi::SubCommand::NONE, no_data);
    DRETURN(alp);
 }
 
@@ -119,15 +119,15 @@ lList *ocs::gdi::Client::gdi_tsm() {
  *
  * @note MT-NOTE: gdi_kill() is MT safe (assumptions)
  */
-lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
+ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
    DENTER(GDI_LAYER);
    bool id_list_created = false;
-   lList *alp = lCreateList("answer", AN_Type);
+   auto alp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
 
    if (action_flag & MASTER_KILL) {
-      lList *tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::MASTER_EVENT, ocs::gdi::Command::TRIGGER,
+      auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::MASTER_EVENT, ocs::gdi::Command::TRIGGER,
                               ocs::gdi::SubCommand::NONE, nullptr, nullptr, nullptr);
-      lAddList(alp, &tmpalp);
+      alp->splice(std::move(tmpalp));
    }
 
    if (action_flag & SCHEDD_KILL) {
@@ -137,15 +137,15 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
       ocs::tom::emplace_back<ID_str>(&id_list, buffer);
-      lList *tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
+      auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
                               ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
-      lAddList(alp, &tmpalp);
+      alp->splice(std::move(tmpalp));
    }
 
    if (action_flag & THREAD_START) {
-      lList *tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::DUMMY_LIST, ocs::gdi::Command::TRIGGER,
+      auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::DUMMY_LIST, ocs::gdi::Command::TRIGGER,
                               ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
-      lAddList(alp, &tmpalp);
+      alp->splice(std::move(tmpalp));
    }
 
    if (action_flag & EVENTCLIENT_KILL) {
@@ -156,9 +156,9 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
          id_list_created = true;
          ocs::tom::emplace_back<ID_str>(&id_list, buffer);
       }
-      lList *tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
+      auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
                               ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
-      lAddList(alp, &tmpalp);
+      alp->splice(std::move(tmpalp));
    }
 
    if ((action_flag & EXECD_KILL) || (action_flag & JOB_KILL)) {
@@ -185,8 +185,8 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
          ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
          hosts->push_back(std::move(hlep));
       }
-      lList *tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, hosts);
-      lAddList(alp, &tmpalp);
+      auto tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, hosts);
+      alp->splice(std::move(tmpalp));
    }
 
    if (id_list_created) {
@@ -207,14 +207,14 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
  * @return true when the permissions could be determined
  */
 bool
-ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
+ocs::gdi::Client::sge_gdi_get_permission(ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool *is_manager, bool *is_operator,
                        bool *is_admin_host, bool *is_submit_host) {
    DENTER(TOP_LAYER);
 
    // fetch permissions for current user and host from qmaster
    // the response holds the permissions (PERM_Type)
    ocs::tom::ListPtr<ocs::tom::PERM> permission_list;
-   lList *alp = sge_gdi(Target::DUMMY_LIST, Command::PERMCHECK, SubCommand::NONE, permission_list);
+   auto alp = sge_gdi(Target::DUMMY_LIST, Command::PERMCHECK, SubCommand::NONE, permission_list);
    if (!permission_list || permission_list->size() != 1) {
       answer_list_append_list(alpp, &alp);
       DRETURN(false);
@@ -239,7 +239,7 @@ ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *i
       DPRINTF("is_submit_host: %s\n", *is_submit_host ? "true" : "false");
    }
 
-   lFreeList(&alp);
+   alp.reset();
    DRETURN(true);
 }
 
@@ -322,7 +322,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
    const auto what = ocs::tom::what_all<ocs::tom::CONF>();
    // the response holds the configurations (CONF_Type)
    ocs::tom::ListPtr<ocs::tom::CONF> lp;
-   lList *alp = sge_gdi(Target::CONF_LIST, Command::GET, SubCommand::NONE, lp, where, what);
+   auto alp = sge_gdi(Target::CONF_LIST, Command::GET, SubCommand::NONE, lp, where, what);
 
    /* in case the gdi request failed: error handling & return */
    if (const uint32_t status = ocs::tom::get<AN_status>(lFirst(alp)); status != STATUS_OK) {
@@ -331,11 +331,11 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
          already_logged = 1;
       }
 
-      lFreeList(&alp);
+      alp.reset();
       DRETURN(std::make_tuple((status != STATUS_EDENIED2HOST) ? -4 : -7, std::move(global_conf),
                               std::move(local_conf)));
    }
-   lFreeList(&alp);
+   alp.reset();
 
    /* we didn't get the correct number of configurations? */
    if (lp->size() > (2 - is_global_requested)) {

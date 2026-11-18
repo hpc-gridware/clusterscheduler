@@ -164,11 +164,11 @@ reporting_reinitialize_timed_event() {
  * @see #reporting_initialize
  */
 bool
-reporting_shutdown(lList **answer_list, bool do_spool) {
+reporting_shutdown(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool do_spool) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    if (do_spool) {
       /* flush the last reporting values, suppress adding new timer */
@@ -263,7 +263,7 @@ intermediate_usage_written(const ocs::tom::ConstElement<ocs::tom::JR> job_report
  * @return true on success, false on error
  */
 bool
-ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list,
+ocs::ClassicAccountingFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                      const ocs::tom::Element<ocs::tom::JR> job_report,
                                                      const ocs::tom::Element<ocs::tom::JB> job,
                                                      const ocs::tom::Element<ocs::tom::JAT> ja_task,
@@ -349,7 +349,7 @@ ocs::ClassicReportingFileWriter::create_record(const char *type, const char *dat
  * create_acct_record is called and we needn't search it from ja_task
  */
 bool
-ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                     const ocs::tom::Element<ocs::tom::JR> job_report,
                                                     const ocs::tom::Element<ocs::tom::JB> job,
                                                     const ocs::tom::Element<ocs::tom::JAT> ja_task, bool intermediate) {
@@ -397,7 +397,7 @@ ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list,
  * @return true on success
  */
 bool
-ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_new_job_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
@@ -471,8 +471,8 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list,
  * @return true on success
  */
 bool
-ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t event_time, const job_log_t type,
-                                                const char *user, const char *host,
+ocs::ClassicReportingFileWriter::create_job_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t event_time,
+                                                const job_log_t type, const char *user, const char *host,
                                                 const ocs::tom::ConstElement<ocs::tom::JR> job_report,
                                                 const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                 const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
@@ -582,7 +582,8 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t ev
  * @note MT-NOTE: reporting_write_consumables() is MT safe
  */
 void
-ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list, dstring *buffer,
+ocs::ClassicReportingFileWriter::reporting_write_consumables(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                             dstring *buffer,
                                                              const ocs::tom::ConstList<ocs::tom::RUE> actual,
                                                              const ocs::tom::ConstList<ocs::tom::CE> total,
                                                              const ocs::tom::ConstElement<ocs::tom::EH> host,
@@ -647,7 +648,7 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
  * @note MT-NOTE: create_queue_record() is MT safe
  */
 bool
-ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_queue_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                      const ocs::tom::ConstElement<ocs::tom::QU> queue,
                                                      uint64_t report_time) {
    DENTER(TOP_LAYER);
@@ -690,7 +691,7 @@ ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
  * @note MT-NOTE: create_queue_consumable_record() is MT safe
  */
 bool
-ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_queue_consumable_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                                 const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                                 const ocs::tom::ConstElement<ocs::tom::QU> queue,
                                                                 const ocs::tom::ConstElement<ocs::tom::JB> job,
@@ -746,7 +747,7 @@ ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_l
  * @note MT-NOTE: create_host_record() is MT safe
  */
 bool
-ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_host_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                     const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                     uint64_t report_time) {
    DENTER(TOP_LAYER);
@@ -794,7 +795,7 @@ ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
  * @note MT-NOTE: create_host_consumable_record() is MT safe
  */
 bool
-ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_host_consumable_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                                const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                                const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                uint64_t report_time) {
@@ -919,7 +920,7 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
  * @note MT-NOTE: write_load_values() is MT-safe
  */
 bool
-ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring *buffer,
+ocs::ClassicReportingFileWriter::write_load_values(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer,
                                                    const ocs::tom::ConstList<ocs::tom::HL> load_list,
                                                    const ocs::tom::ConstList<ocs::tom::STU> variables) {
    DENTER(TOP_LAYER);
@@ -959,7 +960,7 @@ ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring 
  * @note MT-NOTE: reporting_flush() is MT-safe
  */
 bool
-ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_new_ar_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                       const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                       uint64_t report_time) {
    DENTER(TOP_LAYER);
@@ -1005,7 +1006,7 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
  * @note MT-NOTE: reporting_flush() is MT-safe
  */
 bool
-ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_ar_attribute_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                             const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                             uint64_t report_time) {
    DENTER(TOP_LAYER);
@@ -1073,7 +1074,7 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
  * @note MT-NOTE: reporting_flush() is MT-safe
  */
 bool
-ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
+ocs::ClassicReportingFileWriter::create_ar_log_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                       const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                       ar_state_event_t event, const char *ar_description,
                                                       uint64_t report_time) {
@@ -1129,7 +1130,7 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
  *
  * @see #create_single_ar_acct_record
  */
-bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
+bool ocs::ClassicReportingFileWriter::create_ar_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                             const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                             uint64_t report_time) {
    DENTER(TOP_LAYER);

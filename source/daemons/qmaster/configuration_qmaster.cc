@@ -100,29 +100,33 @@ static const char *Static_Conf_Entries[] = {"execd_spool_dir", nullptr};
 
 
 static int
-check_config(lList **alpp, ocs::tom::ConstElement<ocs::tom::CONF> conf);
+check_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstElement<ocs::tom::CONF> conf);
 
 static bool
-check_config_script_path(lList **alpp, const char *name, const char *path, const char **allowed);
+check_config_script_path(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name, const char *path,
+                         const char **allowed);
 
 static int
 do_mod_config(char *aConfName, ocs::tom::ConstElement<ocs::tom::CONF> anOldConf,
-              ocs::tom::Element<ocs::tom::CONF> aNewConf, lList **anAnswer, uint64_t gdi_session);
+              ocs::tom::Element<ocs::tom::CONF> aNewConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+              uint64_t gdi_session);
 
 static int
 check_static_conf_entries(ocs::tom::ConstList<ocs::tom::CF> theOldConfEntries,
-                          ocs::tom::ConstList<ocs::tom::CF> theNewConfEntries, lList **anAnswer);
+                          ocs::tom::ConstList<ocs::tom::CF> theNewConfEntries,
+                          ocs::tom::ListPtr<ocs::tom::AN> *anAnswer);
 
 static int
 exchange_conf_by_name(char *aConfName, ocs::tom::ConstElement<ocs::tom::CONF> anOldConf,
-                      ocs::tom::Element<ocs::tom::CONF> aNewConf, lList **anAnswer, uint64_t gdi_session);
+                      ocs::tom::Element<ocs::tom::CONF> aNewConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+                      uint64_t gdi_session);
 
 static bool
 has_reschedule_unknown_change(ocs::tom::ConstList<ocs::tom::CF> theOldConfEntries,
                               ocs::tom::ConstList<ocs::tom::CF> theNewConfEntries);
 
 static int
-do_add_config(char *aConfName, ocs::tom::ConstElement<ocs::tom::CONF> aConf, lList **anAnswer,
+do_add_config(char *aConfName, ocs::tom::ConstElement<ocs::tom::CONF> aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
               uint64_t gdi_session);
 
 static int
@@ -155,7 +159,8 @@ notify_execds_about_conf_change(const char *conf_name);
  * @return 0 on success, -1 if there is no global configuration or merging failed
  */
 int
-sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList **answer_list) {
+sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
@@ -240,8 +245,8 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
  */
 int
 sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                      const ocs::tom::ConstElement<ocs::tom::CONF> aConf, lList **anAnswer, char *aUser,
-                      char *aHost) {
+                      const ocs::tom::ConstElement<ocs::tom::CONF> aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+                      char *aUser, char *aHost) {
    DENTER(TOP_LAYER);
 
    const char *tmp_name = nullptr;
@@ -341,8 +346,8 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
  * @return as the typed sge_del_configuration()
  */
 int
-sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *aConf, lList **anAnswer,
-                      char *aUser, char *aHost) {
+sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *aConf,
+                      ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, char *aUser, char *aHost) {
    return sge_del_configuration(packet, task, ocs::tom::ConstElement<ocs::tom::CONF>(aConf), anAnswer, aUser,
                                 aHost);
 }
@@ -445,8 +450,8 @@ notify_execds_about_conf_change(const char *conf_name) {
  * @note MT-NOTE: sge_mod_configuration() is MT safe
  */
 int
-sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, lList **anAnswer, const char *aUser,
-                      const char *aHost, const uint64_t gdi_session) {
+sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+                      const char *aUser, const char *aHost, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
@@ -506,7 +511,7 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, lList **anA
    ** if so, initialise conf struct anew
    */
    if (strcmp(unique_name, SGE_GLOBAL_NAME) == 0 || sge_hostcmp(unique_name, qualified_hostname) == 0) {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       char *qmaster_params = nullptr;
 
       auto local = sge_get_configuration_for_host(qualified_hostname);
@@ -585,7 +590,7 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, lList **anA
  * @return as the typed sge_mod_configuration()
  */
 int
-sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost,
+sge_mod_configuration(lListElem *aConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, const char *aUser, const char *aHost,
                       const uint64_t gdi_session) {
    return sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF>(aConf), anAnswer, aUser, aHost, gdi_session);
 }
@@ -641,7 +646,8 @@ sge_update_heard_from_timeout() {
  * @return true if the path is valid, false otherwise.
  */
 static bool
-check_config_script_path(lList **alpp, const char *name, const char *path, const char **allowed) {
+check_config_script_path(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name, const char *path,
+                         const char **allowed) {
    DENTER(TOP_LAYER);
 
    if (!config_is_absolute_script_path(path)) {
@@ -671,7 +677,7 @@ check_config_script_path(lList **alpp, const char *name, const char *path, const
  *         STATUS_ESYNTAX when an attribute is given twice
  */
 static int
-check_config(lList **alpp, const ocs::tom::ConstElement<ocs::tom::CONF> conf) {
+check_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement<ocs::tom::CONF> conf) {
    DENTER(TOP_LAYER);
 
    const char *name, *value;
@@ -1190,7 +1196,8 @@ sge_get_configuration_for_host(const char *aName) {
  */
 static int
 do_mod_config(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CONF> anOldConf,
-              const ocs::tom::Element<ocs::tom::CONF> aNewConf, lList **anAnswer, const uint64_t gdi_session) {
+              const ocs::tom::Element<ocs::tom::CONF> aNewConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+              const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    const auto old_entries = ocs::tom::get<CONF_entries>(anOldConf);
    const auto new_entries = ocs::tom::get<CONF_entries>(aNewConf);
@@ -1238,7 +1245,8 @@ do_mod_config(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CONF> anOl
  */
 static int
 check_static_conf_entries(const ocs::tom::ConstList<ocs::tom::CF> theOldConfEntries,
-                          const ocs::tom::ConstList<ocs::tom::CF> theNewConfEntries, lList **anAnswer) {
+                          const ocs::tom::ConstList<ocs::tom::CF> theNewConfEntries,
+                          ocs::tom::ListPtr<ocs::tom::AN> *anAnswer) {
    DENTER(TOP_LAYER);
 
    int entry_idx = 0;
@@ -1284,7 +1292,7 @@ check_static_conf_entries(const ocs::tom::ConstList<ocs::tom::CF> theOldConfEntr
  */
 static int
 exchange_conf_by_name(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CONF> anOldConf,
-                      const ocs::tom::Element<ocs::tom::CONF> aNewConf, lList **anAnswer,
+                      const ocs::tom::Element<ocs::tom::CONF> aNewConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
                       const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
@@ -1358,8 +1366,8 @@ has_reschedule_unknown_change(const ocs::tom::ConstList<ocs::tom::CF> theOldConf
  * @return 0
  */
 static int
-do_add_config(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CONF> aConf, lList **anAnswer,
-              const uint64_t gdi_session) {
+do_add_config(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CONF> aConf,
+              ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    auto copy = aConf.clone();

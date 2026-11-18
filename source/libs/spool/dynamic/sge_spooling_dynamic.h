@@ -41,6 +41,7 @@
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
+#include "sgeobj/sge_answer.h"
 
 /** @defgroup spool_dynamic Dynamic spooling
  * @brief Pick the storage backend at runtime instead of at link time
@@ -73,7 +74,7 @@ const char *get_dynamic_spooling_method();
 #endif
 
 lListElem *
-spool_dynamic_create_context(lList **answer_list, const char *method,
+spool_dynamic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args);
 
 /** @} */

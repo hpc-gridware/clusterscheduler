@@ -28,6 +28,7 @@
 #include "spool/flatfile/ocs_spool_json.h"
 
 #include "ocs_QConfViewJSON.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief The names as a JSON array inside the schema envelope
@@ -58,7 +59,7 @@ ocs::QConfViewJSON::show_name_list(std::ostream &os, const lList *list, int key_
       type_name = nullptr;
    }
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    dstring out = DSTRING_INIT;
    spool_json_write_name_list_ex(&alp, list, key_nm, type_name, &out);
    const char *text = sge_dstring_get_string(&out);
@@ -66,7 +67,7 @@ ocs::QConfViewJSON::show_name_list(std::ostream &os, const lList *list, int key_
       os << text;
    }
    sge_dstring_free(&out);
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN_VOID;
 }

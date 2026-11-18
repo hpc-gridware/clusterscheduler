@@ -32,6 +32,7 @@
 #include "cull/cull.h"
 #include "procedure/qconf/ocs_QConfParameterClient.h"
 #include "ocs_qconf_common.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief How a show of one object ended (CS-2796).
  *
@@ -60,7 +61,7 @@ enum class QConfShowStatus {
  * @return true when the operation was rendered
  */
 bool
-qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lList **alpp,
+qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                          uint32_t *reduction = nullptr);
 
 /** @brief Show one object of the given type on stdout.
@@ -82,7 +83,7 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
  */
 QConfShowStatus
 qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name,
-                  lList **alpp, uint32_t *reduction = nullptr, bool report_errors = true);
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint32_t *reduction = nullptr, bool report_errors = true);
 
 /**
  * @brief Run one read operation as a stored procedure, if it is one
@@ -107,7 +108,7 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
  */
 QConfOpResult
 qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                         lList **alpp);
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /**
  * @brief Run one read operation from qconf_sub_procedure_table, if it is one
@@ -124,7 +125,7 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
  */
 QConfOpResult
 qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                        lList **alpp);
+                        ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /**
  * @brief Whether an operation only reads, so that "-dry" has nothing to hold back (CS-2984)

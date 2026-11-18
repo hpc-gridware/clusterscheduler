@@ -396,7 +396,8 @@ bool qinstance_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::
  * @note MT-NOTE: qinstance_list_find_matching() is MT safe
  */
 ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(const ocs::tom::ConstList<ocs::tom::QU> this_list,
-                                                             lList **answer_list, const char *hostname_pattern) {
+                                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                             const char *hostname_pattern) {
    DENTER(QINSTANCE_LAYER);
 
    // created by the first match, as the old out-parameter was
@@ -687,7 +688,7 @@ void qinstance_set_full_name(lListElem *this_elem) {
  *
  * @note MT-NOTE: qinstance_validate() is MT safe
  */
-bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                         const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
@@ -755,8 +756,8 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, lList *
  *
  * @return as qinstance_validate()
  */
-bool qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
-                        const lList *master_centry_list) {
+bool qinstance_validate(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        const lList *master_exechost_list, const lList *master_centry_list) {
    return qinstance_validate(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list,
                              ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
                              ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
@@ -776,7 +777,7 @@ bool qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *
  *
  * @note MT-NOTE: qinstance_list_validate() is MT safe
  */
-bool qinstance_list_validate(const ocs::tom::List<ocs::tom::QU> this_list, lList **answer_list,
+bool qinstance_list_validate(const ocs::tom::List<ocs::tom::QU> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                              const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
@@ -802,8 +803,8 @@ bool qinstance_list_validate(const ocs::tom::List<ocs::tom::QU> this_list, lList
  *
  * @return as qinstance_list_validate()
  */
-bool qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list,
-                             const lList *master_centry_list) {
+bool qinstance_list_validate(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                             const lList *master_exechost_list, const lList *master_centry_list) {
    return qinstance_list_validate(ocs::tom::List<ocs::tom::QU>(this_list), answer_list,
                                   ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
                                   ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
@@ -1126,7 +1127,7 @@ void qinstance_set_conf_slots_used(lListElem *this_elem) {
  *
  * @note MT-NOTE: qinstance_verify() is MT safe
  */
-bool qinstance_verify(const ocs::tom::ConstElement<ocs::tom::QU> qep, lList **answer_list) {
+bool qinstance_verify(const ocs::tom::ConstElement<ocs::tom::QU> qep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1172,7 +1173,7 @@ bool qinstance_verify(const ocs::tom::ConstElement<ocs::tom::QU> qep, lList **an
  * @note MT-NOTE: qinstance_verify_full_name() is MT safe
  */
 bool
-qinstance_verify_full_name(lList **answer_list, const char *full_name) {
+qinstance_verify_full_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *full_name) {
    bool ret = true;
 
    dstring cqueue_name = DSTRING_INIT;

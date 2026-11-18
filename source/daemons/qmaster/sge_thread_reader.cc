@@ -63,6 +63,7 @@
 #include "msg_qmaster.h"
 
 #include <ocs_gdi_ClientServerBase.h>
+#include "sgeobj/sge_answer.h"
 
 /** @brief Release the monitoring state when the reader thread ends
  *
@@ -269,7 +270,7 @@ sge_reader_main(void *arg) {
             if (packet->request_type == PACKET_GDI_REQUEST) {
                //sge_usleep(1000000);
 
-               lList *tmp_answer_list = nullptr;
+               ocs::tom::ListPtr<ocs::tom::AN> tmp_answer_list;
                packet->pack_header(&tmp_answer_list, &packet->pb);
 
                for (size_t i = 0; i < packet->tasks.size(); ++i) {

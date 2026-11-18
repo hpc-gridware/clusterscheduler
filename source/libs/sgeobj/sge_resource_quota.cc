@@ -97,7 +97,8 @@
  *
  * @note MT-NOTE: rqs_parse_filter_from_string() is MT safe
  */
-ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *buffer, lList **alp) {
+ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *buffer,
+                                                                  ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
    const char delims[] = "\t \v\r,{}";
@@ -169,7 +170,7 @@ ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *bu
  *
  * @return true on success false on error
  */
-bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer, lList **alp) {
+bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    auto parsed = rqs_parse_filter_from_string(buffer, alp);
    if (!parsed) {
       return false;
@@ -192,7 +193,7 @@ bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer, lList 
  * @note MT-NOTE: rqs_append_filter_to_dstring() is MT safe
  */
 bool rqs_append_filter_to_dstring(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, dstring *buffer,
-                                  lList **alp) {
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
    bool first = true;
@@ -245,7 +246,7 @@ bool rqs_append_filter_to_dstring(const ocs::tom::ConstElement<ocs::tom::RQRF> f
  *
  * @return as rqs_append_filter_to_dstring()
  */
-bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lList **alp) {
+bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    return rqs_append_filter_to_dstring(ocs::tom::ConstElement<ocs::tom::RQRF>(filter), buffer, alp);
 }
 
@@ -319,8 +320,8 @@ ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(const ocs::tom::Element<ocs::t
  * @see #rqs_verify_attributes
  */
 template <auto F>
-static bool rqs_verify_filter(const ocs::tom::ConstElement<ocs::tom::RQR> rule, lList **answer_list,
-                              const char *message) {
+static bool rqs_verify_filter(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *message) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -381,7 +382,8 @@ static bool rqs_verify_filter(const ocs::tom::ConstElement<ocs::tom::RQR> rule, 
  *
  * @see #rqs_verify_attributes, ocs::reference_pattern
  */
-static bool rqs_verify_host_scope(const ocs::tom::List<ocs::tom::ST> scope, lList **answer_list) {
+static bool rqs_verify_host_scope(const ocs::tom::List<ocs::tom::ST> scope,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -437,8 +439,8 @@ static bool rqs_verify_host_scope(const ocs::tom::List<ocs::tom::ST> scope, lLis
  *
  * @note MT-NOTE: rqs_verify_attributes() is MT safe
  */
-bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, lList **answer_list, const bool in_master,
-                           const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
+bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           const bool in_master, const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -583,7 +585,8 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, lList **a
  *
  * @return as rqs_verify_attributes()
  */
-bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list) {
+bool rqs_verify_attributes(lListElem *rqs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool in_master,
+                           const lList *master_centry_list) {
    return rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS>(rqs), answer_list, in_master,
                                 ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
 }
@@ -679,7 +682,7 @@ ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(const ocs::tom::List<ocs::tom::
  *
  * @note MT-NOTE: rqs_xattr_pre_gdi() is MT safe
  */
-bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list) {
+bool rqs_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

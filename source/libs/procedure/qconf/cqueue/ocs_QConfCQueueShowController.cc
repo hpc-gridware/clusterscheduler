@@ -25,6 +25,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QConfCQueueShowController.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Write the queues, instances or template the model resolved
  *
@@ -43,9 +44,9 @@ ocs::QConfCQueueShowController::process_request([[maybe_unused]] QConfParameter 
                                                 QConfCQueueShowView &view) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    view.show_queues(out_, &answer_list, model);
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    DRETURN_VOID;
 }

@@ -88,7 +88,8 @@ ocs::Binding::clear(const ocs::tom::Element<Parent<F>> parent) {
  */
 template <auto F>
 ocs::tom::Element<ocs::tom::BN>
-ocs::Binding::binding_get_or_create_elem(const ocs::tom::Element<Parent<F>> parent, lList **answer_list) {
+ocs::Binding::binding_get_or_create_elem(const ocs::tom::Element<Parent<F>> parent,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    if (!parent) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFN, MSG_PARSE_NULLPOINTERRECEIVED);
@@ -357,7 +358,8 @@ ocs::Binding::binding_get_amount(const ocs::tom::ConstElement<Parent<F>> parent)
  */
 template <auto F>
 void
-ocs::Binding::binding_set_missing_defaults(const ocs::tom::Element<Parent<F>> parent, lList **answer_list) {
+ocs::Binding::binding_set_missing_defaults(const ocs::tom::Element<Parent<F>> parent,
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    // if the job has no new binding, we do not need to set defaults
@@ -431,7 +433,8 @@ ocs::Binding::binding_set_missing_defaults(const ocs::tom::Element<Parent<F>> pa
 
 // the two objects that carry a binding request
 template ocs::tom::Element<ocs::tom::BN>
-ocs::Binding::binding_get_or_create_elem<JB_binding>(ocs::tom::Element<ocs::tom::JB> parent, lList **answer_list);
+ocs::Binding::binding_get_or_create_elem<JB_binding>(ocs::tom::Element<ocs::tom::JB> parent,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 template void ocs::Binding::clear<JB_binding>(ocs::tom::Element<ocs::tom::JB> parent);
 template ocs::BindingType::Type ocs::Binding::binding_get_type<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB> parent);
 template ocs::BindingUnit::Unit ocs::Binding::binding_get_unit<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB> parent);
@@ -446,9 +449,11 @@ template uint32_t ocs::Binding::binding_get_amount<JB_binding>(ocs::tom::ConstEl
 template ocs::BindingInstance::Instance
 ocs::Binding::binding_get_instance<JB_binding>(ocs::tom::ConstElement<ocs::tom::JB> parent);
 template void
-ocs::Binding::binding_set_missing_defaults<JB_binding>(ocs::tom::Element<ocs::tom::JB> parent, lList **answer_list);
+ocs::Binding::binding_set_missing_defaults<JB_binding>(ocs::tom::Element<ocs::tom::JB> parent,
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 template ocs::tom::Element<ocs::tom::BN>
-ocs::Binding::binding_get_or_create_elem<AR_binding>(ocs::tom::Element<ocs::tom::AR> parent, lList **answer_list);
+ocs::Binding::binding_get_or_create_elem<AR_binding>(ocs::tom::Element<ocs::tom::AR> parent,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 template void ocs::Binding::clear<AR_binding>(ocs::tom::Element<ocs::tom::AR> parent);
 template ocs::BindingType::Type ocs::Binding::binding_get_type<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR> parent);
 template ocs::BindingUnit::Unit ocs::Binding::binding_get_unit<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR> parent);
@@ -463,4 +468,5 @@ template uint32_t ocs::Binding::binding_get_amount<AR_binding>(ocs::tom::ConstEl
 template ocs::BindingInstance::Instance
 ocs::Binding::binding_get_instance<AR_binding>(ocs::tom::ConstElement<ocs::tom::AR> parent);
 template void
-ocs::Binding::binding_set_missing_defaults<AR_binding>(ocs::tom::Element<ocs::tom::AR> parent, lList **answer_list);
+ocs::Binding::binding_set_missing_defaults<AR_binding>(ocs::tom::Element<ocs::tom::AR> parent,
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

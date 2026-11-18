@@ -28,6 +28,7 @@
 
 #include "ocs_QStatModelBase.h"
 #include "ocs_QStatParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief QStat model for the client execution context.
@@ -41,8 +42,8 @@ namespace ocs {
     */
    class QStatModelClient : public QStatModelBase {
    protected:
-      bool fetch_data(lList **answer_list, QStatParameter &parameter) override;
-      bool prepare_data(lList **answer_list, QStatParameter &parameter) override;
+      bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) override;
+      bool prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QStatParameter &parameter) override;
    public:
       QStatModelClient() : QStatModelBase() {};
       ~QStatModelClient() override = default;

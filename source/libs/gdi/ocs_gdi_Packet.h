@@ -34,6 +34,7 @@
 #include "comm/cl_communication.h"
 
 #include "gdi/ocs_gdi_Task.h"
+#include "sgeobj/sge_answer.h"
 
 /// Queue the worker threads take GDI packets from
 extern sge_tq_queue_t *GlobalRequestQueue;
@@ -170,19 +171,19 @@ namespace ocs::gdi {
       /// Mark this packet finished and wake everyone waiting on it
       void broadcast_that_handled();
 
-      bool execute_internal(lList **answer_list);
+      bool execute_internal(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       void wait_for_result_internal(lList **malpp);
 
-      bool execute_external(lList **answer_list);
+      bool execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       void wait_for_result_external(lList **malpp);
 
       uint32_t get_pb_size();
-      bool unpack(lList **answer_list, sge_pack_buffer *pb);
-      bool unpack_header(lList **answer_list, sge_pack_buffer *pb);
+      bool unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb);
+      bool unpack_header(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb);
 
-      bool pack(lList **answer_list, sge_pack_buffer *pb);
-      bool pack_header(lList **answer_list, sge_pack_buffer *pb);
-      bool pack_task(Task *task, lList **answer_list, sge_pack_buffer *pb, bool has_next);
+      bool pack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb);
+      bool pack_header(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb);
+      bool pack_task(Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb, bool has_next);
       /// Log this packet's header and tasks at debug level
       void debug_print();
    };

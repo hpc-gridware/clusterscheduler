@@ -209,7 +209,7 @@ int get_rsrc(const char *name, bool queue, int *field, int *cqfld, int *valfld, 
  *
  * @return 0 on success, -1 on error; the error message is written into @p answer_list
  */
-int centry_fill_and_check(const ocs::tom::Element<ocs::tom::CE> this_elem, lList **answer_list,
+int centry_fill_and_check(const ocs::tom::Element<ocs::tom::CE> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const bool allow_empty_boolean, const bool allow_neg_consumable) {
    DENTER(CENTRY_LAYER);
    static char tmp[1000];
@@ -343,8 +343,8 @@ int centry_fill_and_check(const ocs::tom::Element<ocs::tom::CE> this_elem, lList
  *
  * @return as centry_fill_and_check()
  */
-int centry_fill_and_check(lListElem *this_elem, lList **answer_list, const bool allow_empty_boolean,
-                          const bool allow_neg_consumable) {
+int centry_fill_and_check(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          const bool allow_empty_boolean, const bool allow_neg_consumable) {
    return centry_fill_and_check(ocs::tom::Element<ocs::tom::CE>(this_elem), answer_list, allow_empty_boolean,
                                 allow_neg_consumable);
 }
@@ -462,7 +462,7 @@ map_type2str(ocs::CEntry::Type type) {
  * @return the CE_Type element, or an empty handle when @p name is nullptr
  */
 ocs::tom::ElementPtr<ocs::tom::CE>
-centry_create(lList **answer_list, const char *name) {
+centry_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(CENTRY_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::CE> ret;
@@ -499,7 +499,8 @@ centry_create(lList **answer_list, const char *name) {
  *
  * @return true if the complex entry is referenced, else false
  */
-bool centry_is_referenced(const ocs::tom::ConstElement<ocs::tom::CE> centry, lList **answer_list,
+bool centry_is_referenced(const ocs::tom::ConstElement<ocs::tom::CE> centry,
+                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                           const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
                           const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list) {
@@ -576,7 +577,8 @@ bool centry_is_referenced(const ocs::tom::ConstElement<ocs::tom::CE> centry, lLi
  *
  * @return as centry_is_referenced()
  */
-bool centry_is_referenced(const lListElem *centry, lList **answer_list, const lList *master_cqueue_list,
+bool centry_is_referenced(const lListElem *centry, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          const lList *master_cqueue_list,
                           const lList *master_exechost_list, const lList *master_rqs_list) {
    return centry_is_referenced(ocs::tom::ConstElement<ocs::tom::CE>(centry), answer_list,
                                ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
@@ -783,7 +785,7 @@ ocs_centry_list_drop_earlier_request(const ocs::tom::List<ocs::tom::CE> this_lis
  *
  * @return error 0 on success -1 on error an error message will be written into SGE_EVENT
  */
-int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, lList **answer_list,
+int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              const ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
                              const bool allow_non_requestable, const bool allow_empty_boolean,
                              const bool allow_neg_consumable) {
@@ -884,7 +886,8 @@ int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, lList
  *
  * @return as centry_list_fill_request()
  */
-int centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
+int centry_list_fill_request(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                             const lList *master_centry_list,
                              const bool allow_non_requestable, const bool allow_empty_boolean,
                              const bool allow_neg_consumable) {
    return centry_list_fill_request(ocs::tom::List<ocs::tom::CE>(this_list), answer_list,
@@ -1238,8 +1241,8 @@ void centry_list_remove_duplicates(const ocs::tom::List<ocs::tom::CE> this_list)
  * @return false on error (the answer_list contains the error message), true if okay
  */
 bool centry_elem_validate(const ocs::tom::ConstElement<ocs::tom::CE> centry,
-                          const ocs::tom::ConstList<ocs::tom::CE> centry_list, lList **answer_list,
-                          const bool from_spool_read) {
+                          const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const bool from_spool_read) {
    DENTER(TOP_LAYER);
    uint32_t relop = ocs::tom::get<CE_relop>(centry);
    auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry));
@@ -1553,7 +1556,7 @@ bool centry_elem_validate(const ocs::tom::ConstElement<ocs::tom::CE> centry,
  *
  * @return as centry_elem_validate()
  */
-bool centry_elem_validate(lListElem *centry, const lList *centry_list, lList **answer_list,
+bool centry_elem_validate(lListElem *centry, const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const bool from_spool_read) {
    return centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE>(centry),
                                ocs::tom::ConstList<ocs::tom::CE>(centry_list), answer_list, from_spool_read);
@@ -1625,7 +1628,8 @@ double centry_urgency_contribution(const int slots, const char *name, const doub
  * @param centry_list the entries to look for, CE_Type, may be an empty handle
  * @return true when all of them exist
  */
-bool centry_list_do_all_exists(const ocs::tom::ConstList<ocs::tom::CE> this_list, lList **answer_list,
+bool centry_list_do_all_exists(const ocs::tom::ConstList<ocs::tom::CE> this_list,
+                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
 
@@ -1655,7 +1659,8 @@ bool centry_list_do_all_exists(const ocs::tom::ConstList<ocs::tom::CE> this_list
  * @param[out] answer_list receives the reason it was rejected
  * @return true when the list is usable
  */
-bool centry_list_is_correct(const ocs::tom::ConstList<ocs::tom::CE> this_list, lList **answer_list) {
+bool centry_list_is_correct(const ocs::tom::ConstList<ocs::tom::CE> this_list,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1698,7 +1703,7 @@ bool centry_list_is_correct(const ocs::tom::ConstList<ocs::tom::CE> this_list, l
  * @param master_centry_list the defined complex entries, CE_Type
  * @return 0 when every referenced resource exists, STATUS_EUNKNOWN otherwise
  */
-int ensure_attrib_available(lList **alpp, lListElem *ep, const int nm,
+int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, const int nm,
                             const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    int ret = 0;
@@ -1737,7 +1742,8 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, const int nm,
  * @param master_centry_list the defined complex entries, CE_Type, checked; may be nullptr
  * @return as ensure_attrib_available()
  */
-int ensure_attrib_available(lList **alpp, lListElem *ep, const int nm, const lList *master_centry_list) {
+int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, const int nm,
+                            const lList *master_centry_list) {
    return ensure_attrib_available(alpp, ep, nm, ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
 }
 
@@ -1810,7 +1816,7 @@ int host_ensure_slots_are_defined(lListElem *ehost, const uint32_t processors) {
  *
  * @note MT-NOTE: is MT-safe, works only on the passed in data
  */
-bool validate_load_formula(const char *load_formula, lList **answer_list,
+bool validate_load_formula(const char *load_formula, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            const ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *name) {
    DENTER(TOP_LAYER);
 
@@ -1902,8 +1908,8 @@ bool validate_load_formula(const char *load_formula, lList **answer_list,
  *
  * @return as validate_load_formula()
  */
-bool validate_load_formula(const char *load_formula, lList **answer_list, const lList *centry_list,
-                           const char *name) {
+bool validate_load_formula(const char *load_formula, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           const lList *centry_list, const char *name) {
    return validate_load_formula(load_formula, answer_list, ocs::tom::ConstList<ocs::tom::CE>(centry_list), name);
 }
 

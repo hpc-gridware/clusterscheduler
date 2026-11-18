@@ -54,6 +54,7 @@
 #include "sgeobj/tom/ocs_tom_SPR.h"
 #include "sgeobj/tom/ocs_tom_SPT.h"
 #include "sgeobj/tom/ocs_tom_SPTR.h"
+#include "sgeobj/sge_answer.h"
 
 /** @defgroup spool_framework Spooling framework
  * @brief An abstraction layer between what has to be spooled and where it goes
@@ -145,11 +146,11 @@ typedef const char *
  * the method specific URL or option string, e.g. the spool directory.
  */
 typedef lListElem *
-(*spooling_create_context_func)(lList **answer_list, const char *args);
+(*spooling_create_context_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args);
 
 /** @brief Apply one backend specific option to a rule */
 typedef bool
-(*spooling_option_func)(lList **answer_list, lListElem *rule, 
+(*spooling_option_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *rule, 
                         const char *option); 
 /** @brief Open the storage
  *
@@ -159,18 +160,18 @@ typedef bool
  * which every operation wants except the one that creates the database.
  */
 typedef bool
-(*spooling_startup_func)(lList **answer_list, const lListElem *rule, 
+(*spooling_startup_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
                          bool check); 
 /** @brief Flush unwritten data and close the storage again */
 typedef bool
-(*spooling_shutdown_func)(lList **answer_list, const lListElem *rule); 
+(*spooling_shutdown_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule); 
 
 /** @brief Carry out a #spooling_maintenance_command on the storage
  *
  * @warning Every backend in this tree implements #SPM_init and nothing else.
  */
 typedef bool 
-(*spooling_maintenance_func)(lList **answer_list, const lListElem *rule, 
+(*spooling_maintenance_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
                              const spooling_maintenance_command cmd, 
                              const char *args);
 
@@ -181,12 +182,12 @@ typedef bool
  * it for checkpointing and for trimming the transaction log.
  */
 typedef bool
-(*spooling_trigger_func)(lList **answer_list, const lListElem *rule, 
+(*spooling_trigger_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
                          uint64_t trigger, uint64_t *next_trigger);
                                   
 /** @brief Begin, commit or roll back a transaction on the storage */
 typedef bool
-(*spooling_transaction_func)(lList **answer_list, const lListElem *rule, 
+(*spooling_transaction_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
                              spooling_transaction_command cmd);
                                   
 /** @brief Read every object of one type into a list
@@ -195,21 +196,21 @@ typedef bool
  * while reading, and #spooling_validate_list_func once the list is complete.
  */
 typedef bool
-(*spooling_list_func)(lList **answer_list, 
+(*spooling_list_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                       const lListElem *type, const lListElem *rule, 
                       lList **list, 
                       const sge_object_type object_type);
                                   
 /** @brief Write one object to the storage under `key` */
 typedef bool
-(*spooling_write_func)(lList **answer_list, 
+(*spooling_write_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                        const lListElem *type, const lListElem *rule, 
                        const lListElem *object, const char *key, 
                        const sge_object_type object_type);
 
 /** @brief Read one object back from the storage by `key` */
 typedef lListElem *
-(*spooling_read_func)(lList **answer_list,
+(*spooling_read_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                       const lListElem *type, const lListElem *rule,
                       const char *key,
                       const sge_object_type object_type);
@@ -220,21 +221,21 @@ typedef lListElem *
  * `nullptr`, which is what makes #spool_read_keys behave the way it does.
  */
 typedef bool
-(*spooling_read_keys_func)(lList **answer_list,
+(*spooling_read_keys_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                       const lListElem *rule, 
                       lList **list,
                       const char *key);
 
 /** @brief Remove the object stored under `key` */
 typedef bool
-(*spooling_delete_func)(lList **answer_list, 
+(*spooling_delete_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                         const lListElem *type, const lListElem *rule, 
                         const char *key, 
                         const sge_object_type object_type);
 
 /** @brief Check and complete a single object that was just read */
 typedef bool
-(*spooling_validate_func)(lList **answer_list, 
+(*spooling_validate_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                         const lListElem *type, const lListElem *rule, 
                         lListElem *object, 
                         const sge_object_type object_type);
@@ -246,18 +247,18 @@ typedef bool
  *       can only be done once every element of the list is present.
  */
 typedef bool
-(*spooling_validate_list_func)(lList **answer_list, 
+(*spooling_validate_list_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                         const lListElem *type, const lListElem *rule, 
                         const sge_object_type object_type);
 /** @} */
 
 /* creation and maintenance of the spooling context */
 ocs::tom::ElementPtr<ocs::tom::SPC>
-ocs_spool_create_context(lList **answer_list, const char *name);
-OCS_TRANSITIONAL lListElem *spool_create_context(lList **answer_list, const char *name);
+ocs_spool_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name);
+OCS_TRANSITIONAL lListElem *spool_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name);
 
 void
-spool_free_context(lList **answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&context);
+spool_free_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&context);
 
 void 
 spool_set_default_context(lListElem *context);
@@ -266,7 +267,7 @@ ocs::tom::Element<ocs::tom::SPC>
 spool_get_default_context();
 
 ocs::tom::Element<ocs::tom::SPR>
-spool_context_create_rule(lList **answer_list, ocs::tom::Element<ocs::tom::SPC> context,
+spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::SPC> context,
                           const char *name, const char *url,
                           spooling_option_func option_func, 
                           spooling_startup_func startup_func, 
@@ -281,7 +282,7 @@ spool_context_create_rule(lList **answer_list, ocs::tom::Element<ocs::tom::SPC> 
                           spooling_delete_func delete_func,
                           spooling_validate_func validate_func,
                           spooling_validate_list_func validate_list_func);
-OCS_TRANSITIONAL lListElem *spool_context_create_rule(lList **answer_list, lListElem *context,
+OCS_TRANSITIONAL lListElem *spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context,
                                                       const char *name, const char *url,
                                                       spooling_option_func option_func,
                                                       spooling_startup_func startup_func,
@@ -301,69 +302,69 @@ ocs::tom::Element<ocs::tom::SPT>
 spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC> context, sge_object_type object_type);
 
 ocs::tom::Element<ocs::tom::SPT>
-spool_context_create_type(lList **answer_list, ocs::tom::Element<ocs::tom::SPC> context,
+spool_context_create_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::SPC> context,
                           sge_object_type object_type);
-OCS_TRANSITIONAL lListElem *spool_context_create_type(lList **answer_list, lListElem *context,
+OCS_TRANSITIONAL lListElem *spool_context_create_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context,
                                                       sge_object_type object_type);
 
 ocs::tom::Element<ocs::tom::SPR>
 spool_type_search_default_rule(ocs::tom::ConstElement<ocs::tom::SPT> spool_type);
 
 ocs::tom::Element<ocs::tom::SPTR>
-spool_type_add_rule(lList **answer_list, ocs::tom::Element<ocs::tom::SPT> spool_type,
+spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::SPT> spool_type,
                     ocs::tom::ConstElement<ocs::tom::SPR> rule, lBool is_default);
-OCS_TRANSITIONAL lListElem *spool_type_add_rule(lList **answer_list, lListElem *spool_type,
+OCS_TRANSITIONAL lListElem *spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *spool_type,
                                                 const lListElem *rule, lBool is_default);
 
 bool
-spool_set_option(lList **answer_list, lListElem *context, const char *option);
+spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, const char *option);
 
 /* startup and shutdown */
 bool 
-spool_startup_context(lList **answer_list, lListElem *context, bool check);
+spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, bool check);
 
 bool 
-spool_shutdown_context(lList **answer_list, const lListElem *context);
+spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context);
 
 bool
-spool_maintain_context(lList **answer_list, lListElem *context, 
+spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, 
                        const spooling_maintenance_command cmd,
                        const char *args);
 
 bool
-spool_trigger_context(lList **answer_list, const lListElem *context, 
+spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
                       uint64_t trigger, uint64_t *next_trigger);
 
-bool spool_transaction(lList **answer_list, const lListElem *context, 
+bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
                        spooling_transaction_command cmd);
 
 /* reading */
 bool 
-spool_read_list(lList **answer_list, const lListElem *context, 
+spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
                 lList **list, const sge_object_type object_type);
 
 lListElem *
-spool_read_object(lList **answer_list, const lListElem *context, 
+spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
                   const sge_object_type object_type, const char *key);
 
 bool
-spool_read_keys(lList **answer_list, const lListElem *context,
+spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                 lList **list, const char *key);
 
 /* writing */
 bool 
-spool_write_object(lList **answer_list, const lListElem *context, 
+spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
                    const lListElem *object, const char *key, 
                    const sge_object_type object_type);
 
 /* deleting */
 bool 
-spool_delete_object(lList **answer_list, const lListElem *context, 
+spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
                     const sge_object_type object_type, const char *key);
 
 /* compare spooled attributes of 2 objects */
 bool
-spool_compare_objects(lList **answer_list, const lListElem *context, 
+spool_compare_objects(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
                       const sge_object_type object_type, 
                       const lListElem *ep1, const lListElem *ep2);
 

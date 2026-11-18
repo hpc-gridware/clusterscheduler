@@ -56,15 +56,17 @@
 
 #include "sge_qmaster_timed_event.h"
 #include "sge_c_gdi.h"
+#include "sgeobj/sge_answer.h"
 
 /* funtions called from within gdi framework in qmaster, the signatures are fixed by the gdi_object_t table */
 int
-ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ar_ep, lListElem *ar_ep, int add,
-       const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ar_ep,
+       lListElem *ar_ep, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
        ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
-ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object);
+ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *pep,
+         gdi_object_t *object);
 
 int
 ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
@@ -72,10 +74,10 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
 
 /* funtions called via gdi and inside the qmaster */
 int
-ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::ID> ep, lList **alpp,
-       ocs::tom::List<ocs::tom::AR> master_ar_list, monitoring_t *monitor);
-OCS_TRANSITIONAL int ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp,
-                            lList **master_ar_list, monitoring_t *monitor);
+ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::ID> ep,
+       ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::List<ocs::tom::AR> master_ar_list, monitoring_t *monitor);
+OCS_TRANSITIONAL int ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **master_ar_list, monitoring_t *monitor);
 
 void
 sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor);
@@ -93,22 +95,25 @@ void
 sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
 bool
-ar_list_has_reservation_due_to_ckpt(ocs::tom::ConstList<ocs::tom::AR> ar_master_list, lList **answer_list,
+ar_list_has_reservation_due_to_ckpt(ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     const char *qinstance_name, ocs::tom::ConstList<ocs::tom::ST> ckpt_string_list);
 
 bool
-ar_list_has_reservation_due_to_pe(ocs::tom::ConstList<ocs::tom::AR> ar_master_list, lList **answer_list,
+ar_list_has_reservation_due_to_pe(ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                   const char *qinstance_name, ocs::tom::ConstList<ocs::tom::ST> pe_string_list);
 
 bool
-ar_list_has_reservation_for_pe_with_slots(ocs::tom::ConstList<ocs::tom::AR> ar_master_list, lList **answer_list,
+ar_list_has_reservation_for_pe_with_slots(ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
+                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                           const char *pe_name, uint32_t new_slots);
 
 bool
 sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64_t gdi_session);
 
 bool
-sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name,
+sge_ar_list_conflicts_with_calendar(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *qinstance_name,
                                     ocs::tom::ConstElement<ocs::tom::CAL> cal_ep,
                                     ocs::tom::ConstList<ocs::tom::AR> master_ar_list);
 
@@ -130,13 +135,15 @@ sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR> ar_list, const char *qn
 
 bool
 ar_list_has_reservation_due_to_qinstance_complex_attr(ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
-                                                      lList **answer_list, ocs::tom::Element<ocs::tom::QU> qinstance,
+                                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                      ocs::tom::Element<ocs::tom::QU> qinstance,
                                                       ocs::tom::ConstList<ocs::tom::CE> ce_master_list);
 
 bool
 ar_list_has_reservation_due_to_host_complex_attr(ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
-                                                 lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 ocs::tom::ConstElement<ocs::tom::EH> host,
                                                  ocs::tom::ConstList<ocs::tom::CE> ce_master_list);
 
 void
-ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_session);
+ar_initialize_timer(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *monitor, uint64_t gdi_session);

@@ -148,16 +148,28 @@ static pthread_t japi_event_client_thread;
 
 /* ---- japi_ec_return_value ------------------------------ */
 /**
- * @brief The answer list the event client thread reports its result through
+ * @brief Guards the answer list the event client thread reports its result through, see japi_ec_alp()
  *
  * The thread has no caller to return to, so it stores its diagnosis here and
  * japi_exit() picks it up.
  */
 struct japi_ec_alp_data_t {
-   lList*           japi_ec_alp;   ///< Answer list produced by the event client thread
-   pthread_mutex_t  mutex;         ///< Guards `japi_ec_alp`
+   pthread_mutex_t  mutex;         ///< Guards the list japi_ec_alp() gives
 };
-static struct japi_ec_alp_data_t japi_ec_alp_struct = {nullptr, PTHREAD_MUTEX_INITIALIZER };
+static struct japi_ec_alp_data_t japi_ec_alp_struct = {PTHREAD_MUTEX_INITIALIZER};
+
+/**
+ * @brief The answer list produced by the event client thread
+ *
+ * Created on first use and never freed, so no destructor runs at exit while the thread may still use it
+ * (a process-lifetime static). Access only under #JAPI_LOCK_EC_ALP.
+ *
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::AN> *japi_ec_alp() {
+   static auto *const alp = new ocs::tom::ListPtr<ocs::tom::AN>();
+   return alp;
+}
 /** Takes the mutex guarding the event client thread's answer list */
 #define JAPI_LOCK_EC_ALP(japi_ec_alp_data_t)      sge_mutex_lock("EC_ALP", __func__, __LINE__, &(japi_ec_alp_data_t.mutex))
 /** Releases the mutex taken by #JAPI_LOCK_EC_ALP */
@@ -322,7 +334,8 @@ static int japi_wait_retry(ocs::tom::List<ocs::tom::JJ> japi_job_list, int wait4
                            uint32_t *wjobidp, uint32_t *wtaskidp,
                            bool *wis_task_arrayp, int *wait_status,
                            int *wevent, ocs::tom::ListPtr<ocs::tom::UA> *rusagep);
-static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int drmaa_control_action);
+static int japi_gdi_control_error2japi_error(ocs::tom::ConstElement<ocs::tom::AN> aep, dstring *diag,
+                                             int drmaa_control_action);
 static int japi_sync_job_tasks(ocs::tom::Element<ocs::tom::JJ> japi_job, ocs::tom::ConstElement<ocs::tom::JB> sge_job);
 static int japi_clean_up_jobs (int flag, dstring *diag);
 static int japi_read_dynamic_attributes(dstring *diag);
@@ -377,7 +390,7 @@ static void japi_dec_threads(const char *func) {
 int japi_init_mt(dstring *diag) {
    DENTER(TOP_LAYER);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::gdi::ErrorValue gdi_errno;
 
    /* current major assumptions are
@@ -394,10 +407,10 @@ int japi_init_mt(dstring *diag) {
    gdi_errno = ocs::gdi::ClientBase::setup_and_enroll(prog_number, MAIN_THREAD, &alp);
    if ((gdi_errno != ocs::gdi::AE_OK) && (gdi_errno != ocs::gdi::AE_ALREADY_SETUP)) {
       answer_to_dstring(lFirst(alp), diag);
-      lFreeList(&alp);
+      alp.reset();
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -489,7 +502,7 @@ int japi_init(const char *contact, const char *session_key_in,
    /* No need to worry about locking for this global since it is only used in
     * japi_init(), and only one thread may be in japi_init() at a time. */
    if (!virgin_session) {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       int commlib_error = CL_RETVAL_OK;
       const char *component_name = component_get_component_name();
       handle = cl_com_get_handle(component_name, 0);
@@ -689,7 +702,7 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
       ret = DRMAA_ERRNO_SUCCESS;
    }
    else if (japi_ec_state == JAPI_EC_FAILED) {
-      const lListElem *aep = nullptr;
+      ocs::tom::ConstElement<ocs::tom::AN> aep;
 
       japi_ec_state = JAPI_EC_DOWN;
       JAPI_UNLOCK_EC_STATE();
@@ -704,7 +717,7 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
 
       /* return error context from event client thread if there is such */
       JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-      aep = lFirst(japi_ec_alp_struct.japi_ec_alp);
+      aep = lFirst(*japi_ec_alp());
       if (aep != nullptr) {
          answer_to_dstring(aep, diag);
       }
@@ -1115,7 +1128,7 @@ void japi_delete_string_vector(drmaa_attr_values_t *iter) {
  */
 static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, uint32_t *jobid, dstring *diag) {
    DENTER(TOP_LAYER);
-   lList *alp;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    int result = DRMAA_ERRNO_SUCCESS;
 
 
@@ -1150,7 +1163,7 @@ static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, u
    response.reset();
 
    if (!lFirst(alp)) {
-      lFreeList(&alp);
+      alp.reset();
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
    }
@@ -1182,7 +1195,7 @@ static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, u
          sge_dstring_append(diag, "\n");
       }
    }
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(result);
 }
@@ -1563,7 +1576,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
    int drmaa_errno;
    uint32_t jobid, taskid;
    bool array;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /* ensure japi_init() was called */
    JAPI_LOCK_SESSION();
@@ -1655,12 +1668,12 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
                   japi_dec_threads(__func__);
                   ret = japi_gdi_control_error2japi_error(aep, diag, drmaa_action);
-                  lFreeList(&alp);
+                  alp.reset();
 
                   DRETURN(ret);
                }
             }
-            lFreeList(&alp);
+            alp.reset();
          }
       }
       break;
@@ -1668,7 +1681,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
    case DRMAA_CONTROL_HOLD:
    case DRMAA_CONTROL_RELEASE:
       {
-         lList *alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
          ocs::tom::ListPtr<ocs::tom::JB> request_list;
          uint32_t gdi_action;
 
@@ -1751,13 +1764,13 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
                   japi_dec_threads(__func__);
                   ret = japi_gdi_control_error2japi_error(aep, diag, drmaa_action);
-                  lFreeList(&alp);
+                  alp.reset();
 
                   DRETURN(ret);
                }
             }
 
-            lFreeList(&alp);
+            alp.reset();
          }
       }
       break;
@@ -1905,7 +1918,8 @@ enum {
    JAPI_WAIT_TIMEOUT      ///< The timeout expired before the condition was met
 };
 
-static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int drmaa_control_action) {
+static int japi_gdi_control_error2japi_error(ocs::tom::ConstElement<ocs::tom::AN> aep, dstring *diag,
+                                             int drmaa_control_action) {
    DENTER(TOP_LAYER);
 
    int ret, gdi_error;
@@ -2365,7 +2379,7 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
                                           &waited_taskid, &waited_is_task_array,
                                           stat, event, &rusagep)) == JAPI_WAIT_UNFINISHED) {
 
-         const lListElem *aep = nullptr;
+         ocs::tom::ConstElement<ocs::tom::AN> aep;
          /* has japi_exit() been called meanwhile ? */
          JAPI_LOCK_SESSION();
          if (japi_session != JAPI_SESSION_ACTIVE) {
@@ -2378,7 +2392,7 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
          JAPI_UNLOCK_SESSION();
 
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-         aep = lFirst(japi_ec_alp_struct.japi_ec_alp);
+         aep = lFirst(*japi_ec_alp());
          /* return error context from event client thread if there is such */
          if (aep != nullptr) {
             sge_dstring_clear(diag);
@@ -3025,8 +3039,8 @@ static std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>> japi_get_job(const uint3
 
    using Result = std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>>;
 
-   lList *alp = nullptr;
-   const lListElem *aep = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   ocs::tom::ConstElement<ocs::tom::AN> aep;
    int jb_id = 0;
    ocs::gdi::Request gdi_multi{};
    uint32_t quality = 0;
@@ -3056,7 +3070,7 @@ static std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>> japi_get_job(const uint3
    aep = lFirst(alp);
    if (aep == nullptr) {
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
-      lFreeList(&alp);
+      alp.reset();
       DRETURN(Result(DRMAA_ERRNO_INTERNAL_ERROR, std::move(retrieved_job_list)));
    }
 
@@ -3064,11 +3078,11 @@ static std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>> japi_get_job(const uint3
 
    if (quality == ANSWER_QUALITY_ERROR) {
       answer_to_dstring(aep, diag);
-      lFreeList(&alp);
+      alp.reset();
       DRETURN(Result(DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, std::move(retrieved_job_list)));
    }
 
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(Result(DRMAA_ERRNO_SUCCESS, std::move(retrieved_job_list)));
 }
@@ -3605,7 +3619,8 @@ static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_
 static void *japi_implementation_thread(void *a_user_data_pointer) {
    DENTER(TOP_LAYER);
 
-   lList *alp = nullptr, *event_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   lList *event_list = nullptr;
    char buffer[1024];
    dstring buffer_wrapper;
    bool stop_ec = false;
@@ -3626,7 +3641,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
    JAPI_LOCK_EC_STATE();
    if (japi_ec_state != JAPI_EC_STARTING && japi_ec_state != JAPI_EC_RESTARTING ) {
       JAPI_UNLOCK_EC_STATE();
-      lFreeList(&alp);
+      alp.reset();
       goto SetupFailed;
    }
    restarting = (japi_ec_state == JAPI_EC_RESTARTING)?true:false;
@@ -3636,15 +3651,15 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
 
    gdi_errno = ocs::gdi::ClientBase::setup_and_enroll(prog_number, MAIN_THREAD, &alp);
    if ((gdi_errno != ocs::gdi::ErrorValue::AE_OK) && (gdi_errno != ocs::gdi::ErrorValue::AE_ALREADY_SETUP)) {
-      const lListElem *aep = lFirst(alp);
+      const auto aep = alp->front();
       DPRINTF("error: ocs::gdi::ClientBase::setup_and_enroll() failed with gdi_error %d for event client thread\n", gdi_errno);
       if (aep) {
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-         answer_list_add(&(japi_ec_alp_struct.japi_ec_alp), ocs::tom::get<AN_text>(aep),
+         answer_list_add(japi_ec_alp(), ocs::tom::get<AN_text>(aep),
                ocs::tom::get<AN_status>(aep), (answer_quality_t)ocs::tom::get<AN_quality>(aep));
          JAPI_UNLOCK_EC_ALP(japi_ec_alp_struct);
       }
-      lFreeList(&alp);
+      alp.reset();
       goto SetupFailed;
    }
 
@@ -3659,14 +3674,14 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
    DPRINTF("registering as event client ...\n");
    evc = sge_evc_class_create(EV_ID_ANY, &alp, nullptr);
    if (evc == nullptr) {
-      const lListElem *aep = lFirst(alp);
+      const auto aep = alp->front();
       if (aep) {
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-         answer_list_add(&(japi_ec_alp_struct.japi_ec_alp), ocs::tom::get<AN_text>(aep),
+         answer_list_add(japi_ec_alp(), ocs::tom::get<AN_text>(aep),
                ocs::tom::get<AN_status>(aep), (answer_quality_t)ocs::tom::get<AN_quality>(aep));
          JAPI_UNLOCK_EC_ALP(japi_ec_alp_struct);
       }
-      lFreeList(&alp);
+      alp.reset();
       goto SetupFailed;
    }
 
@@ -3697,21 +3712,21 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
    JAPI_LOCK_EC_STATE();
    if (japi_ec_state != JAPI_EC_STARTING && japi_ec_state != JAPI_EC_RESTARTING ) {
       JAPI_UNLOCK_EC_STATE();
-      lFreeList(&alp);
+      alp.reset();
       goto SetupFailed;
    }
 
    if (!evc->ec_register(evc, false, &alp)) {
-      const lListElem *aep = lFirst(alp);
+      const auto aep = alp->front();
       DPRINTF("error: ec_register() failed\n");
       if (aep) {
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-         answer_list_add(&(japi_ec_alp_struct.japi_ec_alp), ocs::tom::get<AN_text>(aep),
+         answer_list_add(japi_ec_alp(), ocs::tom::get<AN_text>(aep),
                ocs::tom::get<AN_status>(aep), (answer_quality_t)ocs::tom::get<AN_quality>(aep));
          JAPI_UNLOCK_EC_ALP(japi_ec_alp_struct);
       }
       JAPI_UNLOCK_EC_STATE();
-      lFreeList(&alp);
+      alp.reset();
       goto SetupFailed;
    }
    japi_ec_id = evc->ec_get_id(evc);
@@ -3914,7 +3929,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                         DPRINTF("adding started task %ld for job %ld\n", intkey2, intkey);
                         range_list_insert_id(range, &alp, intkey2);
                         JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-                        range_list_sort_uniq_compress(*range, &(japi_ec_alp_struct.japi_ec_alp), true);
+                        range_list_sort_uniq_compress(*range, japi_ec_alp(), true);
                         JAPI_UNLOCK_EC_ALP(japi_ec_alp_struct);
                         static_cast<void>(japi_job.exchange<JJ_started_task_ids>(std::move(range)));
 
@@ -3941,7 +3956,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                stop_ec = true;
                qmaster_bound = false;
                JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-               answer_list_add(&(japi_ec_alp_struct.japi_ec_alp), MSG_JAPI_KILLED_EVENT_CLIENT,
+               answer_list_add(japi_ec_alp(), MSG_JAPI_KILLED_EVENT_CLIENT,
                   STATUS_ERROR1, ANSWER_QUALITY_CRITICAL);
                JAPI_UNLOCK_EC_ALP(japi_ec_alp_struct);
                pthread_cond_broadcast (&Master_japi_job_list_finished_cv);
@@ -4158,7 +4173,7 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
    ocs::tom::ConstElement<ocs::tom::JJ> japi_job;
    // created with the first job, as the free emplace_back() created it
    ocs::tom::ListPtr<ocs::tom::ID> id_list;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    uint32_t jobid;
    int ret = DRMAA_ERRNO_SUCCESS;
    bool done = false;
@@ -4247,7 +4262,7 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
    } /* if */
 
    // the answers of range_list_calculate_difference_set() were never looked at, and leaked before
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(ret);
 }
@@ -4413,7 +4428,7 @@ static int do_gdi_delete(ocs::tom::ListPtr<ocs::tom::ID> &&id_list_in, const int
 
    // sge_gdi() has no typed form yet; it replaces the request with the response, freed here
    lList *id_list = id_list_in.release();
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
                                           &id_list, nullptr, nullptr);
    lFreeList(&id_list);
 
@@ -4429,12 +4444,12 @@ static int do_gdi_delete(ocs::tom::ListPtr<ocs::tom::ID> &&id_list_in, const int
     * return a DRMAA_ERRNO_INVALID_JOB error by every control(ALL, TERM). */
       if ((status != STATUS_OK) && !(delete_all && (status == STATUS_EEXIST))) {
          int ret = japi_gdi_control_error2japi_error(aep, diag, action);
-         lFreeList(&alp);
+         alp.reset();
          DRETURN(ret);
       }
    }
 
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -4454,7 +4469,7 @@ static int do_gdi_delete(ocs::tom::ListPtr<ocs::tom::ID> &&id_list_in, const int
 static int japi_stop_event_client(const char *default_cell) {
    DENTER(TOP_LAYER);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    char id_string[25];
 
    DPRINTF (("Requesting that GDI kill our event client.\n"));
@@ -4464,7 +4479,7 @@ static int japi_stop_event_client(const char *default_cell) {
    id_list->emplace_back<ID_str>(id_string);
    alp = ocs::gdi::Client::gdi_kill(*id_list, EVENTCLIENT_KILL);
    id_list.reset();
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(0);
 }

@@ -52,6 +52,7 @@
 #include "msg_common.h"
 #include "sge_string.h"
 #include "sge_spool.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    // static attributes
@@ -298,7 +299,8 @@ namespace ocs {
     * @return true on success
     */
    bool
-   ReportingFileWriter::create_new_job_records(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   ReportingFileWriter::create_new_job_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                               const ocs::tom::ConstElement<ocs::tom::JB> job) {
       bool ret = true;
 
       sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
@@ -317,7 +319,8 @@ namespace ocs {
     * @param job the job (`JB_Type`), checked; may be nullptr
     * @return as create_new_job_records()
     */
-   bool ReportingFileWriter::create_new_job_records(lList **answer_list, const lListElem *job) {
+   bool ReportingFileWriter::create_new_job_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                    const lListElem *job) {
       return create_new_job_records(answer_list, ocs::tom::ConstElement<ocs::tom::JB>(job));
    }
 
@@ -334,8 +337,8 @@ namespace ocs {
     * @param message a description of what happened
     * @return true on success
     */
-   bool ReportingFileWriter::create_job_logs(lList **answer_list, const uint64_t event_time, const job_log_t type,
-                                             const char *user, const char *host,
+   bool ReportingFileWriter::create_job_logs(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint64_t event_time,
+                                             const job_log_t type, const char *user, const char *host,
                                              const ocs::tom::ConstElement<ocs::tom::JR> job_report,
                                              const ocs::tom::ConstElement<ocs::tom::JB> job,
                                              const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
@@ -369,7 +372,8 @@ namespace ocs {
     * @param message a description of what happened
     * @return as create_job_logs()
     */
-   bool ReportingFileWriter::create_job_logs(lList **answer_list, const uint64_t event_time, const job_log_t type,
+   bool ReportingFileWriter::create_job_logs(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint64_t event_time,
+                                             const job_log_t type,
                                              const char *user, const char *host, const lListElem *job_report,
                                              const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
                                              const char *message) {
@@ -388,7 +392,8 @@ namespace ocs {
     * @param intermediate whether this is an interim record for a job that is still running
     * @return true on success
     */
-   bool ReportingFileWriter::create_acct_records(lList **answer_list, const ocs::tom::Element<ocs::tom::JR> job_report,
+   bool ReportingFileWriter::create_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const ocs::tom::Element<ocs::tom::JR> job_report,
                                                  const ocs::tom::Element<ocs::tom::JB> job,
                                                  const ocs::tom::Element<ocs::tom::JAT> ja_task,
                                                  const bool intermediate) {
@@ -413,8 +418,8 @@ namespace ocs {
     * @param intermediate whether this is an interim record for a job that is still running
     * @return as create_acct_records()
     */
-   bool ReportingFileWriter::create_acct_records(lList **answer_list, lListElem *job_report, lListElem *job,
-                                                 lListElem *ja_task, const bool intermediate) {
+   bool ReportingFileWriter::create_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *job_report,
+                                                 lListElem *job, lListElem *ja_task, const bool intermediate) {
       return create_acct_records(answer_list, ocs::tom::Element<ocs::tom::JR>(job_report),
                                  ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::Element<ocs::tom::JAT>(ja_task),
                                  intermediate);
@@ -442,7 +447,7 @@ namespace ocs {
     * @see is_online_usage_required()
     */
    bool
-   ReportingFileWriter::create_online_usage_records(lList **answer_list,
+   ReportingFileWriter::create_online_usage_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                     const ocs::tom::ConstElement<ocs::tom::JR> job_report,
                                                     const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                     const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
@@ -471,7 +476,8 @@ namespace ocs {
     * @param aggregate_pe_tasks whether the PE tasks are summed rather than reported individually
     * @return as create_online_usage_records()
     */
-   bool ReportingFileWriter::create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
+   bool ReportingFileWriter::create_online_usage_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                         lListElem *job_report, lListElem *job,
                                                          lListElem *ja_task, lListElem *pe_task,
                                                          const bool aggregate_pe_tasks) {
       // the job report comes from an execution host and no writer reads it here: taken unchecked
@@ -508,7 +514,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return true on success
     */
-   bool ReportingFileWriter::create_host_records(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::EH> host,
+   bool ReportingFileWriter::create_host_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                  const uint64_t report_time) {
       bool ret = true;
 
@@ -529,7 +536,7 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_host_records()
     */
-   bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host,
+   bool ReportingFileWriter::create_host_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *host,
                                                  const uint64_t report_time) {
       return create_host_records(answer_list, ocs::tom::ConstElement<ocs::tom::EH>(host), report_time);
    }
@@ -542,7 +549,7 @@ namespace ocs {
     * @return true on success
     */
    bool
-   ReportingFileWriter::create_host_consumable_records(lList **answer_list,
+   ReportingFileWriter::create_host_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                        const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                        const uint64_t report_time) {
@@ -566,7 +573,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_host_consumable_records()
     */
-   bool ReportingFileWriter::create_host_consumable_records(lList **answer_list, const lListElem *host,
+   bool ReportingFileWriter::create_host_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                            const lListElem *host,
                                                             const lListElem *job, const uint64_t report_time) {
       return create_host_consumable_records(answer_list, ocs::tom::ConstElement<ocs::tom::EH>(host),
                                             ocs::tom::ConstElement<ocs::tom::JB>(job), report_time);
@@ -578,7 +586,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return true on success
     */
-   bool ReportingFileWriter::create_queue_records(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::QU> queue,
+   bool ReportingFileWriter::create_queue_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                  const ocs::tom::ConstElement<ocs::tom::QU> queue,
                                                   const uint64_t report_time) {
       bool ret = true;
 
@@ -599,7 +608,7 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_queue_records()
     */
-   bool ReportingFileWriter::create_queue_records(lList **answer_list, const lListElem *queue,
+   bool ReportingFileWriter::create_queue_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *queue,
                                                   const uint64_t report_time) {
       return create_queue_records(answer_list, ocs::tom::ConstElement<ocs::tom::QU>(queue), report_time);
    }
@@ -612,7 +621,7 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return true on success
     */
-   bool ReportingFileWriter::create_queue_consumable_records(lList **answer_list,
+   bool ReportingFileWriter::create_queue_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                              const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                              const ocs::tom::ConstElement<ocs::tom::QU> queue,
                                                              const ocs::tom::ConstElement<ocs::tom::JB> job,
@@ -638,7 +647,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_queue_consumable_records()
     */
-   bool ReportingFileWriter::create_queue_consumable_records(lList **answer_list, const lListElem *host,
+   bool ReportingFileWriter::create_queue_consumable_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                             const lListElem *host,
                                                              const lListElem *queue, const lListElem *job,
                                                              const uint64_t report_time) {
       return create_queue_consumable_records(answer_list, ocs::tom::ConstElement<ocs::tom::EH>(host),
@@ -652,7 +662,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return true on success
     */
-   bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+   bool ReportingFileWriter::create_new_ar_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                   const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                    const uint64_t report_time) {
       bool ret = true;
 
@@ -673,7 +684,7 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_new_ar_records()
     */
-   bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const lListElem *ar,
+   bool ReportingFileWriter::create_new_ar_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *ar,
                                                    const uint64_t report_time) {
       return create_new_ar_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), report_time);
    }
@@ -685,7 +696,8 @@ namespace ocs {
     * @return true on success
     */
    bool
-   ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+   ReportingFileWriter::create_ar_attribute_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                    const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                     const uint64_t report_time) {
       bool ret = true;
 
@@ -706,8 +718,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_ar_attribute_records()
     */
-   bool ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const lListElem *ar,
-                                                         const uint64_t report_time) {
+   bool ReportingFileWriter::create_ar_attribute_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                         const lListElem *ar, const uint64_t report_time) {
       return create_ar_attribute_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), report_time);
    }
 
@@ -719,7 +731,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return true on success
     */
-   bool ReportingFileWriter::create_ar_log_records(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+   bool ReportingFileWriter::create_ar_log_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                   const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                    const ar_state_event_t state, const char *ar_description,
                                                    const uint64_t report_time) {
       bool ret = true;
@@ -743,7 +756,7 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_ar_log_records()
     */
-   bool ReportingFileWriter::create_ar_log_records(lList **answer_list, const lListElem *ar,
+   bool ReportingFileWriter::create_ar_log_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *ar,
                                                    const ar_state_event_t state, const char *ar_description,
                                                    const uint64_t report_time) {
       return create_ar_log_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), state, ar_description,
@@ -756,7 +769,8 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return true on success
     */
-   bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+   bool ReportingFileWriter::create_ar_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                    const ocs::tom::ConstElement<ocs::tom::AR> ar,
                                                     const uint64_t report_time) {
       bool ret = true;
 
@@ -777,7 +791,7 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     * @return as create_ar_acct_records()
     */
-   bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const lListElem *ar,
+   bool ReportingFileWriter::create_ar_acct_records(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *ar,
                                                     const uint64_t report_time) {
       return create_ar_acct_records(answer_list, ocs::tom::ConstElement<ocs::tom::AR>(ar), report_time);
    }

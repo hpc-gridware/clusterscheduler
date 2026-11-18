@@ -44,7 +44,7 @@
  * @param parameter the parsed parameters
  * @return true when reservations were found or a summary was requested
  */
-bool ocs::QRStatModelClient::fetch_data(lList **answer_list, QRStatParameter& parameter) {
+bool ocs::QRStatModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
 
    lEnumeration *what_ar = get_ar_what(parameter);
@@ -58,7 +58,9 @@ bool ocs::QRStatModelClient::fetch_data(lList **answer_list, QRStatParameter& pa
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
-   lFreeList(answer_list);
+   if (answer_list != nullptr) {
+      answer_list->reset();
+   }
 
    if (!parameter.is_summary() && ar_list_->empty()) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_GDI_AR_DOES_NOT_EXIT);

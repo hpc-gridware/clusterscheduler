@@ -41,9 +41,9 @@
  * @return the first answer's text, or "" if the list is empty or has no text
  */
 static const char *
-first_answer_text(lList *answer_list) {
-   const lListElem *aep = lFirst(answer_list);
-   const char *text = (aep != nullptr) ? ocs::tom::get<AN_text>(aep) : nullptr;
+first_answer_text(const ocs::tom::ConstList<ocs::tom::AN> answer_list) {
+   const auto aep = answer_list.front();
+   const char *text = aep ? ocs::tom::get<AN_text>(aep) : nullptr;
    return (text != nullptr) ? text : "";
 }
 
@@ -78,11 +78,11 @@ test_parse_date_time() {
 
    // T01: a well-formed MMDDhhmm value parses successfully.
    {
-      lList *al = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> al;
       uint32_t t = 0;
       bool ok = ulong_parse_date_time_from_string(&t, &al, "06151200");
       CHECK(1, "valid MMDDhhmm date accepted", ok);
-      lFreeList(&al);
+      al.reset();
    }
 
    // T02: RED->GREEN. An input of exactly sizeof(stringT) bytes must be
@@ -90,27 +90,27 @@ test_parse_date_time() {
    //      it slipped through into the strcpy.
    {
       std::string s(cap, '9'); // exactly 2048 chars
-      lList *al = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> al;
       uint32_t t = 0;
       bool ok = ulong_parse_date_time_from_string(&t, &al, s.c_str());
       const char *msg = first_answer_text(al);
       CHECK(2, "len==sizeof(stringT) rejected (no overflow)", !ok);
       CHECK(3, "len==sizeof(stringT) rejected by length guard, not format check",
             strstr(msg, "exceeds maximum") != nullptr);
-      lFreeList(&al);
+      al.reset();
    }
 
    // T04: an over-long input (sizeof+1) is likewise rejected by the guard.
    {
       std::string s(cap + 1, '9');
-      lList *al = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> al;
       uint32_t t = 0;
       bool ok = ulong_parse_date_time_from_string(&t, &al, s.c_str());
       const char *msg = first_answer_text(al);
       CHECK(4, "len>sizeof(stringT) rejected", !ok);
       CHECK(5, "len>sizeof(stringT) rejected by length guard",
             strstr(msg, "exceeds maximum") != nullptr);
-      lFreeList(&al);
+      al.reset();
    }
 
    // T06: a string just under the buffer capacity (sizeof-1) must NOT be
@@ -119,24 +119,24 @@ test_parse_date_time() {
    //      against over-tightening the bound.
    {
       std::string s(cap - 1, '9');
-      lList *al = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> al;
       uint32_t t = 0;
       bool ok = ulong_parse_date_time_from_string(&t, &al, s.c_str());
       const char *msg = first_answer_text(al);
       CHECK(6, "len==sizeof(stringT)-1 not rejected as too long", !ok);
       CHECK(7, "len==sizeof(stringT)-1 reaches format check, not length guard",
             strstr(msg, "exceeds maximum") == nullptr);
-      lFreeList(&al);
+      al.reset();
    }
 
    // T08: NULL and empty input are rejected without crashing.
    {
-      lList *al = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> al;
       uint32_t t = 0;
       bool ok_null = ulong_parse_date_time_from_string(&t, &al, nullptr);
       bool ok_empty = ulong_parse_date_time_from_string(&t, &al, "");
       CHECK(8, "NULL and empty input rejected", !ok_null && !ok_empty);
-      lFreeList(&al);
+      al.reset();
    }
 }
 

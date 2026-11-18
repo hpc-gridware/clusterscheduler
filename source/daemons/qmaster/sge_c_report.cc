@@ -267,7 +267,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
 
    if (is_pb_used) {
       if (pb_filled(&pb)) {
-         lList *alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
          /* send all stuff packed during processing to execd */
          ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, 0, &alp);
          MONITOR_MESSAGES_OUT(monitor);
@@ -317,7 +317,7 @@ update_license_data(const ocs::tom::Element<ocs::tom::EH> hep, const ocs::tom::C
    ** we spool, cf. cod_update_load_values()
    */
    if (processors != ocs::tom::get<EH_processors>(hep)) {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       // set the processors attribute
       ocs::tom::set<EH_processors>(hep, processors);

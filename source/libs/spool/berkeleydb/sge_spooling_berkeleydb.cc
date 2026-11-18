@@ -106,7 +106,7 @@ const char *get_berkeleydb_spooling_method()
 }
 
 static bool
-spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
+spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *rule,
                              const char *option);
 
 /**
@@ -125,7 +125,7 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
  * @return on success, the new spooling context (SPC_Type), else nullptr
  */
 lListElem *
-spool_berkeleydb_create_context(lList **answer_list, const char *args) {
+spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args) {
    DENTER(BDB_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::SPC> context;
@@ -186,7 +186,7 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args) {
  *
  * @see `spool_startup_context()`
  */
-bool spool_berkeleydb_default_startup_func(lList **answer_list,
+bool spool_berkeleydb_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                            const lListElem *rule, bool check) {
    DENTER(BDB_LAYER);
 
@@ -226,7 +226,7 @@ bool spool_berkeleydb_default_startup_func(lList **answer_list,
  *
  * @see `spool_shutdown_context()`
  */
-bool spool_berkeleydb_default_shutdown_func(lList **answer_list,
+bool spool_berkeleydb_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                             const lListElem *rule) {
    DENTER(BDB_LAYER);
 
@@ -271,7 +271,7 @@ bool spool_berkeleydb_default_shutdown_func(lList **answer_list,
  *
  * @see `spool_maintain_context()`
  */
-bool spool_berkeleydb_default_maintenance_func(lList **answer_list,
+bool spool_berkeleydb_default_maintenance_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                const lListElem *rule,
                                                const spooling_maintenance_command cmd,
                                                const char *args) {
@@ -316,7 +316,7 @@ bool spool_berkeleydb_default_maintenance_func(lList **answer_list,
  *
  * @note MT-NOTE: spool_berkeleydb_trigger_func() is MT safe
  */
-bool spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
+bool spool_berkeleydb_trigger_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule,
                                    uint64_t trigger, uint64_t *next_trigger) {
    DENTER(BDB_LAYER);
 
@@ -360,7 +360,7 @@ bool spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
  *
  * @note MT-NOTE: spool_berkeleydb_transaction_func() is MT safe
  */
-bool spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
+bool spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule,
                                        spooling_transaction_command cmd) {
    DENTER(BDB_LAYER);
 
@@ -425,7 +425,7 @@ bool spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rul
  *
  * @see `spool_read_list()`
  */
-bool spool_berkeleydb_default_list_func(lList **answer_list,
+bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                         const lListElem *type,
                                         const lListElem *rule, lList **list,
                                         const sge_object_type object_type) {
@@ -647,7 +647,7 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
  * @see `spool_read_object()`
  */
 lListElem *
-spool_berkeleydb_default_read_func(lList **answer_list,
+spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const lListElem *type,
                                    const lListElem *rule, const char *key,
                                    const sge_object_type object_type) {
@@ -743,7 +743,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
  * @note This function should not be called directly, it is called by the
  *       spooling framework.
  */
-bool spool_berkeleydb_default_read_keys_func(lList **answer_list,
+bool spool_berkeleydb_default_read_keys_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                              const lListElem *rule,
                                              lList **list,
                                              const char *key) {
@@ -820,7 +820,7 @@ bool spool_berkeleydb_default_read_keys_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool spool_berkeleydb_default_write_func(lList **answer_list,
+bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                          const lListElem *type,
                                          const lListElem *rule,
                                          const lListElem *object,
@@ -973,7 +973,7 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool spool_berkeleydb_default_delete_func(lList **answer_list,
+bool spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                           const lListElem *type,
                                           const lListElem *rule,
                                           const char *key,
@@ -1083,7 +1083,7 @@ bool spool_berkeleydb_default_delete_func(lList **answer_list,
 }
 
 static bool
-spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
+spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *rule,
                              const char *option) {
    DENTER(BDB_LAYER);
 

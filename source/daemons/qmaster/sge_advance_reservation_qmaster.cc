@@ -156,7 +156,7 @@ typedef struct {
 ar_id_t ar_id_control = {0, false, PTHREAD_MUTEX_INITIALIZER};   ///< @copybrief ar_id_t
 
 static bool
-ar_reserve_queues(lList **alpp, ocs::tom::Element<ocs::tom::AR> ar, uint64_t gdi_session);
+ar_reserve_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::AR> ar, uint64_t gdi_session);
 
 static uint32_t
 sge_get_ar_id(monitoring_t *monitor);
@@ -177,7 +177,7 @@ sge_ar_send_mail(ocs::tom::ConstElement<ocs::tom::AR> ar, int type);
  * @param gdi_session the session the change belongs to
  */
 void
-ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_session) {
+ar_initialize_timer(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *monitor, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    uint64_t now = sge_get_gmt64();
@@ -248,7 +248,8 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_ses
  * @return true if no project is requested or the project is valid, false otherwise.
  */
 static bool
-ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi::Packet *packet, lList **alpp) {
+ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi::Packet *packet,
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    const char *project = ocs::tom::get<AR_project>(ar);
@@ -320,7 +321,8 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
  *
  * @note MT-NOTE: ar_mod() is not MT safe
  */
-int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ar_ep, lListElem *ar_ep,
+int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ar_ep,
+           lListElem *ar_ep,
            const int add, const char *ruser, const char *rhost, gdi_object_t *object, const ocs::gdi::Command cmd,
            const ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -452,11 +454,12 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
  *
  * @note MT-NOTE: ar_spool() is MT safe
  */
-int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+             gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstElement<ocs::tom::AR> ar(ep);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    dstring buffer = DSTRING_INIT;
 
    sge_dstring_sprintf(&buffer, sge_u32, ocs::tom::get<AR_id>(ar));
@@ -561,7 +564,8 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
  * @note MT-NOTE: ar_del() is not MT safe
  */
 int
-ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::ID> ep, lList **alpp,
+ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::ID> ep,
+       ocs::tom::ListPtr<ocs::tom::AN> *alpp,
        const ocs::tom::List<ocs::tom::AR> master_ar_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -776,8 +780,8 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElem
  * @return as ar_del()
  */
 int
-ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **master_ar_list,
-       monitoring_t *monitor) {
+ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+       lList **master_ar_list, monitoring_t *monitor) {
    return ar_del(packet, task, ocs::tom::ConstElement<ocs::tom::ID>(ep), alpp,
                  ocs::tom::List<ocs::tom::AR>(*master_ar_list), monitor);
 }
@@ -1048,14 +1052,15 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
  * @note MT-NOTE: ar_reserve_queues() is not MT safe, needs GLOBAL_LOCK
  */
 static bool
-ar_reserve_queues(lList **alpp, const ocs::tom::Element<ocs::tom::AR> ar, const uint64_t gdi_session) {
+ar_reserve_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<ocs::tom::AR> ar,
+                  const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[SPLIT_LAST];
    ocs::tom::ListPtr<ocs::tom::JB> suspended_list;
    ocs::tom::ListPtr<ocs::tom::JB> running_list;
 
    int verify_mode = ocs::tom::get<AR_verify>(ar);
-   lList *talp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> talp;
    const auto ar_queue_request = ocs::tom::get<AR_queue_list>(ar);
    const char *ar_pe_request = ocs::tom::get<AR_pe>(ar);
    const char *ar_ckpt_request = ocs::tom::get<AR_checkpoint_name>(ar);
@@ -1453,8 +1458,8 @@ ar_do_reservation(const ocs::tom::Element<ocs::tom::AR> ar, const bool incslots,
  * @note MT-NOTE: ar_get_string_from_event() is MT safe
  */
 bool
-ar_list_has_reservation_due_to_ckpt(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list, lList **answer_list,
-                                    const char *qinstance_name,
+ar_list_has_reservation_due_to_ckpt(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *qinstance_name,
                                     const ocs::tom::ConstList<ocs::tom::ST> ckpt_string_list) {
    DENTER(TOP_LAYER);
 
@@ -1495,7 +1500,8 @@ ar_list_has_reservation_due_to_ckpt(const ocs::tom::ConstList<ocs::tom::AR> ar_m
  * @note MT-NOTE: ar_get_string_from_event() is MT safe
  */
 bool
-ar_list_has_reservation_due_to_pe(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list, lList **answer_list,
+ar_list_has_reservation_due_to_pe(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                   const char *qinstance_name, const ocs::tom::ConstList<ocs::tom::ST> pe_string_list) {
    DENTER(TOP_LAYER);
 
@@ -1537,7 +1543,8 @@ ar_list_has_reservation_due_to_pe(const ocs::tom::ConstList<ocs::tom::AR> ar_mas
  * @note MT-NOTE: ar_list_has_reservation_for_pe_with_slots() is MT safe
  */
 bool
-ar_list_has_reservation_for_pe_with_slots(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list, lList **answer_list,
+ar_list_has_reservation_for_pe_with_slots(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
+                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                           const char *pe_name, const uint32_t new_slots) {
    DENTER(TOP_LAYER);
 
@@ -2124,7 +2131,7 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
  * @note MT-NOTE: sge_ar_list_conflicts_with_calendar() is MT safe
  */
 bool
-sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name,
+sge_ar_list_conflicts_with_calendar(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *qinstance_name,
                                     const ocs::tom::ConstElement<ocs::tom::CAL> cal_ep,
                                     const ocs::tom::ConstList<ocs::tom::AR> master_ar_list) {
    DENTER(TOP_LAYER);
@@ -2435,7 +2442,7 @@ sge_ar_send_mail(const ocs::tom::ConstElement<ocs::tom::AR> ar, const int type) 
  */
 bool
 ar_list_has_reservation_due_to_qinstance_complex_attr(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
-                                                      lList **answer_list,
+                                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                       const ocs::tom::Element<ocs::tom::QU> qinstance,
                                                       const ocs::tom::ConstList<ocs::tom::CE> ce_master_list) {
    DENTER(TOP_LAYER);
@@ -2525,7 +2532,8 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const ocs::tom::ConstList<
  */
 bool
 ar_list_has_reservation_due_to_host_complex_attr(const ocs::tom::ConstList<ocs::tom::AR> ar_master_list,
-                                                 lList **answer_list, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const ocs::tom::ConstElement<ocs::tom::EH> host,
                                                  const ocs::tom::ConstList<ocs::tom::CE> ce_master_list) {
    DENTER(TOP_LAYER);
 

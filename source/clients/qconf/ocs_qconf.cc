@@ -58,7 +58,7 @@ extern char **environ;
 /************************************************************************/
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qconf");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    sge_setup_sig_handlers(QCONF);
 

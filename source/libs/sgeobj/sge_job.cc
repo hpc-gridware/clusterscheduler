@@ -537,7 +537,7 @@ uint32_t job_get_not_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB
    DENTER(TOP_LAYER);
 
    // out-parameters of range_list_calculate_union_set(), adopted right after
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lList *uo_ids_raw = nullptr;
    lList *uos_ids_raw = nullptr;
    lList *uosa_ids_raw = nullptr;
@@ -558,7 +558,7 @@ uint32_t job_get_not_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB
    ret += range_list_get_number_of_ids(uosa_ids.get());
 
    // the answer list was never freed before
-   lFreeList(&answer_list);
+   answer_list.reset();
    DRETURN(ret);
 }
 
@@ -626,7 +626,8 @@ uint32_t job_get_submit_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job)
  *
  * @return the enrolled task (JAT_Type)
  */
-ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB> job,
+                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                             const uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
@@ -664,7 +665,8 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB
  * @param answer_list the answer list
  * @param[in,out] ja_task the task to unenroll (JAT_Type); freed and set to nullptr
  */
-void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list, lListElem **ja_task) {
+void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                  lListElem **ja_task) {
    DENTER(TOP_LAYER);
    if (!job || ja_task == nullptr || *ja_task == nullptr) {
       // nothing to do
@@ -777,8 +779,8 @@ uint32_t job_count_pending_tasks(const lListElem *job, const bool count_all) {
  * @param answer_list AN_Type
  * @param ja_task_number Task to be removed
  */
-void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
-                                     const uint32_t ja_task_number) {
+void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
    const int attributes = 5;
@@ -798,7 +800,8 @@ void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job, 
  * @param answer_list AN_Type
  * @param ja_task_number Task to be removed
  */
-void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list, const uint32_t ja_task_number) {
+void job_delete_not_enrolled_ja_task(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                     const uint32_t ja_task_number) {
    job_delete_not_enrolled_ja_task(ocs::tom::Element<ocs::tom::JB>(job), answer_list, ja_task_number);
 }
 
@@ -839,7 +842,7 @@ bool job_has_soft_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
  * @param ja_task_id Array task id
  * @param new_hold_state hold state (see MINUS_H_TGT_*)
  */
-void job_set_hold_state(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+void job_set_hold_state(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const uint32_t ja_task_id,
                         const uint32_t new_hold_state) {
    DENTER(TOP_LAYER);
@@ -898,7 +901,7 @@ void job_set_hold_state(const ocs::tom::Element<ocs::tom::JB> job, lList **answe
  * @param ja_task_id Array task id
  * @param new_hold_state hold state (see MINUS_H_TGT_*)
  */
-void job_set_hold_state(lListElem *job, lList **answer_list, const uint32_t ja_task_id,
+void job_set_hold_state(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t ja_task_id,
                         const uint32_t new_hold_state) {
    job_set_hold_state(ocs::tom::Element<ocs::tom::JB>(job), answer_list, ja_task_id, new_hold_state);
 }
@@ -962,7 +965,8 @@ uint32_t job_get_hold_state(lListElem *job, const uint32_t ja_task_id) {
  *       MT-NOTE: job_search_task() is MT safe
  */
 ocs::tom::Element<ocs::tom::JAT> job_search_task(const ocs::tom::ConstElement<ocs::tom::JB> job,
-                                                 [[maybe_unused]] lList **answer_list, const uint32_t ja_task_id) {
+                                                 [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::JAT> ja_task = nullptr;
@@ -982,7 +986,8 @@ ocs::tom::Element<ocs::tom::JAT> job_search_task(const ocs::tom::ConstElement<oc
  *
  * @return JAT_Type element, or nullptr
  */
-lListElem *job_search_task(const lListElem *job, lList **answer_list, const uint32_t ja_task_id) {
+lListElem *job_search_task(const lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           const uint32_t ja_task_id) {
    return job_search_task(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, ja_task_id);
 }
 
@@ -1004,7 +1009,8 @@ lListElem *job_search_task(const lListElem *job, lList **answer_list, const uint
  * @note In case of errors, the function should return a message in a
  *       given answer_list (answer_list != nullptr).
  */
-ocs::tom::Element<ocs::tom::JAT> job_create_task(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+ocs::tom::Element<ocs::tom::JAT> job_create_task(const ocs::tom::Element<ocs::tom::JB> job,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                  const uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
 
@@ -1514,7 +1520,7 @@ int job_list_register_new_job(const lList *job_list, const uint32_t max_jobs, co
  *
  * @note MT-NOTE: job_initialize_id_lists() is MT safe
  */
-int job_initialize_id_lists(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
+int job_initialize_id_lists(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    auto n_h_list = ocs::tom::get<JB_ja_structure>(job).clone("task_id_range");
@@ -1540,7 +1546,7 @@ int job_initialize_id_lists(const ocs::tom::Element<ocs::tom::JB> job, lList **a
  *
  * @return as job_initialize_id_lists()
  */
-int job_initialize_id_lists(lListElem *job, lList **answer_list) {
+int job_initialize_id_lists(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return job_initialize_id_lists(ocs::tom::Element<ocs::tom::JB>(job), answer_list);
 }
 
@@ -1571,7 +1577,7 @@ int job_initialize_id_lists(lListElem *job, lList **answer_list) {
  * @param unqualified_hostname the submit host without its domain
  * @param qualified_hostname the submit host including its domain
  */
-void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const ocs::tom::ConstList<ocs::tom::PA> path_alias_list,
                         const char *unqualified_hostname,
                         const char *qualified_hostname) {
@@ -1637,7 +1643,7 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, lList **answe
  * @param unqualified_hostname the submit host without its domain
  * @param qualified_hostname the submit host including its domain
  */
-void job_initialize_env(lListElem *job, lList **answer_list, const lList *path_alias_list,
+void job_initialize_env(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *path_alias_list,
                         const char *unqualified_hostname, const char *qualified_hostname) {
    job_initialize_env(ocs::tom::Element<ocs::tom::JB>(job), answer_list,
                       ocs::tom::ConstList<ocs::tom::PA>(path_alias_list), unqualified_hostname, qualified_hostname);
@@ -1678,7 +1684,8 @@ const char *job_get_env_string(const ocs::tom::ConstElement<ocs::tom::JB> job, c
  * @param job JB_Type element
  * @param answer_list AN_Type list
  */
-void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
+void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    /*
     * Is 0 contained in one of the range lists
@@ -1749,7 +1756,7 @@ void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job, lL
  * @param job JB_Type element, checked
  * @param answer_list AN_Type list
  */
-void job_check_correct_id_sublists(lListElem *job, lList **answer_list) {
+void job_check_correct_id_sublists(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    job_check_correct_id_sublists(ocs::tom::Element<ocs::tom::JB>(job), answer_list);
 }
 
@@ -1974,7 +1981,7 @@ void job_add_parent_id_to_context(lListElem *job) {
  *       functions job_set_qsh_display and job_get_qsh_display would
  *       be usefull.
  */
-int job_check_qsh_display(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
+int job_check_qsh_display(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const bool output_warning) {
    DENTER(TOP_LAYER);
 
@@ -2030,7 +2037,8 @@ int job_check_qsh_display(const ocs::tom::ConstElement<ocs::tom::JB> job, lList 
  *
  * @return as job_check_qsh_display()
  */
-int job_check_qsh_display(const lListElem *job, lList **answer_list, const bool output_warning) {
+int job_check_qsh_display(const lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          const bool output_warning) {
    return job_check_qsh_display(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, output_warning);
 }
 
@@ -2269,8 +2277,8 @@ char *jobscript_parse_key(char *key, const char **exec_file) {
  *
  * @return error code (STATUS_OK, or ...)
  */
-int job_resolve_host_for_path_list(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
-                                   const int name) {
+int job_resolve_host_for_path_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const int name) {
    DENTER(TOP_LAYER);
    bool ret_error=false;
 
@@ -2336,7 +2344,7 @@ int job_resolve_host_for_path_list(const ocs::tom::ConstElement<ocs::tom::JB> jo
  *
  * @return as job_resolve_host_for_path_list()
  */
-int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, const int name) {
+int job_resolve_host_for_path_list(const lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const int name) {
    return job_resolve_host_for_path_list(ocs::tom::ConstElement<ocs::tom::JB>(job), answer_list, name);
 }
 
@@ -2421,7 +2429,8 @@ job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char 
  *       nothing rather than booking zero.
  */
 bool
-job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, const char *name,
+job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
                               double *value, const ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
                               const uint32_t scope) {
    DENTER(TOP_LAYER);
@@ -2779,7 +2788,8 @@ job_get_context_change(ocs::tom::ConstElement<ocs::tom::JB> job);
  * @see `object_verify_cull()`, #job_verify_submitted_job, `job_verify_execd_job()`
  */
 bool
-job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, const bool do_cull_verify) {
+job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+           const bool do_cull_verify) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -2883,7 +2893,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, 
  *
  * @see #job_verify
  */
-bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
+bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = job_verify(job, answer_list, true);
@@ -3184,7 +3194,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, lList *
  *
  * @return as job_verify_submitted_job()
  */
-bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
+bool job_verify_submitted_job(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB>(job), answer_list);
 }
 
@@ -3616,7 +3626,8 @@ bool
  * @param[out] answer_list receives the message naming the rejected letter
  * @return true when the letter is valid for that program
  */
-job_parse_validation_level(int *level, const char *input, int prog_number, lList **answer_list) {
+job_parse_validation_level(int *level, const char *input, int prog_number,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

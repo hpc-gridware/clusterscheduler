@@ -76,7 +76,7 @@ typedef struct _s_token {
    bool has_patterns;   ///< whether the pattern really contains wildcards, so the cheap compare can be used
    int  tt;             ///< Type of token
    int  et;             ///< Expected Token type
-   lList **answer_list; ///< Answer list, or nullptr
+   ocs::tom::ListPtr<ocs::tom::AN> *answer_list; ///< Answer list, or nullptr
 } s_token;
 
 
@@ -122,7 +122,8 @@ const char *tTypes[] = { "!<pattern>", "|<pattern>", "&<pattern>", "(", ")", "<e
  * @return int The result of the evaluation: 0 if true, 1 if false, -1 if error.
  */
 int 
-sge_eval_expression(const ocs::CEntry::Type type, const char *expr, const char *value, lList **answer_list,
+sge_eval_expression(const ocs::CEntry::Type type, const char *expr, const char *value,
+                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                     const bool use_is_expression, const bool is_expression) {
    DENTER(BASIS_LAYER);
    int match;

@@ -185,10 +185,10 @@ add_calendar(const char *name, const char *week) {
    ocs::tom::Element<ocs::tom::CAL> ep = ocs::tom::emplace_back<CAL_name>(&lp, name);
    ocs::tom::set<CAL_week_calendar>(ep, week);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::ADD,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::ADD,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
    const bool ok = !answer_list_has_error(&alp);
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(&lp);
    return ok;
 }
@@ -202,10 +202,10 @@ del_calendar(const char *name) {
    lList *lp = nullptr;
    ocs::tom::emplace_back<CAL_name>(&lp, name);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::DEL,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::DEL,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
    const bool ok = !answer_list_has_error(&alp);
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(&lp);
    return ok;
 }
@@ -220,11 +220,11 @@ get_week_calendar(const char *name) {
    lCondition *where = lWhere("%T(%I==%s)", CAL_Type, CAL_name, name);
    lEnumeration *what = lWhat("%T(ALL)", CAL_Type);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
                                           ocs::gdi::SubCommand::NONE, &lp, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
-   lFreeList(&alp);
+   alp.reset();
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
    ocs::tom::ConstElement<ocs::tom::CAL> found = ocs::tom::find_first<CAL_name>(lp, name);
@@ -241,17 +241,17 @@ get_week_calendar(const char *name) {
  */
 static bool
 procedure_refused(ocs::ProcedureModel &model, ocs::ProcedureParameter &parameter) {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool ok = model.make_snapshot(&alp, parameter);
    const bool refused = !ok || answer_list_has_error(&alp);
-   lFreeList(&alp);
+   alp.reset();
    return refused;
 }
 
 int
 main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_qmaster_procedure_mod");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
@@ -274,12 +274,12 @@ main(int /*argc*/, char * /*argv*/[]) {
       parameter.add_item(nullptr, calendar_text(CAL_NAME, WEEK_AFTER));
       ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
 
-      lList *call_alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> call_alp;
       const bool ok = model.make_snapshot(&call_alp, parameter);
       if (!ok) {
          answer_list_output(&call_alp);
       }
-      lFreeList(&call_alp);
+      call_alp.reset();
 
       CHECK(3, "the modifying procedure was accepted", ok);
       CHECK(4, "the calendar carries the new week calendar", get_week_calendar(CAL_NAME) == WEEK_AFTER);
@@ -291,9 +291,9 @@ main(int /*argc*/, char * /*argv*/[]) {
       ocs::QConfWriteParameter reset;
       reset.add_item(nullptr, calendar_text(CAL_NAME, WEEK_BEFORE));
       ocs::QConfWriteModelClient reset_model(ocs::gdi::Target::CAL_LIST);
-      lList *reset_alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> reset_alp;
       const bool reset_ok = reset_model.make_snapshot(&reset_alp, reset);
-      lFreeList(&reset_alp);
+      reset_alp.reset();
       /* The call has to be asserted, not only its effect: checking the value
        * alone would also pass when nothing ever changed, which is exactly how
        * this check passed while T03 and T04 were failing. */
@@ -408,12 +408,12 @@ main(int /*argc*/, char * /*argv*/[]) {
       parameter.add_item(nullptr, calendar_text(new_name, WEEK_AFTER));
       ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
 
-      lList *call_alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> call_alp;
       const bool ok = model.make_snapshot(&call_alp, parameter);
       if (!ok) {
          answer_list_output(&call_alp);
       }
-      lFreeList(&call_alp);
+      call_alp.reset();
 
       CHECK(16, "writing a calendar that does not exist was accepted", ok);
       CHECK(17, "it was created with the week calendar that was sent",

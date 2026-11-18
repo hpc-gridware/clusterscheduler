@@ -127,13 +127,13 @@ int main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);
    lInit(nmv);
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    int id = 1;
 
    // build a minimal CQ with a terminate_method sublist entry
    auto created = cqueue_create(nullptr, "template");
    cqueue_set_template_attributes(*created, &alp);
-   lFreeList(&alp);
+   alp.reset();
 
    ocs::tom::set<CQ_name>(created, "foobar");
 
@@ -152,7 +152,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
          spool_flatfile_align_object(&alp, CQ_fields)); id++;
    CHECK(id, "aligned field width is positive",
          CQ_fields[0].width > 0); id++;
-   lFreeList(&alp);
+   alp.reset();
 
    // --- single-object round-trip ---
    {
@@ -176,7 +176,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       sge_unlink(nullptr, file2);
       sge_free(&file1);
       sge_free(&file2);
-      lFreeList(&alp);
+      alp.reset();
    }
 
    // --- list round-trip (CE objects, the canonical qconf_ce_list_sfi use case) ---
@@ -196,7 +196,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       ocs::tom::set<CE_urgency_weight>(ce, "1");
       lAppendElem(ce_list, std::move(ce));
       spool_flatfile_align_list(&alp, (const lList *)ce_list, CE_fields, 0);
-      lFreeList(&alp);
+      alp.reset();
 
       file1 = spool_flatfile_write_list(&alp, ce_list, CE_fields,
                                         &qconf_ce_list_sfi,
@@ -211,7 +211,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
       if (read_list != nullptr) {
          spool_flatfile_align_list(&alp, (const lList *)read_list, CE_fields, 0);
-         lFreeList(&alp);
+         alp.reset();
          file2 = spool_flatfile_write_list(&alp, read_list, CE_fields,
                                            &qconf_ce_list_sfi,
                                            SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
@@ -223,20 +223,20 @@ int main(int /*argc*/, char * /*argv*/[]) {
       sge_unlink(nullptr, file2);
       sge_free(&file1);
       sge_free(&file2);
-      lFreeList(&alp);
+      alp.reset();
       lFreeList(&ce_list);
    }
 
    // --- error handling ---
    CHECK(id, "spool_flatfile_align_object rejects null fields: returns false",
          !spool_flatfile_align_object(&alp, nullptr)); id++;
-   lFreeList(&alp);
+   alp.reset();
    CHECK(id, "spool_flatfile_align_list rejects null list: returns false",
          !spool_flatfile_align_list(&alp, nullptr, CQ_fields, 0)); id++;
-   lFreeList(&alp);
+   alp.reset();
    CHECK(id, "spool_flatfile_align_list rejects null fields: returns false",
          !spool_flatfile_align_list(&alp, *cqueue_list, nullptr, 0)); id++;
-   lFreeList(&alp);
+   alp.reset();
 
    cqueue_list.reset();
 

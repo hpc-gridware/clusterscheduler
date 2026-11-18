@@ -55,7 +55,7 @@
  * @return true on success, false if the GDI call returned an error.
  */
 bool
-ocs::ProcedureModel::make_snapshot(lList **answer_list, ProcedureParameter &parameter) {
+ocs::ProcedureModel::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ProcedureParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // Fetch the SPP_Type list and pass it to qmaster

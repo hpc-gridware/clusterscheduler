@@ -561,7 +561,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    
                            }
                            if (task->answer_list) {
-                              lWriteListTo(task->answer_list,stdout); 
+                              lWriteListTo(*task->answer_list,stdout); 
                            } else {
                               printf("alp   : %s\n", "nullptr");
                            }

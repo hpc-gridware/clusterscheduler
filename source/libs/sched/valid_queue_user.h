@@ -43,9 +43,12 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/sge_answer.h"
 
-bool sge_ar_have_users_access(lList **alpp, ocs::tom::ConstElement<ocs::tom::AR> ar, const char *name,
+bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstElement<ocs::tom::AR> ar,
+                              const char *name,
                               ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ConstList<ocs::tom::US> xacl_list,
                               ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list,
+OCS_TRANSITIONAL bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ar, const char *name,
+                                               const lList *acl_list,
                                                const lList *xacl_list, const lList *master_userset_list);

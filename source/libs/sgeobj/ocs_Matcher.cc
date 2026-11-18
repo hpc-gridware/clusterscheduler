@@ -57,7 +57,7 @@
  */
 bool
 ocs::Matcher::prepare(const char *member, const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const bool introducing,
-                      dstring *out, lList **answer_list) {
+                      dstring *out, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_MATCHER_NOTSUPPORTED);
@@ -82,7 +82,7 @@ ocs::Matcher::prepare(const char *member, const ocs::tom::ConstElement<ocs::tom:
 bool
 ocs::Matcher::expand(const ocs::tom::ConstList<ocs::tom::HR> member_list,
                      const ocs::tom::ConstList<ocs::tom::HR> candidates, ocs::tom::ListPtr<ocs::tom::HR> &hosts,
-                     lList **answer_list) {
+                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    DRETURN(true);
 }
@@ -156,7 +156,7 @@ ocs::Matcher::why(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const cha
  */
 bool
 ocs::Matcher::report_ineffective(const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
-                                 lList **answer_list) {
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    DRETURN(true);
 }

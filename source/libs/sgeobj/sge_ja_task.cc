@@ -281,8 +281,8 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
  * @note MT-NOTE: sge_parse_jobtasks() is MT safe
  */
 std::pair<int, ocs::tom::Element<ocs::tom::ID>>
-sge_parse_jobtasks(lList **ipp, const char *str_jobtask, lList **alpp, const bool include_names,
-                   const ocs::tom::ConstList<ocs::tom::RN> arrayDefList) {
+sge_parse_jobtasks(lList **ipp, const char *str_jobtask, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                   const bool include_names, const ocs::tom::ConstList<ocs::tom::RN> arrayDefList) {
    DENTER(TOP_LAYER);
 
    char *token;
@@ -437,7 +437,7 @@ bool ja_task_message_trash_all_of_type_X(lListElem *this_elem, const uint32_t ty
  *
  * @see #ja_task_verify_execd_job
  */
-bool ja_task_verify(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, lList **answer_list) {
+bool ja_task_verify(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const bool ret = object_verify_ulong_not_null(ja_task, answer_list, JAT_task_number);
@@ -500,7 +500,8 @@ bool ja_task_verify(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, lList *
  *
  * @see #ja_task_verify
  */
-bool ja_task_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, lList **answer_list) {
+bool ja_task_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = ja_task_verify(ja_task, answer_list);
@@ -529,7 +530,7 @@ bool ja_task_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JAT> ja_tas
  * @see #ja_task_verify_granted_destin_identifier
  */
 bool ja_task_verify_granted_destin_identifier_list(const ocs::tom::ConstList<ocs::tom::JG> gdil,
-                                                   lList **answer_list) {
+                                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -567,7 +568,8 @@ bool ja_task_verify_granted_destin_identifier_list(const ocs::tom::ConstList<ocs
  *
  * @see #ja_task_verify_granted_destin_identifier_list
  */
-bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::tom::JG> ep, lList **answer_list) {
+bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::tom::JG> ep,
+                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

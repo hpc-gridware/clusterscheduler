@@ -78,7 +78,7 @@
  *
  * @return true or false
  */
-bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, lList **answer_list,
+bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const ocs::tom::ConstList<ocs::tom::JB> master_job_list,
                         const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
@@ -127,8 +127,8 @@ bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, lList *
  * @param master_cqueue_list CQ_Type list, checked
  * @return as ckpt_is_referenced()
  */
-bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list, const lList *master_job_list,
-                        const lList *master_cqueue_list) {
+bool ckpt_is_referenced(const lListElem *ckpt, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        const lList *master_job_list, const lList *master_cqueue_list) {
    return ckpt_is_referenced(ocs::tom::ConstElement<ocs::tom::CK>(ckpt), answer_list,
                              ocs::tom::ConstList<ocs::tom::JB>(master_job_list),
                              ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list));
@@ -219,7 +219,7 @@ int sge_parse_checkpoint_attr(const char *attr_str) {
  *
  * @note MT-NOTE: ckpt_validate() is not MT safe
  */
-int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, lList **alpp) {
+int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    static const char* ckpt_interfaces[] = {
@@ -310,7 +310,7 @@ int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, lList **
  * @param alpp answer list where the function stores error messages
  * @return as ckpt_validate()
  */
-int ckpt_validate(const lListElem *this_elem, lList **alpp) {
+int ckpt_validate(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK>(this_elem), alpp);
 }
 
@@ -326,7 +326,8 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
  *
  * @return true if all ckpt objects exist
  */
-bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list, lList **answer_list,
+bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             const ocs::tom::ConstList<ocs::tom::ST> ckpt_ref_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -353,7 +354,8 @@ bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list, l
  * @param ckpt_ref_list ST_Type list containing ckpt names, checked
  * @return as ckpt_list_do_all_exist()
  */
-bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list, const lList *ckpt_ref_list) {
+bool ckpt_list_do_all_exist(const lList *ckpt_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const lList *ckpt_ref_list) {
    return ckpt_list_do_all_exist(ocs::tom::ConstList<ocs::tom::CK>(ckpt_list), answer_list,
                                  ocs::tom::ConstList<ocs::tom::ST>(ckpt_ref_list));
 }

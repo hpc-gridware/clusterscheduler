@@ -72,7 +72,7 @@ extern char **environ;
 
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qrsub");
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* Set up the program information name */
    sge_setup_sig_handlers(QRSTAT);

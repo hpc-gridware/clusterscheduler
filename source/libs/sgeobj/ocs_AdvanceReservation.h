@@ -50,6 +50,7 @@
 #include "ocs_BindingStop.h"
 #include "ocs_BindingStrategy.h"
 #include "ocs_BindingInstance.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -62,8 +63,9 @@ namespace ocs {
    class AdvanceReservation {
    public:
       static ocs::tom::Element<ocs::tom::BN> binding_get_or_create_elem(ocs::tom::Element<ocs::tom::AR> ar,
-                                                                        lList **answer_list);
-      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *ar, lList **answer_list);
+                                                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *ar,
+                                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       static BindingType::Type binding_get_type(ocs::tom::ConstElement<ocs::tom::AR> ar);
       OCS_TRANSITIONAL static BindingType::Type binding_get_type(const lListElem *ar);
       static BindingUnit::Unit binding_get_unit(ocs::tom::ConstElement<ocs::tom::AR> ar);
@@ -82,7 +84,9 @@ namespace ocs {
       OCS_TRANSITIONAL static uint32_t binding_get_amount(const lListElem *ar);
       static BindingInstance::Instance binding_get_instance(ocs::tom::ConstElement<ocs::tom::AR> ar);
       OCS_TRANSITIONAL static BindingInstance::Instance binding_get_instance(const lListElem *ar);
-      static void binding_set_missing_defaults(ocs::tom::Element<ocs::tom::AR> ar, lList **answer_list);
-      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *ar, lList **answer_list);
+      static void binding_set_missing_defaults(ocs::tom::Element<ocs::tom::AR> ar,
+                                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *ar,
+                                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
    };
 }

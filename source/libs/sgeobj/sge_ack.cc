@@ -90,7 +90,7 @@ int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, cons
  * @return `CL_RETVAL_OK` on success
  */
 int sge_send_ack_to_qmaster(uint32_t type, uint32_t ulong_val,
-                            uint32_t ulong_val_2, const char *str, lList **alpp) {
+                            uint32_t ulong_val_2, const char *str, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    int ret;

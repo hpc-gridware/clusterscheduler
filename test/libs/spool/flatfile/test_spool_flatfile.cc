@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
 
 static int PE_test() {
    int ret = 0;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -406,7 +406,7 @@ static int PE_test() {
 static int CAL_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_cal = ocs::tom::ElementPtr<ocs::tom::CAL>::create();   
@@ -446,7 +446,7 @@ static int CAL_test() {
    sge_free(&file2);
    
    answer_list_output(&alp);   
-   lFreeList(&alp);
+   alp.reset();
    
    return ret;
 }
@@ -454,7 +454,7 @@ static int CAL_test() {
 static int CK_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_ck = ocs::tom::ElementPtr<ocs::tom::CK>::create();
@@ -508,7 +508,7 @@ static int CK_test() {
 static int STN_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -612,7 +612,7 @@ static int STN_test() {
 static int CE_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
@@ -664,7 +664,7 @@ static int CE_test() {
 static int CEL_test() {
    int ret = 0;
    lList *lp = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
@@ -985,7 +985,7 @@ static int UU_test() {
    int ret = 0;
    lListElem *user = nullptr;
    lList *lp = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -1049,7 +1049,7 @@ static int PR_test() {
    int ret = 0;
    lListElem *prj = nullptr;
    lList *lp = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -1121,7 +1121,7 @@ static int PR_test() {
 static int US_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
@@ -1188,7 +1188,7 @@ static int EH_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lList *lp = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -1429,7 +1429,7 @@ static int EH_test() {
 static int CQ_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_cq = ocs::tom::ElementPtr<ocs::tom::CQ>::create();
@@ -2232,7 +2232,7 @@ static int CQ_test() {
 static int SC_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_sc = ocs::tom::ElementPtr<ocs::tom::SC>::create();
@@ -2352,7 +2352,7 @@ static int SC_test() {
 static int QU_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList * alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr, *file2 = nullptr;
    
@@ -2407,7 +2407,7 @@ static int QU_test() {
 static int HGRP_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList * alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_hgrp = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
@@ -2456,7 +2456,7 @@ static int HGRP_test() {
 static int CONF_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList * alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -2547,7 +2547,7 @@ static int CONF_test() {
 
 static int RQS_test() {
    int ret = 0;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    lList* rqs_list = lCreateList("test", RQS_Type);
@@ -2684,7 +2684,7 @@ static int RQS_test() {
 static int AR_test() {
    int ret = 0;
    lListElem *ep = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_ar = ocs::tom::ElementPtr<ocs::tom::AR>::create();
@@ -2778,7 +2778,7 @@ static int AR_test() {
 }
 
 static int PE_minimal_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -2814,7 +2814,7 @@ static int PE_minimal_test() {
 // reflects exactly the requested create mode, then assert it is 0600 with no
 // group/other bits. Pre-fix the file is 0666, so this returns non-zero.
 static int SPOOL_perm_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    ocs::tom::set<PE_name>(ep, "perm_pe");
 
@@ -2863,7 +2863,7 @@ static int SPOOL_perm_test() {
 // common dir), and asserts the resulting mode is exactly 0700. Red->green:
 // pre-fix the directory is 0755.
 static int SPOOL_dir_perm_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    char base[1024];
    snprintf(base, sizeof(base), "/tmp/test_spool_dirperm.%ld", (long)getpid());
@@ -2936,7 +2936,7 @@ static int SPOOL_dir_perm_test() {
  * @return 0 if all modes are owner-only afterwards, 1 otherwise
  */
 static int SPOOL_restrict_existing_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    char base[1024];
    snprintf(base, sizeof(base), "/tmp/test_spool_restrict.%ld", (long)getpid());
@@ -3026,14 +3026,14 @@ static int SPOOL_classic_params_test() {
 
    int ret = 0;
    for (const auto &c : rejected) {
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       lListElem *ctx = spool_classic_create_context(&alp, c.args);
       if (ctx != nullptr) {
          printf("   spool_classic_create_context accepted %s (expected reject)\n", c.desc);
          lFreeElem(&ctx);
          ret = 1;
       }
-      lFreeList(&alp);
+      alp.reset();
    }
    return ret;
 }
@@ -3082,7 +3082,7 @@ static int SPOOL_key_safe_test() {
 }
 
 static int CE_minimal_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3115,7 +3115,7 @@ static int CE_minimal_test() {
 }
 
 static int PE_zero_slots_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3144,7 +3144,7 @@ static int PE_zero_slots_test() {
 }
 
 static int PE_max_slots_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3173,7 +3173,7 @@ static int PE_max_slots_test() {
 }
 
 static int CE_zero_values_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3210,7 +3210,7 @@ static int CE_zero_values_test() {
 }
 
 static int CE_max_values_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3246,7 +3246,7 @@ static int CE_max_values_test() {
 }
 
 static int PE_spaces_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3282,7 +3282,7 @@ static int PE_spaces_test() {
 }
 
 static int CE_special_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3318,7 +3318,7 @@ static int CE_special_test() {
 }
 
 static int PE_empty_lists_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
@@ -3350,7 +3350,7 @@ static int PE_empty_lists_test() {
 }
 
 static int PE_large_list_test() {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
    const char *file2 = nullptr;

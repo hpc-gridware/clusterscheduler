@@ -47,6 +47,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/sge_answer.h"
 
 int add_nm_to_set(int fields[], int name_nm);
 
@@ -56,7 +57,8 @@ enum {
 };
 
 std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
-read_config_list(FILE *fp, lList **alpp, bool sublists, const char *delimitor, int flag, char *buffer,
-                 int buffer_size);
+read_config_list(FILE *fp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool sublists, const char *delimitor, int flag,
+                 char *buffer, int buffer_size);
 
-const char *get_conf_value(lList **alpp, ocs::tom::ConstList<ocs::tom::CF> config, const char *key);
+const char *get_conf_value(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstList<ocs::tom::CF> config,
+                           const char *key);

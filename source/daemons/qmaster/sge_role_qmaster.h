@@ -28,15 +28,17 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_RL.h"
+#include "sgeobj/sge_answer.h"
 
 int
-role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ep, lListElem *ep, int add,
-         const char *ruser, const char *rhost, gdi_object_t *object,
+role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ep,
+         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor);
 
 int
-role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object);
+role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+           gdi_object_t *object);
 
 int
 role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
@@ -44,6 +46,6 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 
 int
 sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::RL> ep,
-             lList **alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp,
-                                  char *ruser, char *rhost);
+             ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);

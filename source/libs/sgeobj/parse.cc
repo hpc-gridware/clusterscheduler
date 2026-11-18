@@ -241,7 +241,7 @@ lListElem *sge_add_arg(lList **popt_list, const uint32_t opt_number, const uint3
  * @return a pointer to the next argument
  */
 char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                   [[maybe_unused]] lList **alpp) {
+                   [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    if ((!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp))) {
@@ -263,7 +263,8 @@ char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::to
  * @param[out] alpp receives the error message
  * @return as parse_noopt()
  */
-char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp) {
+char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
+                   ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
       return parse_noopt(sp, shortopt, longopt, cmdline, alpp);
    });
@@ -285,7 +286,7 @@ char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList *
  * @return a pointer to the next argument
  */
 char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt,
-                            ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp) {
+                            ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    char **rp = sp;
@@ -320,7 +321,8 @@ char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt
  * @param[out] alpp receives the error message
  * @return as parse_until_next_opt()
  */
-char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp) {
+char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
       return parse_until_next_opt(sp, shortopt, longopt, cmdline, alpp);
    });
@@ -340,7 +342,8 @@ char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt
  * @return a pointer to the next argument
  */
 char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt,
-                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, [[maybe_unused]] lList **alpp) {
+                             ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                             [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    char **rp = sp;
@@ -367,7 +370,8 @@ char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longop
  * @param[out] alpp not used
  * @return as parse_until_next_opt2()
  */
-char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp) {
+char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline,
+                             ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
       return parse_until_next_opt2(sp, shortopt, longopt, cmdline, alpp);
    });
@@ -385,7 +389,7 @@ char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longop
  * @return a pointer to the next argument
  */
 char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                   [[maybe_unused]] lList **alpp) {
+                   [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    char **rp = sp;
@@ -410,7 +414,7 @@ char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> 
  * @param[out] alpp not used
  * @return as parse_param()
  */
-char **parse_param(char **sp, const char *opt, lList **ppcmdline, lList **alpp) {
+char **parse_param(char **sp, const char *opt, lList **ppcmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    return ocs_parse_on_untyped_cmdline(ppcmdline, [&](ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
       return parse_param(sp, opt, cmdline, alpp);
    });
@@ -429,8 +433,8 @@ char **parse_param(char **sp, const char *opt, lList **ppcmdline, lList **alpp) 
  * @param[out] pflag set to 1 when the switch was present, untouched otherwise
  * @return true when the switch was present
  */
-bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
-                uint32_t *pflag) {
+bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal, uint32_t *pflag) {
    DENTER(BASIS_LAYER);
 
    auto ep = cmdline.find_first_like<SPA_switch_val>(opt);
@@ -457,7 +461,7 @@ bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[
  * @param[out] pflag set to 1 when the switch was present
  * @return as parse_flag()
  */
-bool parse_flag(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *pflag) {
+bool parse_flag(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal, uint32_t *pflag) {
    return parse_flag(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, ppal, pflag);
 }
 
@@ -478,7 +482,7 @@ bool parse_flag(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *pfla
  */
 template <auto F>
 bool parse_multi_stringlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
-                            [[maybe_unused]] lList **ppal,
+                            [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                             ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> &dest) {
    DENTER(TOP_LAYER);
 
@@ -498,10 +502,12 @@ bool parse_multi_stringlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const c
 }
 
 /// parse_multi_stringlist() into a string list
-template bool parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal,
+template bool parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                                              ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                                               ocs::tom::ListPtr<ocs::tom::ST> &dest);
 /// parse_multi_stringlist() into a queue reference list
-template bool parse_multi_stringlist<QR_name>(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **ppal,
+template bool parse_multi_stringlist<QR_name>(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                                              ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                                               ocs::tom::ListPtr<ocs::tom::QR> &dest);
 
 /**
@@ -519,7 +525,8 @@ template bool parse_multi_stringlist<QR_name>(ocs::tom::List<ocs::tom::SPA> cmdl
  * @param action what the caller intends to do with the jobs, recorded per entry
  * @return true when the switch was present and every argument was understood
  */
-bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, lList **alpp,
+bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                              ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                               lList **ppdestlist, const bool include_names, const uint32_t action) {
    DENTER(TOP_LAYER);
    ocs::tom::Element<ocs::tom::SPA> ep;
@@ -582,8 +589,8 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
  * @param action what the caller intends to do with the jobs, recorded per entry
  * @return as parse_multi_jobtaskslist()
  */
-bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **alpp, lList **ppdestlist,
-                              const bool include_names, const uint32_t action) {
+bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                              lList **ppdestlist, const bool include_names, const uint32_t action) {
    return parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, alpp, ppdestlist, include_names,
                                    action);
 }
@@ -600,8 +607,8 @@ bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **alpp, 
  * @param[out] str receives a freshly allocated copy of the argument, or nullptr if there is none
  * @return 1 when the switch was present
  */
-int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
-                 char **str) {
+int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                 [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal, char **str) {
    DENTER(TOP_LAYER);
 
    const auto ep = cmdline.find_first<SPA_switch_val>(opt);
@@ -634,7 +641,7 @@ int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [
  * @param[out] str receives a freshly allocated copy of the argument
  * @return as parse_string()
  */
-int parse_string(lList **ppcmdline, const char *opt, lList **ppal, char **str) {
+int parse_string(lList **ppcmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal, char **str) {
    return parse_string(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), opt, ppal, str);
 }
 
@@ -647,8 +654,8 @@ int parse_string(lList **ppcmdline, const char *opt, lList **ppal, char **str) {
  * @param[out] value receives a freshly allocated copy of the argument
  * @return 1 when the switch was present
  */
-int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal,
-                     char **value) {
+int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                     [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal, char **value) {
    DENTER(TOP_LAYER);
    bool ret = false;
 
@@ -674,7 +681,8 @@ int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *op
  *         switch is not present
  */
 std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>>
-parse_u_longlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [[maybe_unused]] lList **ppal) {
+parse_u_longlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                 [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal) {
    DENTER(TOP_LAYER);
 
    std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>> ret;
@@ -698,7 +706,7 @@ parse_u_longlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, [
  * @return the combined `GROUP_*` bit mask
  */
 uint32_t
-parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, lList **answer_list) {
+parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    uint32_t group_opt = GROUP_DEFAULT;
 
@@ -752,7 +760,7 @@ parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, lList *
  * @return true when every name was understood
  */
 bool sge_parse_bitfield_str(const char *str, const char *set_specifier[],
-                            uint32_t *value, const char *name, lList **alpp,
+                            uint32_t *value, const char *name, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                             bool none_allowed) {
    DENTER(TOP_LAYER);
 

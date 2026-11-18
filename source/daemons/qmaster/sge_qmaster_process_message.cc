@@ -588,7 +588,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       if (packet != nullptr) {
          init_packbuffer(&packet->pb, 0);
 
-         lList *tmp_answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> tmp_answer_list;
          packet->pack_header(&tmp_answer_list, &packet->pb);
 
          for (size_t i = 0; i < packet->tasks.size(); ++i) {
@@ -627,7 +627,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       // prepare pack=buffer for the clients answer
       init_packbuffer(&(packet->pb), 0);
 
-      lList *tmp_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> tmp_answer_list;
       packet->pack_header(&tmp_answer_list, &packet->pb);
 
       // handle the requests
@@ -808,7 +808,7 @@ static void
 sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
               const uint32_t ack_ulong, const uint32_t ack_ulong2, const char *ack_str, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    if (strcmp(to_cstr(EXECD), commproc) != 0) {
       ERROR(MSG_COM_ACK_S, commproc);

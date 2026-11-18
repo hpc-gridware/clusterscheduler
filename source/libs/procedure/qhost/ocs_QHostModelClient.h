@@ -26,6 +26,7 @@
 #include "cull/cull.h"
 
 #include "ocs_QHostModelBase.h"
+#include "sgeobj/sge_answer.h"
 
 
 namespace ocs {
@@ -40,9 +41,9 @@ namespace ocs {
     */
    class QHostModelClient : public QHostModelBase {
    protected:
-      bool fetch_data(lList **answer_list, ocs::tom::ConstList<ocs::tom::ST> hostname_list,
+      bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstList<ocs::tom::ST> hostname_list,
                       ocs::tom::ConstList<ocs::tom::ST> user_name_list, uint32_t show) override;
-      bool prepare_data(lList **answer_list, ocs::tom::List<ocs::tom::CE> resource_match_list,
+      bool prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::List<ocs::tom::CE> resource_match_list,
                         uint32_t show) const override;
 
    public:

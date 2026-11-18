@@ -52,6 +52,7 @@
 #include "sgeobj/cull/sge_attr_ACELIST_L.h"
 #include "sgeobj/cull/sge_attr_ASOLIST_L.h"
 #include "sgeobj/cull/sge_attr_AQTLIST_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @name Flags for per host attribute lists
@@ -86,21 +87,21 @@
 #define TEMPLATE_ATTR_PROTO(PREFIX, TYPE, INTERNAL_TYPE)                      \
                                                                               \
 bool                                                                          \
-PREFIX##_list_find_value(const lList *this_list, lList **answer_list,         \
+PREFIX##_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,         \
                          const char *hostname, INTERNAL_TYPE *value,          \
                          const char **matching_host_or_group,                 \
                          const char **matching_group,                         \
                          bool *is_ambiguous, const lList *master_hgroup_list);                                 \
                                                                               \
 bool                                                                          \
-PREFIX##_list_find_value_href(const lList *this_list, lList **answer_list,    \
+PREFIX##_list_find_value_href(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,    \
                          const char *hostname, INTERNAL_TYPE *value,          \
                          bool *found);                                        \
 bool                                                                          \
 PREFIX##_list_append_to_dstring(const lList *this_list, dstring *string);     \
                                                                               \
 bool                                                                          \
-PREFIX##_list_parse_from_string(lList **this_list, lList **answer_list,       \
+PREFIX##_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,       \
                                 const char *string, int flags, const lList *master_hgroup_list);
                                                                               
 TEMPLATE_ATTR_PROTO(str_attr, const char *, const char *)

@@ -42,6 +42,7 @@
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Packet.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs::gdi {
    /**
@@ -106,13 +107,14 @@ namespace ocs::gdi {
                                          char *rip = nullptr);
 
       static int sge_gdi_send_any_request(int synchron, uint32_t *mid, const char *rhost, const char *commproc, int id,
-                                          sge_pack_buffer *pb, ClientServerBaseTag tag, uint32_t response_id, lList **alpp);
+                                          sge_pack_buffer *pb, ClientServerBaseTag tag, uint32_t response_id,
+                                          ocs::tom::ListPtr<ocs::tom::AN> *alpp);
       static bool sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bool local_uid_gid, bool reresolve_user,
                                                bool reresolve_supp_grp);
 #if defined(OCS_WITH_OPENSSL)
-      static int gdi_setup_tls_config(bool needs_client, bool is_server, lList **answer_list,
+      static int gdi_setup_tls_config(bool needs_client, bool is_server, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                       const char *local_host, uint32_t local_port, const char *target_host, uint32_t target_port, const char *target_commproc);
-      static int gdi_update_client_tls_config(lList **answer_list, const char *master_host);
+      static int gdi_update_client_tls_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *master_host);
 #endif
    };
 }

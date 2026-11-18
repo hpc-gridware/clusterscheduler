@@ -916,7 +916,8 @@ unsuspend_all_tasks_in_slotwise_sub_tree(const ocs::tom::Element<ocs::tom::QU> q
  */
 bool
 check_new_slotwise_subordinate_tree(const ocs::tom::Element<ocs::tom::QU> qinstance,
-                                    const ocs::tom::ConstList<ocs::tom::SO> new_so_list, lList **answer_list) {
+                                    const ocs::tom::ConstList<ocs::tom::SO> new_so_list,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool success = true;
@@ -1314,7 +1315,8 @@ qinstance_x_on_subordinate(const ocs::tom::Element<ocs::tom::QU> this_elem, cons
  * @return true if every affected queue instance could be signalled
  */
 bool
-cqueue_list_x_on_subordinate_so(const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list, lList **answer_list,
+cqueue_list_x_on_subordinate_so(const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const bool suspend, const ocs::tom::ConstList<ocs::tom::SO> resolved_so_list,
                                 monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -1352,7 +1354,8 @@ cqueue_list_x_on_subordinate_so(const ocs::tom::ConstList<ocs::tom::CQ> master_c
  *         has slotwise subordinates or nothing was resolved
  */
 ocs::tom::ListPtr<ocs::tom::SO>
-qinstance_find_suspended_subordinates(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, lList **answer_list,
+qinstance_find_suspended_subordinates(const ocs::tom::ConstElement<ocs::tom::QU> this_elem,
+                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                       const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list) {
    DENTER(TOP_LAYER);
 

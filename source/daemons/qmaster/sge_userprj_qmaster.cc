@@ -129,7 +129,7 @@ namespace {
 
 static int
 do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::UU> anUser,
-                 lList **anAnswer, monitoring_t *monitor);
+                 ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, monitoring_t *monitor);
 
 /** @brief Apply the attribute changes to a user or a project
  *
@@ -143,7 +143,7 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Eleme
  */
 template <typename F>
 static int
-ocs_userprj_mod(lList **alpp, const ocs::tom::Element<typename F::Type> modp,
+ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<typename F::Type> modp,
                 const ocs::tom::Element<typename F::Type> ep, const int add, const char *obj_name) {
    DENTER(TOP_LAYER);
 
@@ -275,8 +275,8 @@ ocs_userprj_mod(lList **alpp, const ocs::tom::Element<typename F::Type> modp,
  * @return 0 on success
  */
 int
-userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add,
-            const char *ruser, const char *rhost, gdi_object_t *object,
+userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
+            lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
             ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
             monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -370,7 +370,8 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
  * @return 0 on success
  */
 int
-userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
+userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *upe,
+              gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    const bool user_flag = object->target == ocs::gdi::Target::UU_LIST;
@@ -378,7 +379,7 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLis
                                 : ocs::tom::get<PR_name>(ocs::tom::ConstElement<ocs::tom::PR>(upe));
 
    /* write user or project to file */
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), upe, name,
                                          user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
@@ -401,7 +402,7 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLis
  * @return STATUS_OK if the project is not referenced, STATUS_EEXIST otherwise
  */
 static int
-ocs_verify_project_deletion(lList **alpp, const char *name) {
+ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name) {
    DENTER(TOP_LAYER);
 
    for (const auto cqueue : ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
@@ -481,7 +482,8 @@ ocs_verify_project_deletion(lList **alpp, const char *name) {
 template <typename F>
 static int
 ocs_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<typename F::Type> up_ep,
-                lList **alpp, const ocs::tom::List<typename F::Type> upl, const char *ruser, const char *rhost) {
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::List<typename F::Type> upl, const char *ruser,
+                const char *rhost) {
    DENTER(TOP_LAYER);
 
    constexpr bool user = std::is_same_v<typename F::Type, ocs::tom::UU>;
@@ -547,7 +549,8 @@ ocs_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
  */
 int
 sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::UU> up_ep,
-                lList **alpp, const ocs::tom::List<ocs::tom::UU> upl, const char *ruser, const char *rhost) {
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::List<ocs::tom::UU> upl, const char *ruser,
+                const char *rhost) {
    DENTER(TOP_LAYER);
    const int ret = ocs_del_userprj<UserFields>(packet, task, up_ep, alpp, upl, ruser, rhost);
    DRETURN(ret);
@@ -566,7 +569,8 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
  */
 int
 sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::PR> up_ep,
-                lList **alpp, const ocs::tom::List<ocs::tom::PR> upl, const char *ruser, const char *rhost) {
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::List<ocs::tom::PR> upl, const char *ruser,
+                const char *rhost) {
    DENTER(TOP_LAYER);
    const int ret = ocs_del_userprj<ProjectFields>(packet, task, up_ep, alpp, upl, ruser, rhost);
    DRETURN(ret);
@@ -585,8 +589,8 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
  * @return STATUS_OK on success
  */
 int
-sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **upl,
-                const char *ruser, const char *rhost, int user) {
+sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                lList **upl, const char *ruser, const char *rhost, int user) {
    if (user) {
       return sge_del_userprj(packet, task, ocs::tom::ConstElement<ocs::tom::UU>(ep), alpp,
                              ocs::tom::List<ocs::tom::UU>(*upl), ruser, rhost);
@@ -605,7 +609,7 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
  * @return STATUS_OK when every project exists
  */
 int
-verify_project_list(lList **alpp, const ocs::tom::ConstList<ocs::tom::PR> name_list,
+verify_project_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstList<ocs::tom::PR> name_list,
                     const ocs::tom::ConstList<ocs::tom::PR> prj_list, const char *attr_name, const char *obj_descr,
                     const char *obj_name) {
    DENTER(TOP_LAYER);
@@ -669,7 +673,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
             } else {
                /* if the delete time has expired, delete user */
                if (delete_time <= now) {
-                  lList *answer_list = nullptr;
+                  ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                   ocs::gdi::Packet packet;
                   ocs::gdi::Task task;
 
@@ -707,8 +711,8 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
  * @return STATUS_OK on success
  */
 int
-sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp,
-                  monitoring_t *monitor) {
+sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user,
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int status = STATUS_OK;
@@ -777,12 +781,12 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
  */
 static int
 do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::UU> anUser,
-                 lList **anAnswer, monitoring_t *monitor) {
+                 ocs::tom::ListPtr<ocs::tom::AN> *anAnswer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int res = STATUS_EUNKNOWN;
    gdi_object_t *userList = nullptr;
-   lList *tmpAnswer = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> tmpAnswer;
    lList *ppList = nullptr;
    const char *admin_user = ocs::Bootstrap::get_admin_user();
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -807,7 +811,7 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    }
 
    if (tmpAnswer != nullptr) {
-      lFreeList(&tmpAnswer);
+      tmpAnswer.reset();
    }
 
    DRETURN(res);
@@ -827,7 +831,7 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
  */
 void sge_userprj_spool(uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    uint64_t now = sge_get_gmt64();
 
    /* this function is used on qmaster shutdown, no need to monitor this lock */

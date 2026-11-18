@@ -66,8 +66,8 @@
  * @return 0 on success
  */
 int
-role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ep, lListElem *ep, int add,
-         const char *ruser, const char *rhost, gdi_object_t *object,
+role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ep,
+         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -154,10 +154,11 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
  * @return 0 on success
  */
 int
-role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+           gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    ocs::tom::get<RL_name>(ep), SGE_TYPE_RL);
@@ -208,7 +209,7 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  */
 int
 sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::RL> ep,
-             lList **alpp, char *ruser, char *rhost) {
+             ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    // raw out-parameter of the DataStore API: ocs::tom::erase() below frees the list when it becomes empty
@@ -263,6 +264,7 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
  * @return see the typed form
  */
 int
-sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             char *ruser, char *rhost) {
    return sge_del_role(packet, task, ocs::tom::ConstElement<ocs::tom::RL>(ep), alpp, ruser, rhost);
 }

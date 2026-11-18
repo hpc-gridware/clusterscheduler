@@ -29,6 +29,7 @@
 #include <ostream>
 
 #include "ocs_qconf_common.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Run one delete operation from qconf_delete_table, if it is one
@@ -43,7 +44,7 @@
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_delete(std::ostream &os, const qconf_op &op, lList **alpp);
+qconf_run_delete(std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /**
  * @brief Whether a delete switch previews under "-dry" (CS-2984)

@@ -712,7 +712,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1) {
  *
  * @note MT-NOTE: var_list_verify() is MT safe
  */
-bool var_list_verify(const ocs::tom::ConstList<ocs::tom::VA> lp, lList **answer_list) {
+bool var_list_verify(const ocs::tom::ConstList<ocs::tom::VA> lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    bool ret = true;
    for (const auto ep : lp) {
       const char *variable = ocs::tom::get<VA_variable>(ep);

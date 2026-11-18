@@ -144,7 +144,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
                                      const char *client_cred,
                                      char *out_token, size_t out_token_size,
                                      char *out_exec_host, size_t out_exec_host_size,
-                                     lList **answer_list) {
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    if (requester_user == nullptr || client_host == nullptr || client_port <= 0 ||

@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "cull/cull.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -48,7 +49,8 @@ namespace ocs {
       static std::string get_long_product_name();
 
       /// May a peer of this version talk to us?
-      static bool do_versions_match(lList **alpp, uint32_t version, const char *host, const char *commproc, int id);
+      static bool do_versions_match(ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint32_t version, const char *host,
+                                    const char *commproc, int id);
    };
 }
 

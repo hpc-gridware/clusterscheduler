@@ -198,7 +198,7 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, const bool monitor_
  * @param answer_list receives error messages
  * @param lists the scheduler's snapshot of the cluster
  */
-void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists) {
+void scheduler_method(sge_evc_class_t *evc, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, scheduler_all_data_t *lists) {
    DENTER(TOP_LAYER);
 
    order_t orders = ORDER_INIT;
@@ -888,7 +888,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 
                   // send orders every 100ms
                   if (passed > 100 * 1000) {
-                     lList *answer_list = nullptr;
+                     ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                      // Why the config and pending order here? Send them earlier or at the end!
                      // We actually send them before the loop over all jobs, so the calls here won't do anything.
                      if (do_prof) {

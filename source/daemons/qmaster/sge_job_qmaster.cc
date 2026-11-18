@@ -210,28 +210,30 @@ job_number_t job_number_control = {0, false, PTHREAD_MUTEX_INITIALIZER};   ///< 
 static int
 mod_task_attributes(const ocs::gdi::Packet *packet, ocs::tom::Element<ocs::tom::JB> job,
                     ocs::tom::Element<ocs::tom::JAT> new_ja_task, ocs::tom::Element<ocs::tom::JAT> tep,
-                    lList **alpp, int *trigger, int is_array, int is_task_enrolled);
+                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, int *trigger, int is_array, int is_task_enrolled);
 
 static int
 mod_job_attributes(const ocs::gdi::Packet *packet, ocs::tom::Element<ocs::tom::JB> new_job,
-                   ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, int *trigger);
+                   ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int *trigger);
 
 static bool
 job_redebit(ocs::tom::ConstElement<ocs::tom::JB> old_job, ocs::tom::ConstElement<ocs::tom::JB> new_job,
-            lList **answer_list, uint32_t gdi_session);
+            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t gdi_session);
 
 static uint32_t
 guess_highest_job_number();
 
 static bool
-contains_dependency_cycles(ocs::tom::ConstElement<ocs::tom::JB> new_job, uint32_t job_number, lList **alpp);
+contains_dependency_cycles(ocs::tom::ConstElement<ocs::tom::JB> new_job, uint32_t job_number,
+                           ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 static int
-verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_users_flag, int all_jobs_flag,
-                       int jid_flag, int user_list_flag);
+verify_job_list_filter(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int all_users_flag,
+                       int all_jobs_flag, int jid_flag, int user_list_flag);
 
 static void
-empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modify, int user_list_flag,
+empty_job_list_filter(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int was_modify,
+                      int user_list_flag,
                       ocs::tom::ConstList<ocs::tom::ST> user_list, int jid_flag, const char *jobid, int all_users_flag,
                       int all_jobs_flag, int is_array, uint32_t start, uint32_t end, uint32_t step);
 
@@ -239,14 +241,14 @@ static void
 get_rid_of_schedd_job_messages(uint32_t job_number);
 
 static bool
-has_invalid_consumable_changes(lList **alpp, ocs::tom::ConstList<ocs::tom::CE> new_lp,
+has_invalid_consumable_changes(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstList<ocs::tom::CE> new_lp,
                                ocs::tom::ConstList<ocs::tom::CE> old_lp, bool when_now, bool &resources_decreased);
 
 static ocs::tom::Where<ocs::tom::JB>
 job_list_filter(ocs::tom::ConstList<ocs::tom::ST> user_list, const char *jobid);
 
 static int
-sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **alpp,
+sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                             ocs::tom::Element<ocs::tom::JB> job, uint32_t *r_start, uint32_t *r_end, uint32_t *step,
                             ocs::tom::ConstList<ocs::tom::RN> ja_structure, int *alltasks, uint32_t *deleted_tasks,
                             uint64_t start_time, monitoring_t *monitor, int forced, bool *deletion_time_reached);
@@ -274,7 +276,7 @@ static const char JOB_NAME_DEL = ':';
  * @note MT-Note: it is thread safe. It is using the global lock to secure the none safe functions
  */
 int
-sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, lList **alpp, lList **lpp,
+sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
                 ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                 monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -327,7 +329,7 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, lList **alpp, lList **l
    // The messages of the spooling layer go to the messages file only, the client gets a message
    // saying that the job could not be written. They are about the spooling database, not about
    // the job, and may contain its connection parameters.
-   lList *spool_answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> spool_answer_list;
 
    // open a spooling transaction
    if (!spool_transaction(&spool_answer_list, spool_get_default_context(), STC_begin)) {
@@ -457,8 +459,8 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, lList **alpp, lList **l
  * @return STATUS_OK on success, an error status otherwise
  */
 int
-sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                monitoring_t *monitor) {
+sge_gdi_add_job(lListElem **jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp, ocs::gdi::Packet *packet,
+                ocs::gdi::Task *task, monitoring_t *monitor) {
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(*jep);
    const int ret = sge_gdi_add_job(job, alpp, lpp, packet, task, monitor);
    *jep = job.release();
@@ -482,7 +484,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp, ocs::gdi::Packet *pa
  */
 int
 sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::ID> idep,
-                lList **alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+                monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int all_jobs_flag;
@@ -661,7 +664,8 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
  * @return STATUS_OK on success, an error status otherwise
  */
 int
-sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *idep, lList **alpp,
+sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *idep,
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                 const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    return sge_gdi_del_job(packet, task, ocs::tom::Element<ocs::tom::ID>(idep), alpp, cmd, sub_command, monitor);
 }
@@ -867,7 +871,8 @@ ack_all_slaves(const uint32_t job_id, const uint32_t ja_task_id, const lListElem
  * @param step step of the range
  */
 static void
-empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, const int was_modify, const int user_list_flag,
+empty_job_list_filter(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const int was_modify,
+                      const int user_list_flag,
                       const ocs::tom::ConstList<ocs::tom::ST> user_list, const int jid_flag, const char *jobid,
                       const int all_users_flag, const int all_jobs_flag, const int is_array,
                       const uint32_t start, const uint32_t end, const uint32_t step) {
@@ -1006,7 +1011,8 @@ job_list_filter(const ocs::tom::ConstList<ocs::tom::ST> user_list, const char *j
 */
 
 static int
-verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_users_flag, int all_jobs_flag, int jid_flag, int user_list_flag) {
+verify_job_list_filter(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int all_users_flag,
+                       int all_jobs_flag, int jid_flag, int user_list_flag) {
    DENTER(TOP_LAYER);
 
    /* Reject incorrect requests */
@@ -1147,8 +1153,7 @@ void job_ja_task_send_abort_mail(const ocs::tom::ConstElement<ocs::tom::JB> job,
  */
 void get_rid_of_job_due_to_qdel(ocs::tom::Element<ocs::tom::JB> j,
                                 const ocs::tom::Element<ocs::tom::JAT> t,
-                                lList **answer_list,
-                                const char *ruser,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *ruser,
                                 const int force,
                                 monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -1248,7 +1253,7 @@ void job_mark_job_as_deleted(const ocs::tom::Element<ocs::tom::JB> j, const ocs:
       ocs::tom::set<JAT_state>(t, state);
       ocs::tom::set<JAT_stop_initiate_time>(t, sge_get_gmt64());
 
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, ocs::tom::get<JB_job_number>(j),
                       ocs::tom::get<JAT_task_number>(t), nullptr, nullptr, nullptr,
                       j, t, nullptr, true, true, 0);
@@ -1334,7 +1339,7 @@ enum {
  */
 int
 sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::JB> jep,
-                lList **alpp, const ocs::gdi::SubCommand sub_command) {
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::gdi::SubCommand sub_command) {
    DENTER(TOP_LAYER);
 
    int user_list_flag;
@@ -1421,7 +1426,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    auto nxt = job_list.front();
    while (const auto jobep = nxt) {
       uint32_t jobid = 0;
-      lList *tmp_alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> tmp_alp;
       int trigger = 0;
       nxt = jobep.next();
 
@@ -1469,9 +1474,9 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       int lret = mod_job_attributes(packet, new_job, jep, &tmp_alp, &trigger);
       if (lret != STATUS_OK) {
          if (*alpp == nullptr) {
-            *alpp = lCreateList("answer", AN_Type);
+            *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
          }
-         lAddList(*alpp, &tmp_alp);
+         (*alpp)->splice(std::move(tmp_alp));
          sge_free(&job_mod_name);
          DRETURN(lret);
       }
@@ -1481,9 +1486,9 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
               ocs::tom::get<JB_job_number>(jobep));
          if (!job_redebit(jobep, new_job, &tmp_alp, packet->gdi_session)) {
             if (*alpp == nullptr) {
-               *alpp = lCreateList("answer", AN_Type);
+               *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
             }
-            lAddList(*alpp, &tmp_alp);
+            (*alpp)->splice(std::move(tmp_alp));
             sge_free(&job_mod_name);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -1498,12 +1503,12 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          // open a spooling transaction. A event transaction is open automatically within worker threads
          // The messages of the spooling layer go to the messages file only, the client gets a
          // message saying that the modification could not be written.
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          if (!spool_transaction(&answer_list, spool_get_default_context(), STC_begin)) {
             answer_list_output(&answer_list);
             ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            lFreeList(&tmp_alp);
+            tmp_alp.reset();
             sge_free(&job_mod_name);
             DRETURN(STATUS_EDISK);
          }
@@ -1556,7 +1561,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
-            lFreeList(&tmp_alp);
+            tmp_alp.reset();
             sge_free(&job_mod_name);
             DRETURN(STATUS_EDISK);
          }
@@ -1564,9 +1569,9 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
          /* all elems in tmp_alp need to be appended to alpp */
          if (!*alpp) {
-            *alpp = lCreateList("answer", AN_Type);
+            *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
          }
-         lAddList(*alpp, &tmp_alp);
+         (*alpp)->splice(std::move(tmp_alp));
 
          if (trigger & MOD_EVENT) {
             sge_add_job_event(sgeE_JOB_MOD, new_job, ocs::tom::Element<ocs::tom::JAT>(), packet->gdi_session);
@@ -1680,8 +1685,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
  * @return STATUS_OK on success, an error status otherwise
  */
 int
-sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lList **alpp,
-                const ocs::gdi::SubCommand sub_command) {
+sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep,
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::gdi::SubCommand sub_command) {
    return sge_gdi_mod_job(packet, task, ocs::tom::Element<ocs::tom::JB>(jep), alpp, sub_command);
 }
 
@@ -1901,7 +1906,8 @@ void job_suc_pre_ad(lListElem *jep) {
 static int
 mod_task_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::tom::JB> job,
                     ocs::tom::Element<ocs::tom::JAT> new_ja_task, const ocs::tom::Element<ocs::tom::JAT> tep,
-                    lList **alpp, int *trigger, const int is_array, const int is_task_enrolled) {
+                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, int *trigger, const int is_array,
+                    const int is_task_enrolled) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid = ocs::tom::get<JB_job_number>(job);
@@ -2035,7 +2041,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs:
  *         false if changes are valid
  */
 static bool
-has_invalid_consumable_changes(lList **alpp, const ocs::tom::ConstList<ocs::tom::CE> new_lp,
+has_invalid_consumable_changes(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstList<ocs::tom::CE> new_lp,
                                const ocs::tom::ConstList<ocs::tom::CE> old_lp, const bool when_now,
                                bool &resources_decreased) {
    DENTER(TOP_LAYER);
@@ -2125,7 +2131,7 @@ has_invalid_consumable_changes(lList **alpp, const ocs::tom::ConstList<ocs::tom:
  *
  * @return 0 request can pass !=0 consumables requested soft
  */
-int deny_soft_consumables(lList **alpp, const ocs::tom::ConstList<ocs::tom::CE> srl,
+int deny_soft_consumables(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstList<ocs::tom::CE> srl,
                           const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
 
@@ -2166,7 +2172,7 @@ int deny_soft_consumables(lList **alpp, const ocs::tom::ConstList<ocs::tom::CE> 
  */
 static int
 mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::tom::JB> new_job,
-                   const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, int *trigger) {
+                   const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int *trigger) {
    DENTER(TOP_LAYER);
 
    bool is_running{false}, may_not_be_running{false};
@@ -3213,7 +3219,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
  * @note MT-NOTE
  */
 static bool contains_dependency_cycles(const ocs::tom::ConstElement<ocs::tom::JB> new_job, const uint32_t job_number,
-                                       lList **alpp) {
+                                       ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    bool is_cycle = false;
@@ -3271,7 +3277,7 @@ static bool contains_dependency_cycles(const ocs::tom::ConstElement<ocs::tom::JB
  *
  * @return returns != 0 if there is a problem with predecessors
  */
-int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, lList **alpp) {
+int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid = ocs::tom::get<JB_job_number>(job);
@@ -3347,7 +3353,8 @@ int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, lList **a
  *
  * @return returns != 0 if there is a problem with predecessors
  */
-int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, lList **alpp, const uint64_t gdi_session) {
+int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                               const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid = ocs::tom::get<JB_job_number>(job);
@@ -3606,8 +3613,8 @@ static uint32_t guess_highest_job_number() {
  * @param is_modify whether this is a modification rather than a submit
  * @return 0 when a suitable queue exists
  */
-int verify_suitable_queues(lList **alpp, const ocs::tom::Element<ocs::tom::JB> jep, int *trigger,
-                           const bool is_modify) {
+int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<ocs::tom::JB> jep,
+                           int *trigger, const bool is_modify) {
    DENTER(TOP_LAYER);
 
    int verify_mode = ocs::tom::get<JB_verify_suitable_queues>(jep);
@@ -3649,7 +3656,7 @@ int verify_suitable_queues(lList **alpp, const ocs::tom::Element<ocs::tom::JB> j
    }
 
    {
-      lList *talp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> talp;
       int try_it = 1;
       const char *ckpt_name;
       const auto job_hard_queue_list = job_get_hard_queue_list(jep);
@@ -3815,11 +3822,11 @@ int verify_suitable_queues(lList **alpp, const ocs::tom::Element<ocs::tom::JB> j
          /* copy error msgs from talp into alpp */
          if (verify_only) {
             if (!*alpp) {
-               *alpp = lCreateList("answer", AN_Type);
+               *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
             }
-            lAddList(*alpp, &talp);
+            (*alpp)->splice(std::move(talp));
          } else {
-            lFreeList(&talp);
+            talp.reset();
          }
          if (verify_only) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_NOSUITABLEQ_S, MSG_JOB_VERIFYVERIFY);
@@ -3844,7 +3851,7 @@ int verify_suitable_queues(lList **alpp, const ocs::tom::Element<ocs::tom::JB> j
             DRETURN(STATUS_ESEMANTIC);
          }
       }
-      lFreeList(&talp);
+      talp.reset();
       a.monitor_alpp = nullptr;
 
       if (verify_only) {
@@ -3878,7 +3885,7 @@ int verify_suitable_queues(lList **alpp, const ocs::tom::Element<ocs::tom::JB> j
  * @param monitor for monitoring qmaster threads
  * @return STATUS_OK on success, an error status otherwise
  */
-int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, lList **lpp,
+int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
                      ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -3948,8 +3955,8 @@ int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, lL
  * @param monitor for monitoring qmaster threads
  * @return STATUS_OK on success, an error status otherwise
  */
-int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                     monitoring_t *monitor) {
+int sge_gdi_copy_job(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp, ocs::gdi::Packet *packet,
+                     ocs::gdi::Task *task, monitoring_t *monitor) {
    return sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB>(jep), alpp, lpp, packet, task, monitor);
 }
 
@@ -3968,7 +3975,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp, ocs::gdi::Packet
  *
  * @see #spool_delete_script, #spool_read_script
  */
-bool spool_write_script(lList **answer_list, const uint32_t jobid,
+bool spool_write_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t jobid,
                         const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
 
@@ -4001,7 +4008,7 @@ bool spool_write_script(lList **answer_list, const uint32_t jobid,
  *
  * @see #spool_write_script, #spool_delete_script
  */
-bool spool_read_script(lList **answer_list, const uint32_t jobid,
+bool spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t jobid,
                        const ocs::tom::Element<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
 
@@ -4036,7 +4043,7 @@ bool spool_read_script(lList **answer_list, const uint32_t jobid,
  * @param jep the job
  * @return true on success
  */
-bool spool_read_script(lList **answer_list, const uint32_t jobid, lListElem *jep) {
+bool spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t jobid, lListElem *jep) {
    return spool_read_script(answer_list, jobid, ocs::tom::Element<ocs::tom::JB>(jep));
 }
 
@@ -4055,7 +4062,7 @@ bool spool_read_script(lList **answer_list, const uint32_t jobid, lListElem *jep
  *
  * @see #spool_write_script, #spool_read_script
  */
-bool spool_delete_script(lList **answer_list, const uint32_t jobid,
+bool spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t jobid,
                          const ocs::tom::Element<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
 
@@ -4079,7 +4086,7 @@ bool spool_delete_script(lList **answer_list, const uint32_t jobid,
  * @param jep the job
  * @return true on success
  */
-bool spool_delete_script(lList **answer_list, const uint32_t jobid, lListElem *jep) {
+bool spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t jobid, lListElem *jep) {
    return spool_delete_script(answer_list, jobid, ocs::tom::Element<ocs::tom::JB>(jep));
 }
 
@@ -4101,7 +4108,7 @@ bool spool_delete_script(lList **answer_list, const uint32_t jobid, lListElem *j
  * @param deletion_time_reached receives whether the deletion time limit was reached
  * @return the number of jobs or tasks handled
  */
-static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **alpp,
+static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                        ocs::tom::Element<ocs::tom::JB> job, uint32_t *r_start, uint32_t *r_end,
                                        uint32_t *step, const ocs::tom::ConstList<ocs::tom::RN> ja_structure,
                                        int *alltasks, uint32_t *deleted_tasks, const uint64_t start_time,
@@ -4281,7 +4288,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
          if (existing_tasks > *deleted_tasks) {
             dstring buffer = DSTRING_INIT;
             /* write only the common part - pass only the jobid, no jatask or petask id */
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
             spool_write_object(&answer_list, spool_get_default_context(),
                                job, job_get_job_key(job_number, &buffer),
                                SGE_TYPE_JOB);
@@ -4504,7 +4511,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
  * @note MT-NOTE: job_verify_project() is MT safe, if caller holds the global lock.
  */
 int
-job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **alpp,
+job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                    const char *user, const char *group, const ocs::tom::ConstList<ocs::tom::ST> grp_list) {
    DENTER(TOP_LAYER);
 
@@ -4673,7 +4680,7 @@ get_job_log_name(const job_log_t type) {
  */
 bool
 job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
-                  lList **answer_list, const uint32_t gdi_session, const int factor = 1) {
+                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t gdi_session, const int factor = 1) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -4827,7 +4834,7 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
  */
 bool
 job_ja_task_undebit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
-                    lList **answer_list, const uint32_t gdi_session) {
+                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t gdi_session) {
    DENTER(TOP_LAYER);
    DRETURN(job_ja_task_debit(job, ja_task, answer_list, gdi_session, -1));
 }
@@ -4860,7 +4867,7 @@ job_ja_task_undebit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::t
  */
 static bool
 job_redebit(const ocs::tom::ConstElement<ocs::tom::JB> old_job, const ocs::tom::ConstElement<ocs::tom::JB> new_job,
-            lList **answer_list, const uint32_t gdi_session) {
+            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

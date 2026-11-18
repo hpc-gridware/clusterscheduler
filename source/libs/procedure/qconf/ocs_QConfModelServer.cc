@@ -44,7 +44,7 @@
  * @return true
  */
 bool
-ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] lList **answer_list) {
+ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*DataStore::get_master_list(SGE_TYPE_HGROUP));
@@ -68,7 +68,7 @@ ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] lList **answer_list) {
  * @return true on success
  */
 bool
-ocs::QConfModelServer::fetch(lList **answer_list, gdi::Target target,
+ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
                              lCondition *where, lEnumeration *what) {
    DENTER(TOP_LAYER);
 
@@ -122,7 +122,7 @@ ocs::qconf_set_thread_pool_provider(ocs::qconf_thread_pool_provider provider) {
  * @return true on success
  */
 bool
-ocs::QConfModelServer::fetch_thread_pools(lList **answer_list) {
+ocs::QConfModelServer::fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    if (thread_pool_provider == nullptr) {
@@ -146,7 +146,7 @@ ocs::QConfModelServer::fetch_thread_pools(lList **answer_list) {
  * @return true, always: there is nothing here that can fail
  */
 bool
-ocs::QConfModelServer::fetch_centries([[maybe_unused]] lList **answer_list) {
+ocs::QConfModelServer::fetch_centries([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*DataStore::get_master_list(SGE_TYPE_CENTRY));

@@ -30,6 +30,7 @@
  */
 
 #include "ocs_qconf_common.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Run one attribute operation, if it is one
@@ -42,4 +43,4 @@
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_attr(const qconf_op &op, lList **alpp);
+qconf_run_attr(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp);

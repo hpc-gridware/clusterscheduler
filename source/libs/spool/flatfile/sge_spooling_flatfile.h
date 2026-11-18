@@ -41,6 +41,7 @@
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
+#include "sgeobj/sge_answer.h"
 
 /** @defgroup spool_classic Classic spooling backend
  * @brief The master lists as flat files in the spool directory
@@ -72,38 +73,38 @@ const char *get_classic_spooling_method();
 #endif
 
 lListElem *
-spool_classic_create_context(lList **answer_list, const char *args);
+spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args);
 }
 
 bool 
-spool_classic_default_startup_func(lList **answer_list, 
+spool_classic_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                     const lListElem *rule, bool check);
 
 bool
-spool_classic_default_shutdown_func(lList **answer_list,
+spool_classic_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     const lListElem *rule);
 
 bool
-spool_classic_default_list_func(lList **answer_list,
+spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const lListElem *type, 
                                  const lListElem *rule,
                                  lList **list, 
                                  const sge_object_type object_type);
 lListElem *
-spool_classic_default_read_func(lList **answer_list, 
+spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                  const lListElem *type, 
                                  const lListElem *rule,
                                  const char *key, 
                                  const sge_object_type object_type);
 bool 
-spool_classic_default_write_func(lList **answer_list, 
+spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                   const lListElem *type, 
                                   const lListElem *rule, 
                                   const lListElem *object, 
                                   const char *key, 
                                   const sge_object_type object_type);
 bool
-spool_classic_default_delete_func(lList **answer_list,
+spool_classic_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const lListElem *type,
                                    const lListElem *rule,
                                    const char *key,

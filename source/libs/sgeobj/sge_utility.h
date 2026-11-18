@@ -84,13 +84,13 @@ typedef enum sge_thread_state_transitions_t_ {
 #define QSUB_TABLE	(2) ///< the set a submit client accepts, e.g. for a job name
 /** @} */
 an_status_t
-verify_str_key(lList **alpp, const char *str, size_t str_length, const char *name, int table,
+verify_str_key(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *str, size_t str_length, const char *name, int table,
                const char *exceptions = nullptr);
 
 an_status_t
-verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *name,
+verify_obj_name(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *str, size_t str_length, const char *name,
                 const char *exceptions = nullptr);
 
-bool verify_host_name(lList **answer_list, const char *host_name);
+bool verify_host_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *host_name);
 
 int reresolve_qualified_hostname();

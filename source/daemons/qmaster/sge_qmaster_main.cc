@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
    int ret_val;
    uint64_t start_time = sge_get_gmt64();
    monitoring_t monitor;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
 #ifdef WITH_PYTHON_IN_QMASTER
    // @todo: initialize_interpreter() is called within scoped_interpreter(). This function allows to disable signal handling. We need to find out what this means for the qmaster.

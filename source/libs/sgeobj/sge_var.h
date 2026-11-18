@@ -46,6 +46,7 @@
 #include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "sgeobj/cull/sge_var_VA_L.h"
+#include "sgeobj/sge_answer.h"
 
 /// Marks a variable that is exported to the job with the prefix replaced, e.g. `__SGE_PREFIX__O_HOME` becomes `SGE_O_HOME`
 #define VAR_PREFIX "__SGE_PREFIX__"
@@ -97,7 +98,7 @@ OCS_TRANSITIONAL void var_list_split_prefix_vars(lList **varl, lList **pefix_var
 int var_list_add_as_set(ocs::tom::List<ocs::tom::VA> varl, ocs::tom::ListPtr<ocs::tom::VA> &&vars);
 OCS_TRANSITIONAL int var_list_add_as_set(lList *varl, lList *vars);
 
-bool var_list_verify(ocs::tom::ConstList<ocs::tom::VA> lp, lList **answer_list);
+bool var_list_verify(ocs::tom::ConstList<ocs::tom::VA> lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char *variable_str, int check_environment);
 OCS_TRANSITIONAL int var_list_parse_from_string(lList **lpp, const char *variable_str, int check_environment);

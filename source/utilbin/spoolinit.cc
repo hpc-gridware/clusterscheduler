@@ -74,7 +74,7 @@ static int init_framework(const char *method, const char *shlib,
    int ret = EXIT_FAILURE;
 
    lListElem *spooling_context = nullptr;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    lInit(nmv);
    /* create spooling context */
@@ -102,7 +102,7 @@ static int init_framework(const char *method, const char *shlib,
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "spoolinit");
    int ret = EXIT_SUCCESS;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();

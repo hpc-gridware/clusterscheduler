@@ -83,10 +83,10 @@ refused(const char *token, const char *sub_procedure, const int args) {
    param.set_sub_procedure_name(sub_procedure);
 
    ocs::QConfModelClient model;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    const bool ok = model.make_snapshot(&alp, param);
    const bool said_why = answer_list_has_error(&alp);
-   lFreeList(&alp);
+   alp.reset();
 
    DRETURN(!ok && said_why);
 }

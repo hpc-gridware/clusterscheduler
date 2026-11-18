@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
    static char tmp_err_file_name[SGE_PATH_MAX];
    int execd_exit_state = 0;
    lList **master_job_list = nullptr;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    lInit(nmv);
 
@@ -481,7 +481,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
    // the answer list, filled through an lList ** by gdi_is_alive() and returned by sge_gdi()
-   lList *alp_raw = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /*
     * If it is a reconnect (is_restart is true) the act_qmaster file must be
@@ -493,7 +493,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp_raw) == CL_RETVAL_OK) {
+   if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp) == CL_RETVAL_OK) {
       auto hlp = ocs::tom::ListPtr<ocs::tom::EH>::create("exechost starting");
       hlp->push_back(ocs::tom::ElementPtr<ocs::tom::EH>::create());
 
@@ -503,14 +503,14 @@ int sge_execd_register_at_qmaster(bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp_raw = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
                                              ocs::gdi::SubCommand::NONE, hlp);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
-         alp_raw = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
                                              ocs::gdi::SubCommand::EXECD_RESTART, hlp);
       }
       hlp.reset();
@@ -518,7 +518,6 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       DPRINTF("*****  Register at qmaster - qmaster not alive!  *****\n");
    }
 
-   const ocs::tom::ListPtr<ocs::tom::AN> alp(alp_raw);
    if (!alp) {
       if (sge_last_register_error_flag == 0) {
          WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", MSG_COM_ERROR);
@@ -611,7 +610,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv,
    char **rp;
    stringT str;
    // filled through an lList ** by the parsing functions
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    rp = argv;
    while(*(sp=rp)) {
@@ -631,9 +630,9 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv,
       snprintf(str, sizeof(str), MSG_PARSE_INVALIDARG_S, *sp);
       sge_usage(EXECD, stderr);
       answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
+      DRETURN(alp);
    }
-   DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
+   DRETURN(alp);
 }
 
 
@@ -649,7 +648,7 @@ sge_parse_execd(const ocs::tom::List<ocs::tom::SPA> ppcmdline, uint32_t *help) {
    DENTER(TOP_LAYER);
 
    // filled through an lList ** by the parsing functions
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    int usageshowed = 0;
 
    /* Loop over all options. Only valid options can be in the
@@ -669,10 +668,10 @@ sge_parse_execd(const ocs::tom::List<ocs::tom::SPA> ppcmdline, uint32_t *help) {
          sge_usage(EXECD, stderr);
       }
       answer_list_add(&alp, MSG_PARSE_TOOMANYARGS, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
+      DRETURN(alp);
    }
 
-   DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
+   DRETURN(alp);
 }
 
 /* JG: TODO: we have this searching code in many places!! */

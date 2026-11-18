@@ -72,6 +72,7 @@
 #include "sgeobj/cull/sge_job_JRS_L.h"
 #include "sgeobj/cull/sge_job_PN_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @name Job states
@@ -372,14 +373,16 @@ OCS_TRANSITIONAL uint32_t job_get_enrolled_ja_tasks(const lListElem *job);
 
 uint32_t job_get_submit_ja_tasks(ocs::tom::ConstElement<ocs::tom::JB> job);
 
-ocs::tom::Element<ocs::tom::JAT> job_enroll(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
-                                            uint32_t ja_task_number);
+ocs::tom::Element<ocs::tom::JAT> job_enroll(ocs::tom::Element<ocs::tom::JB> job,
+                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t ja_task_number);
 
-void job_unenroll(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list, lListElem **ja_task);
+void job_unenroll(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                  lListElem **ja_task);
 
-void job_delete_not_enrolled_ja_task(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+void job_delete_not_enrolled_ja_task(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                      uint32_t ja_task_number);
-OCS_TRANSITIONAL void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list, uint32_t ja_task_number);
+OCS_TRANSITIONAL void job_delete_not_enrolled_ja_task(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                      uint32_t ja_task_number);
 
 uint32_t job_count_pending_tasks(ocs::tom::ConstElement<ocs::tom::JB> job, bool count_all);
 OCS_TRANSITIONAL uint32_t job_count_pending_tasks(const lListElem *job, bool count_all);
@@ -389,10 +392,10 @@ bool job_has_soft_requests(ocs::tom::ConstElement<ocs::tom::JB> job);
 bool job_is_ja_task_defined(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t ja_task_number);
 OCS_TRANSITIONAL bool job_is_ja_task_defined(const lListElem *job, uint32_t ja_task_number);
 
-void job_set_hold_state(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list, uint32_t ja_task_id,
-                        uint32_t new_hold_state);
-OCS_TRANSITIONAL void job_set_hold_state(lListElem *job, lList **answer_list, uint32_t ja_task_id,
-                                         uint32_t new_hold_state);
+void job_set_hold_state(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        uint32_t ja_task_id, uint32_t new_hold_state);
+OCS_TRANSITIONAL void job_set_hold_state(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                         uint32_t ja_task_id, uint32_t new_hold_state);
 
 uint32_t job_get_hold_state(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t ja_task_id);
 OCS_TRANSITIONAL uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id);
@@ -404,12 +407,13 @@ ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(ocs::tom::Cons
                                                                   uint32_t ja_task_id);
 OCS_TRANSITIONAL lListElem *job_get_ja_task_template_pending(const lListElem *job, uint32_t ja_task_id);
 
-ocs::tom::Element<ocs::tom::JAT> job_search_task(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
-                                                 uint32_t ja_task_id);
-OCS_TRANSITIONAL lListElem *job_search_task(const lListElem *job, lList **answer_list, uint32_t ja_task_id);
+ocs::tom::Element<ocs::tom::JAT> job_search_task(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t ja_task_id);
+OCS_TRANSITIONAL lListElem *job_search_task(const lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                            uint32_t ja_task_id);
 
-ocs::tom::Element<ocs::tom::JAT> job_create_task(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
-                                                 uint32_t ja_task_id);
+ocs::tom::Element<ocs::tom::JAT> job_create_task(ocs::tom::Element<ocs::tom::JB> job,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t ja_task_id);
 
 int job_list_add_job(lList **job_list, const char *name, ocs::tom::Element<ocs::tom::JB> job, int check);
 OCS_TRANSITIONAL int job_list_add_job(lList **job_list, const char *name, lListElem *job, int check);
@@ -452,19 +456,20 @@ OCS_TRANSITIONAL uint32_t job_get_biggest_enrolled_task_id(const lListElem *job)
 int job_list_register_new_job(ocs::tom::ConstList<ocs::tom::JB> job_list, uint32_t max_jobs, int force_registration);
 OCS_TRANSITIONAL int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int force_registration);
 
-int job_initialize_id_lists(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
-OCS_TRANSITIONAL int job_initialize_id_lists(lListElem *job, lList **answer_list);
+int job_initialize_id_lists(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+OCS_TRANSITIONAL int job_initialize_id_lists(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-void job_initialize_env(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list,
+void job_initialize_env(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::PA> path_alias_list, const char *unqualified_hostname,
                         const char *qualified_hostname);
-OCS_TRANSITIONAL void job_initialize_env(lListElem *job, lList **answer_list, const lList *path_alias_list,
+OCS_TRANSITIONAL void job_initialize_env(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                         const lList *path_alias_list,
                                          const char *unqualified_hostname, const char *qualified_hostname);
 
 const char *job_get_env_string(ocs::tom::ConstElement<ocs::tom::JB> job, const char *variable);
 
-void job_check_correct_id_sublists(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
-OCS_TRANSITIONAL void job_check_correct_id_sublists(lListElem *job, lList **answer_list);
+void job_check_correct_id_sublists(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+OCS_TRANSITIONAL void job_check_correct_id_sublists(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 const char *job_get_id_string(uint32_t job_id, uint32_t ja_task_id,
                               const char *pe_task_id, dstring *buffer);
@@ -491,19 +496,24 @@ void job_get_state_string(char *str, uint32_t op);
 void job_add_parent_id_to_context(ocs::tom::Element<ocs::tom::JB> job);
 OCS_TRANSITIONAL void job_add_parent_id_to_context(lListElem *job);
 
-int job_check_qsh_display(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, bool output_warning);
-OCS_TRANSITIONAL int job_check_qsh_display(const lListElem *job, lList **answer_list, bool output_warning);
+int job_check_qsh_display(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          bool output_warning);
+OCS_TRANSITIONAL int job_check_qsh_display(const lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           bool output_warning);
 
 int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, ocs::tom::ConstList<ocs::tom::JB> master_job_list);
 OCS_TRANSITIONAL int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *master_job_list);
 
-int job_resolve_host_for_path_list(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, int name);
-OCS_TRANSITIONAL int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
+int job_resolve_host_for_path_list(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name);
+OCS_TRANSITIONAL int job_resolve_host_for_path_list(const lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                    int name);
 
 ocs::tom::ConstElement<ocs::tom::CE> job_get_request(ocs::tom::ConstElement<ocs::tom::JB> job, const char *centry_name);
 OCS_TRANSITIONAL const lListElem *job_get_request(const lListElem *job, const char *centry_name);
 
-bool job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, const char *name,
+bool job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
                                    double *value, ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
                                    uint32_t scope);
 
@@ -531,10 +541,11 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
                              ocs::tom::ConstList<ocs::tom::ST> grp_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
                              const char *option);
 
-bool job_verify(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list, bool do_cull_verify);
+bool job_verify(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                bool do_cull_verify);
 
-bool job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
-OCS_TRANSITIONAL bool job_verify_submitted_job(lListElem *job, lList **answer_list);
+bool job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+OCS_TRANSITIONAL bool job_verify_submitted_job(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool job_get_wallclock_limit(uint64_t *limit, ocs::tom::ConstElement<ocs::tom::JB> jep);
 OCS_TRANSITIONAL bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep);
@@ -571,7 +582,8 @@ OCS_TRANSITIONAL void ocs_context_change_add(lList **change, const lList *option
 OCS_TRANSITIONAL lList *ocs_context_get_effective(const lListElem *job);
 
 bool
-job_parse_validation_level(int *level, const char *input, int prog_number, lList **answer_list);
+job_parse_validation_level(int *level, const char *input, int prog_number,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool job_is_requesting_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, const char *resource_name);
 

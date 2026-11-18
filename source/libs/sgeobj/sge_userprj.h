@@ -51,6 +51,7 @@
 #include "sgeobj/cull/sge_userprj_UU_L.h"
 #include "sgeobj/cull/sge_userprj_UPU_L.h"
 #include "sgeobj/cull/sge_userprj_UPP_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief The position of each attribute within the object
@@ -133,7 +134,7 @@ OCS_TRANSITIONAL ocs::tom::Element<ocs::tom::UU> user_list_locate(const lList *u
 const char *prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR> this_list, dstring *string);
 OCS_TRANSITIONAL const char *prj_list_append_to_dstring(const lList *this_list, dstring *string);
 
-bool prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR> this_list, lList **answer_list,
+bool prj_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            ocs::tom::ConstList<ocs::tom::PR> userprj_list);
 
 ocs::tom::ElementPtr<ocs::tom::UU> getUserTemplate();

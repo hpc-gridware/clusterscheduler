@@ -68,8 +68,8 @@ extern char **environ;
  * @return true when the switch was found
  */
 static bool
-parse_multi_stringlist_into(const ocs::tom::List<ocs::tom::SPA> switch_list, const char *opt, lList **answer_list,
-                            ocs::tom::ListPtr<ocs::tom::ST> &list) {
+parse_multi_stringlist_into(const ocs::tom::List<ocs::tom::SPA> switch_list, const char *opt,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::ST> &list) {
    DENTER(TOP_LAYER);
    const bool found = parse_multi_stringlist<ST_name>(switch_list, opt, answer_list,
                                                       list);
@@ -111,8 +111,8 @@ ocs::QHostParameterClient::show_usage(FILE *fp) {
  * @return true when the file is missing or every word in it was a known switch
  */
 bool
-ocs::QHostParameterClient::parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **answer_list,
-                                                   const char *file) {
+ocs::QHostParameterClient::parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *file) {
    DENTER(TOP_LAYER);
 
    // check if file exists - this is no error if it does not exist, because the file is optional
@@ -146,7 +146,8 @@ ocs::QHostParameterClient::parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::S
  */
 bool
 ocs::QHostParameterClient::parse_cmdline_and_env(char **argv, [[maybe_unused]] char **env,
-                                                 ocs::tom::ListPtr<ocs::tom::SPA> &switch_list, lList **answer_list) {
+                                                 ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -207,7 +208,8 @@ ocs::QHostParameterClient::parse_cmdline_and_env(char **argv, [[maybe_unused]] c
  * @return 1 when the switches are usable, 2 after `-help`, 0 on an error
  */
 int
-ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA> ppcmdline, lList **alpp) {
+ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA> ppcmdline,
+                                             ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    uint32_t helpflag;
    bool usageshowed = false;
@@ -327,7 +329,7 @@ ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA>
  * @param envp the environment
  * @return true when the parameters are usable
  */
-bool ocs::QHostParameterClient::parse_parameters(lList **alpp, char **argv, char **envp) {
+bool ocs::QHostParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *alpp, char **argv, char **envp) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::SPA> file_switches;

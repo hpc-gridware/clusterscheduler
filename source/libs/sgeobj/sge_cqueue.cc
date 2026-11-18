@@ -293,7 +293,8 @@ char *cqueue_get_name_from_qinstance(const char *queue_instance) {
  *
  * @return the CQ_Type object, or an empty handle if "name" is nullptr
  */
-ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create([[maybe_unused]] lList **answer_list, const char *name) {
+ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                 const char *name) {
    DENTER(CQUEUE_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::CQ> ret;
@@ -615,7 +616,8 @@ static void ocs_cqueue_set_default_attr(const ocs::tom::Element<ocs::tom::CQ> cq
  *
  * @return error state true  - success false - error
  */
-bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list) {
+bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_elem,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = true;
@@ -746,7 +748,7 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
  *
  * @return as cqueue_set_template_attributes()
  */
-bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
+bool cqueue_set_template_attributes(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ>(this_elem), answer_list);
 }
 
@@ -836,7 +838,8 @@ lListElem *cqueue_locate_qinstance(const lListElem *this_elem, const char *hostn
  *
  * @return error state true  - success false - error
  */
-bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               const ocs::tom::ConstElement<ocs::tom::CQ> reduced_elem, const bool in_master,
                               const ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list,
                               const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
@@ -998,8 +1001,8 @@ bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, lLis
  *
  * @return as cqueue_verify_attributes()
  */
-bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, const bool in_master,
-                              const lList *master_calendar_list, const lList *master_ckpt_list,
+bool cqueue_verify_attributes(lListElem *cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *reduced_elem,
+                              const bool in_master, const lList *master_calendar_list, const lList *master_ckpt_list,
                               const lList *master_pe_list, const lList *master_userset_list,
                               const lList *master_project_list, const lList *master_centry_list,
                               const lList *master_cqueue_list, const lList *master_hgroup_list) {
@@ -1031,8 +1034,8 @@ bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem 
  * @note MT-NOTE: cqueue_list_find_all_matching_references() is MT safe
  */
 ocs::tom::ListPtr<ocs::tom::QR>
-cqueue_list_find_all_matching_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
-                                         const char *cqueue_pattern) {
+cqueue_list_find_all_matching_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *cqueue_pattern) {
    DENTER(CQUEUE_LAYER);
 
    // created by the first match, as the old out-parameter was
@@ -1069,7 +1072,7 @@ cqueue_list_find_all_matching_references(const ocs::tom::ConstList<ocs::tom::CQ>
  *
  * @return always true
  */
-bool cqueue_list_find_all_matching_references(const lList *this_list, lList **answer_list,
+bool cqueue_list_find_all_matching_references(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                               const char *cqueue_pattern, lList **qref_list) {
    if (qref_list != nullptr) {
       auto found = cqueue_list_find_all_matching_references(ocs::tom::ConstList<ocs::tom::CQ>(this_list),
@@ -1151,7 +1154,7 @@ ocs_cqueue_xattr_merge(const ocs::tom::Element<ocs::tom::CQ> target, const ocs::
  *
  * @note MT-NOTE: cqueue_xattr_pre_gdi() is MT safe
  */
-bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
+bool cqueue_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = true;
@@ -1288,7 +1291,7 @@ bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqu
  */
 ocs::tom::ListPtr<ocs::tom::ST>
 cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list,
-                                   [[maybe_unused]] lList **answer_list,
+                                   [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
    DENTER(CQUEUE_LAYER);
 
@@ -1448,7 +1451,7 @@ lListElem *cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char
  *
  * @note MT-NOTE: cqueue_purge_host() is not MT safe
  */
-bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list,
+bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        const ocs::tom::ConstList<ocs::tom::US> attr_list, const char *hgroup_or_hostname) {
    DENTER(CQUEUE_LAYER);
 
@@ -1513,7 +1516,8 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **
  *
  * @return as cqueue_purge_host()
  */
-bool cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList *attr_list, const char *hgroup_or_hostname) {
+bool cqueue_purge_host(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList *attr_list,
+                       const char *hgroup_or_hostname) {
    return cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ>(this_elem), answer_list,
                             ocs::tom::ConstList<ocs::tom::US>(attr_list), hgroup_or_hostname);
 }
@@ -1534,7 +1538,7 @@ bool cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList *attr_li
  * @param[out] ds receives the human readable report
  * @return true when the queue could be inspected
  */
-bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                  const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *ds) {
    DENTER(TOP_LAYER);
 
@@ -1549,7 +1553,7 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answ
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
       ocs::tom::ListPtr<ocs::tom::HR> used_hosts;
       ocs::tom::ListPtr<ocs::tom::HR> used_groups;
-      lList **answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> *answer_list = nullptr;
       int index;
       
       /*

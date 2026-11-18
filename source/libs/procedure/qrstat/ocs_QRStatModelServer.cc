@@ -42,7 +42,7 @@
  * @param parameter the parsed parameters
  * @return true when reservations were found or a summary was requested
  */
-bool ocs::QRStatModelServer::fetch_data(lList **answer_list, QRStatParameter& parameter) {
+bool ocs::QRStatModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
    const lList *master_ar_list = *DataStore::get_master_list(SGE_TYPE_AR);
 

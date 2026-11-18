@@ -105,7 +105,7 @@
  * @note MT-NOTE: verify_str_key() is MT safe
  */
 an_status_t
-verify_str_key(lList **alpp, const char *str, size_t str_length, const char *name, int table,
+verify_str_key(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *str, size_t str_length, const char *name, int table,
                const char *exceptions) {
    static const char *begin_strings[2][3];
    static const char *mid_strings[2][20];
@@ -263,7 +263,7 @@ verify_str_key(lList **alpp, const char *str, size_t str_length, const char *nam
  * @see #verify_str_key
  */
 an_status_t
-verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *name,
+verify_obj_name(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *str, size_t str_length, const char *name,
                 const char *exceptions) {
    an_status_t ret = verify_str_key(alpp, str, str_length, name, KEY_TABLE, exceptions);
 
@@ -297,7 +297,7 @@ verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *na
  * @param[in]  host_name   the hostname to verify
  * @return true if the hostname is acceptable, false otherwise (with answer_list set)
  */
-bool verify_host_name(lList **answer_list, const char *host_name) {
+bool verify_host_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *host_name) {
    bool ret = true;
 
    if (host_name == nullptr || *host_name == '\0') {

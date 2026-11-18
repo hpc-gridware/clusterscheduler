@@ -27,6 +27,7 @@
 #include "gdi/ocs_gdi_Task.h"
 
 #include "ocs_QConfModelBase.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief What produces the qmaster thread pool list
@@ -60,11 +61,11 @@ namespace ocs {
 #pragma endregion
 
    protected:
-      bool fetch(lList **answer_list, gdi::Target target,
+      bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
                  lCondition *where, lEnumeration *what) override;
-      bool fetch_thread_pools(lList **answer_list) override;
-      bool fetch_centries(lList **answer_list) override;
-      bool fetch_hgroups(lList **answer_list) override;
+      bool fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) override;
+      bool fetch_centries(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) override;
+      bool fetch_hgroups(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) override;
 
    public:
       /** @brief Build the server side model

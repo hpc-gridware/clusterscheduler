@@ -75,7 +75,7 @@ extern char **environ;
                                       
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qquota");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QQUOTA, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);

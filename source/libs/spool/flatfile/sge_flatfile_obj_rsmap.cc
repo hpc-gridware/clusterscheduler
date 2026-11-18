@@ -109,7 +109,7 @@ properties_equal(const ocs::tom::ConstList<ocs::tom::CE> a, const ocs::tom::Cons
  */
 static bool
 store_resl(const ocs::tom::Element<ocs::tom::CE> centry, const char *id, ocs::tom::ListPtr<ocs::tom::CE> &&properties,
-           lList **alpp, const char *rsmap_name) {
+           ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *rsmap_name) {
    auto incoming = std::move(properties);
    const auto resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(centry, id);
    if (!resl) {
@@ -156,7 +156,8 @@ store_resl(const ocs::tom::Element<ocs::tom::CE> centry, const char *id, ocs::to
  *                          a syntax error (answer_list is populated)
  */
 static std::optional<ocs::tom::ListPtr<ocs::tom::CE>>
-parse_id_characteristics(const char *token, std::string &id_out, lList **alpp, const char *rsmap_name) {
+parse_id_characteristics(const char *token, std::string &id_out, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                         const char *rsmap_name) {
    const char *bracket = strchr(token, RSMAP_CHARACTERISTICS_OPEN);
    if (bracket == nullptr) {
       id_out.assign(token);
@@ -229,7 +230,7 @@ parse_id_characteristics(const char *token, std::string &id_out, lList **alpp, c
  * @return          1 in case of success, else 0
  */
 int
-read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
+read_CE_stringval_host(lListElem *ep, int nm, const char *buf, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
@@ -403,7 +404,7 @@ store_range(std::string &str_out, long &range_start, long &range_last, uint32_t 
  * @return          1 in case of success, else 0
  */
 int
-write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **alp) {
+write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
 
    std::string str_out{};

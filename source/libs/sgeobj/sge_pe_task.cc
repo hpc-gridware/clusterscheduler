@@ -229,7 +229,8 @@ lListElem *pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_
  * @see `object_verify_cull()`
  */
 bool
-pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr, lList **answer_list) {
+pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

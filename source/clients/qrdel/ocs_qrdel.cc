@@ -62,9 +62,9 @@
 #include "msg_clients_common.h"
 
 static bool sge_parse_cmdline_qrdel(char **argv, char **envp, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                                    lList **alpp);
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool sge_parse_qrdel(ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &id_list,
-                            lList **alpp);
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 /** @brief The process environment, as the C library defines it
  *
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qrdel");
    ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    ocs::tom::ListPtr<ocs::tom::ID> id_list;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /* Set up the program information name */
    sge_setup_sig_handlers(QRDEL);
@@ -141,12 +141,12 @@ int main(int argc, char **argv) {
    }
    answer_list_on_error_print_or_exit(&alp, stdout);
 
-   lFreeList(&alp);
+   alp.reset();
    ocs::gdi::ClientBase::shutdown();
    DRETURN(0);
 
 error_exit:
-   lFreeList(&alp);
+   alp.reset();
    ocs::gdi::ClientBase::shutdown();
    sge_exit(1);
    DRETURN(1);
@@ -164,7 +164,7 @@ error_exit:
  * @return true on success, false on a parse error
  */
 static bool sge_parse_cmdline_qrdel(char **argv, [[maybe_unused]] char **envp,
-                                    ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp) {
+                                    ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -222,7 +222,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, [[maybe_unused]] char **envp,
  * @return true on success, false on an error
  */
 static bool sge_parse_qrdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &id_list,
-                            lList **alpp) {
+                            ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
    uint32_t pforce = 0;

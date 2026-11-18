@@ -130,15 +130,17 @@ const char *default_prefix = "#$";
  *         - `STATUS_EDISK` - `getcwd()` failed
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
  */
-lList *cull_parse_job_parameter([[maybe_unused]] const uint32_t uid, const char *username, const char *cell_root,
-                                const char *unqualified_hostname, const char *qualified_hostname,
-                                const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ElementPtr<ocs::tom::JB> &pjob,
-                                uint32_t *sync_options) {
+ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const uint32_t uid, const char *username,
+                                                         const char *cell_root, const char *unqualified_hostname,
+                                                         const char *qualified_hostname,
+                                                         const ocs::tom::List<ocs::tom::SPA> cmdline,
+                                                         ocs::tom::ElementPtr<ocs::tom::JB> &pjob,
+                                                         uint32_t *sync_options) {
    DENTER(TOP_LAYER); 
 
    const char *cp;
    ocs::tom::Element<ocs::tom::SPA> ep;
-   lList *answer = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer;
    char error_string[MAX_STRING_SIZE];
 
    if (sync_options == nullptr) {
@@ -868,17 +870,18 @@ lList *cull_parse_job_parameter([[maybe_unused]] const uint32_t uid, const char 
  *
  * @return `nullptr` when everything was fine, otherwise an answer list, see the typed form
  */
-lList *cull_parse_job_parameter(const uint32_t uid, const char *username, const char *cell_root,
-                                const char *unqualified_hostname, const char *qualified_hostname, lList *cmdline,
-                                lListElem **pjob, uint32_t *sync_options) {
+ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter(const uint32_t uid, const char *username,
+                                                         const char *cell_root, const char *unqualified_hostname,
+                                                         const char *qualified_hostname, lList *cmdline,
+                                                         lListElem **pjob, uint32_t *sync_options) {
    if (pjob == nullptr) {
-      lList *answer = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer;
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       return answer;
    }
    // the option list is built by the option parsers with SPA_Type, the job by the callers with JB_Type
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(*pjob);
-   lList *answer = cull_parse_job_parameter(uid, username, cell_root, unqualified_hostname, qualified_hostname,
+   auto answer = cull_parse_job_parameter(uid, username, cell_root, unqualified_hostname, qualified_hostname,
                                             ocs::tom::List<ocs::tom::SPA>::from_typed(cmdline), job, sync_options);
    *pjob = job.release();
    return answer;
@@ -922,8 +925,10 @@ lList *cull_parse_job_parameter(const uint32_t uid, const char *username, const 
  *
  * @see #centry_list_parse_from_string
  */
-lList *parse_script_file(const uint32_t prog_number, const char *script_file, const char *directive_prefix,
-                         ocs::tom::ListPtr<ocs::tom::SPA> &lpp_options, char **envp, const uint32_t flags) {
+ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, const char *script_file,
+                                                  const char *directive_prefix,
+                                                  ocs::tom::ListPtr<ocs::tom::SPA> &lpp_options, char **envp,
+                                                  const uint32_t flags) {
    DENTER(TOP_LAYER);
 
    unsigned int dpl; /* directive_prefix length */
@@ -931,7 +936,8 @@ lList *parse_script_file(const uint32_t prog_number, const char *script_file, co
    char *filestrptr = nullptr;
    int script_len = 0;
    char **str_table = nullptr;
-   lList *alp, *answer = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   ocs::tom::ListPtr<ocs::tom::AN> answer;
    int i;
    int do_exit = 0;
    ocs::tom::Element<ocs::tom::SPA> ep_opt;
@@ -1147,7 +1153,7 @@ lList *parse_script_file(const uint32_t prog_number, const char *script_file, co
                }
 
                sge_free(&str_table);
-               lFreeList(&alp);
+               alp.reset();
                sge_free(&free_me);
                parameters = nullptr;
                
@@ -1232,17 +1238,18 @@ FCLOSE_ERROR:
  *
  * @return answer list, AN_Type, or nullptr if everything was ok, see the typed form
  */
-lList *parse_script_file(const uint32_t prog_number, const char *script_file, const char *directive_prefix,
-                         lList **lpp_options, char **envp, const uint32_t flags) {
+ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, const char *script_file,
+                                                  const char *directive_prefix,
+                                                  lList **lpp_options, char **envp, const uint32_t flags) {
    if (lpp_options == nullptr) {
       /* no place where to put result */
-      lList *answer = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer;
       answer_list_add(&answer, MSG_ANSWER_CANTPROCESSNULLLIST, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       return answer;
    }
    // the callers hand in their option list, which is created by the option parsers with SPA_Type
    auto options = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(*lpp_options);
-   lList *answer = parse_script_file(prog_number, script_file, directive_prefix, options, envp, flags);
+   auto answer = parse_script_file(prog_number, script_file, directive_prefix, options, envp, flags);
    *lpp_options = options.release();
    return answer;
 }

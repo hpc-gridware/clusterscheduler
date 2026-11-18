@@ -50,6 +50,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sgeobj/cull/sge_pe_PE_L.h"
+#include "sgeobj/sge_answer.h"
 
 bool
 pe_name_is_matching(const char *pe_name, const char *wildcard);
@@ -66,35 +67,37 @@ pe_list_locate(ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *pe_name);
 OCS_TRANSITIONAL lListElem *pe_list_locate(const lList *pe_list, const char *pe_name);
 
 bool
-pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE> pe, lList **answer_list,
+pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                  ocs::tom::ConstList<ocs::tom::JB> master_job_list,
                  ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list);
-OCS_TRANSITIONAL bool pe_is_referenced(const lListElem *pe, lList **answer_list, const lList *master_job_list,
-                                       const lList *master_cqueue_list);
+OCS_TRANSITIONAL bool pe_is_referenced(const lListElem *pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       const lList *master_job_list, const lList *master_cqueue_list);
 
 int
-pe_validate(ocs::tom::Element<ocs::tom::PE> pep, lList **alpp, int startup,
+pe_validate(ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int startup,
             ocs::tom::ConstList<ocs::tom::US> master_userset_list);
-OCS_TRANSITIONAL int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list);
+OCS_TRANSITIONAL int pe_validate(lListElem *pep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, int startup,
+                                 const lList *master_userset_list);
 
 int
-pe_validate_slots(lList **alpp, uint32_t slots, bool warn_only);
+pe_validate_slots(ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint32_t slots, bool warn_only);
 
 int
-pe_validate_urgency_slots(lList **alpp, const char *s);
+pe_validate_urgency_slots(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *s);
 
 bool
-pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bool output_errors = false);
+pe_validate_allocation_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *allocation_rule,
+                            bool output_errors = false);
 
 int
 pe_urgency_slots(ocs::tom::ConstElement<ocs::tom::PE> pe, const char *urgency_slot_setting,
                  ocs::tom::ConstList<ocs::tom::RN> range_list);
 
 bool
-pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE> pe_list, lList **answer_list,
+pe_list_do_all_exist(ocs::tom::ConstList<ocs::tom::PE> pe_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                      ocs::tom::ConstList<ocs::tom::ST> pe_ref_list, bool ignore_make_pe);
-OCS_TRANSITIONAL bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list, const lList *pe_ref_list,
-                                           bool ignore_make_pe);
+OCS_TRANSITIONAL bool pe_list_do_all_exist(const lList *pe_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           const lList *pe_ref_list, bool ignore_make_pe);
 
 ocs::tom::ElementPtr<ocs::tom::PE>
 pe_create_template(const char *pe_name);

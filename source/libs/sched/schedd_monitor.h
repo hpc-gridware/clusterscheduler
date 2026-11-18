@@ -48,13 +48,14 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "tom/ocs_List.h"
+#include "sgeobj/sge_answer.h"
 
 /** Name of the scheduler run log file, below `<cell root>/common` */
 #define SCHED_LOG_NAME "schedd_runlog"
 
 const char *job_descr(uint32_t jobid);
 
-int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run);
+int schedd_log(const char *logstr, ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool monitor_next_run);
 
 void schedd_log_list(bool monitor_next_run, const char *logstr, ocs::tom::ConstList<ocs::tom::QU> lp);
 void schedd_log_list(bool monitor_next_run, const char *logstr, ocs::tom::ConstList<ocs::tom::JB> lp);

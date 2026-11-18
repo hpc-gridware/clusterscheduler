@@ -29,6 +29,7 @@
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
 /// Checks shared by every list valued configuration object
@@ -36,6 +37,6 @@ class ObjectContainer {
    public:
       template <auto F>
       static bool has_duplicates(ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> obj_list,
-                                 lList **answer_list, const std::string& object_name);
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const std::string& object_name);
    };
 }

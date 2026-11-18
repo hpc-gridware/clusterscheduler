@@ -415,10 +415,11 @@ static bool ec2_set_edtime(sge_evc_class_t *thiz, uint32_t interval);
 static uint32_t ec2_get_edtime(sge_evc_class_t *thiz);
 static bool ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling);
 static ev_busy_handling ec2_get_busy_handling(sge_evc_class_t *thiz);
-static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp);
+static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool ec2_deregister(sge_evc_class_t *thiz);
 static bool ec2_deregister_local(sge_evc_class_t *thiz);
-static bool ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down, lList** alpp);
+static bool ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down,
+                               ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool ec2_subscribe(sge_evc_class_t *thiz, ev_event event);
 static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where);
 static bool ec2_subscribe_all(sge_evc_class_t *thiz);
@@ -432,8 +433,8 @@ static bool ec2_set_busy(sge_evc_class_t *thiz, int busy);
 static bool ec2_get_busy(sge_evc_class_t *thiz);
 static bool ec2_set_session(sge_evc_class_t *thiz, const char *session);
 static const char *ec2_get_session(sge_evc_class_t *thiz);
-static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp);
-static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp);
+static bool ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
+static bool ec2_commit_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_multi);
 static bool ec2_ack(sge_evc_class_t *thiz);
 static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
@@ -441,9 +442,9 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
 static ev_registration_id ec2_get_id(sge_evc_class_t *thiz);
 static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down);
 static void ec2_wait_local(sge_evc_class_t *thiz);
-static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list);
+static int ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list);
 static void ec2_wait(sge_evc_class_t *thiz);
-static int ec2_signal(sge_evc_class_t *thiz, lList **alpp, lList *event_list);
+static int ec2_signal(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list);
 static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz);
 static bool ec2_evco_triggered(sge_evc_class_t *thiz);
 static bool ec2_evco_exit(sge_evc_class_t *thiz);
@@ -474,7 +475,7 @@ static bool ec2_evco_exit(sge_evc_class_t *thiz);
  * @see #sge_evc_class_destroy(), @ref evc_client
  */
 sge_evc_class_t *
-sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name) {
+sge_evc_class_create(ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name) {
    DENTER(EVC_LAYER);
 
    auto *ret = (sge_evc_class_t *)sge_malloc(sizeof(sge_evc_class_t));
@@ -995,7 +996,8 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
  * @return true on success, else false
  */
 static bool
-ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down, lList** alpp) {
+ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down,
+                   ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(EVC_LAYER);
 
    bool ret = true;
@@ -1015,7 +1017,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
       WARNING(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
       ret = false;
    } else {
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       local_t *evc_local = &(thiz->ec_local);
 
       ocs::tom::set<EV_id>(sge_evc->ec, sge_evc->ec_reg_id);
@@ -1073,7 +1075,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
          DPRINTF("registered local event client with id " sge_u32 "\n", sge_evc->ec_reg_id);
       }
 
-      lFreeList(&alp);
+      alp.reset();
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_EVENTCLIENT);
@@ -1099,7 +1101,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
  * @see #sge_evc_class_str::ec_deregister, #sge_evc_class_str::ec_get
  */
 static bool
-ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
+ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -1109,7 +1111,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
    if (sge_evc->ec == nullptr) {
       WARNING(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      lList *alp;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       const lListElem *aep;
       /*
        *   EV_host, EV_commproc and EV_commid get filled
@@ -1196,7 +1198,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
             answer_list_add(alpp, ocs::tom::get<AN_text>(aep),
                   ocs::tom::get<AN_status>(aep),
                   (answer_quality_t)ocs::tom::get<AN_quality>(aep));
-            lFreeList(&alp);
+            alp.reset();
             /* TODO: remove exit_on_qmaster_down and move to calling code by delivering
                      better return values */
             if (exit_on_qmaster_down) {
@@ -1221,7 +1223,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
          }
       }
 
-      lFreeList(&alp);
+      alp.reset();
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_EVENTCLIENT);
@@ -1258,7 +1260,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz) {
       if (init_packbuffer(&pb, sizeof(uint32_t)) == PACK_SUCCESS) {
          /* error message is output from init_packbuffer */
          int send_ret;
-         lList *alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
          /* TODO: to master only !!!!! */
          const char* commproc = to_cstr(QMASTER);
          const char* rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
@@ -1953,7 +1955,7 @@ ec2_config_changed(sge_evc_class_t *thiz) {
  *         initialised, not registered, or the event master rejected it
  */
 static bool
-ec2_commit_local(sge_evc_class_t *thiz, lList **alpp) {
+ec2_commit_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -2037,7 +2039,7 @@ ec2_ack(sge_evc_class_t *thiz) {
  * @see #sge_evc_class_str::ec_commit_multi, #sge_evc_class_str::ec_get
  */
 static bool
-ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
+ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -2053,7 +2055,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
       DPRINTF(SFN "\n", MSG_EVENT_NOTREGISTERED);
       answer_list_add(alpp, MSG_EVENT_NOTREGISTERED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    } else {
-      lList *alp;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
 
       auto request = ocs::tom::ListPtr<ocs::tom::EV>::create("change configuration");
       // the configuration object is owned by this client and always of EV_Type
@@ -2071,13 +2073,13 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
                                       request);
 
       if (ocs::tom::get<AN_status>(lFirst(alp)) == STATUS_OK) {
-         lFreeList(&alp);
+         alp.reset();
          ret = true;
       } else {
          if (alpp) {
-            *alpp = alp;
+            *alpp = std::move(alp);
          } else {
-            lFreeList(&alp);
+            alp.reset();
          }
          ret = false;
       }
@@ -2126,7 +2128,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
       DPRINTF(SFN "\n", MSG_EVENT_NOTREGISTERED);
    } else {
       int commit_id, gdi_ret;
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
 
       /* do not check, if anything has changed.
        * we have to send the request in any case to finish the
@@ -2197,7 +2199,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
    DENTER(EVC_LAYER);
    bool ret = true;
    uint32_t wrong_number;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
@@ -2568,7 +2570,8 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
  * @see #sge_evc_class_create()
  */
 bool
-sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, lList **alpp, const char * name) {
+sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                   const char * name) {
    DENTER(EVC_LAYER);
 
    if (evc_ref == nullptr) {
@@ -2713,7 +2716,7 @@ ec2_wait_local(sge_evc_class_t *thiz) {
  *         has no event control block
  */
 static int
-ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
+ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list) {
    DENTER(EVC_LAYER);
 
    if (thiz == nullptr) {
@@ -2783,7 +2786,7 @@ ec2_wait(sge_evc_class_t *thiz) {
  * @return always 1
  */
 static int
-ec2_signal(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
+ec2_signal(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list) {
    /* do nothing */
    return 1;
 }

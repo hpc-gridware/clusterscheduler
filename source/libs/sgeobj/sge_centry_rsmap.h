@@ -35,16 +35,20 @@
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/sge_answer.h"
 
-bool centry_check_rsmap(lList **answer_list, uint32_t status, const char* attrname);
+bool centry_check_rsmap(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t status, const char* attrname);
 
-bool centry_check_rsmap_characteristics(lList **answer_list, ocs::tom::Element<ocs::tom::CE> centry,
+bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                        ocs::tom::Element<ocs::tom::CE> centry,
                                         ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
-OCS_TRANSITIONAL bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
-                                                         const lList *master_centry_list);
+OCS_TRANSITIONAL bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                         lListElem *centry, const lList *master_centry_list);
 
-bool centry_rsmap_expand_implicit_ids(lList **answer_list, ocs::tom::Element<ocs::tom::CE> centry, uint32_t max_ids);
-OCS_TRANSITIONAL bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_t max_ids);
+bool centry_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                      ocs::tom::Element<ocs::tom::CE> centry, uint32_t max_ids);
+OCS_TRANSITIONAL bool centry_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *centry,
+                                                       uint32_t max_ids);
 
 /**
  * The parameters a resource map request may carry in brackets after its amount. The names are
@@ -69,7 +73,8 @@ bool centry_rsmap_is_reserved_param(const char *name);
 bool centry_rsmap_request_is_job_scope(ocs::tom::ConstElement<ocs::tom::CE> centry);
 OCS_TRANSITIONAL bool centry_rsmap_request_is_job_scope(const lListElem *centry);
 
-bool centry_rsmap_check_request_params(lList **answer_list, ocs::tom::ConstElement<ocs::tom::CE> centry,
+bool centry_rsmap_check_request_params(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       ocs::tom::ConstElement<ocs::tom::CE> centry,
                                        ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
 
 bool centry_rsmap_get_request_param(ocs::tom::ConstElement<ocs::tom::CE> centry, const char *param, dstring *value);
@@ -136,4 +141,5 @@ OCS_TRANSITIONAL const char *centry_rsmap_best_free_id(const lListElem *resource
                                                        uint32_t *free_amount, const char *id_expr = nullptr,
                                                        const lList *required_props = nullptr);
 
-bool centry_list_rsmap_expand_implicit_ids(lList **answer_list, ocs::tom::List<ocs::tom::CE> centry_list);
+bool centry_list_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           ocs::tom::List<ocs::tom::CE> centry_list);

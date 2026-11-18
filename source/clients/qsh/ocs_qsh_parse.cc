@@ -94,15 +94,17 @@
  *         - `STATUS_EDISK` - `getcwd()` failed
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
  */
-lList *cull_parse_qsh_parameter(const uint32_t prog_number, [[maybe_unused]] uint32_t uid, const char *username,
-                                const char *cell_root, const char *unqualified_hostname,
-                                const char *qualified_hostname, const ocs::tom::List<ocs::tom::SPA> cmdline,
-                                const ocs::tom::Element<ocs::tom::JB> job) {
+ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_number, [[maybe_unused]] uint32_t uid,
+                                                         const char *username,
+                                                         const char *cell_root, const char *unqualified_hostname,
+                                                         const char *qualified_hostname,
+                                                         const ocs::tom::List<ocs::tom::SPA> cmdline,
+                                                         const ocs::tom::Element<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
    const char *cp;
    ocs::tom::Element<ocs::tom::SPA> ep;
-   lList *answer = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer;
    ocs::tom::ListPtr<ocs::tom::PA> path_alias;
    uint32_t job_now;
 

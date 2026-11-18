@@ -59,6 +59,7 @@
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief A key that a unique attribute of a list holds a second time */
@@ -214,54 +215,69 @@ const char *
 object_get_name_prefix(const lDescr *descr, dstring *buffer);
 
 const char *
-object_append_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm, char string_quotes);
+object_append_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer,
+                               int nm, char string_quotes);
 bool 
-object_parse_field_from_string(lListElem *object, lList **answer_list, int nm, const char *value);
+object_parse_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm,
+                               const char *value);
 
 void
-object_delete_range_id(lListElem *object, lList **answer_list, int rnm, uint32_t id);
+object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int rnm, uint32_t id);
 
 int 
 object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end, uint32_t step);
 
 bool
-object_parse_bool_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_bool_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                              const char *string);
 
 bool
-object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_ulong32_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                 const char *string);
 
 bool
-object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_ulong64_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                 const char *string);
 
 bool
-object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_int_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                             const char *string);
 
 bool
-object_parse_long_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_long_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                              const char *string);
 
 bool
-object_parse_double_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_double_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                const char *string);
 
 bool
-object_parse_time_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_time_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                              const char *string);
 
 bool
-object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_mem_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                             const char *string);
 
 bool
-object_parse_inter_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_inter_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                               const char *string);
 
 bool
-object_parse_list_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string, const lDescr *descr, int nm);
+object_parse_list_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                              const char *string, const lDescr *descr, int nm);
 
 bool
-object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_celist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                const char *string);
 
 bool
-object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_solist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                const char *string);
 
 bool
-object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string);
+object_parse_qtlist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                const char *string);
 
 bool
 object_set_any_type(lListElem *this_elem, int name, void *value);
@@ -273,13 +289,16 @@ void
 object_get_any_type(const lListElem *this_elem, int name, void *value);
 
 bool  
-object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem);
+object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       const lListElem *old_elem);
 
 bool
-object_list_has_differences(const lList *this_elem, lList **answer_list, const lList *old_elem);
+object_list_has_differences(const lList *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const lList *old_elem);
 
 bool
-object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr);
+object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb, lListElem **epp,
+                          const lDescr *descr);
 
 bool
 object_list_verify_cull(const lList *lp, const lDescr *descr);
@@ -294,10 +313,12 @@ bool
 ocs_object_verify_type(const lListElem *ep, const lDescr *descr);
 
 bool
-ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const char *object_name);
+ocs_object_verify_unique_keys(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                              const char *object_name);
 
 bool
-ocs_object_list_verify_unique_keys(const lList *lp, lList **answer_list, const char *object_name);
+ocs_object_list_verify_unique_keys(const lList *lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                   const char *object_name);
 
 void
 ocs_object_list_remove_repeated_keys(lList *lp, int nm);
@@ -309,33 +330,35 @@ void
 ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey> &found);
 
 bool
-ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, lList **answer_list, const char *object_name);
+ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                const char *object_name);
 
 bool
-object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm);
+object_verify_ulong_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
 bool
-object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm);
+object_verify_ulong64_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
 
 bool
-object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm);
+object_verify_ulong_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
 bool
-object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm);
+object_verify_ulong64_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
 
 bool
-object_verify_double_null(const lListElem *ep, lList **answer_list, int nm);
+object_verify_double_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
 
 bool
-object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm);
+object_verify_string_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm);
 
 bool
-object_verify_expression_syntax(ocs::tom::ConstElement<ocs::tom::CE> elem, lList **answer_list);
+object_verify_expression_syntax(ocs::tom::ConstElement<ocs::tom::CE> elem,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 int
-object_verify_name(const lListElem *object, lList **answer_list, int name);
+object_verify_name(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name);
 
 int
-object_verify_pe_range(lList **alpp, const char *pe_name, ocs::tom::List<ocs::tom::RN> pe_range,
-                       const char *object_descr);
+object_verify_pe_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *pe_name,
+                       ocs::tom::List<ocs::tom::RN> pe_range, const char *object_descr);
 
 int
-compress_ressources(lList **alpp, ocs::tom::List<ocs::tom::CE> rl, const char *object_descr);
+compress_ressources(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::List<ocs::tom::CE> rl, const char *object_descr);

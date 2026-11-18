@@ -104,8 +104,8 @@
  * @return 0 on success, STATUS_EUNKNOWN on error
  */
 int
-centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *centry,
-           lListElem *reduced_elem, const int add, const char *remote_user, const char *remote_host,
+centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+           lListElem *centry, lListElem *reduced_elem, const int add, const char *remote_user, const char *remote_host,
            gdi_object_t *object, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
            monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -261,12 +261,13 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
  * @return 0 on success, 1 if writing failed
  */
 int
-centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *cep,
+             gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    // the generic GDI code hands over an element of the table's type (CE_Type)
    const ocs::tom::Element<ocs::tom::CE> centry(cep);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), centry,
                                          ocs::tom::get<CE_name>(centry), SGE_TYPE_CENTRY);
@@ -381,7 +382,7 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
  */
 int
 sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::CE> centry,
-               lList **answer_list, char *remote_user, char *remote_host) {
+               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -394,7 +395,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
       const char *name = ocs::tom::get<CE_name>(centry);
 
       if (name != nullptr) {
-         lList *local_answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
          const auto tmp_centry = centry_list_locate(master_centry_list, name);
 
          /* check if its a build in value */
@@ -428,7 +429,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
 
                   ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-                  lFreeList(&local_answer_list);
+                  local_answer_list.reset();
                   ret = false;
                }
             } else {
@@ -467,8 +468,8 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
  * @return as the typed sge_del_centry()
  */
 int
-sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry, lList **answer_list,
-               char *remote_user, char *remote_host) {
+sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry,
+               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
    return sge_del_centry(packet, task, ocs::tom::ConstElement<ocs::tom::CE>(centry), answer_list, remote_user,
                          remote_host);
 }
@@ -481,7 +482,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry
 static void
 sge_change_queue_version_centry(const uint64_t gdi_version) {
    DENTER(TOP_LAYER);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
    const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
 
@@ -596,7 +597,7 @@ centry_redebit_consumables(const ocs::tom::ConstList<ocs::tom::STU> centries, co
     * dump queue and host consumables to reporting file.
     */
    {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       const uint64_t now = sge_get_gmt64();
 
       /* dump all queue consumables */

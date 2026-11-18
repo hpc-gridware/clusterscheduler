@@ -213,8 +213,8 @@ bool qinstance_print_qtype_to_dstring(const lListElem *this_elem, dstring *strin
  * @param value the type names, as an administrator wrote them
  * @return true when the value was understood
  */
-bool qinstance_parse_qtype_from_string(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
-                                       const char *value) {
+bool qinstance_parse_qtype_from_string(const ocs::tom::Element<ocs::tom::QU> this_elem,
+                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
    DENTER(QINSTANCE_TYPE_LAYER);
 
    bool ret = true;
@@ -240,7 +240,8 @@ bool qinstance_parse_qtype_from_string(const ocs::tom::Element<ocs::tom::QU> thi
  * @param value the type names, as an administrator wrote them
  * @return as qinstance_parse_qtype_from_string()
  */
-bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list, const char *value) {
+bool qinstance_parse_qtype_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       const char *value) {
    return qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list, value);
 }
 

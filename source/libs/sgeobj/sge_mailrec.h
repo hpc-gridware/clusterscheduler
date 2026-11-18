@@ -49,6 +49,7 @@
 #include "sgeobj/tom/ocs_tom_MR.h"
 
 #include "sgeobj/cull/sge_mailrec_MR_L.h"
+#include "sgeobj/sge_answer.h"
 
 [[nodiscard]] std::pair<int, ocs::tom::ListPtr<ocs::tom::MR>> mailrec_parse(const char *mail_str);
 
@@ -58,4 +59,4 @@ bool
 sge_mailopt_to_dstring(uint32_t opt, dstring *string);
 
 int 
-sge_parse_mail_options(lList **alpp, const char *mail_str, uint32_t prog_number);
+sge_parse_mail_options(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *mail_str, uint32_t prog_number);

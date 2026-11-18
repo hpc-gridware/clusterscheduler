@@ -140,7 +140,7 @@ const spool_instr_t spool_user_instr = {
 };
 
 static spooling_field *
-_spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
+_spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                            const spool_instr_t *instr);
 
 /**
@@ -168,7 +168,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
  * @see `object_get_subtype()`, #spool_free_spooling_fields
  */
 spooling_field *
-spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
+spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                           const spool_instr_t *instr) {
    DENTER(TOP_LAYER);
 
@@ -194,7 +194,7 @@ spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
  * @return the field array terminated by #NoName, or nullptr on error
  */
 static spooling_field *
-_spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
+_spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                            const spool_instr_t *instr) {
    DENTER(TOP_LAYER);
 
@@ -366,7 +366,7 @@ spool_free_spooling_fields(spooling_field *fields) {
  * @note This function should not be called directly, it is called by the
  *       spooling framework.
  */
-bool spool_default_validate_func(lList **answer_list,
+bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const lListElem *type,
                                  const lListElem *rule,
                                  lListElem *object,
@@ -545,7 +545,7 @@ bool spool_default_validate_func(lList **answer_list,
          // failure here would otherwise leave the amount at 0 and the job would be dispatched
          // while booking nothing. Report it rather than discarding the answer list.
          for (const ocs::tom::Element<ocs::tom::JRS> jrs : job.get<JB_request_set_list>()) {
-            lList *fill_answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> fill_answer_list;
             // both calls must run; do not let the first failure skip the soft list
             int hard_ret = centry_list_fill_request(jrs.get<JRS_hard_resource_list>(), &fill_answer_list,
                                                     master_centry_list, true, false, true);
@@ -556,7 +556,7 @@ bool spool_default_validate_func(lList **answer_list,
                                        MSG_SPOOL_JOBREQUESTNOTPARSABLE_U, job.get<JB_job_number>());
                answer_list_append_list(answer_list, &fill_answer_list);
             }
-            lFreeList(&fill_answer_list);
+            fill_answer_list.reset();
          }
       }
          break;
@@ -588,7 +588,7 @@ bool spool_default_validate_func(lList **answer_list,
  *       references. Only the scheduler configuration is really validated.
  */
 bool
-spool_default_validate_list_func(lList **answer_list,
+spool_default_validate_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const lListElem *type, const lListElem *rule,
                                  const sge_object_type object_type) {
    DENTER(TOP_LAYER);

@@ -79,8 +79,8 @@
  *         handle when no entry was read
  */
 std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
-read_config_list(FILE *fp, lList **alpp, const bool sublists, const char *delimitor, const int flag, char *buffer,
-                 const int buffer_size) {
+read_config_list(FILE *fp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const bool sublists, const char *delimitor,
+                 const int flag, char *buffer, const int buffer_size) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::CF> config;
@@ -186,7 +186,8 @@ read_config_list(FILE *fp, lList **alpp, const bool sublists, const char *delimi
  * @param key the entry to look for
  * @return the value, or nullptr when the key is absent
  */
-const char *get_conf_value(lList **alpp, const ocs::tom::ConstList<ocs::tom::CF> config, const char *key) {
+const char *get_conf_value(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstList<ocs::tom::CF> config,
+                           const char *key) {
    DENTER(CULL_LAYER);
 
    const auto ep = config.find_first<CF_name>(key);

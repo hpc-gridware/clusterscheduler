@@ -111,7 +111,8 @@
  * @return true when the job is acceptable
  */
 static bool
-sge_job_verify_global_master_slave_queues(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep) {
+sge_job_verify_global_master_slave_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                          const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -140,8 +141,8 @@ sge_job_verify_global_master_slave_queues(lList **alpp, const ocs::tom::ConstEle
  * @return true when the job is acceptable
  */
 static bool
-sge_job_verify_global_master_slave_requests(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep,
-                                            const bool soft) {
+sge_job_verify_global_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                            const ocs::tom::ConstElement<ocs::tom::JB> jep, const bool soft) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -177,7 +178,8 @@ sge_job_verify_global_master_slave_requests(lList **alpp, const ocs::tom::ConstE
  * @return true when the job is acceptable
  */
 bool
-sge_job_verify_global_master_slave_allocation_rule(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep) {
+sge_job_verify_global_master_slave_allocation_rule(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                                   const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -221,7 +223,8 @@ sge_job_verify_global_master_slave_allocation_rule(lList **alpp, const ocs::tom:
  * @return true when the job is acceptable
  */
 bool
-sge_job_verify_slave_per_job_requests(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+sge_job_verify_slave_per_job_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                      const ocs::tom::ConstElement<ocs::tom::JB> jep,
                                       const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -254,7 +257,7 @@ sge_job_verify_slave_per_job_requests(lList **alpp, const ocs::tom::ConstElement
  * @return true when the job is acceptable
  */
 bool
-sge_job_verify_per_host_requests(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+sge_job_verify_per_host_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep,
                                  const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -292,7 +295,8 @@ sge_job_verify_per_host_requests(lList **alpp, const ocs::tom::ConstElement<ocs:
  * @return true when the job is acceptable
  */
 static bool
-job_verify_soft_master_slave_requests(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep) {
+job_verify_soft_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                      const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -331,7 +335,8 @@ job_verify_soft_master_slave_requests(lList **alpp, const ocs::tom::ConstElement
  * @return true when the job is acceptable
  */
 static bool
-job_verify_non_pe_soft_master_slave_requests(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep) {
+job_verify_non_pe_soft_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                             const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -370,7 +375,8 @@ job_verify_non_pe_soft_master_slave_requests(lList **alpp, const ocs::tom::Const
  * @return true when every scope agrees about every map, false otherwise
  */
 static bool
-sge_job_verify_rsmap_scope_requests(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep) {
+sge_job_verify_rsmap_scope_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                                    const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -432,7 +438,7 @@ sge_job_verify_rsmap_scope_requests(lList **alpp, const ocs::tom::ConstElement<o
  * @return true if all checks passed; false with `alpp` filled otherwise
  */
 bool
-job_verify_adjust_request_set(lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+job_verify_adjust_request_set(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement<ocs::tom::JB> jep,
                               const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -495,7 +501,7 @@ job_verify_adjust_request_set(lList **alpp, const ocs::tom::ConstElement<ocs::to
  *         when a unique attribute holds a key twice
  */
 int
-sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, lList **lpp,
+sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
                       ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                       monitoring_t *monitor) {
    DENTER(TOP_LAYER);

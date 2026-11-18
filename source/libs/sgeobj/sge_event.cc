@@ -465,7 +465,8 @@ const char *event_text(const lListElem *event, dstring *buffer) {
  * @return true when every subscribed event id is valid
  */
 static bool event_client_verify_subscription(const ocs::tom::ConstElement<ocs::tom::EV> event_client,
-                                             lList **answer_list, [[maybe_unused]] const int d_time) {
+                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                             [[maybe_unused]] const int d_time) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -521,7 +522,8 @@ static bool event_client_verify_subscription(const ocs::tom::ConstElement<ocs::t
  *
  * @note MT-NOTE: event_client_verify() is MT safe
  */
-bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client, lList **answer_list, const bool add) {
+bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const bool add) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

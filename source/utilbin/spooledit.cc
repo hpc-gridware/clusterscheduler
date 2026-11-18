@@ -83,7 +83,7 @@ init_framework() {
 
    int ret = EXIT_FAILURE;
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    lListElem *spooling_context = nullptr;
    const char *spooling_method = ocs::Bootstrap::get_spooling_method();
    const char *spooling_lib = ocs::Bootstrap::get_spooling_lib();
@@ -173,7 +173,7 @@ list_objects(const char *key) {
 
    int   ret = EXIT_SUCCESS;
    bool  dbret = false;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    // out-parameter of spool_read_keys(), which hands the keys over raw
    lList *stu_list_raw = nullptr;
 
@@ -217,7 +217,7 @@ list_objects(const char *key) {
       ret = EXIT_FAILURE;
    }
 
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    DRETURN(ret);
 }
@@ -228,7 +228,7 @@ dump_object(const char *key) {
 
    int ret = EXIT_SUCCESS;
    bool dbret;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* start a transaction */
    dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
@@ -308,7 +308,7 @@ load_object(const char *key, const char *fname) {
 
    int ret = EXIT_SUCCESS;
    bool dbret;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lDescr *descr;
    lListElem *object = nullptr;
 
@@ -379,7 +379,7 @@ delete_object(const char *key) {
 
    int ret = EXIT_SUCCESS;
    bool dbret;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /* start a transaction */
    dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
@@ -414,7 +414,7 @@ int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "spooledit");
 
    int ret = EXIT_SUCCESS;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    if (ocs::gdi::ClientBase::setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&answer_list);

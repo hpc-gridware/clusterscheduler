@@ -79,7 +79,7 @@
 #include "msg_qmaster.h"
 
 static bool
-hgroup_mod_hostlist(ocs::tom::Element<ocs::tom::HGRP> hgroup, lList **answer_list,
+hgroup_mod_hostlist(ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                     ocs::tom::Element<ocs::tom::HGRP> reduced_elem, ocs::gdi::Command cmd,
                     ocs::gdi::SubCommand sub_command, ocs::tom::ListPtr<ocs::tom::HR> &add_hosts,
                     ocs::tom::ListPtr<ocs::tom::HR> &rem_hosts, ocs::tom::ListPtr<ocs::tom::HR> &occupant_groups);
@@ -168,7 +168,8 @@ hgroup_nesting_that_contains(const ocs::tom::ConstList<ocs::tom::HR> current, co
  *       were rather than unified, so no script parsing either one has to change.
  */
 static bool
-hgroup_reserved_delta_is_strict(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, lList **answer_list,
+hgroup_reserved_delta_is_strict(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const ocs::tom::ConstList<ocs::tom::HR> delta_list,
                                 const ocs::gdi::SubCommand sub_command,
                                 const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
@@ -257,7 +258,7 @@ hgroup_reserved_delta_is_strict(const ocs::tom::ConstElement<ocs::tom::HGRP> hgr
  * @return true on success
  */
 static bool
-hgroup_mod_hostlist(const ocs::tom::Element<ocs::tom::HGRP> hgroup, lList **answer_list,
+hgroup_mod_hostlist(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                     const ocs::tom::Element<ocs::tom::HGRP> reduced_elem, const ocs::gdi::Command cmd,
                     const ocs::gdi::SubCommand sub_command, ocs::tom::ListPtr<ocs::tom::HR> &add_hosts,
                     ocs::tom::ListPtr<ocs::tom::HR> &rem_hosts, ocs::tom::ListPtr<ocs::tom::HR> &occupant_groups) {
@@ -484,7 +485,8 @@ hgroup_rollback_cqueues(const ocs::tom::Element<ocs::tom::HGRP> hgroup) {
  * @return 0 on success
  */
 int
-hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *raw_hgroup,
+hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+           lListElem *raw_hgroup,
            lListElem *raw_reduced_elem, int add, const char *remote_user, const char *remote_host,
            gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
            monitoring_t *monitor) {
@@ -897,7 +899,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
  */
 int
 hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
-           lList **answer_list, char *remote_user, char *remote_host) {
+           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
    DENTER(TOP_LAYER);
 
    int ret = true;
@@ -1070,7 +1072,7 @@ void hgroup_refresh_caches(const ocs::tom::Element<ocs::tom::HGRP> hgroup,
                            ocs::tom::ListPtr<ocs::tom::HR> &referencees) {
    DENTER(TOP_LAYER);
 
-   lList *cache_answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> cache_answer_list;
 
    hgroup_update_cache(hgroup, &cache_answer_list, master_hgroup_list);
    if (hgroup_find_all_referencees(hgroup, &cache_answer_list, master_hgroup_list, &referencees)) {
@@ -1125,7 +1127,7 @@ void hgroup_refresh_matcher_caches(const ocs::tom::List<ocs::tom::HGRP> master_h
                                    ocs::tom::ListPtr<ocs::tom::HR> &refreshed) {
    DENTER(TOP_LAYER);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    for (const auto hgroup : master_hgroup_list) {
       const char *group_name = ocs::tom::get<HGRP_name>(hgroup);
@@ -1245,8 +1247,8 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *raw_hg
  * @return 0 on success
  */
 int
-hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *raw_this_elem,
-             gdi_object_t *object) {
+hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+             lListElem *raw_this_elem, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    // the signature is fixed by gdi_object_t::writer
@@ -1256,7 +1258,7 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
    const char *name = ocs::tom::get<HGRP_name>(this_elem);
    ocs::tom::ConstList<ocs::tom::CQ> cqueue_list = ocs::tom::get<HGRP_cqueue_list>(this_elem);
    dstring key_dstring = DSTRING_INIT;
-   lList *spool_answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> spool_answer_list;
 
    /* start a transaction for spooling of all affected objects */
    dbret = spool_transaction(&spool_answer_list, spool_get_default_context(),
@@ -1336,8 +1338,8 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
  * @return as hgroup_del()
  */
 int
-hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list,
-           char *remote_user, char *remote_host) {
+hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
+           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char *remote_user, char *remote_host) {
    return hgroup_del(packet, task, ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list, remote_user,
                      remote_host);
 }

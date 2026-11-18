@@ -230,7 +230,8 @@ ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom:
  * @return the binding sub-object, or nullptr on error
  */
 ocs::tom::Element<ocs::tom::BN>
-ocs::Job::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
+ocs::Job::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::JB> job,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    // JB_binding holds a BN_Type object
    return Binding::binding_get_or_create_elem<JB_binding>(job, answer_list);
 }
@@ -245,7 +246,7 @@ ocs::Job::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::JB> job, 
  * @return as binding_get_or_create_elem()
  */
 lListElem *
-ocs::Job::binding_get_or_create_elem(lListElem *job, lList **answer_list) {
+ocs::Job::binding_get_or_create_elem(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return Binding::binding_get_or_create_elem<JB_binding>(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
                                                           answer_list);
 }
@@ -473,7 +474,8 @@ ocs::Job::binding_get_amount(const lListElem *job) {
  * @param[out] answer_list receives the reason on failure
  */
 void
-ocs::Job::binding_set_missing_defaults(const ocs::tom::Element<ocs::tom::JB> job, lList **answer_list) {
+ocs::Job::binding_set_missing_defaults(const ocs::tom::Element<ocs::tom::JB> job,
+                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    Binding::binding_set_missing_defaults<JB_binding>(job, answer_list);
 }
 
@@ -486,7 +488,7 @@ ocs::Job::binding_set_missing_defaults(const ocs::tom::Element<ocs::tom::JB> job
  * @param[out] answer_list receives the reason on failure
  */
 void
-ocs::Job::binding_set_missing_defaults(lListElem *job, lList **answer_list) {
+ocs::Job::binding_set_missing_defaults(lListElem *job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    Binding::binding_set_missing_defaults<JB_binding>(ocs::tom::Element<ocs::tom::JB>::from_typed(job),
                                                      answer_list);
 }

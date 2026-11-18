@@ -65,7 +65,8 @@ ocs::set_qconf_action_provider(const char *action, const qconf_action_provider p
  * @return true when the action did not fail
  */
 bool
-ocs::QConfActionModelServer::make_snapshot(lList **answer_list, QConfActionParameter &parameter) {
+ocs::QConfActionModelServer::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           QConfActionParameter &parameter) {
    DENTER(TOP_LAYER);
 
    const std::string &action = parameter.get_sub_procedure_name();

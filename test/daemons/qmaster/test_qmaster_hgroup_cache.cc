@@ -90,10 +90,10 @@ fetch_hgroup_list() {
    lList *lp = nullptr;
    lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
    lFreeWhat(&what);
-   lFreeList(&alp);
+   alp.reset();
    return lp;
 }
 
@@ -109,13 +109,13 @@ write_hgroup(ocs::gdi::Command cmd, const char *name, const char *const members[
    }
    ocs::tom::set<HGRP_host_list>(ep, hosts);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, cmd,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, cmd,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
    bool ok = !answer_list_has_error(&alp);
    if (!ok) {
       answer_list_output(&alp);
    }
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(&lp);
    return ok;
 }
@@ -126,9 +126,9 @@ drop_hgroup(const char *name) {
    lList *lp = lCreateList("del", HGRP_Type);
    ocs::tom::emplace_back<HGRP_name>(&lp, name);
 
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
+   auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-   lFreeList(&alp);
+   alp.reset();
    lFreeList(&lp);
 }
 
@@ -150,14 +150,14 @@ drop_hgroup(const char *name) {
 static bool
 cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
    lList *walked = nullptr;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    if (!hgroup_find_all_references(hgroup, &answer_list, master_hgroup_list, &walked, nullptr)) {
       answer_list_output(&answer_list);
       lFreeList(&walked);
       return false;
    }
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
    bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(walked);
@@ -337,7 +337,7 @@ test_cache_content_and_invalidation() {
 int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_qmaster_hgroup_cache");
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();

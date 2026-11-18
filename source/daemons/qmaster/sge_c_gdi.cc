@@ -170,8 +170,8 @@ static bool
 sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 static int
-schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-           const char *rhost, gdi_object_t *object,
+schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
+           lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
            monitoring_t *monitor);
 
@@ -242,7 +242,7 @@ void sge_clean_lists() {
  */
 bool
 sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                              lList **answer_list, monitoring_t *monitor, bool has_next) {
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *monitor, bool has_next) {
    DENTER(TOP_LAYER);
 
    const char *target_name = nullptr;
@@ -377,7 +377,7 @@ sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *t
  */
 void
 sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                            lList **answer_list, monitoring_t *monitor, bool has_next) {
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *monitor, bool has_next) {
    DENTER(TOP_LAYER);
 
    const char *target_name = nullptr;
@@ -800,8 +800,8 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
  */
 void
 sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi::Target target, lListElem *ep,
-                      lList **alpp, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
-                      monitoring_t *monitor) {
+                      ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::gdi::Command cmd,
+                      const ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(GDI_LAYER);
 
    if (ep == nullptr) {
@@ -930,13 +930,13 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command 
  * @param ao          the table entry of the target, unused
  * @param packet      the client request
  * @param task        the GDI task being answered; its data list holds the objects to copy
- * @param sub_command GDI sub command, e.g. RETURN_NEW_VERSION
+ * @param sub_command GDI sub command; RETURN_NEW_VERSION is not honoured for COPY
  * @param monitor     for monitoring qmaster threads
  *
  * @note MT-NOTE: sge_c_gdi_copy() is MT safe
  */
 static void sge_c_gdi_copy(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                           ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+                           [[maybe_unused]] ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    // the element type of the data list is given at run time by the target; only jobs are handled
    for_each_rw_lv (ep, task->data_list) {
@@ -944,9 +944,9 @@ static void sge_c_gdi_copy(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi:
          case ocs::gdi::Target::JB_LIST:
             /* gdi_copy_job uses the global lock internal */
             // the request data is structure checked by the listener (CS-3125): a JB_LIST copy carries JB_Type
-            sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB>(ep), &(task->answer_list),
-                             (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION ? &(task->answer_list) : nullptr,
-                             packet, task, monitor);
+            // RETURN_NEW_VERSION is not honoured for COPY: the old code handed the answer list in as the job return
+            // list, which put a JB_Type element into the AN_Type answer list; no client sends it with COPY
+            sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB>(ep), &(task->answer_list), nullptr, packet, task, monitor);
             break;
          default:
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
@@ -1092,7 +1092,7 @@ sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet,
                                        ocs::gdi::Task *task,
                                        monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   lList **answer_list = &(task->answer_list);
+   ocs::tom::ListPtr<ocs::tom::AN> *answer_list = &(task->answer_list);
    // every element is read as ID_Type below, as the free access on the raw element did
    for (const auto elem : ocs::tom::List<ocs::tom::ID>(task->data_list)) {
       const char *name = ocs::tom::get<ID_str>(elem);
@@ -1138,7 +1138,7 @@ sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *ta
 
    // every element is read as ID_Type by get_client_id(), as the free access on the raw element did
    for (const auto elem : ocs::tom::List<ocs::tom::ID>(task->data_list)) {
-      lList *local_alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> local_alp;
       int client_id = EV_ID_ANY;
       int res = -1;
 
@@ -1181,7 +1181,7 @@ sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *ta
       }
 
       if ((res == EINVAL) && (client_id == EV_ID_SCHEDD)) {
-         lFreeList(&local_alp);
+         local_alp.reset();
          answer_list_add(&(task->answer_list), MSG_COM_NOSCHEDDREGMASTER, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
       } else {
          answer_list_append_list(&(task->answer_list), &local_alp);
@@ -1347,7 +1347,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
 }
 
 bool
-sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target) {
+sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Target target) {
    DENTER(TOP_LAYER);
 
 
@@ -1448,7 +1448,8 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
  * @return true if permission is granted, false otherwise
  */
 bool
-sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const ocs::gdi::Target target, const ocs::gdi::Command command) {
+sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                       const ocs::gdi::Target target, const ocs::gdi::Command command) {
    DENTER(TOP_LAYER);
 
    if (!packet->is_intern_request) {
@@ -1622,14 +1623,15 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
  * @return STATUS_OK on success, an error status otherwise
  */
 int
-sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
+sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                        lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
                         const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **tmp_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int pos;
    int dataType;
    const char *name;
-   lList *tmp_alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> tmp_alp;
    lListElem *new_obj = nullptr;
    lListElem *old_obj;
 
@@ -1713,18 +1715,17 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
             elements before may contain invalid success messages */
          if (tmp_alp) {
             if (!*alpp) {
-               *alpp = lCreateList("answer", AN_Type);
+               *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
             }
 
             if (object->type == AR_Type) {
-               lAppendList(*alpp, tmp_alp);
-               lFreeList(&tmp_alp);
+               (*alpp)->splice(*tmp_alp);
+               tmp_alp.reset();
             } else {
-               lListElem *failure = lLastRW(tmp_alp);
-
-               lDechainElem(tmp_alp, failure);
-               lAppendElem(*alpp, failure);
-               lFreeList(&tmp_alp);
+               if (const auto failure = tmp_alp->back()) {
+                  (*alpp)->push_back(tmp_alp->extract(failure));
+               }
+               tmp_alp.reset();
             }
          }
       }
@@ -1738,7 +1739,7 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
       const std::string object_name = std::string(object->object_name) + " " + name;
       if (!ocs_object_verify_unique_keys(new_obj, alpp, object_name.c_str())) {
          lFreeElem(&new_obj);
-         lFreeList(&tmp_alp);
+         tmp_alp.reset();
          DRETURN(STATUS_ESYNTAX);
       }
    }
@@ -1746,19 +1747,19 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
    /* write on file */
    if (object->writer(packet, task, alpp, new_obj, object)) {
       lFreeElem(&new_obj);
-      lFreeList(&tmp_alp);
+      tmp_alp.reset();
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if (alpp != nullptr) {
       if (*alpp == nullptr) {
-         *alpp = lCreateList("answer", AN_Type);
+         *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
       }
 
       /* copy tmp_alp to alpp */
-      lAppendList(*alpp, tmp_alp);
+      (*alpp)->splice(*tmp_alp);
    }
-   lFreeList(&tmp_alp);
+   tmp_alp.reset();
 
    {
       lList **master_list = ocs::DataStore::get_master_list_rw(object->list_type);
@@ -1812,7 +1813,8 @@ gdi_object_t *get_gdi_object(ocs::gdi::Target target) {
    DRETURN(nullptr);
 }
 
-static int schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+static int schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                      lListElem *modp, lListElem *ep, int add, const char *ruser,
                       const char *rhost, gdi_object_t *object,
                       ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
                       monitoring_t *monitor) {

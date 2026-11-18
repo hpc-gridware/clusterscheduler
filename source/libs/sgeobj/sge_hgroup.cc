@@ -97,7 +97,7 @@
  * @note MT-NOTE: hgroup_update_cache() is not MT safe -- call it under the write
  *       lock, like every other writer of the HGRP master list
  */
-bool hgroup_update_cache(const ocs::tom::Element<ocs::tom::HGRP> hgroup, lList **answer_list,
+bool hgroup_update_cache(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
    DENTER(HGROUP_LAYER);
 
@@ -137,7 +137,8 @@ bool hgroup_update_cache(const ocs::tom::Element<ocs::tom::HGRP> hgroup, lList *
  *
  * @return as hgroup_update_cache()
  */
-bool hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_hgroup_list) {
+bool hgroup_update_cache(lListElem *hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                         const lList *master_hgroup_list) {
    return hgroup_update_cache(ocs::tom::Element<ocs::tom::HGRP>(hgroup), answer_list,
                               ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
 }
@@ -156,7 +157,8 @@ bool hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *ma
  *
  * @note MT-NOTE: hgroup_list_update_caches() is not MT safe
  */
-bool hgroup_list_update_caches(const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list, lList **answer_list) {
+bool hgroup_list_update_caches(const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list,
+                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(HGROUP_LAYER);
 
    bool ret = true;
@@ -175,7 +177,7 @@ bool hgroup_list_update_caches(const ocs::tom::List<ocs::tom::HGRP> master_hgrou
  *
  * @return as hgroup_list_update_caches()
  */
-bool hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list) {
+bool hgroup_list_update_caches(lList *master_hgroup_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return hgroup_list_update_caches(ocs::tom::List<ocs::tom::HGRP>(master_hgroup_list), answer_list);
 }
 
@@ -290,7 +292,7 @@ bool hgroup_contains_host(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, c
       DRETURN(hgroup_cache_contains_host(hgroup, hostname));
    }
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    ocs::tom::ListPtr<ocs::tom::HR> used_hosts;
    bool ret = false;
 
@@ -299,7 +301,7 @@ bool hgroup_contains_host(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, c
    if (resolved) {
       ret = used_hosts->find_first<HR_name>(ocs::tom::Host(hostname)) != nullptr;
    }
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    DRETURN(ret);
 }
@@ -632,7 +634,7 @@ hgroup_queue_of_group_name(const char *name) {
  *
  * @note MT-NOTE: check_hgroup_name() is not MT safe
  */
-bool hgroup_check_name(lList **answer_list, const char *name) {
+bool hgroup_check_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    if (!ocs::is_hgroup_name(name)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
@@ -693,8 +695,8 @@ lListElem *hgroup_list_locate(const lList *this_list, const char *group) {
  * @return new element or an empty handle
  */
 ocs::tom::ElementPtr<ocs::tom::HGRP>
-hgroup_create(lList **answer_list, const char *name, ocs::tom::ListPtr<ocs::tom::HR> &&href_or_groupref,
-              const bool is_name_validate) {
+hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
+              ocs::tom::ListPtr<ocs::tom::HR> &&href_or_groupref, const bool is_name_validate) {
    DENTER(HGROUP_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::HGRP> ret = nullptr;
@@ -728,7 +730,8 @@ hgroup_create(lList **answer_list, const char *name, ocs::tom::ListPtr<ocs::tom:
  *
  * @return new element or nullptr
  */
-lListElem *hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bool is_name_validate) {
+lListElem *hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name, lList *href_or_groupref,
+                         bool is_name_validate) {
    auto hrefs = ocs::tom::ListPtr<ocs::tom::HR>(href_or_groupref);
    auto ret = hgroup_create(answer_list, name, std::move(hrefs), is_name_validate);
 
@@ -748,7 +751,8 @@ lListElem *hgroup_create(lList **answer_list, const char *name, lList *href_or_g
  *
  * @return error state true  - Success false - Error
  */
-bool hgroup_add_references(const ocs::tom::Element<ocs::tom::HGRP> this_elem, lList **answer_list,
+bool hgroup_add_references(const ocs::tom::Element<ocs::tom::HGRP> this_elem,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            const ocs::tom::ConstList<ocs::tom::HR> href_or_groupref) {
    DENTER(HGROUP_LAYER);
 
@@ -795,7 +799,8 @@ bool hgroup_add_references(const ocs::tom::Element<ocs::tom::HGRP> this_elem, lL
  *
  * @note Extremely poor performance. Try not to use this function.
  */
-bool hgroup_find_all_references(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
+bool hgroup_find_all_references(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                 ocs::tom::ListPtr<ocs::tom::HR> *used_hosts,
                                 ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
@@ -831,7 +836,8 @@ bool hgroup_find_all_references(const ocs::tom::ConstElement<ocs::tom::HGRP> thi
  *
  * @return as hgroup_find_all_references()
  */
-bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list, const lList *master_list,
+bool hgroup_find_all_references(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                const lList *master_list,
                                 lList **used_hosts, lList **used_groups, lList **used_matchers,
                                 const bool expand_matchers) {
    ocs::UntypedHrefList typed_used_hosts(used_hosts);
@@ -859,7 +865,8 @@ bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
  *
  * @return exit state true  - Success false - Error
  */
-bool hgroup_find_all_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
+bool hgroup_find_all_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                  ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups) {
    DENTER(HGROUP_LAYER);
@@ -890,8 +897,8 @@ bool hgroup_find_all_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> th
  *
  * @return as hgroup_find_all_referencees()
  */
-bool hgroup_find_all_referencees(const lListElem *this_elem, lList **answer_list, const lList *master_list,
-                                 lList **occupants_groups) {
+bool hgroup_find_all_referencees(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 const lList *master_list, lList **occupants_groups) {
    ocs::UntypedHrefList typed_occupants_groups(occupants_groups);
 
    return hgroup_find_all_referencees(ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list,
@@ -918,7 +925,8 @@ bool hgroup_find_all_referencees(const lListElem *this_elem, lList **answer_list
  *
  * @return Error state true  - Success false - Error
  */
-bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem, lList **answer_list,
+bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                              const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                              ocs::tom::ListPtr<ocs::tom::HR> *occupants_groups,
@@ -966,8 +974,8 @@ bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_e
  *
  * @return as hgroup_find_referencees()
  */
-bool hgroup_find_referencees(const lListElem *this_elem, lList **answer_list, const lList *master_hgroup_list,
-                             const lList *master_cqueue_list, lList **occupants_groups,
+bool hgroup_find_referencees(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                             const lList *master_hgroup_list, const lList *master_cqueue_list, lList **occupants_groups,
                              lList **occupants_queues) {
    ocs::UntypedHrefList typed_occupants_groups(occupants_groups);
 
@@ -1009,7 +1017,8 @@ bool hgroup_find_referencees(const lListElem *this_elem, lList **answer_list, co
  *
  * @return true or false; true if one of the lists is an empty handle
  */
-bool hgroup_list_exists(const ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **answer_list,
+bool hgroup_list_exists(const ocs::tom::ConstList<ocs::tom::HGRP> this_list,
+                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const ocs::tom::ConstList<ocs::tom::HR> href_list) {
    DENTER(HGROUP_LAYER);
 
@@ -1041,7 +1050,7 @@ bool hgroup_list_exists(const ocs::tom::ConstList<ocs::tom::HGRP> this_list, lLi
  *
  * @return as hgroup_list_exists()
  */
-bool hgroup_list_exists(const lList *this_list, lList **answer_list, const lList *href_list) {
+bool hgroup_list_exists(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *href_list) {
    return hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP>(this_list), answer_list,
                              ocs::tom::ConstList<ocs::tom::HR>(href_list));
 }
@@ -1061,8 +1070,8 @@ bool hgroup_list_exists(const lList *this_list, lList **answer_list, const lList
  *
  * @return error state true  - Success false - Error
  */
-bool hgroup_list_find_matching_and_resolve(const ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **answer_list,
-                                           const char *hgroup_pattern,
+bool hgroup_list_find_matching_and_resolve(const ocs::tom::ConstList<ocs::tom::HGRP> this_list,
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *hgroup_pattern,
                                            ocs::tom::ListPtr<ocs::tom::HR> *used_hosts) {
    DENTER(HGROUP_LAYER);
 
@@ -1103,8 +1112,8 @@ bool hgroup_list_find_matching_and_resolve(const ocs::tom::ConstList<ocs::tom::H
  *
  * @return as hgroup_list_find_matching_and_resolve()
  */
-bool hgroup_list_find_matching_and_resolve(const lList *this_list, lList **answer_list, const char *hgroup_pattern,
-                                           lList **used_hosts) {
+bool hgroup_list_find_matching_and_resolve(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           const char *hgroup_pattern, lList **used_hosts) {
    ocs::UntypedHrefList typed_used_hosts(used_hosts);
 
    return hgroup_list_find_matching_and_resolve(ocs::tom::ConstList<ocs::tom::HGRP>(this_list), answer_list,
@@ -1125,7 +1134,8 @@ bool hgroup_list_find_matching_and_resolve(const lList *this_list, lList **answe
  *
  * @return error state true  - success false - error
  */
-bool hgroup_list_find_matching(const ocs::tom::ConstList<ocs::tom::HGRP> this_list, lList **answer_list,
+bool hgroup_list_find_matching(const ocs::tom::ConstList<ocs::tom::HGRP> this_list,
+                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                const char *hgroup_pattern, ocs::tom::ListPtr<ocs::tom::HR> *href_list) {
    DENTER(HGROUP_LAYER);
    bool ret = true;

@@ -365,7 +365,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
          case JRUNNING:
          case JWAITING4OSJID:
             if (jep && jatep) {
-               lList *answer_list = nullptr;
+               ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
                switch (status) {
                   case JTRANSFERING:
@@ -778,7 +778,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                               auto container =
                                  ocs::tom::find_first_in_rw<JAT_task_list, PET_id>(jatep, PE_TASK_PAST_USAGE_CONTAINER);
                               if (!container) {
-                                 lList *answer_list = nullptr;
+                                 ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                                  container = pe_task_sum_past_usage_list(ocs::tom::get<JAT_task_list>(jatep), petask);
                                  /* usage container will be spooled */
                                  sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
@@ -787,7 +787,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                                                  jep, jatep, container, true, true, gdi_session);
                                  answer_list_output(&answer_list);
                               } else {
-                                 lList *answer_list = nullptr;
+                                 ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
                                  pe_task_sum_past_usage(container, petask);
                                  /* create list event for the USAGE_CONTAINER */
@@ -810,7 +810,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
 
                            /* remove pe task from job/jatask */
                            if (known_pe_task) {
-                              lList *answer_list = nullptr;
+                              ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                               sge_event_spool(&answer_list, 0, sgeE_PETASK_DEL,
                                               jobid, jataskid, pe_task_id_str,
                                               nullptr, nullptr, nullptr, nullptr, nullptr,

@@ -646,7 +646,7 @@ sge_timer_initialize(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    cl_thread_settings_t *dummy_thread_p = nullptr;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    te_init();
    DPRINTF("timed event module has been initialized\n");

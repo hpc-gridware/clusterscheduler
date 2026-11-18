@@ -38,6 +38,7 @@
 #include "sgeobj/tom/ocs_tom_ET.h"
 
 #include "ocs_thread_mirror.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -97,7 +98,9 @@ namespace ocs {
       virtual bool lock();
       virtual void unlock();
 
-      static void event_mirror_update_func([[maybe_unused]] uint32_t ec_id, [[maybe_unused]] lList **answer_list, lList *event_list, void *arg);
+      static void event_mirror_update_func([[maybe_unused]] uint32_t ec_id,
+                                           [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                           lList *event_list, void *arg);
 
       static void thread_cleanup_monitor(void *arg);
       static void thread_cleanup_event_client(void *arg);

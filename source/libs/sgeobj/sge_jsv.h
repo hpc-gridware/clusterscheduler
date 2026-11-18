@@ -48,30 +48,34 @@
 #include "sgeobj/tom/ocs_tom_JSV.h"
 
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
+#include "sgeobj/sge_answer.h"
 
 /// The JSV runs in a submit client rather than in qmaster
 #define JSV_CONTEXT_CLIENT "client"
 
 bool        
-jsv_url_parse(dstring *jsv_url_str, lList **answer_list, dstring *type, 
+jsv_url_parse(dstring *jsv_url_str, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *type, 
               dstring *user, dstring *path, bool in_client);
 
 bool
-jsv_send_command(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const char *message);
+jsv_send_command(ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                 const char *message);
 
 bool
-jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job, lList **answer_list, bool holding_lock);
-OCS_TRANSITIONAL bool jsv_do_verify(const char *context, lListElem **job, lList **answer_list, bool holding_lock);
+jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
+              ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool holding_lock);
+OCS_TRANSITIONAL bool jsv_do_verify(const char *context, lListElem **job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                    bool holding_lock);
 
 bool
-jsv_stop(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, bool try_soft_quit);
+jsv_stop(ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool try_soft_quit);
 
 bool
-jsv_start(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list);
+jsv_start(ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool
 jsv_list_add(const char *name, const char *context, 
-             lList **answer_list, const char *jsv_url);
+             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *jsv_url);
 
 bool
 jsv_list_remove(const char *name, const char *context);
@@ -84,4 +88,4 @@ jsv_is_enabled(const char *context);
 
 bool
 jsv_list_update(const char *name, const char *context,
-                lList **answer_list, const char *jsv_url);
+                ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *jsv_url);

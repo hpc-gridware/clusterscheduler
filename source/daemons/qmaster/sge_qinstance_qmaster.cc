@@ -148,7 +148,8 @@ qinstance_change_state_on_calender_(ocs::tom::Element<ocs::tom::QU> qi_elem, uin
  * @return true on success
  */
 bool
-qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
                            const int attribute_name, const int cqueue_attibute_name, const int sub_host_name,
                            const int sub_value_name, const int subsub_key, const char **matching_host_or_group,
@@ -719,7 +720,8 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem, lLis
  * @return true when the transition was made
  */
 bool
-qinstance_change_state_on_command(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+qinstance_change_state_on_command(const ocs::tom::Element<ocs::tom::QU> this_elem,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                   const uint32_t transition, const bool force_transition, const char *user,
                                   const char *host, const bool is_operator, const bool is_owner,
                                   monitoring_t *monitor, const uint64_t gdi_session) {
@@ -1266,7 +1268,8 @@ sge_qmaster_qinstance_set_initial_state(const ocs::tom::Element<ocs::tom::QU> th
  * @note MT-NOTE: qinstance_reinit_consumable_actual_list() is MT safe
  */
 bool
-qinstance_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list) {
+qinstance_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::QU> this_elem,
+                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1351,6 +1354,6 @@ qinstance_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::QU> th
  * @return as qinstance_reinit_consumable_actual_list()
  */
 bool
-qinstance_reinit_consumable_actual_list(lListElem *this_elem, lList **answer_list) {
+qinstance_reinit_consumable_actual_list(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    return qinstance_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list);
 }

@@ -38,8 +38,9 @@
  */
 
 #include "cull/cull.h"
+#include "sgeobj/sge_answer.h"
 
 /* create spooling context dynamically or from compiled in default */
 lListElem *
-spool_create_dynamic_context(lList **answer_list, const char *method,
+spool_create_dynamic_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args);

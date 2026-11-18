@@ -54,6 +54,7 @@
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
 #include "sge_select_queue.h"
+#include "sgeobj/sge_answer.h"
 
 /** Size of the buffer one formatted scheduler message is built in */
 #define MAXMSGLEN 256
@@ -66,11 +67,13 @@ void schedd_mes_initialize();
 /* Get message structure */
 ocs::tom::ElementPtr<ocs::tom::SME> schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count);
 
-void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id, uint32_t message_number, ...);
+void schedd_mes_add(ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool monitor_next_run, uint32_t job_id,
+                    uint32_t message_number, ...);
 
 void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t message_number, ...);
 
-void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t message_number, ...);
+void schedd_mes_add_global(ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool monitor_next_run,
+                           uint32_t message_number, ...);
 
 void schedd_mes_set_logging(int bval);
 

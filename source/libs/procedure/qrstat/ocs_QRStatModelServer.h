@@ -29,6 +29,7 @@
 
 #include "ocs_QRStatModelBase.h"
 #include "ocs_QRStatParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief QRStat model for the server execution context.
@@ -45,7 +46,7 @@ namespace ocs {
       [[maybe_unused]] gdi::Packet *packet = nullptr;
       [[maybe_unused]] gdi::Task *task = nullptr;
    protected:
-      bool fetch_data(lList **answer_list, QRStatParameter& parameter) override;
+      bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) override;
    public:
       /** @brief Build the server side model
        * @param packet the originating client packet, so permission checks see the real caller

@@ -56,6 +56,7 @@
 #include "gdi/ocs_gdi_Packet.h"
 
 #include "sge_qmaster_timed_event.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief The points in a job's life that are worth recording
  *
@@ -86,29 +87,30 @@ const char *
 get_job_log_name(job_log_t type);
 
 int
-sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, lList **alpp, lList **lpp,
+sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
                 ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
-OCS_TRANSITIONAL int sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
+OCS_TRANSITIONAL int sge_gdi_add_job(lListElem **jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
                                      ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 int
-sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, lList **lpp,
+sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
                  ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
-OCS_TRANSITIONAL int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
+OCS_TRANSITIONAL int sge_gdi_copy_job(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
                                       ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 int
 sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::JB> jep,
-                lList **alpp, ocs::gdi::SubCommand sub_command);
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::SubCommand sub_command);
 OCS_TRANSITIONAL int sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep,
-                                     lList **alpp, ocs::gdi::SubCommand sub_command);
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::SubCommand sub_command);
 
 int
 sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::ID> idep,
-                lList **alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+                ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+                monitoring_t *monitor);
 OCS_TRANSITIONAL int sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *idep,
-                                     lList **alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-                                     monitoring_t *monitor);
+                                     ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Command cmd,
+                                     ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 void
 sge_add_job_event(ev_event type, ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep,
@@ -156,7 +158,8 @@ job_ja_task_send_abort_mail(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::
                             const char *ruser, const char *rhost, const char *err_str);
 
 void
-get_rid_of_job_due_to_qdel(ocs::tom::Element<ocs::tom::JB> j, ocs::tom::Element<ocs::tom::JAT> t, lList **answer_list,
+get_rid_of_job_due_to_qdel(ocs::tom::Element<ocs::tom::JB> j, ocs::tom::Element<ocs::tom::JAT> t,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            const char *ruser, int force, monitoring_t *monitor, uint64_t gdi_session);
 
 void
@@ -167,32 +170,35 @@ void
 job_set_deleted_by(ocs::tom::Element<ocs::tom::JAT> ja_task, const char *user, const char *host);
 
 bool
-spool_write_script(lList **answer_list, uint32_t jobid, ocs::tom::ConstElement<ocs::tom::JB> jep);
+spool_write_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t jobid,
+                   ocs::tom::ConstElement<ocs::tom::JB> jep);
 
 bool
-spool_delete_script(lList **answer_list, uint32_t jobid, ocs::tom::Element<ocs::tom::JB> jep);
-OCS_TRANSITIONAL bool spool_delete_script(lList **answer_list, uint32_t jobid, lListElem *jep);
+spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t jobid, ocs::tom::Element<ocs::tom::JB> jep);
+OCS_TRANSITIONAL bool spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t jobid, lListElem *jep);
 
 bool
-spool_read_script(lList **answer_list, uint32_t jobid, ocs::tom::Element<ocs::tom::JB> jep);
-OCS_TRANSITIONAL bool spool_read_script(lList **answer_list, uint32_t jobid, lListElem *jep);
+spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t jobid, ocs::tom::Element<ocs::tom::JB> jep);
+OCS_TRANSITIONAL bool spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t jobid, lListElem *jep);
 
 uint32_t
 sge_get_job_number(monitoring_t *monitor);
 
 int
-deny_soft_consumables(lList **alpp, ocs::tom::ConstList<ocs::tom::CE> srl,
+deny_soft_consumables(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstList<ocs::tom::CE> srl,
                       ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
 
 int
-job_verify_project(ocs::tom::ConstElement<ocs::tom::JB> job, lList **alpp, const char *user, const char *group,
-                   ocs::tom::ConstList<ocs::tom::ST> grp_list);
+job_verify_project(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *user,
+                   const char *group, ocs::tom::ConstList<ocs::tom::ST> grp_list);
 
 int
-job_verify_predecessors(ocs::tom::Element<ocs::tom::JB> job, lList **alpp);
+job_verify_predecessors(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 int
-verify_suitable_queues(lList **alpp, ocs::tom::Element<ocs::tom::JB> jep, int *trigger, bool is_modify);
+verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::JB> jep, int *trigger,
+                       bool is_modify);
 
 int
-job_verify_predecessors_ad(ocs::tom::Element<ocs::tom::JB> job, lList **alpp, uint64_t gdi_session);
+job_verify_predecessors_ad(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                           uint64_t gdi_session);

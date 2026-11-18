@@ -126,7 +126,7 @@ const char *get_classic_spooling_method()
  * @return on success the new spooling context (SPC_Type), else nullptr
  */
 lListElem *
-spool_classic_create_context(lList **answer_list, const char *args) {
+spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::SPC> context;
@@ -349,7 +349,7 @@ spool_classic_restrict_mode(const char *base, const char *name) {
  * @param[in]  check        check the spooling database
  * @return true if the startup succeeded, else false
  */
-bool spool_classic_default_startup_func(lList **answer_list,
+bool spool_classic_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                         const lListElem *rule, bool check) {
    DENTER(TOP_LAYER);
 
@@ -432,7 +432,7 @@ bool spool_classic_default_startup_func(lList **answer_list,
  * @note This function should not be called directly, it is called by the
  *       spooling framework.
  */
-bool spool_classic_default_shutdown_func(lList **answer_list,
+bool spool_classic_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                          const lListElem *rule) {
    DENTER(TOP_LAYER);
 
@@ -493,7 +493,7 @@ bool spool_classic_default_shutdown_func(lList **answer_list,
  * @param spool_key the file as the duplicate message names it, relative to the spool directory
  * @return true if the object was read and validated, else false; a filtered duplicate counts as read
  */
-static bool read_validate_object(lList **answer_list,
+static bool read_validate_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const lListElem *type, const lListElem *rule,
                                  const char *key, int key_nm,
                                  sge_object_type object_type, lList **master_list,
@@ -562,7 +562,7 @@ static bool read_validate_object(lList **answer_list,
  *
  * @see `spool_read_list()`
  */
-bool spool_classic_default_list_func(lList **answer_list,
+bool spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                      const lListElem *type,
                                      const lListElem *rule,
                                      lList **list,
@@ -780,7 +780,7 @@ bool spool_classic_default_list_func(lList **answer_list,
  * @see `spool_read_object()`
  */
 lListElem *
-spool_classic_default_read_func(lList **answer_list,
+spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const lListElem *type,
                                 const lListElem *rule,
                                 const char *key,
@@ -975,7 +975,7 @@ spool_flatfile_key_is_safe(const char *key) {
  *
  * @see #spool_write_object
  */
-bool spool_classic_default_write_func(lList **answer_list,
+bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                       const lListElem *type,
                                       const lListElem *rule,
                                       const lListElem *object,
@@ -1219,7 +1219,7 @@ bool spool_classic_default_write_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool spool_classic_default_delete_func(lList **answer_list,
+bool spool_classic_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                        const lListElem *type,
                                        const lListElem *rule,
                                        const char *key,

@@ -45,6 +45,7 @@
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/sge_answer.h"
 
 int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
@@ -74,13 +75,16 @@ void
 hgroup_rollback_cqueues(ocs::tom::Element<ocs::tom::HGRP> hgroup);
 
 int
-hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
+           lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+           ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
-hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object);
+hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *upe,
+             gdi_object_t *object);
 
 int
-hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::HGRP> cep, lList **alpp,
-           char *ruser, char *rhost);
-OCS_TRANSITIONAL int hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp,
-                                char *ruser, char *rhost);
+hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::HGRP> cep,
+           ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
+                                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);

@@ -1535,6 +1535,66 @@ template <ocs::tom::ObjectType T>
 }
 
 /**
+ * @brief The first element of an owning list handle, read only; lFirst() for it
+ * @tparam T the object type
+ * @param lp the list, or an empty handle
+ * @return the element, or an empty handle for an empty list
+ */
+template <ocs::tom::ObjectType T>
+[[nodiscard]] ocs::tom::ConstElement<T> lFirst(const ocs::tom::ListPtr<T> &lp) noexcept {
+   return lFirst(ocs::tom::ConstList<T>(lp));
+}
+
+/** @brief No lFirst() of a temporary owning list handle: the element would dangle */
+template <ocs::tom::ObjectType T>
+void lFirst(const ocs::tom::ListPtr<T> &&lp) = delete;
+
+/**
+ * @brief The first element of an owning list handle; lFirstRW() for it
+ * @tparam T the object type
+ * @param lp the list, or an empty handle
+ * @return the element, or an empty handle for an empty list
+ */
+template <ocs::tom::ObjectType T>
+[[nodiscard]] ocs::tom::Element<T> lFirstRW(const ocs::tom::ListPtr<T> &lp) noexcept {
+   return lFirstRW(ocs::tom::ConstList<T>(lp));
+}
+
+/** @brief No lFirstRW() of a temporary owning list handle: the element would dangle */
+template <ocs::tom::ObjectType T>
+void lFirstRW(const ocs::tom::ListPtr<T> &&lp) = delete;
+
+/**
+ * @brief The last element of an owning list handle, read only; lLast() for it
+ * @tparam T the object type
+ * @param lp the list, or an empty handle
+ * @return the element, or an empty handle for an empty list
+ */
+template <ocs::tom::ObjectType T>
+[[nodiscard]] ocs::tom::ConstElement<T> lLast(const ocs::tom::ListPtr<T> &lp) noexcept {
+   return lLast(ocs::tom::ConstList<T>(lp));
+}
+
+/** @brief No lLast() of a temporary owning list handle: the element would dangle */
+template <ocs::tom::ObjectType T>
+void lLast(const ocs::tom::ListPtr<T> &&lp) = delete;
+
+/**
+ * @brief The last element of an owning list handle; lLastRW() for it
+ * @tparam T the object type
+ * @param lp the list, or an empty handle
+ * @return the element, or an empty handle for an empty list
+ */
+template <ocs::tom::ObjectType T>
+[[nodiscard]] ocs::tom::Element<T> lLastRW(const ocs::tom::ListPtr<T> &lp) noexcept {
+   return lLastRW(ocs::tom::ConstList<T>(lp));
+}
+
+/** @brief No lLastRW() of a temporary owning list handle: the element would dangle */
+template <ocs::tom::ObjectType T>
+void lLastRW(const ocs::tom::ListPtr<T> &&lp) = delete;
+
+/**
  * @brief The element after an element handle, read only; lNext() for a handle
  *
  * Elements of a list share their type, so the next one has the type of this one.

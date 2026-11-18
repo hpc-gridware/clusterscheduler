@@ -67,7 +67,7 @@
  * @return true when every entry could be parsed
  */
 bool id_list_build_from_str_list(lList **id_list,
-                                 lList **answer_list,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const ocs::tom::ConstList<ocs::tom::ST> str_list,
                                  const uint32_t transition,
                                  const uint32_t option) {

@@ -155,7 +155,8 @@ ocs::tom::ListPtr<ocs::tom::ST> str_list_parse_from_string(const char *string, c
  *
  * @return always true; an invalid string only adds an error to "answer_list"
  */
-bool str_list_is_valid(const ocs::tom::ConstList<ocs::tom::ST> this_list, lList **answer_list) {
+bool str_list_is_valid(const ocs::tom::ConstList<ocs::tom::ST> this_list,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(STR_LAYER);
    bool ret = true;
 
@@ -180,8 +181,8 @@ bool str_list_is_valid(const ocs::tom::ConstList<ocs::tom::ST> this_list, lList 
  * @param username the name to substitute
  * @return true when the list could be rewritten
  */
-bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list, [[maybe_unused]] lList **answer_list,
-                                  const char *username) {
+bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list,
+                                  [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *username) {
    DENTER(STR_LAYER);
    bool ret = true;
 

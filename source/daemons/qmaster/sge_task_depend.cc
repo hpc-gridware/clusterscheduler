@@ -100,7 +100,8 @@ static void task_depend(uint32_t *lb, uint32_t *ub, uint32_t t0, uint32_t sa, ui
  *       MT-NOTE: sge_task_depend_get_range() is MT safe
  */
 ocs::tom::ElementPtr<ocs::tom::RN>
-sge_task_depend_get_range([[maybe_unused]] lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> pre_jep,
+sge_task_depend_get_range([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                          const ocs::tom::ConstElement<ocs::tom::JB> pre_jep,
                           const ocs::tom::ConstElement<ocs::tom::JB> suc_jep, const uint32_t task_id) {
    DENTER(TOP_LAYER);
 
@@ -150,8 +151,8 @@ sge_task_depend_get_range([[maybe_unused]] lList **alpp, const ocs::tom::ConstEl
  * @return 0 on success, STATUS_EUNKNOWN if the range cannot be determined
  */
 int
-sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_jep, const lListElem *suc_jep,
-                          const uint32_t task_id) {
+sge_task_depend_get_range(lListElem **range, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lListElem *pre_jep,
+                          const lListElem *suc_jep, const uint32_t task_id) {
    if (range == nullptr) {
       return STATUS_EUNKNOWN;
    }
@@ -226,8 +227,8 @@ task_depend_is_finished(const ocs::tom::ConstElement<ocs::tom::JB> job, const ui
  *       MT-NOTE: Is not thread safe. Reads from the global Job-List
  */
 bool
-sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, const uint32_t task_id,
-                       const uint64_t gdi_request) {
+sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                       const uint32_t task_id, const uint64_t gdi_request) {
    DENTER(TOP_LAYER);
    uint32_t hold_state, new_state;
    int Depend = 0;
@@ -316,7 +317,8 @@ sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, 
  * @return true if the job was modified, otherwise false
  */
 bool
-sge_task_depend_update(lListElem *jep, lList **alpp, const uint32_t task_id, const uint64_t gdi_request) {
+sge_task_depend_update(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint32_t task_id,
+                       const uint64_t gdi_request) {
    return sge_task_depend_update(ocs::tom::Element<ocs::tom::JB>(jep), alpp, task_id, gdi_request);
 }
 
@@ -343,7 +345,8 @@ sge_task_depend_update(lListElem *jep, lList **alpp, const uint32_t task_id, con
  *       MT-NOTE: sge_task_depend_init() is not MT safe (calls MT unsafe method)
  */
 bool
-sge_task_depend_init(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, const uint64_t gdi_session) {
+sge_task_depend_init(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                     const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -380,7 +383,7 @@ sge_task_depend_init(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, co
  * @return true if the job was modified, otherwise false
  */
 bool
-sge_task_depend_init(lListElem *jep, lList **alpp, const uint64_t gdi_session) {
+sge_task_depend_init(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint64_t gdi_session) {
    return sge_task_depend_init(ocs::tom::Element<ocs::tom::JB>(jep), alpp, gdi_session);
 }
 
@@ -411,7 +414,8 @@ sge_task_depend_init(lListElem *jep, lList **alpp, const uint64_t gdi_session) {
  *       MT-NOTE: sge_task_depend_flush() is MT safe
  */
 bool
-sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, const uint64_t gdi_session) {
+sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                      const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -466,7 +470,7 @@ sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, c
  * @return true if the job was modified, otherwise false
  */
 bool
-sge_task_depend_flush(lListElem *jep, lList **alpp, const uint64_t gdi_session) {
+sge_task_depend_flush(lListElem *jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint64_t gdi_session) {
    return sge_task_depend_flush(ocs::tom::Element<ocs::tom::JB>(jep), alpp, gdi_session);
 }
 

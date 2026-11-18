@@ -148,8 +148,8 @@ static object_description object_base[SGE_TYPE_ALL] = {
  * @see #object_parse_field_from_string
  */
 static const char *
-object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm,
-                                   char string_quotes) {
+object_append_raw_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                   dstring *buffer, int nm, char string_quotes) {
    DENTER(OBJECT_LAYER);
    const char *str;
    const char *result = nullptr;
@@ -242,7 +242,8 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
  * @see #object_append_field_to_dstring
  */
 static bool
-object_parse_raw_field_from_string(lListElem *object, lList **answer_list, const int nm, const char *value) {
+object_parse_raw_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const int nm,
+                                   const char *value) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
    int pos;
@@ -559,7 +560,7 @@ object_get_type_name(const lListElem *object) {
  * @see #object_parse_field_from_string
  */
 const char *
-object_append_field_to_dstring(const lListElem *object, lList **answer_list,
+object_append_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                dstring *buffer, int nm,
                                char string_quotes) {
    DENTER(OBJECT_LAYER);
@@ -666,7 +667,7 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
  * @see #object_append_field_to_dstring
  */
 bool
-object_parse_field_from_string(lListElem *object, lList **answer_list,
+object_parse_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                int nm, const char *value) {
    DENTER(OBJECT_LAYER);
 
@@ -809,7 +810,7 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
  * @param id id to delete
  */
 void
-object_delete_range_id(lListElem *object, lList **answer_list,
+object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        int rnm, uint32_t id) {
    lList *range_list = nullptr;
 
@@ -1000,7 +1001,7 @@ int object_type_get_key_nm(sge_object_type type) {
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
+object_parse_bool_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               int name, const char *string) {
    DENTER(OBJECT_LAYER);
 
@@ -1039,7 +1040,7 @@ object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
+object_parse_time_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               int name, const char *string) {
    DENTER(OBJECT_LAYER);
 
@@ -1074,7 +1075,7 @@ object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
+object_parse_inter_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                int name, const char *string) {
    DENTER(OBJECT_LAYER);
 
@@ -1112,7 +1113,7 @@ object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
+object_parse_list_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               int name, const char *string,
                               const lDescr *descr, int nm) {
    DENTER(OBJECT_LAYER);
@@ -1155,7 +1156,8 @@ object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_celist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                const char *string) {
    DENTER(TOP_LAYER);
    static int rule[] = {CE_name, CE_stringval, 0};
    bool ret = true;
@@ -1195,7 +1197,8 @@ object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int n
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, const int name, const char *string) {
+object_parse_solist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const int name,
+                                const char *string) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
 
@@ -1374,7 +1377,8 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, const
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_qtlist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                const char *string) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -1408,7 +1412,8 @@ object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int n
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_mem_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                             const char *string) {
    DENTER(OBJECT_LAYER);
 
    bool ret = true;
@@ -1440,7 +1445,8 @@ object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_ulong32_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                 const char *string) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
 
@@ -1494,7 +1500,8 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int 
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_ulong64_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                 const char *string) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
 
@@ -1548,7 +1555,8 @@ object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int 
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_int_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                             const char *string) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
 
@@ -1579,7 +1587,8 @@ object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_long_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_long_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                              const char *string) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
 
@@ -1610,7 +1619,8 @@ object_parse_long_from_string(lListElem *this_elem, lList **answer_list, int nam
  * @return true when the value was parsed and stored
  */
 bool
-object_parse_double_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+object_parse_double_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
+                                const char *string) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
 
@@ -1806,7 +1816,8 @@ object_get_any_type(const lListElem *this_elem, int name, void *value) {
  * @return true when the elements differ, or when only one of them is nullptr
  */
 bool
-object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem) {
+object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       const lListElem *old_elem) {
    DENTER(TOP_LAYER);
    bool ret = false;
 
@@ -1948,7 +1959,8 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
  * @see #object_has_differences
  */
 bool
-object_list_has_differences(const lList *this_list, lList **answer_list, const lList *old_list) {
+object_list_has_differences(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const lList *old_list) {
    DENTER(BASIS_LAYER);
    bool ret = false;
 
@@ -2286,7 +2298,8 @@ namespace {
     * @param object_name the object named in the error
     */
    void
-   add_repeated_key_error(lList **answer_list, const ocs::RepeatedKey &repeated, const char *object_name) {
+   add_repeated_key_error(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::RepeatedKey &repeated,
+                          const char *object_name) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJ_DUPLICATEKEY_SSS,
                               repeated.key.c_str(), lNm2Str(repeated.nm), object_name != nullptr ? object_name : "");
    }
@@ -2335,7 +2348,8 @@ ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey>
  * @see #ocs_object_list_verify_unique_keys
  */
 bool
-ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const char *object_name) {
+ocs_object_verify_unique_keys(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                              const char *object_name) {
    std::vector<ocs::RepeatedKey> found;
    find_in_object(ep, "", found);
    if (found.empty()) {
@@ -2361,7 +2375,8 @@ ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const ch
  * @note MT-NOTE: ocs_object_list_verify_unique_keys() is MT safe
  */
 bool
-ocs_object_list_verify_unique_keys(const lList *lp, lList **answer_list, const char *object_name) {
+ocs_object_list_verify_unique_keys(const lList *lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                   const char *object_name) {
    std::vector<ocs::RepeatedKey> found;
    find_in_list(lp, "", found);
    if (found.empty()) {
@@ -2461,7 +2476,7 @@ namespace {
  * @see #ocs_object_find_repeated_keys
  */
 bool
-ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, lList **answer_list,
+ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const char *object_name) {
    std::vector<ocs::RepeatedKey> found;
    find_in_object(ep, "", found);
@@ -2584,7 +2599,7 @@ ocs_object_list_add_unique(lList **lpp, lList **src) {
  * @see #object_verify_string_not_null
  */
 bool
-object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
+object_verify_ulong_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) == 0) {
@@ -2613,7 +2628,7 @@ object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
  * @note MT-NOTE: object_verify_ulong64_not_null() is MT safe
  */
 bool
-object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm) {
+object_verify_ulong64_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) == 0) {
@@ -2641,7 +2656,7 @@ object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm)
  * @see #object_verify_string_not_null
  */
 bool
-object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
+object_verify_ulong_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong(ep, nm) != 0) {
@@ -2664,7 +2679,7 @@ object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
  * @note MT-NOTE: object_verify_ulong64_null() is MT safe
  */
 bool
-object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm) {
+object_verify_ulong64_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
    bool ret = true;
 
    if (lGetUlong64(ep, nm) != 0) {
@@ -2692,7 +2707,7 @@ object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm) {
  * @see #object_verify_string_not_null
  */
 bool
-object_verify_double_null(const lListElem *ep, lList **answer_list, int nm) {
+object_verify_double_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
    bool ret = true;
 
    if (lGetDouble(ep, nm) != 0.0) {
@@ -2720,7 +2735,7 @@ object_verify_double_null(const lListElem *ep, lList **answer_list, int nm) {
  * @see #object_verify_ulong_not_null
  */
 bool
-object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) {
+object_verify_string_not_null(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm) {
    bool ret = true;
 
    if (lGetString(ep, nm) == nullptr) {
@@ -2746,7 +2761,8 @@ object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) 
  * @note MT-NOTE: object_verify_expression_syntax() is MT safe
  */
 bool
-object_verify_expression_syntax(const ocs::tom::ConstElement<ocs::tom::CE> elem, lList **answer_list) {
+object_verify_expression_syntax(const ocs::tom::ConstElement<ocs::tom::CE> elem,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
    switch (const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(elem))) {
@@ -2784,7 +2800,7 @@ object_verify_expression_syntax(const ocs::tom::ConstElement<ocs::tom::CE> elem,
  * @note MT-NOTE: object_verify_name() is MT safe
  */
 int
-object_verify_name(const lListElem *object, lList **answer_list, int name) {
+object_verify_name(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name) {
    DENTER(TOP_LAYER);
    int ret = 0;
 
@@ -2822,8 +2838,8 @@ object_verify_name(const lListElem *object, lList **answer_list, int name) {
  * @return STATUS_OK on success
  */
 int
-object_verify_pe_range(lList **alpp, const char *pe_name, const ocs::tom::List<ocs::tom::RN> pe_range,
-                       const char *object_descr) {
+object_verify_pe_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *pe_name,
+                       const ocs::tom::List<ocs::tom::RN> pe_range, const char *object_descr) {
    DENTER(TOP_LAYER);
 
    /* ensure jobs PE range list request is normalized and ascending */
@@ -2877,7 +2893,8 @@ object_verify_pe_range(lList **alpp, const char *pe_name, const ocs::tom::List<o
  *
  * @return 0 on success, -1 for an explicit `slots` request
  */
-int compress_ressources(lList **alpp, const ocs::tom::List<ocs::tom::CE> rl, const char *object_descr) {
+int compress_ressources(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::List<ocs::tom::CE> rl,
+                        const char *object_descr) {
    DENTER(TOP_LAYER);
 
    for (auto ep = rl.back(); ep; ep = ep.prev()) {
@@ -2923,7 +2940,8 @@ int compress_ressources(lList **alpp, const ocs::tom::List<ocs::tom::CE> rl, con
  *
  * @see #object_verify_cull
  */
-bool object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr) {
+bool object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb, lListElem **epp,
+                               const lDescr *descr) {
    DENTER(TOP_LAYER);
    bool ret = true;
 

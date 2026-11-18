@@ -46,16 +46,18 @@
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/sge_answer.h"
 
 bool
 cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
-                      lList **answer_list, const lListElem *reduced_elem, bool refresh_all_values, bool is_startup,
+                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
+                      bool refresh_all_values, bool is_startup,
                       monitoring_t *monitor, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                       ocs::tom::List<ocs::tom::CQ> master_cqueue_list);
 
 bool
 cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
-                         lList **answer_list, const lListElem *reduced_elem,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
                          ocs::tom::ConstList<ocs::tom::HR> add_hosts, ocs::tom::ConstList<ocs::tom::HR> rem_hosts,
                          bool refresh_all_values, monitoring_t *monitor,
                          ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
@@ -82,25 +84,27 @@ cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
                monitoring_t *monitor);
 
 int
-cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
+cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *modp,
+           lListElem *ep, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
-cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *this_elem, gdi_object_t *object);
+cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+             lListElem *this_elem, gdi_object_t *object);
 
 int
-cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CQ> this_elem, lList **alpp,
-           char *ruser, char *rhost);
-OCS_TRANSITIONAL int cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **alpp,
-                                char *ruser, char *rhost);
+cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+           ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
+                                ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 bool
-cqueue_del_all_orphaned(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list, const char *ehname,
-                        uint64_t gdi_session);
+cqueue_del_all_orphaned(ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        const char *ehname, uint64_t gdi_session);
 
 bool
-cqueue_list_del_all_orphaned(ocs::tom::List<ocs::tom::CQ> this_list, lList **answer_list, const char *cqname,
-                             const char *ehname, uint64_t gdi_session);
+cqueue_list_del_all_orphaned(ocs::tom::List<ocs::tom::CQ> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                             const char *cqname, const char *ehname, uint64_t gdi_session);
 
 void
 cqueue_list_set_unknown_state(ocs::tom::List<ocs::tom::CQ> this_list, const char *hostname,

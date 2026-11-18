@@ -84,7 +84,7 @@ static int get_gdi_retries_value() {
 }
 
 static bool
-sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
+sge_gdi_map_pack_errors(int pack_ret, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(GDI_LAYER);
 
    switch (pack_ret) {
@@ -200,8 +200,7 @@ ocs::gdi::Packet::create_multi_answer(lList **malpp) {
          task->data_list = nullptr;
       }
 
-      ocs::tom::set<MA_answers>(map, task->answer_list);
-      task->answer_list = nullptr;
+      ocs::tom::set<MA_answers>(map, std::move(task->answer_list));
    }
    DRETURN_VOID;
 }
@@ -291,7 +290,7 @@ void ocs::gdi::Packet::broadcast_that_handled() {
  * @param[out] answer_list receives packing or communication errors
  * @return true when the packet was sent
  */
-bool ocs::gdi::Packet::execute_external(lList **answer_list) {
+bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    sge_pack_buffer pb;
@@ -521,9 +520,8 @@ bool ocs::gdi::Packet::execute_external(lList **answer_list) {
 
             lFreeList(&send->data_list);
             send->data_list = recv->data_list;
-            send->answer_list = recv->answer_list;
+            send->answer_list = std::move(recv->answer_list);
             recv->data_list = nullptr;
-            recv->answer_list = nullptr;
          }
       }
       if (gdi_mismatch) {
@@ -550,7 +548,7 @@ bool ocs::gdi::Packet::execute_external(lList **answer_list) {
  * @return true when the packet was queued
  */
 bool
-ocs::gdi::Packet::execute_internal(lList **answer_list) {
+ocs::gdi::Packet::execute_internal(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    // fill in packet data for internal request - we don't get it via a pack buffer
@@ -611,7 +609,7 @@ ocs::gdi::Packet::get_pb_size() {
    DENTER(TOP_LAYER);
    uint32_t ret = 0;
    bool local_ret;
-   lList *local_answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
    sge_pack_buffer tmppb;
 
    init_packbuffer(&tmppb, 0, true, false);
@@ -630,7 +628,7 @@ ocs::gdi::Packet::get_pb_size() {
  * @return true on success
  */
 bool
-ocs::gdi::Packet::unpack(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret = true;
    bool has_next;
@@ -674,7 +672,8 @@ ocs::gdi::Packet::unpack(lList **answer_list, sge_pack_buffer *pb) {
       if ((pack_ret = cull_unpack_list(pb, &(a_list)))) {
          goto error_with_mapping;
       }
-      task->answer_list = a_list;
+      // an answer list as it was packed; taken over unchecked like the data list, a daemon thread must not throw
+      task->answer_list = ocs::tom::ListPtr<ocs::tom::AN>::from_typed(a_list);
 
       if ((pack_ret = cull_unpack_cond(pb, &(condition)))) {
          goto error_with_mapping;
@@ -711,7 +710,7 @@ error_with_mapping:
  * @return true on success
  */
 bool
-ocs::gdi::Packet::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::unpack_header(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret;
    int pack_ret;
@@ -741,7 +740,7 @@ error_with_mapping:
  * @return true on success
  */
 bool
-ocs::gdi::Packet::pack(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::pack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -771,7 +770,7 @@ ocs::gdi::Packet::pack(lList **answer_list, sge_pack_buffer *pb) {
  * @return true on success
  */
 bool
-ocs::gdi::Packet::pack_header(lList **answer_list, sge_pack_buffer *pb) {
+ocs::gdi::Packet::pack_header(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret = true;
    int pack_ret;
@@ -796,7 +795,8 @@ error_with_mapping:
  * @return true on success
  */
 bool
-ocs::gdi::Packet::pack_task(Task *task, lList **answer_list, sge_pack_buffer *pb, bool has_next) {
+ocs::gdi::Packet::pack_task(Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb,
+                            bool has_next) {
    DENTER(TOP_LAYER);
    bool ret = true;
    int pack_ret;
@@ -842,7 +842,7 @@ ocs::gdi::Packet::pack_task(Task *task, lList **answer_list, sge_pack_buffer *pb
       }
 
       /* ===> pack the suffix */
-      pack_ret = cull_pack_list(pb, task->answer_list);
+      pack_ret = cull_pack_list(pb, task->answer_list.get());
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }

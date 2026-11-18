@@ -45,23 +45,25 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/sge_answer.h"
 
 int
 sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CE> centry,
-               lList **alpp, char *ruser, char *rhost);
-OCS_TRANSITIONAL int sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp, lList **alpp,
-                                    char *ruser, char *rhost);
+               ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 
 int
 centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
                gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
 int 
-centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object);
+centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *cep,
+             gdi_object_t *object);
 
 int 
-centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_complex, lListElem *ep, int add,
-           const char *ruser, const char *rhost, gdi_object_t *object,
+centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           lListElem *new_complex, lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 void

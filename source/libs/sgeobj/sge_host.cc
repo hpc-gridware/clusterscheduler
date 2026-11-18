@@ -346,7 +346,7 @@ cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ
  *
  * @return true if the host is referenced, else false
  */
-bool host_is_referenced(const lListElem *host, lList **answer_list,
+bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const ocs::tom::ConstList<ocs::tom::CQ> queue_list,
                         const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list) {
    DENTER(TOP_LAYER);
@@ -470,7 +470,8 @@ bool host_is_referenced(const lListElem *host, lList **answer_list,
  *
  * @return as host_is_referenced()
  */
-bool host_is_referenced(const lListElem *host, lList **answer_list, const lList *queue_list, const lList *hgrp_list) {
+bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *queue_list,
+                        const lList *hgrp_list) {
    return host_is_referenced(host, answer_list, ocs::tom::ConstList<ocs::tom::CQ>(queue_list),
                              ocs::tom::ConstList<ocs::tom::HGRP>(hgrp_list));
 }

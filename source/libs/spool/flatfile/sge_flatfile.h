@@ -69,6 +69,7 @@
 #include "cull/cull.h"
 
 #include "spool/sge_spooling_utilities.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Width the aligned output pads a line to */
 #define MAX_LINE_LENGTH 80
@@ -197,7 +198,7 @@ extern const spool_flatfile_instr qconf_sub_name_value_comma_braced_sfi;   ///< 
 
 
 const char *
-spool_flatfile_write_object(lList **answer_list, const lListElem *object,
+spool_flatfile_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
                             bool is_root, const spooling_field *fields,
                             const spool_flatfile_instr *instr,
                             const spool_flatfile_destination destination,
@@ -208,7 +209,7 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             spool_flatfile_line_breaks line_breaks = SP_LINE_BREAKS_ENV);
 
 const char *
-spool_flatfile_write_list(lList **answer_list,
+spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const lList *list,
                           const spooling_field *fields,
                           const spool_flatfile_instr *instr,
@@ -219,7 +220,7 @@ spool_flatfile_write_list(lList **answer_list,
                           spool_flatfile_line_breaks line_breaks = SP_LINE_BREAKS_ENV);
 
 lListElem *
-spool_flatfile_read_object(lList **answer_list, const lDescr *descr, lListElem *root,
+spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, lListElem *root,
                            const spooling_field *fields_in, int fields_out[],
                            bool parse_values, const spool_flatfile_instr *instr,
                            const spool_flatfile_format format,
@@ -227,7 +228,7 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr, lListElem *
                            const char *filepath,
                            const char *content = nullptr);
 lList *
-spool_flatfile_read_list(lList **answer_list, const lDescr *descr, 
+spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, 
                          const spooling_field *fields_in, int fields_out[],
                          bool parse_values, const spool_flatfile_instr *instr,
                          const spool_flatfile_format format,
@@ -236,14 +237,14 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
                          const char *content = nullptr);
 
 bool 
-spool_flatfile_align_object(lList **answer_list,
+spool_flatfile_align_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             spooling_field *fields);
 
 bool
-spool_flatfile_align_list(lList **answer_list, const lList *list, 
+spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list, 
                           spooling_field *fields, int padding);
 
-int spool_get_unprocessed_field(spooling_field in[], int out[], lList **alpp);
+int spool_get_unprocessed_field(spooling_field in[], int out[], ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 int spool_get_number_of_fields(const spooling_field fields[]);
 
 /** @} */

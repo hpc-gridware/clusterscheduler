@@ -28,6 +28,7 @@
 #include <cstdint>
 
 #include "cull/cull_list.h"
+#include "sgeobj/sge_answer.h"
 
 int qmaster_handle_reconnect_request(uint32_t job_id,
                                      const char *requester_user,
@@ -36,7 +37,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
                                      const char *client_cred,
                                      char *out_token, size_t out_token_size,
                                      char *out_exec_host, size_t out_exec_host_size,
-                                     lList **answer_list);
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
                                        const char *exec_host,

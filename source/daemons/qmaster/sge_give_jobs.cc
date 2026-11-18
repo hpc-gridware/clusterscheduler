@@ -973,7 +973,7 @@ sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, cons
    int no_events = (commit_flags & COMMIT_NO_EVENTS);
    uint64_t now = sge_get_gmt64();
    const char *session;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
    const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
    const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
@@ -1381,7 +1381,7 @@ sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, cons
             sge_finish_ja_task(sge_root, jep, jobid, jatep, no_events, gdi_session);
 
             // (4) spool the modification + emit sgeE_JATASK_MOD (KTD5)
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
             sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid,
                             nullptr, nullptr, session, jep, jatep, nullptr,
                             true, true, gdi_session);
@@ -1659,7 +1659,7 @@ sge_clear_granted_resources(const ocs::tom::Element<ocs::tom::JB> job, const ocs
    uint32_t job_id = ocs::tom::get<JB_job_number>(job);
    uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    ocs::tom::ConstList<ocs::tom::JG> gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
    const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
    const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
@@ -2130,7 +2130,7 @@ sge_bury_ja_task([[maybe_unused]] const char *sge_root, lListElem *raw_job, cons
        * do not try to remove script file for interactive jobs
        */
       {
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          dstring buffer = DSTRING_INIT;
 
          spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
@@ -2184,7 +2184,7 @@ sge_bury_ja_task([[maybe_unused]] const char *sge_root, lListElem *raw_job, cons
        * remove the task
        */
       if (is_enrolled) {
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          dstring buffer = DSTRING_INIT;
          spool_delete_object(&answer_list, spool_get_default_context(),
                              SGE_TYPE_JOB, job_get_key(job_id, ja_task_id, nullptr, &buffer));
@@ -2194,7 +2194,7 @@ sge_bury_ja_task([[maybe_unused]] const char *sge_root, lListElem *raw_job, cons
       } else {
          job_delete_not_enrolled_ja_task(job, nullptr, ja_task_id);
          if (spool_job) {
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
             dstring buffer = DSTRING_INIT;
             spool_write_object(&answer_list, spool_get_default_context(), job,
                                job_get_key(job_id, ja_task_id, nullptr, &buffer), SGE_TYPE_JOB);
@@ -2312,7 +2312,7 @@ setCheckpointObj(const ocs::tom::Element<ocs::tom::JB> job) {
  * @return true when anything was released
  */
 bool
-gdil_del_all_orphaned(const lList *gdil_list, lList **alpp, const uint64_t gdi_session) {
+gdil_del_all_orphaned(const lList *gdil_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

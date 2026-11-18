@@ -87,7 +87,8 @@
  *
  * @return error state true - Success false - Error
  */
-bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, lList **answer_list, const char *host_or_group) {
+bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                   const char *host_or_group) {
    DENTER(HOSTREF_LAYER);
 
    bool ret = true;
@@ -123,7 +124,7 @@ bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, lList **answer_li
  *
  * @return as href_list_add(); false with an error if "this_list" is nullptr
  */
-bool href_list_add(lList **this_list, lList **answer_list, const char *host_or_group) {
+bool href_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *host_or_group) {
    if (this_list == nullptr) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -179,7 +180,7 @@ void ocs_href_list_emplace(ocs::tom::ListPtr<ocs::tom::HR> &this_list, const cha
  * @see #href_list_add
  */
 static bool
-href_list_merge(ocs::tom::ListPtr<ocs::tom::HR> *this_list, lList **answer_list,
+href_list_merge(ocs::tom::ListPtr<ocs::tom::HR> *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                 const ocs::tom::ConstList<ocs::tom::HR> other) {
    DENTER(HOSTREF_LAYER);
 
@@ -264,7 +265,7 @@ bool href_list_has_member(const lList *this_list, const char *host_or_group) {
  *
  * @see #href_list_find_diff
  */
-bool href_list_compare(const ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
+bool href_list_compare(const ocs::tom::ConstList<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        const ocs::tom::ConstList<ocs::tom::HR> list, ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
                        ocs::tom::ListPtr<ocs::tom::HR> *add_groups, ocs::tom::ListPtr<ocs::tom::HR> *equity_hosts,
                        ocs::tom::ListPtr<ocs::tom::HR> *equity_groups) {
@@ -325,8 +326,8 @@ bool href_list_compare(const ocs::tom::ConstList<ocs::tom::HR> this_list, lList 
  *
  * @return as href_list_compare()
  */
-bool href_list_compare(const lList *this_list, lList **answer_list, const lList *list, lList **add_hosts,
-                       lList **add_groups, lList **equity_hosts, lList **equity_groups) {
+bool href_list_compare(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+                       lList **add_hosts, lList **add_groups, lList **equity_hosts, lList **equity_groups) {
    ocs::UntypedHrefList typed_add_hosts(add_hosts);
    ocs::UntypedHrefList typed_add_groups(add_groups);
    ocs::UntypedHrefList typed_equity_hosts(equity_hosts);
@@ -362,7 +363,8 @@ bool href_list_compare(const lList *this_list, lList **answer_list, const lList 
  *
  * @see #href_list_compare
  */
-bool href_list_find_diff(const ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
+bool href_list_find_diff(const ocs::tom::ConstList<ocs::tom::HR> this_list,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          const ocs::tom::ConstList<ocs::tom::HR> list, ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
                          ocs::tom::ListPtr<ocs::tom::HR> *rem_hosts, ocs::tom::ListPtr<ocs::tom::HR> *add_groups,
                          ocs::tom::ListPtr<ocs::tom::HR> *rem_groups) {
@@ -390,8 +392,8 @@ bool href_list_find_diff(const ocs::tom::ConstList<ocs::tom::HR> this_list, lLis
  *
  * @return as href_list_find_diff()
  */
-bool href_list_find_diff(const lList *this_list, lList **answer_list, const lList *list, lList **add_hosts,
-                         lList **rem_hosts, lList **add_groups, lList **rem_groups) {
+bool href_list_find_diff(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+                         lList **add_hosts, lList **rem_hosts, lList **add_groups, lList **rem_groups) {
    ocs::UntypedHrefList typed_add_hosts(add_hosts);
    ocs::UntypedHrefList typed_rem_hosts(rem_hosts);
    ocs::UntypedHrefList typed_add_groups(add_groups);
@@ -418,7 +420,8 @@ bool href_list_find_diff(const lList *this_list, lList **answer_list, const lLis
  *
  * @return error state true  - Success false - Error
  */
-bool href_list_find_effective_diff(lList **answer_list, const ocs::tom::ConstList<ocs::tom::HR> add_groups,
+bool href_list_find_effective_diff(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                   const ocs::tom::ConstList<ocs::tom::HR> add_groups,
                                    const ocs::tom::ConstList<ocs::tom::HR> rem_groups,
                                    const ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                    ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
@@ -462,7 +465,8 @@ bool href_list_find_effective_diff(lList **answer_list, const ocs::tom::ConstLis
  *
  * @return as href_list_find_effective_diff()
  */
-bool href_list_find_effective_diff(lList **answer_list, const lList *add_groups, const lList *rem_groups,
+bool href_list_find_effective_diff(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *add_groups,
+                                   const lList *rem_groups,
                                    const lList *master_list, lList **add_hosts, lList **rem_hosts) {
    ocs::UntypedHrefList typed_add_hosts(add_hosts);
    ocs::UntypedHrefList typed_rem_hosts(rem_hosts);
@@ -525,7 +529,8 @@ lListElem *href_list_locate(const lList *this_list, const char *name) {
  *
  * @return error state true  - Success false - Error
  */
-bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
+bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list,
+                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                const ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                ocs::tom::ListPtr<ocs::tom::HR> *used_hosts,
                                ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
@@ -668,7 +673,8 @@ bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list
  *       -- is out of its reach, because the reference side must keep matching group
  *       names as expressions (CS-2450). That is why this was left as a tree walk.
  */
-bool href_list_find_all_references(const ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
+bool href_list_find_all_references(const ocs::tom::ConstList<ocs::tom::HR> this_list,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                    ocs::tom::ListPtr<ocs::tom::HR> *used_hosts,
                                    ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
@@ -750,7 +756,8 @@ bool href_list_find_all_references(const ocs::tom::ConstList<ocs::tom::HR> this_
  *
  * @return as href_list_find_all_references()
  */
-bool href_list_find_all_references(const lList *this_list, lList **answer_list, const lList *master_list,
+bool href_list_find_all_references(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                   const lList *master_list,
                                    lList **used_hosts, lList **used_groups, lList **used_matchers,
                                    const bool expand_matchers) {
    ocs::UntypedHrefList typed_used_hosts(used_hosts);
@@ -778,7 +785,8 @@ bool href_list_find_all_references(const lList *this_list, lList **answer_list, 
  *
  * @return error state true  - Success false - Error
  */
-bool href_list_find_referencees(const ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
+bool href_list_find_referencees(const ocs::tom::ConstList<ocs::tom::HR> this_list,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                 ocs::tom::ListPtr<ocs::tom::HR> *occupant_groups) {
    DENTER(HOSTREF_LAYER);
@@ -825,7 +833,8 @@ bool href_list_find_referencees(const ocs::tom::ConstList<ocs::tom::HR> this_lis
  *
  * @return error state true  - Success false - Error
  */
-bool href_list_find_all_referencees(const ocs::tom::ConstList<ocs::tom::HR> this_list, lList **answer_list,
+bool href_list_find_all_referencees(const ocs::tom::ConstList<ocs::tom::HR> this_list,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     const ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                     ocs::tom::ListPtr<ocs::tom::HR> *occupant_groups) {
    DENTER(HOSTREF_LAYER);
@@ -907,7 +916,8 @@ bool href_list_find_all_referencees(const ocs::tom::ConstList<ocs::tom::HR> this
  *
  * @return error state true  - Success false - Error
  */
-bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list, lList **answer_list,
+bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const bool ignore_errors, const bool introducing,
                                  const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
    DENTER(HOSTREF_LAYER);
@@ -972,8 +982,8 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list, l
  *
  * @return as href_list_resolve_hostnames()
  */
-bool href_list_resolve_hostnames(lList *this_list, lList **answer_list, bool ignore_errors, bool introducing,
-                                 const lListElem *hgroup) {
+bool href_list_resolve_hostnames(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool ignore_errors,
+                                 bool introducing, const lListElem *hgroup) {
    return href_list_resolve_hostnames(ocs::tom::List<ocs::tom::HR>(this_list), answer_list, ignore_errors,
                                       introducing, ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup));
 }
@@ -1036,7 +1046,7 @@ bool href_list_append_to_dstring(const lList *this_list, dstring *string) {
  *
  * @return Error state true  - Success false - Error
  */
-bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, lList **answer_list,
+bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                const ocs::tom::ConstList<ocs::tom::HR> list) {
    DENTER(HOSTREF_LAYER);
 
@@ -1066,7 +1076,7 @@ bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, lList
  *
  * @return as href_list_remove_existing()
  */
-bool href_list_remove_existing(lList **this_list, lList **answer_list, const lList *list) {
+bool href_list_remove_existing(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list) {
    if (this_list == nullptr) {
       return true;
    }
@@ -1129,7 +1139,7 @@ void href_list_debug_print(const lList *this_list, const char *prefix) {
  * @param this_list HR_Type list, may be an empty handle
  * @param answer_list AN_Type list, receives one INFO per removed entry
  */
-void href_list_make_uniq(const ocs::tom::List<ocs::tom::HR> this_list, lList **answer_list) {
+void href_list_make_uniq(const ocs::tom::List<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    std::unordered_set<std::string> seen;
@@ -1164,6 +1174,6 @@ void href_list_make_uniq(const ocs::tom::List<ocs::tom::HR> this_list, lList **a
  * @param this_list HR_Type list, checked; may be nullptr
  * @param answer_list AN_Type list, receives one INFO per removed entry
  */
-void href_list_make_uniq(lList *this_list, lList **answer_list) {
+void href_list_make_uniq(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    href_list_make_uniq(ocs::tom::List<ocs::tom::HR>(this_list), answer_list);
 }

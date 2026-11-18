@@ -1229,7 +1229,7 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, co
 
    const auto hold_id_lists = job_create_hold_id_lists(job);
    for (const auto &[hold_state, range_list] : hold_id_lists) {
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       uint32_t first_id;
       int show = 0;
 
@@ -1296,7 +1296,7 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, co
             }
          }
       }
-      lFreeList(&answer_list);
+      answer_list.reset();
    }
 
    sge_dstring_free(&ja_task_id_string);

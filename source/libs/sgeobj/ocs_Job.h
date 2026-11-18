@@ -54,6 +54,7 @@
 #include "ocs_BindingStop.h"
 #include "ocs_BindingStrategy.h"
 #include "ocs_BindingInstance.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /**
@@ -72,8 +73,9 @@ namespace ocs {
                                                   std::string &slice, std::string &scope, dstring *error_dstr);
 
       static ocs::tom::Element<ocs::tom::BN> binding_get_or_create_elem(ocs::tom::Element<ocs::tom::JB> job,
-                                                                        lList **answer_list);
-      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *job, lList **answer_list);
+                                                                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      OCS_TRANSITIONAL static lListElem *binding_get_or_create_elem(lListElem *job,
+                                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       static BindingType::Type binding_get_type(ocs::tom::ConstElement<ocs::tom::JB> job);
       OCS_TRANSITIONAL static BindingType::Type binding_get_type(const lListElem *job);
       static BindingUnit::Unit binding_get_unit(ocs::tom::ConstElement<ocs::tom::JB> job);
@@ -92,7 +94,9 @@ namespace ocs {
       OCS_TRANSITIONAL static uint32_t binding_get_amount(const lListElem *job);
       static BindingInstance::Instance binding_get_instance(ocs::tom::ConstElement<ocs::tom::JB> job);
       OCS_TRANSITIONAL static BindingInstance::Instance binding_get_instance(const lListElem *job);
-      static void binding_set_missing_defaults(ocs::tom::Element<ocs::tom::JB> job, lList **answer_list);
-      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *job, lList **answer_list);
+      static void binding_set_missing_defaults(ocs::tom::Element<ocs::tom::JB> job,
+                                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      OCS_TRANSITIONAL static void binding_set_missing_defaults(lListElem *job,
+                                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
    };
 }

@@ -89,9 +89,10 @@
    */
 static const char *JOB_NAME_DEL = ":";
 
-static lList *qalter_parse_job_parameter(uint32_t prog_number, ocs::tom::List<ocs::tom::SPA> cmdline,
-                                         ocs::tom::ListPtr<ocs::tom::JB> &requestlist, int *all_jobs,
-                                         int *all_users);
+static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(uint32_t prog_number,
+                                                                  ocs::tom::List<ocs::tom::SPA> cmdline,
+                                                                  ocs::tom::ListPtr<ocs::tom::JB> &requestlist,
+                                                                  int *all_jobs, int *all_users);
 
 /** @brief `-w v` was given: report what would happen and change nothing
  *
@@ -121,7 +122,7 @@ extern char **environ;
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qalter");
    int ret = STATUS_OK;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::JB> request_list;
    ocs::tom::ListPtr<ocs::tom::SPA> cmdline;
    int all_jobs = 0;
@@ -285,9 +286,10 @@ int main(int argc, const char **argv) {
  *         an internal error, STATUS_EDISK if getcwd() failed or STATUS_ENOIMP for an
  *         unknown switch or -help
  */
-static lList *qalter_parse_job_parameter(const uint32_t me_who, const ocs::tom::List<ocs::tom::SPA> cmdline,
-                                         ocs::tom::ListPtr<ocs::tom::JB> &requestlist, int *all_jobs,
-                                         [[maybe_unused]] int *all_users) {
+static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t me_who,
+                                                                  const ocs::tom::List<ocs::tom::SPA> cmdline,
+                                                                  ocs::tom::ListPtr<ocs::tom::JB> &requestlist,
+                                                                  int *all_jobs, [[maybe_unused]] int *all_users) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::SPA> ep;
@@ -295,7 +297,7 @@ static lList *qalter_parse_job_parameter(const uint32_t me_who, const ocs::tom::
    int i;
    lEnumeration *what = nullptr;
    const lDescr *rdp = nullptr;
-   lList *answer = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer;
    enum {NOTINIT, JOB, ALL} all_or_jidlist = NOTINIT;
    int users_flag = 0;
 

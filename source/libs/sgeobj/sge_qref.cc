@@ -96,8 +96,7 @@
  */
 static bool
 qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
-                               lList **answer_list,
-                               lList **qref_list,
+                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **qref_list,
                                bool *found_something,
                                const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
                                const bool resolve_cqueue) {
@@ -135,8 +134,7 @@ qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_l
  */
 static bool
 qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
-                                  lList **answer_list,
-                                  dstring *host_or_hgroup,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *host_or_hgroup,
                                   lList **qref_list,
                                   bool *found_something,
                                   const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list) {
@@ -181,8 +179,7 @@ qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qre
  */
 static bool
 qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
-                                lList **answer_list,
-                                dstring *host_or_hgroup,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *host_or_hgroup,
                                 lList **qref_list,
                                 bool *found_something,
                                 const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
@@ -247,7 +244,7 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
  *
  * @return error state true  - success false - error
  */
-bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_string) {
+bool qref_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *qref_string) {
    DENTER(QREF_LAYER);
 
    bool ret = true;
@@ -310,8 +307,8 @@ bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_stri
  *
  * @return error state true  - success false - error
  */
-bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list, lList **answer_list,
-                       lList **qref_list, bool *found_something,
+bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **qref_list, bool *found_something,
                        const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
                        const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
                        const bool resolve_cqueue, const bool resolve_qdomain) {
@@ -389,7 +386,8 @@ bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list, lL
  *
  * @return as qref_list_resolve()
  */
-bool qref_list_resolve(const lList *src_qref_list, lList **answer_list, lList **qref_list, bool *found_something,
+bool qref_list_resolve(const lList *src_qref_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **qref_list,
+                       bool *found_something,
                        const lList *cqueue_list, const lList *hgroup_list, const bool resolve_cqueue,
                        const bool resolve_qdomain) {
    return qref_list_resolve(ocs::tom::ConstList<ocs::tom::QR>(src_qref_list), answer_list, qref_list,
@@ -726,7 +724,7 @@ bool qref_list_host_rejected(const char *href, const char *hostname, const lList
  *
  * @return error state true  - success false - error
  */
-bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, lList **answer_list,
+bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                         const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                         const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
@@ -793,7 +791,8 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, lList
  *
  * @return as qref_list_is_valid()
  */
-bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list,
+bool qref_list_is_valid(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        const lList *master_cqueue_list,
                         const lList *master_hgroup_list, const lList *master_centry_list) {
    return qref_list_is_valid(ocs::tom::ConstList<ocs::tom::QR>(this_list), answer_list,
                              ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),

@@ -61,6 +61,7 @@
 #include "sgeobj/tom/ocs_tom_STN.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief The scheduler's private snapshot of the cluster
  *
@@ -114,4 +115,4 @@ int
 subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 
 void
-scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists);
+scheduler_method(sge_evc_class_t *evc, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, scheduler_all_data_t *lists);

@@ -28,6 +28,7 @@
 #include "gdi/ocs_gdi_Target.h"
 
 #include "ocs_ProcedureParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
 
@@ -161,7 +162,7 @@ namespace ocs {
          return gdi::Target::PROCEDURE;
       }
 
-      virtual bool make_snapshot(lList **answer_list, ProcedureParameter &parameter);
+      virtual bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ProcedureParameter &parameter);
 #pragma endregion
 
 #pragma region Constructors/Destructors

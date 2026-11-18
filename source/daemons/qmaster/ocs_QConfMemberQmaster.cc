@@ -74,7 +74,7 @@ namespace {
       ocs::tom::set<US_name>(elem, name);
       ocs::tom::set<US_entries>(elem, std::move(taken_entries));
 
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       lList *post_list = nullptr;   // the generic path's post processing list has no fixed type
       const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *elem, add ? 1 : 0, object, packet->user,
                                               packet->host, ocs::gdi::Command::MOD_PROCEDURE,
@@ -89,7 +89,7 @@ namespace {
          }
       }
       lFreeList(&post_list);
-      lFreeList(&alp);
+      alp.reset();
       elem.reset();
 
       DRETURN(static_cast<uint32_t>(ret));
@@ -101,7 +101,7 @@ namespace {
     * @param text the message
     */
    void
-   add_answer(lList **answer_list, const uint32_t status, const char *text) {
+   add_answer(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t status, const char *text) {
       answer_list_add(answer_list, text, status, (status == STATUS_OK) ? ANSWER_QUALITY_INFO : ANSWER_QUALITY_ERROR);
    }
 }
@@ -131,7 +131,7 @@ namespace {
  */
 bool
 qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                            const ocs::QConfActionParameter &parameter, lList **answer_list) {
+                            const ocs::QConfActionParameter &parameter, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const std::string users_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_USERS);
@@ -279,7 +279,8 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
  */
 bool
 qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                                   const ocs::QConfActionParameter &parameter, lList **answer_list) {
+                                   const ocs::QConfActionParameter &parameter,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const std::string group = parameter.get_arg(ocs::QConfActionParameter::ARG_GROUP);
@@ -328,7 +329,7 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
    ocs::tom::set<HGRP_host_list>(delta, std::move(hosts));
 
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lList *post_list = nullptr;
    const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *delta, 0, object, packet->user, packet->host,
                                            ocs::gdi::Command::MOD_PROCEDURE,
@@ -336,9 +337,8 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
                                            &post_list, monitor);
    if (ret == STATUS_OK) {
       /* the generic confirmation of the object layer is the last answer */
-      lListElem *last = lLastRW(alp);
-      if (last != nullptr) {
-         lRemoveElem(alp, &last);
+      if (const auto last = alp->back()) {
+         alp->erase(last);
       }
    }
    answer_list_append_list(answer_list, &alp);

@@ -82,65 +82,65 @@ static bool feq(double a, double b) {
 // The test cluster resource: num_proc = 4 (double)
 // ---------------------------------------------------------------------------
 
-static void test_validate_valid(lList **alpp, const lList *centry_list) {
+static void test_validate_valid(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *centry_list) {
    printf("\n--- validate_load_formula (valid) ---\n");
 
    // T01: bare attribute name is the simplest valid formula
    CHECK(1,  "bare attribute name",             validate_load_formula("num_proc",         alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T02: '$'-prefixed attribute name is also valid (shell-variable style)
    CHECK(2,  "$-prefixed attribute name",        validate_load_formula("$num_proc",        alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T03: multiply $name by an integer constant
    CHECK(3,  "$name * integer",                  validate_load_formula("$num_proc*2",      alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T04: multiply $name by a fractional constant
    CHECK(4,  "$name * fractional constant",      validate_load_formula("$num_proc*0.5",    alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T05: multiply without '$' prefix — both forms are accepted
    CHECK(5,  "name * integer (no $ prefix)",     validate_load_formula("num_proc*2",       alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T06: addition of an integer constant
    CHECK(6,  "name + integer",                   validate_load_formula("num_proc+1",       alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T07: subtraction of an integer constant
    CHECK(7,  "$name - integer",                  validate_load_formula("$num_proc-2",      alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T08: addition of a fractional constant
    CHECK(8,  "$name + fractional",               validate_load_formula("$num_proc+0.1",    alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T09: leading constant followed by attribute — allowed as long as attribute comes first in value terms
    CHECK(9,  "constant + $name + fractional",    validate_load_formula("1+$num_proc+0.1",  alpp, centry_list, "load_formula") == true);
-   lFreeList(alpp);
+   alpp->reset();
 }
 
 // ---------------------------------------------------------------------------
 // validate_load_formula — invalid formulas  [T10–T12]
 // ---------------------------------------------------------------------------
 
-static void test_validate_invalid(lList **alpp, const lList *centry_list) {
+static void test_validate_invalid(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *centry_list) {
    printf("\n--- validate_load_formula (invalid) ---\n");
 
    // T10: formula starting with a numeric literal is rejected
    //      (the parser requires the formula to begin with an attribute name)
    CHECK(10, "leading numeric rejected (2*num_proc)",   validate_load_formula("2*num_proc",      alpp, centry_list, "load_formula") == false);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T11: comma as decimal separator is invalid — only '.' is accepted
    CHECK(11, "comma decimal separator rejected",        validate_load_formula("2,0+num_proc",    alpp, centry_list, "load_formula") == false);
-   lFreeList(alpp);
+   alpp->reset();
 
    // T12: "none" is a reserved keyword; it is not a valid attribute reference
    CHECK(12, "reserved keyword 'none' rejected",        validate_load_formula("none",            alpp, centry_list, "load_formula") == false);
-   lFreeList(alpp);
+   alpp->reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -214,7 +214,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    auto host = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    ocs::tom::set<EH_consumable_config_list>(host, std::move(host_centry_list));
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    test_validate_valid(&answer_list, *centry_list);
    test_validate_invalid(&answer_list, *centry_list);

@@ -230,7 +230,7 @@ main(int argc, char **argv) {
 
 #endif
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    /* initialize recovery control variables */

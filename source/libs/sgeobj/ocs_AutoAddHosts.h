@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "cull/cull.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief The rules of the AUTO_ADD_HOSTS qmaster parameter.
@@ -58,7 +59,7 @@ namespace ocs {
          std::string hostgroup;    ///< host group the host is added to, empty if there is none
       };
 
-      static bool parse(const char *value, std::vector<Rule> &rules, lList **answer_list);
+      static bool parse(const char *value, std::vector<Rule> &rules, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
       static bool match_rules(const std::vector<Rule> &rules, const char *hostname, const char *ip,
                               std::string &hostgroup);
       static bool match_host(const char *hostname, const char *ip, std::string &hostgroup);

@@ -42,4 +42,5 @@
 #include "cull/cull_list.h"
 #include "sgeobj/ocs_CEntry.h"
 
-int sge_eval_expression(ocs::CEntry::Type type, const char *, const char *, lList **, bool use_is_expression = false, bool is_expression = false);
+int sge_eval_expression(ocs::CEntry::Type type, const char *, const char *, ocs::tom::ListPtr<ocs::tom::AN> *,
+                        bool use_is_expression = false, bool is_expression = false);

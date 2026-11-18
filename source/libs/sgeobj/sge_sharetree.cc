@@ -96,7 +96,7 @@ ocs_id_sharetree_subtree(const ocs::tom::Element<ocs::tom::STN> ep, const int id
  * @param id the id to give this node
  * @return true when the whole subtree could be numbered, false for an empty @p ep
  */
-bool id_sharetree(lList **alpp, const ocs::tom::Element<ocs::tom::STN> ep, const int id) {
+bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<ocs::tom::STN> ep, const int id) {
    DENTER(TOP_LAYER);
 
    if (!ep) {
@@ -117,7 +117,7 @@ bool id_sharetree(lList **alpp, const ocs::tom::Element<ocs::tom::STN> ep, const
  * @param id the id to give this node
  * @return as id_sharetree()
  */
-bool id_sharetree(lList **alpp, lListElem *ep, int id) {
+bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, int id) {
    return id_sharetree(alpp, ocs::tom::Element<ocs::tom::STN>(ep), id);
 }
 

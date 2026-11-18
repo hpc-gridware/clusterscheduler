@@ -55,6 +55,7 @@
 #include "tom/ocs_ElementCore.h"
 
 #include "ocs_module_test.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief Whether the first entry of an answer list contains a text
@@ -63,8 +64,8 @@
  * @return true if the list has an entry and its text contains the given one
  */
 static bool
-answer_contains(const lList *answer_list, const char *text) {
-   const char *answer = ocs::tom::get<AN_text>(lFirst(answer_list));
+answer_contains(const ocs::tom::ConstList<ocs::tom::AN> answer_list, const char *text) {
+   const char *answer = ocs::tom::get<AN_text>(answer_list.front());
    return answer != nullptr && strstr(answer, text) != nullptr;
 }
 
@@ -77,7 +78,7 @@ test_flat_lists() {
    // builds lists with a repeated key on purpose, as input for the check; a debug build refuses them already at
    // the append (N-H-18), so the check is suspended here
    const ocs::tom::UniqueCheckSuspension suspension;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    lList *vars = nullptr;
    ocs::tom::emplace_back<VA_variable>(&vars, "A");
@@ -88,7 +89,7 @@ test_flat_lists() {
    const bool rejected = !ocs_object_list_verify_unique_keys(vars, &answer_list, "test");
    CHECK(2, "a repeated string key is rejected, naming the key and the attribute",
          rejected && answer_contains(answer_list, "\"A\"") && answer_contains(answer_list, "VA_variable"));
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&vars);
 
    auto no_keys = ocs::tom::ListPtr<ocs::tom::VA>::create("no keys");
@@ -105,7 +106,7 @@ test_flat_lists() {
    CHECK(4, "host keys compare like the hash table of the list: H1 repeats h1, named as it is given",
          distinct_hosts && !ocs_object_list_verify_unique_keys(hosts, &answer_list, "test") &&
          answer_contains(answer_list, "\"H1\""));
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&hosts);
 
    lList *ulongs = nullptr;
@@ -115,7 +116,7 @@ test_flat_lists() {
    ocs::tom::emplace_back<ULNG_value>(&ulongs, 1);
    CHECK(5, "a repeated ulong key is rejected",
          distinct && !ocs_object_list_verify_unique_keys(ulongs, &answer_list, "test"));
-   lFreeList(&answer_list);
+   answer_list.reset();
    lFreeList(&ulongs);
 }
 
@@ -128,7 +129,7 @@ test_nested() {
    // builds lists with a repeated key on purpose, as input for the check; a debug build refuses them already at
    // the append (N-H-18), so the check is suspended here
    const ocs::tom::UniqueCheckSuspension suspension;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    lList *env = nullptr;
    ocs::tom::emplace_back<VA_variable>(&env, "A");
@@ -141,7 +142,7 @@ test_nested() {
    const bool rejected = !ocs_object_verify_unique_keys(*job, &answer_list, "job 1");
    CHECK(7, "a repeated variable in the job's environment is rejected, naming the job",
          rejected && answer_contains(answer_list, "job 1"));
-   lFreeList(&answer_list);
+   answer_list.reset();
 }
 
 /**
@@ -195,10 +196,10 @@ test_set_lists() {
          lGetNumberOfElem(acl) == 2 && strcmp(ocs::tom::get<ARA_name>(lLast(acl)), "u2") == 0);
    lFreeList(&acl);
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const auto [parsed, ulongs] = ulong_list_parse_from_string(&answer_list, "1,2,1", ",");
    CHECK(14, "a ulong list given 1,2,1 holds 1 once", parsed && ulongs->size() == 2);
-   lFreeList(&answer_list);
+   answer_list.reset();
 }
 
 /**
@@ -250,10 +251,10 @@ test_context_change() {
 
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_context_change>(job, change);
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    CHECK(16, "the central check accepts a job holding the request",
          ocs_object_verify_unique_keys(*job, &answer_list, "job 1"));
-   lFreeList(&answer_list);
+   answer_list.reset();
 
    set_context(ocs::tom::get<JB_context_change>(job), *job);
    CHECK(17, "the request yields the context b=2,a=3",
@@ -371,7 +372,7 @@ test_repair() {
    ocs::tom::set<JRS_hard_resource_list>(request_set, resources);
 
    std::string repairs;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const bool repaired = ocs_object_repair_repeated_keys(*job, repairs, &answer_list, "job 7");
    ocs::tom::ConstElement<ocs::tom::VA> a = ocs::tom::find_first<VA_variable>(ocs::tom::get<JB_env_list>(job), "A");
    ocs::tom::ConstList<ocs::tom::QR> repaired_queues = ocs::tom::get<JRS_hard_queue_list>(request_set);
@@ -408,7 +409,7 @@ test_repair() {
          lGetNumberOfElem(ocs::tom::get<JB_ja_tasks>(job)) == 2 && answer_contains(answer_list, "job 7, JB_ja_tasks") &&
          answer_contains(answer_list, "JAT_task_number"));
 
-   lFreeList(&answer_list);
+   answer_list.reset();
    userset.reset();
 }
 
@@ -536,13 +537,13 @@ test_inventory() {
    lList *request = nullptr;
    add_arch_request(&request, "a", "lx-amd64");
    add_arch_request(&request, "arch", "lx-arm64");
-   lList *answers = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answers;
    int ret = centry_list_fill_request(request, &answers, master_centry_list, false, true, false);
    const char *value = only_arch_value(request);
    CHECK(33, "-l a=lx-amd64,arch=lx-arm64 holds arch once, with the later value",
          ret == 0 && value != nullptr && strcmp(value, "lx-arm64") == 0);
    lFreeList(&request);
-   lFreeList(&answers);
+   answers.reset();
 
    add_arch_request(&request, "arch", "lx-amd64");
    add_arch_request(&request, "a", "lx-arm64");
@@ -551,7 +552,7 @@ test_inventory() {
    CHECK(34, "-l arch=lx-amd64,a=lx-arm64 holds arch once, with the later value",
          ret == 0 && value != nullptr && strcmp(value, "lx-arm64") == 0);
    lFreeList(&request);
-   lFreeList(&answers);
+   answers.reset();
    lFreeList(&master_centry_list);
 
    // qconf -mattr queue slots 4 all.q@h1 all.q@h2 all.q: one request per target, each with a default entry
@@ -569,7 +570,7 @@ test_inventory() {
          static_cast<const lListElem *>(ocs::tom::find_first<AULNG_href>(slots, "h2")) != nullptr &&
          static_cast<const lListElem *>(ocs::tom::find_first<AULNG_href>(slots, HOSTREF_DEFAULT)) != nullptr);
    lFreeList(&targets);
-   lFreeList(&answers);
+   answers.reset();
 
    // the qmaster enforces a limit on a task, and then again on the same task
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
@@ -603,7 +604,7 @@ test_inventory() {
          ok && lGetNumberOfElem(hosts) == 3);
    lFreeList(&hosts);
    lFreeList(&hgroups);
-   lFreeList(&answers);
+   answers.reset();
 }
 
 /**

@@ -41,13 +41,14 @@
 #include "sge_qmaster_timed_event.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/sge_answer.h"
 
 
 bool
-sge_initialize_persistence(lList **answer_list);
+sge_initialize_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool
-sge_shutdown_persistence(lList **answer_list);
+sge_shutdown_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 void
 sge_initialize_persistance_timer();
@@ -56,7 +57,7 @@ void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor);
 
 bool
-sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event type,
+sge_event_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t timestamp, ev_event type,
                 uint32_t intkey1, uint32_t intkey2, const char *strkey,
                 const char *strkey2, const char *session, lListElem *object, 
                 lListElem *sub_object1, lListElem *sub_object2, 

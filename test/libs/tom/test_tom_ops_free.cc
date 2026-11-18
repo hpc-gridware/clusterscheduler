@@ -1087,6 +1087,26 @@ void test_owning() {
    const ocs::tom::ListPtr<ocs::tom::VA> empty_list;
    CHECK(33, "an owning handle compares with nullptr and tests as a condition, empty after reset()",
          tests && freed == nullptr && !freed && empty_list == nullptr);
+
+   auto vars = ocs::tom::ListPtr<ocs::tom::VA>::create("vars");
+   auto var = ocs::tom::ElementPtr<ocs::tom::VA>::create();
+   ocs::tom::set<VA_variable>(var, "A");
+   vars->push_back(std::move(var));
+   const ocs::tom::ConstList<ocs::tom::VA> view = vars;
+   const ocs::tom::List<ocs::tom::VA> rw_view = vars;
+   const lListElem *const front = view.front();
+   const bool views = view.raw() == vars.get().raw() && rw_view.raw() == vars.get().raw() && view.size() == 1 &&
+                      static_cast<const lListElem *>(lFirst(vars)) == front &&
+                      static_cast<const lListElem *>(lFirstRW(vars)) == front &&
+                      static_cast<const lListElem *>(lLast(vars)) == front &&
+                      static_cast<const lListElem *>(lLastRW(vars)) == front;
+   const bool empty_views = ocs::tom::ConstList<ocs::tom::VA>(empty_list).raw() == nullptr && !lFirst(empty_list);
+   static_assert(!std::is_constructible_v<ocs::tom::ConstList<ocs::tom::VA>, ocs::tom::ListPtr<ocs::tom::VA> &&>,
+                 "no view of a temporary owning handle");
+   static_assert(!std::is_constructible_v<ocs::tom::List<ocs::tom::VA>, ocs::tom::ListPtr<ocs::tom::VA> &&>,
+                 "no view of a temporary owning handle");
+   CHECK(34, "an owning list handle is viewed by List and ConstList, and lFirst/lLast take it, also when empty",
+         views && empty_views);
    lFreeList(&jobs);
 }
 
@@ -1144,8 +1164,8 @@ int main(int argc, char *argv[]) {
        test_handle_forms},
       {"OPS-FREE-16", "owning", "an owning element handle takes the free forms and moves into the calls that take its element over",
        {"field access on an owning job and task, append and insert moved in, set of an object and a list field moved in, "
-        "a refused store, nullptr comparison"},
+        "a refused store, nullptr comparison, List/ConstList views and lFirst/lLast of an owning list"},
        "the same results as on the handle; a moved handle is empty, a refused one keeps its element",
-       {{"OPS-02", "covers"}}, {29, 30, 31, 32, 33}, test_owning},
+       {{"OPS-02", "covers"}}, {29, 30, 31, 32, 33, 34}, test_owning},
    });
 }

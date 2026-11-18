@@ -63,7 +63,7 @@ namespace {
        * @param answer_list where they go
        * @param failed true when the command failed, which makes every problem an error
        */
-      void flush(lList **answer_list, const bool failed) const {
+      void flush(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const bool failed) const {
          for (const auto &[text, is_problem] : lines) {
             if (!is_problem) {
                answer_list_add(answer_list, text.c_str(), STATUS_OK, ANSWER_QUALITY_INFO);
@@ -267,7 +267,8 @@ namespace {
 bool
 qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                                      [[maybe_unused]] monitoring_t *monitor,
-                                     const ocs::QConfActionParameter &parameter, lList **answer_list) {
+                                     const ocs::QConfActionParameter &parameter,
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const std::string nodes_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_NODES);
@@ -328,7 +329,7 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       report.flush(answer_list, false);
       /* the reason of a refused write is what the client printed; the generic
        * confirmation is replaced by its own line, as before */
-      lList *alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
       const int ret = sge_mod_sharetree(packet, task, *root, tree_list, &alp, packet->user, packet->host);
       if (ret == STATUS_OK) {
          answer_list_add(answer_list, MSG_TREE_MODIFIEDSHARETREE, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -348,7 +349,7 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
             answer_list_add(answer_list, MSG_TREE_NOMIDIFIEDSHARETREE, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          }
       }
-      lFreeList(&alp);
+      alp.reset();
    }
    root.reset();
 

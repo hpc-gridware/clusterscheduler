@@ -53,6 +53,7 @@
 
 #include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
 #include "sgeobj/cull/sge_schedd_conf_SC_L.h"
+#include "sgeobj/sge_answer.h"
 
 /// Valid values for `SC_queue_sort_method`
 enum {
@@ -129,17 +130,18 @@ void sconf_print_config();
 
 ocs::tom::ElementPtr<ocs::tom::SC> sconf_create_default();
 
-bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, lList **answer_list);
-OCS_TRANSITIONAL bool sconf_set_config(lList **config, lList **answer_list);
+bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+OCS_TRANSITIONAL bool sconf_set_config(lList **config, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-bool sconf_is_valid_load_formula(lList **answer_list, ocs::tom::ConstList<ocs::tom::CE> cmplx_list);
+bool sconf_is_valid_load_formula(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 ocs::tom::ConstList<ocs::tom::CE> cmplx_list);
 
 bool
 sconf_is_centry_referenced(ocs::tom::ConstElement<ocs::tom::CE> centry);
 
-bool sconf_validate_config(lList **answer_list, ocs::tom::List<ocs::tom::SC> config);
+bool sconf_validate_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::List<ocs::tom::SC> config);
 
-bool sconf_validate_config_(lList **answer_list);
+bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 
 ocs::tom::ListPtr<ocs::tom::SC> sconf_get_config_list();

@@ -1058,7 +1058,7 @@ getConfEntry(const char *name, tConfEntry conf[]) {
  * MT-NOTE: merge_configuration() is MT safe.
  */
 std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
-merge_configuration(lList **answer_list, const uint32_t progid, const char *cell_root,
+merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t progid, const char *cell_root,
                     const ocs::tom::ConstElement<ocs::tom::CONF> global,
                     const ocs::tom::ConstElement<ocs::tom::CONF> local) {
    DENTER(BASIS_LAYER);
@@ -4411,7 +4411,7 @@ std::vector<std::pair<std::string, std::string>> mconf_get_usage_patterns() {
  * @return true if all groups are valid, false if at least one was left out
  */
 bool
-parse_usage_patterns_value(lList **answer_list, const char *value,
+parse_usage_patterns_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value,
                            std::vector<std::pair<std::string, std::string>> &out_patterns) {
    DENTER(BASIS_LAYER);
    out_patterns.clear();
@@ -4493,7 +4493,7 @@ parse_usage_patterns_value(lList **answer_list, const char *value,
  * @return true when the whole value was accepted
  */
 bool
-parse_online_usage_value(lList **answer_list, const char *value,
+parse_online_usage_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value,
                          std::vector<std::string> &out_vars) {
    out_vars.clear();
    if (value == nullptr || *value == '\0') {

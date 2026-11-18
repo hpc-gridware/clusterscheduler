@@ -67,7 +67,7 @@ static unsigned long spooling_wait_time = 0;
  * @return true on success
  */
 bool
-sge_initialize_persistence(lList **answer_list) {
+sge_initialize_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -126,12 +126,12 @@ sge_initialize_persistance_timer() {
  * @return true on success
  */
 bool
-sge_shutdown_persistence(lList **answer_list) {
+sge_shutdown_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
    uint64_t time = 0;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /* trigger spooling actions (flush data) */
    if (!spool_trigger_context(&alp, spool_get_default_context(), 0, &time)) {
@@ -141,14 +141,11 @@ sge_shutdown_persistence(lList **answer_list) {
    /* shutdown spooling; the default context is the SPC_Type element set in sge_initialize_persistence() */
    auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::from_typed(spool_get_default_context());
    if (context) {
-      lList *local_answer = nullptr;
-
       if (answer_list != nullptr) {
-         local_answer = *answer_list;
-      }
-
-      spool_shutdown_context(&local_answer, context.get());
-      if (answer_list == nullptr) {
+         spool_shutdown_context(answer_list, context.get());
+      } else {
+         ocs::tom::ListPtr<ocs::tom::AN> local_answer;
+         spool_shutdown_context(&local_answer, context.get());
          answer_list_output(&local_answer);
       }
 
@@ -169,7 +166,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    uint64_t next_trigger = 0;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    te_event_t ev = nullptr;
 
    /* trigger spooling regular actions */
@@ -223,7 +220,7 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
  *       basis should also be updated (spooled).
  */
 bool
-sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_t intkey1,
+sge_event_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t timestamp, ev_event event, uint32_t intkey1,
                 uint32_t intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
                 lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -488,7 +485,7 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          /* use an own answer list for the low level spooling operation.
           * in case of error, generate a high level error message.
           */
-         lList *spool_answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> spool_answer_list;
          if (do_delete) {
             ret = spool_delete_object(&spool_answer_list, spool_get_default_context(),
                                       object_type, key);

@@ -96,7 +96,8 @@
  * @param master_calendar_list the defined calendars (CAL_Type)
  * @return true when the value is acceptable
  */
-bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             lListElem *attr_elem, const lList *master_calendar_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -129,7 +130,8 @@ bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, l
  * @param master_ckpt_list the defined checkpointing environments
  * @return true when the value is acceptable
  */
-bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              lListElem *attr_elem, const lList *master_ckpt_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -159,7 +161,8 @@ bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, 
  * @param master_centry_list the defined complex entries
  * @return true when the value is acceptable
  */
-bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                           lListElem *attr_elem, const lList *master_centry_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -198,7 +201,8 @@ bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom:
  * @param master_list unused
  * @return true when the value is acceptable
  */
-bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -238,7 +242,8 @@ bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cque
  * @param master_pe_list the defined parallel environments
  * @return true when the value is acceptable
  */
-bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            lListElem *attr_elem, const lList *master_pe_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -268,7 +273,8 @@ bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lL
  * @param master_list unused
  * @return true when the value is acceptable
  */
-bool cqueue_verify_priority(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_priority(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -304,7 +310,8 @@ bool cqueue_verify_priority(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, l
  * @param master_list unused
  * @return true when the value is acceptable
  */
-bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -337,7 +344,8 @@ bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  * @param master_project_list the defined projects
  * @return true when the value is acceptable
  */
-bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 lListElem *attr_elem, const lList *master_project_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -369,7 +377,8 @@ bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
  * @param master_list unused
  * @return true when the value is acceptable
  */
-bool cqueue_verify_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -411,8 +420,8 @@ bool cqueue_verify_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::CQ> c
  * @param master_list unused
  * @return true when the value is acceptable
  */
-bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
-                         lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
@@ -445,7 +454,8 @@ bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lLis
  * @param master_cqueue_list the defined cluster queues (CQ_Type)
  * @return true when the value is acceptable
  */
-bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     lListElem *attr_elem, const lList *master_cqueue_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -501,7 +511,8 @@ bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> c
  * @param master_userset_list the defined usersets
  * @return true when the value is acceptable
  */
-bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              lListElem *attr_elem, const lList *master_userset_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -536,7 +547,8 @@ bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, 
  *
  * @note MT-NOTE: cqueue_verify_job_slots() is MT safe
  */
-bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -571,7 +583,8 @@ bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, 
  *
  * @note MT-NOTE: cqueue_verify_memory_value() is MT safe
  */
-bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -604,7 +617,8 @@ bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
  *
  * @note MT-NOTE: cqueue_verify_time_value() is MT safe
  */
-bool cqueue_verify_time_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_time_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               lListElem *attr_elem, const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 

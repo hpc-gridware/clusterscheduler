@@ -86,7 +86,8 @@
  * @note MT-NOTE: attr_mod_procedure() is MT safe
  */
 int
-attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name, const char *variables[]) {
+attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm,
+                   const char *attr_name, const char *variables[]) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -170,7 +171,7 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_nam
  * @note MT-NOTE: attr_mod_str() is MT safe
  */
 int
-attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
+attr_mod_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
    int dataType;
@@ -331,7 +332,7 @@ attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
  * @note MT-NOTE: attr_mod_mem_str() is MT safe
  */
 int
-attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
+attr_mod_mem_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -371,7 +372,8 @@ attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
  * @note MT-NOTE: attr_mod_time_str() is MT safe
  */
 int
-attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, int enable_infinity) {
+attr_mod_time_str(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name,
+                  int enable_infinity) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
@@ -429,7 +431,8 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
  * @note MT-NOTE: attr_mod_sub_list() is MT safe
  */
 bool
-attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
+attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, int this_elem_name,
+                  int this_elem_primary_key,
                   const lListElem *delta_elem, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
                   const char *sub_list_name, const char *object_name, int no_info, bool *changed) {
    DENTER(TOP_LAYER);
@@ -633,7 +636,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
  * @return true on success
  */
 bool
-attr_mod_obj_binding(lList **alpp, const ocs::tom::Element<ocs::tom::AR> new_ar,
+attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<ocs::tom::AR> new_ar,
                      const ocs::tom::ConstElement<ocs::tom::AR> ar) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -751,7 +754,7 @@ attr_mod_obj_binding(lList **alpp, const ocs::tom::Element<ocs::tom::AR> new_ar,
  * @return as attr_mod_obj_binding()
  */
 bool
-attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
+attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_ar, const lListElem *ar) {
    return attr_mod_obj_binding(alpp, ocs::tom::Element<ocs::tom::AR>(new_ar), ocs::tom::ConstElement<ocs::tom::AR>(ar));
 }
 
@@ -787,7 +790,7 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
  * @note MT-NOTE: cqueue_mod_sublist() is MT safe
  */
 bool
-cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem,
+cqueue_mod_sublist(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *reduced_elem,
                    ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
                    int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
                    const char *attribute_name_str, const char *object_name_str) {
@@ -903,7 +906,8 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
  * @return non-zero when a key occurs more than once
  */
 int
-multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, const char *name, const char *obj_name) {
+multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const lList *lp1, const lList *lp2, int nm, const char *name,
+                    const char *obj_name) {
    DENTER(TOP_LAYER);
 
    const lListElem *ep1;

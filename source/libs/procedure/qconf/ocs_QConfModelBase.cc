@@ -417,7 +417,7 @@ drop_from_export(lList *list, const qconf_object_desc &desc, int key_nm) {
  * @return true when the list was fetched
  */
 bool
-ocs::QConfModelBase::make_list_snapshot(lList **answer_list, QConfObj object) {
+ocs::QConfModelBase::make_list_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfObj object) {
    DENTER(TOP_LAYER);
 
    object_ = object;
@@ -461,7 +461,7 @@ ocs::QConfModelBase::make_list_snapshot(lList **answer_list, QConfObj object) {
  * @return true when the list was fetched
  */
 bool
-ocs::QConfModelBase::make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter) {
+ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
 
    requested_name_ = parameter.get_operation().arg(0);
@@ -557,9 +557,9 @@ cqueue_json_type_complex_overrides(const ocs::tom::Element<ocs::tom::CQ> cqueue,
       for (const auto entry : override_list) {
          const auto ce_list = ocs::tom::get<ACELIST_value>(entry);
          if (!ce_list.empty()) {
-            lList *fill_alp = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> fill_alp;
             centry_list_fill_request(ce_list, &fill_alp, centry_list, true, true, true);
-            lFreeList(&fill_alp);
+            fill_alp.reset();
          }
       }
    }
@@ -602,7 +602,8 @@ sobjl_value_or_none(dstring *value) {
  * @return true on success; false with @p answer_list filled when the hosts could not be read
  */
 bool
-ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *attr, const char *val) {
+ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *attr,
+                                              const char *val) {
    DENTER(TOP_LAYER);
 
    object_ = QConfObj::EH;
@@ -734,7 +735,8 @@ ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *a
  * @return true on success; false with @p answer_list filled when the queues could not be read
  */
 bool
-ocs::QConfModelBase::collect_cqueue_matches(lList **answer_list, const char *spec, const char *attr, const char *val) {
+ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *spec,
+                                            const char *attr, const char *val) {
    DENTER(TOP_LAYER);
 
    const bool handle_cqueue = strcmp(spec, "queue") == 0;
@@ -853,7 +855,7 @@ ocs::QConfModelBase::collect_cqueue_matches(lList **answer_list, const char *spe
  * @return true unless the objects could not be read or the specification is unknown
  */
 bool
-ocs::QConfModelBase::make_sobjl_snapshot(lList **answer_list, QConfParameter &parameter) {
+ocs::QConfModelBase::make_sobjl_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
 
    const char *spec = parameter.get_operation().arg(0);
@@ -896,7 +898,7 @@ ocs::QConfModelBase::make_sobjl_snapshot(lList **answer_list, QConfParameter &pa
  * @return true on success
  */
 bool
-ocs::QConfModelBase::make_threadpool_snapshot(lList **answer_list) {
+ocs::QConfModelBase::make_threadpool_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    /* there is no descriptor row for the thread pools, and nothing downstream
@@ -937,7 +939,7 @@ ocs::QConfModelBase::make_threadpool_snapshot(lList **answer_list) {
  * @return true unless the share tree could not be read
  */
 bool
-ocs::QConfModelBase::make_sharetree_snapshot(lList **answer_list, QConfParameter &parameter) {
+ocs::QConfModelBase::make_sharetree_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
 
    object_ = QConfObj::STN;
@@ -1012,7 +1014,7 @@ ocs::QConfModelBase::make_sharetree_snapshot(lList **answer_list, QConfParameter
  * @return true on success; false with @p answer_list filled when nothing could be read
  */
 bool
-ocs::QConfModelBase::make_processor_snapshot(lList **answer_list) {
+ocs::QConfModelBase::make_processor_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    object_ = QConfObj::EH;
@@ -1066,7 +1068,7 @@ ocs::QConfModelBase::make_processor_snapshot(lList **answer_list) {
  * @return true when the clients were fetched
  */
 bool
-ocs::QConfModelBase::make_eventclient_snapshot(lList **answer_list) {
+ocs::QConfModelBase::make_eventclient_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    object_ = QConfObj::EV;
@@ -1119,7 +1121,7 @@ ocs::QConfModelBase::make_eventclient_snapshot(lList **answer_list) {
  * @return true unless the queues could not be read
  */
 bool
-ocs::QConfModelBase::make_sick_snapshot(lList **answer_list) {
+ocs::QConfModelBase::make_sick_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    object_ = QConfObj::CQ;
@@ -1188,7 +1190,7 @@ ocs::QConfModelBase::make_sick_snapshot(lList **answer_list) {
  *         reference could not be read
  */
 bool
-ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter) {
+ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
 
    object_ = QConfObj::CQ;
@@ -1455,7 +1457,8 @@ qconf_required_args(const std::string &sub_procedure, const ocs::QConfReadKind k
  * @return true when the read has to be refused
  */
 static bool
-qconf_refuse_missing_args(lList **answer_list, const ocs::QConfParameter &parameter, const size_t required) {
+qconf_refuse_missing_args(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::QConfParameter &parameter,
+                          const size_t required) {
    const qconf_op &op = parameter.get_operation();
    for (size_t i = 0; i < required; i++) {
       if (op.arg(i) == nullptr) {
@@ -1483,7 +1486,7 @@ qconf_refuse_missing_args(lList **answer_list, const ocs::QConfParameter &parame
  * @return true when there is something to show
  */
 bool
-ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &parameter) {
+ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
 
    if (parameter.get_output_format() == ProcedureParameter::OutputFormat::XML) {

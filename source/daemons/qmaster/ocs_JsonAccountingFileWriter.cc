@@ -34,6 +34,7 @@
 #include "sge_rusage.h"
 
 #include "ocs_JsonAccountingFileWriter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Write the accounting record of a finished job as one JSON object to the accounting file
@@ -48,7 +49,7 @@ namespace ocs {
     * @param intermediate whether this is an interim record for a job that is still running
     * @return true on success
     */
-   bool JsonAccountingFileWriter::create_acct_record(lList **answer_list,
+   bool JsonAccountingFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                      const ocs::tom::Element<ocs::tom::JR> job_report,
                                                      const ocs::tom::Element<ocs::tom::JB> job,
                                                      const ocs::tom::Element<ocs::tom::JAT> ja_task,

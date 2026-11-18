@@ -73,6 +73,7 @@
 #include "sge_thread_worker.h"
 #include "sge_qmaster_process_message.h"
 #include "msg_qmaster.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief Release the monitoring state when the worker thread ends
  *
@@ -297,7 +298,7 @@ sge_worker_main(void *arg) {
          if (packet->request_type == PACKET_GDI_REQUEST) {
             sge_set_commit_required();
 
-            lList *tmp_answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> tmp_answer_list;
             if (!packet->is_intern_request) {
                packet->pack_header(&tmp_answer_list, &packet->pb);
             }

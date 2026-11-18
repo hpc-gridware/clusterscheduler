@@ -203,7 +203,7 @@ bool qinstance_has_state(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, c
  *
  * @note MT-NOTE: transition_is_valid_for_qinstance() is MT safe
  */
-bool transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list) {
+bool transition_is_valid_for_qinstance(uint32_t transition, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    bool ret = false;
   
    transition = transition & (~JOB_DO_ACTION);
@@ -243,7 +243,7 @@ bool transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list)
  * @param[out] answer_list receives the rejection message
  * @return true when the option is valid
  */
-bool transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list) {
+bool transition_option_is_valid_for_qinstance(uint32_t option, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(QINSTANCE_STATE_LAYER);
 
    bool ret = false;
@@ -356,8 +356,7 @@ qinstance_state_as_string(uint32_t bit) {
  */
 uint32_t
 qinstance_state_from_string(const char* sstate, 
-                            lList **answer_list, 
-                            uint32_t filter){
+                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t filter){
    DENTER(QINSTANCE_STATE_LAYER);
 
    uint32_t ustate = 0;

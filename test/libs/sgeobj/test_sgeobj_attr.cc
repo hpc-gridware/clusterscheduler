@@ -127,7 +127,7 @@ static void test_str_attr_list_find_value() {
    lAppendElem(*hgroups, make_hgroup("@grpInner", {"host5"}));
    lAppendElem(*hgroups, make_hgroup("@grpOuter", {"@grpInner"}));
 
-   lList *al = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> al;
    const char *value = nullptr;
    const char *match_hog = nullptr;
    const char *match_grp = nullptr;
@@ -149,7 +149,7 @@ static void test_str_attr_list_find_value() {
       CHECK(1, "direct match: returns true",   ok);
       CHECK(1, "direct match: correct value",  ok && strcmp(value, "direct") == 0);
       CHECK(1, "direct match: not ambiguous",  !ambiguous);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T02 — default fallback
@@ -166,7 +166,7 @@ static void test_str_attr_list_find_value() {
       CHECK(2, "default fallback: returns true",    ok);
       CHECK(2, "default fallback: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(2, "default fallback: not ambiguous",   !ambiguous);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T03 — hostgroup match (one level)
@@ -186,7 +186,7 @@ static void test_str_attr_list_find_value() {
       CHECK(3, "hostgroup match: correct value",            ok && strcmp(value, "group_value") == 0);
       CHECK(3, "hostgroup match: matching group is @grpA",  match_hog && strcmp(match_hog, "@grpA") == 0);
       CHECK(3, "hostgroup match: not ambiguous",            !ambiguous);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T04 — transitive (nested) hostgroup expansion
@@ -206,7 +206,7 @@ static void test_str_attr_list_find_value() {
       CHECK(4, "nested group: correct value from outer",      ok && strcmp(value, "outer_value") == 0);
       CHECK(4, "nested group: matching group is @grpOuter",   match_hog && strcmp(match_hog, "@grpOuter") == 0);
       CHECK(4, "nested group: not ambiguous",                 !ambiguous);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T05 — group-without-attr fallback
@@ -224,7 +224,7 @@ static void test_str_attr_list_find_value() {
       CHECK(5, "group-without-attr: returns true",    ok);
       CHECK(5, "group-without-attr: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(5, "group-without-attr: not ambiguous",   !ambiguous);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T06 — ambiguous with default
@@ -245,7 +245,7 @@ static void test_str_attr_list_find_value() {
       CHECK(6, "ambiguous+default: returns true (default used)",  ok);
       CHECK(6, "ambiguous+default: is_ambiguous flag is set",     ambiguous);
       CHECK(6, "ambiguous+default: value is the default",         ok && strcmp(value, "default") == 0);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T07 — ambiguous without default
@@ -263,7 +263,7 @@ static void test_str_attr_list_find_value() {
                                     &ambiguous, *hgroups);
       CHECK(7, "ambiguous+no-default: returns false",          !ok);
       CHECK(7, "ambiguous+no-default: is_ambiguous flag set",  ambiguous);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T08 — direct hostname entry overrides hostgroup entry
@@ -283,7 +283,7 @@ static void test_str_attr_list_find_value() {
       CHECK(8, "direct overrides group: returns true",   ok);
       CHECK(8, "direct overrides group: correct value",  ok && strcmp(value, "direct_value") == 0);
       CHECK(8, "direct overrides group: not ambiguous",  !ambiguous);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T09 — null attr list
@@ -295,7 +295,7 @@ static void test_str_attr_list_find_value() {
                                     &value, &match_hog, &match_grp,
                                     &ambiguous, *hgroups);
       CHECK(9, "null attr list: returns false",   !ok);
-      lFreeList(&al);
+      al.reset();
    }
 
    // T10 — null hostname
@@ -310,7 +310,7 @@ static void test_str_attr_list_find_value() {
                                     &value, &match_hog, &match_grp,
                                     &ambiguous, *hgroups);
       CHECK(10, "null hostname: returns false",   !ok);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
 }
@@ -337,7 +337,7 @@ static void test_str_attr_list_find_value() {
 static void test_str_attr_list_find_value_href() {
    printf("\n--- str_attr_list_find_value_href ---\n");
 
-   lList *al = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> al;
    const char *value = nullptr;
    bool found = false;
    bool ok = false;
@@ -355,7 +355,7 @@ static void test_str_attr_list_find_value_href() {
       CHECK(11, "href/direct match: returns true",   ok);
       CHECK(11, "href/direct match: correct value",  ok && strcmp(value, "direct") == 0);
       CHECK(11, "href/direct match: found is true",  found);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T12 — default fallback (found = false)
@@ -371,7 +371,7 @@ static void test_str_attr_list_find_value_href() {
       CHECK(12, "href/default fallback: returns true",    ok);
       CHECK(12, "href/default fallback: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(12, "href/default fallback: found is false",  !found);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T13 — hostgroup entries are ignored
@@ -388,7 +388,7 @@ static void test_str_attr_list_find_value_href() {
       CHECK(13, "href/group ignored: returns true (default used)",  ok);
       CHECK(13, "href/group ignored: returns default not group",    ok && strcmp(value, "default") == 0);
       CHECK(13, "href/group ignored: found is false",               !found);
-      lFreeList(&al); 
+      al.reset(); 
    }
 
    // T14 — null attr list
@@ -398,7 +398,7 @@ static void test_str_attr_list_find_value_href() {
       value = nullptr; found = false;
       ok = str_attr_list_find_value_href(nullptr, &al, "host1", &value, &found);
       CHECK(14, "href/null attr list: returns false",  !ok);
-      lFreeList(&al);
+      al.reset();
    }
 }
 

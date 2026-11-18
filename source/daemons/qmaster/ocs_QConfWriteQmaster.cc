@@ -87,7 +87,7 @@ qconf_can_delete(const ocs::gdi::Target target) {
  */
 static bool
 qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi::Target target,
-                 const char *name, lList **answer_list) {
+                 const char *name, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::CE> ep = nullptr;
@@ -213,7 +213,7 @@ qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list
 static int
 qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                 const qconf_object_desc &desc, gdi_object_t *object, lListElem *ep,
-                const bool exists, lList **answer_list, lList **post_list) {
+                const bool exists, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **post_list) {
    DENTER(TOP_LAYER);
 
    switch (desc.target) {
@@ -257,7 +257,7 @@ qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *mo
 bool
 qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                            const QConfObj obj, const ocs::QConfWriteParameter &parameter,
-                           lList **answer_list, ocs::QConfWriteResult *result) {
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::QConfWriteResult *result) {
    DENTER(TOP_LAYER);
 
    const qconf_object_desc &desc = qconf_desc(obj);

@@ -26,6 +26,7 @@
 #include <utility>
 
 #include "ocs_ReportingFileWriter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief Writes qmaster's own monitoring snapshots as JSON
@@ -39,7 +40,7 @@ namespace ocs {
       explicit MonitoringFileWriter()
       : ReportingFileWriter(std::string{bootstrap_get_cell_root()} + "/" + COMMON_DIR + "/" + "monitoring.jsonl", false) {
       }
-      bool create_acct_record(lList **answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
+      bool create_acct_record(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
                               ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
                               bool intermediate) override;
       bool

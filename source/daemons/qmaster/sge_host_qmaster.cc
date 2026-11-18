@@ -147,14 +147,15 @@ notify(ocs::tom::Element<ocs::tom::EH> lel, ocs::gdi::Packet *packet, ocs::gdi::
        int kill_jobs, int force);
 
 static int
-verify_scaling_list(lList **alpp, ocs::tom::ConstElement<ocs::tom::EH> host);
+verify_scaling_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstElement<ocs::tom::EH> host);
 
 static void
 host_update_categories(ocs::tom::ConstElement<ocs::tom::EH> new_hep, ocs::tom::ConstElement<ocs::tom::EH> old_hep,
                        uint64_t gdi_session);
 
 static int
-attr_mod_threshold(lList **alpp, ocs::tom::Element<ocs::tom::EH> ep, ocs::tom::Element<ocs::tom::EH> new_ep,
+attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::EH> ep,
+                   ocs::tom::Element<ocs::tom::EH> new_ep,
                    ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, const char *attr_name,
                    const char *object_name);
 
@@ -288,7 +289,8 @@ sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char 
  */
 bool
 host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                           const ocs::tom::ConstList<ocs::tom::EH> this_list, lList **answer_list,
+                           const ocs::tom::ConstList<ocs::tom::EH> this_list,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            const ocs::tom::ConstList<ocs::tom::HR> href_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    bool ret = true;
@@ -323,7 +325,7 @@ host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
  * @return STATUS_OK on success
  */
 int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::EH> hep,
-                 lList **alpp, char *ruser, char *rhost, const ocs::gdi::Target target,
+                 ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost, const ocs::gdi::Target target,
                  const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -408,7 +410,7 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
          // a deleted host does not report, rescheduled jobs must not wait for their old runs
          reschedule_clear_deferred_starts_of_host(ep, packet->gdi_session);
 
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_DEL,
                          0, 0, ocs::tom::get<EH_name>(ep), nullptr, nullptr,
                          nullptr, nullptr, nullptr, true, true, packet->gdi_session);
@@ -499,8 +501,8 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
  * @param monitor for monitoring qmaster threads
  * @return as sge_del_host()
  */
-int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp, char *ruser,
-                 char *rhost, const ocs::gdi::Target target, const lList *master_hgroup_list,
+int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                 char *ruser, char *rhost, const ocs::gdi::Target target, const lList *master_hgroup_list,
                  monitoring_t *monitor) {
    return sge_del_host(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(hep), alpp, ruser, rhost, target,
                        ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list), monitor);
@@ -528,8 +530,8 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
  * @return 0 on success
  */
 int
-host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
-         const char *ruser, const char *rhost, gdi_object_t *object,
+host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_host,
+         lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
@@ -724,7 +726,8 @@ DRETURN(STATUS_EUNKNOWN);
  * @return 0 on success
  */
 int
-host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,
+           gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
    // the signature is fixed by gdi_object_t::writer, and the key field comes from the table at run time
@@ -745,7 +748,7 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    }
 
    int ret = 0;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, key, host_type);
    answer_list_output(&answer_list);
    if (!dbret) {
@@ -853,7 +856,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
     * the same effect comes from swapping the new member list in for the length
     * of one resolution.
     */
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    ocs::tom::ListPtr<ocs::tom::HR> add_hosts;
    ocs::tom::ListPtr<ocs::tom::HR> rem_hosts;
    bool ret;
@@ -979,7 +982,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
    {
       ocs::tom::ConstList<ocs::tom::CQ> pending_queues = ocs::tom::get<HGRP_cqueue_list>(hgrp);
       dstring key_dstring = DSTRING_INIT;
-      lList *spool_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> spool_answer_list;
       bool spool_ok = spool_transaction(&spool_answer_list, spool_get_default_context(), STC_begin);
 
       answer_list_output(&spool_answer_list);
@@ -1148,7 +1151,7 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
    ocs::tom::Element<ocs::tom::EH> host_ep = nullptr;
    ocs::tom::Element<ocs::tom::EH> real_ep = nullptr;
    bool statics_changed = false;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
    const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
 
@@ -1485,7 +1488,7 @@ exec_host_change_queue_version(const char *exechost_name, const uint64_t gdi_ses
       }
       while ((qinstance = next_qinstance)) {
          const char *name;
-         lList *answer_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
          if (change_all) {
             next_qinstance = qinstance.next();
@@ -1568,7 +1571,7 @@ master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
             reschedule_unknown_trigger(lel);
          }
       }
-      if (lGetNumberOfElem(task->answer_list) == 0) {
+      if (task->answer_list->size() == 0) {
          /* no exechosts have been killed */
          DPRINTF(MSG_SGETEXT_NOEXECHOSTS);
          INFO(SFNMAX, MSG_SGETEXT_NOEXECHOSTS);
@@ -1678,7 +1681,7 @@ notify(const ocs::tom::Element<ocs::tom::EH> lel, ocs::gdi::Packet *packet, ocs:
                   ocs::tom::set<JAT_state>(jatep, state);
 
                   /* spool job and propagate state change to event clients */
-                  lList *answer_list = nullptr;
+                  ocs::tom::ListPtr<ocs::tom::AN> answer_list;
                   sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, ocs::tom::get<JB_job_number>(jep),
                                   ocs::tom::get<JAT_task_number>(jatep), nullptr, nullptr, nullptr,
                                   jep, jatep, nullptr, true, true, 0);
@@ -1710,7 +1713,7 @@ host_mark_as_auto_added(const ocs::tom::Element<ocs::tom::EH> hep, const uint64_
 
    ocs::tom::set<EH_auto_added_time>(hep, sge_get_gmt64());
 
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, ocs::tom::get<EH_name>(hep),
                    nullptr, nullptr, hep, nullptr, nullptr, true, true, gdi_session);
    answer_list_output(&answer_list);
@@ -1753,7 +1756,7 @@ host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *h
    ocs_href_list_emplace(href_list, hostname);
 
    bool ret = true;
-   lList *answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    auto hgroup = hgroup_create(&answer_list, hgroup_name, std::move(href_list), true);
    if (hgroup == nullptr) {
       ret = false;
@@ -1824,7 +1827,7 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
          href_list.get().erase(href);
       }
 
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       auto hgroup = hgroup_create(&answer_list, hgroup_name.c_str(), std::move(href_list), true);
       if (hgroup == nullptr) {
          ret = false;
@@ -1954,7 +1957,7 @@ sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
       uint64_t unknown_for = now - it->second;
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       bool removed = false;
       if (host_remove_from_hgroups(&packet, &task, hostname, monitor)) {
          char ruser[] = "qmaster";
@@ -2010,8 +2013,8 @@ sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
  */
 int
 sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::EH> host,
-                    lList **alpp, char *ruser, char *rhost, const ocs::gdi::Target target, monitoring_t *monitor,
-                    const bool is_restart) {
+                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost, const ocs::gdi::Target target,
+                    monitoring_t *monitor, const bool is_restart) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::EH> hep;
@@ -2080,7 +2083,7 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::t
 
          if (qinstance != nullptr) {
             if (sge_qmaster_qinstance_set_initial_state(qinstance, packet->gdi_session)) {
-               lList *answer_list = nullptr;
+               ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
                qinstance_increase_qversion(qinstance);
                sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, ocs::tom::get<QU_qname>(qinstance),
@@ -2114,7 +2117,8 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::t
  * @return as sge_execd_startedup()
  */
 int
-sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *host, lList **alpp, char *ruser,
+sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *host,
+                    ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser,
                     char *rhost, const ocs::gdi::Target target, monitoring_t *monitor, const bool is_restart) {
    return sge_execd_startedup(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(host), alpp, ruser, rhost, target,
                               monitor, is_restart);
@@ -2128,7 +2132,7 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *h
  * @return STATUS_OK, or STATUS_EUNKNOWN for an unknown attribute
  */
 static int
-verify_scaling_list(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::EH> host) {
+verify_scaling_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstElement<ocs::tom::EH> host) {
    DENTER(TOP_LAYER);
    bool ret = true;
    const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
@@ -2300,7 +2304,8 @@ host_update_categories(const ocs::tom::ConstElement<ocs::tom::EH> new_hep,
  * @note MT-NOTE: attr_mod_threshold() is MT safe
  */
 static int
-attr_mod_threshold(lList **alpp, const ocs::tom::Element<ocs::tom::EH> ep, const ocs::tom::Element<ocs::tom::EH> new_ep,
+attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<ocs::tom::EH> ep,
+                   const ocs::tom::Element<ocs::tom::EH> new_ep,
                    const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command, const char *attr_name,
                    const char *object_name) {
    DENTER(TOP_LAYER);

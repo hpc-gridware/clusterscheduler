@@ -80,7 +80,7 @@
                            DESCRIPTOR, HREF_NM, VALUE_NM)                     \
                                                                               \
 bool                                                                          \
-PREFIX##_list_find_value(const lList *this_list, lList **answer_list,         \
+PREFIX##_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,         \
                          const char *hostname, INTERNAL_TYPE *value,          \
                          const char **mastching_host_or_group,                \
                          const char **matching_group,                         \
@@ -93,7 +93,7 @@ PREFIX##_list_find_value(const lList *this_list, lList **answer_list,         \
 }                                                                             \
                                                                               \
 bool                                                                          \
-PREFIX##_list_find_value_href(const lList *this_list, lList **answer_list,    \
+PREFIX##_list_find_value_href(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,    \
                          const char *hostname, INTERNAL_TYPE *value,          \
                          bool *found)                                         \
 {                                                                             \
@@ -110,7 +110,7 @@ PREFIX##_list_append_to_dstring(const lList *this_list, dstring *string)      \
 }                                                                             \
                                                                               \
 bool                                                                          \
-PREFIX##_list_parse_from_string(lList **this_list, lList **answer_list,       \
+PREFIX##_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,       \
                                 const char *string, int flags, const lList *master_hgroup_list)                \
 {                                                                             \
    return attr_list_parse_from_string(this_list, answer_list, string,         \
@@ -118,16 +118,16 @@ PREFIX##_list_parse_from_string(lList **this_list, lList **answer_list,       \
 }
  
 static lListElem *
-attr_create(lList **answer_list, const char *href, void *value,
+attr_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *href, void *value,
             const lDescr *descriptor, int href_nm, int value_nm);
 
 static bool 
-attr_list_add(lList **this_list, lList **answer_list, lListElem **attr, 
+attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **attr, 
               int flags, lList **ambiguous_href_list,
               const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list);
 
 static bool
-attr_list_find_value(const lList *this_list, lList **answer_list, 
+attr_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                      const char *hostname, void *value_buffer, 
                      const char **matching_host_or_group,
                      const char **matching_group,
@@ -135,13 +135,13 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                      int href_nm, int value_nm, const lList *master_hgroup_list);
 
 static bool
-attr_list_find_value_href(const lList *this_list, lList **answer_list, 
+attr_list_find_value_href(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                      const char *hostname, void *value_buffer, 
                      bool *found, const lDescr *descriptor, 
                      int href_nm, int value_nm);
 
 static bool
-attr_list_parse_from_string(lList **this_list, lList **answer_list,
+attr_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             const char *string, int flags,
                             const lDescr *descriptor, int href_nm, 
                             int value_nm, const lList *master_hgroup_list);
@@ -173,7 +173,7 @@ attr_list_locate(const lList *this_list, const char *host_or_group,
  * @note MT-NOTE: attr_create() is MT safe
  */
 static lListElem *
-attr_create(lList **answer_list, const char *href, void *value,
+attr_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *href, void *value,
             const lDescr *descriptor, int href_nm, int value_nm) {
    DENTER(HOSTATTR_LAYER);
 
@@ -239,7 +239,7 @@ attr_create(lList **answer_list, const char *href, void *value,
  * @note MT-NOTE: attr_list_add() is not MT safe
  */
 static bool
-attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
+attr_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **attr,
               int flags, lList **ambiguous_href_list,
               const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list) {
    DENTER(HOSTATTR_LAYER);
@@ -389,7 +389,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
  * @return true if a value was found
  */
 static bool
-attr_list_find_value(const lList *this_list, lList **answer_list,
+attr_list_find_value(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                      const char *hostname, void *value_buffer,
                      const char **matching_host_or_group,
                      const char **matching_group,
@@ -491,7 +491,7 @@ href_nm           ASTR_href
 value_nm          ASTR_value
 */
 static bool
-attr_list_find_value_href(const lList *this_list, lList **answer_list,
+attr_list_find_value_href(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           const char *hostname, void *value_buffer,
                           bool *found, const lDescr *descriptor,
                           int href_nm, int value_nm) {
@@ -617,7 +617,7 @@ href_nm           ASTR_href
 value_nm          ASTR_value
 */
 static bool
-attr_list_parse_from_string(lList **this_list, lList **answer_list,
+attr_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                             const char *string, int flags,
                             const lDescr *descriptor, int href_nm,
                             int value_nm, const lList *master_hgroup_list) {

@@ -528,7 +528,7 @@ int main(int argc, char *argv[]) {
    qevent_options enabled_options;
    dstring errors = DSTRING_INIT;
    int i, gdi_setup;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    sge_evc_class_t *evc = nullptr;
 
    sge_setup_sig_handlers(QEVENT);

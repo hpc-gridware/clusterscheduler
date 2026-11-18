@@ -78,7 +78,7 @@ ocs::gdi::Request::wait() {
  * @return the task id to pass to #get_response, or 0 on error
  */
 int
-ocs::gdi::Request::request(lList **alpp, Mode mode, Target target, const Command cmd,
+ocs::gdi::Request::request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, const Command cmd,
                            SubCommand sub_cmd, lList **lp, lCondition *cp, lEnumeration *enp, const bool do_copy) {
    DENTER(GDI_MULTI_LAYER);
 
@@ -126,7 +126,7 @@ ocs::gdi::Request::request(lList **alpp, Mode mode, Target target, const Command
  * @return true when the task succeeded
  */
 bool
-ocs::gdi::Request::get_response(lList **alpp, const Command cmd, const SubCommand sub_cmd,
+ocs::gdi::Request::get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Command cmd, const SubCommand sub_cmd,
                                 const Target target, const int id, lList **list) const {
    DENTER(GDI_MULTI_LAYER);
 
@@ -160,8 +160,7 @@ ocs::gdi::Request::get_response(lList **alpp, const Command cmd, const SubComman
    // on the same alpp gets freed instead of orphaned; every prior request's
    // per-task answer_list used to leak silently because success/info entries
    // never tripped answer_list_has_error().
-   lList *answer_list = nullptr;
-   ocs::tom::exchange<MA_answers>(map, &answer_list);
+   auto answer_list = map.exchange<MA_answers>(ocs::tom::ListPtr<ocs::tom::AN>());
    answer_list_replace(alpp, &answer_list);
 
    DRETURN(true);

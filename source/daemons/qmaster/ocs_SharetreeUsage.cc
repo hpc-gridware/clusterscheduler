@@ -76,7 +76,7 @@ namespace {
       if (!u) {
          DRETURN_VOID;
       }
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       sge_event_spool(&answer_list, 0, sgeE_USER_MOD, 0, 0, name.c_str(),
                       nullptr, nullptr, u, nullptr, nullptr, false, true, gdi_session);
       answer_list_output(&answer_list);
@@ -98,7 +98,7 @@ namespace {
       if (!p) {
          DRETURN_VOID;
       }
-      lList *answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, name.c_str(),
                       nullptr, nullptr, p, nullptr, nullptr, false, true, gdi_session);
       answer_list_output(&answer_list);

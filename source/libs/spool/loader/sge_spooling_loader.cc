@@ -79,7 +79,7 @@
  * @return on success a spooling context, else nullptr.
  */
 lListElem *
-spool_create_dynamic_context(lList **answer_list, const char *method,
+spool_create_dynamic_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args) {
    DENTER(TOP_LAYER);
 

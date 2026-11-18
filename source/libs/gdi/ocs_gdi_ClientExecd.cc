@@ -219,7 +219,7 @@ int ocs::gdi::ClientExecd::report_list_send(const ocs::tom::ConstList<ocs::tom::
 
    sge_pack_buffer pb;
    int ret;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /* prepare packing buffer */
    if ((ret = init_packbuffer(&pb, 1024)) == PACK_SUCCESS) {

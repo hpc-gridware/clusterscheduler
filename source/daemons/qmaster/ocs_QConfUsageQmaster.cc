@@ -65,7 +65,8 @@ namespace {
    template <ocs::tom::ObjectType T, auto KeyF, auto UsageF, auto ProjectF>
    bool
    clear_usage_of(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                  const ocs::gdi::Target target, const sge_object_type type, lList **answer_list) {
+                  const ocs::gdi::Target target, const sge_object_type type,
+                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       DENTER(TOP_LAYER);
 
       gdi_object_t *object = get_gdi_object(target);
@@ -89,7 +90,7 @@ namespace {
          auto reduced = ocs::tom::ElementPtr<T>::create(reduced_descr);
          ocs::tom::set<KeyF>(reduced, name.c_str());
 
-         lList *alp = nullptr;
+         ocs::tom::ListPtr<ocs::tom::AN> alp;
          lList *post_list = nullptr;   // stays raw: the generic path's post processing list has no fixed type
          const int ret = sge_gdi_add_mod_generic(packet, task, &alp, reduced.get(), 0, object, packet->user,
                                                  packet->host, ocs::gdi::Command::MOD_PROCEDURE,
@@ -107,7 +108,7 @@ namespace {
             }
          }
          lFreeList(&post_list);
-         lFreeList(&alp);
+         alp.reset();
       }
 
       DRETURN(all_ok);
@@ -133,7 +134,7 @@ namespace {
 bool
 qconf_usage_clear_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                                  [[maybe_unused]] const ocs::QConfActionParameter &parameter,
-                                 lList **answer_list) {
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    const bool users_ok = clear_usage_of<ocs::tom::UU, UU_name, UU_usage, UU_project>(

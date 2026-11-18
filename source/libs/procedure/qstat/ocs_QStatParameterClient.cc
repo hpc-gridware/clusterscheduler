@@ -151,7 +151,8 @@ int ocs::QStatParameterClient::qstat_usage(FILE *fp, char *what) {
  */
 bool
 ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(ocs::tom::ListPtr<ocs::tom::SPA> &ppcmdline,
-                                                                lList **answer_list, char **argv) {
+                                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                                char **argv) {
    DENTER(TOP_LAYER);
    bool ret = true;
    char **sp;
@@ -268,11 +269,11 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(ocs::tom::ListPt
  * @param ppcmdline the switches; the ones handled are removed from it
  * @return the answer list with the parsing errors, or nullptr when there were none
  */
-lList *
+ocs::tom::ListPtr<ocs::tom::AN>
 ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> ppcmdline) {
    DENTER(TOP_LAYER);
    stringT str;
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    uint32_t helpflag;
    int usageshowed = 0;
    char *argstr;
@@ -505,7 +506,8 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
  */
 bool
 ocs::QStatParameterClient::switch_list_qstat_parse_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
-                                                             lList **answer_list, const char *file) {
+                                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                             const char *file) {
    DENTER(TOP_LAYER);
    int file_as_string_length;
    char *file_as_string = sge_file2string(file, &file_as_string_length);
@@ -527,9 +529,10 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_file(ocs::tom::ListPtr<o
  * @param envp the environment
  * @return true when the parameters are usable
  */
-bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **argv, char **envp) {
+bool ocs::QStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **argv,
+                                                 char **envp) {
    DENTER(TOP_LAYER);
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::SPA> file_switches;
    ocs::tom::ListPtr<ocs::tom::SPA> cmdline_switches;
 
@@ -596,7 +599,7 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       for_each_ep_lv(aep, alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       cmdline_switches.reset();
       sge_exit(1);
    }
@@ -610,7 +613,7 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       for_each_ep_lv(aep, alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       cmdline_switches.reset();
       sge_exit(1);
    }

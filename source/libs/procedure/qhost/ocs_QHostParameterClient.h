@@ -27,6 +27,7 @@
 #include "tom/ocs_List.h"
 
 #include "ocs_QHostParameter.h"
+#include "sgeobj/sge_answer.h"
 
 namespace ocs {
    /** @brief The `qhost` parameters as the client builds them, from argv and the environment
@@ -43,12 +44,13 @@ namespace ocs {
    private:
       static bool show_usage(FILE *fp);
       bool parse_cmdline_and_env(char **argv, char **env, ocs::tom::ListPtr<ocs::tom::SPA> &switch_list,
-                                 lList **answer_list);
-      bool parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **answer_list, const char *file);
-      int parse_switch_list(ocs::tom::List<ocs::tom::SPA> cmdline, lList **answer_list);
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+      bool parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *file);
+      int parse_switch_list(ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
    public:
-      bool parse_parameters(lList **answer_list, char **argv, char **envp);
+      bool parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **argv, char **envp);
 
 #pragma endregion
 

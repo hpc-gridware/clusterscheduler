@@ -107,7 +107,7 @@ setup_lists(ocs::tom::ListPtr<ocs::tom::STN> &sharetree, ocs::tom::ListPtr<ocs::
             ocs::tom::ListPtr<ocs::tom::PR> &projects, ocs::tom::ListPtr<ocs::tom::US> &usersets,
             ocs::tom::ListPtr<ocs::tom::SC> &config) {
    DENTER(TOP_LAYER);
-   lList *alp = nullptr;               /* answer list for individual gdi_multi */
+   ocs::tom::ListPtr<ocs::tom::AN> alp;               /* answer list for individual gdi_multi */
    ocs::gdi::Request gdi_multi{};
    int sharetree_id = 0;
    int sched_conf_id = 0;
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
 
    dstring output_dstring = DSTRING_INIT;
 
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    
    format.name_format  = false;
    format.delim        = "\t";

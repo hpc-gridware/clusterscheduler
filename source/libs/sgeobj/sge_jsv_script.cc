@@ -127,8 +127,8 @@
  * @param a the remaining arguments
  * @return true when the command was handled
  */
-typedef bool (*jsv_command_f)(ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const dstring *c,
-                              const dstring *s, const dstring *a);
+typedef bool (*jsv_command_f)(ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                              const dstring *c, const dstring *s, const dstring *a);
 
 /// One entry of the table mapping a JSV command name onto its handler
 typedef struct jsv_command_t_ jsv_command_t;
@@ -224,8 +224,8 @@ ocs_jsv_get_job(const ocs::tom::ConstElement<ocs::tom::JSV> jsv) {
  */
 template <auto F>
 static bool
-ocs_jsv_set_path_list_param(const ocs::tom::Element<ocs::tom::JB> new_job, lList **answer_list, const char *param,
-                            const char *value) {
+ocs_jsv_set_path_list_param(const ocs::tom::Element<ocs::tom::JB> new_job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const char *param, const char *value) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -255,7 +255,7 @@ ocs_jsv_set_path_list_param(const ocs::tom::Element<ocs::tom::JB> new_job, lList
  *         as before, the references of what was parsed are returned also on a parse error
  */
 static std::pair<bool, ocs::tom::ListPtr<ocs::tom::JRE>>
-ocs_jsv_parse_jid_request_list(lList **answer_list, const char *param, const char *value) {
+ocs_jsv_parse_jid_request_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *param, const char *value) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -293,8 +293,8 @@ ocs_jsv_parse_jid_request_list(lList **answer_list, const char *param, const cha
  * @return true if the parameter was applied, false on an error
  */
 static bool
-jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const dstring *c,
-                         const dstring *s, const dstring *a) {
+jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                         const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -303,7 +303,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **ans
 
    if (param != nullptr) {
       bool skip_check = false;
-      lList *local_answer_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
       const auto new_job = ocs_jsv_get_job<JSV_new_job>(jsv);
 
       /*
@@ -1075,8 +1075,8 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **ans
  * @return true if the subcommand is known, false otherwise
  */
 static bool
-jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const dstring *c,
-                        const dstring *s, const dstring *a) {
+jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                        const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -1107,8 +1107,8 @@ jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answ
  * @return true if the line could be understood, false otherwise
  */
 static bool
-jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const dstring *c,
-                          const dstring *s, const dstring *a) {
+jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                          const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -1174,8 +1174,8 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **an
  * @return true
  */
 static bool
-jsv_send_queue_list(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const char *prefix,
-                    const char *name, const ocs::tom::ConstList<ocs::tom::QR> queue_list) {
+jsv_send_queue_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                    const char *prefix, const char *name, const ocs::tom::ConstList<ocs::tom::QR> queue_list) {
    DENTER(TOP_LAYER);
 
    if (queue_list) {
@@ -1207,8 +1207,8 @@ jsv_send_queue_list(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_l
  * @return true
  */
 static bool
-jsv_send_resource_list(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const char *prefix,
-                       const char *name, const ocs::tom::ConstList<ocs::tom::CE> resource_list) {
+jsv_send_resource_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       const char *prefix, const char *name, const ocs::tom::ConstList<ocs::tom::CE> resource_list) {
    DENTER(TOP_LAYER);
    if (resource_list) {
       dstring buffer = DSTRING_INIT;
@@ -1231,8 +1231,8 @@ jsv_send_resource_list(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answe
  * @return true
  */
 static bool
-jsv_send_path_list(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const char *prefix,
-                   const char *name, const ocs::tom::ConstList<ocs::tom::PN> path_list) {
+jsv_send_path_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                   const char *prefix, const char *name, const ocs::tom::ConstList<ocs::tom::PN> path_list) {
    DENTER(TOP_LAYER);
    if (!path_list) {
       DRETURN(true);
@@ -1271,8 +1271,8 @@ jsv_send_path_list(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_li
  * @return true if all parameters were sent, false on an error
  */
 static bool
-jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const dstring *c,
-                           const dstring *s, const dstring *a) {
+jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
    const auto  prefix = "PARAM";
    dstring buffer = DSTRING_INIT;
@@ -1948,8 +1948,8 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **a
  * @return true
  */
 static bool
-jsv_handle_log_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const dstring *c,
-                       const dstring *s, const dstring *a) {
+jsv_handle_log_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
    const char *args = sge_dstring_get_string(a);
 
@@ -1985,15 +1985,15 @@ jsv_handle_log_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answe
  * @return true if the line was applied, false on an error
  */
 static bool
-jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list, const dstring *c,
-                       const dstring *s, const dstring *a) {
+jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
    dstring variable = DSTRING_INIT;
    dstring value = DSTRING_INIT;
    bool skip_check = false;
-   lList *local_answer_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
    const auto new_job = ocs_jsv_get_job<JSV_new_job>(jsv);
 
    jsv_split_token(a, &variable, &value);
@@ -2091,7 +2091,7 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answe
  *
  * @note MT-NOTE: jsv_do_communication() is MT safe
  */
-bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, lList **answer_list) {
+bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -2361,7 +2361,7 @@ jsv_cull_attr2switch_name(const int cull_attr, const ocs::tom::ConstElement<ocs:
  * @return true if the modification request is rejected, false otherwise.
  */
 bool
-jsv_is_modify_rejected(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
+jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    bool ret = false;
 

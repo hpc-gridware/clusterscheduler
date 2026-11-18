@@ -155,7 +155,7 @@
  * @param usage whether the usage follows the messages; reset
  */
 static void
-qconf_report_operation(lList **alpp, bool &usage) {
+qconf_report_operation(ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool &usage) {
    qconf_answer_print(alpp);
    if (usage) {
       sge_usage(QCONF, stderr);
@@ -261,7 +261,7 @@ int sge_parse_qconf(char *argv[]) {
     * would leave the ones before it applied, which is just what the caller
     * asked not to happen. A switch that only reads has nothing to hold back. */
    if (param.get_dry_run()) {
-      lList *dry_alp = nullptr;
+      ocs::tom::ListPtr<ocs::tom::AN> dry_alp;
       for (const qconf_op &op : param.get_operations()) {
          /* an unknown token has no row and is reported as such by the loop below */
          if (op.spec != nullptr && op.token != "-help" && !qconf_read_changes_nothing(op) &&
@@ -271,7 +271,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (dry_alp != nullptr) {
          qconf_answer_print(&dry_alp);
-         lFreeList(&dry_alp);
+         dry_alp.reset();
          DRETURN(1);
       }
    }
@@ -290,7 +290,7 @@ int sge_parse_qconf(char *argv[]) {
     * qmaster answered and what the client has to say alike - which is printed
     * when the operation is done: before the next one runs, and before the
     * command line stops after a failure. */
-   lList *op_alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> op_alp;
    bool op_usage = false;
    for (qconf_op &op : param.get_operations()) {
       qconf_report_operation(&op_alp, op_usage);

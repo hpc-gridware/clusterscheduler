@@ -36,6 +36,7 @@
 
 #include "qrstat/ocs_QRStatModelBase.h"
 #include "qrstat/ocs_QRStatParameterClient.h"
+#include "sgeobj/sge_answer.h"
 
 /** @brief The advance reservation fields the report needs
  *
@@ -197,7 +198,7 @@ lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
  * @param parameter the parsed parameters
  * @return true when the list could be fetched
  */
-bool ocs::QRStatModelBase::fetch_data(lList **answer_list, QRStatParameter& parameter) {
+bool ocs::QRStatModelBase::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
    // has to be overwritten by child classes
    DRETURN(true);
@@ -209,7 +210,7 @@ bool ocs::QRStatModelBase::fetch_data(lList **answer_list, QRStatParameter& para
  * @param parameter    Parsed qrstat parameters.
  * @return true if fetch_data succeeded.
  */
-bool ocs::QRStatModelBase::make_snapshot(lList **answer_list, QRStatParameter &parameter) {
+bool ocs::QRStatModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    if (!fetch_data(answer_list, parameter)) {

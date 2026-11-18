@@ -50,15 +50,16 @@
 
 #include "sgeobj/cull/sge_str_ST_L.h"
 #include "sgeobj/cull/sge_str_STU_L.h"
+#include "sgeobj/sge_answer.h"
 
 const char *str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST> this_list, dstring *string, char delimiter);
 OCS_TRANSITIONAL const char *str_list_append_to_dstring(const lList *this_list, dstring *string, char delimiter);
 
 ocs::tom::ListPtr<ocs::tom::ST> str_list_parse_from_string(const char *string, const char *delimitor);
 
-bool str_list_is_valid(ocs::tom::ConstList<ocs::tom::ST> this_list, lList **answer_list);
+bool str_list_is_valid(ocs::tom::ConstList<ocs::tom::ST> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list, lList **answer_list,
-                                  const char *username);
+bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *username);
 
 ocs::tom::ListPtr<ocs::tom::ST> grp_list_array2list(int amount, const ocs_grp_elem_t *grp_array);

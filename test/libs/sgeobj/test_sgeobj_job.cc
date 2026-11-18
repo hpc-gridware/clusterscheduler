@@ -73,10 +73,10 @@ static int s_fail = 0;
  */
 static void
 set_ranges(const ocs::tom::Element<ocs::tom::JB> job, const int field, const char *ranges) {
-   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
    lList *list = nullptr;
    range_list_parse_from_string(&list, &alp, ranges, false, false, INF_NOT_ALLOWED);
-   lFreeList(&alp);
+   alp.reset();
    lSetList(job, field, list);
 }
 

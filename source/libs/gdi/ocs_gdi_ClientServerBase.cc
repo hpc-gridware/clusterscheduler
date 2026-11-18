@@ -113,7 +113,7 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
 #if defined(OCS_WITH_OPENSSL)
             DPRINTF("using communication lib with TLS framework (execd_handle)\n");
             communication_framework = CL_CT_SSL_TLS;
-            lList *answer_list = nullptr;
+            ocs::tom::ListPtr<ocs::tom::AN> answer_list;
             commlib_error = gdi_setup_tls_config(true, false, &answer_list,
                                                  component_get_qualified_hostname(), 0,
                                                  tohost, execd_port, tocomproc);
@@ -365,7 +365,8 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
  */
 int
 ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid, const char *rhost, const char *commproc, int id,
-                                                 sge_pack_buffer *pb, ClientServerBaseTag tag, uint32_t response_id, lList **alpp) {
+                                                 sge_pack_buffer *pb, ClientServerBaseTag tag, uint32_t response_id,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    int i;
    cl_xml_ack_type_t ack_type = CL_MIH_MAT_NAK;
@@ -641,7 +642,8 @@ ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bo
  * @return CL_RETVAL_OK on success, otherwise a commlib error
  */
 int
-ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_server, lList **answer_list,
+ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_server,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                  const char *local_host, uint32_t local_port,
                                                  const char *target_host, uint32_t target_port, const char *target_commproc) {
    DENTER(TOP_LAYER);
@@ -726,7 +728,8 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
  * @return CL_RETVAL_OK on success, otherwise a commlib error
  */
 int
-ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, const char *master_host) {
+ocs::gdi::ClientServerBase::gdi_update_client_tls_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                         const char *master_host) {
    DENTER(TOP_LAYER);
 
    DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);

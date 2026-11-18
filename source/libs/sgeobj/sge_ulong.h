@@ -49,6 +49,7 @@
 #include "sgeobj/cull/sge_ulong_ULNG_L.h"
 
 #include "sgeobj/ocs_CEntry.h"
+#include "sgeobj/sge_answer.h"
 
 bool 
 double_print_infinity_to_dstring(double value, dstring *string);
@@ -72,32 +73,32 @@ double_print_to_dstring(double value, dstring *string, ocs::CEntry::Type type);
 
 bool
 ulong_parse_date_time_from_string(uint32_t *this_ulong,
-                                  lList **alpp, const char *date_str);
+                                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *date_str);
 
 bool
 ulong_parse_centry_type_from_string(uint32_t *this_ulong,
-                                    lList **answer_list, const char *string);
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
 
 bool
 ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
-                                     lList **answer_list, const char *string);
+                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
 
 bool 
 ulong_parse_from_string(uint32_t *this_ulong,
-                        lList **answer_list, const char *string);
+                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
 
 std::pair<bool, ocs::tom::ListPtr<ocs::tom::ULNG>>
-ulong_list_parse_from_string(lList **answer_list, const char *string, const char *delimitor);
+ulong_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string, const char *delimitor);
 
 bool
-ulong_parse_priority(lList **alpp, int *valp, const char *priority_str);
+ulong_parse_priority(ocs::tom::ListPtr<ocs::tom::AN> *alpp, int *valp, const char *priority_str);
 
 bool
-ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_str);
+ulong_parse_binding_amount(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int *valp, const char *bamount_str);
 
 bool
 ulong_parse_value_from_string(uint32_t *this_ulong,
-                           lList **answer_list, const char *string);
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
 
 bool
-ulong_parse_task_concurrency(lList **alpp, int *valp, const char *task_concurrency_str);
+ulong_parse_task_concurrency(ocs::tom::ListPtr<ocs::tom::AN> *alpp, int *valp, const char *task_concurrency_str);

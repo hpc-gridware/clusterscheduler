@@ -57,6 +57,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sgeobj/cull/sge_cqueue_CQ_L.h"
+#include "sgeobj/sge_answer.h"
 
 /**
  * @brief What has to happen to a queue instance after a cluster queue change
@@ -93,8 +94,8 @@ typedef struct _list_attribute_struct {
    /// validates a new value, or nullptr; called with the cluster queue, the answer list, one entry of the
    /// attribute list and the master list the attribute refers to
    /// (the entry and the master list are of a type that differs per attribute, so they stay untyped)
-   bool (*verify_function)(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list, lListElem *attr_elem,
-                           const lList *master_list);
+   bool (*verify_function)(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                           lListElem *attr_elem, const lList *master_list);
 } list_attribute_struct;
 
 /// Every cluster queue attribute, terminated by an entry whose `name` is nullptr
@@ -106,7 +107,8 @@ cqueue_name_split(const char *name, dstring *cqueue_name, dstring *host_domain,
 
 char* cqueue_get_name_from_qinstance(const char *queue_instance);
 
-[[nodiscard]] ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create(lList **answer_list, const char *name);
+[[nodiscard]] ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                               const char *name);
 
 /* CS-2677: the host list of a cluster queue, i.e. the member list of the host
  * group "@@<queue>" it owns. Replaces lGetList(cqueue, CQ_hostlist), which is
@@ -133,8 +135,10 @@ bool cqueue_is_a_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
 OCS_TRANSITIONAL bool cqueue_is_a_href_referenced(const lListElem *this_elem, const lList *href_list,
                                                   bool only_hostlist);
 
-bool cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list);
-OCS_TRANSITIONAL bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list);
+bool cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ> this_elem,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+OCS_TRANSITIONAL bool cqueue_set_template_attributes(lListElem *this_elem,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ> this_list, const char *name);
 OCS_TRANSITIONAL lListElem *cqueue_list_locate(const lList *this_list, const char *name);
@@ -149,19 +153,21 @@ OCS_TRANSITIONAL lListElem *cqueue_list_locate_qinstance_msg(const lList *cqueue
                                                               bool raise_error);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::QR>
-cqueue_list_find_all_matching_references(ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
-                                         const char *cqueue_pattern);
-OCS_TRANSITIONAL bool cqueue_list_find_all_matching_references(const lList *this_list, lList **answer_list,
+cqueue_list_find_all_matching_references(ocs::tom::ConstList<ocs::tom::CQ> this_list,
+                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *cqueue_pattern);
+OCS_TRANSITIONAL bool cqueue_list_find_all_matching_references(const lList *this_list,
+                                                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                                const char *cqueue_pattern, lList **qref_list);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::ST>
-cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
+cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    ocs::tom::ConstElement<ocs::tom::HGRP> hgroup);
 
 bool
-cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list);
+cqueue_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-bool cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               ocs::tom::ConstElement<ocs::tom::CQ> reduced_elem, bool in_master,
                               ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list,
                               ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
@@ -171,7 +177,8 @@ bool cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, lList **an
                               ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
                               ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
                               ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
-OCS_TRANSITIONAL bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+OCS_TRANSITIONAL bool cqueue_verify_attributes(lListElem *cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                               lListElem *reduced_elem,
                                                bool in_master, const lList *master_calendar_list,
                                                const lList *master_ckpt_list, const lList *master_pe_list,
                                                const lList *master_userset_list, const lList *master_project_list,
@@ -187,10 +194,10 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(ocs::tom::ConstList
                                                              const char *full_name);
 OCS_TRANSITIONAL lListElem *cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name);
 
-bool cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list,
+bool cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        ocs::tom::ConstList<ocs::tom::US> attr_list, const char *hgroup_or_hostname);
-OCS_TRANSITIONAL bool cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList *attr_list,
-                                        const char *hgroup_or_hostname);
+OCS_TRANSITIONAL bool cqueue_purge_host(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                        lList *attr_list, const char *hgroup_or_hostname);
 
-bool cqueue_sick(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+bool cqueue_sick(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                  ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *ds);
