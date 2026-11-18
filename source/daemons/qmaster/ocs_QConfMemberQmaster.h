@@ -23,7 +23,7 @@
  * @brief The changing half of the access list membership procedure (CS-2959)
  *
  * Lives here for the reason the write provider does: the change goes through
- * `sge_gdi_add_mod_generic()`, which is the daemon's, and the procedure library
+ * `ocs_gdi_add_mod()`, which is the daemon's, and the procedure library
  * is linked into the clients too. Registered as the action
  * ocs::QConfActionParameter::USERSET_MEMBERS at startup (CS-2962), and since
  * CS-2985 the reserved host groups as HGROUP_MEMBERS.

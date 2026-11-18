@@ -182,12 +182,13 @@ qconf_write_is_unchanged([[maybe_unused]] const ocs::tom::ConstList<typename E::
 
 /** @brief Hand one parsed object to the function that applies its type (CS-2823)
  *
- * Most types are applied by sge_gdi_add_mod_generic() through their
- * `gdi_object_t` row, and for them this is a pass-through. The three types that
- * kept their own editor to the end are exactly the ones that row does not
- * describe: `sge_c_gdi_mod()` special-cases them above the generic branch, their
- * modifier hook is null (CONF, STN) or unreachable (SC's `schedd_mod`), and
- * their key and list type are empty there. So the special cases are repeated
+ * Most types are applied by ocs_gdi_add_mod() with their typed hooks, and for
+ * them this is a pass-through. The three types that kept their own editor to
+ * the end are exactly the ones without a generic add and modify:
+ * `sge_c_gdi_mod()` special-cases them above the generic branch, they have no
+ * hooks, and their key and list type are empty in their `gdi_object_t` row.
+ * Any other type without hooks (event clients, categories) is refused as the
+ * generic path refuses it. So the special cases are repeated
  * here rather than invented: one call each, the same function the GDI MOD of
  * that target performs.
  *
@@ -241,15 +242,18 @@ qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *mo
    } else if constexpr (std::is_same_v<T, ocs::tom::STN>) {
       DRETURN(sge_mod_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
                                 answer_list, packet->user, packet->host));
-   } else {
+   } else if constexpr (OcsGdiGenericType<T>) {
       /* add == 0 modifies and fails when the object is gone, add == 1 adds
-       * and fails when it is already there - sge_gdi_add_mod_generic()
-       * enforces both against the list it is about to change. Its element is
-       * untyped because it serves every row of the gdi_object_t table. */
-      DRETURN(sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1,
-                                      object, packet->user, packet->host,
-                                      ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
-                                      post, monitor));
+       * and fails when it is already there - ocs_gdi_add_mod()
+       * enforces both against the list it is about to change. */
+      DRETURN(ocs_gdi_add_mod<T>(packet, task, answer_list, ep, exists ? 0 : 1,
+                                 object, packet->user, packet->host,
+                                 ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
+                                 post, monitor));
+   } else {
+      /* a type without a generic add and modify, refused as the generic path
+       * refuses a table entry without one */
+      DRETURN(ocs_gdi_add_mod_unsupported(answer_list, object));
    }
 }
 

@@ -261,7 +261,7 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
 
 /** @brief Apply one attribute change to an user or project
  *
- * The gdi_object_t::modifier for users (UU_LIST) and projects (PR_LIST); see sge_c_gdi.h for the sequence
+ * The modifier of ocs_gdi_hooks for users (UU_LIST) and projects (PR_LIST); see ocs_gdi_add_mod() for the sequence
  * it is called from.
  *
  * @tparam T the object type of the table entry, ocs::tom::UU or ocs::tom::PR
@@ -344,7 +344,7 @@ ocs_userprj_success(ocs::gdi::Packet *packet, const ocs::tom::Element<typename F
 
 /** @brief Announce an user or project change once it is safely spooled
  *
- * The gdi_object_t::on_success for users (UU_LIST) and projects (PR_LIST).
+ * The on_success of ocs_gdi_hooks for users (UU_LIST) and projects (PR_LIST).
  *
  * @tparam T the object type of the table entry, ocs::tom::UU or ocs::tom::PR
  * @param packet the client request
@@ -381,7 +381,7 @@ template int userprj_success<ocs::tom::PR>(ocs::gdi::Packet *packet, ocs::gdi::T
 
 /** @brief Write an user or project to the spool
  *
- * The gdi_object_t::writer for users (UU_LIST) and projects (PR_LIST).
+ * The writer of ocs_gdi_hooks for users (UU_LIST) and projects (PR_LIST).
  *
  * @tparam T the object type of the table entry, ocs::tom::UU or ocs::tom::PR
  * @param packet the client request
@@ -805,8 +805,8 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
     * Add anUser to the user list.
     * Owner of the operation is the admin user on the qmaster host.
     */
-   res = sge_gdi_add_mod_generic(packet, task, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname,
-                                 ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, nullptr, monitor);
+   res = ocs_gdi_add_mod<ocs::tom::UU>(packet, task, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname,
+                                       ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, nullptr, monitor);
 
    if ((STATUS_OK != res) && (nullptr != tmpAnswer)) {
       const lListElem *err = lFirst(tmpAnswer);

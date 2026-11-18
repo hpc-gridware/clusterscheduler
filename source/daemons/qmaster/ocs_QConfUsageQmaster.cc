@@ -92,9 +92,9 @@ namespace {
 
          ocs::tom::ListPtr<ocs::tom::AN> alp;
          // the on_success hook of users and projects leaves nothing for after the request
-         const int ret = sge_gdi_add_mod_generic(packet, task, &alp, reduced.get(), 0, object, packet->user,
-                                                 packet->host, ocs::gdi::Command::MOD_PROCEDURE,
-                                                 ocs::gdi::SubCommand::NONE, nullptr, monitor);
+         const int ret = ocs_gdi_add_mod<T>(packet, task, &alp, reduced.get(), 0, object, packet->user,
+                                            packet->host, ocs::gdi::Command::MOD_PROCEDURE,
+                                            ocs::gdi::SubCommand::NONE, nullptr, monitor);
          /* only what went wrong is passed on: a successful clear said nothing
           * when the client did it, and one line per user would bury a failure */
          if (ret != STATUS_OK) {

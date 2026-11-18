@@ -23,7 +23,7 @@
  * @brief The `qconf -clearusage` action (CS-2963)
  *
  * Lives here for the reason every action does: the change goes through
- * `sge_gdi_add_mod_generic()`, which is the daemon's. Registered as the action
+ * `ocs_gdi_add_mod()`, which is the daemon's. Registered as the action
  * ocs::QConfActionParameter::USAGE_CLEAR at startup.
  */
 

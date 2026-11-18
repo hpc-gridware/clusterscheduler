@@ -93,6 +93,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/ocs_object_type.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ASOLIST.h"
@@ -1363,26 +1364,38 @@ setup_qmaster() {
 
 /**
  * @brief The key of a spooled object as text
- * @param ep the object
- * @param type its object type
- * @return the value of the type's key attribute; empty if the type has none
+ *
+ * Compiled per object type, so the key field and its type are known at compile time; the object is taken raw
+ * because the repair of the spooled objects around it is descriptor-generic.
+ *
+ * @tparam E the entry of the object type in #ocs_object_types
+ * @param ep the object, from the master list of the entry's type
+ * @return the value of the type's key attribute; empty if the type has none, the object does not hold it or the
+ *         key is neither a string, a host nor a 32 bit number
  */
+template <typename E>
 static std::string
-ocs_qmaster_object_key(const lListElem *ep, const sge_object_type type) {
-   const int nm = object_type_get_key_nm(type);
-   if (nm < 0 || lGetPosInDescr(ep->descr, nm) < 0) {
-      return "";
+ocs_qmaster_object_key(const lListElem *ep) {
+   DENTER(TOP_LAYER);
+   std::string ret;
+   if constexpr (E::has_key) {
+      constexpr auto key = E::key;
+      constexpr ocs::tom::FieldType key_type = ocs::tom::FieldTraits<key>::type;
+      // the element comes from the master list of the entry's type
+      const auto object = ocs::tom::ConstElement<typename E::type>::from_typed(ep);
+      if (object.template has<key>()) {
+         if constexpr (key_type == ocs::tom::FieldType::String) {
+            const char *value = ocs::tom::get<key>(object);
+            ret = value != nullptr ? value : "";
+         } else if constexpr (key_type == ocs::tom::FieldType::Host) {
+            const char *value = ocs::tom::get<key>(object).c_str();
+            ret = value != nullptr ? value : "";
+         } else if constexpr (key_type == ocs::tom::FieldType::Uint32) {
+            ret = std::to_string(ocs::tom::get<key>(object));
+         }
+      }
    }
-   switch (lGetType(ep->descr, nm)) {
-      case lStringT:
-         return lGetString(ep, nm) != nullptr ? lGetString(ep, nm) : "";
-      case lHostT:
-         return lGetHost(ep, nm) != nullptr ? lGetHost(ep, nm) : "";
-      case lUlongT:
-         return std::to_string(lGetUlong(ep, nm));
-      default:
-         return "";
-   }
+   DRETURN(ret);
 }
 
 /**
@@ -1477,6 +1490,11 @@ ocs_qmaster_check_unique_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       SGE_TYPE_CKPT, SGE_TYPE_AR, SGE_TYPE_JOB, SGE_TYPE_USER, SGE_TYPE_PROJECT, SGE_TYPE_SHARETREE
    };
    for (const sge_object_type type : spooled_types) {
+      // the key of an object of this type as text, chosen once per type
+      const auto key_of = ocs_with_object_type(type, [](const auto &entry) {
+         return &ocs_qmaster_object_key<ocs_object_type_entry_t<decltype(entry)>>;
+      }).value_or(nullptr);
+      // stays raw: the repair below is descriptor-generic, the type of the master list is given at run time
       lList *master_list = *ocs::DataStore::get_master_list_rw(type);
       for_each_rw_lv(ep, master_list) {
          int skip_nm = NoName;
@@ -1496,7 +1514,7 @@ ocs_qmaster_check_unique_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
          } else if (type == SGE_TYPE_SCHEDD_CONF) {
             key = "schedd_conf";
          } else {
-            key = ocs_qmaster_object_key(ep, type);
+            key = key_of != nullptr ? key_of(ep) : "";
          }
          ocs_qmaster_repair_spooled_object(ep, type, key, unrepaired, skip_nm);
       }

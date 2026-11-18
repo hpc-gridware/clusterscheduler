@@ -23,7 +23,7 @@
  * @brief The writing half of the qconf write procedure (CS-2822)
  *
  * The procedure library holds the model, the parameters and the view; what it
- * cannot hold is the write itself, because `sge_gdi_add_mod_generic()` is the
+ * cannot hold is the write itself, because `ocs_gdi_add_mod()` is the
  * daemon's and the library is linked into the clients too. So this function
  * lives here and is handed over at startup - see ocs::set_qconf_write_provider().
  */

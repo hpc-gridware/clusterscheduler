@@ -39,14 +39,16 @@
  * Adding, modifying and deleting a calendar, a queue, a user or a project is
  * the same sequence every time - validate, spool, announce - and only the
  * validation and the spooling differ. So each object type contributes one
- * #gdi_object_t giving its list, its key field and those few functions, and
- * sge_gdi_add_mod_generic() does the rest.
+ * #gdi_object_t giving its list, its key field and its name, plus its typed
+ * modifier, writer and on_success functions (ocs_gdi_hooks in sge_c_gdi.cc),
+ * and ocs_gdi_add_mod() does the rest, compiled once per object type.
  *
  * That is why a new configuration object needs a table entry rather than a new
  * request handler, and why a bug in the sequence is a bug for every object at
  * once.
  */
 
+#include <concepts>
 #include <utility>
 
 #include "uti/sge_monitor.h"
@@ -56,6 +58,7 @@
 #include "tom/ocs_List.h"
 
 #include "sgeobj/sge_object.h"
+#include "sgeobj/ocs_object_type.h"
 
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/ocs_gdi_Packet.h"
@@ -68,7 +71,7 @@ typedef struct _gdi_object_t gdi_object_t;   ///< @copybrief _gdi_object_t
  * @brief What the on_success hooks of one request leave for after its last object
  *
  * Some work is done once per request rather than once per object, on the final state after the last object
- * of the request is stored. The hooks note it here, the caller of sge_gdi_add_mod_generic() carries it out
+ * of the request is stored. The hooks note it here, the caller of ocs_gdi_add_mod() carries it out
  * after its loop over the objects of the request. A caller that has no such step passes nullptr, the hooks
  * then note nothing.
  */
@@ -76,150 +79,22 @@ struct ocs_gdi_post_processing {
    ocs::tom::ListPtr<ocs::tom::STU> redebit_centries;   ///< consumables whose debitation is rebuilt once
 };
 
-/** @brief Validates one attribute change and applies it to the destination object
+/**
+ * @brief Everything the generic request path needs to know about one object type at run time
  *
- * Called once per attribute the client wants changed.
+ * The functions that validate, spool and announce an object are not part of the entry: they are typed and are
+ * bound to the object type at compile time (ocs_gdi_hooks in sge_c_gdi.cc), see ocs_gdi_add_mod().
  */
-typedef int (*modifier_func_t)(
-        ocs::gdi::Packet *packet,
-        ocs::gdi::Task *task,
-        ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *new_cal,   /* destination */
-        lListElem *cep,       /* reduced element */
-        int add,              /* 1 for add/0 for mod */
-        const char *ruser,
-        const char *rhost,
-        gdi_object_t *object, /* some kind of "this" */
-        ocs::gdi::Command cmd,
-        ocs::gdi::SubCommand sub_com,
-        monitoring_t *monitor
-);
-
-/** @brief Spools the object once every change has been validated */
-typedef int (*writer_func_t)(
-        ocs::gdi::Packet *packet,
-        ocs::gdi::Task *task,
-        ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep,      /* new modified element */
-        gdi_object_t *thiz   /* some kind of "this" */
-);
-
-/** @brief allows to retrieve a master list */
-typedef lList **(*getMasterList)();
-
-/** @brief Does whatever has to happen once the object is safely spooled
- *
- * Anything that must not be done before the change is on disk - announcing it
- * to the event clients, triggering a scheduling run - belongs here rather than
- * in the modifier.
- */
-typedef int (*on_success_func_t)(
-        ocs::gdi::Packet *packet,
-        ocs::gdi::Task *task,
-        lListElem *ep,       /* new modified and already spooled element */
-        lListElem *old_ep,   /* old element is nullptr in add case */
-        gdi_object_t *thiz,  /* some kind of "this" */
-        ocs_gdi_post_processing *post,   /* what is left for after the last object, or nullptr */
-        monitoring_t *monitor  /* monitoring structure */
-);
-
-/** @brief Everything the generic request path needs to know about one object type */
 struct _gdi_object_t {
    ocs::gdi::Target target;          ///< Which GDI target this is, e.g. `SGE_QUEUE_LIST`
    int key_nm;          ///< The field that identifies an object, e.g. `QU_qname`
    const lDescr *type;           ///< The CULL type, e.g. `QU_Type`
    const char *object_name;    ///< Its name in messages, e.g. `"queue"`
    sge_object_type list_type;       ///< identifier to retrive the master list via ocs::DataStore::get_master_list
-   modifier_func_t modifier;        ///< responsible for validating each our attribute modifier
-   writer_func_t writer;          ///< function that spools our object
-   on_success_func_t on_success;      ///< do everything what has to be done on successful writing
 };
 
 /** @brief The table entry for a GDI target, nullptr for a target without generic handling */
 gdi_object_t *get_gdi_object(ocs::gdi::Target);
-
-/**
- * @brief The gdi_object_t::modifier of a table entry: calls the typed modifier of the entry's object type
- *
- * Has exactly the signature of #modifier_func_t, so the table keeps its raw function pointers while every
- * modifier is typed. The raw elements are taken into handles without a check: the table entry pairs @p F
- * with @p T, the new element is created with the entry's type or copied from its master list, and the
- * request is structure-checked by the listener (CS-3125) or built by qmaster for that entry.
- *
- * @tparam T the object type of the table entry
- * @tparam F the typed modifier, taking an `Element<T>` destination and an `Element<T>` or `ConstElement<T>`
- *           request in place of the raw elements, the other parameters as #modifier_func_t
- * @param packet the client request
- * @param task the GDI task being answered
- * @param alpp receives messages for the caller
- * @param new_ep the object as it is to become (of type T)
- * @param request the reduced element the client sent (of type T)
- * @param add 1 for add, 0 for modify
- * @param ruser the requesting user
- * @param rhost the requesting host
- * @param object the table entry
- * @param cmd the command being executed
- * @param sub_command what kind of modification this is
- * @param monitor for monitoring qmaster threads
- * @return what @p F returns: 0 on success
- */
-template <ocs::tom::ObjectType T, auto F>
-int
-ocs_gdi_modifier(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                 lListElem *new_ep, lListElem *request, const int add, const char *ruser, const char *rhost,
-                 gdi_object_t *object, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
-                 monitoring_t *monitor) {
-   // the types are guaranteed by the table entry and the listener's structure check, see above
-   return F(packet, task, alpp, ocs::tom::Element<T>::from_typed(new_ep), ocs::tom::Element<T>::from_typed(request),
-            add, ruser, rhost, object, cmd, sub_command, monitor);
-}
-
-/**
- * @brief The gdi_object_t::writer of a table entry: calls the typed writer of the entry's object type
- *
- * Has exactly the signature of #writer_func_t; the element is the one the modifier has built, of the entry's
- * type (see ocs_gdi_modifier()), and is taken into a handle without a check.
- *
- * @tparam T the object type of the table entry
- * @tparam F the typed writer, taking an `Element<T>` or `ConstElement<T>` in place of the raw element
- * @param packet the client request
- * @param task the GDI task being answered
- * @param alpp receives messages for the caller
- * @param ep the object to spool (of type T)
- * @param object the table entry
- * @return what @p F returns: 0 on success
- */
-template <ocs::tom::ObjectType T, auto F>
-int
-ocs_gdi_writer(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-               lListElem *ep, gdi_object_t *object) {
-   // the type is guaranteed by the table entry, see ocs_gdi_modifier()
-   return F(packet, task, alpp, ocs::tom::Element<T>::from_typed(ep), object);
-}
-
-/**
- * @brief The gdi_object_t::on_success of a table entry: calls the typed on_success of the entry's object type
- *
- * Has exactly the signature of #on_success_func_t; the new element is the spooled one of the entry's type,
- * the old one comes from the entry's master list, so both are taken into handles without a check.
- *
- * @tparam T the object type of the table entry
- * @tparam F the typed on_success, taking an `Element<T>` and a `ConstElement<T>` in place of the raw elements
- * @param packet the client request
- * @param task the GDI task being answered
- * @param ep the new, already spooled object (of type T)
- * @param old_ep the object as it was (of type T), nullptr on add
- * @param object the table entry
- * @param post what is left for after the last object of the request, or nullptr
- * @param monitor for monitoring qmaster threads
- * @return what @p F returns: 0 on success
- */
-template <ocs::tom::ObjectType T, auto F>
-int
-ocs_gdi_on_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
-                   gdi_object_t *object, ocs_gdi_post_processing *post, monitoring_t *monitor) {
-   // the types are guaranteed by the table entry and its master list, see above
-   return F(packet, task, ocs::tom::Element<T>::from_typed(ep), ocs::tom::ConstElement<T>::from_typed(old_ep),
-            object, post, monitor);
-}
 
 bool
 sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
@@ -280,11 +155,31 @@ void
 sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *monitor, bool has_next);
 
+/**
+ * @brief The object types that have a generic add and modify: those whose table entry has typed hooks
+ *
+ * Exactly the types with a specialization of ocs_gdi_hooks in sge_c_gdi.cc, for which ocs_gdi_add_mod() is
+ * instantiated there.
+ *
+ * @tparam T the object type
+ */
+template <typename T>
+concept OcsGdiGenericType =
+   std::same_as<T, ocs::tom::CAL> || std::same_as<T, ocs::tom::EH> || std::same_as<T, ocs::tom::CQ> ||
+   std::same_as<T, ocs::tom::CE> || std::same_as<T, ocs::tom::PE> || std::same_as<T, ocs::tom::UU> ||
+   std::same_as<T, ocs::tom::US> || std::same_as<T, ocs::tom::PR> || std::same_as<T, ocs::tom::CK> ||
+   std::same_as<T, ocs::tom::RQS> || std::same_as<T, ocs::tom::HGRP> || std::same_as<T, ocs::tom::AR> ||
+   std::same_as<T, ocs::tom::RL>;
+
+template <OcsGdiGenericType T>
 int
-sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                        lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
-                        const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-                        ocs_gdi_post_processing *post, monitoring_t *monitor);
+ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                ocs::tom::Element<T> request, int add, gdi_object_t *object, const char *ruser, const char *rhost,
+                ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, ocs_gdi_post_processing *post,
+                monitoring_t *monitor);
+
+int
+ocs_gdi_add_mod_unsupported(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const gdi_object_t *object);
 
 void sge_clean_lists();
 

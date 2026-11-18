@@ -646,7 +646,7 @@ cqueue_verify_hostlist(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
  * CS-2677, N-T-4: every write to a host group is owned by the host group
  * write path, and one that arrives as a change to a cluster queue is no
  * exception. This is the routing, and it is deliberately not a
- * reimplementation -- it hands the instruction to sge_gdi_add_mod_generic()
+ * reimplementation -- it hands the instruction to ocs_gdi_add_mod()
  * with the host group's own table entry, so the request travels
  * hgroup_mod() -> hgroup_spool() -> hgroup_success() exactly as
  * `qconf -mhgrp @@<queue>` would. The queue instances the change creates or
@@ -682,9 +682,9 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
    ocs::tom::set<HGRP_name>(instructions, group_name);
    ocs::tom::set<HGRP_host_list>(instructions, std::move(members));
 
-   const int status = sge_gdi_add_mod_generic(packet, task, &answer_list, *instructions, 0,
-                                              hgroup_object, packet->user, packet->host,
-                                              task->command, task->sub_command, nullptr, monitor);
+   const int status = ocs_gdi_add_mod<ocs::tom::HGRP>(packet, task, &answer_list, *instructions, 0,
+                                                      hgroup_object, packet->user, packet->host,
+                                                      task->command, task->sub_command, nullptr, monitor);
 
    /* the caller's answer list is the queue's; the group's messages name the
     * group, which is not the object the administrator addressed */
@@ -885,7 +885,7 @@ cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const o
 
 /** @brief Apply one attribute change to a cluster queue
  *
- * The gdi_object_t::modifier for cluster queues; see sge_c_gdi.h for the sequence it is called from.
+ * The modifier of ocs_gdi_hooks for cluster queues; see ocs_gdi_add_mod() for the sequence it is called from.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -1056,7 +1056,7 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
 
 /** @brief Announce a cluster queue change once it is safely spooled
  *
- * The gdi_object_t::on_success for cluster queues.
+ * The on_success of ocs_gdi_hooks for cluster queues.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -1229,7 +1229,7 @@ cqueue_commit(const ocs::tom::Element<ocs::tom::CQ> cqueue, const uint64_t gdi_s
 
 /** @brief Write a cluster queue to the spool
  *
- * The gdi_object_t::writer for cluster queues.
+ * The writer of ocs_gdi_hooks for cluster queues.
  *
  * @param packet the client request
  * @param task the GDI task being answered

@@ -42,6 +42,7 @@
 #include <sstream>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "uti/sge_log.h"
@@ -170,11 +171,10 @@ trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task, mon
 static bool
 sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
-static int
-schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-           ocs::tom::Element<ocs::tom::SC> modp, ocs::tom::ConstElement<ocs::tom::SC> ep, int add, const char *ruser,
-           const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-           monitoring_t *monitor);
+static void
+ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList *requests, int add, gdi_object_t *object,
+                     ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, ocs_gdi_post_processing *post,
+                     monitoring_t *monitor);
 
 /*
  * Prevent these functions made inline by compiler. This is
@@ -186,78 +186,96 @@ schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
 
 /* ------------------------------ generic gdi objects --------------------- */
 /*
- * The function pointers keep the raw signatures of sge_c_gdi.h; each points to an adapter that takes the raw
- * elements into handles of the entry's type and calls the typed function (ocs_gdi_modifier() and its siblings).
+ * The run-time part of each object type. The typed modifier, writer and on_success of a type are bound to it at
+ * compile time by ocs_gdi_hooks below, and called directly by ocs_gdi_add_mod().
  */
 /* *INDENT-OFF* */
 static gdi_object_t gdi_object[] = {
-        {ocs::gdi::Target::CAL_LIST,     CAL_name,  CAL_Type,  "calendar",                SGE_TYPE_CALENDAR,
-         ocs_gdi_modifier<ocs::tom::CAL, calendar_mod>, ocs_gdi_writer<ocs::tom::CAL, calendar_spool>,
-         ocs_gdi_on_success<ocs::tom::CAL, calendar_success>},
-        {ocs::gdi::Target::EV_LIST,      0,         nullptr,   "event",                   SGE_TYPE_NONE,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::EH_LIST,      EH_name,   EH_Type,   "exechost",                SGE_TYPE_EXECHOST,
-         ocs_gdi_modifier<ocs::tom::EH, host_mod>, ocs_gdi_writer<ocs::tom::EH, host_spool>,
-         ocs_gdi_on_success<ocs::tom::EH, host_success>},
-        {ocs::gdi::Target::CQ_LIST,      CQ_name,   CQ_Type,   "cluster queue",           SGE_TYPE_CQUEUE,
-         ocs_gdi_modifier<ocs::tom::CQ, cqueue_mod>, ocs_gdi_writer<ocs::tom::CQ, cqueue_spool>,
-         ocs_gdi_on_success<ocs::tom::CQ, cqueue_success>},
-        {ocs::gdi::Target::JB_LIST,      0,         nullptr,   "job",                     SGE_TYPE_JOB,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY,
-         ocs_gdi_modifier<ocs::tom::CE, centry_mod>, ocs_gdi_writer<ocs::tom::CE, centry_spool>,
-         ocs_gdi_on_success<ocs::tom::CE, centry_success>},
-        {ocs::gdi::Target::ORDER_LIST,   0,         nullptr,   "order",                   SGE_TYPE_NONE,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::MASTER_EVENT, 0,         nullptr,   "master event",            SGE_TYPE_NONE,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::PE_LIST,      PE_name,   PE_Type,   "parallel environment",    SGE_TYPE_PE,
-         ocs_gdi_modifier<ocs::tom::PE, pe_mod>, ocs_gdi_writer<ocs::tom::PE, pe_spool>,
-         ocs_gdi_on_success<ocs::tom::PE, pe_success>},
-        {ocs::gdi::Target::CONF_LIST,    0,         nullptr,   "configuration",           SGE_TYPE_NONE,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::SC_LIST,      0,         nullptr,   "scheduler configuration", SGE_TYPE_NONE,
-         ocs_gdi_modifier<ocs::tom::SC, schedd_mod>, nullptr, nullptr},
-        {ocs::gdi::Target::UU_LIST,      UU_name,   UU_Type,   "user",                    SGE_TYPE_USER,
-         ocs_gdi_modifier<ocs::tom::UU, userprj_mod<ocs::tom::UU>>,
-         ocs_gdi_writer<ocs::tom::UU, userprj_spool<ocs::tom::UU>>,
-         ocs_gdi_on_success<ocs::tom::UU, userprj_success<ocs::tom::UU>>},
-        {ocs::gdi::Target::US_LIST,      US_name,   US_Type,   "userset",                 SGE_TYPE_USERSET,
-         ocs_gdi_modifier<ocs::tom::US, userset_mod>, ocs_gdi_writer<ocs::tom::US, userset_spool>,
-         ocs_gdi_on_success<ocs::tom::US, userset_success>},
-        {ocs::gdi::Target::PR_LIST,      PR_name,   PR_Type,   "project",                 SGE_TYPE_PROJECT,
-         ocs_gdi_modifier<ocs::tom::PR, userprj_mod<ocs::tom::PR>>,
-         ocs_gdi_writer<ocs::tom::PR, userprj_spool<ocs::tom::PR>>,
-         ocs_gdi_on_success<ocs::tom::PR, userprj_success<ocs::tom::PR>>},
-        {ocs::gdi::Target::STN_LIST,     0,         nullptr,   "sharetree",               SGE_TYPE_SHARETREE,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::CK_LIST,      CK_name,   CK_Type,   "checkpoint interface",    SGE_TYPE_CKPT,
-         ocs_gdi_modifier<ocs::tom::CK, ckpt_mod>, ocs_gdi_writer<ocs::tom::CK, ckpt_spool>,
-         ocs_gdi_on_success<ocs::tom::CK, ckpt_success>},
-        {ocs::gdi::Target::SME_LIST,     0,         nullptr,   "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::RQS_LIST,     RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS,
-         ocs_gdi_modifier<ocs::tom::RQS, rqs_mod>, ocs_gdi_writer<ocs::tom::RQS, rqs_spool>,
-         ocs_gdi_on_success<ocs::tom::RQS, rqs_success>},
-        {ocs::gdi::Target::HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,
-         ocs_gdi_modifier<ocs::tom::HGRP, hgroup_mod>, ocs_gdi_writer<ocs::tom::HGRP, hgroup_spool>,
-         ocs_gdi_on_success<ocs::tom::HGRP, hgroup_success>},
-        {ocs::gdi::Target::AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,
-         ocs_gdi_modifier<ocs::tom::AR, ar_mod>, ocs_gdi_writer<ocs::tom::AR, ar_spool>,
-         ocs_gdi_on_success<ocs::tom::AR, ar_success>},
-        {ocs::gdi::Target::DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::CAT_LIST,     CT_id,     nullptr,   "category",                SGE_TYPE_CATEGORY,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::RL_LIST,      RL_name,   RL_Type,   "role",                    SGE_TYPE_RL,
-         ocs_gdi_modifier<ocs::tom::RL, role_mod>, ocs_gdi_writer<ocs::tom::RL, role_spool>,
-         ocs_gdi_on_success<ocs::tom::RL, role_success>},
-        {ocs::gdi::Target::PROCEDURE,    0,         nullptr,   "procedure",               SGE_TYPE_CATEGORY,
-         nullptr, nullptr, nullptr},
-        {ocs::gdi::Target::NO_TARGET,    0,         nullptr,   nullptr,                   SGE_TYPE_NONE,
-         nullptr, nullptr, nullptr}
+        {ocs::gdi::Target::CAL_LIST,     CAL_name,  CAL_Type,  "calendar",                SGE_TYPE_CALENDAR},
+        {ocs::gdi::Target::EV_LIST,      0,         nullptr,   "event",                   SGE_TYPE_NONE},
+        {ocs::gdi::Target::EH_LIST,      EH_name,   EH_Type,   "exechost",                SGE_TYPE_EXECHOST},
+        {ocs::gdi::Target::CQ_LIST,      CQ_name,   CQ_Type,   "cluster queue",           SGE_TYPE_CQUEUE},
+        {ocs::gdi::Target::JB_LIST,      0,         nullptr,   "job",                     SGE_TYPE_JOB},
+        {ocs::gdi::Target::CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY},
+        {ocs::gdi::Target::ORDER_LIST,   0,         nullptr,   "order",                   SGE_TYPE_NONE},
+        {ocs::gdi::Target::MASTER_EVENT, 0,         nullptr,   "master event",            SGE_TYPE_NONE},
+        {ocs::gdi::Target::PE_LIST,      PE_name,   PE_Type,   "parallel environment",    SGE_TYPE_PE},
+        {ocs::gdi::Target::CONF_LIST,    0,         nullptr,   "configuration",           SGE_TYPE_NONE},
+        {ocs::gdi::Target::SC_LIST,      0,         nullptr,   "scheduler configuration", SGE_TYPE_NONE},
+        {ocs::gdi::Target::UU_LIST,      UU_name,   UU_Type,   "user",                    SGE_TYPE_USER},
+        {ocs::gdi::Target::US_LIST,      US_name,   US_Type,   "userset",                 SGE_TYPE_USERSET},
+        {ocs::gdi::Target::PR_LIST,      PR_name,   PR_Type,   "project",                 SGE_TYPE_PROJECT},
+        {ocs::gdi::Target::STN_LIST,     0,         nullptr,   "sharetree",               SGE_TYPE_SHARETREE},
+        {ocs::gdi::Target::CK_LIST,      CK_name,   CK_Type,   "checkpoint interface",    SGE_TYPE_CKPT},
+        {ocs::gdi::Target::SME_LIST,     0,         nullptr,   "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO},
+        {ocs::gdi::Target::RQS_LIST,     RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS},
+        {ocs::gdi::Target::HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP},
+        {ocs::gdi::Target::AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR},
+        {ocs::gdi::Target::DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE},
+        {ocs::gdi::Target::CAT_LIST,     CT_id,     nullptr,   "category",                SGE_TYPE_CATEGORY},
+        {ocs::gdi::Target::RL_LIST,      RL_name,   RL_Type,   "role",                    SGE_TYPE_RL},
+        {ocs::gdi::Target::PROCEDURE,    0,         nullptr,   "procedure",               SGE_TYPE_CATEGORY},
+        {ocs::gdi::Target::NO_TARGET,    0,         nullptr,   nullptr,                   SGE_TYPE_NONE}
 };
 
+/* *INDENT-ON* */
+
+/**
+ * @brief The typed functions of one object type with a generic add and modify; undefined for the other types
+ *
+ * Each specialization derives from ocs_gdi_hooks_of and names the master list of the type, its modifier, its
+ * writer and its on_success. The types are exactly those of #OcsGdiGenericType.
+ *
+ * @tparam T the object type
+ */
+template <OcsGdiGenericType T>
+struct ocs_gdi_hooks;
+
+/**
+ * @brief The members of an ocs_gdi_hooks specialization
+ *
+ * @tparam L the master list of the type, an #sge_object_type value
+ * @tparam M the modifier: validates the request and applies it to the new object; 0 on success
+ * @tparam W the writer: spools the new object; 0 on success
+ * @tparam S the on_success: announces the stored object
+ */
+template <sge_object_type L, auto M, auto W, auto S>
+struct ocs_gdi_hooks_of {
+   static constexpr sge_object_type list_type = L;   ///< the master list of the type
+   static constexpr auto modifier = M;               ///< validates the request and applies it to the new object
+   static constexpr auto writer = W;                 ///< spools the new object
+   static constexpr auto on_success = S;             ///< announces the stored object
+};
+
+/* *INDENT-OFF* */
+template <> struct ocs_gdi_hooks<ocs::tom::CAL>
+   : ocs_gdi_hooks_of<SGE_TYPE_CALENDAR, calendar_mod, calendar_spool, calendar_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::EH>
+   : ocs_gdi_hooks_of<SGE_TYPE_EXECHOST, host_mod, host_spool, host_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::CQ>
+   : ocs_gdi_hooks_of<SGE_TYPE_CQUEUE, cqueue_mod, cqueue_spool, cqueue_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::CE>
+   : ocs_gdi_hooks_of<SGE_TYPE_CENTRY, centry_mod, centry_spool, centry_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::PE>
+   : ocs_gdi_hooks_of<SGE_TYPE_PE, pe_mod, pe_spool, pe_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::UU>
+   : ocs_gdi_hooks_of<SGE_TYPE_USER, userprj_mod<ocs::tom::UU>, userprj_spool<ocs::tom::UU>,
+                      userprj_success<ocs::tom::UU>> {};
+template <> struct ocs_gdi_hooks<ocs::tom::US>
+   : ocs_gdi_hooks_of<SGE_TYPE_USERSET, userset_mod, userset_spool, userset_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::PR>
+   : ocs_gdi_hooks_of<SGE_TYPE_PROJECT, userprj_mod<ocs::tom::PR>, userprj_spool<ocs::tom::PR>,
+                      userprj_success<ocs::tom::PR>> {};
+template <> struct ocs_gdi_hooks<ocs::tom::CK>
+   : ocs_gdi_hooks_of<SGE_TYPE_CKPT, ckpt_mod, ckpt_spool, ckpt_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::RQS>
+   : ocs_gdi_hooks_of<SGE_TYPE_RQS, rqs_mod, rqs_spool, rqs_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::HGRP>
+   : ocs_gdi_hooks_of<SGE_TYPE_HGROUP, hgroup_mod, hgroup_spool, hgroup_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::AR>
+   : ocs_gdi_hooks_of<SGE_TYPE_AR, ar_mod, ar_spool, ar_success> {};
+template <> struct ocs_gdi_hooks<ocs::tom::RL>
+   : ocs_gdi_hooks_of<SGE_TYPE_RL, role_mod, role_spool, role_success> {};
 /* *INDENT-ON* */
 
 /** @brief Release every master list, at shutdown */
@@ -738,10 +756,9 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          ep = next;
       }
    } else {
-      // stays raw: the element type of the data list is given at run time by the target
+      // the element type of the data list is given at run time by the target: the orders stay raw, share tree
+      // nodes and execution hosts are walked typed, every other target dispatches once on its object type
       bool is_scheduler_resync = false;
-      lListElem *ep;
-      lListElem *next;
 
       /* With RETURN_NEW_VERSION the requests are not returned: the client gets what ar_success() appends to
        * task->data_list instead, nullptr when nothing was appended. The requests are therefore taken out of
@@ -751,70 +768,64 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
               (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
       lList *requests = return_new_version ? std::exchange(task->data_list, nullptr) : task->data_list;
 
-      next = lFirstRW(requests);
-      while ((ep = next) != nullptr) {
-         next = lNextRW(ep);
-
-         /* add each element */
-         switch (task->target) {
-
-            case ocs::gdi::Target::ORDER_LIST:
-               switch (sge_follow_order(ep, packet->user, packet->host,
-                                        reprioritize_tickets ? &ticket_orders : nullptr, monitor, packet->gdi_session)) {
-                  case STATUS_OK :
-                  case 0 : /* everything went fine */
-                     break;
-                  case -2 :
-                     is_scheduler_resync = true;
-                  case -1 :
-                  case -3 :
-                     /* stop the order processing */
-                     WARNING("Skipping remaining " sge_u32 " orders", lGetNumberOfRemainingElem(ep));
-                     next = nullptr;
-                     break;
-
-                  default :
-                  DPRINTF("--> FAILED: unexpected state from in the order processing <--\n");
-                     break;
-               }
-               break;
-
-            case ocs::gdi::Target::STN_LIST:
-               // the request data is structure checked by the listener (CS-3125): an STN_LIST add carries STN_Type
-               sge_add_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep),
-                                 ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
-                                 packet->user, packet->host);
-               break;
-
-            default:
-               if (!ao) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
-                  answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-                  break;
-               }
-
-               if (task->target == ocs::gdi::Target::EH_LIST && !strcmp(to_cstr(EXECD), packet->commproc)) {
-                  bool is_restart = false;
-
-                  if (sub_command == ocs::gdi::SubCommand::EXECD_RESTART) {
-                     is_restart = true;
-                  }
-
-                  // the request data is structure checked by the listener (CS-3125): an EH_LIST add carries EH_Type
-                  sge_execd_startedup(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(ep), &(task->answer_list),
-                                      packet->user, packet->host, task->target, monitor, is_restart);
-               } else {
-                  // no on_success hook leaves anything for after an add
-                  sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host,
-                                          cmd, sub_command, nullptr, monitor);
-               }
-               break;
-         }
-      } /* while loop */
-
       if (task->target == ocs::gdi::Target::ORDER_LIST) {
+         // stays raw: sge_follow_order() takes the order raw
+         lListElem *ep;
+         lListElem *next = lFirstRW(requests);
+         while ((ep = next) != nullptr) {
+            next = lNextRW(ep);
+
+            switch (sge_follow_order(ep, packet->user, packet->host,
+                                     reprioritize_tickets ? &ticket_orders : nullptr, monitor, packet->gdi_session)) {
+               case STATUS_OK :
+               case 0 : /* everything went fine */
+                  break;
+               case -2 :
+                  is_scheduler_resync = true;
+               case -1 :
+               case -3 :
+                  /* stop the order processing */
+                  WARNING("Skipping remaining " sge_u32 " orders", lGetNumberOfRemainingElem(ep));
+                  next = nullptr;
+                  break;
+
+               default :
+               DPRINTF("--> FAILED: unexpected state from in the order processing <--\n");
+                  break;
+            }
+         }
+
          set_next_stree_spooling_time();
          answer_list_add(&(task->answer_list), "OK\n", STATUS_OK, ANSWER_QUALITY_INFO);
+      } else if (task->target == ocs::gdi::Target::STN_LIST) {
+         // the request data is structure checked by the listener (CS-3125): an STN_LIST add carries STN_Type
+         auto ep = ocs::tom::List<ocs::tom::STN>::from_typed(requests).front();
+         while (ep) {
+            const auto next = ep.next();
+            sge_add_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
+                              &(task->answer_list), packet->user, packet->host);
+            ep = next;
+         }
+      } else if (ao == nullptr) {
+         // stays raw: a target without a table entry has no element type; every request is refused
+         for (auto n = lGetNumberOfElem(requests); n > 0; n--) {
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
+            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+         }
+      } else if (task->target == ocs::gdi::Target::EH_LIST && !strcmp(to_cstr(EXECD), packet->commproc)) {
+         const bool is_restart = sub_command == ocs::gdi::SubCommand::EXECD_RESTART;
+
+         // the request data is structure checked by the listener (CS-3125): an EH_LIST add carries EH_Type
+         auto ep = ocs::tom::List<ocs::tom::EH>::from_typed(requests).front();
+         while (ep) {
+            const auto next = ep.next();
+            sge_execd_startedup(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target,
+                                monitor, is_restart);
+            ep = next;
+         }
+      } else {
+         // no on_success hook leaves anything for after an add
+         ocs_gdi_add_mod_list(packet, task, requests, 1, ao, cmd, sub_command, nullptr, monitor);
       }
 
       if (is_scheduler_resync) {
@@ -1313,8 +1324,11 @@ trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 /**
  * @brief Carry out a GDI modify request, one object of its data list after the other
  *
- * The element type of the data list is given at run time by the target, so it stays untyped here. What the
- * on_success hooks leave for after the last object is carried out once, after the loop.
+ * The element type of the data list is given at run time by the target. The targets with a modify of their
+ * own (configuration, event clients, scheduler configuration, jobs, share tree) are walked raw and converted per
+ * element; every other target with a table entry dispatches once on its object type and is walked typed
+ * (ocs_gdi_add_mod_list()). What the on_success hooks leave for after the last object is carried out once,
+ * after the loop.
  *
  * @param ao          the table entry of the target, nullptr if it has no generic handling
  * @param packet      the client request
@@ -1331,56 +1345,54 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
    DENTER(TOP_LAYER);
    ocs_gdi_post_processing post;
 
-   for_each_rw_lv(ep, task->data_list) {
-      if (task->target == ocs::gdi::Target::CONF_LIST) {
-         // the request data is structure checked by the listener (CS-3125): a CONF_LIST mod carries CONF_Type
-         sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF>(ep), &(task->answer_list), packet->user,
-                               packet->host, packet->gdi_session);
-      } else if (task->target == ocs::gdi::Target::EV_LIST) {
-         // the request data is structure checked by the listener (CS-3125): an EV_LIST mod carries EV_Type
-         const auto ev = ocs::tom::Element<ocs::tom::EV>(ep);
+   const ocs::gdi::Target target = task->target;
+   const bool own_mod = target == ocs::gdi::Target::CONF_LIST || target == ocs::gdi::Target::EV_LIST ||
+                        target == ocs::gdi::Target::SC_LIST || target == ocs::gdi::Target::JB_LIST ||
+                        target == ocs::gdi::Target::STN_LIST;
+   if (!own_mod && ao != nullptr) {
+      // every other target with a table entry dispatches once on its object type
+      ocs_gdi_add_mod_list(packet, task, task->data_list, 0, ao, command, sub_command, &post, monitor);
+   } else {
+      for_each_rw_lv(ep, task->data_list) {
+         if (target == ocs::gdi::Target::CONF_LIST) {
+            // the request data is structure checked by the listener (CS-3125): a CONF_LIST mod carries CONF_Type
+            sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF>(ep), &(task->answer_list), packet->user,
+                                  packet->host, packet->gdi_session);
+         } else if (target == ocs::gdi::Target::EV_LIST) {
+            // the request data is structure checked by the listener (CS-3125): an EV_LIST mod carries EV_Type
+            const auto ev = ocs::tom::Element<ocs::tom::EV>(ep);
 
-         /* fill address infos from request into event client that must be added */
-         ocs::tom::set<EV_host>(ev, packet->host);
-         ocs::tom::set<EV_commproc>(ev, packet->commproc);
-         ocs::tom::set<EV_commid>(ev, packet->commproc_id);
+            /* fill address infos from request into event client that must be added */
+            ocs::tom::set<EV_host>(ev, packet->host);
+            ocs::tom::set<EV_commproc>(ev, packet->commproc);
+            ocs::tom::set<EV_commid>(ev, packet->commproc_id);
 
-         /* fill in authentication infos from request */
-         ocs::tom::set<EV_uid>(ev, packet->uid);
-         if (!event_client_verify(ev, &(task->answer_list), false)) {
-            ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
+            /* fill in authentication infos from request */
+            ocs::tom::set<EV_uid>(ev, packet->uid);
+            if (!event_client_verify(ev, &(task->answer_list), false)) {
+               ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
+            } else {
+               sge_mod_event_client(ev, &(task->answer_list), packet->user, packet->host);
+            }
+         } else if (target == ocs::gdi::Target::SC_LIST) {
+            // the request data is structure checked by the listener (CS-3125): an SC_LIST mod carries SC_Type
+            sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>(ep), &(task->answer_list),
+                                        packet->user, packet->host);
+         } else if (target == ocs::gdi::Target::JB_LIST) {
+            // the request data is structure checked by the listener (CS-3125): a JB_LIST mod carries JB_Type
+            sge_gdi_mod_job(packet, task, ocs::tom::Element<ocs::tom::JB>(ep), &(task->answer_list), sub_command);
+         } else if (target == ocs::gdi::Target::STN_LIST) {
+            // the request data is structure checked by the listener (CS-3125): an STN_LIST mod carries STN_Type
+            sge_mod_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep),
+                              ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
+                              packet->user, packet->host);
          } else {
-            sge_mod_event_client(ev, &(task->answer_list), packet->user, packet->host);
+            // a target without a table entry
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
+            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          }
-      } else if (task->target == ocs::gdi::Target::SC_LIST) {
-         // the request data is structure checked by the listener (CS-3125): an SC_LIST mod carries SC_Type
-         sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>(ep), &(task->answer_list),
-                                     packet->user, packet->host);
-      } else {
-         switch (task->target) {
-            case ocs::gdi::Target::JB_LIST:
-               // the request data is structure checked by the listener (CS-3125): a JB_LIST mod carries JB_Type
-               sge_gdi_mod_job(packet, task, ocs::tom::Element<ocs::tom::JB>(ep), &(task->answer_list), sub_command);
-               break;
-
-            case ocs::gdi::Target::STN_LIST:
-               // the request data is structure checked by the listener (CS-3125): an STN_LIST mod carries STN_Type
-               sge_mod_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep),
-                                 ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
-                                 packet->user, packet->host);
-               break;
-            default:
-               if (ao == nullptr) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
-                  answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-                  break;
-               }
-               sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 0, ao, packet->user,
-                                       packet->host, command, sub_command, &post, monitor);
-               break;
-         }
-      }
-   } /* for_each */
+      } /* for_each */
+   }
 
    /* postprocessing for the list of requests: centry_success() collects the names of the changed complex
     * entries, their debitation is rebuilt once for the whole request */
@@ -1636,6 +1648,216 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 }
 
 
+/* ------------------------------ generic add and modify --------------------- */
+
+/**
+ * @brief Refuse an add or modify without an object or without a table entry
+ *
+ * @param alpp receives the refusal
+ * @param function the generic function, for the message
+ * @return STATUS_EUNKNOWN
+ */
+static int
+ocs_gdi_add_mod_null(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *function) {
+   DENTER(TOP_LAYER);
+   CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, function);
+   answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+   DRETURN(STATUS_EUNKNOWN);
+}
+
+/**
+ * @brief Refuse an add or modify whose request does not carry the key field of the table entry
+ *
+ * @param alpp receives the refusal
+ * @param object the table entry
+ * @param function the generic function, for the message
+ * @return STATUS_EUNKNOWN
+ */
+static int
+ocs_gdi_add_mod_missing_key(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const gdi_object_t *object,
+                            const char *function) {
+   DENTER(TOP_LAYER);
+   CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(object->key_nm), function);
+   answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+   DRETURN(STATUS_EUNKNOWN);
+}
+
+/**
+ * @brief Refuse an add or modify of an object type that has no generic add and modify
+ *
+ * Says what the untyped generic path said for such a table entry: the request does not carry the key field of
+ * the entry, which is none for most of these entries (key field 0).
+ *
+ * @param alpp receives the refusal
+ * @param object the table entry, nullptr is refused as a null pointer
+ * @return STATUS_EUNKNOWN
+ */
+int
+ocs_gdi_add_mod_unsupported(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+   const int ret = object == nullptr ? ocs_gdi_add_mod_null(alpp, __func__)
+                                     : ocs_gdi_add_mod_missing_key(alpp, object, __func__);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Refuse an add or modify of an execution host whose name does not resolve
+ *
+ * @param alpp receives the refusal
+ * @param host the host name of the request, or nullptr
+ * @return STATUS_EUNKNOWN
+ */
+static int
+ocs_gdi_add_mod_unresolved_host(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *host) {
+   DENTER(TOP_LAYER);
+   ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, host ? host : "nullptr");
+   answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+   DRETURN(STATUS_EUNKNOWN);
+}
+
+/**
+ * @brief Check the name of the request and whether its object exists as the command needs it
+ *
+ * An add needs an object that does not exist yet, a modify one that does.
+ *
+ * @param alpp receives the refusal
+ * @param object the table entry
+ * @param add 1 for add, 0 for modify
+ * @param name the key of the request as text, nullptr if it has none
+ * @param exists whether the master list holds an object with that key
+ * @return STATUS_OK if the request may go on, STATUS_EEXIST otherwise
+ */
+static int
+ocs_gdi_add_mod_check_existence(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const gdi_object_t *object, const int add,
+                                const char *name, const bool exists) {
+   DENTER(TOP_LAYER);
+   if (name == nullptr) {
+      answer_list_add(alpp, MSG_OBJ_NAME_MISSING, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_EEXIST);
+   }
+
+   /* prevent duplicates / modifying non existing objects */
+   if ((exists && add) || (!exists && !add)) {
+      ERROR(add ? MSG_SGETEXT_ALREADYEXISTS_SS : MSG_SGETEXT_DOESNOTEXIST_SS, object->object_name, name);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_EEXIST);
+   }
+   DRETURN(STATUS_OK);
+}
+
+/**
+ * @brief Refuse an add or modify for which the new object could not be created
+ *
+ * @param alpp receives the refusal
+ * @return STATUS_EEXIST
+ */
+static int
+ocs_gdi_add_mod_no_memory(ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
+   DENTER(TOP_LAYER);
+   ERROR(SFNMAX, MSG_MEM_MALLOC);
+   answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+   DRETURN(STATUS_EEXIST);
+}
+
+/**
+ * @brief Pass on what a failed modifier said
+ *
+ * Only the last message is passed on, the ones before may be success messages that are no longer true; an
+ * advance reservation passes on all of them.
+ *
+ * @param alpp receives the messages, nullptr to drop them
+ * @param tmp_alp what the modifier said, taken over
+ * @param pass_all true to pass on every message
+ * @return STATUS_EUNKNOWN
+ */
+static int
+ocs_gdi_add_mod_modifier_failed(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::tom::AN> &&tmp_alp,
+                                const bool pass_all) {
+   DENTER(TOP_LAYER);
+   auto answers = std::move(tmp_alp);
+   if (alpp != nullptr && answers) {
+      if (!*alpp) {
+         *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
+      }
+
+      if (pass_all) {
+         (*alpp)->splice(*answers);
+      } else if (const auto failure = answers->back()) {
+         (*alpp)->push_back(answers->extract(failure));
+      }
+   }
+   answers.reset();
+   DRETURN(STATUS_EUNKNOWN);
+}
+
+/**
+ * @brief Whether no unique attribute of the new object holds a key twice (CS-3053)
+ *
+ * Checked after the modifier, so that the merges which collapse a repeated key on purpose (host groups) keep
+ * working.
+ *
+ * @param new_obj the new object; the check is descriptor-generic and takes it raw
+ * @param alpp receives the refusal
+ * @param object the table entry
+ * @param name the key of the object as text
+ * @return true if the object holds every key once
+ */
+static bool
+ocs_gdi_add_mod_unique_keys(const lListElem *new_obj, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                            const gdi_object_t *object, const char *name) {
+   DENTER(TOP_LAYER);
+   const std::string object_name = std::string(object->object_name) + " " + name;
+   const bool ret = ocs_object_verify_unique_keys(new_obj, alpp, object_name.c_str());
+   DRETURN(ret);
+}
+
+/**
+ * @brief Pass on what the modifier said about an object that is spooled now
+ *
+ * @param alpp receives the messages, nullptr to drop them
+ * @param tmp_alp what the modifier said, taken over
+ */
+static void
+ocs_gdi_add_mod_take_answers(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::tom::AN> &&tmp_alp) {
+   DENTER(TOP_LAYER);
+   auto answers = std::move(tmp_alp);
+   if (alpp != nullptr) {
+      if (*alpp == nullptr) {
+         *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
+      }
+
+      /* copy tmp_alp to alpp */
+      (*alpp)->splice(*answers);
+   }
+   answers.reset();
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Confirm an add or modify that is done, unless the client asked for the new version instead
+ *
+ * @param alpp receives the confirmation
+ * @param object the table entry
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param name the key of the object as text
+ * @param sub_command what kind of modification this is
+ * @return STATUS_OK
+ */
+static int
+ocs_gdi_add_mod_done(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const gdi_object_t *object, const int add,
+                     const char *ruser, const char *rhost, const char *name, const ocs::gdi::SubCommand sub_command) {
+   DENTER(TOP_LAYER);
+   if ((sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) != ocs::gdi::SubCommand::RETURN_NEW_VERSION) {
+      INFO(add ? MSG_SGETEXT_ADDEDTOLIST_SSSS : MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, name,
+           object->object_name);
+
+      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+   }
+   DRETURN(STATUS_OK);
+}
+
 /*
    this is our strategy:
 
@@ -1648,18 +1870,21 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    on success create events
    replace old object by new queue
 */
-/** @brief Add or modify one configuration object, whatever its type
+/**
+ * @brief Add or modify one configuration object of a type with a generic add and modify
  *
- * The sequence every object type shares: validate each attribute through
- * gdi_object_t::modifier, spool through gdi_object_t::writer, then let
- * gdi_object_t::on_success announce it.
+ * The sequence every object type shares: validate each attribute through the modifier of the type, spool
+ * through its writer, then let its on_success announce it (ocs_gdi_hooks). Compiled once per object type, so
+ * the lookup by key, the copy and the update of the master list are typed; what does not depend on the type -
+ * the messages, the answer handling, the check for repeated keys - is in shared functions.
  *
+ * @tparam T the object type
  * @param packet the client request
  * @param task the GDI task being answered
- * @param alpp receives messages for the caller
- * @param instructions the object as the client wants it to become
+ * @param alpp receives messages for the caller, may be nullptr
+ * @param request the object as the client wants it to become, possibly reduced; must carry the key field
  * @param add 1 for add, 0 for modify
- * @param object the table entry for this object type
+ * @param object the table entry of @p T, for its name in messages and for the hooks
  * @param ruser the requesting user
  * @param rhost the requesting host
  * @param cmd the command being executed
@@ -1669,177 +1894,219 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
  * @param monitor for monitoring qmaster threads
  * @return STATUS_OK on success, an error status otherwise
  */
+template <OcsGdiGenericType T>
 int
-sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                        lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
-                        const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-                        ocs_gdi_post_processing *post, monitoring_t *monitor) {
+ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                const ocs::tom::Element<T> request, const int add, gdi_object_t *object, const char *ruser,
+                const char *rhost, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
+                ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-
-   int pos;
-   int dataType;
-   const char *name;
-   ocs::tom::ListPtr<ocs::tom::AN> tmp_alp;
-   lListElem *new_obj = nullptr;
-   lListElem *old_obj;
-
-   dstring buffer;
-   char ds_buffer[256];
-
-   sge_dstring_init(&buffer, ds_buffer, sizeof(ds_buffer));
+   using H = ocs_gdi_hooks<T>;
+   using E = ocs_object_type_t<H::list_type>;
+   static_assert(std::is_same_v<typename E::type, T> && E::has_key, "the master list holds T, and T has a key");
+   constexpr auto key = E::key;
+   constexpr ocs::tom::FieldType key_type = ocs::tom::FieldTraits<key>::type;
 
    /* DO COMMON CHECKS AND SEARCH OLD OBJECT */
-   if (!instructions || !object) {
-      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
-      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EUNKNOWN);
+   if (!request || object == nullptr) {
+      DRETURN(ocs_gdi_add_mod_null(alpp, __func__));
    }
 
-   /* ep is no element of this type, if ep doesn't contain the the primary key attribute */
-   if (lGetPosViaElem(instructions, object->key_nm, SGE_NO_ABORT) < 0) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(object->key_nm), __func__);
-      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EUNKNOWN);
+   /* the request is no element of this type if it does not contain the primary key attribute; a table entry of
+    * another master list is refused the same way, it does not describe T */
+   if (object->list_type != H::list_type || !request.template has<key>()) {
+      DRETURN(ocs_gdi_add_mod_missing_key(alpp, object, __func__));
    }
 
-   /*
-    * resolve host name in case of objects with hostnames as key
-    * before searching for the objects
-    */
-   if (object->key_nm == EH_name) {
-      if (sge_resolve_host(instructions, object->key_nm) != CL_RETVAL_OK) {
-         const char *host = lGetHost(instructions, object->key_nm);
-         ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, host ? host : "nullptr");
-         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-         DRETURN(STATUS_EUNKNOWN);
+   /* resolve host name in case of objects with hostnames as key before searching for the objects */
+   if constexpr (std::is_same_v<T, ocs::tom::EH>) {
+      // sge_resolve_host() has no typed form: it takes the field number
+      if (sge_resolve_host(request, key) != CL_RETVAL_OK) {
+         DRETURN(ocs_gdi_add_mod_unresolved_host(alpp, ocs::tom::get<key>(request).c_str()));
       }
    }
 
    /* get and verify the primary key */
-   pos = lGetPosViaElem(instructions, object->key_nm, SGE_NO_ABORT);
-   dataType = lGetPosType(lGetElemDescr(instructions), pos);
-   if (dataType == lUlongT) {
-      uint32_t id = lGetUlong(instructions, object->key_nm);
+   char ds_buffer[256];
+   dstring buffer;
+   sge_dstring_init(&buffer, ds_buffer, sizeof(ds_buffer));
+   const char *name;
+   ocs::tom::Element<T> old_obj;
+   if constexpr (key_type == ocs::tom::FieldType::Uint32) {
+      const uint32_t id = ocs::tom::get<key>(request);
       sge_dstring_sprintf(&buffer, sge_u32, id);
       name = sge_dstring_get_string(&buffer);
-
-      old_obj = lGetElemUlongRW(*ocs::DataStore::get_master_list(object->list_type), object->key_nm, id);
-   } else if (dataType == lHostT) {
-      name = lGetHost(instructions, object->key_nm);
-      old_obj = lGetElemHostRW(*ocs::DataStore::get_master_list(object->list_type), object->key_nm, name);
+      old_obj = ocs::tom::find_first_rw<key>(*ocs::DataStore::get_master_list(H::list_type), id);
+   } else if constexpr (key_type == ocs::tom::FieldType::Host) {
+      name = ocs::tom::get<key>(request).c_str();
+      old_obj = ocs::tom::find_first_rw<key>(*ocs::DataStore::get_master_list(H::list_type), name);
    } else {
-      name = lGetString(instructions, object->key_nm);
-      old_obj = lGetElemStrRW(*ocs::DataStore::get_master_list(object->list_type), object->key_nm, name);
+      static_assert(key_type == ocs::tom::FieldType::String, "the key is a number, a host or a string");
+      name = ocs::tom::get<key>(request);
+      old_obj = ocs::tom::find_first_rw<key>(*ocs::DataStore::get_master_list(H::list_type), name);
    }
 
-   if (name == nullptr) {
-      answer_list_add(alpp, MSG_OBJ_NAME_MISSING,
-                      STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EEXIST);
-   }
-
-   /* prevent duplicates / modifying non existing objects */
-   if ((old_obj && add) || (!old_obj && !add)) {
-      ERROR(add ? MSG_SGETEXT_ALREADYEXISTS_SS : MSG_SGETEXT_DOESNOTEXIST_SS, object->object_name, name);
-      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EEXIST);
+   if (const int status = ocs_gdi_add_mod_check_existence(alpp, object, add, name, static_cast<bool>(old_obj));
+       status != STATUS_OK) {
+      DRETURN(status);
    }
 
    /* create a new object (add case), or make a copy of the old object (mod case) */
-   if (!(new_obj = (add
-                    ? lCreateElem(object->type)
-                    : lCopyElem(old_obj)))) {
-      ERROR(SFNMAX, MSG_MEM_MALLOC);
-      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EEXIST);
+   auto new_obj = add ? ocs::tom::ElementPtr<T>::create() : old_obj.clone();
+   if (!new_obj) {
+      DRETURN(ocs_gdi_add_mod_no_memory(alpp));
    }
 
-   /* modify the new object base on information in the request */
-   if (object->modifier(packet, task, &tmp_alp, new_obj, instructions, add, ruser, rhost, object, cmd, sub_command, monitor) != 0) {
-
-      if (alpp) {
-         /* ON ERROR: DISPOSE NEW OBJECT */
-         /* failure: just append last elem in tmp_alp
-            elements before may contain invalid success messages */
-         if (tmp_alp) {
-            if (!*alpp) {
-               *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
-            }
-
-            if (object->type == AR_Type) {
-               (*alpp)->splice(*tmp_alp);
-               tmp_alp.reset();
-            } else {
-               if (const auto failure = tmp_alp->back()) {
-                  (*alpp)->push_back(tmp_alp->extract(failure));
-               }
-               tmp_alp.reset();
-            }
-         }
-      }
-      lFreeElem(&new_obj);
-      DRETURN(STATUS_EUNKNOWN);
+   /* modify the new object base on information in the request; on error the new object is disposed of */
+   ocs::tom::ListPtr<ocs::tom::AN> tmp_alp;
+   if (H::modifier(packet, task, &tmp_alp, new_obj.get(), request, add, ruser, rhost, object, cmd, sub_command,
+                   monitor) != 0) {
+      DRETURN(ocs_gdi_add_mod_modifier_failed(alpp, std::move(tmp_alp), std::is_same_v<T, ocs::tom::AR>));
    }
 
-   /* no unique attribute of the resulting object may hold a key twice (CS-3053); checked after the
-      modifier, so that the merges which collapse a repeated key on purpose (host groups) keep working */
-   {
-      const std::string object_name = std::string(object->object_name) + " " + name;
-      if (!ocs_object_verify_unique_keys(new_obj, alpp, object_name.c_str())) {
-         lFreeElem(&new_obj);
-         tmp_alp.reset();
-         DRETURN(STATUS_ESYNTAX);
-      }
+   /* no unique attribute of the resulting object may hold a key twice (CS-3053) */
+   if (!ocs_gdi_add_mod_unique_keys(new_obj.get(), alpp, object, name)) {
+      DRETURN(STATUS_ESYNTAX);
    }
 
    /* write on file */
-   if (object->writer(packet, task, alpp, new_obj, object)) {
-      lFreeElem(&new_obj);
-      tmp_alp.reset();
+   if (H::writer(packet, task, alpp, new_obj.get(), object) != 0) {
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (alpp != nullptr) {
-      if (*alpp == nullptr) {
-         *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
-      }
+   ocs_gdi_add_mod_take_answers(alpp, std::move(tmp_alp));
 
-      /* copy tmp_alp to alpp */
-      (*alpp)->splice(*tmp_alp);
-   }
-   tmp_alp.reset();
-
-   {
-      lList **master_list = ocs::DataStore::get_master_list_rw(object->list_type);
-
+   /* replace the old object by the new one; the data store keeps the master list raw */
+   lList **master_list = ocs::DataStore::get_master_list_rw(H::list_type);
+   ocs::tom::ElementPtr<T> old_owned;
+   if (old_obj) {
       /* chain out the old object */
-      if (old_obj) {
-         lDechainElem(*master_list, old_obj);
-      }
-
-      /* ensure our global list exists */
-      if (*master_list == nullptr) {
-         *master_list = lCreateList(object->object_name, object->type);
-      }
-
-      /* chain in new object */
-      lAppendElem(*master_list, new_obj);
+      old_owned = ocs::tom::List<T>::from_typed(*master_list).extract(old_obj);
    }
+   if (*master_list == nullptr) {
+      /* ensure our global list exists */
+      *master_list = ocs::tom::ListPtr<T>::create(object->object_name).release();
+   }
+   /* chain in new object */
+   const auto stored = ocs::tom::List<T>::from_typed(*master_list).push_back(std::move(new_obj));
 
    /* once we successfully added/modified the object, do final steps (on_success callback) */
-   if (object->on_success) {
-      object->on_success(packet, task, new_obj, old_obj, object, post, monitor);
+   H::on_success(packet, task, stored, old_owned.get(), object, post, monitor);
+   old_owned.reset();
+
+   DRETURN(ocs_gdi_add_mod_done(alpp, object, add, ruser, rhost, name, sub_command));
+}
+
+/* *INDENT-OFF* */
+// the instantiations for the callers outside this file, one per type of OcsGdiGenericType
+template int ocs_gdi_add_mod<ocs::tom::CAL>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::CAL>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::EH>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::EH>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::CQ>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::CQ>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::CE>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::CE>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::PE>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::PE>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::UU>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::UU>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::US>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::US>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::PR>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::PR>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::CK>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::CK>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::RQS>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::RQS>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::HGRP>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::HGRP>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::AR>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::AR>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+template int ocs_gdi_add_mod<ocs::tom::RL>(ocs::gdi::Packet *, ocs::gdi::Task *, ocs::tom::ListPtr<ocs::tom::AN> *,
+   ocs::tom::Element<ocs::tom::RL>, int, gdi_object_t *, const char *, const char *, ocs::gdi::Command,
+   ocs::gdi::SubCommand, ocs_gdi_post_processing *, monitoring_t *);
+/* *INDENT-ON* */
+
+/**
+ * @brief Call a callable with the object type of a table entry, if that type has a generic add and modify
+ *
+ * Dispatches once on the master list type (ocs_with_object_type()); the callable is compiled only for the
+ * types of #OcsGdiGenericType.
+ *
+ * @tparam F a generic callable taking `std::type_identity<T>`
+ * @param list_type the master list of the table entry
+ * @param f the callable
+ * @return true if it was called, false for a type without a generic add and modify or without an object
+ */
+template <typename F>
+static bool
+ocs_gdi_with_generic_type(const sge_object_type list_type, F &&f) {
+   DENTER(TOP_LAYER);
+   const bool ret = ocs_with_object_type(list_type, [&f](const auto &entry) {
+      using T = typename ocs_object_type_entry_t<decltype(entry)>::type;
+      if constexpr (OcsGdiGenericType<T>) {
+         f(std::type_identity<T>{});
+         return true;
+      } else {
+         return false;
+      }
+   }).value_or(false);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Add or modify every object of a request list through the generic path of its table entry
+ *
+ * Dispatches once on the object type of the table entry and walks the requests typed. The next request is
+ * fetched before the current one is handled; the generic path does not change the request list. A table entry
+ * without a generic add and modify refuses every request.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered; receives the answers
+ * @param requests the requests, of the type of the table entry
+ * @param add 1 for add, 0 for modify
+ * @param object the table entry of the target
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param post receives what the on_success hooks leave for after the last object, or nullptr
+ * @param monitor for monitoring qmaster threads
+ */
+static void
+ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList *requests, const int add,
+                     gdi_object_t *object, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
+                     ocs_gdi_post_processing *post, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+   const bool generic = ocs_gdi_with_generic_type(object->list_type, [&](auto tag) {
+      using T = typename decltype(tag)::type;
+      // the request data is structure checked by the listener (CS-3125): it carries the type of the table entry
+      auto ep = ocs::tom::List<T>::from_typed(requests).front();
+      while (ep) {
+         const auto next = ep.next();
+         ocs_gdi_add_mod<T>(packet, task, &(task->answer_list), ep, add, object, packet->user, packet->host, cmd,
+                            sub_command, post, monitor);
+         ep = next;
+      }
+   });
+   if (!generic) {
+      // stays raw: the element type is given at run time by the target, and every request is refused
+      for (auto n = lGetNumberOfElem(requests); n > 0; n--) {
+         ocs_gdi_add_mod_unsupported(&(task->answer_list), object);
+      }
    }
-
-   lFreeElem(&old_obj);
-
-   if ((sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) != ocs::gdi::SubCommand::RETURN_NEW_VERSION) {
-      INFO(add ? MSG_SGETEXT_ADDEDTOLIST_SSSS : MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, name, object->object_name);
-
-      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-   }
-
-   DRETURN(STATUS_OK);
+   DRETURN_VOID;
 }
 
 /*
@@ -1859,33 +2126,5 @@ gdi_object_t *get_gdi_object(ocs::gdi::Target target) {
    }
 
    DRETURN(nullptr);
-}
-
-/** @brief The gdi_object_t::modifier of the scheduler configuration: validates the configuration as it is
- *
- * No request reaches it through the table: a scheduler configuration is modified by
- * sge_mod_sched_configuration(), and the entry has no key field for sge_gdi_add_mod_generic().
- *
- * @param packet the client request, unused
- * @param task the GDI task being answered, unused
- * @param alpp receives messages for the caller
- * @param modp the configuration as it is to become, unused
- * @param ep the reduced element the client sent, unused
- * @param add 1 for add, 0 for modify, unused
- * @param ruser the requesting user, unused
- * @param rhost the requesting host, unused
- * @param object the table entry, unused
- * @param cmd the command being executed, unused
- * @param sub_command what kind of modification this is, unused
- * @param monitor for monitoring qmaster threads, unused
- * @return 0 if the configuration is valid, 1 otherwise
- */
-static int schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                      const ocs::tom::Element<ocs::tom::SC> modp, const ocs::tom::ConstElement<ocs::tom::SC> ep,
-                      int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
-                      ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
-   DENTER(TOP_LAYER);
-   int ret = sconf_validate_config_(alpp) ? 0 : 1;
-   DRETURN(ret);
 }
 

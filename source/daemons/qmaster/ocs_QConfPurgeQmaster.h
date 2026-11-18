@@ -23,7 +23,7 @@
  * @brief The purging half of the `qconf -purge` procedure (CS-2948)
  *
  * Lives here for the reason the write provider does: the change goes through
- * `sge_gdi_add_mod_generic()`, which is the daemon's, and the procedure library
+ * `ocs_gdi_add_mod()`, which is the daemon's, and the procedure library
  * is linked into the clients too. Registered as the action
  * ocs::QConfActionParameter::QUEUE_PURGE at startup (CS-2962).
  */

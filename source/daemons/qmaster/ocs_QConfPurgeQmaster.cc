@@ -177,9 +177,9 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    copy.reset();
 
    // the on_success hook of cluster queues leaves nothing for after the request
-   const int ret = sge_gdi_add_mod_generic(packet, task, answer_list, *reduced, 0, object, packet->user,
-                                           packet->host, ocs::gdi::Command::MOD_PROCEDURE,
-                                           ocs::gdi::SubCommand::SET_ALL, nullptr, monitor);
+   const int ret = ocs_gdi_add_mod<ocs::tom::CQ>(packet, task, answer_list, *reduced, 0, object, packet->user,
+                                                 packet->host, ocs::gdi::Command::MOD_PROCEDURE,
+                                                 ocs::gdi::SubCommand::SET_ALL, nullptr, monitor);
    reduced.reset();
 
    DRETURN(ret == STATUS_OK);

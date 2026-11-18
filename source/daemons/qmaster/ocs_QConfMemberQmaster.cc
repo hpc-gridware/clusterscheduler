@@ -76,9 +76,9 @@ namespace {
 
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       // the on_success hook of access lists leaves nothing for after the request
-      const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *elem, add ? 1 : 0, object, packet->user,
-                                              packet->host, ocs::gdi::Command::MOD_PROCEDURE,
-                                              ocs::gdi::SubCommand::NONE, nullptr, monitor);
+      const int ret = ocs_gdi_add_mod<ocs::tom::US>(packet, task, &alp, *elem, add ? 1 : 0, object, packet->user,
+                                                    packet->host, ocs::gdi::Command::MOD_PROCEDURE,
+                                                    ocs::gdi::SubCommand::NONE, nullptr, monitor);
       why.clear();
       if (ret != STATUS_OK) {
          for_each_ep_lv(aep, alp) {
@@ -258,7 +258,7 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
  *
  * The request is one change for the whole list (CS-2754), so it is atomic: a
  * list naming one member that is already there, or one that is not there to be
- * removed, changes nothing. sge_gdi_add_mod_generic() passes on only the last of
+ * removed, changes nothing. ocs_gdi_add_mod() passes on only the last of
  * several reasons, so such a list is refused naming one of them.
  *
  * What hgroup_mod() says on the way - a matcher normalised by the domain rules,
@@ -330,10 +330,10 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    // the on_success hook of host groups leaves nothing for after the request
-   const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *delta, 0, object, packet->user, packet->host,
-                                           ocs::gdi::Command::MOD_PROCEDURE,
-                                           add ? ocs::gdi::SubCommand::APPEND : ocs::gdi::SubCommand::REMOVE,
-                                           nullptr, monitor);
+   const int ret = ocs_gdi_add_mod<ocs::tom::HGRP>(packet, task, &alp, *delta, 0, object, packet->user, packet->host,
+                                                   ocs::gdi::Command::MOD_PROCEDURE,
+                                                   add ? ocs::gdi::SubCommand::APPEND : ocs::gdi::SubCommand::REMOVE,
+                                                   nullptr, monitor);
    if (ret == STATUS_OK) {
       /* the generic confirmation of the object layer is the last answer */
       if (const auto last = alp->back()) {

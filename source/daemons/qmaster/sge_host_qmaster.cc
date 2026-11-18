@@ -217,7 +217,8 @@ host_trash_nonstatic_load_values(const ocs::tom::Element<ocs::tom::EH> host) {
  *
  * An execution host reporting in for the first time, or a submit host named in
  * a request, is created rather than rejected. The host is added to the host list
- * of @p target through the generic GDI add.
+ * of @p target through the generic GDI add. Only the execution host list has a
+ * generic add; any other target is refused by it.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -231,39 +232,22 @@ sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char 
                      const ocs::gdi::Target target, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   int ret;
-   int dataType;
-   int pos;
-   lListElem *ep;
-   gdi_object_t *object;
-   const char *username = component_get_username();
-   const char *qualified_hostname = component_get_qualified_hostname();
-
    if (hostname == nullptr) {
       DRETURN(-1);
    }
 
-   object = get_gdi_object(target);
-
-   /* prepare template
-    * the object type and its key field are known only at run time (gdi_object_t), so this stays generic */
-   ep = lCreateElem(object->type);
-   pos = lGetPosInDescr(object->type, object->key_nm);
-   dataType = lGetPosType(object->type, pos);
-   switch (dataType) {
-      case lStringT:
-         lSetString(ep, object->key_nm, hostname);
-         break;
-      case lHostT:
-         lSetHost(ep, object->key_nm, hostname);
-         break;
-      default:
-      DPRINTF("sge_add_host_of_type: unexpected datatype\n");
+   gdi_object_t *object = get_gdi_object(target);
+   int ret;
+   if (target == ocs::gdi::Target::EH_LIST) {
+      /* prepare template */
+      auto ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
+      ocs::tom::set<EH_name>(ep, hostname);
+      ret = ocs_gdi_add_mod<ocs::tom::EH>(packet, task, nullptr, *ep, 1, object, component_get_username(),
+                                          component_get_qualified_hostname(), ocs::gdi::Command::NONE,
+                                          ocs::gdi::SubCommand::NONE, nullptr, monitor);
+   } else {
+      ret = ocs_gdi_add_mod_unsupported(nullptr, object);
    }
-   ret = sge_gdi_add_mod_generic(packet, task, nullptr, ep, 1, object, username,
-                                 qualified_hostname, ocs::gdi::Command::NONE,
-                                 ocs::gdi::SubCommand::NONE, nullptr, monitor);
-   lFreeElem(&ep);
 
    DRETURN((ret == STATUS_OK) ? 0 : -1);
 }
@@ -483,7 +467,7 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
 
 /** @brief Apply one attribute change to a host
  *
- * The gdi_object_t::modifier for hosts; see sge_c_gdi.h for the sequence it
+ * The modifier of ocs_gdi_hooks for hosts; see ocs_gdi_add_mod() for the sequence it
  * is called from.
  *
  * @param packet the client request
@@ -671,7 +655,7 @@ DRETURN(STATUS_EUNKNOWN);
 
 /** @brief Write a host to the spool
  *
- * The gdi_object_t::writer for hosts.
+ * The writer of ocs_gdi_hooks for hosts.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -971,7 +955,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
 
 /** @brief Announce a host change once it is safely spooled
  *
- * The gdi_object_t::on_success for hosts.
+ * The on_success of ocs_gdi_hooks for hosts.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -1686,10 +1670,10 @@ host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *h
    } else {
       gdi_object_t *object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
 
-      if (sge_gdi_add_mod_generic(packet, task, &answer_list, *hgroup, add, object,
-                                  component_get_username(), component_get_qualified_hostname(),
-                                  ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
-                                  nullptr, monitor) != STATUS_OK) {
+      if (ocs_gdi_add_mod<ocs::tom::HGRP>(packet, task, &answer_list, *hgroup, add, object,
+                                          component_get_username(), component_get_qualified_hostname(),
+                                          ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
+                                          nullptr, monitor) != STATUS_OK) {
          ret = false;
       }
    }
@@ -1755,10 +1739,10 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
       } else {
          gdi_object_t *object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
 
-         if (sge_gdi_add_mod_generic(packet, task, &answer_list, *hgroup, 0, object,
-                                     component_get_username(), component_get_qualified_hostname(),
-                                     ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
-                                     nullptr, monitor) != STATUS_OK) {
+         if (ocs_gdi_add_mod<ocs::tom::HGRP>(packet, task, &answer_list, *hgroup, 0, object,
+                                             component_get_username(), component_get_qualified_hostname(),
+                                             ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
+                                             nullptr, monitor) != STATUS_OK) {
             ret = false;
          }
       }
