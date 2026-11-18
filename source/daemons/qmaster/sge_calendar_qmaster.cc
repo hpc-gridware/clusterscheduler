@@ -394,14 +394,14 @@ calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
  * @param cep the calendar
  * @param old_cep the calendar as it was, or an empty handle when it was added
  * @param object the table entry for calendars, unused
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
 calendar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CAL> cep,
                  const ocs::tom::ConstElement<ocs::tom::CAL> old_cep, [[maybe_unused]] gdi_object_t *object,
-                 [[maybe_unused]] lList **ppList, monitoring_t *monitor) {
+                 [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    const int ret = calendar_update_queue_states(packet, task, cep, old_cep, monitor);
    DRETURN(ret);

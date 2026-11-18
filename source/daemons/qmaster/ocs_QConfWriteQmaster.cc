@@ -192,10 +192,10 @@ qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list
  *
  * The generic path's `on_success` hook may need to say something about the
  * object it just stored that only the caller can act on - the complex entry
- * says "this consumable has to be debited anew" - and it says it by appending to
- * @p post_list. Dropping that list is how CS-2823 broke the re-debit after a
+ * says "this consumable has to be debited anew" - and it says it by noting it in
+ * @p post. Dropping that note is how CS-2823 broke the re-debit after a
  * complex change: `lAddElemStr()` returns on a null pointer after a `DPRINTF`,
- * so the note was lost without a trace. The list is therefore threaded through
+ * so the note was lost without a trace. The notes are therefore threaded through
  * to qconf_write_from_procedure(), which runs the post-processing once the whole
  * batch is applied, exactly as `sge_c_gdi_mod()` does for a GDI MOD.
  *
@@ -207,13 +207,13 @@ qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list
  * @param ep the parsed object
  * @param exists whether an object of that name is already stored
  * @param answer_list receives the reason on failure
- * @param post_list collects what the type's `on_success` hook needs post-processed
+ * @param post collects what the type's `on_success` hook needs post-processed
  * @return STATUS_OK when the object was applied
  */
 static int
 qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                 const qconf_object_desc &desc, gdi_object_t *object, lListElem *ep,
-                const bool exists, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **post_list) {
+                const bool exists, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs_gdi_post_processing *post) {
    DENTER(TOP_LAYER);
 
    switch (desc.target) {
@@ -241,7 +241,7 @@ qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *mo
          DRETURN(sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1,
                                          object, packet->user, packet->host,
                                          ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
-                                         post_list, monitor));
+                                         post, monitor));
    }
 }
 
@@ -560,7 +560,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    const lList *master_list = *ocs::DataStore::get_master_list(list_type);
    bool all_ok = (result->parse_failed == 0);
    std::vector<std::string> parsed_names;   ///< what the texts held, for the report below
-   lList *post_list = nullptr;              ///< what the applied objects need post-processed
+   ocs_gdi_post_processing post;            ///< what the applied objects need post-processed
    size_t stored_objects = 0;               ///< objects written or deleted, for the summary below
    size_t left_objects = 0;                 ///< objects the store already held as asked
    for (auto &item: parsed) {
@@ -610,7 +610,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             left_objects++;
          } else {
             const int ret = qconf_apply_one(packet, task, monitor, desc, object, ep, exists,
-                                            answer_list, &post_list);
+                                            answer_list, &post);
             if (ret == STATUS_OK) {
                applied_here++;
                result->elements++;
@@ -638,30 +638,23 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * queue and host once, not once per entry.
     *
     * Only an entry whose `consumable` flag or default request actually changed
-    * reaches the list - centry_success() decides that - so an untouched table
-    * costs nothing, and a failed object contributes nothing because its
+    * reaches `post.redebit_centries` - centry_success() decides that - so an
+    * untouched table costs nothing, and a failed object contributes nothing because its
     * `on_success` hook never ran. A failure elsewhere in the batch does not
     * cancel it either: what was stored is stored, and the bookings have to match
     * it. Nothing collects in a dry run, which never applies anything.
     *
-    * It is a switch and not a hook on the descriptor for the reason
-    * qconf_apply_one() is one: these are qmaster functions and the descriptor
-    * lives in a library that cannot link against them. */
-   if (lGetNumberOfElem(post_list) != 0) {
-      switch (desc.target) {
-         case ocs::gdi::Target::CE_LIST:
-            /* Rebuilds the consumable debitation of every queue and host against
-             * the new definition, bumps the queue version, and dumps the
-             * queue_consumable/host_consumable reporting records - all three of
-             * which were silently skipped while the list was dropped. */
-            centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU>(post_list), packet->gdi_session);
-            break;
-
-         default:
-            break;
-      }
+    * It is spelled out here and not a hook on the descriptor for the reason
+    * qconf_apply_one() is a switch: these are qmaster functions and
+    * the descriptor lives in a library that cannot link against them. */
+   if (!post.redebit_centries->empty()) {
+      /* Rebuilds the consumable debitation of every queue and host against
+       * the new definition, bumps the queue version, and dumps the
+       * queue_consumable/host_consumable reporting records - all three of
+       * which were silently skipped while the list was dropped. */
+      centry_redebit_consumables(post.redebit_centries.get(), packet->gdi_session);
    }
-   lFreeList(&post_list);
+   post.redebit_centries.reset();
 
    /* Phase 3: what the text did not hold is deleted, for a replacing write.
     *

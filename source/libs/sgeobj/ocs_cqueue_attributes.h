@@ -232,28 +232,3 @@ bool ocs_for_each_cqueue_attr_while(F &&f) {
    return std::apply([&f](const auto &...attr) { return (static_cast<bool>(f(attr)) && ...); },
                      ocs_cqueue_attributes);
 }
-
-/**
- * @brief Call a callable with the entry of #ocs_cqueue_attributes an administrator names, found at run time
- *
- * The name is compared with every entry's name; the callable is instantiated per entry, as in
- * ocs_for_each_cqueue_attr(), and called for the matching one only.
- *
- * @tparam F the callable, taking `const CqueueAttr<...> &`
- * @param name the attribute name, e.g. "slots"; may be nullptr
- * @param f the callable
- * @return true if an entry has the name and the callable was called
- */
-template <typename F>
-bool ocs_with_cqueue_attr(const char *name, F &&f) {
-   if (name == nullptr) {
-      return false;
-   }
-   return !ocs_for_each_cqueue_attr_while([name, &f](const auto &attr) {
-      if (std::strcmp(attr.name, name) == 0) {
-         f(attr);
-         return false;
-      }
-      return true;
-   });
-}

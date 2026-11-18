@@ -75,10 +75,10 @@ namespace {
       ocs::tom::set<US_entries>(elem, std::move(taken_entries));
 
       ocs::tom::ListPtr<ocs::tom::AN> alp;
-      lList *post_list = nullptr;   // the generic path's post processing list has no fixed type
+      // the on_success hook of access lists leaves nothing for after the request
       const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *elem, add ? 1 : 0, object, packet->user,
                                               packet->host, ocs::gdi::Command::MOD_PROCEDURE,
-                                              ocs::gdi::SubCommand::NONE, &post_list, monitor);
+                                              ocs::gdi::SubCommand::NONE, nullptr, monitor);
       why.clear();
       if (ret != STATUS_OK) {
          for_each_ep_lv(aep, alp) {
@@ -88,7 +88,6 @@ namespace {
             }
          }
       }
-      lFreeList(&post_list);
       alp.reset();
       elem.reset();
 
@@ -330,11 +329,11 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
 
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lList *post_list = nullptr;
+   // the on_success hook of host groups leaves nothing for after the request
    const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *delta, 0, object, packet->user, packet->host,
                                            ocs::gdi::Command::MOD_PROCEDURE,
                                            add ? ocs::gdi::SubCommand::APPEND : ocs::gdi::SubCommand::REMOVE,
-                                           &post_list, monitor);
+                                           nullptr, monitor);
    if (ret == STATUS_OK) {
       /* the generic confirmation of the object layer is the last answer */
       if (const auto last = alp->back()) {
@@ -342,7 +341,6 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
       }
    }
    answer_list_append_list(answer_list, &alp);
-   lFreeList(&post_list);
    delta.reset();
 
    DRETURN(ret == STATUS_OK);

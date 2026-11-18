@@ -63,7 +63,7 @@ calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs
 
 int
 calendar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CAL> cep,
-                 ocs::tom::ConstElement<ocs::tom::CAL> old_cep, gdi_object_t *object, lList **ppList,
+                 ocs::tom::ConstElement<ocs::tom::CAL> old_cep, gdi_object_t *object, ocs_gdi_post_processing *post,
                  monitoring_t *monitor);
 
 int

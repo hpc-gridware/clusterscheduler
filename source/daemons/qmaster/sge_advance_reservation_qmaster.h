@@ -72,7 +72,7 @@ ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
 int
 ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::AR> ar,
            ocs::tom::ConstElement<ocs::tom::AR> old_ep, gdi_object_t *object,
-           ocs::tom::ListPtr<ocs::tom::AR> *ppList, monitoring_t *monitor);
+           ocs_gdi_post_processing *post, monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int

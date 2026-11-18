@@ -230,15 +230,15 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr
  *        (function pointers, names, CULL-types)
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor for monitoring qmaster threads
  *
  * @return success
  */
 int
 ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CK> ep,
-             const ocs::tom::ConstElement<ocs::tom::CK> old_ep, gdi_object_t *object, lList **ppList,
-             monitoring_t *monitor) {
+             const ocs::tom::ConstElement<ocs::tom::CK> old_ep, gdi_object_t *object,
+             [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *ckpt_name;

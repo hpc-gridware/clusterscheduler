@@ -176,11 +176,10 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    lFreeWhat(&what);
    copy.reset();
 
-   lList *post_list = nullptr;   // the generic path's post processing list has no fixed type
+   // the on_success hook of cluster queues leaves nothing for after the request
    const int ret = sge_gdi_add_mod_generic(packet, task, answer_list, *reduced, 0, object, packet->user,
                                            packet->host, ocs::gdi::Command::MOD_PROCEDURE,
-                                           ocs::gdi::SubCommand::SET_ALL, &post_list, monitor);
-   lFreeList(&post_list);
+                                           ocs::gdi::SubCommand::SET_ALL, nullptr, monitor);
    reduced.reset();
 
    DRETURN(ret == STATUS_OK);

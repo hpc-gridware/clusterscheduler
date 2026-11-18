@@ -62,7 +62,7 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs:
 
 int
 rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::RQS> rqs,
-            ocs::tom::ConstElement<ocs::tom::RQS> old_ep, gdi_object_t *object, lList **ppList,
+            ocs::tom::ConstElement<ocs::tom::RQS> old_ep, gdi_object_t *object, ocs_gdi_post_processing *post,
             monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */

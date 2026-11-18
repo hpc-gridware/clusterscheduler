@@ -673,7 +673,6 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
    gdi_object_t *hgroup_object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
    auto instructions = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   lList *tmp_list = nullptr;
 
    auto members = href_list.clone("");
 
@@ -685,7 +684,7 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
 
    const int status = sge_gdi_add_mod_generic(packet, task, &answer_list, *instructions, 0,
                                               hgroup_object, packet->user, packet->host,
-                                              task->command, task->sub_command, &tmp_list, monitor);
+                                              task->command, task->sub_command, nullptr, monitor);
 
    /* the caller's answer list is the queue's; the group's messages name the
     * group, which is not the object the administrator addressed */
@@ -693,7 +692,6 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
       answer_list_log(&answer_list, false, true);
    }
    answer_list.reset();
-   lFreeList(&tmp_list);
    instructions.reset();
    sge_dstring_free(&name_buffer);
 
@@ -1065,14 +1063,14 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
  * @param cqueue the cluster queue
  * @param old_cqueue the cluster queue as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
 cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CQ> cqueue,
-               const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, gdi_object_t *object, lList **ppList,
-               monitoring_t *monitor) {
+               const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, gdi_object_t *object,
+               [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));

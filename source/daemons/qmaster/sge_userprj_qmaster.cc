@@ -352,15 +352,15 @@ ocs_userprj_success(ocs::gdi::Packet *packet, const ocs::tom::Element<typename F
  * @param ep the object
  * @param old_ep the object as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 template <ocs::tom::ObjectType T>
 int
 userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<T> ep,
-                const ocs::tom::ConstElement<T> old_ep, gdi_object_t *object, lList **ppList,
-                monitoring_t *monitor) {
+                const ocs::tom::ConstElement<T> old_ep, gdi_object_t *object,
+                [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    ocs_userprj_success<FieldsOf<T>>(packet, ep, old_ep != nullptr);
@@ -372,11 +372,11 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
 template int userprj_success<ocs::tom::UU>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                                            ocs::tom::Element<ocs::tom::UU> ep,
                                            ocs::tom::ConstElement<ocs::tom::UU> old_ep, gdi_object_t *object,
-                                           lList **ppList, monitoring_t *monitor);
+                                           ocs_gdi_post_processing *post, monitoring_t *monitor);
 template int userprj_success<ocs::tom::PR>(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                                            ocs::tom::Element<ocs::tom::PR> ep,
                                            ocs::tom::ConstElement<ocs::tom::PR> old_ep, gdi_object_t *object,
-                                           lList **ppList, monitoring_t *monitor);
+                                           ocs_gdi_post_processing *post, monitoring_t *monitor);
 /// @endcond
 
 /** @brief Write an user or project to the spool
@@ -796,7 +796,6 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    int res = STATUS_EUNKNOWN;
    gdi_object_t *userList = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> tmpAnswer;
-   lList *ppList = nullptr;
    const char *admin_user = ocs::Bootstrap::get_admin_user();
    const char *qualified_hostname = component_get_qualified_hostname();
 
@@ -807,9 +806,8 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
     * Owner of the operation is the admin user on the qmaster host.
     */
    res = sge_gdi_add_mod_generic(packet, task, &tmpAnswer, anUser, 1, userList, admin_user, qualified_hostname,
-                                 ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, &ppList, monitor);
+                                 ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, nullptr, monitor);
 
-   lFreeList(&ppList);
    if ((STATUS_OK != res) && (nullptr != tmpAnswer)) {
       const lListElem *err = lFirst(tmpAnswer);
       const char *text = ocs::tom::get<AN_text>(err);

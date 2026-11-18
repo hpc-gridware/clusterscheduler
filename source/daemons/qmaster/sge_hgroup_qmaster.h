@@ -49,7 +49,7 @@
 
 int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::HGRP> hgroup,
-               ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup, gdi_object_t *object, lList **ppList,
+               ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup, gdi_object_t *object, ocs_gdi_post_processing *post,
                monitoring_t *monitor);
 
 /* CS-2451: refresh the resolved-host cache of a group and of every group that

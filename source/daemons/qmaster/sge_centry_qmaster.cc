@@ -286,8 +286,8 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
  * @param object the GDI object description for complex entries
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ppList collects the names of the complex entries whose consumables are to be rebuilt (created if
- *        empty), or nullptr
+ * @param post collects in `redebit_centries` the names of the complex entries whose consumables are to be
+ *        rebuilt (the list is created on first use), or nullptr
  * @param monitor for monitoring qmaster threads
  *
  * @return 0 on success
@@ -324,7 +324,7 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
 int
 centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CE> centry,
                const ocs::tom::ConstElement<ocs::tom::CE> old_centry, gdi_object_t *object,
-               ocs::tom::ListPtr<ocs::tom::STU> *ppList, monitoring_t *monitor) {
+               ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    bool rebuild_consumables = false;
@@ -353,11 +353,11 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::E
    }
 
    // a nullptr name adds nothing, as the free emplace_back() on the raw list did
-   if (const char *name = ocs::tom::get<CE_name>(centry); rebuild_consumables && ppList != nullptr && name != nullptr) {
-      if (*ppList == nullptr) {
-         *ppList = ocs::tom::ListPtr<ocs::tom::STU>::create("");
+   if (const char *name = ocs::tom::get<CE_name>(centry); rebuild_consumables && post != nullptr && name != nullptr) {
+      if (post->redebit_centries == nullptr) {
+         post->redebit_centries = ocs::tom::ListPtr<ocs::tom::STU>::create("");
       }
-      (*ppList)->emplace_back<STU_name>(name);
+      post->redebit_centries->emplace_back<STU_name>(name);
    }
 
    DRETURN(0);

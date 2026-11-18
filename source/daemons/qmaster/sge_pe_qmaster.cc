@@ -269,13 +269,13 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
  * @param ep the object
  * @param old_ep the object as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::PE> ep,
-               const ocs::tom::ConstElement<ocs::tom::PE> old_ep, gdi_object_t *object, lList **ppList,
-               monitoring_t *monitor) {
+               const ocs::tom::ConstElement<ocs::tom::PE> old_ep, gdi_object_t *object,
+               [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *pe_name;

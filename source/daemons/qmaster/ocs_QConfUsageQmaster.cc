@@ -91,10 +91,10 @@ namespace {
          ocs::tom::set<KeyF>(reduced, name.c_str());
 
          ocs::tom::ListPtr<ocs::tom::AN> alp;
-         lList *post_list = nullptr;   // stays raw: the generic path's post processing list has no fixed type
+         // the on_success hook of users and projects leaves nothing for after the request
          const int ret = sge_gdi_add_mod_generic(packet, task, &alp, reduced.get(), 0, object, packet->user,
                                                  packet->host, ocs::gdi::Command::MOD_PROCEDURE,
-                                                 ocs::gdi::SubCommand::NONE, &post_list, monitor);
+                                                 ocs::gdi::SubCommand::NONE, nullptr, monitor);
          /* only what went wrong is passed on: a successful clear said nothing
           * when the client did it, and one line per user would bury a failure */
          if (ret != STATUS_OK) {
@@ -107,7 +107,6 @@ namespace {
                }
             }
          }
-         lFreeList(&post_list);
          alp.reset();
       }
 

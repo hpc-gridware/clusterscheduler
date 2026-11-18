@@ -54,7 +54,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstEl
 int
 centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CE> centry,
                ocs::tom::ConstElement<ocs::tom::CE> old_centry, gdi_object_t *object,
-               ocs::tom::ListPtr<ocs::tom::STU> *ppList, monitoring_t *monitor);
+               ocs_gdi_post_processing *post, monitoring_t *monitor);
 
 int 
 centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,

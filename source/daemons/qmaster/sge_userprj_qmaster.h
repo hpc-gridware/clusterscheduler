@@ -56,7 +56,8 @@ sge_userprj_spool(uint64_t gdi_session);
 template <ocs::tom::ObjectType T>
 int
 userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<T> ep,
-                ocs::tom::ConstElement<T> old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+                ocs::tom::ConstElement<T> old_ep, gdi_object_t *object, ocs_gdi_post_processing *post,
+                monitoring_t *monitor);
 
 template <ocs::tom::ObjectType T>
 int

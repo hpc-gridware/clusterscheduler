@@ -486,10 +486,11 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
  * @param ar new added object
  * @param old_ep old object before modifications or an empty handle for add requests
  * @param object structure from the GDI framework
- * @param ppList receives a copy of the new object, created if it is empty; nullptr for none
+ * @param post what is left for after the last object of the request, unused
  * @param monitor monitoring structure
  * @param packet the client request
- * @param task the GDI task being answered
+ * @param task the GDI task being answered; on an add with RETURN_NEW_VERSION its data list receives a copy
+ *        of the new AR
  *
  * @return 0
  *
@@ -498,7 +499,7 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
 int
 ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::AR> ar,
            const ocs::tom::ConstElement<ocs::tom::AR> old_ep, gdi_object_t *object,
-           ocs::tom::ListPtr<ocs::tom::AR> *ppList, monitoring_t *monitor) {
+           [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    te_event_t ev;
    uint64_t timestamp = sge_get_gmt64();
@@ -512,13 +513,18 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Eleme
    }
 
    /*
-   ** return element with correct id
+   ** return element with correct id: an add with RETURN_NEW_VERSION answers with a copy of every added AR,
+   ** made before the state is set below. sge_c_gdi_add() has taken the requests out of task->data_list for
+   ** such a request, so the list holds nothing but what is appended here, and frees them after its loop.
    */
-   if (ppList != nullptr) {
-      if (*ppList == nullptr) {
-         *ppList = ocs::tom::ListPtr<ocs::tom::AR>::create("");
+   if (task != nullptr && old_ep == nullptr &&
+       (task->sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION) {
+      if (task->data_list == nullptr) {
+         // stays raw: task->data_list carries any object type, given at run time by the target
+         task->data_list = ocs::tom::ListPtr<ocs::tom::AR>::create("").release();
       }
-      (*ppList)->push_back(ar.clone());
+      // only this hook fills the data list of such a request, so it holds ARs
+      ocs::tom::List<ocs::tom::AR>::from_typed(task->data_list).push_back(ar.clone());
    }
 
    sge_ar_state_set_waiting(ar);

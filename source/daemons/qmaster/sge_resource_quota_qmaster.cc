@@ -246,7 +246,7 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs:
  * @param old_ep old rqs object before modification or an empty handle if a new object was added
  * @param object structure of the gdi framework which contains additional information to perform the request
  *        (function pointers, names, CULL-types)
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor monitoring structure
  *
  * @return 0 success
@@ -255,8 +255,8 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs:
  */
 int
 rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::RQS> rqs,
-            const ocs::tom::ConstElement<ocs::tom::RQS> old_ep, gdi_object_t *object, lList **ppList,
-            monitoring_t *monitor) {
+            const ocs::tom::ConstElement<ocs::tom::RQS> old_ep, gdi_object_t *object,
+            [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    const char *rqs_name = ocs::tom::get<RQS_name>(rqs);
    rqs_update_categories(rqs, old_ep, packet->gdi_session);

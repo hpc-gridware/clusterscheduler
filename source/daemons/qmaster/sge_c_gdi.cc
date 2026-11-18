@@ -42,6 +42,7 @@
 #include <sstream>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -205,7 +206,7 @@ static gdi_object_t gdi_object[] = {
          nullptr, nullptr, nullptr},
         {ocs::gdi::Target::CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY,
          ocs_gdi_modifier<ocs::tom::CE, centry_mod>, ocs_gdi_writer<ocs::tom::CE, centry_spool>,
-         ocs_gdi_on_success_list<ocs::tom::CE, ocs::tom::STU, centry_success>},
+         ocs_gdi_on_success<ocs::tom::CE, centry_success>},
         {ocs::gdi::Target::ORDER_LIST,   0,         nullptr,   "order",                   SGE_TYPE_NONE,
          nullptr, nullptr, nullptr},
         {ocs::gdi::Target::MASTER_EVENT, 0,         nullptr,   "master event",            SGE_TYPE_NONE,
@@ -243,7 +244,7 @@ static gdi_object_t gdi_object[] = {
          ocs_gdi_on_success<ocs::tom::HGRP, hgroup_success>},
         {ocs::gdi::Target::AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,
          ocs_gdi_modifier<ocs::tom::AR, ar_mod>, ocs_gdi_writer<ocs::tom::AR, ar_spool>,
-         ocs_gdi_on_success_list<ocs::tom::AR, ocs::tom::AR, ar_success>},
+         ocs_gdi_on_success<ocs::tom::AR, ar_success>},
         {ocs::gdi::Target::DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE,
          nullptr, nullptr, nullptr},
         {ocs::gdi::Target::CAT_LIST,     CT_id,     nullptr,   "category",                SGE_TYPE_CATEGORY,
@@ -731,13 +732,20 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          ep = next;
       }
    } else {
-      // stays raw: the element type of the data list and of tmp_list is given at run time by the target
+      // stays raw: the element type of the data list is given at run time by the target
       bool is_scheduler_resync = false;
-      lList *tmp_list = nullptr;
       lListElem *ep;
       lListElem *next;
 
-      next = lFirstRW(task->data_list);
+      /* With RETURN_NEW_VERSION the requests are not returned: the client gets what ar_success() appends to
+       * task->data_list instead, nullptr when nothing was appended. The requests are therefore taken out of
+       * task->data_list before the loop, so that the appended objects are neither visited by the loop nor
+       * mixed with the requests, and freed after it. */
+      const bool return_new_version =
+              (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
+      lList *requests = return_new_version ? std::exchange(task->data_list, nullptr) : task->data_list;
+
+      next = lFirstRW(requests);
       while ((ep = next) != nullptr) {
          next = lNextRW(ep);
 
@@ -790,8 +798,9 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                   sge_execd_startedup(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(ep), &(task->answer_list),
                                       packet->user, packet->host, task->target, monitor, is_restart);
                } else {
+                  // no on_success hook leaves anything for after an add
                   sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host,
-                                          cmd, sub_command, &tmp_list, monitor);
+                                          cmd, sub_command, nullptr, monitor);
                }
                break;
          }
@@ -806,16 +815,10 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          sge_resync_schedd(monitor, packet->gdi_session); /* ask for a total update */
       }
 
-      /*
-      ** tmp_list contains the changed AR element, set in ar_success
-      */
-      if ((sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION) {
-         lFreeList(&(task->data_list));
-         task->data_list = tmp_list;
-         tmp_list = nullptr;
+      // task->data_list holds the added ARs appended by ar_success(), see above
+      if (return_new_version) {
+         lFreeList(&requests);
       }
-
-      lFreeList(&tmp_list);
    }
 
    if (reprioritize_tickets && ticket_orders != nullptr) {
@@ -1304,8 +1307,8 @@ trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 /**
  * @brief Carry out a GDI modify request, one object of its data list after the other
  *
- * The element type of the data list, and of the list collected for post processing, is given at run time
- * by the target, so both stay untyped here.
+ * The element type of the data list is given at run time by the target, so it stays untyped here. What the
+ * on_success hooks leave for after the last object is carried out once, after the loop.
  *
  * @param ao          the table entry of the target, nullptr if it has no generic handling
  * @param packet      the client request
@@ -1320,7 +1323,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
                           ocs::gdi::Command command, ocs::gdi::SubCommand sub_command,
                           monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   lList *tmp_list = nullptr;
+   ocs_gdi_post_processing post;
 
    for_each_rw_lv(ep, task->data_list) {
       if (task->target == ocs::gdi::Target::CONF_LIST) {
@@ -1367,25 +1370,18 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
                   break;
                }
                sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 0, ao, packet->user,
-                                       packet->host, command, sub_command, &tmp_list, monitor);
+                                       packet->host, command, sub_command, &post, monitor);
                break;
          }
       }
    } /* for_each */
 
-   /* postprocessing for the list of requests */
-   if (lGetNumberOfElem(tmp_list) != 0) {
-      switch (task->target) {
-         case ocs::gdi::Target::CE_LIST:
-         DPRINTF("rebuilding consumable debitation\n");
-            // centry_success() collects the names of the changed complex entries (STU_Type)
-            centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU>(tmp_list), packet->gdi_session);
-            break;
-      default: ;
-      }
+   /* postprocessing for the list of requests: centry_success() collects the names of the changed complex
+    * entries, their debitation is rebuilt once for the whole request */
+   if (!post.redebit_centries->empty()) {
+      DPRINTF("rebuilding consumable debitation\n");
+      centry_redebit_consumables(post.redebit_centries.get(), packet->gdi_session);
    }
-
-   lFreeList(&tmp_list);
 
    DRETURN_VOID;
 }
@@ -1662,14 +1658,16 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
  * @param rhost the requesting host
  * @param cmd the command being executed
  * @param sub_command what kind of modification this is
- * @param tmp_list receives information for post processing
+ * @param post receives what the on_success hook leaves for after the last object of the request, nullptr
+ *        when the caller has no such step
  * @param monitor for monitoring qmaster threads
  * @return STATUS_OK on success, an error status otherwise
  */
 int
 sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                         lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
-                        const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **tmp_list, monitoring_t *monitor) {
+                        const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+                        ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int pos;
@@ -1824,7 +1822,7 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom
 
    /* once we successfully added/modified the object, do final steps (on_success callback) */
    if (object->on_success) {
-      object->on_success(packet, task, new_obj, old_obj, object, tmp_list, monitor);
+      object->on_success(packet, task, new_obj, old_obj, object, post, monitor);
    }
 
    lFreeElem(&old_obj);

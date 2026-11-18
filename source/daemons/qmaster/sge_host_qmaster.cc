@@ -213,29 +213,22 @@ host_trash_nonstatic_load_values(const ocs::tom::Element<ocs::tom::EH> host) {
    DRETURN_VOID;
 }
 
-/* ------------------------------------------ 
-
-   adds the host to host_list with type 
-
-   -1 error 
-   0 ok
-   1 host does exist
-
- */
 /** @brief Create a host object of a given kind, if it does not exist yet
  *
  * An execution host reporting in for the first time, or a submit host named in
- * a request, is created rather than rejected.
+ * a request, is created rather than rejected. The host is added to the host list
+ * of @p target through the generic GDI add.
  *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param hostname the host
  * @param target which host list to add it to
  * @param monitor for monitoring qmaster threads
- * @return 0 on success
+ * @return 0 on success, -1 on error (also when the host exists already)
  */
 int
-sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname, ocs::gdi::Target target, monitoring_t *monitor) {
+sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname,
+                     const ocs::gdi::Target target, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int ret;
@@ -243,7 +236,6 @@ sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char 
    int pos;
    lListElem *ep;
    gdi_object_t *object;
-   lList *ppList = nullptr;
    const char *username = component_get_username();
    const char *qualified_hostname = component_get_qualified_hostname();
 
@@ -270,9 +262,8 @@ sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char 
    }
    ret = sge_gdi_add_mod_generic(packet, task, nullptr, ep, 1, object, username,
                                  qualified_hostname, ocs::gdi::Command::NONE,
-                                 ocs::gdi::SubCommand::NONE, &ppList, monitor);
+                                 ocs::gdi::SubCommand::NONE, nullptr, monitor);
    lFreeElem(&ep);
-   lFreeList(&ppList);
 
    DRETURN((ret == STATUS_OK) ? 0 : -1);
 }
@@ -987,14 +978,14 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
  * @param ep the host as it now is
  * @param old_ep the host as it was, or nullptr on add
  * @param object the table entry for hosts
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
 host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::EH> ep,
-             const ocs::tom::ConstElement<ocs::tom::EH> old_ep, gdi_object_t *object, lList **ppList,
-             monitoring_t *monitor) {
+             const ocs::tom::ConstElement<ocs::tom::EH> old_ep, gdi_object_t *object,
+             [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
 
@@ -1693,16 +1684,14 @@ host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *h
    if (hgroup == nullptr) {
       ret = false;
    } else {
-      lList *tmp_list = nullptr;
       gdi_object_t *object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
 
       if (sge_gdi_add_mod_generic(packet, task, &answer_list, *hgroup, add, object,
                                   component_get_username(), component_get_qualified_hostname(),
                                   ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
-                                  &tmp_list, monitor) != STATUS_OK) {
+                                  nullptr, monitor) != STATUS_OK) {
          ret = false;
       }
-      lFreeList(&tmp_list);
    }
    answer_list_output(&answer_list);
 
@@ -1764,16 +1753,14 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
       if (hgroup == nullptr) {
          ret = false;
       } else {
-         lList *tmp_list = nullptr;
          gdi_object_t *object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
 
          if (sge_gdi_add_mod_generic(packet, task, &answer_list, *hgroup, 0, object,
                                      component_get_username(), component_get_qualified_hostname(),
                                      ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
-                                     &tmp_list, monitor) != STATUS_OK) {
+                                     nullptr, monitor) != STATUS_OK) {
             ret = false;
          }
-         lFreeList(&tmp_list);
       }
       answer_list_output(&answer_list);
    }

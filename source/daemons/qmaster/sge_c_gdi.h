@@ -60,8 +60,21 @@
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/ocs_gdi_Packet.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 
 typedef struct _gdi_object_t gdi_object_t;   ///< @copybrief _gdi_object_t
+
+/**
+ * @brief What the on_success hooks of one request leave for after its last object
+ *
+ * Some work is done once per request rather than once per object, on the final state after the last object
+ * of the request is stored. The hooks note it here, the caller of sge_gdi_add_mod_generic() carries it out
+ * after its loop over the objects of the request. A caller that has no such step passes nullptr, the hooks
+ * then note nothing.
+ */
+struct ocs_gdi_post_processing {
+   ocs::tom::ListPtr<ocs::tom::STU> redebit_centries;   ///< consumables whose debitation is rebuilt once
+};
 
 /** @brief Validates one attribute change and applies it to the destination object
  *
@@ -104,7 +117,7 @@ typedef int (*on_success_func_t)(
         lListElem *ep,       /* new modified and already spooled element */
         lListElem *old_ep,   /* old element is nullptr in add case */
         gdi_object_t *thiz,  /* some kind of "this" */
-        lList **ppList,       /* a list to pass back information for post processing */
+        ocs_gdi_post_processing *post,   /* what is left for after the last object, or nullptr */
         monitoring_t *monitor  /* monitoring structure */
 );
 
@@ -186,8 +199,7 @@ ocs_gdi_writer(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr
  * @brief The gdi_object_t::on_success of a table entry: calls the typed on_success of the entry's object type
  *
  * Has exactly the signature of #on_success_func_t; the new element is the spooled one of the entry's type,
- * the old one comes from the entry's master list, so both are taken into handles without a check. The list
- * for post processing is passed on raw: the callee does not use it, its element type is not fixed.
+ * the old one comes from the entry's master list, so both are taken into handles without a check.
  *
  * @tparam T the object type of the table entry
  * @tparam F the typed on_success, taking an `Element<T>` and a `ConstElement<T>` in place of the raw elements
@@ -196,52 +208,17 @@ ocs_gdi_writer(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr
  * @param ep the new, already spooled object (of type T)
  * @param old_ep the object as it was (of type T), nullptr on add
  * @param object the table entry
- * @param ppList a list to pass back information for post processing
+ * @param post what is left for after the last object of the request, or nullptr
  * @param monitor for monitoring qmaster threads
  * @return what @p F returns: 0 on success
  */
 template <ocs::tom::ObjectType T, auto F>
 int
 ocs_gdi_on_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
-                   gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+                   gdi_object_t *object, ocs_gdi_post_processing *post, monitoring_t *monitor) {
    // the types are guaranteed by the table entry and its master list, see above
    return F(packet, task, ocs::tom::Element<T>::from_typed(ep), ocs::tom::ConstElement<T>::from_typed(old_ep),
-            object, ppList, monitor);
-}
-
-/**
- * @brief ocs_gdi_on_success() for a typed on_success that fills the list for post processing with elements of L
- *
- * The raw list is handed over as an owning handle for the call and given back afterwards: one request has
- * one target, so whatever the list holds was put there by this entry, as elements of @p L.
- *
- * @tparam T the object type of the table entry
- * @tparam L the element type of the list for post processing
- * @tparam F the typed on_success, taking `Element<T>`, `ConstElement<T>` and `ocs::tom::ListPtr<L> *`
- * @param packet the client request
- * @param task the GDI task being answered
- * @param ep the new, already spooled object (of type T)
- * @param old_ep the object as it was (of type T), nullptr on add
- * @param object the table entry
- * @param ppList a list to pass back information for post processing (of type L), or nullptr
- * @param monitor for monitoring qmaster threads
- * @return what @p F returns: 0 on success
- */
-template <ocs::tom::ObjectType T, ocs::tom::ObjectType L, auto F>
-int
-ocs_gdi_on_success_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
-                        gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
-   // the types are guaranteed by the table entry and its master list, see above
-   const auto typed_ep = ocs::tom::Element<T>::from_typed(ep);
-   const auto typed_old_ep = ocs::tom::ConstElement<T>::from_typed(old_ep);
-   if (ppList == nullptr) {
-      return F(packet, task, typed_ep, typed_old_ep, object, nullptr, monitor);
-   }
-   // only this entry fills the list of a request, so it holds elements of L
-   auto list = ocs::tom::ListPtr<L>::from_typed(std::exchange(*ppList, nullptr));
-   const int ret = F(packet, task, typed_ep, typed_old_ep, object, &list, monitor);
-   *ppList = list.release();
-   return ret;
+            object, post, monitor);
 }
 
 bool
@@ -305,8 +282,9 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
 int
 sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                        lListElem *instructions, int add, gdi_object_t *object,
-                        const char *ruser, const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **ppList, monitoring_t *monitor);
+                        lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
+                        const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+                        ocs_gdi_post_processing *post, monitoring_t *monitor);
 
 void sge_clean_lists();
 

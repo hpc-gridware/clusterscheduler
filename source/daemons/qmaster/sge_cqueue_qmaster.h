@@ -81,7 +81,7 @@ cqueue_rollback(lListElem *cqueue);
 
 int
 cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
-               ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, gdi_object_t *object, lList **ppList,
+               ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, gdi_object_t *object, ocs_gdi_post_processing *post,
                monitoring_t *monitor);
 
 int

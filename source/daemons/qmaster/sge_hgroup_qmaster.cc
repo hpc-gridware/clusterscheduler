@@ -1192,14 +1192,14 @@ void hgroup_send_referencee_events(const ocs::tom::ConstList<ocs::tom::HR> refer
  * @param hgroup the host group
  * @param old_hgroup the host group as it was, or an empty handle on add
  * @param object the table entry for this object type
- * @param ppList receives information for post processing, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
 int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::HGRP> hgroup,
-               const ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup, gdi_object_t *object, lList **ppList,
-               monitoring_t *monitor) {
+               const ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup, gdi_object_t *object,
+               [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *name = ocs::tom::get<HGRP_name>(hgroup);

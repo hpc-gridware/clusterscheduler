@@ -854,7 +854,7 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::List
  * @param userset new added userset
  * @param old_ep for mod the old userset, an empty handle for add
  * @param object structure of the gdi framework
- * @param ppList additional list that is returned to the client, unused
+ * @param post what is left for after the last object of the request, unused
  * @param monitor monitoring structure
  *
  * @return 0 on success
@@ -862,8 +862,8 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::List
  * @note MT-NOTE: userset_success() is not MT safe
  */
 int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::US> userset,
-                    const ocs::tom::ConstElement<ocs::tom::US> old_ep, gdi_object_t *object, lList **ppList,
-                    monitoring_t *monitor) {
+                    const ocs::tom::ConstElement<ocs::tom::US> old_ep, gdi_object_t *object,
+                    [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    dstring ds = DSTRING_INIT;
    const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));

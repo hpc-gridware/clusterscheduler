@@ -42,7 +42,7 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
 
 int
 role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::RL> ep,
-             ocs::tom::ConstElement<ocs::tom::RL> old_ep, gdi_object_t *object, lList **ppList,
+             ocs::tom::ConstElement<ocs::tom::RL> old_ep, gdi_object_t *object, ocs_gdi_post_processing *post,
              monitoring_t *monitor);
 
 int
