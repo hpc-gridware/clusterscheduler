@@ -3086,6 +3086,7 @@ int sge_parse_qconf(char *argv[])
 
       if (cqueue == nullptr) {
          ERROR(MSG_CQUEUE_DOESNOTEXIST_S, object);
+         lFreeList(&alp);
          sge_free(&attr); 
          sge_free(&object);
          sge_free(&hgroup_or_hostname);
