@@ -57,5 +57,3 @@ int sort_host_list(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<o
 double scaled_mixed_load(const char *load_formula, ocs::tom::ConstElement<ocs::tom::EH> global,
                          ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                          ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
-OCS_TRANSITIONAL double scaled_mixed_load(const char *load_formula, const lListElem *global, const lListElem *host,
-                                          const lList *centry_list, const lList *load_adjustments);

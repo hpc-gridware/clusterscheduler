@@ -100,8 +100,6 @@ namespace ocs {
 bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                    const char *host_or_group);
 void ocs_href_list_emplace(ocs::tom::ListPtr<ocs::tom::HR> &this_list, const char *name);
-OCS_TRANSITIONAL bool href_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                    const char *host_or_group);
 
 bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                ocs::tom::ConstList<ocs::tom::HR> list);
@@ -109,15 +107,11 @@ bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::
 bool href_list_has_member(ocs::tom::ConstList<ocs::tom::HR> this_list, const char *host_or_group);
 
 bool href_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::HR> this_list, dstring *string);
-OCS_TRANSITIONAL bool href_list_append_to_dstring(const lList *this_list, dstring *string);
 
 bool href_list_compare(ocs::tom::ConstList<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                        ocs::tom::ConstList<ocs::tom::HR> list, ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
                        ocs::tom::ListPtr<ocs::tom::HR> *add_groups, ocs::tom::ListPtr<ocs::tom::HR> *equity_hosts,
                        ocs::tom::ListPtr<ocs::tom::HR> *equity_groups);
-OCS_TRANSITIONAL bool href_list_compare(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                        const lList *list, lList **add_hosts, lList **add_groups, lList **equity_hosts,
-                                        lList **equity_groups);
 
 bool href_list_find_diff(ocs::tom::ConstList<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          ocs::tom::ConstList<ocs::tom::HR> list, ocs::tom::ListPtr<ocs::tom::HR> *add_hosts,
@@ -158,7 +152,6 @@ bool href_list_find_all_referencees(ocs::tom::ConstList<ocs::tom::HR> this_list,
                                     ocs::tom::ListPtr<ocs::tom::HR> *occupant_groups);
 
 ocs::tom::Element<ocs::tom::HR> href_list_locate(ocs::tom::ConstList<ocs::tom::HR> this_list, const char *name);
-OCS_TRANSITIONAL lListElem *href_list_locate(const lList *this_list, const char *name);
 
 bool href_list_resolve_hostnames(ocs::tom::List<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  bool ignore_error,
@@ -167,4 +160,3 @@ bool href_list_resolve_hostnames(ocs::tom::List<ocs::tom::HR> this_list, ocs::to
 void href_list_debug_print(ocs::tom::ConstList<ocs::tom::HR> this_list, const char *prefix);
 
 void href_list_make_uniq(ocs::tom::List<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL void href_list_make_uniq(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

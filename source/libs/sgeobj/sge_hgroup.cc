@@ -128,20 +128,6 @@ bool hgroup_update_cache(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::to
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_update_cache() for an untyped caller
- *
- * @param hgroup the group to refresh (HGRP_Type), checked; nullptr gives false
- * @param answer_list for returning errors
- * @param master_hgroup_list HGRP_Type list the references are resolved against, checked; nullptr gives false
- *
- * @return as hgroup_update_cache()
- */
-bool hgroup_update_cache(lListElem *hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                         const lList *master_hgroup_list) {
-   return hgroup_update_cache(ocs::tom::Element<ocs::tom::HGRP>(hgroup), answer_list,
-                              ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
-}
 
 /**
  * @brief Refresh every group's resolved host list
@@ -169,17 +155,6 @@ bool hgroup_list_update_caches(const ocs::tom::List<ocs::tom::HGRP> master_hgrou
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_list_update_caches() for an untyped caller
- *
- * @param master_hgroup_list the HGRP_Type list to refresh in place, checked; may be nullptr
- * @param answer_list for returning errors
- *
- * @return as hgroup_list_update_caches()
- */
-bool hgroup_list_update_caches(lList *master_hgroup_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return hgroup_list_update_caches(ocs::tom::List<ocs::tom::HGRP>(master_hgroup_list), answer_list);
-}
 
 /**
  * @brief Does this group carry a usable resolved list?
@@ -210,16 +185,6 @@ bool hgroup_has_host_cache(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) 
    return hgroup && ocs::tom::get<HGRP_cache_version>(hgroup) != 0;
 }
 
-/**
- * @brief hgroup_has_host_cache() for an untyped caller
- *
- * @param hgroup HGRP_Type object, checked; may be nullptr
- *
- * @return as hgroup_has_host_cache()
- */
-bool hgroup_has_host_cache(const lListElem *hgroup) {
-   return hgroup_has_host_cache(ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup));
-}
 
 /**
  * @brief Is host a member, according to the cache?
@@ -413,24 +378,6 @@ hgroup_why(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *host
    DRETURN(route);
 }
 
-/**
- * @brief hgroup_why() for an untyped caller
- *
- * @param hgroup the group to ask (HGRP_Type), checked; may be nullptr
- * @param hostname the host in question, already resolved by the caller
- * @param master_hgroup_list the groups its references resolve against (HGRP_Type), checked
- * @param[out] group receives the group the entry was found in, empty when that
- *        is @p hgroup itself
- * @param[out] detail receives the matcher on the matcher route, empty otherwise
- *
- * @return as hgroup_why()
- */
-ocs::Matcher::Route
-hgroup_why(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list, dstring *group,
-           dstring *detail) {
-   return hgroup_why(ocs::tom::ConstElement<ocs::tom::HGRP>(hgroup), hostname,
-                     ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list), group, detail);
-}
 
 /**
  * @brief Split a member list into its three classes
@@ -654,17 +601,6 @@ hgroup_list_locate(const ocs::tom::ConstList<ocs::tom::HGRP> this_list, const ch
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_list_locate() for an untyped caller
- *
- * @param this_list HGRP_Type list, checked; may be nullptr
- * @param group group name
- *
- * @return found element or nullptr
- */
-lListElem *hgroup_list_locate(const lList *this_list, const char *group) {
-   return hgroup_list_locate(ocs::tom::ConstList<ocs::tom::HGRP>(this_list), group).raw();
-}
 
 
 /**
@@ -706,26 +642,6 @@ hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_create() for an untyped caller
- *
- * @param answer_list AN_Type list
- * @param name name
- * @param href_or_groupref list of hosts for this hgroup (HR_Type), checked; may be nullptr; taken over only when
- *        the group is created, otherwise it stays with the caller
- * @param is_name_validate if true, the hgrp name is validated
- *
- * @return new element or nullptr
- */
-lListElem *hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name, lList *href_or_groupref,
-                         bool is_name_validate) {
-   auto hrefs = ocs::tom::ListPtr<ocs::tom::HR>(href_or_groupref);
-   auto ret = hgroup_create(answer_list, name, std::move(hrefs), is_name_validate);
-
-   // not taken over: the list stays with the caller, as before
-   [[maybe_unused]] const lList *const not_taken = hrefs.release();
-   return ret.release();
-}
 
 /**
  * @brief Add a host or group reference
@@ -810,31 +726,6 @@ bool hgroup_find_all_references(const ocs::tom::ConstElement<ocs::tom::HGRP> thi
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_find_all_references() for an untyped caller
- *
- * @param this_elem HGRP_Type, checked; may be nullptr
- * @param answer_list AN_Type list
- * @param master_list HGRP_Type list, checked; may be nullptr
- * @param used_hosts in-out: HR_Type list, or nullptr
- * @param used_groups in-out: HR_Type list, or nullptr
- * @param used_matchers in-out: HR_Type list receiving the matchers met, or nullptr
- * @param expand_matchers whether the hosts the matchers capture are added to 'used_hosts'
- *
- * @return as hgroup_find_all_references()
- */
-bool hgroup_find_all_references(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                const lList *master_list,
-                                lList **used_hosts, lList **used_groups, lList **used_matchers,
-                                const bool expand_matchers) {
-   ocs::UntypedHrefList typed_used_hosts(used_hosts);
-   ocs::UntypedHrefList typed_used_groups(used_groups);
-   ocs::UntypedHrefList typed_used_matchers(used_matchers);
-
-   return hgroup_find_all_references(ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list,
-                                     ocs::tom::ConstList<ocs::tom::HGRP>(master_list), typed_used_hosts.get(),
-                                     typed_used_groups.get(), typed_used_matchers.get(), expand_matchers);
-}
 
 /**
  * @brief Find groups refering to this group
@@ -874,24 +765,6 @@ bool hgroup_find_all_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> th
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_find_all_referencees() for an untyped caller
- *
- * @param this_elem HGRP_Type element, checked; may be nullptr
- * @param answer_list AN_Type list
- * @param master_list list of all existing HGRP_Type elements, checked
- * @param occupants_groups in-out: HR_Type list
- *
- * @return as hgroup_find_all_referencees()
- */
-bool hgroup_find_all_referencees(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                 const lList *master_list, lList **occupants_groups) {
-   ocs::UntypedHrefList typed_occupants_groups(occupants_groups);
-
-   return hgroup_find_all_referencees(ocs::tom::ConstElement<ocs::tom::HGRP>(this_elem), answer_list,
-                                      ocs::tom::ConstList<ocs::tom::HGRP>(master_list),
-                                      typed_occupants_groups.get());
-}
 
 /**
  * @brief Find groups refering to this group
@@ -1035,23 +908,6 @@ bool hgroup_list_find_matching_and_resolve(const ocs::tom::ConstList<ocs::tom::H
    DRETURN(ret);
 }
 
-/**
- * @brief hgroup_list_find_matching_and_resolve() for an untyped caller
- *
- * @param this_list HGRP_Type list, checked; may be nullptr
- * @param answer_list AN_Type
- * @param hgroup_pattern fnmatch pattern
- * @param used_hosts in-out: HR_Type list, or nullptr
- *
- * @return as hgroup_list_find_matching_and_resolve()
- */
-bool hgroup_list_find_matching_and_resolve(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           const char *hgroup_pattern, lList **used_hosts) {
-   ocs::UntypedHrefList typed_used_hosts(used_hosts);
-
-   return hgroup_list_find_matching_and_resolve(ocs::tom::ConstList<ocs::tom::HGRP>(this_list), answer_list,
-                                                hgroup_pattern, typed_used_hosts.get());
-}
 
 /**
  * @brief Find hgroups which match pattern

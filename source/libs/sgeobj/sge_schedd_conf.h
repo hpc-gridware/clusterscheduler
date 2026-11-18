@@ -131,7 +131,6 @@ void sconf_print_config();
 ocs::tom::ElementPtr<ocs::tom::SC> sconf_create_default();
 
 bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL bool sconf_set_config(lList **config, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool sconf_is_valid_load_formula(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  ocs::tom::ConstList<ocs::tom::CE> cmplx_list);

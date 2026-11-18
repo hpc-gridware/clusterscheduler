@@ -668,21 +668,4 @@ int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char 
    DRETURN(0);
 }
 
-/**
- * @brief var_list_parse_from_string() for an untyped caller
- *
- * @param[in,out] lpp VA_Type list to append to, checked; created if *lpp is nullptr
- * @param[in] variable_str source string ("a=1,b=2,...")
- * @param[in] check_environment if true, a name without "=value" takes its value from the caller's environment
- * @return as var_list_parse_from_string(), and 1 if @p lpp is nullptr
- */
-int var_list_parse_from_string(lList **lpp, const char *variable_str, int check_environment) {
-   if (lpp == nullptr) {
-      return 1;
-   }
-   ocs::tom::ListPtr<ocs::tom::VA> list(*lpp);
-   const int ret = var_list_parse_from_string(list, variable_str, check_environment);
-   *lpp = list.release();
-   return ret;
-}
 

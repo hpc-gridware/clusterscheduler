@@ -143,23 +143,3 @@ ocs::UserProject::decay_userprj_usage(const ocs::tom::Element<ocs::tom::PR> proj
    DRETURN_VOID;
 }
 
-/**
- * @brief decay_userprj_usage() for an untyped caller
- *
- * @param userprj The user/project element to decay, checked; may be nullptr.
- * @param is_user A boolean indicating if the element is a user or project.
- * @param decay_list The list of decay elements to use for decay calculations (UA_Type), checked.
- * @param seqno The sequence number indicating new scheduling cycles.
- * @param curr_time The current time.
- */
-void
-ocs::UserProject::decay_userprj_usage(lListElem *userprj, const bool is_user, const lList *decay_list,
-                                      const u_long seqno, const uint64_t curr_time) {
-   if (is_user) {
-      decay_userprj_usage(ocs::tom::Element<ocs::tom::UU>(userprj), ocs::tom::ConstList<ocs::tom::UA>(decay_list),
-                          seqno, curr_time);
-   } else {
-      decay_userprj_usage(ocs::tom::Element<ocs::tom::PR>(userprj), ocs::tom::ConstList<ocs::tom::UA>(decay_list),
-                          seqno, curr_time);
-   }
-}

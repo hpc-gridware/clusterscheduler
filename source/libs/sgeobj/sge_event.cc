@@ -445,16 +445,6 @@ const char *event_text(const ocs::tom::ConstElement<ocs::tom::ET> event, dstring
    DRETURN(sge_dstring_get_string(buffer));
 }
 
-/**
- * @brief event_text() for an untyped caller
- *
- * @param event the event to render (ET_Type, checked)
- * @param[out] buffer receives the text
- * @return as event_text()
- */
-const char *event_text(const lListElem *event, dstring *buffer) {
-   return event_text(ocs::tom::ConstElement<ocs::tom::ET>(event), buffer);
-}
 
 /**
  * @brief Verify the subscription list of an event client

@@ -74,10 +74,8 @@ constexpr uint32_t OCS_MAX_SLOTS = RANGE_INFINITY;
 
 void range_get_all_ids(ocs::tom::ConstElement<ocs::tom::RN> this_elem, uint32_t *min, uint32_t *max,
                        uint32_t *step);
-OCS_TRANSITIONAL void range_get_all_ids(const lListElem *this_elem, uint32_t *min, uint32_t *max, uint32_t *step);
 
 void range_set_all_ids(ocs::tom::Element<ocs::tom::RN> this_elem, uint32_t min, uint32_t max, uint32_t step);
-OCS_TRANSITIONAL void range_set_all_ids(lListElem *this_elem, uint32_t min, uint32_t max, uint32_t step);
 
 bool range_containes_id_less_than(ocs::tom::ConstElement<ocs::tom::RN> this_elem, uint32_t id);
 
@@ -107,76 +105,52 @@ void range_to_dstring(uint32_t start, uint32_t end, int step,
 
 void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           uint32_t id);
-OCS_TRANSITIONAL void range_list_insert_id(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           uint32_t id);
 
 void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           uint32_t id);
-OCS_TRANSITIONAL void range_list_remove_id(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           uint32_t id);
 
 void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  ocs::tom::ListPtr<ocs::tom::RN> &list, uint32_t n);
 
 bool range_list_is_id_within(ocs::tom::ConstList<ocs::tom::RN> this_list, uint32_t id);
-OCS_TRANSITIONAL bool range_list_is_id_within(const lList *this_list, uint32_t id);
 
 bool range_list_is_empty(ocs::tom::ConstList<ocs::tom::RN> this_list);
-OCS_TRANSITIONAL bool range_list_is_empty(const lList *this_list);
 
 void range_list_compress(ocs::tom::List<ocs::tom::RN> this_list);
 
 void range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    bool correct_end);
-OCS_TRANSITIONAL void range_list_sort_uniq_compress(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                    bool correct_end);
 
 uint32_t range_list_get_first_id(ocs::tom::ConstList<ocs::tom::RN> this_list,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL uint32_t range_list_get_first_id(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 uint32_t range_list_get_last_id(ocs::tom::ConstList<ocs::tom::RN> this_list,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL uint32_t range_list_get_last_id(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 double range_list_get_average(ocs::tom::ConstList<ocs::tom::RN> this_list, uint32_t upperbound);
-OCS_TRANSITIONAL double range_list_get_average(const lList *this_list, uint32_t upperbound);
 
 void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 uint32_t range_list_get_number_of_ids(ocs::tom::ConstList<ocs::tom::RN> this_list);
-OCS_TRANSITIONAL uint32_t range_list_get_number_of_ids(const lList *this_list);
 
 bool range_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                   const char *string, bool just_parse, bool step_allowed, bool inf_allowed);
-OCS_TRANSITIONAL bool range_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                   const char *string,
-                                                   bool just_parse, bool step_allowed, bool inf_allowed);
 
 bool range_list_containes_id_less_than(ocs::tom::ConstList<ocs::tom::RN> range_list, uint32_t id);
-OCS_TRANSITIONAL bool range_list_containes_id_less_than(const lList *range_list, uint32_t id);
 
 void range_list_calculate_union_set(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                     ocs::tom::ConstList<ocs::tom::RN> list1,
                                     ocs::tom::ConstList<ocs::tom::RN> list2);
-OCS_TRANSITIONAL void range_list_calculate_union_set(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                     const lList *list1, const lList *list2);
 
 void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                          ocs::tom::ConstList<ocs::tom::RN> list1,
                                          ocs::tom::ConstList<ocs::tom::RN> list2);
-OCS_TRANSITIONAL void range_list_calculate_difference_set(lList **this_list,
-                                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                          const lList *list1, const lList *list2);
 
 void range_list_calculate_intersection_set(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                            ocs::tom::ConstList<ocs::tom::RN> list1,
                                            ocs::tom::ConstList<ocs::tom::RN> list2);
-OCS_TRANSITIONAL void range_list_calculate_intersection_set(lList **this_list,
-                                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                            const lList *list1, const lList *list2);

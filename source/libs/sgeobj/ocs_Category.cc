@@ -204,18 +204,3 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
    DRETURN_VOID;
 }
 
-/**
- * @brief build_string() for an untyped caller
- *
- * @param category_str   The target string, contains the category or nothing
- * @param job            The job for the category creating (JB_Type), checked
- * @param acl_list       Global access list (US_Type), checked; may be nullptr
- * @param prj_list       Project list (PR_Type), checked; may be nullptr
- * @param rqs_list       Resource quota set list (RQS_Type), checked; may be nullptr
- */
-void
-ocs::Category::build_string(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list,
-                            const lList *rqs_list) {
-   build_string(category_str, ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::ConstList<ocs::tom::US>(acl_list),
-                ocs::tom::ConstList<ocs::tom::PR>(prj_list), ocs::tom::ConstList<ocs::tom::RQS>(rqs_list));
-}

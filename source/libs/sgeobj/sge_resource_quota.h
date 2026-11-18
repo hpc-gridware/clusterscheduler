@@ -85,8 +85,6 @@ enum {
 
 ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *buffer,
                                                                   ocs::tom::ListPtr<ocs::tom::AN> *alp);
-OCS_TRANSITIONAL bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer,
-                                                   ocs::tom::ListPtr<ocs::tom::AN> *alp);
 
 bool rqs_append_filter_to_dstring(ocs::tom::ConstElement<ocs::tom::RQRF> filter, dstring *buffer,
                                   ocs::tom::ListPtr<ocs::tom::AN> *alp);
@@ -129,9 +127,6 @@ bool rqs_is_matching_rule(ocs::tom::ConstElement<ocs::tom::RQR> rule, const char
                           ocs::tom::ConstList<ocs::tom::ST> grp_list, const char *project, const char *pe,
                           const char *host, const char *queue, ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                           ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
-OCS_TRANSITIONAL bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
-                                           const char *project, const char *pe, const char *host, const char *queue,
-                                           const lList *master_userset_list, const lList *master_hgroup_list);
 
 bool sge_centry_referenced_in_rqs(ocs::tom::ConstElement<ocs::tom::RQS> rqs,
                                   ocs::tom::ConstElement<ocs::tom::CE> centry);

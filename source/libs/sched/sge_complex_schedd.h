@@ -82,8 +82,6 @@ get_attribute_by_name(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::Con
 int compare_complexes(int slots, ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
                       ocs::tom::ConstElement<ocs::tom::CE> src_cplx, char *availability_text,
                       int is_threshold, int force_existence);
-OCS_TRANSITIONAL int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
-                                       int is_threshold, int force_existence);
 
 ocs::tom::ElementPtr<ocs::tom::CE>
 get_attribute(const char *attrname, ocs::tom::ConstList<ocs::tom::CE> config_attr,

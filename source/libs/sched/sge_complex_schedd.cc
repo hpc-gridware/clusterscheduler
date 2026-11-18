@@ -1176,24 +1176,6 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
    DRETURN(0);
 }
 
-/**
- * @brief Matches a request against what an object offers, for a caller with untyped elements (N-X-2)
- *
- * @param[in]  slots             number of slots the request is made for
- * @param[in]  req_cplx          the requested attribute (`CE_Type`), checked
- * @param[in]  src_cplx          what the object offers (`CE_Type`), checked
- * @param[out] availability_text receives the diagnosis when the match fails
- * @param[in]  is_threshold      true when matching a threshold
- * @param[in]  force_existence   true if an attribute that does not exist at the object makes the match fail
- *
- * @return 1 if the request is satisfied, 0 otherwise
- */
-int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
-                      int is_threshold, int force_existence) {
-   return compare_complexes(slots, ocs::tom::ConstElement<ocs::tom::CE>(req_cplx),
-                            ocs::tom::ConstElement<ocs::tom::CE>(src_cplx), availability_text, is_threshold,
-                            force_existence);
-}
 
 /**
  * @brief Returns an attribut by name

@@ -337,21 +337,3 @@ static int get_load_value(double *dvalp, const ocs::tom::ConstElement<ocs::tom::
 
    DRETURN(0);
 }
-
-/**
- * @brief Computes the scaled and weighted load of one host, for a caller with untyped objects (N-X-2)
- *
- * @param[in] load_formula     the load formula of the scheduler configuration
- * @param[in] global           the global host (`EH_Type`), checked, or nullptr
- * @param[in] host             the host to compute the load for (`EH_Type`), checked
- * @param[in] centry_list      the complex entry list (`CE_Type`), checked
- * @param[in] load_adjustments the job load adjustments (`CE_Type`), checked, or nullptr
- *
- * @return the load value the host list is sorted by, or #ERROR_LOAD_VAL on error
- */
-double scaled_mixed_load(const char *load_formula, const lListElem *global, const lListElem *host,
-                         const lList *centry_list, const lList *load_adjustments) {
-   return scaled_mixed_load(load_formula, ocs::tom::ConstElement<ocs::tom::EH>(global),
-                            ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                            ocs::tom::ConstList<ocs::tom::CE>(load_adjustments));
-}

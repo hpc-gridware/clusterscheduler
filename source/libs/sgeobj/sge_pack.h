@@ -51,13 +51,9 @@ enum {
 };
 
 ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where);
-OCS_TRANSITIONAL lListElem *lWhereToElem(const lCondition *where);
 
 lCondition *ocs_where_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> where);
-OCS_TRANSITIONAL lCondition *lWhereFromElem(const lListElem *where);
 
 ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what);
-OCS_TRANSITIONAL lListElem *lWhatToElem(const lEnumeration *what);
 
 lEnumeration *ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> what);
-OCS_TRANSITIONAL lEnumeration *lWhatFromElem(const lListElem *what);

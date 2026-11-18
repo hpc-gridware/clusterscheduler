@@ -161,23 +161,6 @@ ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *bu
    DRETURN(filter);
 }
 
-/**
- * @brief rqs_parse_filter_from_string() for an untyped caller
- *
- * @param filter receives the filter (RQRF_Type) on success; left as it is on error
- * @param buffer string to be converted
- * @param alp answer_list
- *
- * @return true on success false on error
- */
-bool rqs_parse_filter_from_string(lListElem **filter, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
-   auto parsed = rqs_parse_filter_from_string(buffer, alp);
-   if (!parsed) {
-      return false;
-   }
-   *filter = parsed.release();
-   return true;
-}
 
 /**
  * @brief RQRF Element to string
@@ -1282,30 +1265,6 @@ bool rqs_is_matching_rule(const ocs::tom::ConstElement<ocs::tom::RQR> rule, cons
    DRETURN(true);
 }
 
-/**
- * @brief rqs_is_matching_rule() for an untyped caller
- *
- * @param rule resource quota rule (RQR_Type), checked
- * @param user user name
- * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
- * @param project project name
- * @param pe pe name
- * @param host host name
- * @param queue queue name
- * @param master_userset_list master user set list (US_Type), checked
- * @param master_hgroup_list master hostgroup list (HGRP_Type), checked
- *
- * @return as rqs_is_matching_rule()
- */
-bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
-                          const char *project, const char *pe, const char *host, const char *queue,
-                          const lList *master_userset_list, const lList *master_hgroup_list) {
-   return rqs_is_matching_rule(ocs::tom::ConstElement<ocs::tom::RQR>(rule), user, group,
-                               ocs::tom::ConstList<ocs::tom::ST>(grp_list), project, pe, host, queue,
-                               ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
-                               ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
-}
 
 /**
  * @brief Match name with host scope

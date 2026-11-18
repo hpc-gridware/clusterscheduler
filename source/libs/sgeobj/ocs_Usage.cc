@@ -551,22 +551,6 @@ ocs::Usage::sum_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DRETURN_VOID;
 }
 
-/**
- * @brief sum_usage() for an untyped caller
- *
- * @param job the finished job (JB_Type), checked
- * @param ja_task the finished array task (JAT_Type), checked
- * @param user the submitting user's object (UU_Type), checked
- * @param project the job's project (PR_Type), checked
- * @param usage_weight_list the weights each usage attribute is scaled by (UA_Type), checked
- */
-void
-ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
-                      const lList *usage_weight_list) {
-   sum_usage(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstElement<ocs::tom::JAT>(ja_task),
-             ocs::tom::Element<ocs::tom::UU>(user), ocs::tom::Element<ocs::tom::PR>(project),
-             ocs::tom::ConstList<ocs::tom::UA>(usage_weight_list));
-}
 
 
 /**

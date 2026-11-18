@@ -90,13 +90,9 @@ bool hgroup_check_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char*
  * every group in the list. Qmaster-side maintenance -- readers never compute. */
 bool hgroup_update_cache(ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                          ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
-OCS_TRANSITIONAL bool hgroup_update_cache(lListElem *hgroup, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                          const lList *master_hgroup_list);
 
 bool hgroup_list_update_caches(ocs::tom::List<ocs::tom::HGRP> master_hgroup_list,
                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-OCS_TRANSITIONAL bool hgroup_list_update_caches(lList *master_hgroup_list,
-                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 /* CS-2451: consume the resolved host list cache.
  *
@@ -110,7 +106,6 @@ OCS_TRANSITIONAL bool hgroup_list_update_caches(lList *master_hgroup_list,
  * list as nullptr. "No hosts" and "no cache" must not collapse into one answer.
  */
 bool hgroup_has_host_cache(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup);
-OCS_TRANSITIONAL bool hgroup_has_host_cache(const lListElem *hgroup);
 
 bool hgroup_cache_contains_host(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname);
 
@@ -147,8 +142,6 @@ bool hgroup_contains_host(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const c
 ocs::Matcher::Route hgroup_why(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname,
                                ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *group,
                                dstring *detail);
-OCS_TRANSITIONAL ocs::Matcher::Route hgroup_why(const lListElem *hgroup, const char *hostname,
-                                                const lList *master_hgroup_list, dstring *group, dstring *detail);
 
 /**
  * @brief Split a member list into its three classes (CS-2680, N-I-14)
@@ -207,8 +200,6 @@ hgroup_queue_of_group_name(const char *name);
 [[nodiscard]] ocs::tom::ElementPtr<ocs::tom::HGRP>
 hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
               ocs::tom::ListPtr<ocs::tom::HR> &&hostref_or_groupref, bool is_name_validate);
-OCS_TRANSITIONAL lListElem *hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
-                                          lList *hostref_or_groupref, bool is_name_validate);
 
 bool hgroup_add_references(ocs::tom::Element<ocs::tom::HGRP> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            ocs::tom::ConstList<ocs::tom::HR> hostref_or_groupref);
@@ -220,19 +211,11 @@ bool hgroup_find_all_references(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem
                                 ocs::tom::ListPtr<ocs::tom::HR> *used_groups,
                                 ocs::tom::ListPtr<ocs::tom::HR> *used_matchers = nullptr,
                                 bool expand_matchers = true);
-OCS_TRANSITIONAL bool hgroup_find_all_references(const lListElem *this_elem,
-                                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                 const lList *master_list, lList **used_hosts,
-                                                 lList **used_groups, lList **used_matchers = nullptr,
-                                                 bool expand_matchers = true);
 
 bool hgroup_find_all_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                  ocs::tom::ListPtr<ocs::tom::HR> *used_groups);
-OCS_TRANSITIONAL bool hgroup_find_all_referencees(const lListElem *this_elem,
-                                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                  const lList *master_list, lList **used_groups);
 
 bool hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -245,7 +228,6 @@ bool hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
 
 ocs::tom::Element<ocs::tom::HGRP> hgroup_list_locate(ocs::tom::ConstList<ocs::tom::HGRP> this_list,
                                                      const char *group);
-OCS_TRANSITIONAL lListElem *hgroup_list_locate(const lList *this_list, const char *group);
 
 bool hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::HR> href_list);
@@ -253,9 +235,6 @@ bool hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP> this_list, ocs::tom:
 bool hgroup_list_find_matching_and_resolve(ocs::tom::ConstList<ocs::tom::HGRP> this_list,
                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                            const char *hgroup_pattern, ocs::tom::ListPtr<ocs::tom::HR> *used_hosts);
-OCS_TRANSITIONAL bool hgroup_list_find_matching_and_resolve(const lList *this_list,
-                                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                                            const char *hgroup_pattern, lList **used_hosts);
 
 bool hgroup_list_find_matching(ocs::tom::ConstList<ocs::tom::HGRP> this_list,
                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list,

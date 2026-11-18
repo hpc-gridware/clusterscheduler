@@ -63,8 +63,6 @@ bool calendar_parse_week(ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::ListPtr
 
 [[nodiscard]] std::tuple<uint32_t, uint64_t, ocs::tom::ListPtr<ocs::tom::CQU>>
 calender_state_changes(ocs::tom::ConstElement<ocs::tom::CAL> cep, const uint64_t *now64);
-OCS_TRANSITIONAL uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list, uint64_t *when64,
-                                                 uint64_t *now64);
 
 bool calendar_is_referenced(ocs::tom::ConstElement<ocs::tom::CAL> calendar,
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -76,4 +74,3 @@ void cullify_tm(ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now);
 void uncullify_tm(ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now);
 
 bool calendar_open_in_time_frame(ocs::tom::ConstElement<ocs::tom::CAL> cep, uint64_t start_time, uint64_t duration);
-OCS_TRANSITIONAL bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint64_t duration);

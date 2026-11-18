@@ -126,8 +126,6 @@
 
 bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::CQ> queue_list, ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list);
-OCS_TRANSITIONAL bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                         const lList *queue_list, const lList *hgrp_list);
 
 int sge_resolve_host(lListElem *ep, int nm);
 

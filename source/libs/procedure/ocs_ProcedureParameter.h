@@ -273,8 +273,6 @@ namespace ocs {
          ocs::tom::set<SPP_value_list>(bundle_elem, std::move(value));
       }
 
-      OCS_TRANSITIONAL static void add_parameter_bundle(ocs::tom::List<ocs::tom::SPP> bundle,
-                                                        const std::string &name, lList *parameter);
 
       /** @brief A value list holding one number, as a bundle entry carries it
        * @param value the number

@@ -326,16 +326,6 @@ uint32_t range_list_get_number_of_ids(const ocs::tom::ConstList<ocs::tom::RN> th
    DRETURN(ret);
 }
 
-/**
- * @brief range_list_get_number_of_ids() for an untyped caller
- *
- * @param this_list RN_Type list, checked; may be nullptr
- *
- * @return as range_list_get_number_of_ids()
- */
-uint32_t range_list_get_number_of_ids(const lList *this_list) {
-   return range_list_get_number_of_ids(ocs::tom::ConstList<ocs::tom::RN>(this_list));
-}
 
 /**
  * @brief Count the distinct id values in a single RN_Type range element.
@@ -437,17 +427,6 @@ uint32_t range_list_get_first_id(const ocs::tom::ConstList<ocs::tom::RN> range_l
    DRETURN(start);
 }
 
-/**
- * @brief range_list_get_first_id() for an untyped caller
- *
- * @param range_list RN_Type list, checked; may be nullptr
- * @param answer_list Pointer to an AN_Type list
- *
- * @return as range_list_get_first_id()
- */
-uint32_t range_list_get_first_id(const lList *range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return range_list_get_first_id(ocs::tom::ConstList<ocs::tom::RN>(range_list), answer_list);
-}
 
 /**
  * @brief Returns last id contained in the list
@@ -481,17 +460,6 @@ uint32_t range_list_get_last_id(const ocs::tom::ConstList<ocs::tom::RN> range_li
    DRETURN(end);
 }
 
-/**
- * @brief range_list_get_last_id() for an untyped caller
- *
- * @param range_list RN_Type list, checked; may be nullptr
- * @param answer_list Pointer to an AN_Type list
- *
- * @return as range_list_get_last_id()
- */
-uint32_t range_list_get_last_id(const lList *range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return range_list_get_last_id(ocs::tom::ConstList<ocs::tom::RN>(range_list), answer_list);
-}
 
 /**
  * @brief Return average of all numbers in range
@@ -525,17 +493,6 @@ double range_list_get_average(const ocs::tom::ConstList<ocs::tom::RN> this_list,
    return (n > 0) ? (sum / n) : 0;
 }
 
-/**
- * @brief range_list_get_average() for an untyped caller
- *
- * @param this_list RN_Type list, checked; may be nullptr
- * @param upperbound This is used as range upperbound if non-0
- *
- * @return as range_list_get_average()
- */
-double range_list_get_average(const lList *this_list, uint32_t upperbound) {
-   return range_list_get_average(ocs::tom::ConstList<ocs::tom::RN>(this_list), upperbound);
-}
 
 /**
  * @brief Makes lists fit as a fiddle
@@ -619,16 +576,6 @@ void range_list_sort_uniq_compress(const ocs::tom::List<ocs::tom::RN> range_list
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_sort_uniq_compress() for an untyped caller
- *
- * @param range_list RN_Type list, checked; may be nullptr
- * @param answer_list Pointer to an AN_Type list
- * @param correct_end if true, range_list is treated as id enumeration
- */
-void range_list_sort_uniq_compress(lList *range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool correct_end) {
-   range_list_sort_uniq_compress(ocs::tom::List<ocs::tom::RN>(range_list), answer_list, correct_end);
-}
 
 /**
  * @brief Joins sequenced ranges within a list
@@ -724,17 +671,6 @@ bool range_list_is_id_within(const ocs::tom::ConstList<ocs::tom::RN> range_list,
    DRETURN(ret);
 }
 
-/**
- * @brief range_list_is_id_within() for an untyped caller
- *
- * @param range_list RN_Type list, checked; may be nullptr
- * @param id id
- *
- * @return as range_list_is_id_within()
- */
-bool range_list_is_id_within(const lList *range_list, uint32_t id) {
-   return range_list_is_id_within(ocs::tom::ConstList<ocs::tom::RN>(range_list), id);
-}
 
 /**
  * @brief Has id less than x
@@ -760,17 +696,6 @@ bool range_list_containes_id_less_than(const ocs::tom::ConstList<ocs::tom::RN> r
    DRETURN(ret);
 }
 
-/**
- * @brief range_list_containes_id_less_than() for an untyped caller
- *
- * @param range_list RN_Type list, checked; may be nullptr
- * @param id number
- *
- * @return as range_list_containes_id_less_than()
- */
-bool range_list_containes_id_less_than(const lList *range_list, uint32_t id) {
-   return range_list_containes_id_less_than(ocs::tom::ConstList<ocs::tom::RN>(range_list), id);
-}
 
 /**
  * @brief Check if id lists containes ids
@@ -785,16 +710,6 @@ bool range_list_is_empty(const ocs::tom::ConstList<ocs::tom::RN> range_list) {
    return range_list_get_number_of_ids(range_list) == 0;
 }
 
-/**
- * @brief range_list_is_empty() for an untyped caller
- *
- * @param range_list RN_Type list, checked; may be nullptr
- *
- * @return as range_list_is_empty()
- */
-bool range_list_is_empty(const lList *range_list) {
-   return range_list_is_empty(ocs::tom::ConstList<ocs::tom::RN>(range_list));
-}
 
 /**
  * @brief Test whether the range contains any id strictly less than @p id.
@@ -928,20 +843,6 @@ void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, ocs::tom:
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_remove_id() for an untyped caller
- *
- * @param range_list pointer to a RN_Type list, checked; nothing happens for nullptr
- * @param answer_list pointer to a AN_Type list
- * @param id the id to remove
- */
-void range_list_remove_id(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id) {
-   if (range_list != nullptr) {
-      ocs::tom::ListPtr<ocs::tom::RN> list(*range_list);
-      range_list_remove_id(list, answer_list, id);
-      *range_list = list.release();
-   }
-}
 
 /**
  * @brief Split a range list
@@ -1022,18 +923,6 @@ void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_insert_id() for an untyped caller
- *
- * @param range_list pointer to a RN_Type list, checked; must not be nullptr
- * @param answer_list pointer to a AN_Type list
- * @param id new id
- */
-void range_list_insert_id(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id) {
-   ocs::tom::ListPtr<ocs::tom::RN> list(*range_list);
-   range_list_insert_id(list, answer_list, id);
-   *range_list = list.release();
-}
 
 /**
  * @brief Insert an id into an existing range list
@@ -1174,17 +1063,6 @@ void range_get_all_ids(const ocs::tom::ConstElement<ocs::tom::RN> range, uint32_
    DRETURN_VOID;
 }
 
-/**
- * @brief range_get_all_ids() for an untyped caller
- *
- * @param range The RN_Type element to read, checked; may be nullptr
- * @param min Receives the start of the range
- * @param max Receives the end of the range
- * @param step Receives the step size
- */
-void range_get_all_ids(const lListElem *range, uint32_t *min, uint32_t *max, uint32_t *step) {
-   range_get_all_ids(ocs::tom::ConstElement<ocs::tom::RN>(range), min, max, step);
-}
 
 /**
  * @brief Write (min, max, step) into an RN_Type range element.
@@ -1219,17 +1097,6 @@ void range_set_all_ids(const ocs::tom::Element<ocs::tom::RN> range, const uint32
    DRETURN_VOID;
 }
 
-/**
- * @brief range_set_all_ids() for an untyped caller
- *
- * @param range The RN_Type element to modify, checked; nullptr is a no-op
- * @param min Start of the range
- * @param max End of the range
- * @param step Step size
- */
-void range_set_all_ids(lListElem *range, uint32_t min, uint32_t max, uint32_t step) {
-   range_set_all_ids(ocs::tom::Element<ocs::tom::RN>(range), min, max, step);
-}
 
 /**
  * @brief Union set of two range lists
@@ -1283,25 +1150,6 @@ void range_list_calculate_union_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_calculate_union_set() for an untyped caller
- *
- * @param range_list pointer to union set RN_Type list, checked; nothing happens for nullptr
- * @param answer_list pointer to AN_Type list
- * @param range_list1 first source RN_Type list, checked; may be nullptr
- * @param range_list2 second source RN_Type list, checked; may be nullptr
- */
-void range_list_calculate_union_set(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                    const lList *range_list1, const lList *range_list2) {
-   if (range_list != nullptr) {
-      // the sources are checked before the result is taken over
-      const ocs::tom::ConstList<ocs::tom::RN> list1(range_list1);
-      const ocs::tom::ConstList<ocs::tom::RN> list2(range_list2);
-      ocs::tom::ListPtr<ocs::tom::RN> result(*range_list);
-      range_list_calculate_union_set(result, answer_list, list1, list2);
-      *range_list = result.release();
-   }
-}
 
 /**
  * @brief Difference set list
@@ -1352,25 +1200,6 @@ void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &range_
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_calculate_difference_set() for an untyped caller
- *
- * @param range_list pointer to result RN_Type list, checked; nothing happens for nullptr
- * @param answer_list pointer to AN_Type list
- * @param range_list1 first source RN_Type list, checked; may be nullptr
- * @param range_list2 second source RN_Type list, checked; may be nullptr
- */
-void range_list_calculate_difference_set(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                         const lList *range_list1, const lList *range_list2) {
-   if (range_list != nullptr) {
-      // the sources are checked before the result is taken over
-      const ocs::tom::ConstList<ocs::tom::RN> list1(range_list1);
-      const ocs::tom::ConstList<ocs::tom::RN> list2(range_list2);
-      ocs::tom::ListPtr<ocs::tom::RN> result(*range_list);
-      range_list_calculate_difference_set(result, answer_list, list1, list2);
-      *range_list = result.release();
-   }
-}
 
 /**
  * @brief Intersection set
@@ -1412,23 +1241,6 @@ void range_list_calculate_intersection_set(ocs::tom::ListPtr<ocs::tom::RN> &rang
    DRETURN_VOID;
 }
 
-/**
- * @brief range_list_calculate_intersection_set() for an untyped caller
- *
- * @param range_list pointer to result RN_Type list, checked; must not be nullptr
- * @param answer_list pointer to AN_Type list
- * @param range_list1 first source RN_Type list, checked; may be nullptr
- * @param range_list2 second source RN_Type list, checked; may be nullptr
- */
-void range_list_calculate_intersection_set(lList **range_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           const lList *range_list1, const lList *range_list2) {
-   // the sources are checked before the result is taken over
-   const ocs::tom::ConstList<ocs::tom::RN> list1(range_list1);
-   const ocs::tom::ConstList<ocs::tom::RN> list2(range_list2);
-   ocs::tom::ListPtr<ocs::tom::RN> result(*range_list);
-   range_list_calculate_intersection_set(result, answer_list, list1, list2);
-   *range_list = result.release();
-}
 
 /**
  * @brief Appends a range to a dynamic string
@@ -1740,24 +1552,3 @@ range_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::RN> &this_list, ocs::to
    DRETURN(true);
 }
 
-/**
- * @brief range_list_parse_from_string() for an untyped caller
- *
- * @param[in,out] this_list receives the parsed list, checked; pass nullptr to only check the syntax
- * @param[out] answer_list receives the syntax error
- * @param string the text to parse
- * @param just_parse true to validate only, without building a list
- * @param step_allowed whether a `:step` suffix may appear
- * @param inf_allowed whether an open upper bound may appear
- * @return as range_list_parse_from_string()
- */
-bool range_list_parse_from_string(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string,
-                                  bool just_parse, bool step_allowed, bool inf_allowed) {
-   // a list built without a target is not handed out, the handle frees it
-   ocs::tom::ListPtr<ocs::tom::RN> list(this_list != nullptr ? *this_list : nullptr);
-   const bool ret = range_list_parse_from_string(list, answer_list, string, just_parse, step_allowed, inf_allowed);
-   if (this_list != nullptr) {
-      *this_list = list.release();
-   }
-   return ret;
-}

@@ -642,29 +642,6 @@ calender_state_changes(const ocs::tom::ConstElement<ocs::tom::CAL> cep, const ui
    DRETURN(std::make_tuple(state0, when64, std::move(state_changes_list)));
 }
 
-/**
- * @brief calender_state_changes() for an untyped caller
- *
- * @param cep calendar (CAL_Type), checked; nullptr gives 0 and leaves the out-parameters alone
- * @param state_changes_list out: the state change list (CQU_Type); nullptr gives 0
- * @param when64 out: when the next change will be, or 0
- * @param now64 in/out: nullptr, or the current time (only for the test program); rounded to whole seconds
- *
- * @return as calender_state_changes()
- */
-uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list, uint64_t *when64, uint64_t *now64) {
-   if (cep == nullptr || state_changes_list == nullptr) {
-      return 0;
-   }
-
-   auto [state, when, changes] = calender_state_changes(ocs::tom::ConstElement<ocs::tom::CAL>(cep), now64);
-   *when64 = when;
-   if (now64 != nullptr) {
-      *now64 = sge_time_t_to_gmt64(sge_gmt64_to_time_t(*now64));
-   }
-   *state_changes_list = changes.release();
-   return state;
-}
 
 
 /**
@@ -2571,15 +2548,3 @@ bool calendar_open_in_time_frame(const ocs::tom::ConstElement<ocs::tom::CAL> cep
    DRETURN(ret);
 }
 
-/**
- * @brief calendar_open_in_time_frame() for an untyped caller
- *
- * @param cep calendar object (CAL_Type), checked; may be nullptr
- * @param start_time time frame start
- * @param duration time frame duration
- *
- * @return as calendar_open_in_time_frame()
- */
-bool calendar_open_in_time_frame(const lListElem *cep, const uint64_t start_time, const uint64_t duration) {
-   return calendar_open_in_time_frame(ocs::tom::ConstElement<ocs::tom::CAL>(cep), start_time, duration);
-}

@@ -87,5 +87,4 @@ int var_list_add_as_set(ocs::tom::List<ocs::tom::VA> varl, ocs::tom::ListPtr<ocs
 bool var_list_verify(ocs::tom::ConstList<ocs::tom::VA> lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char *variable_str, int check_environment);
-OCS_TRANSITIONAL int var_list_parse_from_string(lList **lpp, const char *variable_str, int check_environment);
 

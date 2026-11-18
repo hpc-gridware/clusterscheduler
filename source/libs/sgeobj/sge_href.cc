@@ -115,24 +115,6 @@ bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::tom::ListPtr
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_add() for an untyped caller
- *
- * @param this_list in-out: the HR_Type list, checked; created if *this_list is nullptr
- * @param answer_list AN_Type list
- * @param host_or_group host or group name
- *
- * @return as href_list_add(); false with an error if "this_list" is nullptr
- */
-bool href_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *host_or_group) {
-   if (this_list == nullptr) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-      return false;
-   }
-   ocs::UntypedHrefList list(this_list);
-   return href_list_add(*list.get(), answer_list, host_or_group);
-}
 
 /**
  * @brief Append a name to a host reference list, creating the list on the first entry
@@ -302,30 +284,6 @@ bool href_list_compare(const ocs::tom::ConstList<ocs::tom::HR> this_list, ocs::t
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_compare() for an untyped caller
- *
- * @param this_list HR_Type list to compare, checked; may be nullptr
- * @param answer_list AN_Type list
- * @param list 2nd HR_Type list to be compared, checked; may be nullptr
- * @param add_hosts in-out: HR_Type list, or nullptr
- * @param add_groups in-out: HR_Type list, or nullptr
- * @param equity_hosts in-out: HR_Type list, or nullptr
- * @param equity_groups in-out: HR_Type list, or nullptr
- *
- * @return as href_list_compare()
- */
-bool href_list_compare(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
-                       lList **add_hosts, lList **add_groups, lList **equity_hosts, lList **equity_groups) {
-   ocs::UntypedHrefList typed_add_hosts(add_hosts);
-   ocs::UntypedHrefList typed_add_groups(add_groups);
-   ocs::UntypedHrefList typed_equity_hosts(equity_hosts);
-   ocs::UntypedHrefList typed_equity_groups(equity_groups);
-
-   return href_list_compare(ocs::tom::ConstList<ocs::tom::HR>(this_list), answer_list,
-                            ocs::tom::ConstList<ocs::tom::HR>(list), typed_add_hosts.get(), typed_add_groups.get(),
-                            typed_equity_hosts.get(), typed_equity_groups.get());
-}
 
 /**
  * @brief Difference between two lists
@@ -440,17 +398,6 @@ ocs::tom::Element<ocs::tom::HR> href_list_locate(const ocs::tom::ConstList<ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_locate() for an untyped caller
- *
- * @param this_list HR_Type list, checked; may be nullptr
- * @param name host or groupname
- *
- * @return Pointer to host or hostgroup element or nullptr
- */
-lListElem *href_list_locate(const lList *this_list, const char *name) {
-   return href_list_locate(ocs::tom::ConstList<ocs::tom::HR>(this_list), name).raw();
-}
 
 /**
  * @brief Find referenced hosts and groups
@@ -922,17 +869,6 @@ bool href_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::HR> this_li
    DRETURN(ret);
 }
 
-/**
- * @brief href_list_append_to_dstring() for an untyped caller
- *
- * @param this_list HR_Type list, checked; may be nullptr
- * @param string dynamic string
- *
- * @return as href_list_append_to_dstring()
- */
-bool href_list_append_to_dstring(const lList *this_list, dstring *string) {
-   return href_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::HR>(this_list), string);
-}
 
 /**
  * @brief Removes entries from list
@@ -1043,12 +979,3 @@ void href_list_make_uniq(const ocs::tom::List<ocs::tom::HR> this_list, ocs::tom:
    DRETURN_VOID;
 }
 
-/**
- * @brief href_list_make_uniq() for an untyped caller
- *
- * @param this_list HR_Type list, checked; may be nullptr
- * @param answer_list AN_Type list, receives one INFO per removed entry
- */
-void href_list_make_uniq(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   href_list_make_uniq(ocs::tom::List<ocs::tom::HR>(this_list), answer_list);
-}

@@ -814,34 +814,6 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
    DRETURN(0);
 }
 
-/**
- * @brief Debit a jobs resource utilization, for a caller with untyped objects (N-X-2)
- *
- * @param cr Resource utilization entry (RUE_Type), checked
- * @param start_time Start time of utilization
- * @param duration Duration
- * @param utilization Amount
- * @param job_id Job id
- * @param ja_taskid Task id
- * @param level *_TAG
- * @param object_name The objects name
- * @param type String denoting type of utilization entry.
- * @param for_job reserve for a job (true) or for an advance reservation (false)
- * @param implicit_non_exclusive add implicit entry for non-exclusive jobs requesting a exclusive centry
- * @param binding_touse the topology units the job will use (ST_Type), checked, or nullptr
- * @param rsmap_inuse the resource map instances the job holds (RESL_Type), checked, or nullptr
- *
- * @return 0 on success
- */
-int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, double utilization,
-                    uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
-                    const char *type, bool for_job, bool implicit_non_exclusive,
-                    const lList *binding_touse, const lList *rsmap_inuse) {
-   return utilization_add(ocs::tom::Element<ocs::tom::RUE>(cr), start_time, duration, utilization, job_id, ja_taskid,
-                          level, object_name, type, for_job, implicit_non_exclusive,
-                          ocs::tom::ConstList<ocs::tom::ST>(binding_touse),
-                          ocs::tom::ConstList<ocs::tom::RESL>(rsmap_inuse));
-}
 
 /** @brief finds the element with the specified time or the element before it
  *

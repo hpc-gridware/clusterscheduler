@@ -333,21 +333,6 @@ int centry_fill_and_check(const ocs::tom::Element<ocs::tom::CE> this_elem, ocs::
    DRETURN(0);
 }
 
-/**
- * @brief centry_fill_and_check() for an untyped caller
- *
- * @param this_elem CE_Type element, checked
- * @param answer_list answer list, receives the error message
- * @param allow_empty_boolean true replaces a nullptr value of a boolean attribute with "true"
- * @param allow_neg_consumable true allows a negative value for a consumable resource
- *
- * @return as centry_fill_and_check()
- */
-int centry_fill_and_check(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                          const bool allow_empty_boolean, const bool allow_neg_consumable) {
-   return centry_fill_and_check(ocs::tom::Element<ocs::tom::CE>(this_elem), answer_list, allow_empty_boolean,
-                                allow_neg_consumable);
-}
 
 /**
  * @brief The symbol a relational operator is written as
@@ -813,26 +798,6 @@ int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, ocs::
    DRETURN(ret);
 }
 
-/**
- * @brief centry_list_fill_request() for an untyped caller
- *
- * @param this_list CE_Type list, checked; may be nullptr
- * @param answer_list answer list
- * @param master_centry_list the global complex list, CE_Type, checked; may be nullptr
- * @param allow_non_requestable needed for qstat -l or qmon customize dialog
- * @param allow_empty_boolean true replaces a nullptr value of a boolean attribute with "true"
- * @param allow_neg_consumable true allows a negative value for a consumable resource
- *
- * @return as centry_list_fill_request()
- */
-int centry_list_fill_request(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                             const lList *master_centry_list,
-                             const bool allow_non_requestable, const bool allow_empty_boolean,
-                             const bool allow_neg_consumable) {
-   return centry_list_fill_request(ocs::tom::List<ocs::tom::CE>(this_list), answer_list,
-                                   ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), allow_non_requestable,
-                                   allow_empty_boolean, allow_neg_consumable);
-}
 
 /**
  * @brief fill in configuration attributes into a list of complex attributes
@@ -1088,19 +1053,6 @@ centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attribut
    DRETURN(ret);
 }
 
-/**
- * @brief centry_list_parse_from_string() for an untyped caller
- *
- * @param complex_attributes CE_Type list the parsed entries are added to, checked and taken over;
- *                           a new list is created when it is nullptr
- * @param str the text to parse
- * @param check_value true to reject a missing value; false makes a missing value TRUE
- * @return the resulting list, or nullptr when the text could not be parsed
- */
-lList *centry_list_parse_from_string(lList *complex_attributes, const char *str, const bool check_value) {
-   return centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(complex_attributes), str, check_value)
-      .release();
-}
 
 /**
  * @brief Collapse repeated requests for the same resource
@@ -1454,21 +1406,6 @@ bool centry_elem_validate(const ocs::tom::ConstElement<ocs::tom::CE> centry,
    DRETURN(ret);
 }
 
-/**
- * @brief centry_elem_validate() for an untyped caller
- *
- * @param centry CE_Type element, checked
- * @param centry_list CE_Type list, checked; nullptr skips the check for duplicates
- * @param answer_list contains the error messages
- * @param from_spool_read true when the element is read from the spool
- *
- * @return as centry_elem_validate()
- */
-bool centry_elem_validate(lListElem *centry, const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                          const bool from_spool_read) {
-   return centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE>(centry),
-                               ocs::tom::ConstList<ocs::tom::CE>(centry_list), answer_list, from_spool_read);
-}
 
 /**
  * @brief Compute urgency for a particular resource
@@ -1783,20 +1720,6 @@ bool validate_load_formula(const char *load_formula, ocs::tom::ListPtr<ocs::tom:
    DRETURN(ret);
 }
 
-/**
- * @brief validate_load_formula() for an untyped caller
- *
- * @param load_formula string that should be a valid load formula
- * @param answer_list error messages
- * @param centry_list list of defined complex values (CE_Type), checked; nullptr skips the check of the names
- * @param name the attribute the formula belongs to, used in error messages
- *
- * @return as validate_load_formula()
- */
-bool validate_load_formula(const char *load_formula, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                           const lList *centry_list, const char *name) {
-   return validate_load_formula(load_formula, answer_list, ocs::tom::ConstList<ocs::tom::CE>(centry_list), name);
-}
 
 /**
  * @brief Search load formula for centry reference

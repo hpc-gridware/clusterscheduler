@@ -653,18 +653,6 @@ bool qref_list_host_rejected(const char *href, const char *hostname,
    DRETURN(true);
 }
 
-/**
- * @brief qref_list_host_rejected() for an untyped caller
- *
- * @param href Host reference from -q ??`@href`
- * @param hostname the host in question
- * @param hgroup_list hostgroup list (HGRP_Type), checked; may be nullptr
- *
- * @return as qref_list_host_rejected()
- */
-bool qref_list_host_rejected(const char *href, const char *hostname, const lList *hgroup_list) {
-   return qref_list_host_rejected(href, hostname, ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list));
-}
 
 /**
  * @brief Check queue reference list

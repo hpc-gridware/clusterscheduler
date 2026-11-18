@@ -86,8 +86,6 @@ namespace ocs {
       static void sum_usage(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                             ocs::tom::Element<ocs::tom::UU> user, ocs::tom::Element<ocs::tom::PR> project,
                             ocs::tom::ConstList<ocs::tom::UA> usage_weight_list);
-      OCS_TRANSITIONAL static void sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
-                                             const lList *usage_weight_list);
 
       static bool strip_irrelevant_usage(ocs::tom::List<ocs::tom::UA> usage_list,
                                          ocs::tom::ConstList<ocs::tom::UA> usage_weight_list);

@@ -362,7 +362,6 @@ typedef bool (*evm_ack_func_t)(
   ((x)==sgeE_ACK_TIMEOUT))
 
 const char *event_text(ocs::tom::ConstElement<ocs::tom::ET> event, dstring *buffer);
-OCS_TRANSITIONAL const char *event_text(const lListElem *event, dstring *buffer);
 
 bool event_client_verify(ocs::tom::ConstElement<ocs::tom::EV> event_client,
                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool add);

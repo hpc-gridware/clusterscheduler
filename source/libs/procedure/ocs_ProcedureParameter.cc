@@ -36,19 +36,6 @@
 #include "ocs_ProcedureParameter.h"
 
 
-/** @brief add_parameter_bundle() for an untyped caller
- * @param bundle the bundle to add to
- * @param param_name the entry's name, one of the constants above
- * @param parameter the entry's value, taken over by the bundle
- * @return none
- */
-void
-ocs::ProcedureParameter::add_parameter_bundle(const ocs::tom::List<ocs::tom::SPP> bundle,
-                                              const std::string &param_name, lList *parameter) {
-   SGE_ASSERT(bundle);
-   const auto bundle_elem = bundle.emplace_back<SPP_name>(param_name.c_str());
-   ocs::tom::set<SPP_value_list>(bundle_elem, parameter);
-}
 
 /** @brief A value list holding one number, as a bundle entry carries it
  * @param value the number

@@ -460,21 +460,6 @@ bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *
    DRETURN(ret);
 }
 
-/**
- * @brief host_is_referenced() for an untyped caller
- *
- * @param host EH_Type object
- * @param answer_list AN_Type list
- * @param queue_list CQ_Type list, checked; may be nullptr
- * @param hgrp_list HGRP_Type list (Master list), checked; may be nullptr
- *
- * @return as host_is_referenced()
- */
-bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *queue_list,
-                        const lList *hgrp_list) {
-   return host_is_referenced(host, answer_list, ocs::tom::ConstList<ocs::tom::CQ>(queue_list),
-                             ocs::tom::ConstList<ocs::tom::HGRP>(hgrp_list));
-}
 
 /* MT-NOTE: sge_resolve_host() is MT safe */
 /**

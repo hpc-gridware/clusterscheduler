@@ -53,7 +53,5 @@ namespace ocs {
                                       ocs::tom::ConstList<ocs::tom::UA> decay_list, u_long seqno, uint64_t curr_time);
       static void decay_userprj_usage(ocs::tom::Element<ocs::tom::PR> project,
                                       ocs::tom::ConstList<ocs::tom::UA> decay_list, u_long seqno, uint64_t curr_time);
-      OCS_TRANSITIONAL static void decay_userprj_usage(lListElem *userprj, bool user, const lList *decay_list,
-                                                       u_long seqno, uint64_t curr_time);
    };
 }

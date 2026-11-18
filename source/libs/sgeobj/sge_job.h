@@ -529,13 +529,10 @@ bool
 job_get_verify_attr(uint32_t op, dstring *string);
 
 void set_context(ocs::tom::ConstList<ocs::tom::CX> change, ocs::tom::Element<ocs::tom::JB> job);
-OCS_TRANSITIONAL void set_context(const lList *change, lListElem *job);
 
 void ocs_context_change_add(lList **change, ocs::tom::ConstList<ocs::tom::VA> option_list);
-OCS_TRANSITIONAL void ocs_context_change_add(lList **change, const lList *option_list);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::VA> ocs_context_get_effective(ocs::tom::ConstElement<ocs::tom::JB> job);
-OCS_TRANSITIONAL lList *ocs_context_get_effective(const lListElem *job);
 
 bool
 job_parse_validation_level(int *level, const char *input, int prog_number,
@@ -614,31 +611,22 @@ ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(ocs::tom::Element<ocs::tom::JB
 
 void job_set_resource_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list,
                            uint32_t scope, bool hard);
-OCS_TRANSITIONAL void job_set_resource_list(lListElem *job, lList *resource_list, uint32_t scope, bool hard);
 void job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list);
-OCS_TRANSITIONAL void job_set_hard_resource_list(lListElem *job, lList *resource_list);
 void job_set_hard_resource_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list,
                                 uint32_t scope);
-OCS_TRANSITIONAL void job_set_hard_resource_list(lListElem *job, lList *resource_list, uint32_t scope);
 void job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list);
-OCS_TRANSITIONAL void job_set_soft_resource_list(lListElem *job, lList *resource_list);
 void job_set_soft_resource_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::CE> &&resource_list,
                                 uint32_t scope);
-OCS_TRANSITIONAL void job_set_soft_resource_list(lListElem *job, lList *resource_list, uint32_t scope);
 
 void job_set_queue_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
                         uint32_t scope, bool hard);
-OCS_TRANSITIONAL void job_set_queue_list(lListElem *job, lList *queue_list, uint32_t scope, bool hard);
 void job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list);
-OCS_TRANSITIONAL void job_set_hard_queue_list(lListElem *job, lList *queue_list);
 void job_set_hard_queue_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
                              uint32_t scope);
-OCS_TRANSITIONAL void job_set_hard_queue_list(lListElem *job, lList *queue_list, uint32_t scope);
 void job_set_soft_queue_list(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::QR> &&queue_list,
                              uint32_t scope);
 void job_set_master_hard_queue_list(ocs::tom::Element<ocs::tom::JB> job,
                                     ocs::tom::ListPtr<ocs::tom::QR> &&queue_list);
-OCS_TRANSITIONAL void job_set_master_hard_queue_list(lListElem *job, lList *queue_list);
 
 const char *job_get_allocation_rule(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t scope);
 void job_set_allocation_rule(ocs::tom::Element<ocs::tom::JB> job, const char *allocation_rule, uint32_t scope);

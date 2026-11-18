@@ -160,8 +160,6 @@ get_rsrc(const char *name, bool queue, int *field, int *cqfld, int *valfld, ocs:
 
 int centry_fill_and_check(ocs::tom::Element<ocs::tom::CE> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                           bool allow_empty_boolean, bool allow_neg_consumable);
-OCS_TRANSITIONAL int centry_fill_and_check(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           bool allow_empty_boolean, bool allow_neg_consumable);
 
 const char *
 map_op2str(uint32_t op);
@@ -189,8 +187,6 @@ ocs::tom::Element<ocs::tom::CE> centry_list_locate(ocs::tom::ConstList<ocs::tom:
 
 bool centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE> centry, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool from_spool_read);
-OCS_TRANSITIONAL bool centry_elem_validate(lListElem *centry, const lList *centry_list,
-                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool from_spool_read);
 
 bool centry_list_sort(ocs::tom::List<ocs::tom::CE> this_list);
 
@@ -199,10 +195,6 @@ void centry_list_init_double(ocs::tom::List<ocs::tom::CE> this_list);
 int centry_list_fill_request(ocs::tom::List<ocs::tom::CE> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                              ocs::tom::ConstList<ocs::tom::CE> master_centry_list, bool allow_non_requestable,
                              bool allow_empty_boolean, bool allow_neg_consumable);
-OCS_TRANSITIONAL int centry_list_fill_request(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                              const lList *master_centry_list,
-                                              bool allow_non_requestable, bool allow_empty_boolean,
-                                              bool allow_neg_consumable);
 
 void centry_list_fill_config(ocs::tom::List<ocs::tom::CE> centry_list,
                              ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
@@ -215,7 +207,6 @@ int centry_list_append_to_string(ocs::tom::List<ocs::tom::CE> this_list, char *b
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::CE>
 centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attributes, const char *str, bool check_value);
-OCS_TRANSITIONAL lList *centry_list_parse_from_string(lList *complex_attributes, const char *str, bool check_value);
 
 void centry_list_remove_duplicates(ocs::tom::List<ocs::tom::CE> this_list);
 
@@ -235,8 +226,6 @@ int host_ensure_slots_are_defined(ocs::tom::Element<ocs::tom::EH> ehost, uint32_
 
 bool validate_load_formula(const char *formula, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                            ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *name);
-OCS_TRANSITIONAL bool validate_load_formula(const char *formula, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                            const lList *centry_list, const char *name);
 
 bool load_formula_is_centry_referenced(const char *load_formula, ocs::tom::ConstElement<ocs::tom::CE> centry);
 

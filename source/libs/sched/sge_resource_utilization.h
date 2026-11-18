@@ -77,10 +77,6 @@ utilization_add(ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_time, uint64
                 uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
                 const char *type, bool for_job, bool implicit_non_exclusive,
                 ocs::tom::ConstList<ocs::tom::ST> binding_touse, ocs::tom::ConstList<ocs::tom::RESL> rsmap_inuse);
-OCS_TRANSITIONAL int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, double utilization,
-                                     uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
-                                     const char *type, bool for_job, bool implicit_non_exclusive,
-                                     const lList *binding_touse, const lList *rsmap_inuse);
 
 ocs::tom::ListPtr<ocs::tom::RESL> utilization_rsmap_max(ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t now,
                                                         uint64_t start_time, uint64_t duration);

@@ -47,7 +47,5 @@ namespace ocs {
       static void build_string(dstring *category_str, ocs::tom::Element<ocs::tom::JB> job,
                                ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ConstList<ocs::tom::PR> prj_list,
                                ocs::tom::ConstList<ocs::tom::RQS> rqs_list);
-      OCS_TRANSITIONAL static void build_string(dstring *category_str, lListElem *job, const lList *acl_list,
-                                                const lList *prj_list, const lList *rqs_list);
    };
 }

@@ -463,29 +463,6 @@ bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, ocs::tom::ListPtr
    DRETURN(ret);
 }
 
-/**
- * @brief sconf_set_config() for an untyped caller
- *
- * A nullptr @p config only resets the cached values.
- *
- * @param[in,out] config new configuration (SC_Type), checked; set to nullptr when taken over
- * @param answer_list error messages
- *
- * @return as sconf_set_config()
- */
-bool sconf_set_config(lList **config, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   if (config == nullptr) {
-      sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      ocs_sconf_reset_cache();
-      sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      return true;
-   }
-   auto typed = ocs::tom::ListPtr<ocs::tom::SC>(*config);
-   *config = nullptr;
-   const bool ret = sconf_set_config(typed, answer_list);
-   *config = typed.release();
-   return ret;
-}
 
 /**
  * @brief Does the configured `load_formula` name only existing complex entries?
