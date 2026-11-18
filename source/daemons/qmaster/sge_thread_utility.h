@@ -25,10 +25,8 @@
 
 #include "cull/cull_list.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 
 ocs::tom::ListPtr<ocs::tom::ST>
 ocs_get_active_thread_list();
 
-OCS_TRANSITIONAL lList *get_active_thread_list();

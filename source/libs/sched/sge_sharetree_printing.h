@@ -49,7 +49,6 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 
 #include "uti/sge_dstring.h"
 #include "rapidjson/writer.h"
@@ -74,7 +73,3 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, ocs::tom:
                     ocs::tom::ConstList<ocs::tom::UU> users, ocs::tom::ConstList<ocs::tom::PR> projects,
                     ocs::tom::ConstList<ocs::tom::US> usersets, bool group_nodes, bool decay_usage, const char **names,
                     const format_t *format);
-OCS_TRANSITIONAL void
-sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
-                    const lList *users, const lList *projects, const lList *usersets, bool group_nodes,
-                    bool decay_usage, const char **names, const format_t *format);

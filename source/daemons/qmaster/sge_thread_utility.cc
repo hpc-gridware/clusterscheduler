@@ -116,15 +116,3 @@ ocs_get_active_thread_list() {
 
    DRETURN(active_thread_list);
 }
-
-/**
- * @brief ocs_get_active_thread_list() for an untyped caller
- *
- * The GDI request data and the thread pool provider of the qconf procedures still take a raw list.
- *
- * @return as ocs_get_active_thread_list(); the caller owns the list
- */
-lList *
-get_active_thread_list() {
-   return ocs_get_active_thread_list().release();
-}

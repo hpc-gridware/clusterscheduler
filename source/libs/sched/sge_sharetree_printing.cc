@@ -588,23 +588,3 @@ void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer,
    DRETURN_VOID;
 }
 
-/**
- * @brief sge_sharetree_print() for an untyped caller
- * @param[out] out          as sge_sharetree_print()
- * @param[out] jsonBuffer   as sge_sharetree_print()
- * @param[in]  sharetree_in the share tree (`STN_Type`)
- * @param[in]  users        the users (`UU_Type`)
- * @param[in]  projects     the projects (`PR_Type`)
- * @param[in]  usersets     the usersets (`US_Type`)
- * @param[in]  group_nodes  as sge_sharetree_print()
- * @param[in]  decay_usage  as sge_sharetree_print()
- * @param[in]  names        as sge_sharetree_print()
- * @param[in]  format       as sge_sharetree_print()
- */
-void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
-                         const lList *users, const lList *projects, const lList *usersets, const bool group_nodes,
-                         const bool decay_usage, const char **names, const format_t *format) {
-   sge_sharetree_print(out, jsonBuffer, ocs::tom::ConstList<ocs::tom::STN>(sharetree_in),
-                       ocs::tom::ConstList<ocs::tom::UU>(users), ocs::tom::ConstList<ocs::tom::PR>(projects),
-                       ocs::tom::ConstList<ocs::tom::US>(usersets), group_nodes, decay_usage, names, format);
-}

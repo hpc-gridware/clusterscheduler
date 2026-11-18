@@ -28,7 +28,6 @@
 #include "cull/cull.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Select.h"
-#include "tom/ocs_Transitional.h"
 
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Target.h"
@@ -55,9 +54,6 @@ namespace ocs::gdi {
       /// Wait until the answer to a request sent asynchronously has arrived
       void wait();
 
-      OCS_TRANSITIONAL int request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, Command cmd,
-                                   SubCommand, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
-
       template <ocs::tom::ObjectType T>
       int request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, Command cmd, SubCommand sub_cmd,
                   std::type_identity_t<ocs::tom::ConstList<T>> data, const ocs::tom::Where<T> &where,
@@ -67,12 +63,20 @@ namespace ocs::gdi {
       int request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, Command cmd, SubCommand sub_cmd,
                   ocs::tom::ListPtr<T> &&data);
 
-      OCS_TRANSITIONAL bool get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Command cmd, SubCommand, Target target,
-                                         int id, lList **list) const;
-
       template <ocs::tom::ObjectType T>
       bool get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Command cmd, SubCommand sub_cmd, Target target, int id,
                         ocs::tom::ListPtr<T> &list) const;
+
+   private:
+      // The untyped core the typed forms above build on; Client::sge_gdi() uses it for lists whose type is known
+      // only at run time. Not for other callers: they use the typed forms.
+      friend class Client;
+
+      int request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, Command cmd, SubCommand sub_cmd,
+                  lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
+
+      bool get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Command cmd, SubCommand sub_cmd, Target target, int id,
+                        lList **list) const;
    };
 
    /**

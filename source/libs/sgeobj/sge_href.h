@@ -43,59 +43,12 @@
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 
 #include "sgeobj/cull/sge_href_HR_L.h"
 #include "sgeobj/sge_answer.h"
 
-namespace ocs {
-   /**
-    * @brief Hands the in-out host reference list of an untyped caller to a typed function and back
-    *
-    * Used by the OCS_TRANSITIONAL wrappers of this module and of sge_hgroup: the
-    * list the caller's reference points to is taken over by an owning handle for
-    * the call and handed back when the object goes out of scope, also when the
-    * call throws, so the typed function may create, replace or free the list as
-    * the untyped one did.
-    */
-   class UntypedHrefList {
-   public:
-      /**
-       * @brief Take over the list the reference points to
-       * @param lpp the caller's list reference, may be nullptr; the list is checked to be an HR_Type list
-       */
-      explicit UntypedHrefList(lList **lpp)
-         : lpp_(lpp), list_(lpp != nullptr ? ocs::tom::ListPtr<ocs::tom::HR>(*lpp) : nullptr) {
-         if (lpp_ != nullptr) {
-            *lpp_ = nullptr;
-         }
-      }
-
-      /** @brief Hand the list back */
-      ~UntypedHrefList() {
-         if (lpp_ != nullptr) {
-            *lpp_ = list_.release();
-         }
-      }
-
-      UntypedHrefList(const UntypedHrefList &) = delete;
-      UntypedHrefList &operator=(const UntypedHrefList &) = delete;
-
-      /**
-       * @brief The owning handle, as the typed functions take an optional in-out list
-       * @return the handle, or nullptr when the caller passed no reference
-       */
-      [[nodiscard]] ocs::tom::ListPtr<ocs::tom::HR> *get() noexcept {
-         return lpp_ != nullptr ? &list_ : nullptr;
-      }
-
-   private:
-      lList **lpp_;                           ///< the caller's list reference, or nullptr
-      ocs::tom::ListPtr<ocs::tom::HR> list_;  ///< holds the list meanwhile
-   };
-}
 
 bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                    const char *host_or_group);

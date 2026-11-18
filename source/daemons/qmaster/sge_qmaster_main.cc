@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
     * daemon's own thread state rather than a data store object. A library must
     * not call into a daemon, so the function that builds the list is handed to
     * the procedure model here, before any worker can answer a request. */
-   ocs::qconf_set_thread_pool_provider(get_active_thread_list);
+   ocs::qconf_set_thread_pool_provider(ocs_get_active_thread_list);
    // CS-2822: the procedure library cannot call into the daemon, so the writing
    // code is handed to it here, once, the same way the thread pool list is.
    ocs::set_qconf_write_provider(qconf_write_from_procedure);

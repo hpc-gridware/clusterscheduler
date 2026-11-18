@@ -130,7 +130,8 @@ ocs::QConfModelServer::fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answe
                               "no thread pool provider registered in " SFQ, __func__);
       DRETURN(false);
    }
-   object_list_ = thread_pool_provider();
+   // object_list_ holds whatever list the operation read, its type is known only at run time
+   object_list_ = thread_pool_provider().release();
 
    DRETURN(true);
 }

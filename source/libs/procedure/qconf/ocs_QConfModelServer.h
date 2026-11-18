@@ -28,6 +28,7 @@
 
 #include "ocs_QConfModelBase.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 namespace ocs {
    /** @brief What produces the qmaster thread pool list
@@ -40,9 +41,9 @@ namespace ocs {
     * reduction has nothing to do here: there is no object and no owner, only the
     * question whether a caller may see the daemon's thread configuration at all.
     *
-    * @return a newly created ST_Type list the caller owns
+    * @return a newly created list of the thread pools, owned by the caller
     */
-   using qconf_thread_pool_provider = lList *(*)();
+   using qconf_thread_pool_provider = ocs::tom::ListPtr<ocs::tom::ST> (*)();
 
    /** @brief Tell the server side model how to reach the thread pools
     * @param provider the function qmaster offers, or nullptr to clear it
