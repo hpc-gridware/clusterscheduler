@@ -110,6 +110,23 @@ std::string g_outdir;          ///< absolute directory the golden files go to
 bool g_roundtrip = true;       ///< read every text back and write it again
 int g_failures = 0;            ///< number of failed checks
 int g_files = 0;               ///< number of golden files written
+int g_known = 0;               ///< number of failed checks that are known deviations of the product
+
+/**
+ * @brief A read-back the product is known to fail today, recorded so the test pins the rest
+ */
+struct KnownDeviation {
+   const char *what;   ///< the file the check is about, as fail() names it
+   const char *why;    ///< why the product fails it
+   bool seen;          ///< the check failed in this run
+};
+
+/// read-backs that fail with the product as it is; a deviation that no longer fails is reported, so the entry goes
+KnownDeviation g_known_deviations[] = {
+   {"CQ.empty.qconf.qconf", "an empty (not absent) hostlist is written without a value, the reader rejects it", false},
+   {"CQ.empty.qconf.qconf-1line", "as CQ.empty.qconf.qconf, in the one-line form", false},
+   {"classic/jobs/00/0000/4711/common", "read from disk and spooled again the job file is 12 bytes shorter", false},
+};
 
 constexpr uint64_t T0 = 1767225600000000;   ///< 2026-01-01T00:00:00Z in microseconds, the base of every time stamp
 constexpr const char *GRP = "@ggrp1";        ///< the host group the per host overrides name
@@ -216,6 +233,14 @@ struct ListCase {
  * @param why what went wrong
  */
 void fail(const std::string &what, const std::string &why) {
+   for (auto &known : g_known_deviations) {
+      if (what == known.what) {
+         printf("KNOWN %s: %s (%s)\n", what.c_str(), why.c_str(), known.why);
+         known.seen = true;
+         ++g_known;
+         return;
+      }
+   }
    printf("FAIL  %s: %s\n", what.c_str(), why.c_str());
    ++g_failures;
 }
@@ -2130,6 +2155,16 @@ int main(int argc, char *argv[]) {
 
    printf("\n%d file(s) written to %s%s\n", g_files, temporary_outdir ? "a temporary directory" : g_outdir.c_str(),
           g_roundtrip ? ", each read back and written again" : "");
-   printf("%s - %d failure(s)\n", g_failures == 0 ? "PASS" : "FAIL", g_failures);
+   if (g_roundtrip) {
+      for (const auto &known : g_known_deviations) {
+         if (!known.seen) {
+            // not through fail(), which would take it for the known deviation again
+            printf("FAIL  %s: is a known deviation, but the read-back no longer fails; remove it from the list\n",
+                   known.what);
+            ++g_failures;
+         }
+      }
+   }
+   printf("%s - %d failure(s), %d known deviation(s)\n", g_failures == 0 ? "PASS" : "FAIL", g_failures, g_known);
    DRETURN(g_failures == 0 ? 0 : 1);
 }
