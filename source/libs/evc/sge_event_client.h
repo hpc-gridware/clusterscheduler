@@ -50,6 +50,10 @@
 
 #include "gdi/ocs_gdi_Request.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_EV.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /** @defgroup evc Event Client Interface
  * @brief Connect to qmaster and receive object changes as events
@@ -116,8 +120,8 @@ struct sge_evc_class_str {
    bool (*ec_ack)(sge_evc_class_t *thiz);
    /// true once the client has been set up, i.e. its event client object exists
    bool (*ec_is_initialized)(sge_evc_class_t *thiz);
-   /// return the underlying `EV_Type` event client object, or nullptr
-   lListElem* (*ec_get_event_client)(sge_evc_class_t *thiz);
+   /// return the underlying `EV_Type` event client object, or an empty handle
+   ocs::tom::Element<ocs::tom::EV> (*ec_get_event_client)(sge_evc_class_t *thiz);
 
    /// subscribe one event, or all of them when passed #sgeE_ALL_EVENTS
    bool (*ec_subscribe)(sge_evc_class_t *thiz, ev_event event);
@@ -177,7 +181,8 @@ struct sge_evc_class_str {
    bool (*ec_need_new_registration)(sge_evc_class_t *thiz);
 
    /// hand newly produced events to an internal client and wake it up
-   int (*ec_signal)(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list);
+   int (*ec_signal)(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                    ocs::tom::List<ocs::tom::REP> event_list);
    /// release the busy state after the client finished processing a batch
    void (*ec_wait)(sge_evc_class_t *thiz);
 

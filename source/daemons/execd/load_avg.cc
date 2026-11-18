@@ -103,13 +103,13 @@
 static ocs::tom::ListPtr<ocs::tom::JB>
 get_reserved_usage(const char *qualified_hostname);
 static int 
-execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send);
+execd_add_load_report(ocs::tom::List<ocs::tom::REP> report_list, uint64_t now, uint64_t *next_send);
 static int 
-execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send);
+execd_add_conf_report(ocs::tom::List<ocs::tom::REP> report_list, uint64_t now, uint64_t *next_send);
 static int 
-execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send);
+execd_add_license_report(ocs::tom::List<ocs::tom::REP> report_list, uint64_t now, uint64_t *next_send);
 static int 
-execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send);
+execd_add_job_report(ocs::tom::List<ocs::tom::REP> report_list, uint64_t now, uint64_t *next_send);
 static int 
 sge_get_loadavg(const char *qualified_hostname, ocs::tom::ListPtr<ocs::tom::LR> &lpp);
 
@@ -246,7 +246,7 @@ void execd_trash_load_report() {
  * @return 0
  */
 static int
-execd_add_load_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
+execd_add_load_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
 
    const char* qualified_hostname = component_get_qualified_hostname();
@@ -320,7 +320,7 @@ execd_add_load_report(lList *report_list, const uint64_t now, uint64_t *next_sen
          last_lr = report->clone().release();
       }
 
-      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(report));
+      report_list.push_back(std::move(report));
       send_all = false;
    }
 
@@ -336,7 +336,7 @@ execd_add_load_report(lList *report_list, const uint64_t now, uint64_t *next_sen
  * @return 0
  */
 static int
-execd_add_conf_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
+execd_add_conf_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
 
    const char* qualified_hostname = component_get_qualified_hostname();
@@ -357,7 +357,7 @@ execd_add_conf_report(lList *report_list, const uint64_t now, uint64_t *next_sen
       ocs::tom::set<REP_host>(report, qualified_hostname);
       ocs::tom::set<REP_list>(report,
          ocs::tom::ConstList<ocs::tom::CONF>(Execd_Config_List).clone("execd config list copy"));
-      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(report));
+      report_list.push_back(std::move(report));
       DPRINTF("handling conf report in execd_add_conf_report\n");
    }
    DRETURN(0);
@@ -372,7 +372,7 @@ execd_add_conf_report(lList *report_list, const uint64_t now, uint64_t *next_sen
  * @return 0
  */
 static int
-execd_add_license_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
+execd_add_license_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
       const char* qualified_hostname = component_get_qualified_hostname();
@@ -399,7 +399,7 @@ execd_add_license_report(lList *report_list, const uint64_t now, uint64_t *next_
          lp_lic->push_back(std::move(ep_lic));
          ocs::tom::set<REP_list>(report, std::move(lp_lic));
       }
-      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(report));
+      report_list.push_back(std::move(report));
       DPRINTF("handling license report in execd_add_license_report\n");
    }
    DRETURN(0);
@@ -414,7 +414,7 @@ execd_add_license_report(lList *report_list, const uint64_t now, uint64_t *next_
  * @return 0
  */
 static int
-execd_add_job_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
+execd_add_job_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
 
    bool do_send = false;
@@ -482,7 +482,7 @@ execd_add_job_report(lList *report_list, const uint64_t now, uint64_t *next_send
       ocs::tom::set<REP_complete>(job_report, complete);
      
       /* append this new job report to the report list */
-      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(job_report));
+      report_list.push_back(std::move(job_report));
 
       /* now all is sent, reset flush_jr */
       sge_set_flush_jr_flag(false);

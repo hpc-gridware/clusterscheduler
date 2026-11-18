@@ -34,6 +34,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <optional>
+#include <utility>
 
 #include "uti/ocs_cond.h"
 #include "uti/sge_error_class.h"
@@ -408,7 +410,7 @@ static bool sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const ch
  */
 static void sge_evc_destroy(sge_evc_t **sge_evc);
 static bool ec2_is_initialized(sge_evc_class_t *thiz);
-static lListElem* ec2_get_event_client(sge_evc_class_t *thiz);
+static ocs::tom::Element<ocs::tom::EV> ec2_get_event_client(sge_evc_class_t *thiz);
 static void ec2_mark4registration(sge_evc_class_t *thiz);
 static bool ec2_need_new_registration(sge_evc_class_t *thiz);
 static bool ec2_set_edtime(sge_evc_class_t *thiz, uint32_t interval);
@@ -438,13 +440,16 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::
 static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_multi);
 static bool ec2_ack(sge_evc_class_t *thiz);
 static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
-static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commlib_error);
+static std::optional<ocs::tom::ListPtr<ocs::tom::REP>> get_event_list(sge_evc_class_t *thiz, int sync,
+                                                                     int *commlib_error);
 static ev_registration_id ec2_get_id(sge_evc_class_t *thiz);
 static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down);
 static void ec2_wait_local(sge_evc_class_t *thiz);
-static int ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list);
+static int ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                            ocs::tom::List<ocs::tom::REP> event_list);
 static void ec2_wait(sge_evc_class_t *thiz);
-static int ec2_signal(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list);
+static int ec2_signal(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                      ocs::tom::List<ocs::tom::REP> event_list);
 static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz);
 static bool ec2_evco_triggered(sge_evc_class_t *thiz);
 static bool ec2_evco_exit(sge_evc_class_t *thiz);
@@ -719,19 +724,19 @@ static bool ec2_is_initialized(sge_evc_class_t *thiz) {
 }
 
 /**
- * @brief Return lList *event_client cull list
- *
- * return lList *event_client cull list
+ * @brief Return the event client object (EV_Type) holding the configuration
  *
  * @param thiz the event client handle
- * @return nullptr otherwise
+ * @return the event client object owned by @p thiz, or an empty handle when it is not initialized
  *
  * @see #sge_evc_class_create()
  */
-static lListElem *ec2_get_event_client(sge_evc_class_t *thiz) {
-   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
+static ocs::tom::Element<ocs::tom::EV> ec2_get_event_client(sge_evc_class_t *thiz) {
+   DENTER(EVC_LAYER);
+   const auto *sge_evc = static_cast<sge_evc_t *>(thiz->sge_evc_handle);
 
-   return sge_evc->ec;
+   // created by sge_evc_class_create() as EV_Type and owned by the client
+   DRETURN(ocs::tom::Element<ocs::tom::EV>::from_typed(sge_evc->ec));
 }
 
 /**
@@ -1055,9 +1060,9 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
          }
       }
 
-      const lListElem *aep;
+      ocs::tom::ConstElement<ocs::tom::AN> aep;
       if (alp != nullptr) {
-         aep = lFirst(alp);
+         aep = alp->front();
          ret = ((ocs::tom::get<AN_status>(aep) == STATUS_OK) ? true : false);
       }
 
@@ -1112,7 +1117,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr
       WARNING(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
-      const lListElem *aep;
+      ocs::tom::ConstElement<ocs::tom::AN> aep;
       /*
        *   EV_host, EV_commproc and EV_commid get filled
        *  at qmaster side with more secure commd
@@ -1174,7 +1179,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr
                                       ocs::gdi::SubCommand::RETURN_NEW_VERSION, registration);
       const auto lp = std::move(registration);
 
-      aep = lFirst(alp);
+      aep = alp->front();
 
       ret = (ocs::tom::get<AN_status>(aep) == STATUS_OK) ? true : false;
 
@@ -1657,7 +1662,8 @@ ec2_get_flush(sge_evc_class_t *thiz, ev_event event) {
  *
  * @return true on success, else false
  *
- * @see @ref evc_flushing, #sge_evc_class_str::ec_get_flush, #sge_evc_class_str::ec_unset_flush, #sge_evc_class_str::ec_subscribe_flush
+ * @see @ref evc_flushing, #sge_evc_class_str::ec_get_flush, #sge_evc_class_str::ec_unset_flush,
+ *      #sge_evc_class_str::ec_subscribe_flush
  */
 static bool
 ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
@@ -1692,7 +1698,7 @@ ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
                ret = true;
             }
          } else {
-            const lListElem *sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
+            const auto sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
 
             if (sub_event == nullptr) {
                WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
@@ -1721,7 +1727,8 @@ ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
  *
  * @return true on success, else false
  *
- * @see @ref evc_flushing, #sge_evc_class_str::ec_set_flush, #sge_evc_class_str::ec_get_flush, #sge_evc_class_str::ec_subscribe_flush
+ * @see @ref evc_flushing, #sge_evc_class_str::ec_set_flush, #sge_evc_class_str::ec_get_flush,
+ *      #sge_evc_class_str::ec_subscribe_flush
  */
 static bool
 ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
@@ -1736,7 +1743,7 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      const lListElem *sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
+      const auto sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
 
       if (sub_event == nullptr) {
          WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
@@ -2277,14 +2284,12 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
             done = true;
             continue;
          }
-         // out-parameter of get_event_list(), which unpacks the report raw
-         lList *report_list_raw = nullptr;
-         if ((fetch_ok = get_event_list(thiz, sync, &report_list_raw, &commlib_error))) {
-            // the report arrived from the network: wrapped without a check
-            auto report_list = ocs::tom::ListPtr<ocs::tom::REP>::from_typed(report_list_raw);
+         auto report_list = get_event_list(thiz, sync, &commlib_error);
+         if ((fetch_ok = report_list.has_value())) {
+            // REP_list is runtime typed: taken out raw, wrapped as ET_Type below
             lList *new_events_raw = nullptr;
-            ocs::tom::exchange<REP_list>(report_list->front(), &new_events_raw);
-            report_list.reset();
+            ocs::tom::exchange<REP_list>((*report_list)->front(), &new_events_raw);
+            report_list->reset();
             // the events (ET_Type) out of the report, from the network as well
             auto new_events = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(new_events_raw);
             if (!ck_event_number(*new_events, &(sge_evc->next_event), &wrong_number)) {
@@ -2509,17 +2514,17 @@ ck_event_number(const ocs::tom::List<ocs::tom::ET> lp, uint32_t *waiting_for, ui
  *
  * @param thiz the event client handle
  * @param sync synchronous transfer
- * @param report_list pointer to returned list
  * @param commlib_error pointer to integer to return communication error
  *
- * @return true on success, else false
+ * @return the report list received (may be an empty handle when qmaster sent none), or std::nullopt on a
+ *         communication or unpack error
  *
  * @see #sge_evc_class_str::ec_get
  */
-static bool
-get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commlib_error ) {
+static std::optional<ocs::tom::ListPtr<ocs::tom::REP>>
+get_event_list(sge_evc_class_t *thiz, const int sync, int *commlib_error) {
    DENTER(EVC_LAYER);
-   bool ret = true;
+   std::optional<ocs::tom::ListPtr<ocs::tom::REP>> ret;
    sge_pack_buffer pb;
    int help;
    char rhost[CL_MAXHOSTNAMELEN+1] = "";
@@ -2534,17 +2539,24 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
 
    uint64_t now = sge_get_gmt64();
    DPRINTF("try to get request from %s, id %d\n", to_cstr(QMASTER), id );
-   if ( (help=ocs::gdi::ClientServerBase::sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
+   if ((help = ocs::gdi::ClientServerBase::sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync, 0,
+                                                                   nullptr)) != CL_RETVAL_OK) {
       if (help == CL_RETVAL_NO_MESSAGE || help == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
-         DEBUG("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now), cl_get_error_text(help));
+         DEBUG("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now),
+               cl_get_error_text(help));
       } else {
-         WARNING("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now), cl_get_error_text(help));
+         WARNING("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now),
+                 cl_get_error_text(help));
       }
-      ret = false;
    } else {
-      if (cull_unpack_list(&pb, report_list)) {
+      // out-parameter of cull_unpack_list(), which does not throw on a broken buffer
+      lList *report_list = nullptr;
+      if (cull_unpack_list(&pb, &report_list)) {
          ERROR(SFNMAX, MSG_LIST_FAILEDINCULLUNPACKREPORT);
-         ret = false;
+         // report_list keeps nullptr: cull_unpack_list() frees what it unpacked on error
+      } else {
+         // the report arrived from the network: wrapped without a check, as qmaster always sends REP_Type
+         ret = ocs::tom::ListPtr<ocs::tom::REP>::from_typed(report_list);
       }
       clear_packbuffer(&pb);
    }
@@ -2660,11 +2672,12 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime6
    }
 
    /* taking out the new events */
-   lList *event_list = evco->new_events;
-   evco->new_events = nullptr;
+   // the events (ET_Type) the event master queued; taken over from the event control block
+   auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(std::exchange(evco->new_events, nullptr));
    evco->triggered = false;
 
-   DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime64(sge_get_gmt64(), &ds_buffer));
+   DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz),
+           sge_ctime64(sge_get_gmt64(), &ds_buffer));
 
    sge_mutex_unlock("evco_event_thread_cond_mutex", __func__, __LINE__,
                     &(evco->mutex));
@@ -2673,10 +2686,11 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime6
    thiz->ec_set_busy(thiz, 1);
    thiz->ec_commit(thiz, nullptr);
 
-   *elist = event_list;
+   const bool ack_timeout = static_cast<bool>(event_list->find_first<ET_type>(sgeE_ACK_TIMEOUT));
+   // the caller owns the events now; ec_get keeps its raw out-parameter for its callers in libs/mir and gcs-extensions
+   *elist = event_list.release();
 
-   // the events (ET_Type) the event master queued; the caller owns them now
-   if (ocs::tom::ConstList<ocs::tom::ET>::from_typed(event_list).find_first<ET_type>(sgeE_ACK_TIMEOUT)) {
+   if (ack_timeout) {
       ec2_mark4registration(thiz);
    }
    DRETURN(true);
@@ -2718,7 +2732,8 @@ ec2_wait_local(sge_evc_class_t *thiz) {
  *         has no event control block
  */
 static int
-ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list) {
+ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                 const ocs::tom::List<ocs::tom::REP> event_list) {
    DENTER(EVC_LAYER);
 
    if (thiz == nullptr) {
@@ -2732,7 +2747,7 @@ ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, l
    }
 
    // the report (REP_Type) the event master built; its event list is runtime typed
-   const auto report = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
+   const auto report = event_list.front();
    // the event list of an event report holds events (ET_Type)
    const auto report_events = ocs::tom::ConstList<ocs::tom::ET>::from_typed(ocs::tom::get<REP_list>(report));
    int num_events = static_cast<int>(report_events.size());
@@ -2788,7 +2803,8 @@ ec2_wait(sge_evc_class_t *thiz) {
  * @return always 1
  */
 static int
-ec2_signal(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list) {
+ec2_signal(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+           const ocs::tom::List<ocs::tom::REP> event_list) {
    /* do nothing */
    return 1;
 }

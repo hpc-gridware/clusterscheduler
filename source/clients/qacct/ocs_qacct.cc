@@ -1783,15 +1783,14 @@ sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_o
  * @param queue_name_list the queue instance patterns (`QR_Type`)
  * @return true if a pattern matches
  */
-static bool matches_queue_name_list(sge_rusage_type *d, const lList *queue_name_list) {
+static bool matches_queue_name_list(sge_rusage_type *d, const ocs::tom::ConstList<ocs::tom::QR> queue_name_list) {
    bool ret = false;
 
    DSTRING_STATIC(dstr, MAX_STRING_SIZE);
    const char *qinstance;
    qinstance = sge_dstring_sprintf(&dstr, "%s@%s", d->qname, d->hostname);
 
-   /* emplace_back<QR_name>() and qref_list_resolve() create the list with QR_Type, so it is wrapped unchecked */
-   for (const auto ep : ocs::tom::ConstList<ocs::tom::QR>::from_typed(queue_name_list)) {
+   for (const auto ep : queue_name_list) {
       if (fnmatch(ocs::tom::get<QR_name>(ep), qinstance, 0) == 0) {
          ret = true;
          break;
@@ -1801,6 +1800,15 @@ static bool matches_queue_name_list(sge_rusage_type *d, const lList *queue_name_
    return ret;
 }
 
+/**
+ * @brief Parse one record of the classic (colon separated) accounting file and apply the filters
+ *
+ * @param line the record; tokenized in place by strtok()
+ * @param d receives the fields of the record
+ * @param options the filters given on the command line
+ * @return 0 when the record was read and passes the filters, -1 when it could not be parsed, -2 when a filter
+ *         rejects it
+ */
 static int
 sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *options) {
    DENTER(TOP_LAYER);
@@ -1824,7 +1832,8 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    }
 
    if (options->queue_name_list != nullptr) {
-      if (!matches_queue_name_list(d, options->queue_name_list)) {
+      // emplace_back<QR_name>() and qref_list_resolve() create the list with QR_Type, so it is wrapped unchecked
+      if (!matches_queue_name_list(d, ocs::tom::ConstList<ocs::tom::QR>::from_typed(options->queue_name_list))) {
          DRETURN(-2);
       }
    }
@@ -2260,6 +2269,14 @@ read_json(const rapidjson::Value &json, const char *name, const char *default_va
 
 static rapidjson::Document document;
 
+/**
+ * @brief Parse one record of the JSON accounting file and apply the filters
+ *
+ * @param line the record, one JSON object
+ * @param d receives the fields of the record
+ * @param options the filters given on the command line
+ * @return 0 when the record was read and passes the filters, -2 when a filter rejects it
+ */
 static int
 sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *options) {
    DENTER(TOP_LAYER);
@@ -2324,7 +2341,8 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
          DRETURN(-2);
       }
       if (options->queue_name_list != nullptr) {
-         if (!matches_queue_name_list(d, options->queue_name_list)) {
+         // emplace_back<QR_name>() and qref_list_resolve() create the list with QR_Type: wrapped unchecked
+         if (!matches_queue_name_list(d, ocs::tom::ConstList<ocs::tom::QR>::from_typed(options->queue_name_list))) {
             DRETURN(-2);
          }
       }
@@ -2374,7 +2392,8 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
          bool have_rusage = false;
          bool have_eusage = false;
          const bool usage_is_eusage = !json_usage_list.HasMember("eusage");
-         for (rapidjson::Value::ConstMemberIterator itr = json_usage_list.MemberBegin(); itr != json_usage_list.MemberEnd(); ++itr) {
+         for (rapidjson::Value::ConstMemberIterator itr = json_usage_list.MemberBegin();
+              itr != json_usage_list.MemberEnd(); ++itr) {
             const char *group_name = itr->name.GetString();
             if (!have_rusage && sge_strnullcmp(group_name, "rusage") == 0) {
                have_rusage = true;
@@ -2422,7 +2441,8 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                // number (populates UA_value) or a JSON string (populates
                // UA_svalue, CS-849). Other JSON types are skipped.
                const rapidjson::Value &json_usage = itr->value;
-               for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin(); usage_itr != json_usage.MemberEnd(); ++usage_itr) {
+               for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin();
+                    usage_itr != json_usage.MemberEnd(); ++usage_itr) {
                   const char *name = usage_itr->name.GetString();
                   // other_usage is a raw member of sge_rusage_type; the free forms keep its creation
                   if (ocs::tom::find_first<UA_name>(d->other_usage, name)) {

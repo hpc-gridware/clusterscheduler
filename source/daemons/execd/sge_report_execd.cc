@@ -125,7 +125,6 @@ int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
          for (i = 0; report_sources[i].type; i++) {
             if (!which || which == report_sources[i].type) {
                DPRINTF("%s\n", report_types[report_sources[i].type - 1]);
-               // the report functions fill the list through the raw pointer of report_func_type
                report_sources[i].func(*report_list, now, &(report_sources[i].next_send));
             }
          }

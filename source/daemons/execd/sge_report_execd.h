@@ -45,13 +45,14 @@
 #include "cull/cull.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_LR.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 #include "sgeobj/sge_daemonize.h"
 
 /** @brief Fills in one kind of report and says when it is next due
  *
  * The `next_send` out parameter is how a report sets its own cadence.
  */
-typedef int (*report_func_type)(lList *, uint64_t now, uint64_t *next_send);
+typedef int (*report_func_type)(ocs::tom::List<ocs::tom::REP> report_list, uint64_t now, uint64_t *next_send);
 
 /** @brief One kind of report the daemon sends, and when it is next due */
 typedef struct report_source {

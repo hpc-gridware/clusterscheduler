@@ -236,9 +236,9 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
 
    auto *ctx = static_cast<qconf_names_ctx *>(vctx);
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lList *read_out = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
-                                              &qconf_rqs_sfi, qconf_opt_format, nullptr, filepath);
-   const auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::from_typed(read_out);
+   const auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::from_typed(
+      spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi, qconf_opt_format, nullptr,
+                               filepath));
    if (qconf_answer_take(ctx->alpp, &alp) != 0 || rqs_list == nullptr) {
       ctx->n_fail++;
       DRETURN(1);

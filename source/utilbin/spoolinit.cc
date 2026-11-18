@@ -48,6 +48,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
+#include "sgeobj/tom/ocs_tom_SPC.h"
+#include "tom/ocs_Element.h"
+
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
 
@@ -67,19 +70,27 @@ static void usage(const char *argv0) {
    fprintf(stderr, "%s\n", MSG_SPOOLINIT_COMMANDINTRO9);
 }
 
+/**
+ * @brief Create and start a spooling context and make it the default
+ *
+ * @param method the spooling method
+ * @param shlib the shared library implementing the method
+ * @param libargs the arguments of the spooling library
+ * @param check_context whether the startup checks the spooled data (the check flag of spool_startup_context())
+ * @return EXIT_SUCCESS when the context is ready, else EXIT_FAILURE
+ */
 static int init_framework(const char *method, const char *shlib,
-                          const char *libargs, bool check_context) {
+                          const char *libargs, const bool check_context) {
    DENTER(TOP_LAYER);
 
    int ret = EXIT_FAILURE;
 
-   lListElem *spooling_context = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    lInit(nmv);
-   /* create spooling context */
-   spooling_context = spool_create_dynamic_context(&answer_list, method, shlib, 
-                                                   libargs);
+   /* create spooling context; the spooling loader creates it as SPC_Type, the default context takes it over */
+   const auto spooling_context = ocs::tom::Element<ocs::tom::SPC>::from_typed(
+      spool_create_dynamic_context(&answer_list, method, shlib, libargs));
    answer_list_output(&answer_list);
    if (spooling_context == nullptr) {
       CRITICAL(SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT);
