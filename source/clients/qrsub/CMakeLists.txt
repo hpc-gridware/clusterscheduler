@@ -27,8 +27,7 @@ add_executable(
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
-      ../../common/usage.cc
-      ../../common/ocs_ClientSanitizerOptions.cc)
+      ../../common/usage.cc)
 
 target_include_directories(qrsub PRIVATE ${SGE_INCLUDES})
 
