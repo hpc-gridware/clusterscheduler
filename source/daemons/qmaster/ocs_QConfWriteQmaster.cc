@@ -257,10 +257,520 @@ qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *mo
    }
 }
 
+/** @brief What a batch write carries from one phase to the next, whatever the object type
+ *
+ * The parts of qconf_write_entry() that do not need the object type work on
+ * this, so they are compiled once instead of once per object type.
+ */
+struct OcsQConfWriteState {
+   bool all_ok = true;                          ///< whether every item and object went in
+   std::vector<std::string> parsed_names;       ///< what the texts held, for the leftover handling
+   size_t stored_objects = 0;                   ///< objects written or deleted, for the summary
+   size_t left_objects = 0;                     ///< objects the store already held as asked
+   ocs::tom::ListPtr<ocs::tom::ST> to_delete;   ///< leftovers a replace deletes, created with the first
+   dstring kept = DSTRING_INIT;                 ///< leftovers a replace keeps, for its message
+   int num_kept = 0;                            ///< how many names @ref kept holds
+};
+
+/** @brief Refuse a write request that cannot be carried out, before anything is read
+ *
+ * Every check here looks at the request and the object type's row only, so
+ * nothing has been parsed or written when one of them refuses.
+ *
+ * @param task the GDI task being answered
+ * @param desc the object type's row
+ * @param list_type the master list of the object type, from its entry
+ * @param parameter the items and the batch policy
+ * @param answer_list receives the reason of a refusal
+ * @return the type's gdi_object_t row, nullptr when the request was refused
+ */
+static gdi_object_t *
+ocs_qconf_write_check_request(const ocs::gdi::Task *task, const qconf_object_desc &desc,
+                              const sge_object_type list_type, const ocs::QConfWriteParameter &parameter,
+                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   DENTER(TOP_LAYER);
+
+   /* The dispatch entry declares the target and sge_c_gdi_procedure() refuses a
+    * request that is addressed elsewhere, so the target reaching us is the one
+    * the entry named. What that check cannot see is whether the entry's target
+    * and the object type it hands us are the same thing: they are written in two
+    * places, the table of procedures and the traits of the handler. Compared
+    * here, where both are in hand, because a mismatch would have the permission
+    * checked against one object list and the write performed on another - the
+    * one failure the whole command/target binding of CS-2822 exists to stop. */
+   if (task->target != desc.target) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_QCONF_WRITEWRONGTARGET_SS,
+                              ocs::gdi::to_string(task->target).c_str(),
+                              ocs::gdi::to_string(desc.target).c_str());
+      DRETURN(nullptr);
+   }
+
+   gdi_object_t *object = get_gdi_object(desc.target);
+   if (object == nullptr) {
+      answer_list_add(answer_list, MSG_UNKNOWN_OBJECT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(nullptr);
+   }
+
+   /* A name on the request gives what the text holds its identity, for the one
+    * type whose text does not carry it (see QConfWriteParameter::set_name). A
+    * text holding a list would have every object in it renamed to that one name,
+    * so the pair is a request error rather than something to interpret. */
+   if (!parameter.get_name().empty() && parameter.is_list()) {
+      answer_list_add(answer_list, MSG_QCONF_WRITENAMEWITHLIST, STATUS_EUNKNOWN,
+                      ANSWER_QUALITY_ERROR);
+      DRETURN(nullptr);
+   }
+
+   /* The key field and the master list come from the entry, not from the
+    * gdi_object_t row. That row carries both for the types whose modify is a
+    * hook on it, and empties - key 0, SGE_TYPE_NONE - for the three whose
+    * modify is a special case in sge_c_gdi_mod() instead: CONF, SC and STN. So
+    * it knows these two facts for every type that never needed them. Taken from
+    * the entry, a key of 0 cannot silently turn the existence check, the
+    * name collection and the leftover report into no-ops (CS-2823). */
+   if (list_type == SGE_TYPE_NONE) {
+      /* A guard, not a reachable path: the one type without a master list is
+       * the event clients, and they are read only. It exists so that a new
+       * singleton reaches this as an error rather than writing into list zero.
+       * Reported like the dispatch's other internal errors, without a
+       * catalogue entry. The function named is the one the check lived in
+       * before it moved here, so the message is unchanged. */
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "no master list for the object type in " SFQ, "qconf_write_entry");
+      DRETURN(nullptr);
+   }
+
+   /* A replace needs a text that is the whole truth about the type, and only a
+    * list text is that: for a single object "everything the text does not hold"
+    * would be the rest of the type (CS-2823). */
+   if (parameter.is_replace() && !parameter.is_list()) {
+      answer_list_add(answer_list, MSG_QCONF_WRITEREPLACENOTLIST, STATUS_EUNKNOWN,
+                      ANSWER_QUALITY_ERROR);
+      DRETURN(nullptr);
+   }
+
+   /* And it needs a delete. There is no generic one: sge_c_gdi_del() switches on
+    * the target and every type has its own, so the replace can only offer what
+    * qconf_delete_one() knows. Refused rather than silently applying the
+    * additions and keeping everything else, which would be a replace in name. */
+   /* A selection says "only these objects", a replace says "the text is all
+    * there is". Together they would delete every object the selection left out,
+    * which no caller can mean. No switch produces the pair; refused so that
+    * none ever does by accident. */
+   if (parameter.is_replace() && !parameter.get_select().empty()) {
+      answer_list_add(answer_list, MSG_QCONF_WRITEREPLACEWITHSELECT, STATUS_EUNKNOWN,
+                      ANSWER_QUALITY_ERROR);
+      DRETURN(nullptr);
+   }
+
+   if (parameter.is_replace() && !qconf_can_delete(desc.target)) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_QCONF_WRITENOREPLACE_S,
+                              ocs::gdi::to_string(desc.target).c_str());
+      DRETURN(nullptr);
+   }
+
+   DRETURN(object);
+}
+
+/** @brief The format the texts of a write are parsed in
+ *
+ * The text is in the form a read rendered it, which is what the caller's
+ * -fmt asked for - so the same value decides how it is parsed back.
+ *
+ * @param parameter the items and the batch policy
+ * @return the flatfile format matching the request's output format
+ */
+static spool_flatfile_format
+ocs_qconf_write_format(const ocs::QConfWriteParameter &parameter) {
+   DENTER(TOP_LAYER);
+   spool_flatfile_format format = SP_FORM_ASCII;
+   switch (parameter.get_output_format()) {
+      case ocs::ProcedureParameter::OutputFormat::XML:
+         format = SP_FORM_XML;
+         break;
+      case ocs::ProcedureParameter::OutputFormat::JSON:
+         format = SP_FORM_JSON;
+         break;
+      case ocs::ProcedureParameter::OutputFormat::PLAIN:
+      default:
+         format = SP_FORM_ASCII;
+         break;
+   }
+   DRETURN(format);
+}
+
+/** @brief Report an item that arrived without a text
+ *
+ * The label is the file name for a file, and nothing for the interactive round
+ * trip, which has no file. Without a label the message must not start with the
+ * colon that introduces one.
+ *
+ * @param label what the caller called the item, nullptr when it has no name
+ * @param answer_list receives the message
+ * @return none
+ */
+static void
+ocs_qconf_write_empty_text(const char *label, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   DENTER(TOP_LAYER);
+   if (label != nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_QCONF_WRITEEMPTYTEXT_S, label);
+   } else {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              SFNMAX, MSG_QCONF_WRITEEMPTYTEXT);
+   }
+   DRETURN_VOID;
+}
+
+/** @brief Report a selected name that the text of an item does not hold
+ *
+ * @param name the selected name, nullptr is reported as an empty name
+ * @param label what the caller called the item, nullptr is reported as an empty label
+ * @param answer_list receives the message
+ * @return none
+ */
+static void
+ocs_qconf_write_not_in_file(const char *name, const char *label, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   DENTER(TOP_LAYER);
+   answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                           MSG_RQS_NOTFOUNDINFILE_SS,
+                           name != nullptr ? name : "",
+                           label != nullptr ? label : "");
+   DRETURN_VOID;
+}
+
+/** @brief Account for one parsed object before it is applied
+ *
+ * Notes the object's name for the leftover handling, and settles every object
+ * that is not applied at all: the dry run says what applying would do, and an
+ * object already stored as the text asks for is left alone, see
+ * qconf_write_is_unchanged(). Both still count as applied - the item was
+ * understood and the store holds, or would hold, what was asked for.
+ *
+ * @param desc the object type's row
+ * @param parameter the items and the batch policy
+ * @param name the object's name, nullptr for a type not addressed by name
+ * @param exists whether an object of that name is already stored
+ * @param unchanged whether the stored object equals the parsed one
+ * @param state the batch state, receives the name and the counts
+ * @param answer_list receives what the dry run would do
+ * @param result receives the object count
+ * @return true when the object still has to be applied
+ */
+static bool
+ocs_qconf_write_settle(const qconf_object_desc &desc, const ocs::QConfWriteParameter &parameter,
+                       const char *name, const bool exists, const bool unchanged, OcsQConfWriteState *state,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::QConfWriteResult *result) {
+   DENTER(TOP_LAYER);
+
+   if (name != nullptr) {
+      state->parsed_names.emplace_back(name);
+   }
+
+   if (parameter.is_dry()) {
+      answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                              unchanged ? MSG_QCONF_WRITEWOULDLEAVE_S
+                                        : (exists ? MSG_QCONF_WRITEWOULDMODIFY_S
+                                                  : MSG_QCONF_WRITEWOULDADD_S),
+                              qconf_object_label(desc, name));
+      result->elements++;
+      DRETURN(false);
+   }
+   if (unchanged) {
+      result->elements++;
+      state->left_objects++;
+      DRETURN(false);
+   }
+   DRETURN(true);
+}
+
+/** @brief Account for the outcome of applying one object
+ *
+ * @param ret what the type's apply function returned
+ * @param state the batch state, receives the store count or the failure
+ * @param result receives the object count
+ * @return true when the object was applied
+ */
+static bool
+ocs_qconf_write_tally(const int ret, OcsQConfWriteState *state, ocs::QConfWriteResult *result) {
+   DENTER(TOP_LAYER);
+   if (ret == STATUS_OK) {
+      result->elements++;
+      state->stored_objects++;
+      DRETURN(true);
+   }
+   state->all_ok = false;
+   DRETURN(false);
+}
+
+/** @brief Run what the whole batch needs done once it is stored
+ *
+ * The step sge_c_gdi_mod() performs after its own element loop (CS-2823). It
+ * runs once and not per object because a replacing write modifies the whole
+ * table: a complex file may change several entries, and the re-debit walks
+ * every queue and host once, not once per entry.
+ *
+ * Only an entry whose `consumable` flag or default request actually changed
+ * reaches `post.redebit_centries` - centry_success() decides that - so an
+ * untouched table costs nothing, and a failed object contributes nothing
+ * because its `on_success` hook never ran. A failure elsewhere in the batch
+ * does not cancel it either: what was stored is stored, and the bookings have
+ * to match it. Nothing collects in a dry run, which never applies anything.
+ *
+ * It is spelled out here and not a hook on the descriptor for the reason
+ * qconf_apply_one() is a choice on the type: these are qmaster functions and
+ * the descriptor lives in a library that cannot link against them.
+ *
+ * @param packet the client request
+ * @param post what the applied objects need post-processed, emptied here
+ * @return none
+ */
+static void
+ocs_qconf_write_post_process(ocs::gdi::Packet *packet, ocs_gdi_post_processing *post) {
+   DENTER(TOP_LAYER);
+   if (!post->redebit_centries->empty()) {
+      /* Rebuilds the consumable debitation of every queue and host against
+       * the new definition, bumps the queue version, and dumps the
+       * queue_consumable/host_consumable reporting records - all three of
+       * which were silently skipped while the list was dropped. */
+      centry_redebit_consumables(post->redebit_centries.get(), packet->gdi_session);
+   }
+   post->redebit_centries.reset();
+   DRETURN_VOID;
+}
+
+/** @brief Whether one of the texts of the batch held a name
+ *
+ * @param state the batch state holding the parsed names
+ * @param name the name to look for
+ * @return true when a text held an object of that name
+ */
+static bool
+ocs_qconf_write_is_parsed(const OcsQConfWriteState &state, const char *name) {
+   DENTER(TOP_LAYER);
+   for (const auto &parsed_name: state.parsed_names) {
+      if (parsed_name == name) {
+         DRETURN(true);
+      }
+   }
+   DRETURN(false);
+}
+
+/** @brief Note a stored object that a replacing write found missing from the texts
+ *
+ * @param state the batch state, receives the name for the delete or the kept list
+ * @param name the object's name
+ * @param retain whether the type's `retain_on_replace` hook keeps the object
+ * @return none
+ */
+static void
+ocs_qconf_write_note_leftover(OcsQConfWriteState *state, const char *name, const bool retain) {
+   DENTER(TOP_LAYER);
+   if (retain) {
+      if (state->num_kept > 0) {
+         sge_dstring_append(&state->kept, ", ");
+      }
+      sge_dstring_append(&state->kept, name);
+      state->num_kept++;
+      DRETURN_VOID;
+   }
+   if (!state->to_delete) {
+      // created with the first name, as the untyped emplace_back() created it
+      state->to_delete = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+   }
+   state->to_delete->emplace_back<ST_name>(name);
+   DRETURN_VOID;
+}
+
+/** @brief Report the kept leftovers of a replacing write and delete the others
+ *
+ * Says what was kept first: staying silent would hide an edit that was not
+ * carried out - whoever removed the row had an intent, and it is not being
+ * fulfilled (CS-2523). Then deletes what ocs_qconf_write_note_leftover()
+ * collected, or says in a dry run that it would.
+ *
+ * Deletes are not counted in result->elements: that count is what a caller
+ * prints as "N objects written", and an object that is gone was not written.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param desc the object type's row
+ * @param parameter the items and the batch policy
+ * @param state the batch state holding the leftovers; receives the store count or the failure
+ * @param answer_list receives the messages
+ * @return none
+ */
+static void
+ocs_qconf_write_delete_leftovers(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const qconf_object_desc &desc,
+                                 const ocs::QConfWriteParameter &parameter, OcsQConfWriteState *state,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   DENTER(TOP_LAYER);
+
+   if (state->num_kept > 0 && desc.write.retain_msg != nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                              desc.write.retain_msg, sge_dstring_get_string(&state->kept));
+   }
+   sge_dstring_free(&state->kept);
+
+   for (const auto name_elem : *state->to_delete) {
+      const char *name = ocs::tom::get<ST_name>(name_elem);
+      if (parameter.is_dry()) {
+         answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                 MSG_QCONF_WRITEWOULDDELETE_S, name);
+      } else if (qconf_delete_one(packet, task, desc.target, name, answer_list)) {
+         state->stored_objects++;
+      } else {
+         state->all_ok = false;
+      }
+   }
+   state->to_delete.reset();
+
+   DRETURN_VOID;
+}
+
+/** @brief The names of every stored object of a type
+ *
+ * A nameless object adds nothing, as the untyped emplace_back() did not; the
+ * list comes with the first name.
+ *
+ * @tparam E the entry type of the object type
+ * @param list_type the master list of the object type
+ * @return the names, an empty handle when no stored object has one
+ */
+template <typename E>
+static ocs::tom::ListPtr<ocs::tom::ST>
+ocs_qconf_stored_names(const sge_object_type list_type) {
+   DENTER(TOP_LAYER);
+   ocs::tom::ListPtr<ocs::tom::ST> names;
+   for (const auto ep : qconf_master_list_of<E>(list_type)) {
+      const char *key = ocs_qconf_key_of<E>(ep);
+      if (key != nullptr) {
+         if (!names) {
+            names = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+         }
+         names->emplace_back<ST_name>(key);
+      }
+   }
+   DRETURN(names);
+}
+
+/** @brief Whether an object of a name is stored
+ *
+ * @tparam E the entry type of the object type
+ * @param list_type the master list of the object type
+ * @param name the name to look for
+ * @return true when the master list holds an object of that name
+ */
+template <typename E>
+static bool
+ocs_qconf_name_stored(const sge_object_type list_type, const char *name) {
+   DENTER(TOP_LAYER);
+   DRETURN(ocs_qconf_name_in_list<E>(qconf_master_list_of<E>(list_type), name));
+}
+
+/** @brief Report what a round trip's text left out and is still stored (CS-2823)
+ *
+ * What the round trip's text left out is still there, and the administrator
+ * who deleted it in the editor has to be told - silently ignoring the deletion
+ * would leave them believing it happened, and applying it would make an editor
+ * a delete command. The scope is what the read was asked for: the names the
+ * caller selected, or every object of the type when it asked for all of them.
+ * Only a list type can lose an object this way; a single object round trip has
+ * nothing to leave out. After a text that did not parse there is nothing to
+ * say either: nothing was written, so every object would be "still there" and
+ * the list would bury the parse error. A replacing write is excluded because
+ * phase 3 already acted on the same comparison: there is nothing left over to
+ * report, it was deleted.
+ *
+ * The two typed questions - every stored name, and whether a name is stored -
+ * are asked through the functions the caller passes for its object type.
+ *
+ * @param parameter the items and the batch policy
+ * @param result the counts so far, for the parse failures
+ * @param state the batch state holding the parsed names
+ * @param list_type the master list of the object type
+ * @param stored_names gives the names of every stored object of the type
+ * @param name_stored tells whether an object of a name is stored
+ * @param answer_list receives one message per object left out
+ * @return none
+ */
+static void
+ocs_qconf_write_report_leftovers(const ocs::QConfWriteParameter &parameter, const ocs::QConfWriteResult &result,
+                                 const OcsQConfWriteState &state, const sge_object_type list_type,
+                                 ocs::tom::ListPtr<ocs::tom::ST> (*stored_names)(sge_object_type),
+                                 bool (*name_stored)(sge_object_type, const char *),
+                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   DENTER(TOP_LAYER);
+
+   if (!parameter.is_list() || parameter.is_replace() || !parameter.is_round_trip() ||
+       parameter.is_dry() || result.parse_failed != 0) {
+      DRETURN_VOID;
+   }
+
+   ocs::tom::ListPtr<ocs::tom::ST> in_scope;
+   if (parameter.get_select().empty()) {
+      in_scope = stored_names(list_type);
+   } else {
+      in_scope = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(parameter.get_select().c_str(), ", ");
+   }
+
+   for (const auto name_elem : *in_scope) {
+      const char *name = ocs::tom::get<ST_name>(name_elem);
+      if (name == nullptr) {
+         continue;
+      }
+      if (!ocs_qconf_write_is_parsed(state, name) && name_stored(list_type, name)) {
+         answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                 MSG_QCONF_WRITENOTREMOVED_S, name);
+      }
+   }
+   in_scope.reset();
+
+   DRETURN_VOID;
+}
+
+/** @brief Close a batch write: say so when it changed nothing (CS-2823)
+ *
+ * Every object of the text was already stored as the text describes it, so
+ * nothing was written and nothing was deleted either - and without a word here
+ * the command would answer an empty output with exit code 0, which is exactly
+ * what a silently broken write looks like. The predecessor had the same rule
+ * for the one type that filtered: when its answer list stayed empty it added
+ * "Complex attribute configuration has not been changed", and the testsuite
+ * reads that message as a success.
+ *
+ * It is a summary and not a line per object, because the quiet case is the
+ * common one: re-applying an unchanged complex would otherwise print more
+ * lines than a real modification does. A write that changed some of its
+ * objects already reports each of them and gets no summary - there is nothing
+ * left unsaid then. The dry run is excluded because it reports per object what
+ * it would do, including what it would leave alone.
+ *
+ * @param parameter the items and the batch policy
+ * @param state the batch state
+ * @param answer_list receives the summary
+ * @return true when the batch was applied as the policy demands
+ */
+static bool
+ocs_qconf_write_summarize(const ocs::QConfWriteParameter &parameter, const OcsQConfWriteState &state,
+                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   DENTER(TOP_LAYER);
+   if (!parameter.is_dry() && state.all_ok && state.stored_objects == 0 && state.left_objects > 0) {
+      answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO, SFNMAX,
+                              MSG_QCONF_WRITENOCHANGE);
+   }
+   DRETURN(state.all_ok);
+}
+
 /** @brief Apply a set of objects of one type, parsing each one first
  *
  * The body of qconf_write_from_procedure(), compiled per object type: the
  * parsed objects, the master list and the hooks are typed on the entry's type.
+ * Only what needs the type stays here - parsing, the selection, the existence
+ * and change checks, the apply call and the walks over the master list; the
+ * checks, messages and counts are the ocs_qconf_write_*() helpers above.
  *
  * @tparam E the entry type of the object type being written
  * @param packet the client request
@@ -281,103 +791,14 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
    using T = typename E::type;
 
    const qconf_object_desc &desc = type_entry.desc;
-
-   /* The dispatch entry declares the target and sge_c_gdi_procedure() refuses a
-    * request that is addressed elsewhere, so the target reaching us is the one
-    * the entry named. What that check cannot see is whether the entry's target
-    * and the object type it hands us are the same thing: they are written in two
-    * places, the table of procedures and the traits of the handler. Compared
-    * here, where both are in hand, because a mismatch would have the permission
-    * checked against one object list and the write performed on another - the
-    * one failure the whole command/target binding of CS-2822 exists to stop. */
-   if (task->target != desc.target) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_QCONF_WRITEWRONGTARGET_SS,
-                              ocs::gdi::to_string(task->target).c_str(),
-                              ocs::gdi::to_string(desc.target).c_str());
-      DRETURN(false);
-   }
-
-   gdi_object_t *object = get_gdi_object(desc.target);
-   if (object == nullptr) {
-      answer_list_add(answer_list, MSG_UNKNOWN_OBJECT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   /* A name on the request gives what the text holds its identity, for the one
-    * type whose text does not carry it (see QConfWriteParameter::set_name). A
-    * text holding a list would have every object in it renamed to that one name,
-    * so the pair is a request error rather than something to interpret. */
-   if (!parameter.get_name().empty() && parameter.is_list()) {
-      answer_list_add(answer_list, MSG_QCONF_WRITENAMEWITHLIST, STATUS_EUNKNOWN,
-                      ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   /* The key field and the master list come from the entry, not from the
-    * gdi_object_t row. That row carries both for the types whose modify is a
-    * hook on it, and empties - key 0, SGE_TYPE_NONE - for the three whose
-    * modify is a special case in sge_c_gdi_mod() instead: CONF, SC and STN. So
-    * it knows these two facts for every type that never needed them. Taken from
-    * the entry, a key of 0 cannot silently turn the existence check, the
-    * name collection and the leftover report into no-ops (CS-2823). */
    const sge_object_type list_type = type_entry.master_list;
-   if (list_type == SGE_TYPE_NONE) {
-      /* A guard, not a reachable path: the one type without a master list is
-       * the event clients, and they are read only. It exists so that a new
-       * singleton reaches this as an error rather than writing into list zero.
-       * Reported like the dispatch's other internal errors, without a
-       * catalogue entry. */
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              "no master list for the object type in " SFQ, __func__);
+
+   gdi_object_t *object = ocs_qconf_write_check_request(task, desc, list_type, parameter, answer_list);
+   if (object == nullptr) {
       DRETURN(false);
    }
 
-   /* A replace needs a text that is the whole truth about the type, and only a
-    * list text is that: for a single object "everything the text does not hold"
-    * would be the rest of the type (CS-2823). */
-   if (parameter.is_replace() && !parameter.is_list()) {
-      answer_list_add(answer_list, MSG_QCONF_WRITEREPLACENOTLIST, STATUS_EUNKNOWN,
-                      ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   /* And it needs a delete. There is no generic one: sge_c_gdi_del() switches on
-    * the target and every type has its own, so the replace can only offer what
-    * qconf_delete_one() below knows. Refused rather than silently applying the
-    * additions and keeping everything else, which would be a replace in name. */
-   /* A selection says "only these objects", a replace says "the text is all
-    * there is". Together they would delete every object the selection left out,
-    * which no caller can mean. No switch produces the pair; refused so that
-    * none ever does by accident. */
-   if (parameter.is_replace() && !parameter.get_select().empty()) {
-      answer_list_add(answer_list, MSG_QCONF_WRITEREPLACEWITHSELECT, STATUS_EUNKNOWN,
-                      ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   if (parameter.is_replace() && !qconf_can_delete(desc.target)) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_QCONF_WRITENOREPLACE_S,
-                              ocs::gdi::to_string(desc.target).c_str());
-      DRETURN(false);
-   }
-
-   /* The text is in the form a read rendered it, which is what the caller's
-    * -fmt asked for - so the same value decides how it is parsed back. */
-   spool_flatfile_format format = SP_FORM_ASCII;
-   switch (parameter.get_output_format()) {
-      case ocs::ProcedureParameter::OutputFormat::XML:
-         format = SP_FORM_XML;
-         break;
-      case ocs::ProcedureParameter::OutputFormat::JSON:
-         format = SP_FORM_JSON;
-         break;
-      case ocs::ProcedureParameter::OutputFormat::PLAIN:
-      default:
-         format = SP_FORM_ASCII;
-         break;
-   }
+   const spool_flatfile_format format = ocs_qconf_write_format(parameter);
 
    bool fields_owned = false;
    /* the write field list, built without the diagnostic attributes: this is the list the
@@ -405,16 +826,7 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
       if (text == nullptr) {
          /* unpackstr() maps an empty string to a null pointer, so this is also
           * what an item with no text at all arrives as */
-         /* The label is the file name for a file, and nothing for the
-          * interactive round trip, which has no file. Without a label the
-          * message must not start with the colon that introduces one. */
-         if (label != nullptr) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_QCONF_WRITEEMPTYTEXT_S, label);
-         } else {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    SFNMAX, MSG_QCONF_WRITEEMPTYTEXT);
-         }
+         ocs_qconf_write_empty_text(label, answer_list);
          result->parse_failed++;
          continue;
       }
@@ -479,10 +891,7 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
                   }
                }
                if (found == nullptr) {
-                  answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                          MSG_RQS_NOTFOUNDINFILE_SS,
-                                          name != nullptr ? name : "",
-                                          label != nullptr ? label : "");
+                  ocs_qconf_write_not_in_file(name, label, answer_list);
                   all_found = false;
                   break;
                }
@@ -567,11 +976,9 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
     * quota sets prints. For every other type each item is one object and the
     * two are equal. */
    const auto master_list = qconf_master_list_of<E>(list_type);
-   bool all_ok = (result->parse_failed == 0);
-   std::vector<std::string> parsed_names;   ///< what the texts held, for the report below
+   OcsQConfWriteState state;
+   state.all_ok = (result->parse_failed == 0);
    ocs_gdi_post_processing post;            ///< what the applied objects need post-processed
-   size_t stored_objects = 0;               ///< objects written or deleted, for the summary below
-   size_t left_objects = 0;                 ///< objects the store already held as asked
    for (auto &item: parsed) {
       size_t applied_here = 0;
 
@@ -585,9 +992,6 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
             ocs_qconf_set_name<E>(*ep, parameter.get_name().c_str());
          }
          const char *name = ocs_qconf_key_of<E>(*ep);
-         if (name != nullptr) {
-            parsed_names.emplace_back(name);
-         }
          /* For a type addressed by name the question is whether that name is
           * stored; for a singleton there is no name to ask about and the answer
           * is a property of the store itself - the scheduler configuration and
@@ -597,34 +1001,18 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
          const bool exists = E::has_key ? ocs_qconf_name_in_list<E>(master_list, name) : !master_list.empty();
 
          /* An object already stored in exactly the state the text asks for is
-          * not written at all, see qconf_write_is_unchanged(). It still counts
-          * as applied: the item was understood and the store holds what was
-          * asked for, which is what the caller wants to know. The dry run says
-          * so rather than promising a modification that would not happen. */
+          * not written at all, see qconf_write_is_unchanged() and
+          * ocs_qconf_write_settle(). */
          const bool unchanged = exists && qconf_write_is_unchanged<E>(master_list, name, *ep);
 
-         if (parameter.is_dry()) {
-            answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
-                                    unchanged ? MSG_QCONF_WRITEWOULDLEAVE_S
-                                              : (exists ? MSG_QCONF_WRITEWOULDMODIFY_S
-                                                        : MSG_QCONF_WRITEWOULDADD_S),
-                                    qconf_object_label(desc, name));
+         bool applied = true;
+         if (ocs_qconf_write_settle(desc, parameter, name, exists, unchanged, &state, answer_list, result)) {
+            applied = ocs_qconf_write_tally(qconf_apply_one<E>(packet, task, monitor, desc, object, *ep, exists,
+                                                               answer_list, &post),
+                                            &state, result);
+         }
+         if (applied) {
             applied_here++;
-            result->elements++;
-         } else if (unchanged) {
-            applied_here++;
-            result->elements++;
-            left_objects++;
-         } else {
-            const int ret = qconf_apply_one<E>(packet, task, monitor, desc, object, *ep, exists,
-                                               answer_list, &post);
-            if (ret == STATUS_OK) {
-               applied_here++;
-               result->elements++;
-               stored_objects++;
-            } else {
-               all_ok = false;
-            }
          }
 
          ep.reset();
@@ -633,184 +1021,46 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
       if (applied_here == item.elements.size()) {
          result->applied++;
       } else {
-         all_ok = false;
+         state.all_ok = false;
       }
    }
 
-   /* What the whole batch needs done once it is stored, which is the step
-    * sge_c_gdi_mod() performs after its own element loop (CS-2823). It runs here
-    * and not per object because a replacing write modifies the whole table: a
-    * complex file may change several entries, and the re-debit walks every
-    * queue and host once, not once per entry.
-    *
-    * Only an entry whose `consumable` flag or default request actually changed
-    * reaches `post.redebit_centries` - centry_success() decides that - so an
-    * untouched table costs nothing, and a failed object contributes nothing because its
-    * `on_success` hook never ran. A failure elsewhere in the batch does not
-    * cancel it either: what was stored is stored, and the bookings have to match
-    * it. Nothing collects in a dry run, which never applies anything.
-    *
-    * It is spelled out here and not a hook on the descriptor for the reason
-    * qconf_apply_one() is a choice on the type: these are qmaster functions and
-    * the descriptor lives in a library that cannot link against them. */
-   if (!post.redebit_centries->empty()) {
-      /* Rebuilds the consumable debitation of every queue and host against
-       * the new definition, bumps the queue version, and dumps the
-       * queue_consumable/host_consumable reporting records - all three of
-       * which were silently skipped while the list was dropped. */
-      centry_redebit_consumables(post.redebit_centries.get(), packet->gdi_session);
-   }
-   post.redebit_centries.reset();
+   ocs_qconf_write_post_process(packet, &post);
 
    /* Phase 3: what the text did not hold is deleted, for a replacing write.
     *
-    * The mirror image of the report below, and the reason the two are exclusive:
-    * both compare the stored objects against the names the texts held, and then
-    * one deletes what is left over while the other says it is still there. The
-    * complex list is a replace because that is how a complex is removed from a
-    * file-managed configuration - there is no "-dc", only a row taken out of
-    * the table - and a modify of the rule sets is not, because a shortened text
-    * there used to wreck the quota configuration (CS-2823).
+    * The mirror image of the round trip report below, and the reason the two
+    * are exclusive: both compare the stored objects against the names the texts
+    * held, and then one deletes what is left over while the other says it is
+    * still there. The complex list is a replace because that is how a complex
+    * is removed from a file-managed configuration - there is no "-dc", only a
+    * row taken out of the table - and a modify of the rule sets is not, because
+    * a shortened text there used to wreck the quota configuration (CS-2823).
     *
     * The names are collected before anything is deleted: a delete changes the
     * very master list this walks.
     *
     * A parse failure stops it. Nothing was written then, so every stored object
     * would count as "not in the text" and the replace would empty the type -
-    * which is the one way this could do real damage.
-    *
-    * Deletes are not counted in result->elements: that count is what a caller
-    * prints as "N objects written", and an object that is gone was not written. */
+    * which is the one way this could do real damage. */
    if (parameter.is_replace() && result->parse_failed == 0) {
-      // created with the first name, as the untyped emplace_back() created it
-      ocs::tom::ListPtr<ocs::tom::ST> to_delete;
-      dstring kept = DSTRING_INIT;
-      int num_kept = 0;
-
       // asked again: phase 2 may have created or replaced the master list
       for (const auto ep : qconf_master_list_of<E>(list_type)) {
          const char *name = ocs_qconf_key_of<E>(ep);
-         if (name == nullptr) {
+         if (name == nullptr || ocs_qconf_write_is_parsed(state, name)) {
             continue;
          }
-         bool in_text = false;
-         for (const auto &parsed_name: parsed_names) {
-            if (parsed_name == name) {
-               in_text = true;
-               break;
-            }
-         }
-         if (in_text) {
-            continue;
-         }
-
-         if (type_entry.hooks.retain_on_replace != nullptr && type_entry.hooks.retain_on_replace(ep)) {
-            if (num_kept > 0) {
-               sge_dstring_append(&kept, ", ");
-            }
-            sge_dstring_append(&kept, name);
-            num_kept++;
-            continue;
-         }
-         if (!to_delete) {
-            to_delete = ocs::tom::ListPtr<ocs::tom::ST>::create("");
-         }
-         to_delete->emplace_back<ST_name>(name);
+         const bool retain = type_entry.hooks.retain_on_replace != nullptr && type_entry.hooks.retain_on_replace(ep);
+         ocs_qconf_write_note_leftover(&state, name, retain);
       }
-
-      /* Say what was kept. Staying silent would hide an edit that was not
-       * carried out: whoever removed the row had an intent, and it is not being
-       * fulfilled (CS-2523). */
-      if (num_kept > 0 && desc.write.retain_msg != nullptr) {
-         answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
-                                 desc.write.retain_msg, sge_dstring_get_string(&kept));
-      }
-      sge_dstring_free(&kept);
-
-      for (const auto name_elem : *to_delete) {
-         const char *name = ocs::tom::get<ST_name>(name_elem);
-         if (parameter.is_dry()) {
-            answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
-                                    MSG_QCONF_WRITEWOULDDELETE_S, name);
-         } else if (qconf_delete_one(packet, task, desc.target, name, answer_list)) {
-            stored_objects++;
-         } else {
-            all_ok = false;
-         }
-      }
-      to_delete.reset();
+      ocs_qconf_write_delete_leftovers(packet, task, desc, parameter, &state, answer_list);
    }
 
-   /* CS-2823: what the round trip's text left out is still there, and the
-    * administrator who deleted it in the editor has to be told - silently
-    * ignoring the deletion would leave them believing it happened, and applying
-    * it would make an editor a delete command. The scope is what the read was
-    * asked for: the names the caller selected, or every object of the type when
-    * it asked for all of them. Only a list type can lose an object this way; a
-    * single object round trip has nothing to leave out. After a text that did
-    * not parse there is nothing to say either: nothing was written, so every
-    * object would be "still there" and the list would bury the parse error.
-    * A replacing write is excluded because phase 3 already acted on the same
-    * comparison: there is nothing left over to report, it was deleted. */
-   if (parameter.is_list() && !parameter.is_replace() && parameter.is_round_trip() &&
-       !parameter.is_dry() && result->parse_failed == 0) {
-      ocs::tom::ListPtr<ocs::tom::ST> in_scope;
-      if (parameter.get_select().empty()) {
-         for (const auto ep : qconf_master_list_of<E>(list_type)) {
-            // a nameless object adds nothing, as the untyped emplace_back() did not; the list comes with the first
-            const char *key = ocs_qconf_key_of<E>(ep);
-            if (key != nullptr) {
-               if (!in_scope) {
-                  in_scope = ocs::tom::ListPtr<ocs::tom::ST>::create("");
-               }
-               in_scope->emplace_back<ST_name>(key);
-            }
-         }
-      } else {
-         in_scope = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(parameter.get_select().c_str(), ", ");
-      }
+   ocs_qconf_write_report_leftovers(parameter, *result, state, list_type, &ocs_qconf_stored_names<E>,
+                                    &ocs_qconf_name_stored<E>, answer_list);
 
-      for (const auto name_elem : *in_scope) {
-         const char *name = ocs::tom::get<ST_name>(name_elem);
-         if (name == nullptr) {
-            continue;
-         }
-         bool in_text = false;
-         for (const auto &item: parsed_names) {
-            if (item == name) {
-               in_text = true;
-               break;
-            }
-         }
-         if (!in_text && ocs_qconf_name_in_list<E>(qconf_master_list_of<E>(list_type), name)) {
-            answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
-                                    MSG_QCONF_WRITENOTREMOVED_S, name);
-         }
-      }
-      in_scope.reset();
-   }
-
-   /* A write that changed nothing has to say so (CS-2823). Every object of the
-    * text was already stored as the text describes it, so the loop above wrote
-    * nothing and nothing was deleted either - and without a word here the
-    * command would answer an empty output with exit code 0, which is exactly
-    * what a silently broken write looks like. The predecessor had the same rule
-    * for the one type that filtered: when its answer list stayed empty it added
-    * "Complex attribute configuration has not been changed", and the testsuite
-    * reads that message as a success.
-    *
-    * It is a summary and not a line per object, because the quiet case is the
-    * common one: re-applying an unchanged complex would otherwise print more
-    * lines than a real modification does. A write that changed some of its
-    * objects already reports each of them and gets no summary - there is
-    * nothing left unsaid then. The dry run is excluded because it reports per
-    * object what it would do, including what it would leave alone. */
-   if (!parameter.is_dry() && all_ok && stored_objects == 0 && left_objects > 0) {
-      answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO, SFNMAX,
-                              MSG_QCONF_WRITENOCHANGE);
-   }
-
-   DRETURN(all_ok);
+   const bool ok = ocs_qconf_write_summarize(parameter, state, answer_list);
+   DRETURN(ok);
 }
 
 /** @brief Apply a set of objects, parsing each one first, see the header
