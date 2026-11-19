@@ -4431,6 +4431,8 @@ int sge_parse_qconf(char *argv[])
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+            lFreeList(&alp);
+            lFreeList(&lp);
             spp++;
             continue;
          }
@@ -4439,6 +4441,7 @@ int sge_parse_qconf(char *argv[])
          ep = lFirstRW(lp);
          if (!ep) {
             fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
+            lFreeList(&lp);
             spp++;
             continue;
          }
@@ -4458,6 +4461,8 @@ int sge_parse_qconf(char *argv[])
          }
 
          if (found != 0) {
+            lFreeList(&arglp);
+            lFreeList(&lp);
             DRETURN(1);
          }
 
@@ -4485,6 +4490,8 @@ int sge_parse_qconf(char *argv[])
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+            lFreeList(&alp);
+            lFreeList(&lp);
             spp++;
             continue;
          }
@@ -4493,6 +4500,7 @@ int sge_parse_qconf(char *argv[])
          ep = lFirstRW(lp);
          if (!ep) {
             fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
+            lFreeList(&lp);
             spp++;
             continue;
          }
@@ -4508,6 +4516,8 @@ int sge_parse_qconf(char *argv[])
          }                                                                      
 
          if (!found && *(spp+1) == nullptr) {
+            lFreeList(&arglp);
+            lFreeList(&lp);
             DRETURN(1);
          }
 
