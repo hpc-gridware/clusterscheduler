@@ -421,8 +421,8 @@ namespace {
       // typed:   ElementPtr<US>::create(layout<US_name, US_type>()), ListPtr<US>::create(name, layout<...>())
       // old:     lReduceDescr(&rdp, US_Type, what); lCreateElem(rdp); ...; ocs_cull_descr_release(&rdp)
       // typed:   ElementPtr<US>::create(what), ListPtr<US>::create(name, what)
-      // differs: nothing to release; a selection of nothing throws NullDescriptor where lReduceDescr() gave
-      //          no descriptor
+      // differs: nothing to release; an empty selection handle throws NullElement (the reason every operation
+      //          gives for an empty selection, see ocs_Select.h) where lReduceDescr() gave no descriptor
 
       // --- CULL
       std::vector<std::string> old_seen;
@@ -472,9 +472,9 @@ namespace {
 
          typed_seen.emplace_back(
                  throws([] { static_cast<void>(ElementPtr<US>::create(ocs::tom::What<US>())); },
-                        FieldException::Reason::NullDescriptor) &&
+                        FieldException::Reason::NullElement) &&
                  throws([] { static_cast<void>(ListPtr<US>::create("none", ocs::tom::What<US>())); },
-                        FieldException::Reason::NullDescriptor)
+                        FieldException::Reason::NullElement)
                     ? "refused"
                     : "made");
       }
@@ -790,7 +790,7 @@ int main(int argc, char *argv[]) {
       {"OPS-LAY-03", "layout", "layout<F...>() and create(what) make reduced layouts as ocs_cull_descr_reduce and "
        "lReduceDescr do",
        {"create a list and an element of a layout from fields and from a selection", "reduce to nothing"},
-       "the same fields present; one descriptor per set of fields; NullDescriptor for nothing",
+       "the same fields present; one descriptor per set of fields; NullElement for an empty selection",
        {{"OPS-01", "covers"}}, {3}, test_layout},
       {"OPS-LAY-04", "select element", "select(what) and select(where, what) reduce one element",
        {"reduce every user set to its name and entries, with and without a condition", "reduce no element"},

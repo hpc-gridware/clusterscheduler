@@ -551,6 +551,15 @@ namespace ocs::tom {
       }
    }
 
+   lListElem *take_object(lListElem *ep, const int pos) noexcept {
+      lListElem *const held = ocs_cull_value(ep, pos).obj;
+      if (held != nullptr) {
+         elem_set_free(held);
+         ocs_cull_value(ep, pos).obj = nullptr;
+      }
+      return held;
+   }
+
    namespace {
 
       /**

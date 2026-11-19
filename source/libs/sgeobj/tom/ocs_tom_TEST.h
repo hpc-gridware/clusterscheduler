@@ -118,7 +118,7 @@ namespace ocs::tom {
    struct TEST {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
       static constexpr FieldInfo fields[] = {
-         {TEST_bool, "TEST_bool", FieldType::Bool, Flag::Hash | Flag::Spool},
+         {TEST_bool, "TEST_bool", FieldType::Bool, Flag::Spool},
          {TEST_uint32, "TEST_uint32", FieldType::Uint32, Flag::Spool | Flag::Unique | Flag::PrimaryKey},
          {TEST_uint64, "TEST_uint64", FieldType::Uint64, Flag::Spool | Flag::Hash},
          {TEST_int, "TEST_int", FieldType::Int32, Flag::Spool},

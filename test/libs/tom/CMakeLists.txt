@@ -123,7 +123,8 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                pack_what_of_other_type unpack_into_wrong_handle
                undump_into_wrong_handle unique_by_number_field free_key_of_other_type
                free_key_not_of_sub_type free_bits_on_64_bit_field free_handle_foreign_field
-               set_atomic_on_hashed_field)
+               set_atomic_on_hashed_field get_atomic_on_32_bit_field set_atomic_on_const hash_on_bool_field
+               pack_type_with_int_field merge_by_key_double_key)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}

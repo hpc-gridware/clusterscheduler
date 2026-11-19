@@ -103,16 +103,16 @@ int incompatibleType2(const char *fmt, ...) {
 }
 
 /**
- * @brief Report an unknown field type, and abort
+ * @brief Report an unknown field type
+ *
+ * Only logs and sets LEUNKTYPE; it does not abort. The caller decides how to go on.
  *
  * @param str name of the function that detected it
- * @return never returns; the process is aborted
+ * @return -1
  */
 int unknownType(const char *str) {
    DENTER(CULL_LAYER);
 
-   /* abort is used, so we don't free any memory; if you change this
-      function please free your memory                      */
    DPRINTF("Unknown Type in %s.\n", str);
    LERROR(LEUNKTYPE);
    DRETURN(-1);

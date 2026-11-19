@@ -440,8 +440,8 @@ void test_compare() {
  */
 void test_named() {
    // old:     lWhere("%T(%I c= %s)", ...), "p=", "h=", "m="
-   // typed:   field<F>().equals_nocase(s), .like(pattern), .same_host(h), .has_bits(mask)
-   // differs: has_bits() takes only a 32 bit field, where "m=" on a 64 bit field compiles and selects nothing;
+   // typed:   field<F>().equals_nocase(s), .like(pattern), .same_host(h), .has_all_bits(mask)
+   // differs: has_all_bits() takes only a 32 bit field, where "m=" on a 64 bit field compiles and selects nothing;
    //          the string comparisons take only a string or host field
 
    // --- CULL
@@ -464,13 +464,13 @@ void test_named() {
       typed_seen.push_back(typed_keys(*rows, field<TEST_string>().like("*a")));
       typed_seen.push_back(typed_keys(*rows, field<TEST_string>().like("*")));
       typed_seen.push_back(typed_keys(*rows, field<TEST_host>().same_host("node3")));
-      typed_seen.push_back(typed_keys(*rows, field<TEST_uint32>().has_bits(3)));
+      typed_seen.push_back(typed_keys(*rows, field<TEST_uint32>().has_all_bits(3)));
    }
 
    // a pattern matches a null string as the empty one
    const std::vector<std::string> expected{"3", "1,2,3", "1,2,3,4", "3", "3"};
    report_difference("named comparisons", old_seen, typed_seen, expected);
-   CHECK(4, "equals_nocase, like, same_host and has_bits select what c=, p=, h= and m= select",
+   CHECK(4, "equals_nocase, like, same_host and has_all_bits select what c=, p=, h= and m= select",
          old_seen == expected && typed_seen == expected);
 }
 
@@ -555,7 +555,7 @@ void test_find() {
    std::vector<std::uint32_t> typed_seen;
    {
       const ListPtr<TEST> rows = typed_rows();
-      const Where<TEST> odd = field<TEST_uint32>().has_bits(1);
+      const Where<TEST> odd = field<TEST_uint32>().has_all_bits(1);
       const Element<TEST> last = rows->find_last_if(odd);
       typed_seen.push_back(rows->find_if(odd).get<TEST_uint32>());
       typed_seen.push_back(rows->find_if(odd).next_if(odd).get<TEST_uint32>());
@@ -618,7 +618,7 @@ void test_select_and_remove() {
       typed_selected.emplace_back(nothing->empty() ? "none" : "some");
 
       const ListPtr<TEST> rows = typed_rows();
-      const std::size_t removed = rows->remove_if(!field<TEST_uint32>().has_bits(1));
+      const std::size_t removed = rows->remove_if(!field<TEST_uint32>().has_all_bits(1));
       for (const ConstElement<TEST> row : *rows) {
          typed_rest.push_back(std::to_string(row.get<TEST_uint32>()));
       }
@@ -636,7 +636,7 @@ void test_select_and_remove() {
 void test_errors() {
    // old:     lOrWhere(nullptr, cp) returns nullptr with LECONDNULL
    // typed:   an empty Where combined with && or || throws NullElement; with<F>() on what_all<T>() throws
-   //          ForeignField
+   //          ForeignField, with<F>() and nest<F>() on an empty selection throw EmptyHandle
    // differs: the typed form throws where the old one returned nullptr
 
    // --- CULL
@@ -650,9 +650,15 @@ void test_errors() {
                                      FieldException::Reason::NullElement);
    const bool with_on_all = throws([] { static_cast<void>(what_all<US>().with<US_entries>(what<UE_name>())); },
                                    FieldException::Reason::ForeignField);
+   // an empty selection that a member is called on: EmptyHandle, as on an empty element or list handle
+   const bool on_empty = throws([] { static_cast<void>(What<US>().with<US_entries>(what<UE_name>())); },
+                                FieldException::Reason::EmptyHandle) &&
+                         throws([] { static_cast<void>(What<US>().nest<US_entries>(what<UE_name>())); },
+                                FieldException::Reason::EmptyHandle);
 
    CHECK(8, "an empty operand throws NullElement where lOrWhere gives nullptr; with() on ALL throws ForeignField",
          old_refused && empty_operand && with_on_all);
+   CHECK(11, "with() and nest() on an empty selection throw EmptyHandle", on_empty);
 }
 
 /**
@@ -714,7 +720,7 @@ void test_collect_and_nest() {
       where &= field<TEST_uint32>() < 4U;
       typed_seen.push_back(typed_keys(*rows, where));
       Where<TEST> none;
-      none &= field<TEST_uint32>().has_bits(1U);
+      none &= field<TEST_uint32>().has_all_bits(1U);
       typed_seen.push_back(typed_keys(*rows, none));
       Where<TEST> empty;
       empty |= Where<TEST>();
@@ -836,7 +842,7 @@ int main(int argc, char *argv[]) {
       {"OPS-SEL-03", "comparisons", "field<F>() compares as lWhere does, for every value type",
        {"select from four elements with ==, !=, <, <=, > and >= on 32 and 64 bit, int, long, double, bool, "
         "string and host fields"}, "the same keys", {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {3}, test_compare},
-      {"OPS-SEL-04", "named comparisons", "equals_nocase, like, same_host and has_bits select as c=, p=, h= and m=",
+      {"OPS-SEL-04", "named comparisons", "equals_nocase, like, same_host and has_all_bits select as c=, p=, h= and m=",
        {"select with each named comparison"}, "the same keys", {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {4},
        test_named},
       {"OPS-SEL-05", "combinations", "&&, || and ! combine and any() looks into a sub-list",
@@ -849,9 +855,9 @@ int main(int argc, char *argv[]) {
        {"select user sets by a share and reduce them to their names, select nothing",
         "remove the even keys"}, "the same contents; an empty list for no match", {{"OPS-01", "covers"}}, {7},
        test_select_and_remove},
-      {"OPS-SEL-08", "errors", "the typed form throws on an empty operand and on with() on ALL",
-       {"combine an empty condition; extend the selection of every field"}, "NullElement and ForeignField thrown",
-       {{"OPS-01", "covers"}}, {8}, test_errors},
+      {"OPS-SEL-08", "errors", "the typed form throws on an empty operand, on with() on ALL and on an empty selection",
+       {"combine an empty condition; extend the selection of every field; extend and narrow an empty selection"},
+       "NullElement, ForeignField and EmptyHandle thrown", {{"OPS-01", "covers"}}, {8, 11}, test_errors},
       {"OPS-SEL-10", "collect and nest", "|= and &= collect conditions, nest() narrows a field selected before",
        {"or three key conditions together in a loop and and a bound onto them, starting from no condition",
         "merge two selections of user sets and narrow their entries"},

@@ -221,6 +221,17 @@ namespace ocs::tom {
    void exchange_list(lListElem *ep, int pos, lList *&lp) noexcept;
 
    /**
+    * @brief Take the element out of an object field, as lDechainObject() after its checks
+    *
+    * The field holds nullptr afterwards; the element is free again and owned by the caller. Nothing is copied.
+    *
+    * @param ep the element holding the object field
+    * @param pos the position of the object field in the element's descriptor
+    * @return the element the field held, or nullptr if it held none
+    */
+   [[nodiscard]] lListElem *take_object(lListElem *ep, int pos) noexcept;
+
+   /**
     * @brief Add an element with a string key, as lAddElemStr()
     *
     * Creates the list with @p descr if @p lp is nullptr, creates an element

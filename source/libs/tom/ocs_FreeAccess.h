@@ -951,6 +951,10 @@ namespace ocs::tom {
 
    /**
     * @brief Whether a 32 bit field has any bit of a mask set; replaces lMatchUlongBitMask()
+    *
+    * "Any bit", where the condition field<F>().has_all_bits(mask) asks for every bit; the two coincide for a
+    * single bit.
+    *
     * @tparam F the 32 bit field
     * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element
@@ -960,7 +964,7 @@ namespace ocs::tom {
     */
    template <auto F, bool Typed = false>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   [[nodiscard]] bool has_bits(const lListElem *ep, const std::uint32_t mask) {
+   [[nodiscard]] bool has_any_bits(const lListElem *ep, const std::uint32_t mask) {
       return (ocs_cull_value(ep, detail::getter_pos<F, Typed>(ep)).ul & mask) > 0;
    }
 
@@ -1214,7 +1218,7 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief has_bits() on an element handle
+    * @brief has_any_bits() on an element handle
     * @tparam F the 32 bit field, of the handle's type
     * @tparam T the object type, deduced from the handle
     * @param ep the element
@@ -1224,9 +1228,9 @@ namespace ocs::tom {
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   [[nodiscard]] bool has_bits(const ConstElement<T> &ep, const std::uint32_t mask) {
+   [[nodiscard]] bool has_any_bits(const ConstElement<T> &ep, const std::uint32_t mask) {
       detail::assert_field_of<F, T>();
-      return has_bits<F, true>(ep.raw(), mask);
+      return has_any_bits<F, true>(ep.raw(), mask);
    }
 
    /**
@@ -1423,7 +1427,7 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief has_bits() on an owning element handle, as on the handle it owns
+    * @brief has_any_bits() on an owning element handle, as on the handle it owns
     * @tparam F the 32 bit field, of the handle's type
     * @tparam T the object type, deduced from the handle
     * @param ep the element
@@ -1432,8 +1436,8 @@ namespace ocs::tom {
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   [[nodiscard]] bool has_bits(const ElementPtr<T> &ep, const std::uint32_t mask) {
-      return has_bits<F>(ep.get(), mask);
+   [[nodiscard]] bool has_any_bits(const ElementPtr<T> &ep, const std::uint32_t mask) {
+      return has_any_bits<F>(ep.get(), mask);
    }
 
    /**
@@ -1486,38 +1490,58 @@ namespace ocs::tom {
     * is. The value is copied as it is, a string or host field copies nullptr as well; a
     * list or object field is copied deeply, as `lSetList(dst, nm, lCopyList(...))` does.
     *
+    * A reference field does not compile: the element does not own what a reference points
+    * to, so a copy would share it with nothing to say who frees it (clone() copies the
+    * pointer, as lCopyElem() did).
+    *
     * @tparam F the field, of the object type of both elements; not a reference field
     * @tparam T the object type, deduced from the destination
-    * @param dst the element to copy into
+    * @param dst the element to copy into, or an empty handle (nothing is copied then)
     * @param src the element to copy from, may be reduced or an empty handle
-    * @return true if the source held the field and it was copied
+    * @return true if the source held the field and the destination took the value; false for an empty
+    *         destination or source, a source without the field, or a value the setter refused (a string that
+    *         cannot be copied)
+    * @throw FieldException with reason AbsentField if the destination is reduced and lacks the field, in a debug
+    *        build DuplicateKey if another element of the destination's list holds the value of a unique field
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type != FieldType::Ref)
    bool copy_if_present(const Element<T> &dst, const ConstElement<T> &src) {
-      if (!has<F>(src)) {
+      if (!dst || !has<F>(src)) {
          return false;
       }
       if constexpr (FieldTraits<F>::type == FieldType::List || FieldTraits<F>::type == FieldType::Object) {
-         set<F>(dst, get<F>(src).clone());
+         return set<F>(dst, get<F>(src).clone()) == 0;
       } else {
-         set<F>(dst, get<F>(src));
+         return set<F>(dst, get<F>(src)) == 0;
       }
-      return true;
    }
 
    namespace detail {
       /**
        * @brief Compare a key field of two elements of one type
+       *
+       * Host names compare as host names (Host::operator==, as sge_hostcmp() does), as find_first() and
+       * modify_sublist() compare them; strings compare with strcmp().
+       *
        * @tparam Key the key field, a number, string or host field
+       * @tparam T the object type, deduced from the elements
        * @param a the one element
        * @param b the other element
        * @param null_matches whether two string or host keys that are both nullptr are equal
        * @return true if the keys are equal
+       * @throw FieldException with reason AbsentField if an element is reduced and lacks the key field
        */
       template <auto Key, ObjectType T>
       bool same_key(const ConstElement<T> &a, const ConstElement<T> &b, const bool null_matches) {
-         if constexpr (FieldTraits<Key>::type == FieldType::String || FieldTraits<Key>::type == FieldType::Host) {
+         if constexpr (FieldTraits<Key>::type == FieldType::Host) {
+            const Host x = get<Key>(a);
+            const Host y = get<Key>(b);
+            if (x == nullptr || y == nullptr) {
+               return null_matches && x == nullptr && y == nullptr;
+            }
+            return x == y;
+         } else if constexpr (FieldTraits<Key>::type == FieldType::String) {
             const char *const x = get<Key>(a);
             const char *const y = get<Key>(b);
             if (x == nullptr || y == nullptr) {
@@ -1535,11 +1559,15 @@ namespace ocs::tom {
     *
     * Walks the list front to back and removes every earlier element with the key of the
     * current one, so the order of the elements that stay is kept. A string or host key that
-    * is nullptr is never a repetition. This is what `cull_compress_definition_list()` did.
+    * is nullptr is never a repetition. Host names compare as host names (as find_first()
+    * does), strings with strcmp(). This is what `cull_compress_definition_list()` did, which
+    * compared host names with strcmp().
     *
-    * @tparam Key the key field, a number, string or host field of the list's type
+    * @tparam Key the key field of the list's type: a number (also Int32, Int64, Double, Bool), string or host
+    *         field; not a list, object or reference field
     * @tparam T the object type, deduced from the list
     * @param lp the list, or an empty handle
+    * @throw FieldException with reason AbsentField if the list is reduced and lacks the key field
     */
    template <auto Key, ObjectType T>
       requires TypedField<decltype(Key)> && (FieldTraits<Key>::type != FieldType::List &&
@@ -1562,17 +1590,23 @@ namespace ocs::tom {
     *
     * For each element of @p src the first element of @p dst with the same key gets the
     * value of @p Value; an element whose key @p dst does not hold is appended as a copy.
-    * Two string or host keys that are both nullptr are equal. This is what
-    * `cull_merge_definition_list()` did.
+    * Two string or host keys that are both nullptr are equal. Host names compare as host
+    * names (as find_first() does), strings with strcmp(). This is what
+    * `cull_merge_definition_list()` did, which compared host names with strcmp().
     *
-    * @tparam Key the key field, a number, string or host field of the lists' type
+    * @tparam Key the key field of the lists' type: a key-capable field (Uint32, Uint64, String or Host), as
+    *         find_first() takes
     * @tparam Value the value field, a number, string or host field of the lists' type
     * @tparam T the object type, deduced from the destination
     * @param dst the list merged into; not an empty handle
     * @param src the list merged from, may be an empty handle; an owning handle converts to it
+    * @throw FieldException with reason EmptyHandle if @p dst is an empty handle and @p src holds an element,
+    *        AbsentField if a list is reduced and lacks the key or the value field, WrongLayout if an element
+    *        of @p src to append has another layout than @p dst; in a debug build DuplicateKey if a unique field
+    *        would repeat in @p dst
     */
    template <auto Key, auto Value, ObjectType T>
-      requires TypedField<decltype(Key)> && TypedField<decltype(Value)> &&
+      requires detail::FreeKeyField<Key> && FieldOf<Key, T> && TypedField<decltype(Value)> && FieldOf<Value, T> &&
                (FieldTraits<Value>::type != FieldType::List && FieldTraits<Value>::type != FieldType::Object &&
                 FieldTraits<Value>::type != FieldType::Ref)
    void merge_by_key(const List<T> &dst, const std::type_identity_t<ConstList<T>> &src) {
@@ -1688,6 +1722,11 @@ namespace ocs::tom {
     * @param differs whether a request element changes the held element with the same key
     * @param report called for every event, in the order they happen
     * @return whether the operation succeeded and whether the object's sub-list was changed
+    * @throw FieldException with reason NullElement if @p dst is an empty handle, AbsentField if @p dst is reduced
+    *        and lacks @p ListF, WrongLayout if a request element moved into the object's sub-list has another
+    *        layout than that list; in a debug build DuplicateKey if a unique field would repeat there. A request
+    *        without the list field, and an element of either sub-list without a key, are not exceptions: they
+    *        are reported (return value, SublistEvent::MissingKey)
     */
    template <auto ListF, auto SubKeyF, ObjectType T, typename Differs, typename Report>
       requires detail::SubKeyField<ListF, SubKeyF> &&

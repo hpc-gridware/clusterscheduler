@@ -3050,10 +3050,10 @@ int sge_split_suspended(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom:
    DENTER(TOP_LAYER);
 
    /* split queues */
-   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) &&
-                                      !ocs::tom::field<QU_state>().has_bits(QI_CAL_SUSPENDED) &&
-                                      !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED) &&
-                                      !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED_ON_SUBORDINATE));
+   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED) &&
+                                      !ocs::tom::field<QU_state>().has_all_bits(QI_CAL_SUSPENDED) &&
+                                      !ocs::tom::field<QU_state>().has_all_bits(QI_CAL_DISABLED) &&
+                                      !ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED_ON_SUBORDINATE));
 
    if (lp != nullptr) {
       for (auto mes_queue : *lp) {
@@ -3096,7 +3096,7 @@ int sge_split_cal_disabled(const bool monitor_next_run, ocs::tom::ListPtr<ocs::t
    DENTER(TOP_LAYER);
 
    /* split queues */
-   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED));
+   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_all_bits(QI_CAL_DISABLED));
 
    if (lp != nullptr) {
       for (auto mes_queue : *lp) {
@@ -3133,8 +3133,8 @@ int sge_split_disabled(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::
    DENTER(TOP_LAYER);
 
    /* split queues */
-   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_bits(QI_DISABLED) &&
-                                      !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED));
+   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_all_bits(QI_DISABLED) &&
+                                      !ocs::tom::field<QU_state>().has_all_bits(QI_CAL_DISABLED));
 
    if (lp != nullptr) {
       for (auto mes_queue : *lp) {
@@ -4203,7 +4203,7 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, const bo
       int slots = MIN(ocs::tom::get<QU_tag>(qep), maxslots - rqs_hslots);
 
       if (!have_master_host && !got_master_queue) {
-         if (!ocs::tom::has_bits<QU_tagged4schedule>(qep, TAG4SCHED_MASTER)) {
+         if (!ocs::tom::has_any_bits<QU_tagged4schedule>(qep, TAG4SCHED_MASTER)) {
             // this queue instance is not suited as a master queue
             /*
                care for slave tasks assignments of -masterq jobs
@@ -4276,7 +4276,7 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, const bo
          if (a->is_soft) {
             qs.soft_violations = ocs::tom::get<QU_soft_violation>(qep);
          }
-         if (!got_master_queue && ocs::tom::has_bits<QU_tagged4schedule>(qep, TAG4SCHED_MASTER)) {
+         if (!got_master_queue && ocs::tom::has_any_bits<QU_tagged4schedule>(qep, TAG4SCHED_MASTER)) {
             // We got our master queue, insert it as first element.
             got_master_queue = true;
             qs.is_master_queue = true;
@@ -5018,7 +5018,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, const ocs::tom::Element<ocs::tom:
 
          if (result == DISPATCH_OK && qslots > 0) {
             /* could this host be a master host */
-            if (!suited_as_master_host && ocs::tom::has_bits<QU_tagged4schedule>(qep, TAG4SCHED_MASTER)) {
+            if (!suited_as_master_host && ocs::tom::has_any_bits<QU_tagged4schedule>(qep, TAG4SCHED_MASTER)) {
                DPRINTF("HOST %s can be master host because of queue %s\n", eh_name, qname);
                suited_as_master_host = true;
             }
@@ -7025,7 +7025,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
             if (queue) {
                DPRINTF("=====> we are processing master requests and have a queue\n");
                print_tagged4schedule(queue);
-               if (!ocs::tom::has_bits<QU_tagged4schedule>(queue, TAG4SCHED_MASTER)) {
+               if (!ocs::tom::has_any_bits<QU_tagged4schedule>(queue, TAG4SCHED_MASTER)) {
                   // we still need the master task, but the queue is already tagged not to match (from exechost matching)
                   DPRINTF("%s: parallel_rc_slots_by_time() master queue already tagged not to match, skipping\n", object_name);
                   continue;
@@ -7036,7 +7036,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
       if (scope == JRS_SCOPE_SLAVE && queue) {
          DPRINTF("=====> we are processing slave requests and have a queue\n");
          print_tagged4schedule(queue);
-         if (!ocs::tom::has_bits<QU_tagged4schedule>(queue, TAG4SCHED_SLAVE)) {
+         if (!ocs::tom::has_any_bits<QU_tagged4schedule>(queue, TAG4SCHED_SLAVE)) {
             // we still need slave tasks, but the queue is already tagged not to match (from exechost matching)
             DPRINTF("%s: parallel_rc_slots_by_time() slave queue already tagged not to match, skipping\n", object_name);
             continue;

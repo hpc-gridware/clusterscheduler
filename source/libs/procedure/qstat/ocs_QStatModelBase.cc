@@ -340,7 +340,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
          /*
           * All jobs not running (= all pending)
           */
-         nw |= !ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JRUNNING));
+         nw |= !ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_all_bits(JRUNNING));
          /*
           * Array Jobs with one or more tasks pending
           */
@@ -354,22 +354,22 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
             /* unenrolled jobs in user hold state ... */
             nw |= ocs::tom::field<JB_ja_u_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
             /* ... or enrolled jobs with an user  hold */
-            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_USER));
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_all_bits(MINUS_H_TGT_USER));
          }
          // Operator Hold
          if ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) == QSTAT_DISPLAY_OPERATORHOLD) {
             nw |= ocs::tom::field<JB_ja_o_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
-            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_OPERATOR));
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_all_bits(MINUS_H_TGT_OPERATOR));
          }
          // System Hold
          if ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) == QSTAT_DISPLAY_SYSTEMHOLD) {
             nw |= ocs::tom::field<JB_ja_s_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
-            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_SYSTEM));
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_all_bits(MINUS_H_TGT_SYSTEM));
          }
          // Job Array Dependency Hold
          if ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) == QSTAT_DISPLAY_JOBARRAYHOLD) {
             nw |= ocs::tom::field<JB_ja_a_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
-            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_JA_AD));
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_all_bits(MINUS_H_TGT_JA_AD));
          }
          /*
           * Start Time Hold
@@ -389,7 +389,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
           */
          if ((parameter.show_ & QSTAT_DISPLAY_PEND_REMAIN) == QSTAT_DISPLAY_PEND_REMAIN) {
             nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_job_restarted>() != 0U);
-            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_bits(JERROR));
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_all_bits(JERROR));
             nw |= ocs::tom::field<JB_ja_n_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
          }
       }
@@ -411,16 +411,16 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
     *    As a result to many jobs will be requested by qsub.
     */
    if ((parameter.show_ & QSTAT_DISPLAY_RUNNING) == QSTAT_DISPLAY_RUNNING) {
-      nw |= (ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JRUNNING)) ||
-             ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JTRANSFERING))) &&
-            !ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_bits(JSUSPENDED));
+      nw |= (ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_all_bits(JRUNNING)) ||
+             ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_all_bits(JTRANSFERING))) &&
+            !ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_all_bits(JSUSPENDED));
    }
 
    // Suspended jobs
    if ((parameter.show_ & QSTAT_DISPLAY_SUSPENDED) == QSTAT_DISPLAY_SUSPENDED) {
-      nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JRUNNING)) ||
-            ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JTRANSFERING)) ||
-            ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_bits(JSUSPENDED));
+      nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_all_bits(JRUNNING)) ||
+            ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_all_bits(JTRANSFERING)) ||
+            ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_all_bits(JSUSPENDED));
    }
 
    // the state condition restricts the owner condition; an empty one leaves it as it is

@@ -208,14 +208,73 @@ namespace ocs::tom {
    }
 
    /**
+    * @brief Whether the hash tables of the list library can hold a field type
+    *
+    * cull_hash_create() builds tables for 32 and 64 bit numbers, strings and host names only; for any other
+    * type it logged an error and built none, so a declared hash or uniqueness check went silently missing.
+    *
+    * @param type the field type
+    * @return true for Uint32, Uint64, String and Host
+    */
+   constexpr bool hashable_type(const FieldType type) {
+      return type == FieldType::Uint32 || type == FieldType::Uint64 || type == FieldType::String ||
+             type == FieldType::Host;
+   }
+
+   /**
+    * @brief Refuse a field table that declares Hash or Unique on a field the hash tables cannot hold
+    *
+    * Called at compile time only: an invalid table makes the throw expression part of the constant
+    * evaluation, which the compiler reports as an error naming the message.
+    *
+    * @tparam N number of fields
+    * @param fields the field table
+    */
+   template <std::size_t N>
+   consteval void check_hash_flags(const FieldInfo (&fields)[N]) {
+      for (const FieldInfo &field : fields) {
+         if ((has_flag(field.flags, Flag::Hash) || has_flag(field.flags, Flag::Unique)) &&
+             !hashable_type(field.type)) {
+            throw "Hash or Unique declared on a field that is not Uint32, Uint64, String or Host";
+         }
+      }
+   }
+
+   /**
     * @brief Build the descriptor of the list library from a field table, at compile time
+    *
+    * The table is checked first: Hash and Unique only on hashable field types (see #hashable_type), so a
+    * model declaring them elsewhere does not compile.
+    *
     * @tparam N number of fields
     * @param fields the field table
     * @return the descriptor block
     */
    template <std::size_t N>
    consteval cull_descr_block<N + 1> make_descriptor(const FieldInfo (&fields)[N]) {
+      check_hash_flags(fields);
       return make_descriptor_impl(fields, std::make_index_sequence<N>{});
+   }
+
+   /**
+    * @brief Whether every field of a field table can be packed
+    *
+    * The pack format has no encoding for Int32 and Int64 fields (pack_value() fails with PACK_FORMAT, as
+    * cull_pack_switch() did), also when they are declared NoTransfer: such a field keeps its place on the
+    * wire with a default value. A type holding one is packed only with a selection that leaves it out.
+    *
+    * @tparam N number of fields
+    * @param fields the field table
+    * @return true if no field is of type Int32 or Int64
+    */
+   template <std::size_t N>
+   consteval bool packable_fields(const FieldInfo (&fields)[N]) {
+      for (const FieldInfo &field : fields) {
+         if (field.type == FieldType::Int32 || field.type == FieldType::Int64) {
+            return false;
+         }
+      }
+      return true;
    }
 
    /**
@@ -259,6 +318,18 @@ namespace ocs::tom {
       T::descriptor.e;
       T::names.data();
    };
+
+   /**
+    * @brief An object type whose own fields can all be packed: no Int32 or Int64 field (see #packable_fields)
+    *
+    * The full pack of an element or a list of such a type compiles; a type with such a field packs only a
+    * selection. The sub-types of list and object fields are not followed: a packed sub-list of a type with an
+    * Int32 or Int64 field still fails at run time.
+    *
+    * @tparam T the struct of the type
+    */
+   template <typename T>
+   concept PackableType = ObjectType<T> && packable_fields(T::fields);
 
    /**
     * @brief Object type of a field enumeration, generated per type

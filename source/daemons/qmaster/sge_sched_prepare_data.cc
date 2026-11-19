@@ -278,7 +278,7 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
    try {
       /* acl */
       if (!where_what->where_acl) {
-         where_what->where_acl = ocs::tom::field<US_type>().has_bits(US_ACL);
+         where_what->where_acl = ocs::tom::field<US_type>().has_all_bits(US_ACL);
       }
       if (!where_what->what_acldept) {
          where_what->what_acldept = ocs::tom::what_all<ocs::tom::US>();
@@ -291,7 +291,7 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
 
       /* departments */
       if (!where_what->where_dept) {
-         where_what->where_dept = ocs::tom::field<US_type>().has_bits(US_DEPT);
+         where_what->where_dept = ocs::tom::field<US_type>().has_all_bits(US_DEPT);
       }
 
       /* configuration */
@@ -335,13 +335,13 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
       // full type hold for the reduced queue instances of the subscription as well.
       if (!where_what->where_queue) {
          where_what->where_queue =
-                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) &&                // only not suspended queues
-                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED_ON_SUBORDINATE) && // not suspended on subordinate
-                 !ocs::tom::field<QU_state>().has_bits(QI_CAL_SUSPENDED) &&            // not suspended on calendar
-                 !ocs::tom::field<QU_state>().has_bits(QI_ERROR) &&                    // not in error state
-                 !ocs::tom::field<QU_state>().has_bits(QI_UNKNOWN) &&                  // not in unknown state
-                 !ocs::tom::field<QU_state>().has_bits(QI_AMBIGUOUS);                  // not in ambiguous state
-                 // @todo: what about the QI_ORPHANED, QI_ALARM, QI_SUSPEND_ALARM ???
+            !ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED) &&                // only not suspended queues
+            !ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED_ON_SUBORDINATE) && // not suspended on subordinate
+            !ocs::tom::field<QU_state>().has_all_bits(QI_CAL_SUSPENDED) &&            // not suspended on calendar
+            !ocs::tom::field<QU_state>().has_all_bits(QI_ERROR) &&                    // not in error state
+            !ocs::tom::field<QU_state>().has_all_bits(QI_UNKNOWN) &&                  // not in unknown state
+            !ocs::tom::field<QU_state>().has_all_bits(QI_AMBIGUOUS);                  // not in ambiguous state
+            // @todo: what about the QI_ORPHANED, QI_ALARM, QI_SUSPEND_ALARM ???
       }
       if (!where_what->what_queue) {
          where_what->what_queue = ocs::tom::what<ocs::tom::QU>(qinstance_field_ids);
@@ -350,14 +350,14 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
       // qinstances (remaining are calendar suspended (possibly also orphaned, alarm, suspend alarm) but not also ...)
       if (!where_what->where_queue2) {
          where_what->where_queue2 =
-                 ocs::tom::field<QU_state>().has_bits(QI_CAL_SUSPENDED) &&             // todo: only calendar suspended?
-                 !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED) &&             // not calendar disabled
-                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) &&                // not suspended
-                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED_ON_SUBORDINATE) && // not suspended on subordinate
-                 !ocs::tom::field<QU_state>().has_bits(QI_ERROR) &&                    // not in error state
-                 !ocs::tom::field<QU_state>().has_bits(QI_UNKNOWN) &&                  // not in unknown state
-                 !ocs::tom::field<QU_state>().has_bits(QI_DISABLED) &&                 // not disabled
-                 !ocs::tom::field<QU_state>().has_bits(QI_AMBIGUOUS);                  // not in ambiguous state
+            ocs::tom::field<QU_state>().has_all_bits(QI_CAL_SUSPENDED) &&             // todo: only calendar suspended?
+            !ocs::tom::field<QU_state>().has_all_bits(QI_CAL_DISABLED) &&             // not calendar disabled
+            !ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED) &&                // not suspended
+            !ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED_ON_SUBORDINATE) && // not suspended on subordinate
+            !ocs::tom::field<QU_state>().has_all_bits(QI_ERROR) &&                    // not in error state
+            !ocs::tom::field<QU_state>().has_all_bits(QI_UNKNOWN) &&                  // not in unknown state
+            !ocs::tom::field<QU_state>().has_all_bits(QI_DISABLED) &&                 // not disabled
+            !ocs::tom::field<QU_state>().has_all_bits(QI_AMBIGUOUS);                  // not in ambiguous state
       }
       if (!where_what->what_queue2) {
          where_what->what_queue2 = ocs::tom::what_all<ocs::tom::QU>();

@@ -760,7 +760,7 @@ namespace ocs::tom {
             case lRefT:
                dst->ref = nullptr;
                break;
-            default:   // lIntT is not packed, other types do not exist
+            default:   // lIntT and lLongT are not packed, other types do not exist
                fail(PACK_FORMAT, "unpacking a value of a type that is not packed");
          }
       }

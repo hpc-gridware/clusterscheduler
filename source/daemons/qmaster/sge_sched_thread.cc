@@ -169,11 +169,11 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, const bool monitor_
    const auto all_queues = ocs::tom::ConstList<ocs::tom::QU>(*lists->all_queue_list);
    if (all_queues != nullptr) {
       // @todo: here are also states missing that make queues unavailable
-      const auto where = ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) ||   // only not suspended queues
-                         ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED_ON_SUBORDINATE) ||
-                         ocs::tom::field<QU_state>().has_bits(QI_ERROR) ||       // no queues in error state
-                         ocs::tom::field<QU_state>().has_bits(QI_AMBIGUOUS) ||
-                         ocs::tom::field<QU_state>().has_bits(QI_UNKNOWN);       // only known queues
+      const auto where = ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED) ||   // only not suspended queues
+                         ocs::tom::field<QU_state>().has_all_bits(QI_SUSPENDED_ON_SUBORDINATE) ||
+                         ocs::tom::field<QU_state>().has_all_bits(QI_ERROR) ||       // no queues in error state
+                         ocs::tom::field<QU_state>().has_all_bits(QI_AMBIGUOUS) ||
+                         ocs::tom::field<QU_state>().has_all_bits(QI_UNKNOWN);       // only known queues
       const auto not_available = all_queues.select(where);
 
       for (const auto queue : *not_available) {

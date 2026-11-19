@@ -32,13 +32,23 @@
  *
  * @code
  * auto what = what<US_name>().with<US_entries>(what<UE_name>());
- * auto where = field<US_type>().has_bits(US_ACL) && !(field<US_name>() == "defaultdepartment");
+ * auto where = field<US_type>().has_all_bits(US_ACL) && !(field<US_name>() == "defaultdepartment");
  * ListPtr<US> acls = usersets.select(where, what);
  * @endcode
  *
  * The handles give the raw pointers with get(), so they serve every function
  * of the old interface as well. The list and element handles take them in
  * select(), find_if(), remove_if() and matches().
+ *
+ * An empty selection or condition is reported with one rule, the one that holds
+ * for the element and list handles as well:
+ * - handed to an operation as an operand (`&&`, `||`, `!`, select() of a list
+ *   or an element, ElementPtr::create(what), ListPtr::create(name, what)), an
+ *   empty handle throws FieldException with reason NullElement, which most of
+ *   these operations used already; an empty condition is not an error where it
+ *   means "every element" (find_if(), matches(), select(where, ...), `|=`, `&=`);
+ * - as the handle a member is called on (print(), with(), nest()), it throws
+ *   EmptyHandle, as every member of an empty element or list handle does.
  */
 
 #include <cstdint>
@@ -465,10 +475,13 @@ namespace ocs::tom {
 
       /**
        * @brief Every bit of a mask is set in the 32 bit field, as `m=` in lWhere()
+       *
+       * "All bits", where the free has_any_bits<F>(ep, mask) asks for any bit; the two coincide for a single bit.
+       *
        * @param mask the bits
        * @return the condition
        */
-      [[nodiscard]] Where<Type> has_bits(const std::uint32_t mask) const
+      [[nodiscard]] Where<Type> has_all_bits(const std::uint32_t mask) const
          requires(FieldTraits<F>::type == FieldType::Uint32) {
          return Where<Type>::from_typed(detail::make_field_compare<F>(CompareOp::Bitmask, mask));
       }
@@ -585,12 +598,16 @@ namespace ocs::tom {
        * @tparam F a list or object field of this type whose sub-type the model names
        * @param sub the selection on the sub-type, taken over
        * @return the extended selection; this handle is empty afterwards
-       * @throw FieldException with reason ForeignField if this selection is ALL, NONE or empty
+       * @throw FieldException with reason EmptyHandle if this handle is empty, ForeignField if this selection is
+       *        ALL or NONE
        */
       template <auto F>
          requires detail::SelectFieldOf<F, T> && detail::Nestable<F>
       [[nodiscard]] What with(What<typename FieldTraits<F>::Sub> &&sub) && {
-         if (ep_ == nullptr || ep_[0].pos < 0) [[unlikely]] {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, static_cast<int>(F), T::descriptor.e);
+         }
+         if (ep_[0].pos < 0) [[unlikely]] {
             throw_field_exception(FieldException::Reason::ForeignField, static_cast<int>(F), T::descriptor.e);
          }
          std::vector<WhatEntry> entries;
@@ -613,15 +630,18 @@ namespace ocs::tom {
        * @tparam F a list or object field of this type whose sub-type the model names
        * @param sub the selection on the sub-type, taken over
        * @return the narrowed selection; this handle is empty afterwards
-       * @throw FieldException with reason ForeignField if this selection is empty, ALL or NONE or does not select
-       *        @p F; this handle and @p sub are freed then
+       * @throw FieldException with reason EmptyHandle if this handle is empty, ForeignField if this selection is
+       *        ALL or NONE or does not select @p F; this handle and @p sub are freed then
        * @see Old form: lWhatSetSubWhat(); core: ocs::tom::set_sub_what()
        */
       template <auto F>
          requires detail::SelectFieldOf<F, T> && detail::Nestable<F>
       [[nodiscard]] What nest(What<typename FieldTraits<F>::Sub> &&sub) && {
          What self = from_typed(release());
-         if (self.ep_ == nullptr || self.ep_[0].pos < 0) [[unlikely]] {
+         if (self.ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, static_cast<int>(F), T::descriptor.e);
+         }
+         if (self.ep_[0].pos < 0) [[unlikely]] {
             throw_field_exception(FieldException::Reason::ForeignField, static_cast<int>(F), T::descriptor.e);
          }
          // set_sub_what() frees the sub-selection when it throws; self frees the selection

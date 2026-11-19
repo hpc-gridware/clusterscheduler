@@ -806,12 +806,17 @@ namespace ocs::tom {
 
       /**
        * @brief Pack the element, as cull_pack_elem() does
+       *
+       * Does not compile for a type with an Int32 or Int64 field, which the pack format cannot carry (see
+       * PackableType); such a type packs with pack(pb, what) and a selection without it.
+       *
        * @param pb the buffer to append to
        * @throw FieldException with reason EmptyHandle if the handle is empty
        * @throw PackException if the buffer cannot grow
        * @see Old form: cull_pack_elem(); core: ocs::tom::pack_elem()
        */
       void pack(sge_pack_buffer &pb) const {
+         static_assert(PackableType<T>, "the type holds an Int32 or Int64 field, which cannot be packed");
          if (ep_ == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
          }
@@ -905,6 +910,7 @@ namespace ocs::tom {
        * @see Old form: lWriteElemToDisk(); core: ocs::tom::write_elem_to_disk()
        */
       void write_to_disk(const char *prefix, const char *name, const char *obj_name) const {
+         static_assert(PackableType<T>, "the type holds an Int32 or Int64 field, which cannot be packed");
          if (ep_ == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
          }
@@ -1016,16 +1022,21 @@ namespace ocs::tom {
        *
        * @tparam F the field number, of this object type
        * @param value the value; an owning handle is moved in
-       * @throw FieldException if the handle is empty, the reduced element does not
-       *        hold the field, a string cannot be copied or an element to store
-       *        is bound elsewhere; in a debug build also with reason DuplicateKey
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field, OutOfMemory if a string cannot be copied, BoundElement if an element to
+       *        store is bound in a list or another object already (it stays there, owned by what it is bound
+       *        to; the moved-in handle is empty afterwards); in a debug build also with reason DuplicateKey
        *        when another element of the list holds the value of a unique field
        */
       template <auto F>
          requires FieldOf<F, T>
       void set(typename detail::SetterArg<F>::type value) const {
          if (!detail::write<F>(this->ep_, this->template present_slot<F>(), std::move(value))) [[unlikely]] {
-            throw_field_exception(FieldTraits<F>::type == FieldType::Object ? FieldException::Reason::WrongType
+            if constexpr (FieldTraits<F>::type == FieldType::Object && FieldTraits<F>::has_sub) {
+               // the element is owned by the list or the object it is bound to: the parameter must not free it
+               static_cast<void>(value.release());
+            }
+            throw_field_exception(FieldTraits<F>::type == FieldType::Object ? FieldException::Reason::BoundElement
                                                                        : FieldException::Reason::OutOfMemory,
                               F, this->ep_->descr);
          }
@@ -1152,6 +1163,26 @@ namespace ocs::tom {
          lList *lp = list.release();
          exchange_list(this->ep_, FieldTraits<F>::pos, lp);
          return ListPtr<typename FieldTraits<F>::Sub>::from_typed(lp);
+      }
+
+      /**
+       * @brief Take the element out of an object field without copying it, as lDechainObject() does
+       *
+       * The typed counterpart of lDechainObject(): where `clone()` and `set<F>(nullptr)` copy the sub-object
+       * deeply and free the original, this moves it out. The field holds nullptr afterwards, and the element
+       * taken is free, so it can be stored in another object or appended to a list.
+       *
+       * @tparam F an object field of this object type whose sub-type the model names
+       * @return the element the field held, now owned by the caller; empty if the field held none
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field; nothing is changed then
+       * @see Old form: lDechainObject(); core: ocs::tom::take_object()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Object) && FieldTraits<F>::has_sub
+      [[nodiscard]] ElementPtr<typename FieldTraits<F>::Sub> take() const {
+         static_cast<void>(this->template present_slot<F>());
+         return ElementPtr<typename FieldTraits<F>::Sub>::from_typed(take_object(this->ep_, FieldTraits<F>::pos));
       }
 
       /**
@@ -1297,12 +1328,15 @@ namespace ocs::tom {
        *
        * @param what the selection of fields
        * @return the owning handle
-       * @throw FieldException with reason NullDescriptor if @p what is empty or selects no field of the type,
-       *        where lReduceDescr() gave no descriptor
+       * @throw FieldException with reason NullElement if @p what is empty (see ocs_Select.h), NullDescriptor if
+       *        it selects no field of the type, where lReduceDescr() gave no descriptor
        * @throw ocs::RuntimeException if there is no memory
        * @see Old form: lReduceDescr() and lCreateElem(); core: ocs::tom::reduced_descr()
        */
       [[nodiscard]] static ElementPtr create(const What<T> &what) {
+         if (!what) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::NullElement, NoName, T::descriptor.e);
+         }
          const lDescr *descr = reduced_descr(T::descriptor.e, what.get());
          if (descr == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::NullDescriptor, NoName, T::descriptor.e);
@@ -1772,9 +1806,13 @@ namespace ocs::tom {
       template <auto F>
       concept AtomicReadable = FieldTraits<F>::type == FieldType::Uint64;
 
-      /** @brief A 64 bit unsigned field that is not declared hashed, which the atomic accessors write */
+      /**
+       * @brief A 64 bit unsigned field that is declared neither hashed nor unique, which the atomic accessors write
+       *
+       * The atomic store bypasses the hash table and the uniqueness check of the setter alike.
+       */
       template <auto F>
-      concept AtomicWritable = AtomicReadable<F> && !FieldTraits<F>::hashed;
+      concept AtomicWritable = AtomicReadable<F> && !FieldTraits<F>::hashed && !FieldTraits<F>::unique;
 
    } // namespace detail
 
@@ -1809,9 +1847,10 @@ namespace ocs::tom {
     *
     * The store bypasses the hash table, so a field declared hashed does not compile, where lSetUlong64Atomic()
     * refused it at run time. The declaration decides, not whether a table is built: the tables are built when an
-    * element enters a list.
+    * element enters a list. A field declared unique does not compile either: the store bypasses the uniqueness
+    * check of set() as well.
     *
-    * @tparam F the field number, of the handle's type, of type Uint64 and not hashed
+    * @tparam F the field number, of the handle's type, of type Uint64, neither hashed nor unique
     * @tparam T the object type, deduced from the handle
     * @param ep the element
     * @param value the value to store
@@ -1880,6 +1919,37 @@ namespace ocs::tom {
       requires TypedField<decltype(F)> && detail::Addable<F>
    int add(const ElementPtr<T> &ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
       return add<F>(ep.get(), offset);
+   }
+
+   /**
+    * @brief Read a 64 bit unsigned field of an owning element handle (L3) atomically, as get_atomic() on the handle
+    *        it owns
+    * @tparam F the field number, of the handle's type and of type Uint64
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @return the value
+    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && detail::AtomicReadable<F>
+   [[nodiscard]] std::uint64_t get_atomic(const ElementPtr<T> &ep) {
+      return get_atomic<F>(ep.get());
+   }
+
+   /**
+    * @brief Write a 64 bit unsigned field of an owning element handle (L3) atomically, as set_atomic() on the
+    *        handle it owns
+    * @tparam F the field number, of the handle's type, of type Uint64, neither hashed nor unique
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @param value the value to store
+    * @return 0 on success, -1 with LEELEMNULL for an empty handle
+    * @throw FieldException with reason AbsentField if the element does not hold the field
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && detail::AtomicWritable<F>
+   int set_atomic(const ElementPtr<T> &ep, const std::uint64_t value) {
+      return set_atomic<F>(ep.get(), value);
    }
 
 } // namespace ocs::tom

@@ -37,5 +37,5 @@
  */
 bool wrong_use(const lListElem *ep) {
    // the bit mask functions work on 32 bit fields only
-   return ocs::tom::has_bits<TEST_uint64>(ep, 1);
+   return ocs::tom::has_any_bits<TEST_uint64>(ep, 1);
 }

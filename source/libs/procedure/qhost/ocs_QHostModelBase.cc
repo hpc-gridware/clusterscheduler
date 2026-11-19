@@ -285,7 +285,7 @@ ocs::tom::Where<ocs::tom::JB> ocs::QHostModelBase::get_job_where(const ocs::tom:
    }
 
    if (!(show & QSTAT_DISPLAY_PENDING)) {
-      where &= ocs::tom::field<JB_ja_tasks>().any(!ocs::tom::field<JAT_state>().has_bits(JQUEUED));
+      where &= ocs::tom::field<JB_ja_tasks>().any(!ocs::tom::field<JAT_state>().has_all_bits(JQUEUED));
    }
 
    DRETURN(where);

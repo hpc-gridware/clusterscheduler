@@ -3509,7 +3509,7 @@ int lGetPosName(const lDescr *dp, int pos) {
  * @return true when at least one bit of @p bitmask is set in the field. A field
  *         of another type is a programming error and aborts the process
  *         (#incompatibleType2).
- * @see Free form: ocs::tom::has_bits<F>(ep, mask), for a constant field (CS-3045).
+ * @see Free form: ocs::tom::has_any_bits<F>(ep, mask), for a constant field (CS-3045).
  */
 bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);

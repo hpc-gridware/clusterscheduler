@@ -288,7 +288,8 @@ namespace ocs::tom {
          /**
           * @brief The first match
           * @return the iterator
-          * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18)
+          * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18),
+          *        AbsentField if the list is reduced and its elements lack the key field
           */
          [[nodiscard]] iterator begin() const {
             return iterator(lp_, key_);
@@ -532,7 +533,8 @@ namespace ocs::tom {
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key
        * @return the element, or an empty handle if no element holds the key
-       * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18)
+       * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18),
+       *        AbsentField if the list is reduced and its elements lack the key field
        */
       template <auto F>
          requires FieldOf<F, T> && detail::LookupField<F>
@@ -545,7 +547,8 @@ namespace ocs::tom {
        * @brief Every element with a key in a field, as lGetElemStrFirst() and lGetElemStrNext() and their variants walk them
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key; a string or host name must outlive the range
-       * @return the matches, as a range
+       * @return the matches, as a range; building it throws nothing, walking it throws as KeyRange::begin()
+       *         and the iterator's increment do (AbsentField, DuplicateKey)
        */
       template <auto F>
          requires FieldOf<F, T> && detail::LookupField<F>
@@ -656,11 +659,16 @@ namespace ocs::tom {
 
       /**
        * @brief Pack the list, as cull_pack_list() does; an empty handle packs a null list
+       *
+       * Does not compile for a type with an Int32 or Int64 field, which the pack format cannot carry (see
+       * PackableType); such a type packs with pack(pb, what) and a selection without it.
+       *
        * @param pb the buffer to append to
        * @throw PackException if the buffer cannot grow
        * @see Old form: cull_pack_list(); core: ocs::tom::pack_list()
        */
       void pack(sge_pack_buffer &pb) const {
+         static_assert(PackableType<T>, "the type holds an Int32 or Int64 field, which cannot be packed");
          pack_list(&pb, lp_, nullptr, 0);
       }
 
@@ -843,7 +851,8 @@ namespace ocs::tom {
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key
        * @return the element, or an empty handle if no element holds the key
-       * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18)
+       * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18),
+       *        AbsentField if the list is reduced and its elements lack the key field
        */
       template <auto F>
          requires FieldOf<F, T> && detail::LookupField<F>
@@ -856,7 +865,8 @@ namespace ocs::tom {
        * @brief Every element with a key in a field, as lGetElemStrFirst() and lGetElemStrNext() and their variants walk them
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key; a string or host name must outlive the range
-       * @return the matches, as a range
+       * @return the matches, as a range; building it throws nothing, walking it throws as KeyRange::begin()
+       *         and the iterator's increment do (AbsentField, DuplicateKey)
        */
       template <auto F>
          requires FieldOf<F, T> && detail::LookupField<F>
@@ -1153,6 +1163,8 @@ namespace ocs::tom {
        * For each element of this list whose key the other holds, the first
        * element with that key is removed from each list. Unlike lDiffListStr(),
        * a list left empty stays.
+       *
+       * An empty handle on either side removes nothing and throws nothing, as lDiffListStr() with a null list.
        *
        * @tparam F a string field of this type
        * @param other the other list; an empty handle removes nothing
@@ -1521,12 +1533,15 @@ namespace ocs::tom {
        * @param what the selection of fields
        * @param hashing whether the list keeps hash tables for its hashed fields
        * @return the owning handle
-       * @throw FieldException with reason NullDescriptor if @p what is empty or selects no field of the type,
-       *        where lReduceDescr() gave no descriptor
+       * @throw FieldException with reason NullElement if @p what is empty (see ocs_Select.h), NullDescriptor if
+       *        it selects no field of the type, where lReduceDescr() gave no descriptor
        * @throw ocs::RuntimeException if there is no memory
        * @see Old form: lReduceDescr() and lCreateList(); core: ocs::tom::reduced_descr()
        */
       [[nodiscard]] static ListPtr create(const char *name, const What<T> &what, const Hashing hashing = Hashing::On) {
+         if (!what) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::NullElement, NoName, T::descriptor.e);
+         }
          const lDescr *descr = reduced_descr(T::descriptor.e, what.get());
          if (descr == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::NullDescriptor, NoName, T::descriptor.e);

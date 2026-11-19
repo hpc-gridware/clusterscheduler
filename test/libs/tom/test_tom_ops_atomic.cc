@@ -27,7 +27,9 @@
  * scenarios compare the typed form with the old one, check the empty handle,
  * and let writers race a reader to show that no torn value is ever seen. A
  * field declared hashed does not compile with set_atomic<F>(), see
- * compile_fail/set_atomic_on_hashed_field.cc.
+ * compile_fail/set_atomic_on_hashed_field.cc, nor does a 32 bit field with
+ * get_atomic<F>() (get_atomic_on_32_bit_field.cc) or a constant handle with
+ * set_atomic<F>() (set_atomic_on_const.cc).
  */
 
 #include <atomic>
@@ -130,6 +132,57 @@ namespace {
       CHECK(7, "no read sees half of one value and half of the other", torn == 0);
    }
 
+   /**
+    * @brief Call a function and give the reason of the FieldException it throws
+    * @tparam Fn the function's type
+    * @param fn the function
+    * @return the reason, or NullList when nothing was thrown (no atomic accessor throws NullList)
+    */
+   template <typename Fn>
+   FieldException::Reason reason_of(Fn &&fn) {
+      try {
+         fn();
+      } catch (const FieldException &e) {
+         return e.reason();
+      }
+      return FieldException::Reason::NullList;
+   }
+
+   /**
+    * @brief A reduced element without the field: both accessors throw AbsentField
+    *
+    * The empty handle differs (set_atomic gives -1, get_atomic throws NullElement, OPS-ATOM-02); a reduced
+    * element is a programming error for both.
+    */
+   void test_absent_field() {
+      // a layout without HM_last_used
+      auto entry = ElementPtr<HM>::create(ocs::tom::layout<HM_name>());
+      CHECK(8, "get_atomic on a reduced element without the field throws AbsentField",
+            reason_of([&] { static_cast<void>(ocs::tom::get_atomic<HM_last_used>(entry.get())); }) ==
+               FieldException::Reason::AbsentField);
+      CHECK(9, "set_atomic on a reduced element throws AbsentField rather than returning -1",
+            reason_of([&] { ocs::tom::set_atomic<HM_last_used>(entry.get(), 1); }) ==
+               FieldException::Reason::AbsentField);
+      CHECK(10, "the reduced element still holds its name field",
+            entry->has<HM_name>() && !entry->has<HM_last_used>());
+   }
+
+   /**
+    * @brief The owning handle takes the atomic accessors as get, set and add do (L3)
+    */
+   void test_owning_handle() {
+      auto entry = ElementPtr<HM>::create();
+      CHECK(11, "set_atomic on an owning handle stores what get_atomic on it reads",
+            ocs::tom::set_atomic<HM_last_used>(entry, Pattern_b) == 0 &&
+            ocs::tom::get_atomic<HM_last_used>(entry) == Pattern_b &&
+            ocs::tom::get<HM_last_used>(entry) == Pattern_b);
+      ElementPtr<HM> empty;
+      CHECK(12, "on an empty owning handle set_atomic gives -1 and get_atomic throws NullElement",
+            ocs::tom::set_atomic<HM_last_used>(empty, 1) == -1 &&
+            reason_of([&] { static_cast<void>(ocs::tom::get_atomic<HM_last_used>(empty)); }) ==
+               FieldException::Reason::NullElement);
+   }
+
 } // namespace
 
 /**
@@ -150,5 +203,12 @@ int main(int argc, char *argv[]) {
       {"OPS-ATOM-03", "no torn value", "a value written with set_atomic<F>() is never read half old, half new",
        {"two threads store two values whose halves differ, a third reads 200 000 times"}, "no torn read", {}, {7},
        test_no_torn_value},
+      {"OPS-ATOM-04", "reduced element", "get_atomic<F>() and set_atomic<F>() on an element without the field",
+       {"create an element with a layout that lacks the field, read and write the field atomically"},
+       "AbsentField from both accessors; the element keeps its other field", {}, {8, 9, 10}, test_absent_field},
+      {"OPS-ATOM-05", "owning handle", "get_atomic<F>() and set_atomic<F>() on an ElementPtr (L3)",
+       {"write and read through an owning handle, then through an empty one"},
+       "the value round trips; -1 from the setter and NullElement from the getter on the empty one", {}, {11, 12},
+       test_owning_handle},
    });
 }

@@ -634,7 +634,7 @@ void test_small() {
    //          lGetStringNotNull(ep, TEST_string), lMatchUlongBitMask / lOrUlongBitMask / lAndUlongBitMask /
    //          lClearUlongBitMask(task, JAT_status, mask)
    // free:    get_or_create<JB_env_list>(job, "env"), list_ref<JB_env_list>(job), get_or_empty<TEST_string>(ep),
-   //          has_bits / or_bits / and_bits / clear_bits<JAT_status>(task, mask)
+   //          has_any_bits / or_bits / and_bits / clear_bits<JAT_status>(task, mask)
    // differs: the descriptor of a created list comes from the field
    const auto run = [](auto create, auto ref, auto not_null, auto match, auto set_or, auto set_and, auto clear) {
       std::vector<std::string> seen;
@@ -679,7 +679,7 @@ void test_small() {
       run([](lListElem *ep) { return ocs::tom::get_or_create<JB_env_list>(ep, "env"); },
           [](const lListElem *ep) { return ocs::tom::list_ref<JB_env_list>(ep); },
           [](const lListElem *ep) { return ocs::tom::get_or_empty<TEST_string>(ep); },
-          [](lListElem *ep, std::uint32_t m) { return ocs::tom::has_bits<JAT_status>(ep, m); },
+          [](lListElem *ep, std::uint32_t m) { return ocs::tom::has_any_bits<JAT_status>(ep, m); },
           [](lListElem *ep, std::uint32_t m) { return ocs::tom::or_bits<JAT_status>(ep, m); },
           [](lListElem *ep, std::uint32_t m) { return ocs::tom::and_bits<JAT_status>(ep, m); },
           [](lListElem *ep, std::uint32_t m) { return ocs::tom::clear_bits<JAT_status>(ep, m); });
@@ -713,7 +713,7 @@ void test_aborts() {
    std::vector<int> free_seen{
       in_child([&] { return ocs::tom::exchange<JB_env_list>(rjob, &other); }),
       in_child([] { return ocs::tom::list_ref<JB_env_list>(nullptr) != nullptr ? 1 : 0; }),
-      in_child([] { return ocs::tom::has_bits<JAT_status>(nullptr, 1) ? 1 : 0; }),
+      in_child([] { return ocs::tom::has_any_bits<JAT_status>(nullptr, 1) ? 1 : 0; }),
       in_child([&] { return ocs::tom::get_or_create<JB_env_list>(rjob, "env") != nullptr ? 1 : 0; })};
    lFreeList(&reduced);
    lFreeList(&jobs);
@@ -974,7 +974,7 @@ void test_handle_forms() {
           lGetList(other, JB_env_list) == before;
    lFreeElem(&other);
    const auto task = ocs::tom::Element<ocs::tom::JAT>::from_typed(lFirstRW(lGetList(job, JB_ja_tasks)));
-   same = same && ocs::tom::set<JAT_status>(task, 0x5) == 0 && ocs::tom::has_bits<JAT_status>(task, 0x4) &&
+   same = same && ocs::tom::set<JAT_status>(task, 0x5) == 0 && ocs::tom::has_any_bits<JAT_status>(task, 0x4) &&
           ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 &&
           ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::get<JAT_status>(task) == 0x4;
    CHECK(26, "the free forms on an element handle give what they give on the raw pointer", same);
@@ -1036,7 +1036,7 @@ void test_owning() {
    same = same && ocs::tom::exchange<JB_owner>(job, &owner) == 0 && owner == nullptr &&
           std::string(ocs::tom::get_or_empty<JB_owner>(job)) == "me";
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
-   same = same && ocs::tom::set<JAT_status>(task, 0x5) == 0 && ocs::tom::has_bits<JAT_status>(task, 0x4) &&
+   same = same && ocs::tom::set<JAT_status>(task, 0x5) == 0 && ocs::tom::has_any_bits<JAT_status>(task, 0x4) &&
           ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 &&
           ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::get<JAT_status>(task) == 0x4;
    CHECK(29, "the free forms on an owning element handle give what they give on the handle it owns", same);
@@ -1191,6 +1191,138 @@ test_keyed_merge() {
    const bool src_kept = values_of(src) == "20,30,31,40,41";
    CHECK(37, "merge_by_key sets the value of a known key and appends a copy of a new one, the source stays",
          values_of(dst) == "1,20,31,41" && src_kept);
+}
+
+/**
+ * @brief Build a mail recipient list from user/host pairs
+ * @param pairs the pairs, a nullptr host for a recipient without a host
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::MR>
+make_mails(std::initializer_list<std::pair<const char *, const char *>> pairs) {
+   auto mails = ocs::tom::ListPtr<ocs::tom::MR>::create("mails");
+   for (const auto &[user, host] : pairs) {
+      auto mail = ocs::tom::ElementPtr<ocs::tom::MR>::create();
+      ocs::tom::set<MR_user>(mail, user);
+      ocs::tom::set<MR_host>(mail, ocs::tom::Host{host});
+      mails->push_back(std::move(mail));
+   }
+   return mails;
+}
+
+/**
+ * @brief The users of a mail recipient list, in order, joined by ','
+ * @param mails the list
+ * @return the users
+ */
+static std::string
+users_of(const ocs::tom::ConstList<ocs::tom::MR> mails) {
+   std::string out;
+   for (const auto mail : mails) {
+      out += out.empty() ? "" : ",";
+      const char *user = ocs::tom::get<MR_user>(mail);
+      out += user != nullptr ? user : "-";
+   }
+   return out;
+}
+
+/**
+ * @brief OPS-FREE-19: host keys compare as host names in keep_last and merge_by_key
+ *
+ * find_first() and modify_sublist() compare host names with sge_hostcmp() (case-insensitive); keep_last and
+ * merge_by_key do the same since the TOM completion, where cull_compress_definition_list() and
+ * cull_merge_definition_list() compared them with strcmp().
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_host_keys() {
+   // "HostA" and "hosta" name one host: the later wins; two nullptr hosts are never a repetition
+   auto mails = make_mails({{"a", "HostA"}, {"b", "hosta"}, {"c", "HostB"}, {"d", nullptr}, {"e", nullptr}});
+   ocs::tom::keep_last<MR_host>(*mails);
+   CHECK(44, "keep_last on a host key keeps one element per host name, compared as find_first compares it",
+         users_of(mails) == "b,c,d,e");
+
+   // a host known under another case takes the new value; two nullptr hosts are the same key
+   auto dst = make_mails({{"a", "HostA"}, {"n", nullptr}});
+   const auto src = make_mails({{"b", "HOSTA"}, {"c", "hostc"}, {"m", nullptr}});
+   ocs::tom::merge_by_key<MR_host, MR_user>(*dst, src);
+   CHECK(45, "merge_by_key on a host key finds a host name in another case, appends a new one",
+         users_of(dst) == "b,m,c" && dst->find_first<MR_host>(ocs::tom::Host{"hosta"}).raw() == dst->front().raw());
+}
+
+/**
+ * @brief OPS-FREE-20: the contracts settled by the TOM completion: copy_if_present into an empty destination,
+ *        Element::set of an element bound elsewhere
+ * @return nothing; CHECK records the results
+ */
+static void
+test_completed_contracts() {
+   auto src = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   ocs::tom::set<JB_job_number>(src, 4711);
+   const bool empty_dst = !ocs::tom::copy_if_present<JB_job_number>(ocs::tom::Element<ocs::tom::JB>(), *src);
+   CHECK(46, "copy_if_present into an empty destination returns false, though the source holds the field",
+         empty_dst && ocs::tom::get<JB_job_number>(src) == 4711);
+
+   // the member setter refuses an element bound to another object with BoundElement; the element stays there
+   auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+   auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+   auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
+   lListElem *const pe_raw = pe.get().raw();
+   other_task->set<JAT_pe_object>(std::move(pe));
+   auto rebound = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(pe_raw);
+   bool bound_refused = false;
+   try {
+      task->set<JAT_pe_object>(std::move(rebound));
+   } catch (const ocs::tom::FieldException &e) {
+      bound_refused = e.reason() == ocs::tom::FieldException::Reason::BoundElement;
+   }
+   CHECK(47, "Element::set of an element bound elsewhere throws BoundElement and leaves it where it is bound",
+         bound_refused && rebound == nullptr && other_task->get<JAT_pe_object>().raw() == pe_raw &&
+            task->get<JAT_pe_object>().raw() == nullptr);
+}
+
+/**
+ * @brief OPS-FREE-21: take<F>() moves the element out of an object field, as lDechainObject() does
+ * @return nothing; CHECK records the results
+ */
+static void
+test_take_object() {
+   auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+   auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
+   ocs::tom::set<PE_name>(pe, "make");
+   lListElem *const pe_raw = pe.get().raw();
+   task->set<JAT_pe_object>(std::move(pe));
+
+   // old:   lDechainObject(task, JAT_pe_object); typed: task->take<JAT_pe_object>()
+   auto taken = task->take<JAT_pe_object>();
+   CHECK(48, "take gives the element the object field held, not a copy, and leaves the field empty",
+         taken.get().raw() == pe_raw && task->get<JAT_pe_object>().raw() == nullptr &&
+            std::strcmp(ocs::tom::get<PE_name>(taken), "make") == 0);
+
+   // the element taken is free: another object takes it over; an empty field gives an empty handle
+   auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+   other_task->set<JAT_pe_object>(std::move(taken));
+   const auto nothing = task->take<JAT_pe_object>();
+   CHECK(49, "the element taken can be stored in another object; take on an empty field gives an empty handle",
+         other_task->get<JAT_pe_object>().raw() == pe_raw && taken == nullptr && nothing == nullptr);
+
+   // a reduced element without the field and an empty handle throw, as get and set do
+   auto reduced = ocs::tom::ElementPtr<ocs::tom::JAT>::create(ocs::tom::layout<JAT_task_number>());
+   bool absent = false;
+   try {
+      static_cast<void>(reduced->take<JAT_pe_object>());
+   } catch (const ocs::tom::FieldException &e) {
+      absent = e.reason() == ocs::tom::FieldException::Reason::AbsentField;
+   }
+   bool empty = false;
+   try {
+      static_cast<void>(ocs::tom::Element<ocs::tom::JAT>().take<JAT_pe_object>());
+   } catch (const ocs::tom::FieldException &e) {
+      empty = e.reason() == ocs::tom::FieldException::Reason::EmptyHandle;
+   }
+   CHECK(50, "take on a reduced element without the field throws AbsentField, on an empty handle EmptyHandle",
+         absent && empty);
 }
 
 /**
@@ -1425,5 +1557,18 @@ int main(int argc, char *argv[]) {
         "a key held twice, a missing key and a request without the list field"},
        "the same lists, results and events in the same order; the request's sub-list consumed",
        {{"OPS-02", "covers"}}, {38, 39, 40, 41, 42, 43}, test_modify_sublist},
+      {"OPS-FREE-19", "host keys", "keep_last<Key> and merge_by_key<Key, Value> compare host keys as host names",
+       {"a mail recipient list with one host in two cases and recipients without a host, compressed and merged"},
+       "one element per host name; a host in another case takes the new value", {{"OPS-02", "covers"}}, {44, 45},
+       test_host_keys},
+      {"OPS-FREE-20", "contracts", "copy_if_present<F> into an empty destination, Element::set of a bound element",
+       {"copy into an empty handle", "store an element bound to another object through the member setter"},
+       "false from copy_if_present; BoundElement, the element stays bound", {{"OPS-02", "covers"}}, {46, 47},
+       test_completed_contracts},
+      {"OPS-FREE-21", "take object", "take<F>() moves the element out of an object field, as lDechainObject",
+       {"take a sub-object and store it in another object", "take from an empty field, a reduced element and "
+        "an empty handle"},
+       "the same element, the field empty; an empty handle for an empty field; AbsentField and EmptyHandle",
+       {{"OPS-02", "covers"}}, {48, 49, 50}, test_take_object},
    });
 }
