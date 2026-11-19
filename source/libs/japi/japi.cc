@@ -4455,6 +4455,8 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    } else {
       DPRINTF("... unregistered.\n");
    }
+   // a later drmaa_init() in the same process (recoverable session) creates a new event client
+   sge_evc_class_destroy(&evc);
 
    JAPI_LOCK_EC_STATE();
    /* We have to check here whether the event client ever got the first job list
@@ -4482,6 +4484,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    DRETURN(nullptr);
 
 SetupFailed:
+   sge_evc_class_destroy(&evc);
    JAPI_LOCK_EC_STATE();
    japi_ec_state = JAPI_EC_FAILED;
    pthread_cond_signal(&japi_ec_state_starting_cv);
