@@ -633,7 +633,8 @@ object_append_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::t
  * @param nm the attribute to change
  * @param value the new value
  *
- * @return true on success, false, on error, error description in answer_list
+ * @return true on success, false on error; most errors are described in
+ *         answer_list, an unknown relational operator (CE_relop) is not
  *
  * @note Sublists, subobjects and references cannot be set with this
  *       function.
@@ -677,13 +678,13 @@ object_parse_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN
          break;
       case CE_relop: {
          uint32_t op = 0;
-         int i;
 
-         for (i = static_cast<uint32_t>(ocs::CEntry::Type::FIRST);
-              !op && i <= static_cast<int>(ocs::CEntry::Type::DOUBLE);
-              i++) {
-            if (!strcasecmp(value, map_op2str(i)))
+         // CS-3169: walk the operators, not the value types - map_op2str() returns "??" for
+         // out-of-range values, which made "??" a valid relop
+         for (uint32_t i = CMPLXEQ_OP; op == 0 && i <= CMPLXEXCL_OP; i++) {
+            if (strcasecmp(value, map_op2str(i)) == 0) {
                op = i;
+            }
          }
 
          if (op == 0) {

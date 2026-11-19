@@ -41,8 +41,10 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_object_type.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pack.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
@@ -757,6 +759,47 @@ static void test_pack_type_roundtrip() {
 }
 
 // ---------------------------------------------------------------------------
+// object_parse_field_from_string — complex relational operator  [T75–T83]
+//
+// CS-3169: the relop is parsed from its text by walking the operators
+// CMPLXEQ_OP .. CMPLXEXCL_OP. The out-of-range text "??" of map_op2str() and
+// an unknown text must be rejected and must leave CE_relop unchanged.
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Check that object_parse_field_from_string() accepts exactly the valid complex relops
+ */
+static void test_object_parse_centry_relop() {
+   printf("\n--- object_parse_field_from_string (CE_relop) ---\n");
+   auto centry = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   char label[128];
+   int id = 75;
+
+   // T75–T81: every operator is parsed from its text and stored
+   for (uint32_t op = CMPLXEQ_OP; op <= CMPLXEXCL_OP; op++) {
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
+      const char *text = map_op2str(op);
+
+      ocs::tom::set<CE_relop>(centry, 0);
+      const bool parsed = object_parse_field_from_string(*centry, &alp, CE_relop, text);
+      snprintf(label, sizeof(label), "relop \"%s\" is accepted and stored as %u", text, op);
+      CHECK(id, label, parsed && ocs::tom::get<CE_relop>(centry) == op);
+      id++;
+   }
+
+   // T82–T83: "??" (map_op2str() of an out-of-range value) and an unknown text are rejected
+   for (const char *text : {"??", "="}) {
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
+
+      ocs::tom::set<CE_relop>(centry, CMPLXLE_OP);
+      const bool parsed = object_parse_field_from_string(*centry, &alp, CE_relop, text);
+      snprintf(label, sizeof(label), "invalid relop \"%s\" is rejected, CE_relop unchanged", text);
+      CHECK(id, label, !parsed && ocs::tom::get<CE_relop>(centry) == CMPLXLE_OP);
+      id++;
+   }
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_object");
@@ -789,6 +832,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_verify_name();
    test_spooled_job_of_shorter_type();
    test_pack_type_roundtrip();
+   test_object_parse_centry_relop();
 
    queue.reset();
    lFreeList(&st_list);
