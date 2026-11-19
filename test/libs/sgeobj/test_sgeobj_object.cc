@@ -25,6 +25,7 @@
 #include <arpa/inet.h>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -45,6 +46,11 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pack.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_ACELIST.h"
+#include "sgeobj/tom/ocs_tom_APRJLIST.h"
+#include "sgeobj/tom/ocs_tom_ASOLIST.h"
+#include "sgeobj/tom/ocs_tom_ASTRLIST.h"
+#include "sgeobj/tom/ocs_tom_AUSRLIST.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
@@ -797,6 +803,85 @@ static void test_object_parse_centry_relop() {
 }
 
 // ---------------------------------------------------------------------------
+// ocs_object_append_field / ocs_object_parse_field — attribute lists  [T75–T90]
+// ---------------------------------------------------------------------------
+// The generic round trip over the spooling records (test_spool_utilities) writes and reads a default element, so
+// it never sees the cluster queue attribute lists, whose text is parsed into a sub-list and written back from it.
+
+/**
+ * @brief Parse a text into the value field of a cluster queue attribute and write it back, twice
+ *
+ * The text written for `input` must be `expected`, and `expected` parsed again must be written as itself, so the
+ * written form is stable across a spool write and read.
+ *
+ * @tparam F the value field of the attribute type, e.g. ASTRLIST_value
+ * @param input the text an administrator writes
+ * @param expected the text the field is written as after parsing `input`
+ * @return true if both texts parse and both are written as `expected`
+ */
+template <auto F>
+static bool ocs_attr_value_round_trip(const char *input, const char *expected) {
+   using T = typename ocs::tom::FieldTraits<F>::Type;
+
+   bool ok = true;
+   const char *text = input;
+   for (int pass = 0; pass < 2 && ok; pass++) {
+      // a copy: the parser of a complex entry list splits its argument in place
+      std::string buffer{text};
+      auto attr = ocs::tom::ElementPtr<T>::create();
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
+      dstring written = DSTRING_INIT;
+
+      ok = ocs_object_parse_field<F>(attr.get(), &alp, buffer.data());
+      const char *result = ok ? ocs_object_append_field<F>(attr.get(), &written) : nullptr;
+      ok = result != nullptr && strcmp(result, expected) == 0;
+      if (!ok) {
+         printf("   %s: \"%s\" written as \"%s\", expected \"%s\"\n", lNm2Str(static_cast<int>(F)), text,
+                result != nullptr ? result : "<parse error>", expected);
+      }
+
+      sge_dstring_free(&written);
+      text = expected;
+   }
+   return ok;
+}
+
+/** @brief The attribute lists survive the typed parse and write: NONE, one entry, several entries [T75–T90] */
+static void test_attr_value_round_trip() {
+   printf("\n--- attribute lists: parse and write ---\n");
+
+   // string lists (e.g. pe_list): names separated by blanks or commas, written separated by blanks
+   CHECK(75, "ASTRLIST NONE", ocs_attr_value_round_trip<ASTRLIST_value>("NONE", "NONE"));
+   CHECK(76, "ASTRLIST one entry", ocs_attr_value_round_trip<ASTRLIST_value>("make", "make"));
+   CHECK(77, "ASTRLIST several entries", ocs_attr_value_round_trip<ASTRLIST_value>("make,mpi smp", "make mpi smp"));
+
+   // user set lists (user_lists, xuser_lists)
+   CHECK(78, "AUSRLIST NONE", ocs_attr_value_round_trip<AUSRLIST_value>("NONE", "NONE"));
+   CHECK(79, "AUSRLIST one entry", ocs_attr_value_round_trip<AUSRLIST_value>("arusers", "arusers"));
+   CHECK(80, "AUSRLIST several entries",
+         ocs_attr_value_round_trip<AUSRLIST_value>("arusers,deadlineusers staff", "arusers deadlineusers staff"));
+
+   // project lists (projects, xprojects)
+   CHECK(81, "APRJLIST NONE", ocs_attr_value_round_trip<APRJLIST_value>("NONE", "NONE"));
+   CHECK(82, "APRJLIST one entry", ocs_attr_value_round_trip<APRJLIST_value>("prj1", "prj1"));
+   CHECK(83, "APRJLIST several entries", ocs_attr_value_round_trip<APRJLIST_value>("prj1, prj2", "prj1 prj2"));
+
+   // complex entry lists (load_thresholds, complex_values): name=value pairs, written separated by commas
+   CHECK(84, "ACELIST NONE", ocs_attr_value_round_trip<ACELIST_value>("NONE", "NONE"));
+   CHECK(85, "ACELIST one entry", ocs_attr_value_round_trip<ACELIST_value>("np_load_avg=1.75", "np_load_avg=1.75"));
+   CHECK(86, "ACELIST several entries",
+         ocs_attr_value_round_trip<ACELIST_value>("h_vmem=1G, arch=lx-amd64", "h_vmem=1G,arch=lx-amd64"));
+
+   // subordinate lists: queue wise with thresholds, and slot wise
+   CHECK(87, "ASOLIST NONE", ocs_attr_value_round_trip<ASOLIST_value>("NONE", "NONE"));
+   CHECK(88, "ASOLIST one entry", ocs_attr_value_round_trip<ASOLIST_value>("A.q=3", "A.q=3"));
+   CHECK(89, "ASOLIST several entries, queue wise",
+         ocs_attr_value_round_trip<ASOLIST_value>("A.q=3,B.q=4", "A.q=3, B.q=4"));
+   CHECK(90, "ASOLIST several entries, slot wise",
+         ocs_attr_value_round_trip<ASOLIST_value>("slots=4(A.q:1:lr, B.q:2)", "slots=4(A.q:1:lr, B.q:2:sr)"));
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_object");
@@ -830,6 +915,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_spooled_job_of_shorter_type();
    test_pack_type_roundtrip();
    test_object_parse_centry_relop();
+   test_attr_value_round_trip();
 
    queue.reset();
    lFreeList(&st_list);

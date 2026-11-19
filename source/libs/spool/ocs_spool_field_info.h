@@ -250,11 +250,24 @@ consteval bool ocs_spool_is_number(const int nm) {
 }
 
 /**
+ * @brief Whether a string field is an RBAC permission rule list, written in JSON as an array of rule objects
+ *
+ * The stored value is a comma-separated list of rules of six colon-separated characteristics each
+ * (ocs::Role::parse_perm_list(), sge_role(5)); the JSON walkers split and join it.
+ *
+ * @param nm the field
+ * @return true for the permission list of a role
+ */
+consteval bool ocs_spool_is_perm_list(const int nm) {
+   return nm == RL_perm_list;
+}
+
+/**
  * @brief How the JSON walkers render a field
  *
- * The kinds are tested in the precedence the JSON writer has always had: date-time, bit field,
- * enumeration, by name, complex typed, number. A field rendered by name by the flatfile walkers that is
- * a bit field (QU_qtype, US_type, AQTLIST_value) therefore is a bit field in JSON, and the JSON kind
+ * The kinds are tested in the precedence the JSON writer and reader have always had: date-time, bit field,
+ * enumeration, permission list, by name, complex typed, number. A field rendered by name by the flatfile walkers
+ * that is a bit field (QU_qtype, US_type, AQTLIST_value) therefore is a bit field in JSON, and the JSON kind
  * #ocs_spool_render::by_name is left with the four CE fields.
  *
  * @param nm the field
@@ -269,6 +282,9 @@ consteval ocs_spool_render ocs_spool_json_render(const int nm) {
    }
    if (ocs_spool_enum_names(nm) != nullptr) {
       return ocs_spool_render::enumeration;
+   }
+   if (ocs_spool_is_perm_list(nm)) {
+      return ocs_spool_render::perm_list;
    }
    if (ocs_spool_is_by_name(nm)) {
       return ocs_spool_render::by_name;
@@ -316,7 +332,7 @@ consteval ocs_spool_field_ops ocs_spool_make_ops() {
                  Tr::type == FieldType::Uint32, "a bit field or an enumeration is a Uint32");
    static_assert((json != ocs_spool_render::avalue && json != ocs_spool_render::number) ||
                  Tr::type == FieldType::String, "a complex typed or numeric value is a String");
-   static_assert(static_cast<int>(F) != RL_perm_list || Tr::type == FieldType::String,
+   static_assert(json != ocs_spool_render::perm_list || Tr::type == FieldType::String,
                  "the JSON walkers read the permission list as a String");
    static_assert(static_cast<std::uint32_t>(ocs_spool_avalue_type(F)) <= UINT8_MAX,
                  "the complex type of a value fits the record");

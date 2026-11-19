@@ -37,8 +37,11 @@
  * @brief The Berkeley DB operations behind the berkeleydb spooling backend
  */
 
+#include <utility>
+
 #include "cull/cull.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
@@ -81,6 +84,34 @@ spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_inf
                            const bdb_database database,
                            lList **list, const lDescr *descr,
                            const char *key);
+
+/**
+ * @brief Read every record whose key starts with a prefix, as objects of a type known at compile time
+ *
+ * The typed form of spool_berkeleydb_read_list() for the sub-objects the list reader fetches per parent (queue
+ * instances of a cluster queue, array tasks of a job, parallel tasks of an array task). Not a template of its own
+ * work: the records are read and unpacked by the type independent spool_berkeleydb_read_list(), with the
+ * descriptor of `T`.
+ *
+ * @tparam T the object type, e.g. ocs::tom::QU
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param database which database to read from
+ * @param key the key prefix
+ * @return whether reading succeeded, and the objects read - an empty handle if no record matched; a list built
+ *         before a read failed is returned as well, so that it is freed with the handle
+ */
+template <typename T>
+std::pair<bool, ocs::tom::ListPtr<T>>
+ocs_spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
+                               const bdb_database database, const char *key) {
+   // out-parameter of the type independent reader
+   lList *list = nullptr;
+   const bool ok = spool_berkeleydb_read_list(answer_list, info, database, &list, T::descriptor.e, key);
+   // every record is unpacked with the descriptor of T, so the list holds objects of T: taken without a check
+   return {ok, ocs::tom::ListPtr<T>::from_typed(list)};
+}
+
 bool 
 spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                               const bdb_database database,

@@ -142,7 +142,7 @@ typedef const char *
 
 /** @brief Build the spooling context for this backend from its argument string
  *
- * The counterpart of #spool_create_context for a concrete backend; `args` is
+ * The counterpart of #ocs_spool_create_context for a concrete backend; `args` is
  * the method specific URL or option string, e.g. the spool directory.
  */
 typedef lListElem *

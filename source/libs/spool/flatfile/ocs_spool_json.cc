@@ -501,7 +501,8 @@ spool_json_datetime_from_string(const char *s) {
  * @brief Write the scalar value of a field, dispatching on its typing.
  *
  * Routes on the JSON rendering kind of the field (#ocs_spool_field_ops::json) to the
- * date-time, bitfield, enum, symbolic, complex-typed, numeric, or plain scalar branch;
+ * date-time, bitfield, enum, symbolic, complex-typed, numeric, or plain scalar branch
+ * (a permission list takes the plain branch, as it always did here);
  * a field absent from the descriptor -> null. The value is read through the row's
  * typed code; the kinds are bound to the field types at compile time (date-time,
  * bitfield, enum are numbers, complex-typed and numeric are strings), so the member of
@@ -538,6 +539,7 @@ spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
       case ocs_spool_render::number:
          spool_json_write_number_value(writer, ops.get(ep).str);
          break;
+      case ocs_spool_render::perm_list:   // a permission list is not a positional value: written as before
       case ocs_spool_render::plain:
          spool_json_write_scalar_value(writer, ep, field);
          break;
@@ -773,17 +775,6 @@ static const char *const perm_rule_fields[] = {
 };
 
 /**
- * @brief Test whether a field is an RBAC permission rule list (rendered as objects).
- *
- * @param nm  CULL field id
- * @return true for the role perm_list field
- */
-static bool
-spool_json_nm_is_perm_list(int nm) {
-   return nm == RL_perm_list;
-}
-
-/**
  * @brief Write a perm_list value as a JSON array of structured rule objects.
  *
  * The stored value is a comma-separated list of rules, each rule six colon-separated
@@ -981,10 +972,10 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
          }
       } else {
          /* the JSON kinds of the field are bound to its type at compile time (date-time,
-            bitfield, enum are numbers, numeric is a string) and the perm list is a
-            string, so the member of the value a branch reads is the one the field's type
-            names; a complex-typed value (ocs_spool_render::avalue) is written as a plain
-            scalar here, as it always was */
+            bitfield, enum are numbers, numeric and the permission list are strings), so
+            the member of the value a branch reads is the one the field's type names; a
+            complex-typed value (ocs_spool_render::avalue) is written as a plain scalar
+            here, as it always was */
          writer.Key(name);
          const ocs_spool_field_ops &ops = *field.ops;
          if (ops.json == ocs_spool_render::datetime) {
@@ -993,7 +984,7 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
             spool_json_write_bitfield_array(writer, ops.get(object).u32, ops.names);
          } else if (ops.json == ocs_spool_render::enumeration) {
             spool_json_write_enum_value(writer, ops.get(object).u32, ops.names);
-         } else if (spool_json_nm_is_perm_list(nm)) {
+         } else if (ops.json == ocs_spool_render::perm_list) {
             spool_json_write_perm_list(writer, ops.get(object).str);
          } else if (ops.json == ocs_spool_render::by_name) {
             spool_json_write_symbolic_value(writer, object, ops);
@@ -1805,7 +1796,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
       } else if (field.ops->json == ocs_spool_render::enumeration) {
          /* symbolic enum token ("USER"/"PROJECT") or raw number -> enum value */
          spool_json_set_u32(ep, field, spool_json_enum_from_value(m->value, field.ops->names));
-      } else if (spool_json_nm_is_perm_list(nm)) {
+      } else if (field.ops->json == ocs_spool_render::perm_list) {
          /* array of rule objects -> comma/colon-joined perm_list string; a non-array
           * value is rejected rather than silently wiping the rule set to NONE */
          dstring s = DSTRING_INIT;

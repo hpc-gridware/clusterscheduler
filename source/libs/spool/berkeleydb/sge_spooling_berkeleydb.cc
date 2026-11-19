@@ -502,19 +502,15 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                   qinstance_table = object_type_get_name(SGE_TYPE_QINSTANCE);
                   // the database holds cluster queues (CQ_Type) under this key, so the list is taken without a check
                   for (const ocs::tom::Element<ocs::tom::CQ> queue : ocs::tom::List<ocs::tom::CQ>::from_typed(*list)) {
-                     // out-parameter of spool_berkeleydb_read_list()
-                     lList *qinstance_list = nullptr;
                      const char *qname = queue.get<CQ_name>();
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%s/",
                                                qinstance_table,
                                                qname);
-                     ret = spool_berkeleydb_read_list(answer_list, info,
-                                                      BDB_CONFIG_DB,
-                                                      &qinstance_list, QU_Type,
-                                                      key);
-                     // queue instances (QU_Type) under this key; a list left behind by a failed read is freed
-                     auto qinstances = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(qinstance_list);
+                     // queue instances under this key; a list left behind by a failed read is freed
+                     auto [read_ok, qinstances] =
+                        ocs_spool_berkeleydb_read_list<ocs::tom::QU>(answer_list, info, BDB_CONFIG_DB, key);
+                     ret = read_ok;
                      if (!ret) {
                         // stop at the first failure as the job loop does: a later success overwrote ret
                         // and qmaster started with a cluster queue missing its queue instances (CS-3121)
@@ -539,13 +535,12 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                   // the database holds jobs (JB_Type), array tasks (JAT_Type) and parallel tasks (PET_Type) under
                   // these keys, so the lists are taken without a check
                   for (const ocs::tom::Element<ocs::tom::JB> job : ocs::tom::List<ocs::tom::JB>::from_typed(*list)) {
-                     // out-parameter of spool_berkeleydb_read_list()
-                     lList *task_list_raw = nullptr;
                      const uint32_t job_id = job.get<JB_job_number>();
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".", ja_task_table, job_id);
-                     ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &task_list_raw, JAT_Type, key);
-                     auto task_list = ocs::tom::ListPtr<ocs::tom::JAT>::from_typed(task_list_raw);
+                     auto [read_ok, task_list] =
+                        ocs_spool_berkeleydb_read_list<ocs::tom::JAT>(answer_list, info, BDB_JOB_DB, key);
+                     ret = read_ok;
                      /* reading ja_tasks succeeded */
                      if (ret) {
                         /* we actually found ja_tasks for this job */
@@ -556,15 +551,13 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                            pe_task_table = object_type_get_name(SGE_TYPE_PETASK);
 
                            for (const ocs::tom::Element<ocs::tom::JAT> ja_task : job.get<JB_ja_tasks>()) {
-                              // out-parameter of spool_berkeleydb_read_list()
-                              lList *pe_task_list_raw = nullptr;
                               const uint32_t ja_task_id = ja_task.get<JAT_task_number>();
                               key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32 ".",
                                                         pe_task_table, job_id, ja_task_id);
 
-                              ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list_raw,
-                                                               PET_Type, key);
-                              auto pe_task_list = ocs::tom::ListPtr<ocs::tom::PET>::from_typed(pe_task_list_raw);
+                              auto [pe_read_ok, pe_task_list] =
+                                 ocs_spool_berkeleydb_read_list<ocs::tom::PET>(answer_list, info, BDB_JOB_DB, key);
+                              ret = pe_read_ok;
                               if (ret) {
                                  if (pe_task_list) {
                                     ja_task.set<JAT_task_list>(std::move(pe_task_list));

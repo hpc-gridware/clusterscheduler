@@ -124,7 +124,8 @@ enum class ocs_spool_render : std::uint8_t {
    bitfield,      ///< a bit field, an array of the names of the set bits in JSON (#ocs_spool_field_ops::names)
    enumeration,   ///< an enumeration, the name of the value in JSON (#ocs_spool_field_ops::names)
    avalue,        ///< a string holding a value of a complex type (#ocs_spool_field_ops::avalue_type)
-   number         ///< a string that holds a number, a native number in JSON
+   number,        ///< a string that holds a number, a native number in JSON
+   perm_list      ///< an RBAC permission rule list (a string), an array of rule objects in JSON
 };
 
 /**
