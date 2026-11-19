@@ -49,8 +49,10 @@ int cl_fd_list_cleanup(cl_raw_list_t **list_p) {
    }
 
    while (elem) {
+      // unregistering frees elem, so the next element has to be fetched before
+      cl_fd_list_elem_t *next_elem = cl_fd_list_get_next_elem(elem);
       cl_fd_list_unregister_fd(*list_p, elem, 1);
-      elem = cl_fd_list_get_next_elem(elem);
+      elem = next_elem;
    }
 
    return cl_raw_list_cleanup(list_p);

@@ -1052,6 +1052,27 @@ int cl_com_update_ssl_configuration(cl_ssl_setup_t *new_config) {
    return ret_val;
 }
 
+/**
+ * @brief Delete the TLS contexts of a commlib handle.
+ *
+ * Used by the error paths of cl_com_create_handle() and by cl_commlib_shutdown_handle().
+ * Contexts that were not created are nullptr and skipped.
+ *
+ * @param handle the handle whose contexts are deleted, the pointers are set to nullptr
+ */
+static void cl_com_free_ssl_contexts(cl_com_handle_t *handle) {
+#if defined(OCS_WITH_OPENSSL)
+   if (handle->ssl_server_context != nullptr) {
+      delete handle->ssl_server_context;
+      handle->ssl_server_context = nullptr;
+   }
+   if (handle->ssl_client_context != nullptr) {
+      delete handle->ssl_client_context;
+      handle->ssl_client_context = nullptr;
+   }
+#endif
+}
+
 cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                       cl_framework_t framework,
                                       cl_xml_connection_type_t data_flow_type,
@@ -1240,6 +1261,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
             new_handle->ssl_client_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error, false);
             if (new_handle->ssl_client_context == nullptr && cl_com_ssl_setup_config->needs_client_cert) {
                sge_free(&local_hostname);
+               cl_com_free_ssl_contexts(new_handle);
                sge_free(&new_handle);
                cl_raw_list_unlock(cl_com_handle_list);
                if (commlib_error) {
@@ -1272,6 +1294,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                                         0)) != CL_RETVAL_OK) {
       CL_LOG(CL_LOG_ERROR, "can't setup debug client structure");
       sge_free(&local_hostname);
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       cl_raw_list_unlock(cl_com_handle_list);
       if (commlib_error) {
@@ -1347,6 +1370,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 
    if (new_handle->max_open_connections < 32) {
       CL_LOG_INT(CL_LOG_ERROR, "too few file descriptors:", (int) new_handle->max_open_connections);
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1373,6 +1397,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 
    new_handle->statistic = (cl_com_handle_statistic_t *) sge_malloc(sizeof(cl_com_handle_statistic_t));
    if (new_handle->statistic == nullptr) {
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1394,6 +1419,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    new_handle->messages_ready_mutex = (pthread_mutex_t *) sge_malloc(sizeof(pthread_mutex_t));
    if (new_handle->messages_ready_mutex == nullptr) {
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1408,6 +1434,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    if (new_handle->connection_list_mutex == nullptr) {
       sge_free(&(new_handle->messages_ready_mutex));
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1426,6 +1453,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
       }
       sge_free(&(new_handle->connection_list_mutex));
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1447,6 +1475,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          sge_free(&(new_handle->messages_ready_mutex));
       }
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1469,6 +1498,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          sge_free(&(new_handle->messages_ready_mutex));
       }
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1494,6 +1524,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          sge_free(&(new_handle->messages_ready_mutex));
       }
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1518,6 +1549,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          sge_free(&(new_handle->messages_ready_mutex));
       }
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1544,6 +1576,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          sge_free(&(new_handle->messages_ready_mutex));
       }
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1571,6 +1604,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          sge_free(&(new_handle->messages_ready_mutex));
       }
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       sge_free(&local_hostname);
       cl_raw_list_unlock(cl_com_handle_list);
@@ -1608,6 +1642,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
             sge_free(&(new_handle->messages_ready_mutex));
          }
          cl_com_free_handle_statistic(&(new_handle->statistic));
+         cl_com_free_ssl_contexts(new_handle);
          sge_free(&new_handle);
          cl_raw_list_unlock(cl_com_handle_list);
          if (commlib_error) {
@@ -1646,6 +1681,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 
          cl_com_free_ssl_setup(&(new_handle->ssl_setup));
 
+         cl_com_free_ssl_contexts(new_handle);
          sge_free(&new_handle);
          cl_raw_list_unlock(cl_com_handle_list);
          if (commlib_error) {
@@ -1829,6 +1865,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          sge_free(&(new_handle->messages_ready_mutex));
       }
       cl_com_free_handle_statistic(&(new_handle->statistic));
+      cl_com_free_ssl_contexts(new_handle);
       sge_free(&new_handle);
       cl_raw_list_unlock(cl_com_handle_list);
       if (commlib_error) {
@@ -2233,16 +2270,7 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
 
       cl_com_free_ssl_setup(&(handle->ssl_setup));
 
-#if defined(OCS_WITH_OPENSSL)
-      if (handle->ssl_server_context != nullptr) {
-         delete handle->ssl_server_context;
-         handle->ssl_server_context = nullptr;
-      }
-      if (handle->ssl_client_context != nullptr) {
-         delete handle->ssl_client_context;
-         handle->ssl_client_context = nullptr;
-      }
-#endif
+      cl_com_free_ssl_contexts(handle);
 
       cl_fd_list_cleanup(&(handle->file_descriptor_list));
 
