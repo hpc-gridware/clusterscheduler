@@ -59,21 +59,6 @@
 #define QINSTANCE_TYPE_LAYER TOP_LAYER
 
 /**
- * @brief The queue type names, in the order of the `QU_qtype` bits
- *
- * The position in this array is the bit position, so `sge_parse_bitfield_str`
- * can turn `qtype` back into the stored bit field. `PARALLEL` and
- * `CHECKPOINTING` are deliberately absent: they are not stored bits but
- * derived from whether the queue references a PE or a checkpointing
- * environment - see #qinstance_is_parallel_queue.
- */
-const char *queue_types[] = {
-   "BATCH",
-   "INTERACTIVE",
-   nullptr
-};
-
-/**
  * @brief Is a type bit of a queue instance set?
  *
  * On the scheduler's hot path; it has no trace frame, as before.
@@ -114,7 +99,7 @@ qtype_append_to_dstring(uint32_t qtype, dstring *string) {
    const char *ret = nullptr;
 
    if (string != nullptr) {
-      const char **ptr = nullptr;
+      const char *const *ptr = nullptr;
       uint32_t bitmask = 1;
       bool qtype_defined = false;
 
@@ -137,11 +122,52 @@ qtype_append_to_dstring(uint32_t qtype, dstring *string) {
 }
 
 /**
+ * @brief Render queue type bits as the queue instance's own type field is written
+ *
+ * Each name of a set bit is followed by a blank, so the text of a queue with
+ * types ends with a blank; without a bit `NONE` is appended. This is the long
+ * form of qinstance_print_qtype_to_dstring() and the spooled form of
+ * `QU_qtype`; the cluster queue attribute (`AQTLIST_value`) is written without
+ * the trailing blank by qtype_append_to_dstring().
+ *
+ * @param qtype the bit field
+ * @param[out] string receives the text, appended
+ * @return the resulting text, nullptr if @p string is nullptr
+ *
+ * @note MT-NOTE: ocs_qinstance_qtype_append_to_dstring() is MT safe
+ */
+const char *
+ocs_qinstance_qtype_append_to_dstring(const uint32_t qtype, dstring *string) {
+   DENTER(QINSTANCE_TYPE_LAYER);
+
+   const char *ret = nullptr;
+
+   if (string != nullptr) {
+      uint32_t bitmask = 1;
+      bool qtype_defined = false;
+
+      for (const char *const *ptr = queue_types; *ptr != nullptr; ptr++) {
+         if (bitmask & qtype) {
+            qtype_defined = true;
+            sge_dstring_sprintf_append(string, "%s ", *ptr);
+         }
+         bitmask <<= 1;
+      }
+      if (!qtype_defined) {
+         sge_dstring_append(string, "NONE");
+      }
+      ret = sge_dstring_get_string(string);
+   }
+   DRETURN(ret);
+}
+
+/**
  * @brief Render a queue's type as qstat prints it
  *
  * The abbreviated form additionally shows `P` for a parallel queue and `C` for
  * a checkpointing one, which the long form does not - those two are derived
- * from references, not from the stored bits.
+ * from references, not from the stored bits. The long form is
+ * ocs_qinstance_qtype_append_to_dstring() of the queue's bits.
  *
  * @param this_elem the queue instance to read, may be an empty handle
  * @param[out] string receives the text, appended
@@ -155,22 +181,19 @@ bool qinstance_print_qtype_to_dstring(const ocs::tom::ConstElement<ocs::tom::QU>
    bool ret = true;
 
    if (this_elem && string != nullptr) {
-      const char **ptr = nullptr;
-      uint32_t bitmask = 1;
-      bool qtype_defined = false;
+      if (!only_first_char) {
+         ocs_qinstance_qtype_append_to_dstring(this_elem.get<QU_qtype>(), string);
+      } else {
+         uint32_t bitmask = 1;
+         bool qtype_defined = false;
 
-      for (ptr = queue_types; *ptr != nullptr; ptr++) {
-         if (bitmask & this_elem.get<QU_qtype>()) {
-            qtype_defined = true;
-            if (only_first_char) {
+         for (const char *const *ptr = queue_types; *ptr != nullptr; ptr++) {
+            if (bitmask & this_elem.get<QU_qtype>()) {
+               qtype_defined = true;
                sge_dstring_sprintf_append(string, "%c", (*ptr)[0]);
-            } else {
-               sge_dstring_sprintf_append(string, "%s ", *ptr);
             }
+            bitmask <<= 1;
          }
-         bitmask <<= 1;
-      };
-      if (only_first_char) {
          if (qinstance_is_parallel_queue(this_elem)) {
             sge_dstring_sprintf_append(string, "%c", 'P');
             qtype_defined = true;
@@ -179,12 +202,8 @@ bool qinstance_print_qtype_to_dstring(const ocs::tom::ConstElement<ocs::tom::QU>
             sge_dstring_sprintf_append(string, "%c", 'C');
             qtype_defined = true;
          }
-      }
-      if (!qtype_defined) {
-         if (only_first_char) {
+         if (!qtype_defined) {
             sge_dstring_append(string, "N");
-         } else {
-            sge_dstring_append(string, "NONE");
          }
       }
    }
@@ -193,32 +212,31 @@ bool qinstance_print_qtype_to_dstring(const ocs::tom::ConstElement<ocs::tom::QU>
 
 
 /**
- * @brief Parse a queue type list and store it in the queue
+ * @brief Parse a queue type list as the queue instance's own type field takes it
  *
- * An empty or missing value clears the type, it is not an error.
+ * An empty or missing value is no type, it is not an error. The bit parser
+ * reports nothing (it gets no answer list); a value with a bad name yields
+ * false and the bits understood before that name, which are stored all the
+ * same.
  *
- * @param[in,out] this_elem the queue instance to change, may be an empty handle
- * @param[out] answer_list receives the message naming the bad type
- * @param value the type names, as an administrator wrote them
- * @return true when the value was understood
+ * @param value the type names, as an administrator wrote them, or nullptr
+ * @return whether the value was understood, and the bits to store in either case
+ *
+ * @note MT-NOTE: ocs_qinstance_qtype_parse() is not MT safe, as sge_parse_bitfield_str() is not
  */
-bool qinstance_parse_qtype_from_string(const ocs::tom::Element<ocs::tom::QU> this_elem,
-                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
+std::pair<bool, uint32_t>
+ocs_qinstance_qtype_parse(const char *value) {
    DENTER(QINSTANCE_TYPE_LAYER);
 
    bool ret = true;
    uint32_t type = 0;
 
-   SGE_CHECK_POINTER_FALSE(this_elem, answer_list);
    if (value != nullptr && *value != 0) {
-      if (!sge_parse_bitfield_str(value, queue_types, &type,
-                                  "queue type", nullptr, true)) {
+      if (!sge_parse_bitfield_str(value, queue_types, &type, "queue type", nullptr, true)) {
          ret = false;
       }
    }
-
-   this_elem.set<QU_qtype>(type);
-   DRETURN(ret);
+   DRETURN(std::make_pair(ret, type));
 }
 
 

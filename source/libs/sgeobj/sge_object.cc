@@ -45,6 +45,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -77,6 +78,18 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_ACELIST.h"
+#include "sgeobj/tom/ocs_tom_ABOOL.h"
+#include "sgeobj/tom/ocs_tom_AINTER.h"
+#include "sgeobj/tom/ocs_tom_AMEM.h"
+#include "sgeobj/tom/ocs_tom_APRJLIST.h"
+#include "sgeobj/tom/ocs_tom_AQTLIST.h"
+#include "sgeobj/tom/ocs_tom_ASOLIST.h"
+#include "sgeobj/tom/ocs_tom_ASTR.h"
+#include "sgeobj/tom/ocs_tom_ASTRLIST.h"
+#include "sgeobj/tom/ocs_tom_ATIME.h"
+#include "sgeobj/tom/ocs_tom_AULNG.h"
+#include "sgeobj/tom/ocs_tom_AUSRLIST.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
@@ -85,7 +98,11 @@
 #include "sgeobj/tom/ocs_tom_PETR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "msg_common.h"
 
@@ -97,185 +114,931 @@ static constexpr const auto &object_base = ocs_object_descriptions;
 
 
 
-/**
- * @brief Object field to string
- *
- * Returns a string representation of a given object attribute.
- * If errors arrise they are returned in the given answer_list.
- * Data will be created in the given dynamic string buffer.
- * For some fields a special handling is implemented, e.g. mapping
- * bitfields to string lists.
- *
- * @param object object to use
- * @param answer_list used to return error messages
- * @param buffer buffer used to format the result
- * @param nm attribute to output
- * @param string_quotes character to be used for string quoting '\0' means no quoting
- *
- * @return string representation of the attribute value (pointer to the string in the dynamic string buffer, or nullptr if an error occurred.
- *
- * @note For sublists, subobjects and references nullptr is returned.
- *
- * @bug For the handled special cases, the dstring is cleared,
- *      the default handling appends to the dstring buffer.
- *
- * @see #object_parse_field_from_string
- */
-static const char *
-object_append_raw_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                   dstring *buffer, int nm, char string_quotes) {
-   DENTER(OBJECT_LAYER);
-   const char *str;
-   const char *result = nullptr;
-   int pos;
-   pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
+namespace {
+   /**
+    * @brief Parse the name of a complex entry type, as `CE_valtype` takes it
+    *
+    * @param[out] answer_list receives the message naming an unknown type
+    * @param value the name, e.g. `MEMORY`, case insensitive
+    * @return the result; a failure stores nothing
+    */
+   ocs_object_parsed_symbol
+   parse_ce_valtype(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
+      /* JG: TODO: we should better have a function map_str2type
+       * and isn't there some sort of framework for mapping
+       * strings to ints and vice versa? See QU_qtype implementation.
+       */
+      ocs::CEntry::Type type = ocs::CEntry::Type::NONE;
 
-   if (pos < 0) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S,
-                              lNm2Str(nm));
-   } else {
-      const lDescr *descr;
-      int type;
-
-      descr = lGetElemDescr(object);
-      type = lGetPosType(descr, pos);
-
-      /* no special case: read and copy data from object */
-      switch (type) {
-         case lDoubleT:
-            result = sge_dstring_sprintf_append(buffer, "%lf", lGetPosDouble(object, pos));
-            break;
-         case lUlongT:
-            result = sge_dstring_sprintf_append(buffer, sge_u32, lGetPosUlong(object, pos));
-            break;
-         case lUlong64T:
-            result = sge_dstring_sprintf_append(buffer, sge_u64, lGetPosUlong64(object, pos));
-            break;
-         case lLongT:
-            result = sge_dstring_sprintf_append(buffer, "%ld", lGetPosLong(object, pos));
-            break;
-         case lBoolT:
-            result = sge_dstring_append(buffer, lGetPosBool(object, pos) ? TRUE_STR : FALSE_STR);
-            break;
-         case lIntT:
-            result = sge_dstring_sprintf_append(buffer, "%d", lGetPosInt(object, pos));
-            break;
-         case lStringT:
-            str = lGetPosString(object, pos);
-            if (string_quotes != '\0') {
-               sge_dstring_append_char(buffer, string_quotes);
-               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-               result = sge_dstring_append_char(buffer, string_quotes);
-            } else {
-               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-            }
-            break;
-         case lHostT:
-            str = lGetPosHost(object, pos);
-            if (string_quotes != '\0') {
-               sge_dstring_append_char(buffer, string_quotes);
-               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-               result = sge_dstring_append_char(buffer, string_quotes);
-            } else {
-               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
-            }
-            break;
-         case lListT:
-         case lObjectT:
-         case lRefT:
-            /* what do to here? */
-            break;
-         default:
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                                    ANSWER_QUALITY_ERROR,
-                                    MSG_INVALIDCULLDATATYPE_D, type);
-            break;
+      for (int i = static_cast<int>(ocs::CEntry::Type::FIRST);
+           type == ocs::CEntry::Type::NONE && i <= static_cast<int>(ocs::CEntry::Type::CE_LAST);
+           i++) {
+         if (strcasecmp(value, map_type2str(static_cast<ocs::CEntry::Type>(i))) == 0) {
+            type = static_cast<ocs::CEntry::Type>(i);
+         }
       }
+
+      if (type == ocs::CEntry::Type::NONE) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_ATTR_TYPE_S,
+                                 value);
+         return {false, false, 0};
+      }
+      return {true, true, static_cast<uint32_t>(type)};
    }
 
-   DRETURN(result);
-}
+   /**
+    * @brief Parse a relational operator, as `CE_relop` takes it
+    *
+    * The symbols of the operators CMPLXEQ_OP to CMPLXEXCL_OP are compared (CS-3169); no message is written for an
+    * unknown symbol.
+    *
+    * @param value the symbol, e.g. `<=`
+    * @return the result; a failure stores nothing
+    */
+   ocs_object_parsed_symbol
+   parse_ce_relop(const char *value) {
+      uint32_t op = 0;
 
-/**
- * @brief Set object attr. from str
- *
- * Sets a new value for a certain object attribute.
- * The new value is passed as parameter in string format.
- *
- * @param object the object to change
- * @param answer_list used to return error messages
- * @param nm the attribute to change
- * @param value the new value
- *
- * @return true on success, false, on error, error description in answer_list
- *
- * @note Sublists, subobjects and references cannot be set with this
- *       function.
- *
- * @see #object_append_field_to_dstring
- */
-static bool
-object_parse_raw_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const int nm,
-                                   const char *value) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-   int pos;
-
-   pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
-   if (pos < 0) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S,
-                              lNm2Str(nm));
-      ret = false;
-   } else {
-      const lDescr *descr;
-      int type;
-
-      descr = lGetElemDescr(object);
-      type = lGetPosType(descr, pos);
-
-      /* read data */
-      switch (type) {
-         case lDoubleT:
-            ret = object_parse_double_from_string(object, answer_list, nm, value);
-            break;
-         case lUlongT:
-            ret = object_parse_ulong32_from_string(object, answer_list, nm, value);
-            break;
-         case lUlong64T:
-            ret = object_parse_ulong64_from_string(object, answer_list, nm, value);
-            break;
-         case lLongT:
-            ret = object_parse_long_from_string(object, answer_list, nm, value);
-            break;
-         case lBoolT:
-            ret = object_parse_bool_from_string(object, answer_list, nm, value);
-            break;
-         case lIntT:
-            ret = object_parse_int_from_string(object, answer_list, nm, value);
-            break;
-         case lStringT:
-            lSetPosString(object, pos, value);
-            break;
-         case lHostT:
-            lSetPosHost(object, pos, value);
-            break;
-         case lListT:
-         case lObjectT:
-         case lRefT:
-            /* what do to here? */
-            break;
-         default:
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                                    ANSWER_QUALITY_ERROR,
-                                    MSG_INVALIDCULLDATATYPE_D, type);
-            break;
+      // CS-3169: walk the operators, not the value types - map_op2str() returns "??" for out-of-range values,
+      // which made "??" a valid relop
+      for (uint32_t i = CMPLXEQ_OP; op == 0 && i <= CMPLXEXCL_OP; i++) {
+         if (strcasecmp(value, map_op2str(i)) == 0) {
+            op = i;
+         }
       }
+
+      if (op == 0) {
+         /* error output necessary? Should be created by parsing function */
+         return {false, false, 0};
+      }
+      return {true, true, op};
    }
 
+   /**
+    * @brief Parse a requestable setting, as `CE_requestable` takes it
+    *
+    * @param value `y`/`yes`, `n`/`no` or `f`/`forced`, case insensitive
+    * @return the result; an unknown word stores #REQU_NO and fails without a message
+    */
+   ocs_object_parsed_symbol
+   parse_ce_requestable(const char *value) {
+      if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
+         return {true, true, REQU_YES};
+      }
+      if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
+         return {true, true, REQU_NO};
+      }
+      if (strcasecmp(value, "f") == 0 || strcasecmp(value, "forced") == 0) {
+         return {true, true, REQU_FORCED};
+      }
+      return {false, true, REQU_NO};
+   }
+
+   /**
+    * @brief Parse a consumable setting, as `CE_consumable` takes it
+    *
+    * @param value `y`/`yes`, `n`/`no`, `j`/`job` or `h`/`host`, case insensitive
+    * @return the result; an unknown word stores #CONSUMABLE_NO and fails without a message
+    */
+   ocs_object_parsed_symbol
+   parse_ce_consumable(const char *value) {
+      if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
+         return {true, true, CONSUMABLE_YES};
+      }
+      if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
+         return {true, true, CONSUMABLE_NO};
+      }
+      if (strcasecmp(value, "j") == 0 || strcasecmp(value, "job") == 0) {
+         return {true, true, CONSUMABLE_JOB};
+      }
+      if (strcasecmp(value, "h") == 0 || strcasecmp(value, "host") == 0) {
+         return {true, true, CONSUMABLE_HOST};
+      }
+      return {false, true, CONSUMABLE_NO};
+   }
+
+   /**
+    * @brief Parse a queue type list, as the cluster queue attribute (`AQTLIST_value`) takes it
+    *
+    * @param[out] answer_list receives the messages of the bit parser and the parse error
+    * @param value the type names; nullptr is an error
+    * @return the result; a failure stores nothing
+    */
+   ocs_object_parsed_symbol
+   parse_attr_queue_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
+      if (value == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 "<null>");
+         return {false, false, 0};
+      }
+      uint32_t type;
+      if (!sge_parse_bitfield_str(value, queue_types, &type, "", answer_list, true)) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_QTYPE_INCORRECTSTRING, value);
+         return {false, false, 0};
+      }
+      return {true, true, type};
+   }
+
+   /**
+    * @brief Add the error for a missing value text to an answer list
+    * @param[out] answer_list the answer list
+    */
+   void
+   add_null_value_error(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                              "<null>");
+   }
+
+   /**
+    * @brief Parse a whitespace or comma separated list of names and store it in a list field
+    *
+    * The single word `NONE` leaves the field as it was rather than storing a one element list.
+    *
+    * @tparam F the list field
+    * @tparam KEY the string field of the list's elements the names are stored in
+    * @param ep the element whose field is set
+    * @param[out] answer_list receives the parse error
+    * @param string the text to parse; nullptr is an error
+    * @return true when the value was parsed
+    */
+   template <auto F, auto KEY>
+   bool
+   parse_name_list(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep,
+                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
+      DENTER(OBJECT_LAYER);
+
+      if (string == nullptr) {
+         add_null_value_error(answer_list);
+         DRETURN(false);
+      }
+
+      auto list = ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Sub>::template from_string<KEY>(string,
+                                                                                                    "\t \v\r,");
+      if (!list) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
+         DRETURN(false);
+      }
+      if (strcasecmp(NONE_STR, ocs::tom::get<KEY>(list->front())) != 0) {
+         ocs::tom::set<F>(ep, std::move(list));
+      }
+      DRETURN(true);
+   }
+
+   /**
+    * @brief Parse a complex entry list and store it in the cluster queue attribute
+    *
+    * Each entry is a `name=value` pair, as in a complex request.
+    *
+    * @param ep the attribute whose value is set
+    * @param[out] answer_list receives the parse error
+    * @param string the text to parse; nullptr is an error
+    * @return true when the value was parsed and stored
+    */
+   bool
+   parse_celist(const ocs::tom::Element<ocs::tom::ACELIST> ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                const char *string) {
+      DENTER(TOP_LAYER);
+      static int rule[] = {CE_name, CE_stringval, 0};
+
+      if (string == nullptr) {
+         add_null_value_error(answer_list);
+         DRETURN(false);
+      }
+
+      // raw out-parameter of cull_parse_definition_list(), which creates the list with CE_Type
+      lList *tmp_list = nullptr;
+      const int parse_ret = cull_parse_definition_list(const_cast<char *>(string), &tmp_list, "", CE_Type, rule);
+      auto list = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(tmp_list);
+      if (parse_ret != 0) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
+         DRETURN(false);
+      }
+      ocs::tom::set<ACELIST_value>(ep, std::move(list));
+      DRETURN(true);
+   }
+
+   /**
+    * @brief Parse a subordinate list and store it in the cluster queue attribute
+    *
+    * Two forms are accepted: queue wise (`A.q=3,B.q=4`) and slot wise
+    * (`slots=4(A.q:1:lr, B.q:2:sr)`). A slot wise list that fails to parse in
+    * one of its entries clears the field; a queue wise list that fails leaves it
+    * as it was.
+    *
+    * @param ep the attribute whose value is set
+    * @param[out] answer_list receives the parse error
+    * @param string the text to parse; nullptr is an error
+    * @return true when the value was parsed and stored
+    */
+   bool
+   parse_solist(const ocs::tom::Element<ocs::tom::ASOLIST> ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                const char *string) {
+      DENTER(OBJECT_LAYER);
+      bool ret = true;
+
+      if (string == nullptr) {
+         add_null_value_error(answer_list);
+         DRETURN(false);
+      }
+
+      ocs::tom::ListPtr<ocs::tom::SO> tmp_list;
+      struct saved_vars_s *last = nullptr;
+
+      /*
+       * The queue wise subordinate is defined like this:
+       * subordinate_list  A.q=3,B.q=4
+       * The slotwise subordinate is defined like this:
+       * subordinate_list slots=4(A.q:1:lr, B.q:2:sr)
+       * If the value of the "subordinate_list" key begins with
+       * "slots=", it's slotwise subordinate, otherwise it's
+       * queue wise subordinate.
+       *
+       * TODO: HP: This parser could be improved, now a queue wise subordinate
+       * that begins with a queue called "slots" will be interpreted as
+       * slotwise subordinate and therefore lead to an error.
+       */
+      const char *slots_text = sge_strtok_r(string, "=", &last);
+      if (slots_text != nullptr && strncasecmp("slots", slots_text, 5) == 0) {
+         /*
+          * slot-wise suspend on subordinate
+          */
+         char *end_ptr = nullptr;
+         lUlong slots_sum_value = 0;
+
+         /*
+          * format of string: slots=8(queue1.q:3:sr, queue2.q:2:lr)
+          */
+         /* the "slots=" was already skipped in the first sge_strtok_r() */
+         /* parse the "8" in our example above */
+         const char *slots_sum_text = sge_strtok_r(nullptr, "(", &last);
+         if (slots_sum_text != nullptr) {
+            slots_sum_value = strtol(slots_sum_text, &end_ptr, 10);
+         } else {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                    string);
+            ret = false;
+         }
+         if (end_ptr != nullptr && *end_ptr != '\0') {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                    string);
+            ret = false;
+         }
+         if (ret) {
+            /* point the "sub_queues_text" to the start of the sub queue list */
+            const char *sub_queues_text = sge_strtok_r(nullptr, ")", &last);
+            /* split up the original string from the first subordinated queue on */
+            tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(sub_queues_text, ",) \t");
+            for (const auto tmp_elem : *tmp_list) {
+               const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
+               char *queuename = sge_strtok(queue_value, ":");
+               char *value_str = sge_strtok(nullptr, ":");
+               char *action_str = sge_strtok(nullptr, ":");
+
+               sge_strip_blanks(queuename);
+               sge_strip_blanks(value_str);
+               sge_strip_blanks(action_str);
+
+               if (queuename != nullptr) {
+                  ocs::tom::set<SO_name>(tmp_elem, queuename);
+               } else {
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                          MSG_ERRORPARSINGVALUEFORNM_S, string);
+                  ret = false;
+                  break;
+               }
+
+               if (slots_sum_value > 0) {
+                  ocs::tom::set<SO_slots_sum>(tmp_elem, slots_sum_value);
+               } else {
+                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                          MSG_ERRORPARSINGVALUEFORNM_S, string);
+                  ret = false;
+                  break;
+               }
+
+               if (value_str != nullptr) {
+                  char *value_end = nullptr;
+                  const uint32_t value = strtol(value_str, &value_end, 10);
+
+                  if (value_end != nullptr && *value_end == '\0') {
+                     ocs::tom::set<SO_seq_no>(tmp_elem, value);
+                  } else {
+                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                             MSG_ERRORPARSINGVALUEFORNM_S, string);
+                     ret = false;
+                     break;
+                  }
+               } else {
+                  ocs::tom::set<SO_seq_no>(tmp_elem, 0);
+               }
+
+               if (action_str != nullptr) {
+                  if (strcmp(action_str, "lr") == 0) {
+                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_LR);
+                  } else if (strcmp(action_str, "sr") == 0) {
+                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
+                  } else {
+                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                             MSG_ERRORPARSINGVALUEFORNM_S, string);
+                     ret = false;
+                     break;
+                  }
+               } else {
+                  /* default is "sr" */
+                  ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
+               }
+            }
+            // a failed entry drops the whole list, and the field is cleared, as it always was
+            if (!ret) {
+               tmp_list.reset();
+            }
+            ocs::tom::set<ASOLIST_value>(ep, std::move(tmp_list));
+         }
+      } else {
+         tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(string, ", \t");
+         if (tmp_list) {
+            if (!strcasecmp("NONE", ocs::tom::get<SO_name>(tmp_list->front()))) {
+               tmp_list.reset();
+            } else {
+               /*
+                * queue instance-wise suspend on subordinate
+                */
+               for (const auto tmp_elem : *tmp_list) {
+                  const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
+                  const char *queuename = sge_strtok(queue_value, ":=");
+                  const char *value_str = sge_strtok(nullptr, ":=");
+
+                  ocs::tom::set<SO_name>(tmp_elem, queuename);
+                  if (value_str != nullptr) {
+                     char *endptr = nullptr;
+                     const uint32_t value = strtol(value_str, &endptr, 10);
+
+                     if (endptr != nullptr && *endptr == '\0') {
+                        ocs::tom::set<SO_threshold>(tmp_elem, value);
+                     } else {
+                        answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                                MSG_ERRORPARSINGVALUEFORNM_S, string);
+                        ret = false;
+                        break;
+                     }
+                  } else {
+                     /*
+                      * No value is explicitely allowed
+                      */
+                  }
+               }
+               if (ret) {
+                  ocs::tom::set<ASOLIST_value>(ep, std::move(tmp_list));
+               }
+            }
+         }
+      }
+      sge_free_saved_vars(last);
+      DRETURN(ret);
+   }
+} // namespace
+
+/**
+ * @brief Append a value of a field that is written as a word, see #ocs_object_symbolic
+ *
+ * Shared by the typed ocs_object_append_field() and by the spooling walkers, which take the kind from the
+ * field's spooling record. A userset type without a bit of a name is written as the plain number, as it
+ * always was.
+ *
+ * @param[out] buffer receives the text, appended
+ * @param kind the kind of the field, not ocs_object_symbolic::none
+ * @param value the field's value
+ * @return the buffer's text, nullptr for ocs_object_symbolic::none
+ *
+ * @note MT-NOTE: ocs_object_append_symbolic() is MT safe
+ */
+const char *
+ocs_object_append_symbolic(dstring *buffer, const ocs_object_symbolic kind, const uint32_t value) {
+   DENTER(OBJECT_LAYER);
+
+   const char *ret = nullptr;
+   switch (kind) {
+      case ocs_object_symbolic::ce_valtype:
+         ret = sge_dstring_append(buffer, map_type2str(static_cast<ocs::CEntry::Type>(value)));
+         break;
+      case ocs_object_symbolic::ce_relop:
+         ret = sge_dstring_append(buffer, map_op2str(value));
+         break;
+      case ocs_object_symbolic::ce_requestable:
+         ret = sge_dstring_append(buffer, map_req2str(value));
+         break;
+      case ocs_object_symbolic::ce_consumable:
+         ret = sge_dstring_append(buffer, map_consumable2str(value));
+         break;
+      case ocs_object_symbolic::qinstance_type:
+         ret = ocs_qinstance_qtype_append_to_dstring(value, buffer);
+         break;
+      case ocs_object_symbolic::userset_type:
+         ret = ocs_userset_type_append_to_dstring(value, buffer);
+         if (ret == nullptr) {
+            ret = sge_dstring_sprintf_append(buffer, sge_u32, value);
+         }
+         break;
+      case ocs_object_symbolic::attr_queue_type:
+         ret = qtype_append_to_dstring(value, buffer);
+         break;
+      case ocs_object_symbolic::none:
+         break;
+   }
    DRETURN(ret);
 }
+
+/**
+ * @brief Parse a value of a field that is written as a word, see #ocs_object_symbolic
+ *
+ * Shared by the typed ocs_object_parse_field() and by the spooling walkers. What a failure reports and stores
+ * differs by kind, as it always did: an unknown complex type reports and stores nothing, an unknown operator
+ * stores nothing without a message, an unknown requestable or consumable word stores `NO` without a message, a
+ * bad queue or userset type of an object stores the bits understood before, a bad queue type of a cluster queue
+ * attribute reports and stores nothing.
+ *
+ * @param[out] answer_list receives the messages
+ * @param kind the kind of the field, not ocs_object_symbolic::none
+ * @param value the text
+ * @return whether the text was understood, whether to store, and the value to store
+ *
+ * @note MT-NOTE: ocs_object_parse_symbolic() is not MT safe for the bit fields, as sge_parse_bitfield_str() is not
+ */
+ocs_object_parsed_symbol
+ocs_object_parse_symbolic(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs_object_symbolic kind,
+                          const char *value) {
+   DENTER(OBJECT_LAYER);
+
+   ocs_object_parsed_symbol ret{true, false, 0};
+   switch (kind) {
+      case ocs_object_symbolic::ce_valtype:
+         ret = parse_ce_valtype(answer_list, value);
+         break;
+      case ocs_object_symbolic::ce_relop:
+         ret = parse_ce_relop(value);
+         break;
+      case ocs_object_symbolic::ce_requestable:
+         ret = parse_ce_requestable(value);
+         break;
+      case ocs_object_symbolic::ce_consumable:
+         ret = parse_ce_consumable(value);
+         break;
+      case ocs_object_symbolic::qinstance_type: {
+         const auto [ok, type] = ocs_qinstance_qtype_parse(value);
+         ret = {ok, true, type};
+         break;
+      }
+      case ocs_object_symbolic::userset_type: {
+         const auto [ok, type] = ocs_userset_type_parse(answer_list, value);
+         ret = {ok, true, type};
+         break;
+      }
+      case ocs_object_symbolic::attr_queue_type:
+         ret = parse_attr_queue_type(answer_list, value);
+         break;
+      case ocs_object_symbolic::none:
+         break;
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Parse a boolean
+ *
+ * Accepts `true`/`t`/`1`/`yes`/`y` and `false`/`f`/`0`/`no`/`n`, each
+ * case insensitively.
+ *
+ * @param[out] answer_list receives the parse error
+ * @param string the text to parse; nullptr is an error
+ * @return the value, std::nullopt on an error
+ */
+std::optional<bool>
+ocs_object_parse_bool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
+   DENTER(OBJECT_LAYER);
+
+   std::optional<bool> ret;
+
+   if (string != nullptr) {
+      if (!strcasecmp(string, "true") || !strcasecmp(string, "t") || !strcmp(string, "1") ||
+          !strcasecmp(string, "yes") || !strcasecmp(string, "y")) {
+         ret = true;
+      } else if (!strcasecmp(string, "false") || !strcasecmp(string, "f") || !strcmp(string, "0") ||
+                 !strcasecmp(string, "no") || !strcasecmp(string, "n")) {
+         ret = false;
+      } else {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
+      }
+   } else {
+      add_null_value_error(answer_list);
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Check that a text is a value of a complex type, for a field that stores the text verbatim
+ *
+ * The cluster queue attributes of times, intervals and memory keep the form the user wrote; the text is only
+ * validated here.
+ *
+ * @param[out] answer_list receives the parse error
+ * @param type the complex type the text must be a value of: ocs::CEntry::Type::TIME or ocs::CEntry::Type::MEM
+ * @param string the text to check; nullptr is an error
+ * @return true when the text is a value of the type
+ */
+bool
+ocs_object_check_value_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::CEntry::Type type,
+                              const char *string) {
+   DENTER(OBJECT_LAYER);
+
+   bool ret = true;
+
+   if (string != nullptr) {
+      if (!parse_ulong_val(nullptr, nullptr, type, string, nullptr, 0)) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
+                                 string);
+         ret = false;
+      }
+   } else {
+      add_null_value_error(answer_list);
+      ret = false;
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Parse a 32 bit unsigned integer
+ *
+ * An empty text is 0.
+ *
+ * @param[out] answer_list receives the parse error
+ * @param string the text to parse; nullptr is an error
+ * @return the value, std::nullopt on an error
+ */
+std::optional<std::uint32_t>
+ocs_object_parse_uint32(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
+   DENTER(OBJECT_LAYER);
+
+   std::optional<std::uint32_t> ret;
+
+   if (string != nullptr) {
+      if (strlen(string) == 0) {
+         /*
+          * Empty string will be parsed as '0'
+          */
+         ret = 0;
+      } else {
+         const double epsilon = 1.0E-12;
+         char *end_ptr = nullptr;
+         const double dbl_value = strtod(string, &end_ptr);
+         const uint32_t ulong_value = dbl_value;
+
+         if (dbl_value < 0 || dbl_value - ulong_value > epsilon) {
+            /*
+             * value to big for uint32_t variable
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S,
+                                    string);
+         } else if (end_ptr != nullptr && *end_ptr == '\0') {
+            ret = ulong_value;
+         } else {
+            /*
+             * Not a number or
+             * garbage after number
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING,
+                                    string);
+         }
+      }
+   } else {
+      add_null_value_error(answer_list);
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Parse a 64 bit unsigned integer
+ *
+ * An empty text is 0.
+ *
+ * @param[out] answer_list receives the parse error
+ * @param string the text to parse; nullptr is an error
+ * @return the value, std::nullopt on an error
+ */
+std::optional<std::uint64_t>
+ocs_object_parse_uint64(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
+   DENTER(OBJECT_LAYER);
+
+   std::optional<std::uint64_t> ret;
+
+   if (string != nullptr) {
+      if (strlen(string) == 0) {
+         /*
+          * Empty string will be parsed as '0'
+          */
+         ret = 0;
+      } else {
+         const double epsilon = 1.0E-12;
+         char *end_ptr = nullptr;
+         const double dbl_value = strtod(string, &end_ptr);
+         const uint64_t ulong_value = dbl_value;
+
+         if (dbl_value < 0 || dbl_value - ulong_value > epsilon) {
+            /*
+             * value to big for uint32_t variable
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S,
+                                    string);
+         } else if (end_ptr != nullptr && *end_ptr == '\0') {
+            ret = ulong_value;
+         } else {
+            /*
+             * Not a number or
+             * garbage after number
+             */
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING,
+                                    string);
+         }
+      }
+   } else {
+      add_null_value_error(answer_list);
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Parse an int
+ *
+ * @param[out] answer_list receives the parse error
+ * @param string the text to parse; nullptr is an error
+ * @return the value, std::nullopt on an error
+ */
+std::optional<std::int32_t>
+ocs_object_parse_int32(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
+   DENTER(OBJECT_LAYER);
+
+   std::optional<std::int32_t> ret;
+
+   if (string != nullptr) {
+      int value;
+
+      if (sscanf(string, "%d", &value) == 1) {
+         ret = value;
+      } else {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_INT_INCORRECTSTRING, string);
+      }
+   } else {
+      add_null_value_error(answer_list);
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Parse a long
+ *
+ * @param[out] answer_list receives the parse error
+ * @param string the text to parse; nullptr is an error
+ * @return the value, std::nullopt on an error
+ */
+std::optional<std::int64_t>
+ocs_object_parse_int64(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
+   DENTER(OBJECT_LAYER);
+
+   std::optional<std::int64_t> ret;
+
+   if (string != nullptr) {
+      long value;
+
+      if (sscanf(string, "%ld", &value) == 1) {
+         ret = value;
+      } else {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_LONG_INCORRECTSTRING, string);
+      }
+   } else {
+      add_null_value_error(answer_list);
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Parse a double
+ *
+ * @param[out] answer_list receives the parse error
+ * @param string the text to parse; nullptr is an error
+ * @return the value, std::nullopt on an error
+ */
+std::optional<double>
+ocs_object_parse_double(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
+   DENTER(OBJECT_LAYER);
+
+   std::optional<double> ret;
+
+   if (string != nullptr) {
+      double value;
+
+      if (sscanf(string, "%lf", &value) == 1) {
+         ret = value;
+      } else {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_DOUBLE_INCORRECTSTRING,
+                                 string);
+      }
+   } else {
+      add_null_value_error(answer_list);
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Append the value of a field as an administrator writes it
+ *
+ * A field of a #ocs_object_symbolic kind is written as a word (ocs_object_append_symbolic()), a list of the
+ * cluster queue attributes as its names or entries, anything else in the default form of its type: a number,
+ * `TRUE`/`FALSE`, a string or `NONE` for an unset one. The text is appended, without quotes.
+ *
+ * @tparam F the field
+ * @param ep the element, may be an empty handle
+ * @param[out] buffer receives the text, appended
+ * @return the buffer's text, nullptr for an empty handle
+ *
+ * @note MT-NOTE: ocs_object_append_field() is MT safe
+ *
+ * @see #ocs_object_parse_field
+ */
+template <auto F>
+   requires OcsAttrValueField<F>
+const char *
+ocs_object_append_field(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep, dstring *buffer) {
+   DENTER(OBJECT_LAYER);
+
+   using ocs::tom::FieldType;
+   constexpr FieldType type = ocs::tom::FieldTraits<F>::type;
+   constexpr ocs_object_symbolic kind = ocs_object_symbolic_of(static_cast<int>(F));
+   constexpr int nm = static_cast<int>(F);
+
+   const char *ret = nullptr;
+   if (ep) {
+      if constexpr (kind != ocs_object_symbolic::none) {
+         ret = ocs_object_append_symbolic(buffer, kind, ocs::tom::get<F>(ep));
+      } else if constexpr (nm == ASTRLIST_value) {
+         ret = str_list_append_to_dstring(ocs::tom::get<F>(ep), buffer, ' ');
+      } else if constexpr (nm == AUSRLIST_value) {
+         ret = userset_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+      } else if constexpr (nm == APRJLIST_value) {
+         ret = prj_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+      } else if constexpr (nm == ACELIST_value) {
+         ret = centry_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+      } else if constexpr (nm == ASOLIST_value) {
+         ret = so_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+      } else if constexpr (type == FieldType::Uint32) {
+         ret = sge_dstring_sprintf_append(buffer, sge_u32, ocs::tom::get<F>(ep));
+      } else if constexpr (type == FieldType::Uint64) {
+         ret = sge_dstring_sprintf_append(buffer, sge_u64, ocs::tom::get<F>(ep));
+      } else if constexpr (type == FieldType::Int32) {
+         ret = sge_dstring_sprintf_append(buffer, "%d", ocs::tom::get<F>(ep));
+      } else if constexpr (type == FieldType::Int64) {
+         ret = sge_dstring_sprintf_append(buffer, "%ld", static_cast<long>(ocs::tom::get<F>(ep)));
+      } else if constexpr (type == FieldType::Double) {
+         ret = sge_dstring_sprintf_append(buffer, "%lf", ocs::tom::get<F>(ep));
+      } else if constexpr (type == FieldType::Bool) {
+         ret = sge_dstring_append(buffer, ocs::tom::get<F>(ep) ? TRUE_STR : FALSE_STR);
+      } else {
+         static_assert(type == FieldType::String, "a field of the cluster queue attributes has no other type");
+         const char *str = ocs::tom::get<F>(ep);
+         ret = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
+      }
+   }
+   DRETURN(ret);
+}
+
+/**
+ * @brief Set the value of a field from the text an administrator writes
+ *
+ * The counterpart of ocs_object_append_field(): a field of a #ocs_object_symbolic kind is parsed by
+ * ocs_object_parse_symbolic(), a time, interval or memory attribute is validated and stored verbatim, a list of
+ * the cluster queue attributes is parsed into its elements, anything else by the parser of its type.
+ *
+ * @tparam F the field
+ * @param ep the element to change
+ * @param[out] answer_list receives the messages
+ * @param value the text
+ * @return true on success, false on an error, described in the answer list for most fields
+ *
+ * @note MT-NOTE: ocs_object_parse_field() is not MT safe for the bit fields, as sge_parse_bitfield_str() is not
+ *
+ * @see #ocs_object_append_field
+ */
+template <auto F>
+   requires OcsAttrValueField<F>
+bool
+ocs_object_parse_field(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
+   DENTER(OBJECT_LAYER);
+
+   using ocs::tom::FieldType;
+   constexpr FieldType type = ocs::tom::FieldTraits<F>::type;
+   constexpr ocs_object_symbolic kind = ocs_object_symbolic_of(static_cast<int>(F));
+   constexpr int nm = static_cast<int>(F);
+
+   if (!ep) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_NULLELEMENTPASSEDTO_S,
+                              __func__);
+      DRETURN(false);
+   }
+
+   bool ret = true;
+   if constexpr (kind != ocs_object_symbolic::none) {
+      const ocs_object_parsed_symbol parsed = ocs_object_parse_symbolic(answer_list, kind, value);
+      if (parsed.store) {
+         ocs::tom::set<F>(ep, parsed.value);
+      }
+      ret = parsed.ok;
+   } else if constexpr (nm == ATIME_value || nm == AINTER_value || nm == AMEM_value) {
+      constexpr ocs::CEntry::Type value_type = nm == AMEM_value ? ocs::CEntry::Type::MEM : ocs::CEntry::Type::TIME;
+      ret = ocs_object_check_value_string(answer_list, value_type, value);
+      if (ret) {
+         ocs::tom::set<F>(ep, value);
+      }
+   } else if constexpr (nm == ASTRLIST_value) {
+      ret = parse_name_list<F, ST_name>(ep, answer_list, value);
+   } else if constexpr (nm == AUSRLIST_value) {
+      ret = parse_name_list<F, US_name>(ep, answer_list, value);
+   } else if constexpr (nm == APRJLIST_value) {
+      ret = parse_name_list<F, PR_name>(ep, answer_list, value);
+   } else if constexpr (nm == ACELIST_value) {
+      ret = parse_celist(ep, answer_list, value);
+   } else if constexpr (nm == ASOLIST_value) {
+      ret = parse_solist(ep, answer_list, value);
+   } else if constexpr (type == FieldType::String) {
+      ocs::tom::set<F>(ep, value);
+   } else {
+      std::optional<typename ocs::tom::ValueOf<type>::type> parsed;
+      if constexpr (type == FieldType::Uint32) {
+         parsed = ocs_object_parse_uint32(answer_list, value);
+      } else if constexpr (type == FieldType::Uint64) {
+         parsed = ocs_object_parse_uint64(answer_list, value);
+      } else if constexpr (type == FieldType::Int32) {
+         parsed = ocs_object_parse_int32(answer_list, value);
+      } else if constexpr (type == FieldType::Int64) {
+         parsed = ocs_object_parse_int64(answer_list, value);
+      } else if constexpr (type == FieldType::Double) {
+         parsed = ocs_object_parse_double(answer_list, value);
+      } else {
+         static_assert(type == FieldType::Bool, "a field of the cluster queue attributes has no other type");
+         parsed = ocs_object_parse_bool(answer_list, value);
+      }
+      if (parsed) {
+         ocs::tom::set<F>(ep, *parsed);
+      } else {
+         ret = false;
+      }
+   }
+   DRETURN(ret);
+}
+
+/// @cond
+template const char *ocs_object_append_field<ASTR_value>(ocs::tom::ConstElement<ocs::tom::ASTR>, dstring *);
+template const char *ocs_object_append_field<AULNG_value>(ocs::tom::ConstElement<ocs::tom::AULNG>, dstring *);
+template const char *ocs_object_append_field<ABOOL_value>(ocs::tom::ConstElement<ocs::tom::ABOOL>, dstring *);
+template const char *ocs_object_append_field<ATIME_value>(ocs::tom::ConstElement<ocs::tom::ATIME>, dstring *);
+template const char *ocs_object_append_field<AMEM_value>(ocs::tom::ConstElement<ocs::tom::AMEM>, dstring *);
+template const char *ocs_object_append_field<AINTER_value>(ocs::tom::ConstElement<ocs::tom::AINTER>, dstring *);
+template const char *ocs_object_append_field<AQTLIST_value>(ocs::tom::ConstElement<ocs::tom::AQTLIST>, dstring *);
+template const char *ocs_object_append_field<ASTRLIST_value>(ocs::tom::ConstElement<ocs::tom::ASTRLIST>,
+                                                             dstring *);
+template const char *ocs_object_append_field<AUSRLIST_value>(ocs::tom::ConstElement<ocs::tom::AUSRLIST>,
+                                                             dstring *);
+template const char *ocs_object_append_field<APRJLIST_value>(ocs::tom::ConstElement<ocs::tom::APRJLIST>,
+                                                             dstring *);
+template const char *ocs_object_append_field<ACELIST_value>(ocs::tom::ConstElement<ocs::tom::ACELIST>, dstring *);
+template const char *ocs_object_append_field<ASOLIST_value>(ocs::tom::ConstElement<ocs::tom::ASOLIST>, dstring *);
+
+template bool ocs_object_parse_field<ASTR_value>(ocs::tom::Element<ocs::tom::ASTR>,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<AULNG_value>(ocs::tom::Element<ocs::tom::AULNG>,
+                                                  ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<ABOOL_value>(ocs::tom::Element<ocs::tom::ABOOL>,
+                                                  ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<ATIME_value>(ocs::tom::Element<ocs::tom::ATIME>,
+                                                  ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<AMEM_value>(ocs::tom::Element<ocs::tom::AMEM>,
+                                                 ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<AINTER_value>(ocs::tom::Element<ocs::tom::AINTER>,
+                                                   ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<AQTLIST_value>(ocs::tom::Element<ocs::tom::AQTLIST>,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<ASTRLIST_value>(ocs::tom::Element<ocs::tom::ASTRLIST>,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<AUSRLIST_value>(ocs::tom::Element<ocs::tom::AUSRLIST>,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<APRJLIST_value>(ocs::tom::Element<ocs::tom::APRJLIST>,
+                                                     ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<ACELIST_value>(ocs::tom::Element<ocs::tom::ACELIST>,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+template bool ocs_object_parse_field<ASOLIST_value>(ocs::tom::Element<ocs::tom::ASOLIST>,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *, const char *);
+/// @endcond
 
 /**
  * @brief Has an object a certain type?
@@ -510,271 +1273,6 @@ object_get_type_name(const lListElem *object) {
 }
 
 /**
- * @brief Object field to string
- *
- * Returns a string representation of a given object attribute.
- * If errors arrise they are returned in the given answer_list.
- * Data will be created in the given dynamic string buffer.
- * For some fields a special handling is implemented, e.g. mapping
- * bitfields to string lists.
- *
- * @param object object to use
- * @param answer_list used to return error messages
- * @param buffer buffer used to format the result
- * @param nm attribute to output
- * @param string_quotes character to be used for string quoting '\0' means no quoting
- *
- * @return string representation of the attribute value (pointer to the string in the dynamic string buffer, or nullptr if an error occurred.
- *
- * @note For sublists, subobjects and references nullptr is returned.
- *
- * @bug For the handled special cases, the dstring is cleared,
- *      the default handling appends to the dstring buffer.
- *
- * @see #object_parse_field_from_string
- */
-const char *
-object_append_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                               dstring *buffer, int nm,
-                               char string_quotes) {
-   DENTER(OBJECT_LAYER);
-
-   const char *ret;
-   dstring string = DSTRING_INIT;
-   bool quote_special_case = false;
-
-   SGE_CHECK_POINTER_NULL(object, answer_list);
-
-   /* handle special cases 
-    * these special cases are for instance bitfields that shall be 
-    * output as readable strings.
-    * Usually such special cases are evidence of bad data base design.
-    * Example: QU_qtype is a bitfield of types (BATCH, PARALLEL, ...)
-    *          Instead, multiple boolean fields should be created:
-    *          QU_batch, QU_parallel, ...
-    */
-
-   switch (nm) {
-      case CE_valtype:
-         ret = map_type2str(static_cast<ocs::CEntry::Type>(lGetUlong(object, nm)));
-         quote_special_case = true;
-         break;
-      case CE_relop:
-         ret = map_op2str(lGetUlong(object, nm));
-         quote_special_case = true;
-         break;
-      case CE_requestable:
-         ret = map_req2str(lGetUlong(object, nm));
-         break;
-      case CE_consumable:
-         ret = map_consumable2str(lGetUlong(object, nm));
-         quote_special_case = true;
-         break;
-      case QU_qtype:
-         qinstance_print_qtype_to_dstring(ocs::tom::ConstElement<ocs::tom::QU>(object), &string, false);
-         ret = sge_dstring_get_string(&string);
-         quote_special_case = true;
-         break;
-      case US_type:
-         ret = userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US>(object), answer_list, &string);
-         quote_special_case = true;
-         break;
-
-      case ASTRLIST_value:
-         ret = str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST>(lGetList(object, nm)), &string, ' ');
-         break;
-      case AUSRLIST_value:
-         ret = userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US>(lGetList(object, nm)), &string);
-         break;
-      case APRJLIST_value:
-         ret = prj_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::PR>(lGetList(object, nm)), &string);
-         break;
-      case ACELIST_value:
-         ret = centry_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::CE>(lGetList(object, nm)), &string);
-         break;
-      case ASOLIST_value:
-         ret = so_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::SO>(lGetList(object, nm)), &string);
-         break;
-      case AQTLIST_value:
-         ret = qtype_append_to_dstring(lGetUlong(object, nm), &string);
-         break;
-      default:
-         ret = nullptr;
-   }
-
-   /* we had a special case - append to result dstring */
-   if (ret != nullptr) {
-      if (quote_special_case && string_quotes != '\0') {
-         sge_dstring_append_char(buffer, string_quotes);
-         sge_dstring_append(buffer, ret);
-         ret = sge_dstring_append_char(buffer, string_quotes);
-      } else {
-         ret = sge_dstring_append(buffer, ret);
-      }
-   } else {
-      ret = object_append_raw_field_to_dstring(object, answer_list, buffer,
-                                               nm, string_quotes);
-   }
-   sge_dstring_free(&string);
-
-   DRETURN(ret);
-}
-
-/**
- * @brief Set object attr. from str
- *
- * Sets a new value for a certain object attribute.
- * The new value is passed as parameter in string format.
- * For some fields a special handling is implemented, e.g. mapping
- * string lists to bitfields.
- *
- * @param object the object to change
- * @param answer_list used to return error messages
- * @param nm the attribute to change
- * @param value the new value
- *
- * @return true on success, false on error; most errors are described in
- *         answer_list, an unknown relational operator (CE_relop) is not
- *
- * @note Sublists, subobjects and references cannot be set with this
- *       function.
- *
- * @see #object_append_field_to_dstring
- */
-bool
-object_parse_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                               int nm, const char *value) {
-   DENTER(OBJECT_LAYER);
-
-   bool ret = true;
-
-   SGE_CHECK_POINTER_FALSE(object, answer_list);
-
-   /* handle special cases */
-   switch (nm) {
-      case CE_valtype: {
-         /* JG: TODO: we should better have a function map_str2type
-          * and isn't there some sort of framework for mapping
-          * strings to ints and vice versa? See QU_qtype implementation.
-          */
-         ocs::CEntry::Type type = ocs::CEntry::Type::NONE;
-         int i;
-
-         for (i = static_cast<uint32_t>(ocs::CEntry::Type::FIRST);
-              type == ocs::CEntry::Type::NONE && i <= static_cast<int>(ocs::CEntry::Type::CE_LAST);
-              i++) {
-            if (strcasecmp(value, map_type2str(static_cast<ocs::CEntry::Type>(i))) == 0) {
-               type = static_cast<ocs::CEntry::Type>(i);
-            }
-         }
-
-         if (type == ocs::CEntry::Type::NONE) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_ATTR_TYPE_S, value);
-            ret = false;
-         } else {
-            lSetUlong(object, nm, static_cast<uint32_t>(type));
-         }
-      }
-         break;
-      case CE_relop: {
-         uint32_t op = 0;
-
-         // CS-3169: walk the operators, not the value types - map_op2str() returns "??" for
-         // out-of-range values, which made "??" a valid relop
-         for (uint32_t i = CMPLXEQ_OP; op == 0 && i <= CMPLXEXCL_OP; i++) {
-            if (strcasecmp(value, map_op2str(i)) == 0) {
-               op = i;
-            }
-         }
-
-         if (op == 0) {
-            /* error output necessary? Should be created by parsing function */
-            ret = false;
-         } else {
-            lSetUlong(object, nm, op);
-         }
-      }
-         break;
-      case CE_requestable: {
-         uint32_t req;
-
-         if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
-            req = REQU_YES;
-         } else if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
-            req = REQU_NO;
-         } else if (strcasecmp(value, "f") == 0 || strcasecmp(value, "forced") == 0) {
-            req = REQU_FORCED;
-         } else {
-            req = REQU_NO;
-            ret = false;
-         }
-         lSetUlong(object, nm, req);
-      }
-         break;
-      case CE_consumable: {
-         uint32_t cond;
-         if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
-            cond = CONSUMABLE_YES;
-         } else if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
-            cond = CONSUMABLE_NO;
-         } else if (strcasecmp(value, "j") == 0 || strcasecmp(value, "job") == 0) {
-            cond = CONSUMABLE_JOB;
-         } else if (strcasecmp(value, "h") == 0 || strcasecmp(value, "host") == 0) {
-            cond = CONSUMABLE_HOST;
-         } else {
-            cond = CONSUMABLE_NO;
-            ret = false;
-         }
-         lSetUlong(object, nm, cond);
-      }
-         break;
-      case QU_qtype:
-         ret = qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU>(object), answer_list, value);
-         break;
-      case US_type:
-         ret = userset_set_type_string(ocs::tom::Element<ocs::tom::US>(object), answer_list, value);
-         break;
-      case AMEM_value:
-         ret = object_parse_mem_from_string(object, answer_list, nm, value);
-         break;
-      case ATIME_value:
-         ret = object_parse_time_from_string(object, answer_list, nm, value);
-         break;
-      case AINTER_value:
-         ret = object_parse_inter_from_string(object, answer_list, nm, value);
-         break;
-      case ASTRLIST_value:
-         ret = object_parse_list_from_string(object, answer_list, nm, value,
-                                             ST_Type, ST_name);
-         break;
-      case AUSRLIST_value:
-         ret = object_parse_list_from_string(object, answer_list, nm, value,
-                                             US_Type, US_name);
-         break;
-      case APRJLIST_value:
-         ret = object_parse_list_from_string(object, answer_list, nm, value,
-                                             PR_Type, PR_name);
-         break;
-      case ACELIST_value:
-         ret = object_parse_celist_from_string(object, answer_list, nm, value);
-         break;
-      case ASOLIST_value:
-         ret = object_parse_solist_from_string(object, answer_list, nm, value);
-         break;
-      case AQTLIST_value:
-         ret = object_parse_qtlist_from_string(object, answer_list, nm, value);
-         break;
-      default:
-         ret = object_parse_raw_field_from_string(object, answer_list, nm,
-                                                  value);
-         break;
-   }
-
-   DRETURN(ret);
-}
-
-
-/**
  * @brief Del certain id from an range_list
  *
  * Deletes a certain id from an objects sublist that is a range list.
@@ -951,7 +1449,8 @@ const lDescr *object_type_get_descr(sge_object_type type) {
  *
  * @param type event type
  *
- * @return the key number (struct element nm of the descriptor), or -1, if no object type is associated with the event type
+ * @return the key number (struct element nm of the descriptor), or -1, if no object type is associated with the
+ *         event type
  *
  * @see #object_type_get_name, #object_type_get_descr
  */
@@ -967,819 +1466,6 @@ int object_type_get_key_nm(sge_object_type type) {
    }
 
    DRETURN(ret);
-}
-
-/**
- * @brief Parse a boolean and store it in a field *
- * Accepts `true`/`t`/`1`/`yes`/`y` and `false`/`f`/`0`/`no`/`n`, each
- * case insensitively. *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_bool_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                              int name, const char *string) {
-   DENTER(OBJECT_LAYER);
-
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (!strcasecmp(string, "true") || !strcasecmp(string, "t") || !strcmp(string, "1") ||
-          !strcasecmp(string, "yes") || !strcasecmp(string, "y")) {
-         lSetPosBool(this_elem, pos, true);
-      } else if (!strcasecmp(string, "false") || !strcasecmp(string, "f") || !strcmp(string, "0") ||
-                 !strcasecmp(string, "no") || !strcasecmp(string, "n")) {
-         lSetPosBool(this_elem, pos, false);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                 string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a time specification and store it in a field *
- * The text is validated as a time value and then stored verbatim, so the
- * field keeps the form the user wrote. *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_time_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                              int name, const char *string) {
-   DENTER(OBJECT_LAYER);
-
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (parse_ulong_val(nullptr, nullptr, ocs::CEntry::Type::TIME, string, nullptr, 0)) {
-         lSetPosString(this_elem, pos, string);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                 string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse an interval and store it in a field *
- * @note Identical to #object_parse_time_from_string - an interval is validated
- *       as a time value and stored verbatim. *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_inter_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                               int name, const char *string) {
-   DENTER(OBJECT_LAYER);
-
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (parse_ulong_val(nullptr, nullptr, ocs::CEntry::Type::TIME, string, nullptr, 0)) {
-         lSetPosString(this_elem, pos, string);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                 string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a whitespace or comma separated list and store it in a field
- *
- * The single word `NONE` yields an empty field rather than a one element list.
- *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @param descr the descriptor of the list elements to create
- * @param nm the field within each element the words are stored in
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_list_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                              int name, const char *string,
-                              const lDescr *descr, int nm) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      lList *tmp_list = nullptr;
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      lString2List(string, &tmp_list, descr, nm, "\t \v\r,");
-      if (tmp_list != nullptr) {
-         const lListElem *first_elem = lFirst(tmp_list);
-         const char *first_string = lGetString(first_elem, nm);
-
-         if (strcasecmp(NONE_STR, first_string) != 0) {
-            lSetPosList(this_elem, pos, tmp_list);
-         } else {
-            lFreeList(&tmp_list);
-         }
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                 string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a complex entry list and store it in a field *
- * Each entry is a `name=value` pair, as in a complex request. *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_celist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                const char *string) {
-   DENTER(TOP_LAYER);
-   static int rule[] = {CE_name, CE_stringval, 0};
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      lList *tmp_list = nullptr;
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (!cull_parse_definition_list((char *) string, &tmp_list, "", CE_Type, rule)) {
-         lSetPosList(this_elem, pos, tmp_list);
-      } else {
-         lFreeList(&tmp_list);
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                 string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a subordinate list and store it in a field
- *
- * Two forms are accepted: queue wise (`A.q=3,B.q=4`) and slot wise
- * (`slots=4(A.q:1:lr, B.q:2:sr)`). A slot wise list that fails to parse in
- * one of its entries clears the field; a queue wise list that fails leaves it
- * as it was.
- *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set, a list of `SO_Type`; it varies per call
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_solist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const int name,
-                                const char *string) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      ocs::tom::ListPtr<ocs::tom::SO> tmp_list;
-      struct saved_vars_s *last = nullptr;
-      const int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      /*
-       * The queue wise subordinate is defined like this:
-       * subordinate_list  A.q=3,B.q=4
-       * The slotwise subordinate is defined like this:
-       * subordinate_list slots=4(A.q:1:lr, B.q:2:sr)
-       * If the value of the "subordinate_list" key begins with
-       * "slots=", it's slotwise subordinate, otherwise it's
-       * queue wise subordinate.
-       *
-       * TODO: HP: This parser could be improved, now a queue wise subordinate
-       * that begins with a queue called "slots" will be interpreted as
-       * slotwise subordinate and therefore lead to an error.
-       */
-      const char *slots_text = sge_strtok_r(string, "=", &last);
-      if (slots_text != nullptr && strncasecmp("slots", slots_text, 5) == 0) {
-         /*
-          * slot-wise suspend on subordinate
-          */
-         char *end_ptr = nullptr;
-         lUlong slots_sum_value = 0;
-
-         /*
-          * format of string: slots=8(queue1.q:3:sr, queue2.q:2:lr)
-          */
-         /* the "slots=" was already skipped in the first sge_strtok_r() */
-         /* parse the "8" in our example above */
-         const char *slots_sum_text = sge_strtok_r(nullptr, "(", &last);
-         if (slots_sum_text != nullptr) {
-            slots_sum_value = strtol(slots_sum_text, &end_ptr, 10);
-         } else {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                    string);
-            ret = false;
-         }
-         if (end_ptr != nullptr && *end_ptr != '\0') {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                    string);
-            ret = false;
-         }
-         if (ret) {
-            /* point the "sub_queues_text" to the start of the sub queue list */
-            const char *sub_queues_text = sge_strtok_r(nullptr, ")", &last);
-            /* split up the original string from the first subordinated queue on */
-            tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(sub_queues_text, ",) \t");
-            for (const auto tmp_elem : *tmp_list) {
-               const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
-               char *queuename = sge_strtok(queue_value, ":");
-               char *value_str = sge_strtok(nullptr, ":");
-               char *action_str = sge_strtok(nullptr, ":");
-
-               sge_strip_blanks(queuename);
-               sge_strip_blanks(value_str);
-               sge_strip_blanks(action_str);
-
-               if (queuename != nullptr) {
-                  ocs::tom::set<SO_name>(tmp_elem, queuename);
-               } else {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                          MSG_ERRORPARSINGVALUEFORNM_S, string);
-                  ret = false;
-                  break;
-               }
-
-               if (slots_sum_value > 0) {
-                  ocs::tom::set<SO_slots_sum>(tmp_elem, slots_sum_value);
-               } else {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                          MSG_ERRORPARSINGVALUEFORNM_S, string);
-                  ret = false;
-                  break;
-               }
-
-               if (value_str != nullptr) {
-                  char *value_end = nullptr;
-                  const uint32_t value = strtol(value_str, &value_end, 10);
-
-                  if (value_end != nullptr && *value_end == '\0') {
-                     ocs::tom::set<SO_seq_no>(tmp_elem, value);
-                  } else {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                             MSG_ERRORPARSINGVALUEFORNM_S, string);
-                     ret = false;
-                     break;
-                  }
-               } else {
-                  ocs::tom::set<SO_seq_no>(tmp_elem, 0);
-               }
-
-               if (action_str != nullptr) {
-                  if (strcmp(action_str, "lr") == 0) {
-                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_LR);
-                  } else if (strcmp(action_str, "sr") == 0) {
-                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
-                  } else {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                             MSG_ERRORPARSINGVALUEFORNM_S, string);
-                     ret = false;
-                     break;
-                  }
-               } else {
-                  /* default is "sr" */
-                  ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
-               }
-            }
-            // a failed entry drops the whole list, and the field is cleared, as it always was
-            if (!ret) {
-               tmp_list.reset();
-            }
-            // the field number varies per call, so the list is handed over raw
-            lSetPosList(this_elem, pos, tmp_list.release());
-         }
-      } else {
-         tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(string, ", \t");
-         if (tmp_list) {
-            if (!strcasecmp("NONE", ocs::tom::get<SO_name>(tmp_list->front()))) {
-               tmp_list.reset();
-            } else {
-               /* 
-                * queue instance-wise suspend on subordinate
-                */
-               for (const auto tmp_elem : *tmp_list) {
-                  const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
-                  const char *queuename = sge_strtok(queue_value, ":=");
-                  const char *value_str = sge_strtok(nullptr, ":=");
-
-                  ocs::tom::set<SO_name>(tmp_elem, queuename);
-                  if (value_str != nullptr) {
-                     char *endptr = nullptr;
-                     const uint32_t value = strtol(value_str, &endptr, 10);
-
-                     if (endptr != nullptr && *endptr == '\0') {
-                        ocs::tom::set<SO_threshold>(tmp_elem, value);
-                     } else {
-                        answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                                MSG_ERRORPARSINGVALUEFORNM_S, string);
-                        ret = false;
-                        break;
-                     }
-                  } else {
-                     /*
-                      * No value is explicitely allowed
-                      */
-                  }
-               }
-               if (ret) {
-                  // the field number varies per call, so the list is handed over raw
-                  lSetPosList(this_elem, pos, tmp_list.release());
-               }
-            }
-         }
-      }
-      sge_free_saved_vars(last);
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a queue type list and store it in a field *
- * The text is a bitfield of queue type names. *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_qtlist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                const char *string) {
-   DENTER(TOP_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      uint32_t value;
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (sge_parse_bitfield_str(string, queue_types, &value, "", answer_list, true)) {
-         lSetPosUlong(this_elem, pos, value);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_QTYPE_INCORRECTSTRING, string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-
-/**
- * @brief Parse a memory specification and store it in a field *
- * The text is validated as a memory value, e.g. `4G`, and then stored
- * verbatim. *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_mem_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                             const char *string) {
-   DENTER(OBJECT_LAYER);
-
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (parse_ulong_val(nullptr, nullptr, ocs::CEntry::Type::MEM, string, nullptr, 0)) {
-         lSetPosString(this_elem, pos, string);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                                 string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a 32 bit unsigned integer and store it in a field *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_ulong32_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                 const char *string) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (strlen(string) == 0) {
-         /*
-          * Empty string will be parsed as '0'
-          */
-         lSetPosUlong(this_elem, pos, (uint32_t) 0);
-      } else {
-         const double epsilon = 1.0E-12;
-         char *end_ptr = nullptr;
-         double dbl_value = strtod(string, &end_ptr);
-         uint32_t ulong_value = dbl_value;
-
-         if (dbl_value < 0 || dbl_value - ulong_value > epsilon) {
-            /*
-             * value to big for uint32_t variable
-             */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S,
-                                    string);
-            ret = false;
-         } else if (end_ptr != nullptr && *end_ptr == '\0') {
-            lSetPosUlong(this_elem, pos, ulong_value);
-         } else {
-            /*
-             * Not a number or
-             * garbage after number
-             */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING,
-                                    string);
-            ret = false;
-         }
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a 64 bit unsigned integer and store it in a field *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_ulong64_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                 const char *string) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-
-      if (strlen(string) == 0) {
-         /*
-          * Empty string will be parsed as '0'
-          */
-         lSetPosUlong64(this_elem, pos, 0);
-      } else {
-         const double epsilon = 1.0E-12;
-         char *end_ptr = nullptr;
-         double dbl_value = strtod(string, &end_ptr);
-         uint64_t ulong_value = dbl_value;
-
-         if (dbl_value < 0 || dbl_value - ulong_value > epsilon) {
-            /*
-             * value to big for uint32_t variable
-             */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_VALUENOTULONG_S,
-                                    string);
-            ret = false;
-         } else if (end_ptr != nullptr && *end_ptr == '\0') {
-            lSetPosUlong64(this_elem, pos, ulong_value);
-         } else {
-            /*
-             * Not a number or
-             * garbage after number
-             */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ULONG_INCORRECTSTRING,
-                                    string);
-            ret = false;
-         }
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse an int and store it in a field *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_int_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                             const char *string) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-      int value;
-
-      if (sscanf(string, "%d", &value) == 1) {
-         lSetPosInt(this_elem, pos, value);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_INT_INCORRECTSTRING, string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a long and store it in a field *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_long_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                              const char *string) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-      long value;
-
-      if (sscanf(string, "%ld", &value) == 1) {
-         lSetPosLong(this_elem, pos, value);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_LONG_INCORRECTSTRING, string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Parse a double and store it in a field *
- * @param[in,out] this_elem the element whose field is set
- * @param[out] answer_list receives the parse error
- * @param name the field to set
- * @param string the text to parse; nullptr is an error
- * @return true when the value was parsed and stored
- */
-bool
-object_parse_double_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                const char *string) {
-   DENTER(OBJECT_LAYER);
-   bool ret = true;
-
-   if (this_elem != nullptr && string != nullptr) {
-      int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-      double value;
-
-      if (sscanf(string, "%lf", &value) == 1) {
-         lSetPosDouble(this_elem, pos, value);
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_DOUBLE_INCORRECTSTRING,
-                                 string);
-         ret = false;
-      }
-   } else {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
-                              "<null>");
-      ret = false;
-   }
-   DRETURN(ret);
-}
-
-/**
- * @brief Set a field of any CULL type from an untyped pointer
- *
- * The field's own type decides how `value` is dereferenced, so the caller has
- * to pass a pointer to a value of the matching type. A list field is set to a
- * copy of the list.
- *
- * @param[in,out] this_elem the element whose field is set
- * @param name the field to set
- * @param value pointer to the new value, of the field's type
- * @return true when the field was set; false for a field type this cannot handle
- */
-bool
-object_set_any_type(lListElem *this_elem, int name, void *value) {
-   DENTER(OBJECT_LAYER);
-   int cull_ret = 0;
-   int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-   int type = lGetPosType(lGetElemDescr(this_elem), pos);
-
-
-   if (type == lStringT) {
-      cull_ret = lSetPosString(this_elem, pos, *((const char **) value));
-   } else if (type == lHostT) {
-      cull_ret = lSetPosHost(this_elem, pos, *((const char **) value));
-   } else if (type == lUlongT) {
-      cull_ret = lSetPosUlong(this_elem, pos, *((lUlong *) value));
-   } else if (type == lDoubleT) {
-      cull_ret = lSetPosDouble(this_elem, pos, *((lDouble *) value));
-   } else if (type == lLongT) {
-      cull_ret = lSetPosLong(this_elem, pos, *((lLong *) value));
-   } else if (type == lBoolT) {
-      cull_ret = lSetPosBool(this_elem, pos, *((bool *) value));
-   } else if (type == lIntT) {
-      cull_ret = lSetPosInt(this_elem, pos, *((int *) value));
-   } else if (type == lObjectT) {
-      cull_ret = lSetPosObject(this_elem, pos, *((lListElem **) value));
-   } else if (type == lRefT) {
-      cull_ret = lSetPosRef(this_elem, pos, *((lRef *) value));
-   } else if (type == lListT) {
-      cull_ret = lSetPosList(this_elem, pos, lCopyList("", *((lList **) value)));
-   } else {
-      /* not possible */
-      cull_ret = -1;
-   }
-   DRETURN(cull_ret == 0 ? true : false);
-}
-
-/**
- * @brief Copy one field of any CULL type from another element
- *
- * Both elements are addressed by the same field name, so they need not share a
- * descriptor.
- *
- * @param[in,out] this_elem the element whose field is set
- * @param name the field to copy
- * @param org_elem the element to copy the value from
- * @return true when the field was copied; false for a field type this cannot handle
- *
- * @note Unlike #object_set_any_type and #object_get_any_type this has no branch
- *       for list fields, so a list attribute is never copied and false is
- *       returned instead.
- */
-bool
-object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem) {
-   DENTER(OBJECT_LAYER);
-
-   int cull_ret;
-   int out_pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-   int in_pos = lGetPosViaElem(org_elem, name, SGE_NO_ABORT);
-   int type = lGetPosType(lGetElemDescr(this_elem), out_pos);
-
-   if (type == lStringT) {
-      const char *value = lGetPosString(org_elem, in_pos);
-
-      cull_ret = lSetPosString(this_elem, out_pos, value);
-   } else if (type == lHostT) {
-      const char *value = lGetPosHost(org_elem, in_pos);
-
-      cull_ret = lSetPosHost(this_elem, out_pos, value);
-   } else if (type == lUlongT) {
-      uint32_t value = lGetPosUlong(org_elem, in_pos);
-
-      cull_ret = lSetPosUlong(this_elem, out_pos, value);
-   } else if (type == lDoubleT) {
-      double value = lGetPosDouble(org_elem, in_pos);
-
-      cull_ret = lSetPosDouble(this_elem, out_pos, value);
-   } else if (type == lLongT) {
-      int value = lGetPosLong(org_elem, in_pos);
-
-      cull_ret = lSetPosLong(this_elem, out_pos, value);
-   } else if (type == lBoolT) {
-      bool value = lGetPosBool(org_elem, in_pos) ? true : false;
-
-      cull_ret = lSetPosBool(this_elem, out_pos, value);
-   } else if (type == lIntT) {
-      int value = lGetPosInt(org_elem, in_pos);
-
-      cull_ret = lSetPosInt(this_elem, out_pos, value);
-   } else if (type == lObjectT) {
-      lListElem *value = lGetPosObject(org_elem, in_pos);
-
-      cull_ret = lSetPosObject(this_elem, out_pos, value);
-   } else if (type == lRefT) {
-      void *value = lGetPosRef(org_elem, in_pos);
-
-      cull_ret = lSetPosRef(this_elem, out_pos, value);
-   } else {
-      /* not possible */
-      cull_ret = -1;
-   }
-   DRETURN(cull_ret == 0 ? true : false);
-}
-
-/**
- * @brief Read a field of any CULL type into an untyped pointer
- *
- * The field's own type decides what is written through `value`, so the caller
- * has to pass a pointer to a variable of the matching type. A list field
- * yields the list pointer itself, not a copy.
- *
- * @param this_elem the element to read
- * @param name the field to read
- * @param[out] value pointer to a variable of the field's type
- */
-void
-object_get_any_type(const lListElem *this_elem, int name, void *value) {
-   DENTER(OBJECT_LAYER);
-   int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
-   int type = lGetPosType(lGetElemDescr(this_elem), pos);
-
-   if (value != nullptr) {
-      if (type == lStringT) {
-         *((const char **) value) = lGetPosString(this_elem, pos);
-      } else if (type == lHostT) {
-         *((const char **) value) = lGetPosHost(this_elem, pos);
-      } else if (type == lUlongT) {
-         *((lUlong *) value) = lGetPosUlong(this_elem, pos);
-      } else if (type == lDoubleT) {
-         *((lDouble *) value) = lGetPosDouble(this_elem, pos);
-      } else if (type == lLongT) {
-         *((lLong *) value) = lGetPosLong(this_elem, pos);
-      } else if (type == lBoolT) {
-         *((bool *) value) = lGetPosBool(this_elem, pos) ? true : false;
-      } else if (type == lIntT) {
-         *((int *) value) = lGetPosInt(this_elem, pos);
-      } else if (type == lObjectT) {
-         *((lListElem **) value) = lGetPosObject(this_elem, pos);
-      } else if (type == lRefT) {
-         *((lRef *) value) = lGetPosRef(this_elem, pos);
-      } else if (type == lListT) {
-         *((lList **) value) = lGetPosList(this_elem, pos);
-      } else {
-         DTRACE;
-         /* not possible */
-      }
-   }
-   DRETURN_VOID;
 }
 
 /**
@@ -2799,37 +2485,38 @@ object_verify_expression_syntax(const ocs::tom::ConstElement<ocs::tom::CE> elem,
 
 
 /**
- * @brief Verify that a name attribute is usable as an object name
+ * @brief Verify that a text is usable as an object name
  *
- * Two checks are applied to the attribute:
+ * Two checks are applied:
  *
  * 1. the name must not start with a digit, and
  * 2. it must pass the general key check for the qsub character table.
  *
- * A detailed problem description is added to the answer list. An attribute
- * that is not set at all passes.
+ * A detailed problem description is added to the answer list. A name that is
+ * not set at all passes. The typed object_verify_name() reads the name from its
+ * field and calls this.
  *
- * @param object the element carrying the name
  * @param[out] answer_list receives the problem description
- * @param name the attribute holding the object name
+ * @param object_name the name, or nullptr
+ * @param attribute_name the name of the attribute holding it, for the message of the key check
  *
  * @return 0 when the name is usable, otherwise `STATUS_EUNKNOWN`
  *
- * @note MT-NOTE: object_verify_name() is MT safe
+ * @note MT-NOTE: ocs_object_verify_name_value() is MT safe
  */
 int
-object_verify_name(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name) {
+ocs_object_verify_name_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *object_name,
+                             const char *attribute_name) {
    DENTER(TOP_LAYER);
    int ret = 0;
 
-   const char *object_name = lGetString(object, name);
    if (object_name != nullptr) {
       if (isdigit(object_name[0])) {
          ERROR(MSG_OBJECT_INVALID_NAME_S, object_name);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       } else {
-         if (verify_str_key(answer_list, object_name, MAX_VERIFY_STRING, lNm2Str(name), QSUB_TABLE) != STATUS_OK) {
+         if (verify_str_key(answer_list, object_name, MAX_VERIFY_STRING, attribute_name, QSUB_TABLE) != STATUS_OK) {
             ret = STATUS_EUNKNOWN;
          }
       }

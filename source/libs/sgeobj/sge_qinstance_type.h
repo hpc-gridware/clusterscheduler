@@ -40,6 +40,9 @@
  * @see sge_qinstance_type.cc
  */
 
+#include <cstdint>
+#include <utility>
+
 #include "uti/sge_dstring.h"
 
 #include "tom/ocs_Element.h"
@@ -47,11 +50,29 @@
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/sge_answer.h"
 
-/// The queue type names, indexed by their `QU_qtype` bit; see sge_qinstance_type.cc
-extern const char *queue_types[];
+/**
+ * @brief The queue type names, in the order of the `QU_qtype` bits
+ *
+ * The position in this array is the bit position, so `sge_parse_bitfield_str`
+ * can turn `qtype` back into the stored bit field. `PARALLEL` and
+ * `CHECKPOINTING` are deliberately absent: they are not stored bits but
+ * derived from whether the queue references a PE or a checkpointing
+ * environment - see #qinstance_is_parallel_queue.
+ */
+inline constexpr const char *const queue_types[] = {
+   "BATCH",
+   "INTERACTIVE",
+   nullptr
+};
 
 const char *
 qtype_append_to_dstring(uint32_t dtype, dstring *string);
+
+const char *
+ocs_qinstance_qtype_append_to_dstring(uint32_t qtype, dstring *string);
+
+std::pair<bool, uint32_t>
+ocs_qinstance_qtype_parse(const char *value);
 
 bool qinstance_is_batch_queue(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
 
@@ -64,5 +85,3 @@ bool qinstance_is_parallel_queue(ocs::tom::ConstElement<ocs::tom::QU> this_elem)
 bool qinstance_print_qtype_to_dstring(ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string,
                                       bool only_first_char);
 
-bool qinstance_parse_qtype_from_string(ocs::tom::Element<ocs::tom::QU> this_elem,
-                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);

@@ -171,7 +171,7 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
    if (in_master) {
       /*    AR_name, SGE_STRING */
       ocs_null_out_none<AR_name>(ar);
-      if (object_verify_name(ar, alpp, AR_name)) {
+      if (object_verify_name<AR_name>(ar, alpp)) {
          goto ERROR;
       }
       /*   AR_account, SGE_STRING */

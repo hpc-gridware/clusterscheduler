@@ -593,9 +593,8 @@ bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
    if (cqueue && attr_elem) {
       const char *memory_string = ocs::tom::get<AMEM_value>(attr_elem);
 
-      const auto copy = attr_elem.clone();
-      // the field is passed by number to the generic parser, which takes the untyped element
-      if (!object_parse_field_from_string(*copy, answer_list, AMEM_value, memory_string)) {
+      // the check parsing AMEM_value does, without storing the text
+      if (!ocs_object_check_value_string(answer_list, ocs::CEntry::Type::MEM, memory_string)) {
          ret = false;
       }
    }

@@ -39,6 +39,9 @@
  * @see sge_userset.cc
  */
 
+#include <cstdint>
+#include <utility>
+
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
@@ -85,7 +88,11 @@
 /** @} */
 
 /// The userset type names, indexed by their `US_type` bit
-extern const char *userset_types[];
+inline constexpr const char *const userset_types[] = {
+   "ACL",   /* US_ACL   */
+   "DEPT",  /* US_DEPT  */
+   nullptr
+};
 
 ocs::tom::ElementPtr<ocs::tom::US> userset_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name);
 
@@ -97,11 +104,9 @@ int userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US> acl_list, o
 int userset_list_validate_access(const lList *acl_list, int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  ocs::tom::ConstList<ocs::tom::US> master_userset_list);
 
-const char *userset_get_type_string(ocs::tom::ConstElement<ocs::tom::US> userset,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
+const char *ocs_userset_type_append_to_dstring(uint32_t type, dstring *buffer);
 
-bool userset_set_type_string(ocs::tom::Element<ocs::tom::US> userset, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                             const char *value);
+std::pair<bool, uint32_t> ocs_userset_type_parse(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);
 
 const char *userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US> this_list, dstring *string);
 

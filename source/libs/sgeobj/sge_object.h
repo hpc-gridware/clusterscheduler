@@ -38,13 +38,18 @@
  *
  * Code that has to treat every object alike - spooling, the flat file
  * readers/writers, the GDI verification layer - cannot name each attribute.
- * These utilities let it ask an object what type it is, read and write an
- * attribute given only its field number, and convert between an attribute and
- * its string representation.
+ * These utilities let it ask an object what type it is, compare and verify
+ * objects of any type, and convert between an attribute and the text an
+ * administrator writes: typed for a field known at compile time
+ * (ocs_object_append_field(), ocs_object_parse_field()), per value for the
+ * spooling walkers, which know a field by its record (ocs_object_append_symbolic(),
+ * ocs_object_parse_symbolic(), ocs_object_parse_uint32() and its siblings).
  *
  * @see sge_object.cc
  */
 
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <strings.h>
 #include <vector>
@@ -59,6 +64,7 @@
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/sge_answer.h"
 
 namespace ocs {
@@ -206,79 +212,123 @@ object_get_type_name(const lListElem *object);
 const char *
 object_get_name_prefix(const lDescr *descr, dstring *buffer);
 
+/**
+ * @brief The fields whose value is written as a word rather than in the default form of the field's type
+ *
+ * Each of them is an unsigned 32 bit number: an enumeration of the complex entry, or a bit field of names.
+ * Usually such special cases are evidence of bad data base design: QU_qtype is a bit field of types (BATCH,
+ * INTERACTIVE) where boolean fields would do. ocs_object_append_symbolic() and ocs_object_parse_symbolic() render
+ * and parse a value of such a kind, the typed ocs_object_append_field() / ocs_object_parse_field() and the
+ * spooling record of the field (ocs_spool_field_ops) choose the kind from the field, at compile time.
+ */
+enum class ocs_object_symbolic : std::uint8_t {
+   none,              ///< no symbolic form, the default form of the field's type
+   ce_valtype,        ///< `CE_valtype`: the name of an ocs::CEntry::Type, e.g. `MEMORY`
+   ce_relop,          ///< `CE_relop`: a relational operator, e.g. `<=`
+   ce_requestable,    ///< `CE_requestable`: `NO`, `YES` or `FORCED`
+   ce_consumable,     ///< `CE_consumable`: `NO`, `YES`, `JOB` or `HOST`
+   qinstance_type,    ///< `QU_qtype`: the names of the queue types, each followed by a blank
+   userset_type,      ///< `US_type`: the names of the userset types, separated by blanks
+   attr_queue_type    ///< `AQTLIST_value`: the names of the queue types, separated by blanks
+};
+
+/**
+ * @brief The symbolic kind of a field
+ *
+ * Evaluated at compile time only: for the typed forms below and for the spooling records.
+ *
+ * @param nm the field
+ * @return the kind, ocs_object_symbolic::none for a field written in the default form of its type
+ */
+consteval ocs_object_symbolic ocs_object_symbolic_of(const int nm) {
+   switch (nm) {
+      case CE_valtype:
+         return ocs_object_symbolic::ce_valtype;
+      case CE_relop:
+         return ocs_object_symbolic::ce_relop;
+      case CE_requestable:
+         return ocs_object_symbolic::ce_requestable;
+      case CE_consumable:
+         return ocs_object_symbolic::ce_consumable;
+      case QU_qtype:
+         return ocs_object_symbolic::qinstance_type;
+      case US_type:
+         return ocs_object_symbolic::userset_type;
+      case AQTLIST_value:
+         return ocs_object_symbolic::attr_queue_type;
+      default:
+         return ocs_object_symbolic::none;
+   }
+}
+
+/** @brief The result of ocs_object_parse_symbolic() */
+struct ocs_object_parsed_symbol {
+   bool ok;               ///< the text was understood; on false a message may be in the answer list
+   bool store;            ///< the value is to be stored into the field - for some kinds after a failure as well
+   std::uint32_t value;   ///< the value to store
+};
+
 const char *
-object_append_field_to_dstring(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer,
-                               int nm, char string_quotes);
-bool 
-object_parse_field_from_string(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int nm,
-                               const char *value);
+ocs_object_append_symbolic(dstring *buffer, ocs_object_symbolic kind, std::uint32_t value);
+
+ocs_object_parsed_symbol
+ocs_object_parse_symbolic(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs_object_symbolic kind, const char *value);
+
+std::optional<bool>
+ocs_object_parse_bool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
+
+std::optional<std::uint32_t>
+ocs_object_parse_uint32(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
+
+std::optional<std::uint64_t>
+ocs_object_parse_uint64(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
+
+std::optional<std::int32_t>
+ocs_object_parse_int32(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
+
+std::optional<std::int64_t>
+ocs_object_parse_int64(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
+
+std::optional<double>
+ocs_object_parse_double(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
+
+bool
+ocs_object_check_value_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::CEntry::Type type,
+                              const char *string);
+
+/**
+ * @brief The value fields of the cluster queue attribute types (sge_attr.h)
+ *
+ * ocs_object_append_field() and ocs_object_parse_field() are defined in sge_object.cc and instantiated there for
+ * exactly these fields, the only ones their callers name; the constraint turns a use with another field into a
+ * compile error instead of an undefined reference at link time.
+ *
+ * @tparam F the field
+ */
+template <auto F>
+concept OcsAttrValueField =
+   static_cast<int>(F) == ASTR_value || static_cast<int>(F) == AULNG_value || static_cast<int>(F) == ABOOL_value ||
+   static_cast<int>(F) == ATIME_value || static_cast<int>(F) == AMEM_value || static_cast<int>(F) == AINTER_value ||
+   static_cast<int>(F) == AQTLIST_value || static_cast<int>(F) == ASTRLIST_value ||
+   static_cast<int>(F) == AUSRLIST_value || static_cast<int>(F) == APRJLIST_value ||
+   static_cast<int>(F) == ACELIST_value || static_cast<int>(F) == ASOLIST_value;
+
+template <auto F>
+   requires OcsAttrValueField<F>
+const char *
+ocs_object_append_field(ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> ep, dstring *buffer);
+
+template <auto F>
+   requires OcsAttrValueField<F>
+bool
+ocs_object_parse_field(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);
 
 void
 object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int rnm, uint32_t id);
 
 int 
 object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end, uint32_t step);
-
-bool
-object_parse_bool_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                              const char *string);
-
-bool
-object_parse_ulong32_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                 const char *string);
-
-bool
-object_parse_ulong64_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                 const char *string);
-
-bool
-object_parse_int_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                             const char *string);
-
-bool
-object_parse_long_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                              const char *string);
-
-bool
-object_parse_double_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                const char *string);
-
-bool
-object_parse_time_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                              const char *string);
-
-bool
-object_parse_mem_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                             const char *string);
-
-bool
-object_parse_inter_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                               const char *string);
-
-bool
-object_parse_list_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                              const char *string, const lDescr *descr, int nm);
-
-bool
-object_parse_celist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                const char *string);
-
-bool
-object_parse_solist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                const char *string);
-
-bool
-object_parse_qtlist_from_string(lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name,
-                                const char *string);
-
-bool
-object_set_any_type(lListElem *this_elem, int name, void *value);
-
-bool
-object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem);
-
-void
-object_get_any_type(const lListElem *this_elem, int name, void *value);
 
 bool  
 object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -355,7 +405,35 @@ object_verify_expression_syntax(ocs::tom::ConstElement<ocs::tom::CE> elem,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 int
-object_verify_name(const lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name);
+ocs_object_verify_name_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *object_name,
+                             const char *attribute_name);
+
+/**
+ * @brief Verify that a name attribute is usable as an object name
+ *
+ * Two checks are applied to the attribute:
+ *
+ * 1. the name must not start with a digit, and
+ * 2. it must pass the general key check for the qsub character table.
+ *
+ * A detailed problem description is added to the answer list. An attribute
+ * that is not set at all passes. The checks are ocs_object_verify_name_value()'s.
+ *
+ * @tparam F the string field holding the object name
+ * @param object the element carrying the name
+ * @param[out] answer_list receives the problem description
+ *
+ * @return 0 when the name is usable, otherwise `STATUS_EUNKNOWN`
+ *
+ * @note MT-NOTE: object_verify_name() is MT safe
+ */
+template <auto F>
+   requires (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::String)
+int
+object_verify_name(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> object,
+                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+   return ocs_object_verify_name_value(answer_list, ocs::tom::get<F>(object), lNm2Str(static_cast<int>(F)));
+}
 
 int
 object_verify_pe_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *pe_name,

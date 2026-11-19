@@ -40,7 +40,7 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_object.h"           /* object_get_type_name, the symbolic value renderer/parser */
+#include "sgeobj/sge_object.h"           /* object_get_type_name, the symbolic value renderer */
 #include "sgeobj/sge_attr.h"             /* HOSTREF_DEFAULT ("@/") */
 #include "sgeobj/sge_centry.h"           /* CE_Type / CE_* for complex-value typing */
 #include "sgeobj/sge_ulong.h"            /* double_print_to_dstring (compact time/mem) */
@@ -313,17 +313,19 @@ spool_json_is_ce_list(const lList *list) {
 /**
  * @brief Write a field as its symbolic string token.
  *
- * Used for the fields of the JSON kind ocs_spool_render::by_name (#ocs_spool_field_ops::json).
+ * Used for the fields of the JSON kind ocs_spool_render::by_name (#ocs_spool_field_ops::json), the
+ * enumerations of the complex entry; the word is the one of the field's symbolic kind
+ * (#ocs_spool_field_ops::symbolic), as the flatfile writer writes it.
  *
  * @param writer  pretty-printer to emit into
  * @param object  element holding the field
- * @param nm      CULL field id to render symbolically
+ * @param ops     the record of the field
  */
 static void
 spool_json_write_symbolic_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                const lListElem *object, int nm) {
+                                const lListElem *object, const ocs_spool_field_ops &ops) {
    dstring buf = DSTRING_INIT;
-   const char *s = object_append_field_to_dstring(object, nullptr, &buf, nm, '\0');
+   const char *s = ocs_object_append_symbolic(&buf, ops.symbolic, ops.get(object).u32);
    s != nullptr ? writer.String(s) : writer.Null();
    sge_dstring_free(&buf);
 }
@@ -528,7 +530,7 @@ spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
          spool_json_write_enum_value(writer, ops.get(ep).u32, ops.names);
          break;
       case ocs_spool_render::by_name:
-         spool_json_write_symbolic_value(writer, ep, field.nm);
+         spool_json_write_symbolic_value(writer, ep, ops);
          break;
       case ocs_spool_render::avalue:
          spool_json_write_avalue(writer, ops.get(ep).str, ocs_spool_avalue_type_of(ops));
@@ -994,7 +996,7 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
          } else if (spool_json_nm_is_perm_list(nm)) {
             spool_json_write_perm_list(writer, ops.get(object).str);
          } else if (ops.json == ocs_spool_render::by_name) {
-            spool_json_write_symbolic_value(writer, object, nm);
+            spool_json_write_symbolic_value(writer, object, ops);
          } else if (ops.json == ocs_spool_render::number) {
             spool_json_write_number_value(writer, ops.get(object).str);
          } else {
@@ -1818,7 +1820,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
       } else if (field.ops->json == ocs_spool_render::by_name) {
          /* symbolic enum token ("INT", "<=", "YES", ...) -> enum value */
          dstring s = DSTRING_INIT;
-         object_parse_field_from_string(ep, nullptr, nm, spool_json_value_to_string(m->value, &s));
+         ocs_spool_parse_value(*field.ops, ep, nullptr, spool_json_value_to_string(m->value, &s));
          sge_dstring_free(&s);
       } else {
          spool_json_set_field(ep, field, m->value);

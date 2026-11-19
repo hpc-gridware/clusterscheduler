@@ -276,8 +276,8 @@ ocs_attr_list_ops<A>::find_href(const ocs::tom::ConstList<A> this_list, ocs::tom
 /**
  * @brief Render a per host attribute list as an administrator writes it
  *
- * See ocs_attr_list_append_to_dstring(), which calls it. The value is rendered by the descriptor generic
- * object_append_field_to_dstring(), which takes the value field by number.
+ * See ocs_attr_list_append_to_dstring(), which calls it. The value is rendered by the typed
+ * ocs_object_append_field() of the attribute's value field.
  *
  * @tparam A the attribute type
  * @param this_list the attribute list to render, may be an empty handle
@@ -300,7 +300,7 @@ ocs_attr_list_ops<A>::append_to_dstring(const ocs::tom::ConstList<A> this_list, 
 
    if (const auto def = this_list.template find_first<href_f>(ocs::tom::Host(HOSTREF_DEFAULT)); def) {
       found_default = true;
-      object_append_field_to_dstring(def, nullptr, string, value_f, '\0');
+      ocs_object_append_field<value_f>(def, string);
    }
 
    for (const auto attr : this_list) {
@@ -328,7 +328,7 @@ ocs_attr_list_ops<A>::append_to_dstring(const ocs::tom::ConstList<A> this_list, 
          sge_dstring_append_char(ds, '[');
          sge_dstring_append(ds, href);
          sge_dstring_append_char(ds, '=');
-         object_append_field_to_dstring(attr, nullptr, ds, value_f, '\0');
+         ocs_object_append_field<value_f>(attr, ds);
          sge_dstring_append_char(ds, ']');
       }
    }
@@ -348,8 +348,8 @@ ocs_attr_list_ops<A>::append_to_dstring(const ocs::tom::ConstList<A> this_list, 
 /**
  * @brief Parse a per host attribute list as an administrator writes it
  *
- * See ocs_attr_list_parse_from_string(), which calls it. Each value is parsed by the descriptor generic
- * object_parse_field_from_string(), which takes the value field by number.
+ * See ocs_attr_list_parse_from_string(), which calls it. Each value is parsed by the typed
+ * ocs_object_parse_field() of the attribute's value field.
  *
  * @tparam A the attribute type
  * @param this_list the list the entries are added to; created if it is empty
@@ -501,8 +501,7 @@ ocs_attr_list_ops<A>::parse_from_string(ocs::tom::ListPtr<A> &this_list, ocs::to
                auto attr_elem = ocs::tom::ElementPtr<A>::create();
 
                ocs::tom::set<ocs_attr_traits<A>::href>(attr_elem, href_name);
-               // the generic parser takes the value field by number
-               ret &= object_parse_field_from_string(*attr_elem, answer_list, ocs_attr_traits<A>::value, value);
+               ret &= ocs_object_parse_field<ocs_attr_traits<A>::value>(*attr_elem, answer_list, value);
                if (ret) {
                   ret &= ocs_attr_list_add(this_list, answer_list, std::move(attr_elem), flags);
                } else {

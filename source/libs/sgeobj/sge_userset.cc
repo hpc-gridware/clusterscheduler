@@ -68,12 +68,6 @@
 
 #include <sge_str.h>
 
-const char* userset_types[] = {
-   "ACL",   /* US_ACL   */
-   "DEPT",  /* US_DEPT  */
-   nullptr
-};
-
 /**
  * @brief Create a new userset
  *
@@ -205,29 +199,23 @@ int userset_validate_entries(const ocs::tom::ConstElement<ocs::tom::US> userset,
 
 
 /**
- * @brief Get readable type definition
+ * @brief Render userset type bits as their names
  *
- * Returns a readable string of the userset type bitfield.
+ * Appends the names of the set bits, separated by blanks. Nothing is appended
+ * when no bit with a name is set; the caller decides what stands for such a
+ * value (the spooled form is the plain number then).
  *
- * @param userset the userset containing the requested information (US_Type)
- * @param answer_list errors will be reported here
- * @param buffer string buffer to hold the result string
+ * @param type the bit field (`US_type`)
+ * @param[out] buffer receives the names, appended
+ * @return the buffer's text, or nullptr if no name was appended
  *
- * @return resulting string
- *
- * @see #userset_set_type_string
+ * @see #ocs_userset_type_parse
  */
-const char *userset_get_type_string(const ocs::tom::ConstElement<ocs::tom::US> userset,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
+const char *ocs_userset_type_append_to_dstring(const uint32_t type, dstring *buffer) {
    DENTER(TOP_LAYER);
 
-   SGE_CHECK_POINTER_NULL(userset, answer_list);
-   SGE_CHECK_POINTER_NULL(buffer, answer_list);
-
    bool append = false;
-   const uint32_t type = ocs::tom::get<US_type>(userset);
 
-   sge_dstring_clear(buffer);
    for (int i = 0; userset_types[i] != nullptr; i++) {
       if ((type & (1 << i)) != 0) {
          if (append) {
@@ -237,35 +225,33 @@ const char *userset_get_type_string(const ocs::tom::ConstElement<ocs::tom::US> u
          append = true;
       }
    }
-   DRETURN(sge_dstring_get_string(buffer));
+   DRETURN(append ? sge_dstring_get_string(buffer) : nullptr);
 }
 
 
 /**
- * @brief Set userset type from string
+ * @brief Parse a userset type from its names
  *
- * Takes a string representation for the userset type,
+ * A missing or empty value is an error, as is a name given twice or an
+ * unknown name; the bits understood before such a name are stored all the
+ * same, a missing value stores no bit.
  *
- * @param userset the userset to change (US_Type)
- * @param answer_list errors will be reported here
- * @param value new value for userset type
+ * @param[out] answer_list errors will be reported here
+ * @param value the type names, or nullptr
+ * @return whether the value was understood, and the bits to store in either case
  *
- * @return true on success, false on error, error message will be in answer_list
+ * @note MT-NOTE: ocs_userset_type_parse() is not MT safe, as sge_parse_bitfield_str() is not
  *
- * @see #userset_get_type_string
+ * @see #ocs_userset_type_append_to_dstring
  */
-bool userset_set_type_string(const ocs::tom::Element<ocs::tom::US> userset,
-                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
+std::pair<bool, uint32_t> ocs_userset_type_parse(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
    DENTER(TOP_LAYER);
-
-   SGE_CHECK_POINTER_FALSE(userset, answer_list);
 
    bool ret = true;
    uint32_t type = 0;
 
    if (value != nullptr && *value != 0) {
-      if (!sge_parse_bitfield_str(value, userset_types, &type, 
-                                  "userset type", answer_list, false)) {
+      if (!sge_parse_bitfield_str(value, userset_types, &type, "userset type", answer_list, false)) {
          ret = false;
       }
    } else { /* value == nullptr || *value == 0 */
@@ -273,10 +259,8 @@ bool userset_set_type_string(const ocs::tom::Element<ocs::tom::US> userset,
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
- 
-   ocs::tom::set<US_type>(userset, type);
 
-   DRETURN(ret);
+   DRETURN(std::make_pair(ret, type));
 }
 
 

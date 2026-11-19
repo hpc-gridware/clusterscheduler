@@ -122,14 +122,16 @@ int main(int /*argc*/, char * /*argv*/[]) {
          sge_dstring_clear(&elem_str);
          sge_dstring_clear(&copy_str);
 
-         const char *value = object_append_field_to_dstring(elem, &alp, &elem_str, nm, '\0');
+         // the value is converted through the field's spooling record, as the flatfile walkers convert it
+         const ocs_spool_field_ops *ops = ocs_spool_field_ops_of(nm);
+         const char *value = ops != nullptr ? ocs_spool_append_value(*ops, elem, &alp, &elem_str) : nullptr;
          alp.reset();
          const char *reread_value = nullptr;
 
          if (value != nullptr) {
-            object_parse_field_from_string(copy, &alp, nm, value);
+            ocs_spool_parse_value(*ops, copy, &alp, value);
             alp.reset();
-            reread_value = object_append_field_to_dstring(copy, &alp, &copy_str, nm, '\0');
+            reread_value = ocs_spool_append_value(*ops, copy, &alp, &copy_str);
             alp.reset();
          }
 

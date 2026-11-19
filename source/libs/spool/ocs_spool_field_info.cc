@@ -19,7 +19,10 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The accessor sets of the spooling records, one per field type
+ * @brief The accessor sets of the spooling records, one per field type, and the shared value conversion
+ *
+ * ocs_spool_append_value() and ocs_spool_parse_value() at the end convert the value of a field that is neither a
+ * list nor an object to and from the text of a flatfile, with the record's accessors and its symbolic kind.
  *
  * The walkers read and write a field through the #ocs_spool_accessors its #ocs_spool_field_ops record points at.
  * There is one set per ocs::tom::FieldType, not one per field, so the code here exists once for all fields of all
@@ -43,10 +46,15 @@
 
 #include "cull/cull.h"
 
+#include "uti/sge.h"
+
+#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/ocs_spool_field_info.h"
+
+#include "msg_common.h"
 
 namespace {
 
@@ -392,3 +400,165 @@ const ocs_spool_accessors ocs_spool_access_object{nullptr, nullptr, nullptr, nul
 const ocs_spool_accessors ocs_spool_access_none{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
 /* *INDENT-ON* */
+
+/**
+ * @brief Append the value of a field as the flatfile walkers write it
+ *
+ * A number, a bool, a string or a host name is read through the record's accessors and written in the default
+ * form of its type, a string or a host name that is not set as `NONE`; a field of a symbolic kind
+ * (#ocs_spool_field_ops::symbolic) is written as a word by ocs_object_append_symbolic(). Nothing is quoted. A list,
+ * an object or a reference field has no such value. Shared by the walkers, which take the record from the row, and
+ * by every other caller that knows a field only by its number (ocs_spool_field_ops_of()). No DENTER, as the
+ * walkers' per field helpers have none.
+ *
+ * @param ops the record of the field
+ * @param ep the element
+ * @param[out] answer_list receives the message for a nullptr element or an element that does not hold the field
+ * @param[out] buffer receives the text, appended
+ * @return the buffer's text; nullptr for a list, an object or a reference field, and on an error
+ */
+const char *
+ocs_spool_append_value(const ocs_spool_field_ops &ops, const lListElem *ep,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
+   if (ep == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_NULLELEMENTPASSEDTO_S,
+                              __func__);
+      return nullptr;
+   }
+   if (lGetPosInDescr(lGetElemDescr(ep), ops.nm) < 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S,
+                              lNm2Str(ops.nm));
+      return nullptr;
+   }
+   if (!ops.has_value()) {
+      return nullptr;
+   }
+
+   const ocs_spool_value value = ops.get(ep);
+   if (ops.symbolic != ocs_object_symbolic::none) {
+      return ocs_object_append_symbolic(buffer, ops.symbolic, value.u32);
+   }
+   switch (ops.type) {
+      case ocs::tom::FieldType::Uint32:
+         return sge_dstring_sprintf_append(buffer, sge_u32, value.u32);
+      case ocs::tom::FieldType::Uint64:
+         return sge_dstring_sprintf_append(buffer, sge_u64, value.u64);
+      case ocs::tom::FieldType::Int32:
+         return sge_dstring_sprintf_append(buffer, "%d", value.i32);
+      case ocs::tom::FieldType::Int64:
+         return sge_dstring_sprintf_append(buffer, "%ld", static_cast<long>(value.i64));
+      case ocs::tom::FieldType::Double:
+         return sge_dstring_sprintf_append(buffer, "%lf", value.dbl);
+      case ocs::tom::FieldType::Bool:
+         return sge_dstring_append(buffer, value.b ? TRUE_STR : FALSE_STR);
+      default:
+         // a string or a host name, the only other fields with a get operation
+         return sge_dstring_append(buffer, value.str != nullptr ? value.str : NONE_STR);
+   }
+}
+
+/**
+ * @brief Set the value of a field from the text the flatfile walkers read
+ *
+ * The counterpart of ocs_spool_append_value(): a field of a symbolic kind is parsed by
+ * ocs_object_parse_symbolic(), which also decides whether a value is stored after a failure; a string holding a
+ * value of a complex type (the time, interval and memory attributes of a cluster queue,
+ * ocs_spool_avalue_type_of()) is validated and stored verbatim; anything else is parsed by the parser of its type,
+ * a string or a host name is stored as it is. A list, an object or a reference field is not set from a text, which
+ * is no error. No DENTER, as the walkers' per field helpers have none.
+ *
+ * @param ops the record of the field
+ * @param ep the element to change
+ * @param[out] answer_list receives the messages
+ * @param value the text
+ * @return true on success, false on an error, described in the answer list for most fields
+ */
+bool
+ocs_spool_parse_value(const ocs_spool_field_ops &ops, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                      const char *value) {
+   if (ep == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_NULLELEMENTPASSEDTO_S,
+                              __func__);
+      return false;
+   }
+   if (lGetPosInDescr(lGetElemDescr(ep), ops.nm) < 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S,
+                              lNm2Str(ops.nm));
+      return false;
+   }
+   if (!ops.has_value()) {
+      return true;
+   }
+
+   ocs_spool_value parsed{};
+   if (ops.symbolic != ocs_object_symbolic::none) {
+      const ocs_object_parsed_symbol symbol = ocs_object_parse_symbolic(answer_list, ops.symbolic, value);
+      if (symbol.store) {
+         parsed.u32 = symbol.value;
+         ops.set(ep, parsed);
+      }
+      return symbol.ok;
+   }
+   if (const ocs::CEntry::Type value_type = ocs_spool_avalue_type_of(ops); value_type != ocs::CEntry::Type::NONE) {
+      if (!ocs_object_check_value_string(answer_list, value_type, value)) {
+         return false;
+      }
+      parsed.str = value;
+      ops.set(ep, parsed);
+      return true;
+   }
+
+   bool ok = true;
+   switch (ops.type) {
+      case ocs::tom::FieldType::Uint32:
+         if (const auto v = ocs_object_parse_uint32(answer_list, value); v) {
+            parsed.u32 = *v;
+         } else {
+            ok = false;
+         }
+         break;
+      case ocs::tom::FieldType::Uint64:
+         if (const auto v = ocs_object_parse_uint64(answer_list, value); v) {
+            parsed.u64 = *v;
+         } else {
+            ok = false;
+         }
+         break;
+      case ocs::tom::FieldType::Int32:
+         if (const auto v = ocs_object_parse_int32(answer_list, value); v) {
+            parsed.i32 = *v;
+         } else {
+            ok = false;
+         }
+         break;
+      case ocs::tom::FieldType::Int64:
+         if (const auto v = ocs_object_parse_int64(answer_list, value); v) {
+            parsed.i64 = *v;
+         } else {
+            ok = false;
+         }
+         break;
+      case ocs::tom::FieldType::Double:
+         if (const auto v = ocs_object_parse_double(answer_list, value); v) {
+            parsed.dbl = *v;
+         } else {
+            ok = false;
+         }
+         break;
+      case ocs::tom::FieldType::Bool:
+         if (const auto v = ocs_object_parse_bool(answer_list, value); v) {
+            parsed.b = *v;
+         } else {
+            ok = false;
+         }
+         break;
+      default:
+         // a string or a host name, the only other fields with a set operation
+         parsed.str = value;
+         break;
+   }
+   if (ok) {
+      ops.set(ep, parsed);
+   }
+   return ok;
+}

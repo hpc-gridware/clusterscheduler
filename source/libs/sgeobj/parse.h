@@ -114,5 +114,6 @@ bool parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA> cmdline, const char 
 uint32_t parse_group_options(ocs::tom::ConstList<ocs::tom::ST> string_list,
                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-bool sge_parse_bitfield_str(const char *str, const char *set_specifier[],
-                           uint32_t *value, const char *name, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool none_allowed);
+bool sge_parse_bitfield_str(const char *str, const char *const *set_specifier,
+                            uint32_t *value, const char *name, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                            bool none_allowed);

@@ -847,8 +847,8 @@ sobjl_match_cqueue_attr(const ocs::tom::ConstList<A> attribute_list, const char 
       const bool is_domain = !is_cqueue && ocs::is_hgroup_name(host_hgroup);
       const bool is_qinstance = !is_domain && !is_cqueue;
 
-      /* the value alone, as a default entry renders; the generic renderer takes the field by number */
-      object_append_field_to_dstring(attribute, nullptr, &value, ocs_attr_traits<A>::value, '\0');
+      /* the value alone, as a default entry renders */
+      ocs_object_append_field<ocs_attr_traits<A>::value>(attribute, &value);
 
       if (fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
          if (handle_cqueue && is_cqueue) {

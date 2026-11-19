@@ -2580,7 +2580,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
          snprintf(job_descr, sizeof(job_descr), "job " sge_u32, jobid);
          job_name = ocs::tom::get<JB_job_name>(new_job);
          ocs::tom::set<JB_job_name>(new_job, new_name);
-         if (object_verify_name(new_job, alpp, JB_job_name)) {
+         if (object_verify_name<JB_job_name>(new_job, alpp)) {
             ocs::tom::set<JB_job_name>(new_job, job_name);
             DRETURN(STATUS_EUNKNOWN);
          }

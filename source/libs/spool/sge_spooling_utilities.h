@@ -112,13 +112,14 @@ union ocs_spool_value {
 /**
  * @brief How a walker renders and parses the value of a field that is neither a list nor an object
  *
- * A property of the field, fixed at compile time in its #ocs_spool_field_ops. The flatfile walkers know
- * #ocs_spool_render::plain and #ocs_spool_render::by_name only (#ocs_spool_field_ops::flat); the JSON walkers
- * know every kind (#ocs_spool_field_ops::json).
+ * A property of the field, fixed at compile time in its #ocs_spool_field_ops (#ocs_spool_field_ops::json). The
+ * flatfile walkers do not use it: they render a field in the default form of its type or, for a field with a
+ * symbolic kind (#ocs_spool_field_ops::symbolic), as a word, through ocs_spool_append_value() and
+ * ocs_spool_parse_value().
  */
 enum class ocs_spool_render : std::uint8_t {
    plain,         ///< the default conversion of the field's type
-   by_name,       ///< object_append_field_to_dstring() / object_parse_field_from_string() render it symbolically
+   by_name,       ///< a word, ocs_object_append_symbolic() / ocs_object_parse_symbolic() of the field's kind
    datetime,      ///< an absolute gmt64 time stamp, an ISO date-time in JSON
    bitfield,      ///< a bit field, an array of the names of the set bits in JSON (#ocs_spool_field_ops::names)
    enumeration,   ///< an enumeration, the name of the value in JSON (#ocs_spool_field_ops::names)
@@ -171,8 +172,9 @@ struct ocs_spool_accessors {
 struct ocs_spool_field_ops {
    int nm;                       ///< the field number
    ocs::tom::FieldType type;     ///< the field's type, from the field table of the object model
-   /// how the flatfile walkers render the value: #ocs_spool_render::plain or #ocs_spool_render::by_name
-   ocs_spool_render flat;
+   /// the symbolic kind of the value (ocs_object_symbolic_of()), ocs_object_symbolic::none for a field written in
+   /// the default form of its type; the flatfile walkers write and read a value of a kind as a word
+   ocs_object_symbolic symbolic;
    ocs_spool_render json;        ///< how the JSON walkers render the value
    /// the complex type of a JSON #ocs_spool_render::avalue field as the value of an ocs::CEntry::Type,
    /// 0 (NONE) for other fields; read it with ocs_spool_avalue_type_of() (spool/ocs_spool_field_info.h)
@@ -287,6 +289,14 @@ ocs_spool_type_ops_of(const lDescr *descr);
 
 const ocs_spool_field_ops *
 ocs_spool_field_ops_of(int nm);
+
+const char *
+ocs_spool_append_value(const ocs_spool_field_ops &ops, const lListElem *ep,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
+
+bool
+ocs_spool_parse_value(const ocs_spool_field_ops &ops, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                      const char *value);
 
 spooling_field *
 spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,

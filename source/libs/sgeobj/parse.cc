@@ -594,23 +594,13 @@ parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, ocs::to
    DRETURN(group_opt);
 }
 
-/* ------------------------------------------ 
-   JG: TODO: make ADOC header
-   parses an enumeration of specifiers into value
-   the first specifier is interpreted
-   as 1, second as 2, third as 4 ..
-   
-   return value
-
-   0 ok
-   -1 error
-
-*/
 /**
- * @brief Parse a comma separated list of names into a bit mask
+ * @brief Parse a comma or blank separated list of names into a bit mask
  *
  * The position of a name in `set_specifier` is its bit position, which is what
- * lets a stored bit field be rendered back into names.
+ * lets a stored bit field be rendered back into names. A name given twice, an
+ * unknown name and an empty result are errors; on an error `value` keeps the
+ * bits understood before.
  *
  * @param str the names to parse
  * @param set_specifier the accepted names, terminated by nullptr
@@ -619,14 +609,16 @@ parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, ocs::to
  * @param[out] alpp receives the message naming the unknown word
  * @param none_allowed true to accept `NONE` as the empty mask
  * @return true when every name was understood
+ *
+ * @note MT-NOTE: sge_parse_bitfield_str() is not MT safe (uses sge_strtok())
  */
-bool sge_parse_bitfield_str(const char *str, const char *set_specifier[],
+bool sge_parse_bitfield_str(const char *str, const char *const *set_specifier,
                             uint32_t *value, const char *name, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                            bool none_allowed) {
+                            const bool none_allowed) {
    DENTER(TOP_LAYER);
 
    const char *s;
-   const char **cpp;
+   const char *const *cpp;
    uint32_t bitmask;
    /* isspace() character plus "," */
    static const char delim[] = ", \t\v\n\f\r";

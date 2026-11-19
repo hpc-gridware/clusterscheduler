@@ -742,7 +742,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* verify the job name */
    if (ret == STATUS_OK) {
-      if (object_verify_name(jep, alpp, JB_job_name)) {
+      if (object_verify_name<JB_job_name>(jep, alpp)) {
          ret = STATUS_EUNKNOWN;
       }
    }

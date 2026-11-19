@@ -595,12 +595,12 @@ static void test_object_verify_name() {
 
    // T59: alphanumeric name with embedded punctuation is accepted
    ocs::tom::set<QU_qname>(ep, "all.q");
-   CHECK(59, "valid name → 0",                         object_verify_name(*ep, &alp, QU_qname) == 0);
+   CHECK(59, "valid name → 0",                         object_verify_name<QU_qname>(*ep, &alp) == 0);
    alp.reset();
 
    // T60: name starting with a digit is always rejected regardless of other characters
    ocs::tom::set<QU_qname>(ep, "1bad");
-   CHECK(60, "leading digit → STATUS_EUNKNOWN",        object_verify_name(*ep, &alp, QU_qname) == STATUS_EUNKNOWN);
+   CHECK(60, "leading digit → STATUS_EUNKNOWN",        object_verify_name<QU_qname>(*ep, &alp) == STATUS_EUNKNOWN);
    alp.reset();
 
 }
@@ -759,42 +759,39 @@ static void test_pack_type_roundtrip() {
 }
 
 // ---------------------------------------------------------------------------
-// object_parse_field_from_string — complex relational operator  [T75–T83]
+// ocs_object_parse_symbolic — complex relational operator  [T91–T99]
 //
 // CS-3169: the relop is parsed from its text by walking the operators
 // CMPLXEQ_OP .. CMPLXEXCL_OP. The out-of-range text "??" of map_op2str() and
-// an unknown text must be rejected and must leave CE_relop unchanged.
+// an unknown text must be rejected and must not be stored.
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Check that object_parse_field_from_string() accepts exactly the valid complex relops
+ * @brief Check that ocs_object_parse_symbolic() accepts exactly the valid complex relops
  */
 static void test_object_parse_centry_relop() {
-   printf("\n--- object_parse_field_from_string (CE_relop) ---\n");
-   auto centry = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   printf("\n--- ocs_object_parse_symbolic (CE_relop) ---\n");
    char label[128];
-   int id = 75;
+   int id = 91;
 
-   // T75–T81: every operator is parsed from its text and stored
+   // T91–T97: every operator is parsed from its text, to be stored with its value
    for (uint32_t op = CMPLXEQ_OP; op <= CMPLXEXCL_OP; op++) {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       const char *text = map_op2str(op);
 
-      ocs::tom::set<CE_relop>(centry, 0);
-      const bool parsed = object_parse_field_from_string(*centry, &alp, CE_relop, text);
+      const auto parsed = ocs_object_parse_symbolic(&alp, ocs_object_symbolic::ce_relop, text);
       snprintf(label, sizeof(label), "relop \"%s\" is accepted and stored as %u", text, op);
-      CHECK(id, label, parsed && ocs::tom::get<CE_relop>(centry) == op);
+      CHECK(id, label, parsed.ok && parsed.store && parsed.value == op);
       id++;
    }
 
-   // T82–T83: "??" (map_op2str() of an out-of-range value) and an unknown text are rejected
+   // T98–T99: "??" (map_op2str() of an out-of-range value) and an unknown text are rejected, nothing is stored
    for (const char *text : {"??", "="}) {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-      ocs::tom::set<CE_relop>(centry, CMPLXLE_OP);
-      const bool parsed = object_parse_field_from_string(*centry, &alp, CE_relop, text);
-      snprintf(label, sizeof(label), "invalid relop \"%s\" is rejected, CE_relop unchanged", text);
-      CHECK(id, label, !parsed && ocs::tom::get<CE_relop>(centry) == CMPLXLE_OP);
+      const auto parsed = ocs_object_parse_symbolic(&alp, ocs_object_symbolic::ce_relop, text);
+      snprintf(label, sizeof(label), "invalid relop \"%s\" is rejected, nothing is stored", text);
+      CHECK(id, label, !parsed.ok && !parsed.store);
       id++;
    }
 }

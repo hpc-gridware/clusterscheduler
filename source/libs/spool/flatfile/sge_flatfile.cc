@@ -703,12 +703,9 @@ ocs_spool_row_is_uint32(const spooling_field &field) {
 /**
  * @brief Append the value of a row's field that is no list
  *
- * A number, a bool, a string or a host name is read through the row's record
- * and formatted here as object_append_field_to_dstring() formats it
- * without quotes. A field with a rendering of its own
- * (#ocs_spool_field_ops::flat is ocs_spool_render::by_name), a list, an object
- * or a reference field, and an element that lacks the field go through object_append_field_to_dstring(),
- * which writes the old message for the last.
+ * Converted by ocs_spool_append_value() through the row's record: a number, a bool, a string or a host name in
+ * the default form of its type, a field of a symbolic kind (#ocs_spool_field_ops::symbolic) as a word. A list, an
+ * object or a reference field yields nullptr; an element that lacks the field yields nullptr and the old message.
  *
  * @param field the row
  * @param object the element
@@ -719,29 +716,7 @@ ocs_spool_row_is_uint32(const spooling_field &field) {
 static const char *
 ocs_spool_row_append(const spooling_field &field, const lListElem *object,
                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
-   if (!field.ops->has_value() || field.ops->flat == ocs_spool_render::by_name ||
-       lGetPosInDescr(lGetElemDescr(object), field.nm) < 0) {
-      return object_append_field_to_dstring(object, answer_list, buffer, field.nm, '\0');
-   }
-
-   const ocs_spool_value value = field.ops->get(object);
-   switch (field.ops->type) {
-      case ocs::tom::FieldType::Uint32:
-         return sge_dstring_sprintf_append(buffer, sge_u32, value.u32);
-      case ocs::tom::FieldType::Uint64:
-         return sge_dstring_sprintf_append(buffer, sge_u64, value.u64);
-      case ocs::tom::FieldType::Int32:
-         return sge_dstring_sprintf_append(buffer, "%d", value.i32);
-      case ocs::tom::FieldType::Int64:
-         return sge_dstring_sprintf_append(buffer, "%ld", static_cast<long>(value.i64));
-      case ocs::tom::FieldType::Double:
-         return sge_dstring_sprintf_append(buffer, "%lf", value.dbl);
-      case ocs::tom::FieldType::Bool:
-         return sge_dstring_append(buffer, value.b ? TRUE_STR : FALSE_STR);
-      default:
-         // a string or a host name, the only other fields with a get operation
-         return sge_dstring_append(buffer, value.str != nullptr ? value.str : NONE_STR);
-   }
+   return ocs_spool_append_value(*field.ops, object, answer_list, buffer);
 }
 
 /**
@@ -2091,7 +2066,7 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
  * parts - list or value, the check of an unsigned value, the sub-type of a
  * list and storing it - come from the typed code of a row (see
  * ocs_spool_row_is_list() and its siblings); a value is converted by
- * object_parse_field_from_string() or the row's read callback.
+ * ocs_spool_parse_value() through the row's record or by the row's read callback.
  *
  * @param answer_list receives the messages
  * @param object the element to fill; created when it points at nullptr
@@ -2384,8 +2359,8 @@ FF_DEBUG("detected end_token");
                   DRETURN_VOID;
                }
             }
-            if (object_parse_field_from_string(*object, answer_list, nm, 
-                                        sge_dstring_get_string(&buffer)) == 0) {
+            if (!ocs_spool_parse_value(*fields[field_index].ops, *object, answer_list,
+                                       sge_dstring_get_string(&buffer))) {
                stop = true;
                continue;
             }

@@ -512,9 +512,11 @@ static bool read_validate_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    } else {
       spooling_validate_func validate_func;
 
-      /* set key from filename */
+      /* set key from filename, converted through the spooling record of the key field */
       if (key_nm != NoName) {
-         object_parse_field_from_string(ep, nullptr, key_nm, key);
+         if (const ocs_spool_field_ops *key_ops = ocs_spool_field_ops_of(key_nm); key_ops != nullptr) {
+            ocs_spool_parse_value(*key_ops, ep, nullptr, key);
+         }
       }
 
 #pragma GCC diagnostic push

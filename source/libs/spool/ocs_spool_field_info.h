@@ -25,10 +25,11 @@
  * Every row a walker sees points at an #ocs_spool_field_ops record: a row of a typed field table
  * (spool/flatfile/ocs_spool_fields.h) at #ocs_spool_ops of its field, a row built at run time at the record
  * in the per-type tables of ocs_spool_type_ops.cc. Both are made by ocs_spool_make_ops() here, from the field
- * alone and at compile time: the field type and the sub-type from the model, the flatfile and JSON renderings,
- * the JSON names and the complex type of a value from the consteval predicates below. A record is data only; the
- * code that reads and writes the field is the accessor set of its field type (ocs_spool_field_info.cc), shared by
- * all fields of that type, so no code is instantiated per field.
+ * alone and at compile time: the field type and the sub-type from the model, the symbolic kind (sgeobj's
+ * ocs_object_symbolic_of()), the JSON rendering, the JSON names and the complex type of a value from the
+ * consteval predicates below. A record is data only; the code that reads and writes the field is the accessor set
+ * of its field type (ocs_spool_field_info.cc), shared by all fields of that type, and the shared
+ * ocs_spool_append_value() / ocs_spool_parse_value() there, so no code is instantiated per field.
  *
  * Part of the base spooling library: no header of a backend is needed here.
  */
@@ -53,6 +54,7 @@
 #include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "sgeobj/ocs_CEntry.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_userset.h"
 
@@ -140,28 +142,16 @@ inline constexpr const char *const ocs_sharetree_node_types[] = {"USER", "PROJEC
 inline constexpr const char *const ocs_sched_queue_sort_methods[] = {"load", "seqno", nullptr};
 
 /**
- * @brief Whether object_append_field_to_dstring() renders a field by its name rather than by its type
+ * @brief Whether a field is written as a word rather than in the default form of its type
  *
- * The special cases of that function and of object_parse_field_from_string() for the fields that are
- * neither lists nor objects; the list valued special cases there are never rendered as a value by the
- * walkers, which write a list through its sub-table. Evaluated at compile time only, for #ocs_spool_ops.
+ * The fields of a symbolic kind (ocs_object_symbolic_of()): the four enumerations of the complex entry and the
+ * queue and userset type bit fields. Evaluated at compile time only, for #ocs_spool_ops.
  *
  * @param nm the field
  * @return true if the field has a rendering of its own
  */
 consteval bool ocs_spool_is_by_name(const int nm) {
-   switch (nm) {
-      case CE_valtype:
-      case CE_relop:
-      case CE_requestable:
-      case CE_consumable:
-      case QU_qtype:
-      case US_type:
-      case AQTLIST_value:
-         return true;
-      default:
-         return false;
-   }
+   return ocs_object_symbolic_of(nm) != ocs_object_symbolic::none;
 }
 
 /**
@@ -181,8 +171,8 @@ consteval bool ocs_spool_is_datetime(const int nm) {
 /**
  * @brief The bit names of a bit field, rendered in JSON as an array of the names of the set bits
  *
- * Bit i has the name names[i], e.g. qtype -> ["BATCH","INTERACTIVE"], userset type -> ["ACL","DEPT"].
- * Only the address of the sgeobj arrays is taken, so they need not be constexpr.
+ * Bit i has the name names[i], e.g. qtype -> ["BATCH","INTERACTIVE"], userset type -> ["ACL","DEPT"]; the names
+ * are the constant arrays of sgeobj the bit parser and the flatfile rendering use as well.
  *
  * @param nm the field
  * @return the nullptr terminated names, nullptr if the field is not a bit field
@@ -293,16 +283,6 @@ consteval ocs_spool_render ocs_spool_json_render(const int nm) {
 }
 
 /**
- * @brief How the flatfile walkers render a field
- * @param nm the field
- * @return #ocs_spool_render::by_name for the special cases of object_append_field_to_dstring(),
- *         #ocs_spool_render::plain otherwise
- */
-consteval ocs_spool_render ocs_spool_flat_render(const int nm) {
-   return ocs_spool_is_by_name(nm) ? ocs_spool_render::by_name : ocs_spool_render::plain;
-}
-
-/**
  * @brief The names a JSON bit field or enumeration is rendered with
  * @param nm the field
  * @return the nullptr terminated names, nullptr for other fields
@@ -316,9 +296,9 @@ consteval const char *const *ocs_spool_json_names(const int nm) {
 /**
  * @brief The spooling record of a field
  *
- * The rendering kinds, the names and the complex type are classified here once, from the field alone, and the
- * accessor set of the field's type is chosen. Evaluated at compile time only: the result is a constant, no code
- * is instantiated per field.
+ * The symbolic and the JSON rendering kinds, the names and the complex type are classified here once, from the
+ * field alone, and the accessor set of the field's type is chosen. Evaluated at compile time only: the result is a
+ * constant, no code is instantiated per field.
  *
  * @tparam F the field
  * @return the record
@@ -341,9 +321,14 @@ consteval ocs_spool_field_ops ocs_spool_make_ops() {
    static_assert(static_cast<std::uint32_t>(ocs_spool_avalue_type(F)) <= UINT8_MAX,
                  "the complex type of a value fits the record");
 
+   // the walkers read the value of a field of a symbolic kind as an unsigned 32 bit number
+   constexpr ocs_object_symbolic symbolic = ocs_object_symbolic_of(static_cast<int>(F));
+   static_assert(symbolic == ocs_object_symbolic::none || Tr::type == FieldType::Uint32,
+                 "a field of a symbolic kind is a Uint32");
+
    return {static_cast<int>(F),
            Tr::type,
-           ocs_spool_flat_render(F),
+           symbolic,
            json,
            static_cast<std::uint8_t>(ocs_spool_avalue_type(F)),
            ocs_spool_sub_descr<F>(),
