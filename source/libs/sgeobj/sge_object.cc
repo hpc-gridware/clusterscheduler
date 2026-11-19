@@ -712,40 +712,24 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_parse_field_from_string() ************************
-*  NAME
-*     object_parse_field_from_string() -- set object attr. from str
-*
-*  SYNOPSIS
-*     bool 
-*     object_parse_field_from_string(lListElem *object, 
-*                                    lList **answer_list, 
-*                                    const int nm, const char *value) 
-*
-*  FUNCTION
-*     Sets a new value for a certain object attribute.
-*     The new value is passed as parameter in string format.
-*     For some fields a special handling is implemented, e.g. mapping
-*     string lists to bitfields.
-*
-*  INPUTS
-*     lListElem *object   - the object to change
-*     lList **answer_list - used to return error messages
-*     const int nm        - the attribute to change
-*     const char *value   - the new value
-*
-*  RESULT
-*     bool - true on success,
-*            false, on error, error description in answer_list 
-*
-*  NOTES
-*     Sublists, subobjects and references cannot be set with this 
-*     function.
-*
-*  SEE ALSO
-*     sgeobj/object/--GDI-object-Handling
-*     sgeobj/object/object_append_field_to_dstring()
-******************************************************************************/
+/**
+ * @brief Set an object attribute from its string representation
+ *
+ * The new value is passed in string format. Some fields have a special
+ * handling, e.g. the complex value type and relational operator are mapped
+ * from their names, string lists are mapped to bitfields.
+ *
+ * Sublists, subobjects and references cannot be set with this function.
+ *
+ * @param object the object to change
+ * @param answer_list receives error messages
+ * @param nm the attribute to change
+ * @param value the new value as string
+ * @return true on success, false on error; most errors are described in
+ *         answer_list, an unknown relational operator (CE_relop) is not
+ *
+ * @see object_append_field_to_dstring()
+ */
 bool
 object_parse_field_from_string(lListElem *object, lList **answer_list,
                                int nm, const char *value) {
@@ -784,11 +768,13 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
          break;
       case CE_relop: {
          u_long32 op = 0;
-         int i;
 
-         for (i = TYPE_FIRST; !op && i <= TYPE_DOUBLE; i++) {
-            if (!strcasecmp(value, map_op2str(i)))
+         // CS-3169: walk the operators, not the value types - map_op2str() returns "??" for
+         // out-of-range values, which made "??" a valid relop
+         for (u_long32 i = CMPLXEQ_OP; op == 0 && i <= CMPLXEXCL_OP; i++) {
+            if (strcasecmp(value, map_op2str(i)) == 0) {
                op = i;
+            }
          }
 
          if (op == 0) {

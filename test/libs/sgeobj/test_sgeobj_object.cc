@@ -40,10 +40,62 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
 
 static int exit_code = EXIT_SUCCESS;
+
+/**
+ * @brief Check that object_parse_field_from_string() accepts exactly the valid complex relops (CS-3169)
+ *
+ * Every operator CMPLXEQ_OP .. CMPLXEXCL_OP must be parsed from its text and stored in CE_relop.
+ * The out-of-range text "??" of map_op2str() and an unknown text must be rejected and must
+ * leave CE_relop unchanged.
+ *
+ * @return true if all checks passed, false otherwise
+ */
+static bool
+check_centry_relop_parsing() {
+   bool ret = true;
+   lListElem *centry = lCreateElem(CE_Type);
+
+   for (u_long32 op = CMPLXEQ_OP; op <= CMPLXEXCL_OP; op++) {
+      lList *answer_list = nullptr;
+      const char *text = map_op2str(op);
+
+      lSetUlong(centry, CE_relop, 0);
+      if (!object_parse_field_from_string(centry, &answer_list, CE_relop, text)) {
+         fprintf(stderr, "relop " SFQ " was rejected\n", text);
+         ret = false;
+      } else if (lGetUlong(centry, CE_relop) != op) {
+         fprintf(stderr, "relop " SFQ " was stored as " sge_u32 " instead of " sge_u32 "\n",
+                 text, lGetUlong(centry, CE_relop), op);
+         ret = false;
+      }
+      lFreeList(&answer_list);
+   }
+
+   const char *invalid[] = {"??", "="};
+   for (const char *text : invalid) {
+      lList *answer_list = nullptr;
+
+      lSetUlong(centry, CE_relop, CMPLXLE_OP);
+      if (object_parse_field_from_string(centry, &answer_list, CE_relop, text)) {
+         fprintf(stderr, "invalid relop " SFQ " was accepted and stored as " sge_u32 "\n",
+                 text, lGetUlong(centry, CE_relop));
+         ret = false;
+      } else if (lGetUlong(centry, CE_relop) != CMPLXLE_OP) {
+         fprintf(stderr, "invalid relop " SFQ " changed CE_relop to " sge_u32 "\n",
+                 text, lGetUlong(centry, CE_relop));
+         ret = false;
+      }
+      lFreeList(&answer_list);
+   }
+
+   lFreeElem(&centry);
+   return ret;
+}
 
 static void 
 check_result_bool(bool value, bool target, const char *function)
@@ -188,6 +240,10 @@ int main(int argc, char *argv[])
    check_result_bool(ret_bool, false, "object_verify_cull");
 
    lFreeElem(&queue);
+
+   /* complex relop parsing (CS-3169) */
+   ret_bool = check_centry_relop_parsing();
+   check_result_bool(ret_bool, true, "object_parse_field_from_string(CE_relop)");
 
    return exit_code;
 }
