@@ -59,9 +59,6 @@ int
 sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                   char *ruser, char *rhost);
 
-int
-update_sharetree(lList *dst, const lList *src);
-
 ocs::tom::ConstElement<ocs::tom::STN>
 getNode(ocs::tom::ConstList<ocs::tom::STN> share_tree, const char *name, int node_type, int recurse);
 
