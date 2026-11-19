@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
       /*
       ** high level parsing error! show answer list
       */
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       alp.reset();
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
       /*
       ** low level parsing error! show answer list
       */
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       alp.reset();
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
    /*
    ** show answer list
    */
-   for_each_ep_lv(aep, alp) {
+   for (const auto aep : *alp) {
       fprintf(stdout, "%s\n", ocs::tom::get<AN_text>(aep));
    }
 
@@ -195,7 +195,7 @@ static bool answer_list_has_exit_code_error(ocs::tom::ListPtr<ocs::tom::AN> *ans
    } else {
       /* check each ERROR if the status is really != 1 (STATUS_OK) */
       uint32_t status;
-      for_each_ep_lv(answer, *answer_list) {
+      for (const auto answer : **answer_list) {
          if (answer_has_quality(answer, ANSWER_QUALITY_ERROR)) {
             status = answer_get_status(answer);       
             if (status != STATUS_OK) {

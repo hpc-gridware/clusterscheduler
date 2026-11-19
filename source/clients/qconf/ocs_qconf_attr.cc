@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <span>
 #include <string>
 #include <unistd.h>
 
@@ -112,25 +113,27 @@ FCLOSE_ERROR:
  * @brief Send the modify request of an attribute change for a target whose object type is known only at run time
  *
  * The attribute table names the target per object kind; the request list was created with the descriptor of the
- * target's type, so it is taken into a handle of that type unchecked, as is the selection built for it.
+ * target's type, so it is taken into a handle of that type unchecked. The selection of the fields to modify is
+ * built here for that type, as lIntVector2What() built it from the same fields, and is owned by this function only.
  *
  * @tparam T the object type of the target
  * @param target the target, of type @p T
  * @param sub_command the sub command of the modify request
  * @param qlp the request list, replaced by the answer data of the request (may be nullptr afterwards)
- * @param what the selection of the fields to modify, still owned by the caller afterwards
+ * @param fields the fields to modify, fields of @p T, at least one
  * @return the answer list of the request
+ * @throw ocs::tom::FieldException for a field that is not one of @p T (not reachable: the fields were read with
+ *        the descriptor of @p T)
  */
 template <ocs::tom::ObjectType T>
 static ocs::tom::ListPtr<ocs::tom::AN>
 ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, lList *&qlp,
-                          lEnumeration *what) {
+                          const std::span<const int> fields) {
    DENTER(TOP_LAYER);
+   const auto what = ocs::tom::what<T>(fields);
    auto data = ocs::tom::ListPtr<T>::from_typed(std::exchange(qlp, nullptr));
-   auto selection = ocs::tom::What<T>::from_typed(what);
    auto alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::MOD, sub_command, data, ocs::tom::Where<T>(),
-                                        selection);
-   static_cast<void>(selection.release());
+                                        what);
    qlp = data.release();
    DRETURN(alp);
 }
@@ -141,32 +144,37 @@ ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubComm
  * @param target the target of the attribute table entry
  * @param sub_command the sub command of the modify request
  * @param qlp the request list, replaced by the answer data of the request (may be nullptr afterwards)
- * @param what the selection of the fields to modify, still owned by the caller afterwards
+ * @param fields the fields to modify, terminated by NoName, at least one
  * @return the answer list of the request; an error for a target the attribute table does not name
  */
 static ocs::tom::ListPtr<ocs::tom::AN>
 ocs_qconf_attr_send(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, lList *&qlp,
-                    lEnumeration *what) {
+                    const int fields[]) {
    DENTER(TOP_LAYER);
+   std::size_t field_count = 0;
+   while (fields[field_count] != NoName) {
+      field_count++;
+   }
+   const std::span<const int> field_span(fields, field_count);
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    switch (target) {
       case ocs::gdi::Target::CQ_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::CQ>(target, sub_command, qlp, what);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::CQ>(target, sub_command, qlp, field_span);
          break;
       case ocs::gdi::Target::EH_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::EH>(target, sub_command, qlp, what);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::EH>(target, sub_command, qlp, field_span);
          break;
       case ocs::gdi::Target::PE_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::PE>(target, sub_command, qlp, what);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::PE>(target, sub_command, qlp, field_span);
          break;
       case ocs::gdi::Target::CK_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::CK>(target, sub_command, qlp, what);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::CK>(target, sub_command, qlp, field_span);
          break;
       case ocs::gdi::Target::HGRP_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::HGRP>(target, sub_command, qlp, what);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::HGRP>(target, sub_command, qlp, field_span);
          break;
       case ocs::gdi::Target::RQS_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::RQS>(target, sub_command, qlp, what);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::RQS>(target, sub_command, qlp, field_span);
          break;
       default:
          answer_list_add_sprintf(&alp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_INVALID_OBJECT_TYPE_SI,
@@ -250,7 +258,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
        * list and replace the error messages with ones that will make better
        * sense. */
       if (answer_list_has_error(alpp)) {
-         for_each_rw_lv(aep, *alpp) {
+         for (const auto aep : **alpp) {
             if (answer_has_quality(aep, ANSWER_QUALITY_ERROR) && (answer_get_status(aep) == STATUS_ESYNTAX)) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_BAD_ATTR_ARGS_SS, name, value);
                ocs::tom::set<AN_text>(aep, SGE_EVENT);
@@ -266,7 +274,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
       }
    }
 
-   /* add object name to int vector and transform it into an lEnumeration */
+   /* add the object name to the int vector of the fields to select */
    if (add_nm_to_set(fields, info_entry->nm_name) < 0) {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_CANTCHANGEOBJECTNAME_SS, "qconf",
                               info_entry->attribute_name);
@@ -274,11 +282,8 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
       DRETURN(1);
    }
 
-   lEnumeration *what = lIntVector2What(info_entry->cull_descriptor, fields);
-   if (what == nullptr) {
-      lFreeElem(&ep);
-      DRETURN(1);
-   }
+   /* the selection of the fields to modify is built where the target's type is known, in
+    * ocs_qconf_attr_send_typed(): it has a single owner there and nothing is borrowed */
 
    /* one copy of the delta per named object */
    lList *qlp = nullptr;
@@ -311,7 +316,6 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
             answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_INTERNALFAILURE_S, "qconf");
             lFreeElem(&add_qp);
             lFreeList(&qlp);
-            lFreeWhat(&what);
             lFreeElem(&ep);
             DRETURN(1);
       }
@@ -322,7 +326,6 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_MQATTR_MISSINGOBJECTLIST_S,
                               "qconf");
       lFreeElem(&ep);
-      lFreeWhat(&what);
       DRETURN(1);
    }
 
@@ -338,7 +341,6 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
       if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE);
          lFreeElem(&ep);
-         lFreeWhat(&what);
          lFreeList(&qlp);
          DRETURN(1);
       } else if (lGetNumberOfElem(lp) == 1) {
@@ -354,7 +356,6 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
                answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_QCONF_CANT_MODIFY_NONE);
                lFreeElem(&ep);
-               lFreeWhat(&what);
                lFreeList(&qlp);
                DRETURN(1);
             }
@@ -363,10 +364,9 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
    }
 
    if (info_entry->pre_gdi_function == nullptr || info_entry->pre_gdi_function(qlp, alpp)) {
-      *alpp = ocs_qconf_attr_send(info_entry->target, sub_command, qlp, what);
+      *alpp = ocs_qconf_attr_send(info_entry->target, sub_command, qlp, fields);
    }
    lFreeElem(&ep);
-   lFreeWhat(&what);
    lFreeList(&qlp);
 
    DRETURN(0);

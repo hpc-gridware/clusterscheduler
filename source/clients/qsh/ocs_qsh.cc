@@ -1303,7 +1303,7 @@ static int do_qrsh_reconnect(const char *job_id_str,
    char token[128] = {0};
    char exec_host[256] = {0};
    bool ok = false;
-   for_each_ep_lv(aep, alp) {
+   for (const auto aep : *alp) {
       const char *text = ocs::tom::get<AN_text>(aep);
       uint32_t status = ocs::tom::get<AN_status>(aep);
       if (status == STATUS_OK && text != nullptr && strncmp(text, "RECONNECT_OK ", 13) == 0) {
@@ -2009,7 +2009,7 @@ int main(int argc, const char **argv) {
 
       status = 0;
 
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          quality = ocs::tom::get<AN_quality>(aep);
          if (quality == ANSWER_QUALITY_ERROR) {
             fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));

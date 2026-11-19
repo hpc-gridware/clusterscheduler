@@ -245,7 +245,7 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
 
       auto alp = parse_script_file(prog_number, *pstr, "", cmdline, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
 
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          uint32_t status;
          answer_quality_t quality;
 

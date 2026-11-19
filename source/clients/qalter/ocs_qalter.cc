@@ -241,7 +241,7 @@ int main(int argc, const char **argv) {
 
    // the request list is replaced by the response, if any
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, gdi_cmd, sub_cmd, request_list);
-   for_each_ep_lv(aep, alp) {
+   for (const auto aep : *alp) {
       printf("%s\n", ocs::tom::get<AN_text>(aep));
       if (ret == STATUS_OK) {
          ret = ocs::tom::get<AN_status>(aep);
@@ -262,6 +262,45 @@ int main(int argc, const char **argv) {
    sge_exit(ret);
 
    DRETURN(0);
+}
+
+/**
+ * @brief Copy one field of the parsed job into a request, if both hold it
+ *
+ * The request is reduced to the fields the options selected, the parsed job is
+ * complete; lGetPosViaElem() != -1 on both was the test before. A list or an
+ * object is copied, as lCopyList("")/lCopyElem() did (nullptr stays nullptr).
+ *
+ * @tparam F the field of the job
+ * @param job the parsed job
+ * @param rep the request element, reduced
+ */
+template <auto F>
+static void
+ocs_qalter_copy_one(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom::Element<ocs::tom::JB> rep) {
+   if (ocs::tom::has<F>(job) && ocs::tom::has<F>(rep)) {
+      if constexpr (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::List) {
+         ocs::tom::set<F>(rep, ocs::tom::get<F>(job).clone(""));
+      } else if constexpr (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Object) {
+         ocs::tom::set<F>(rep, ocs::tom::get<F>(job).clone());
+      } else {
+         ocs::tom::set<F>(rep, ocs::tom::get<F>(job));
+      }
+   }
+}
+
+/**
+ * @brief Copy the fields of the parsed job into a request, each one only if both hold it
+ * @tparam Fs the fields of the job, copied in this order
+ * @param job the parsed job
+ * @param rep the request element, reduced
+ */
+template <auto... Fs>
+static void
+ocs_qalter_copy_present(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom::Element<ocs::tom::JB> rep) {
+   DENTER(TOP_LAYER);
+   (ocs_qalter_copy_one<Fs>(job, rep), ...);
+   DRETURN_VOID;
 }
 
 /**
@@ -290,7 +329,6 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
 
    ocs::tom::Element<ocs::tom::SPA> ep;
    uint32_t jobid;
-   int i;
    lEnumeration *what = nullptr;
    const lDescr *rdp = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> answer;
@@ -1066,95 +1104,18 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       ocs::tom::set<JB_ja_tasks>(job, std::move(task_list));
       ocs::tom::set<JB_ja_structure>(job, ocs::tom::get<ID_ja_structure>(jid).clone(""));
 
-      /* fill in fields of the job; the field numbers come from tables and the request is reduced, so the
-       * copy stays on the generic interface */
-      {
-         static int str_nm[] = {
-            JB_account,
-            JB_cwd,
-            JB_checkpoint_name,
-            JB_project,
-            JB_pe,
-            NoName
-         };
-         static int ulong_nm[] = {
-            JB_mail_options,
-            JB_priority,
-            JB_jobshare,
-            JB_override_tickets,
-            JB_restart,
-            JB_verify_suitable_queues,
-            JB_ar,
-            JB_ja_task_concurrency,
-            JB_when,
-            NoName
-         };
-         static int ulong64_nm[] = {
-            JB_execution_time,
-            JB_deadline,
-            NoName
-         };
-         static int bool_nm[] = {
-            JB_reserve,
-            JB_merge_stderr,
-            JB_notify,
-            NoName
-         };
-         static int list_nm[] = {
-            JB_stderr_path_list,
-            JB_jid_request_list,
-            JB_ja_ad_request_list,
-            JB_request_set_list,
-            JB_mail_list,
-            JB_stdout_path_list,
-            JB_stdin_path_list,
-            JB_pe_range,
-            JB_shell_list,
-            JB_env_list,
-            JB_job_args,
-            JB_context,
-            JB_context_change,
-            JB_ja_tasks,
-            JB_ja_structure,
-            JB_user_list,
-            NoName
-         };
-         static int object_nm[] = {
-            JB_binding,
-            NoName
-         };
-
-         /* copy all strings */
-         for (i=0; str_nm[i]!=NoName; i++)
-            if (lGetPosViaElem(job, str_nm[i], SGE_NO_ABORT) != -1 && lGetPosViaElem(rep, str_nm[i], SGE_NO_ABORT) != -1)
-               lSetString(rep, str_nm[i], lGetString(job, str_nm[i]));
-
-         /* copy all ulongs */
-         for (i=0; ulong_nm[i]!=NoName; i++)
-            if (lGetPosViaElem(job, ulong_nm[i], SGE_NO_ABORT) != -1 && lGetPosViaElem(rep, ulong_nm[i], SGE_NO_ABORT) != -1)
-               lSetUlong(rep, ulong_nm[i], lGetUlong(job, ulong_nm[i]));
-
-         /* copy all ulong64s */
-         for (i=0; ulong64_nm[i]!=NoName; i++)
-            if (lGetPosViaElem(job, ulong64_nm[i], SGE_NO_ABORT) != -1 && lGetPosViaElem(rep, ulong64_nm[i], SGE_NO_ABORT) != -1)
-               lSetUlong64(rep, ulong64_nm[i], lGetUlong64(job, ulong64_nm[i]));
-
-         /* copy all bools */
-         for (i=0; bool_nm[i]!=NoName; i++)
-            if (lGetPosViaElem(job, bool_nm[i], SGE_NO_ABORT) != -1 && lGetPosViaElem(rep, bool_nm[i], SGE_NO_ABORT) != -1)
-               lSetBool(rep, bool_nm[i], lGetBool(job, bool_nm[i]));
-
-         /* copy all lists */
-         for (i=0; list_nm[i]!=NoName; i++)
-            if (lGetPosViaElem(job, list_nm[i], SGE_NO_ABORT) != -1  && lGetPosViaElem(rep, list_nm[i], SGE_NO_ABORT) != -1)
-               lSetList(rep, list_nm[i], lCopyList("", lGetList(job, list_nm[i])));
-
-         /* copy all objects */
-         for (i=0; object_nm[i]!=NoName; i++)
-            if (lGetPosViaElem(job, object_nm[i], SGE_NO_ABORT) != -1  && lGetPosViaElem(rep, object_nm[i], SGE_NO_ABORT) != -1)
-               lSetObject(rep, object_nm[i], lCopyElem(lGetObject(job, object_nm[i])));
-
-      }
+      /* fill in the fields of the job that the reduced request holds: strings, ulongs, ulong64s, bools,
+       * lists and objects, in this order */
+      ocs_qalter_copy_present<JB_account, JB_cwd, JB_checkpoint_name, JB_project, JB_pe,
+                              JB_mail_options, JB_priority, JB_jobshare, JB_override_tickets, JB_restart,
+                              JB_verify_suitable_queues, JB_ar, JB_ja_task_concurrency, JB_when,
+                              JB_execution_time, JB_deadline,
+                              JB_reserve, JB_merge_stderr, JB_notify,
+                              JB_stderr_path_list, JB_jid_request_list, JB_ja_ad_request_list, JB_request_set_list,
+                              JB_mail_list, JB_stdout_path_list, JB_stdin_path_list, JB_pe_range, JB_shell_list,
+                              JB_env_list, JB_job_args, JB_context, JB_context_change, JB_ja_tasks,
+                              JB_ja_structure, JB_user_list,
+                              JB_binding>(job, rep);
    }
 
    ocs_cull_descr_release(&rdp);

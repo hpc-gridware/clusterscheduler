@@ -101,7 +101,8 @@ static void build_name_filter(ocs::tom::List<ocs::tom::ST> filter,
 
 static bool is_attr_prior(ocs::tom::Element<ocs::tom::CE> upper_el, ocs::tom::Element<ocs::tom::CE> lower_el);
 
-static bool is_attr_prior2(ocs::tom::Element<ocs::tom::CE> upper_el, double lower_value, int t_value, int t_dominant);
+template <auto V, auto D>
+static bool is_attr_prior2(ocs::tom::Element<ocs::tom::CE> upper_el, double lower_value);
 
 static bool get_queue_resource(ocs::tom::Element<ocs::tom::CE> queue_elem, ocs::tom::ConstElement<ocs::tom::QU> queue,
                                const char *attrname);
@@ -386,7 +387,7 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
                   ocs::tom::set<CE_pj_dominant>(cplx_el, layer | DOMINANT_TYPE_FIXED);
                } 
  
-               if (!is_attr_prior2(cplx_el.get(), dval, CE_pj_doubleval, CE_pj_dominant)){
+               if (!is_attr_prior2<CE_pj_doubleval, CE_pj_dominant>(cplx_el.get(), dval)){
                   ocs::tom::set<CE_pj_stringval>(cplx_el, load_value);
                   ocs::tom::set<CE_pj_dominant>(cplx_el, layer | dom_type);
                   ocs::tom::set<CE_pj_doubleval>(cplx_el, dval );
@@ -485,7 +486,7 @@ static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
    }
   
 
-   if (!is_attr_prior2(queue_elem, dval, CE_doubleval, CE_dominant)){
+   if (!is_attr_prior2<CE_doubleval, CE_dominant>(queue_elem, dval)){
       ocs::tom::set<CE_dominant>(queue_elem , DOMINANT_LAYER_QUEUE|DOMINANT_TYPE_FIXED);
       ocs::tom::set<CE_doubleval>(queue_elem , dval);
 
@@ -500,6 +501,44 @@ static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
    DRETURN(true);
 }
 
+
+/**
+ * @brief The comparison of is_attr_prior() once the dominant value set of the upper element is chosen
+ *
+ * If the lower element has no value of the chosen set, the other set is copied into it and marked
+ * as not dominant, as before. The value sets are chosen per call from two known at compile time,
+ * so they are template arguments. Called per attribute in the scheduler, hence without DENTER.
+ *
+ * @tparam UsedVal the double value field of the chosen set (CE_doubleval or CE_pj_doubleval)
+ * @tparam UsedStr the string value field of the chosen set (CE_stringval or CE_pj_stringval)
+ * @tparam UsedDom the dominant field of the chosen set (CE_dominant or CE_pj_dominant)
+ * @tparam UnusedVal the double value field of the other set
+ * @tparam UnusedStr the string value field of the other set
+ * @tparam UnusedDom the dominant field of the other set
+ * @param upper_el attribut, which should be overridden by the second one
+ * @param lower_el attribut, which want to override the first one; may get the other value set
+ * @param relop the relational operator of @p upper_el, neither == nor !=
+ * @return true, when the first attribut has a higher priority
+ */
+template <auto UsedVal, auto UsedStr, auto UsedDom, auto UnusedVal, auto UnusedStr, auto UnusedDom>
+static bool ocs_attr_prior_by(const ocs::tom::Element<ocs::tom::CE> upper_el,
+                              const ocs::tom::Element<ocs::tom::CE> lower_el, const uint32_t relop) {
+   const uint32_t dom = ocs::tom::get<UsedDom>(lower_el);
+   if (dom == 0 || (dom & DOMINANT_TYPE_VALUE)) {
+      ocs::tom::set<UsedVal>(lower_el, ocs::tom::get<UnusedVal>(lower_el));
+      ocs::tom::set<UsedStr>(lower_el, ocs::tom::get<UnusedStr>(lower_el));
+      ocs::tom::set<UsedDom>(lower_el, ocs::tom::get<UnusedDom>(lower_el));
+      ocs::tom::set<UnusedDom>(lower_el, static_cast<uint32_t>(DOMINANT_TYPE_VALUE));
+   }
+
+   const double upper_value = ocs::tom::get<UsedVal>(upper_el);
+   const double lower_value = ocs::tom::get<UsedVal>(lower_el);
+
+   if (relop == CMPLXGE_OP || relop == CMPLXGT_OP) {
+      return upper_value >= lower_value;
+   }
+   return upper_value <= lower_value;
+}
 
 /**
  * @brief Compares two attribut instances with each other
@@ -517,21 +556,13 @@ static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
  *
  * @return true, when the first attribut has a higher priority.
  */
-static bool is_attr_prior(const ocs::tom::Element<ocs::tom::CE> upper_el, const ocs::tom::Element<ocs::tom::CE> lower_el) {
+static bool is_attr_prior(const ocs::tom::Element<ocs::tom::CE> upper_el,
+                          const ocs::tom::Element<ocs::tom::CE> lower_el) {
    DENTER(BASIS_LAYER);
 
    uint32_t relop;
    bool ret;
-   double upper_value;
-   double lower_value;
    uint32_t dom;
-   uint32_t used_dom;
-   uint32_t used_dom_val;
-   uint32_t used_dom_str;
-
-   uint32_t unused_dom_val;
-   uint32_t unused_dom_str;
-   uint32_t unused_dom;
 
    /* the order is important must not be changed */   
    if(!upper_el){
@@ -552,38 +583,12 @@ static bool is_attr_prior(const ocs::tom::Element<ocs::tom::CE> upper_el, const 
    }   
 
    if ((dom = ocs::tom::get<CE_pj_dominant>(upper_el)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
-      used_dom_val = CE_doubleval;
-      used_dom_str = CE_stringval;      
-      used_dom = CE_dominant;
-
-      unused_dom_val = CE_pj_doubleval;
-      unused_dom_str= CE_pj_stringval;
-      unused_dom = CE_pj_dominant;
+      ret = ocs_attr_prior_by<CE_doubleval, CE_stringval, CE_dominant,
+                              CE_pj_doubleval, CE_pj_stringval, CE_pj_dominant>(upper_el, lower_el, relop);
    }
    else {
-      used_dom_val = CE_pj_doubleval;
-      used_dom_str = CE_pj_stringval;      
-      used_dom = CE_pj_dominant;
-
-      unused_dom_val = CE_doubleval;
-      unused_dom_str = CE_stringval;
-      unused_dom = CE_dominant;
-   }
-
-   if ((dom = lGetUlong(lower_el, used_dom)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
-      lSetDouble(lower_el, used_dom_val, lGetDouble(lower_el, unused_dom_val));
-      lSetString(lower_el, used_dom_str, lGetString(lower_el, unused_dom_str));
-      lSetUlong(lower_el, used_dom, lGetUlong(lower_el, unused_dom));
-      lSetUlong(lower_el, unused_dom, DOMINANT_TYPE_VALUE);
-   }
-
-   upper_value = lGetDouble(upper_el, used_dom_val);
-   lower_value = lGetDouble(lower_el, used_dom_val);
-
-   if (relop == CMPLXGE_OP || relop == CMPLXGT_OP ){
-      ret = upper_value >= lower_value ? true : false;
-   } else {
-      ret = upper_value <= lower_value ? true : false;
+      ret = ocs_attr_prior_by<CE_pj_doubleval, CE_pj_stringval, CE_pj_dominant,
+                              CE_doubleval, CE_stringval, CE_dominant>(upper_el, lower_el, relop);
    }
 
    DRETURN(ret);
@@ -601,14 +606,15 @@ static bool is_attr_prior(const ocs::tom::Element<ocs::tom::CE> upper_el, const 
  * if the relops are >= or > : true, when the new value is smaller than the old one
  * if the relops are <= or < : true, when the new value is bigger than the old one
  *
+ * @tparam V which value field to use (CE_doubleval or CE_pj_doubleval)
+ * @tparam D which dominant field to use (CE_dominant, CE_pj_dominant)
  * @param upper_el target structure
  * @param lower_value new value
- * @param t_value which field to use (CE_doubleval or CE_pj_doubleval)
- * @param t_dominant which dominant field to use (CE_dominant, CE_pj_dominant)
  *
  * @return true, if the value in the structure has the higher priority
  */
-static bool is_attr_prior2(const ocs::tom::Element<ocs::tom::CE> upper_el, double lower_value, int t_value, int t_dominant) {
+template <auto V, auto D>
+static bool is_attr_prior2(const ocs::tom::Element<ocs::tom::CE> upper_el, const double lower_value) {
    DENTER(BASIS_LAYER);
 
    uint32_t relop;
@@ -616,7 +622,7 @@ static bool is_attr_prior2(const ocs::tom::Element<ocs::tom::CE> upper_el, doubl
    bool ret;
    double upper_value;
 
-   if ((dom = lGetUlong(upper_el, t_dominant)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
+   if ((dom = ocs::tom::get<D>(upper_el)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
       DRETURN(false);
    }
 
@@ -625,7 +631,7 @@ static bool is_attr_prior2(const ocs::tom::Element<ocs::tom::CE> upper_el, doubl
       DRETURN(true);
    }
 
-   upper_value = lGetDouble(upper_el, t_value); 
+   upper_value = ocs::tom::get<V>(upper_el);
 
    if (relop == CMPLXGE_OP || relop == CMPLXGT_OP ){
       ret = upper_value >= lower_value ? true : false;

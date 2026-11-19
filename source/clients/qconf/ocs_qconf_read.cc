@@ -772,7 +772,7 @@ qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, con
     * what show_answer() did for these reads */
    const auto take_last = [&alp, alpp]() {
       int status = 0;
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          if (answer_get_status(aep) != STATUS_OK) {
             status = 1;
          }

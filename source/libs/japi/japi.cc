@@ -1171,7 +1171,7 @@ static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, u
     *  Each single answer message is at first added without newline
     *  characters. Then a newline is added to delimit two messages.
     */
-   for_each_ep_lv(aep, alp) {
+   for (const auto aep : *alp) {
       uint32_t quality;
       quality = ocs::tom::get<AN_quality>(aep);
 
@@ -1623,7 +1623,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
             id_list.reset();
             ref_list.reset();
 
-            for_each_rw_lv(aep, alp) {
+            for (const auto aep : *alp) {
                if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
                   int ret = DRMAA_ERRNO_SUCCESS;
 
@@ -1717,7 +1717,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                                             ocs::gdi::SubCommand::NONE, request_list);
             request_list.reset();
 
-            for_each_rw_lv(aep, alp) {
+            for (const auto aep : *alp) {
                if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
                   int ret = DRMAA_ERRNO_SUCCESS;
 
@@ -4386,7 +4386,7 @@ static int do_gdi_delete(ocs::tom::ListPtr<ocs::tom::ID> &&id_list_in, const int
                                         id_list);
    id_list.reset();
 
-   for_each_rw_lv(aep, alp) {
+   for (const auto aep : *alp) {
       int status = ocs::tom::get<AN_status>(aep);
 
    /* If we're doing a bulk delete (i.e. deleting all jobs in the session), we

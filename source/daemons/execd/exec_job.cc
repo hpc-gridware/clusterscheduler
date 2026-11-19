@@ -411,16 +411,17 @@ exec_job_task_limit_is_summed(const ocs::tom::ConstElement<ocs::tom::JB> jep,
 /**
  * @brief Sum up a limit over all slots of a job on a host
  *
- * @param limit_nm the limit attribute in the queue, e.g. QU_h_rss
+ * @tparam F the limit field of the queue instance, e.g. QU_h_rss
  * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
  * @param jatep the ja_task
  * @param qualified_hostname the host
  * @return the sum of the limit of every queue instance of the job on the host multiplied by its
  *         slots, DBL_MAX (infinity) if one of the queue instances has no limit
  */
+template <auto F>
 static double
-exec_job_sum_host_limit(const int limit_nm, const ocs::CEntry::Type type,
-                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep, const char *qualified_hostname) {
+exec_job_sum_host_limit(const ocs::CEntry::Type type, const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                        const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    double limit = 0;
@@ -428,8 +429,7 @@ exec_job_sum_host_limit(const int limit_nm, const ocs::CEntry::Type type,
    for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
       const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(gdil_ep));
       if (queue) {
-         // the limit field is known only at run time
-         const char *limit_str = lGetString(queue, limit_nm);
+         const char *limit_str = ocs::tom::get<F>(queue);
          if (limit_str != nullptr) {
             // if one of the queue instances has a limit of infinity the sum is infinity
             if (strcasecmp(limit_str, INFINITY_STR) == 0) {
@@ -458,7 +458,7 @@ exec_job_sum_host_limit(const int limit_nm, const ocs::CEntry::Type type,
  * This is the limit sge_shepherd applies to the task, see sge_exec_job_get_limit(). sge_execd
  * checks the usage of the task against the same value.
  *
- * @param limit_nm the limit attribute in the queue, e.g. QU_h_rss
+ * @tparam F the limit field of the queue instance, e.g. QU_h_rss
  * @param limit_name the name of the limit, e.g. h_rss
  * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
  * @param queue the queue instance the task is running in
@@ -468,19 +468,19 @@ exec_job_sum_host_limit(const int limit_nm, const ocs::CEntry::Type type,
  * @param qualified_hostname the host the task is running on
  * @return the limit, DBL_MAX (infinity) if the task has no limit
  */
+template <auto F>
 double
-execd_get_task_limit(const int limit_nm, const char *limit_name, const ocs::CEntry::Type type,
+execd_get_task_limit(const char *limit_name, const ocs::CEntry::Type type,
                      const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::tom::ConstElement<ocs::tom::JB> jep,
                      const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
                      const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    double limit = DBL_MAX;
-   // the limit field is known only at run time
-   const char *limit_str = lGetString(queue, limit_nm);
+   const char *limit_str = ocs::tom::get<F>(queue);
    if (limit_str != nullptr && strcasecmp(limit_str, INFINITY_STR) != 0) {
       if (exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
-         limit = exec_job_sum_host_limit(limit_nm, type, jatep, qualified_hostname);
+         limit = exec_job_sum_host_limit<F>(type, jatep, qualified_hostname);
       } else {
          parse_ulong_val(&limit, nullptr, type, limit_str, nullptr, 0);
       }
@@ -489,6 +489,32 @@ execd_get_task_limit(const int limit_nm, const char *limit_name, const ocs::CEnt
    DRETURN(limit);
 }
 
+// the limits sge_execd checks itself, see force_job_rlimit_task() in execd_ck_to_do.cc
+template double
+execd_get_task_limit<QU_h_cpu>(const char *, ocs::CEntry::Type, ocs::tom::ConstElement<ocs::tom::QU>,
+                               ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstElement<ocs::tom::JAT>,
+                               ocs::tom::ConstElement<ocs::tom::PET>, const char *);
+template double
+execd_get_task_limit<QU_h_rss>(const char *, ocs::CEntry::Type, ocs::tom::ConstElement<ocs::tom::QU>,
+                               ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstElement<ocs::tom::JAT>,
+                               ocs::tom::ConstElement<ocs::tom::PET>, const char *);
+template double
+execd_get_task_limit<QU_h_vmem>(const char *, ocs::CEntry::Type, ocs::tom::ConstElement<ocs::tom::QU>,
+                                ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstElement<ocs::tom::JAT>,
+                                ocs::tom::ConstElement<ocs::tom::PET>, const char *);
+template double
+execd_get_task_limit<QU_s_cpu>(const char *, ocs::CEntry::Type, ocs::tom::ConstElement<ocs::tom::QU>,
+                               ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstElement<ocs::tom::JAT>,
+                               ocs::tom::ConstElement<ocs::tom::PET>, const char *);
+template double
+execd_get_task_limit<QU_s_rss>(const char *, ocs::CEntry::Type, ocs::tom::ConstElement<ocs::tom::QU>,
+                               ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstElement<ocs::tom::JAT>,
+                               ocs::tom::ConstElement<ocs::tom::PET>, const char *);
+template double
+execd_get_task_limit<QU_s_vmem>(const char *, ocs::CEntry::Type, ocs::tom::ConstElement<ocs::tom::QU>,
+                                ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstElement<ocs::tom::JAT>,
+                                ocs::tom::ConstElement<ocs::tom::PET>, const char *);
+
 /**
  * @brief Get the limit of a task as it is written into the config file of sge_shepherd
  *
@@ -496,8 +522,8 @@ execd_get_task_limit(const int limit_nm, const char *limit_name, const ocs::CEnt
  * this is the limit of the queue instance as it is configured. For the tasks which get the limit
  * of all slots of the job on the host, see exec_job_task_limit_is_summed(), it is the sum.
  *
+ * @tparam F the limit field of the queue instance, e.g. QU_h_rss
  * @param dstr buffer for a summed up limit
- * @param limit_nm the limit attribute in the queue, e.g. QU_h_rss
  * @param limit_name the name of the limit, e.g. h_rss
  * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
  * @param master_q the queue instance the task is running in
@@ -507,16 +533,16 @@ execd_get_task_limit(const int limit_nm, const char *limit_name, const ocs::CEnt
  * @param qualified_hostname the host the task is running on
  * @return the limit as a string
  */
+template <auto F>
 static const char *
-sge_exec_job_get_limit(dstring *dstr, const int limit_nm, const char *limit_name, const ocs::CEntry::Type type,
+sge_exec_job_get_limit(dstring *dstr, const char *limit_name, const ocs::CEntry::Type type,
                        const ocs::tom::ConstElement<ocs::tom::QU> master_q,
                        const ocs::tom::ConstElement<ocs::tom::JB> jep,
                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
                        const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
-   // the limit field is known only at run time
-   const char *ret = lGetString(master_q, limit_nm);
+   const char *ret = ocs::tom::get<F>(master_q);
    // can not really happen but just to be sure
    if (ret == nullptr) {
       ret = INFINITY_STR;
@@ -528,7 +554,7 @@ sge_exec_job_get_limit(dstring *dstr, const int limit_nm, const char *limit_name
    if (strcasecmp(ret, INFINITY_STR) != 0 &&
        exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
       DPRINTF("sge_exec_job_get_limit: we need to sum up the limits\n");
-      double limit = exec_job_sum_host_limit(limit_nm, type, jatep, qualified_hostname);
+      double limit = exec_job_sum_host_limit<F>(type, jatep, qualified_hostname);
       if (limit == DBL_MAX) {
          ret = INFINITY_STR;
       } else {
@@ -1512,8 +1538,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
     * several slots it is already the sum, sge_shepherd applies it as it is.
     */
 #define WRITE_LIMIT(A, T) \
-   fprintf(fp, #A"=%s\n", sge_exec_job_get_limit(&dstr_limit, QU_##A, #A, T, master_q, jep, jatep, \
-                                                 petep, qualified_hostname))
+   fprintf(fp, #A"=%s\n", sge_exec_job_get_limit<QU_##A>(&dstr_limit, #A, T, master_q, jep, jatep, petep, \
+                                                         qualified_hostname))
    {
       DSTRING_STATIC(dstr_limit, 512);
       WRITE_LIMIT(h_vmem, ocs::CEntry::Type::MEM);

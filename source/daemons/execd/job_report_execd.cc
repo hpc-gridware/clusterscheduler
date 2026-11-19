@@ -522,15 +522,16 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
  * This function checks if the queue limits for a job are set and updates the
  * global check_queue_limits counter accordingly.
  *
+ * @tparam F The limit field of the queue instance (e.g., QU_h_cpu).
  * @param queue The queue instance to check.
  * @param type The type of limit to check (e.g., TYPE_TIM, TYPE_MEM).
- * @param limit_nm The name of the limit attribute in the queue (e.g., QU_h_cpu).
  * @param increase If true, increments the check_queue_limits counter; otherwise, decrements it.
  *
  * @return true if a limit was found and processed, false otherwise.
  */
+template <auto F>
 static bool
-count_queue_limits(const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::CEntry::Type type, const int limit_nm,
+count_queue_limits(const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::CEntry::Type type,
                    const bool increase) {
    DENTER(TOP_LAYER);
 
@@ -539,8 +540,7 @@ count_queue_limits(const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::
    // @todo: store this once in the ja_task?
    double lim{};
    bool found_limit = false;
-   // the limit field is known only at run time
-   parse_ulong_val(&lim, nullptr, type, lGetString(queue, limit_nm), nullptr, 0);
+   parse_ulong_val(&lim, nullptr, type, ocs::tom::get<F>(queue), nullptr, 0);
    if (lim != DBL_MAX) {
       if (increase) {
          check_queue_limits++;
@@ -580,12 +580,12 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, const ocs:
             continue;
          }
 
-         if (count_queue_limits(q, ocs::CEntry::Type::TIME, QU_s_cpu, increase) ||
-             count_queue_limits(q, ocs::CEntry::Type::TIME, QU_h_cpu, increase) ||
-             count_queue_limits(q, ocs::CEntry::Type::MEM, QU_s_rss, increase) ||
-             count_queue_limits(q, ocs::CEntry::Type::MEM, QU_h_rss, increase) ||
-             count_queue_limits(q, ocs::CEntry::Type::MEM, QU_s_vmem, increase) ||
-             count_queue_limits(q, ocs::CEntry::Type::MEM, QU_h_vmem, increase)) {
+         if (count_queue_limits<QU_s_cpu>(q, ocs::CEntry::Type::TIME, increase) ||
+             count_queue_limits<QU_h_cpu>(q, ocs::CEntry::Type::TIME, increase) ||
+             count_queue_limits<QU_s_rss>(q, ocs::CEntry::Type::MEM, increase) ||
+             count_queue_limits<QU_h_rss>(q, ocs::CEntry::Type::MEM, increase) ||
+             count_queue_limits<QU_s_vmem>(q, ocs::CEntry::Type::MEM, increase) ||
+             count_queue_limits<QU_h_vmem>(q, ocs::CEntry::Type::MEM, increase)) {
             break;
          }
       }

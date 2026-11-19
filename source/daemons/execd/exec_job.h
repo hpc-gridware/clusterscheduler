@@ -52,7 +52,9 @@ responsible_queue(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstEleme
 ocs::tom::Element<ocs::tom::QU>
 responsible_queue(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep,
                   ocs::tom::ConstElement<ocs::tom::PET> petep);
-double execd_get_task_limit(int limit_nm, const char *limit_name, ocs::CEntry::Type type,
+// instantiated in exec_job.cc for QU_h_cpu, QU_h_rss, QU_h_vmem, QU_s_cpu, QU_s_rss and QU_s_vmem
+template <auto F>
+double execd_get_task_limit(const char *limit_name, ocs::CEntry::Type type,
                             ocs::tom::ConstElement<ocs::tom::QU> queue, ocs::tom::ConstElement<ocs::tom::JB> jep,
                             ocs::tom::ConstElement<ocs::tom::JAT> jatep, ocs::tom::ConstElement<ocs::tom::PET> petep,
                             const char *qualified_hostname);

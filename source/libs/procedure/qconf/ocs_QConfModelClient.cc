@@ -42,10 +42,13 @@
  * caller decides, which is the rule for everything that can also run in the
  * daemon.
  *
+ * The condition and the selection are taken over and wrapped at once into owning
+ * handles of the read's type, which free them on every path.
+ *
  * @param answer_list for error reporting
  * @param target      the master list to read
- * @param where       which elements, or nullptr for all
- * @param what        which fields
+ * @param where       which elements, or nullptr for all; taken over
+ * @param what        which fields; taken over
  * @return true on success
  */
 bool
@@ -55,20 +58,21 @@ ocs::QConfModelClient::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
 
    // dispatched once on the read's object type: every caller builds the condition and the selection for it and
    // reads the target of its row; object_list_ stays untyped, its type is the read's
-   auto alp = ocs_with_qconf_object(get_object(), [this, target, where, what](const auto &entry) {
+   auto alp = ocs_with_qconf_object(get_object(), [this, target, &where, &what](const auto &entry) {
       using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
-      // the condition and the selection stay the caller's: the handles only lend them to the request
-      auto typed_where = ocs::tom::Where<T>::from_typed(where);
-      auto typed_what = ocs::tom::What<T>::from_typed(what);
+      // fetch() owns the condition and the selection, built by the model for this type: the handles free them
+      const auto typed_where = ocs::tom::Where<T>::from_typed(std::exchange(where, nullptr));
+      const auto typed_what = ocs::tom::What<T>::from_typed(std::exchange(what, nullptr));
       // a list held before goes out as the request data, as before, and is freed when the answer replaces it
       auto data = ocs::tom::ListPtr<T>::from_typed(std::exchange(object_list_, nullptr));
       auto answers = gdi::Client::sge_gdi(target, gdi::Command::GET, gdi::SubCommand::NONE, data, typed_where,
                                           typed_what);
-      static_cast<void>(typed_where.release());
-      static_cast<void>(typed_what.release());
       object_list_ = data.release();
       return answers;
    });
+   // only for an object outside the dispatch table, which never reaches the lambda: nothing else frees them
+   lFreeWhere(&where);
+   lFreeWhat(&what);
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);

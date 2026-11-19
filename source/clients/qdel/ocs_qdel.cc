@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
                                             ocs::gdi::SubCommand::NONE, part_ref_list);
 
-            for_each_ep_lv(aep, alp) {
+            for (const auto aep : *alp) {
                status = ocs::tom::get<AN_status>(aep);
 
                if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_ERROR) {

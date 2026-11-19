@@ -320,11 +320,11 @@ force_job_rlimit_task(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs:
    }
 
    // hard limits
-   double h_cpu = execd_get_task_limit(QU_h_cpu, "h_cpu", ocs::CEntry::Type::TIME, q,
+   double h_cpu = execd_get_task_limit<QU_h_cpu>("h_cpu", ocs::CEntry::Type::TIME, q,
                                        jep, jatep, petep, qualified_hostname);
-   double h_rss = execd_get_task_limit(QU_h_rss, "h_rss", ocs::CEntry::Type::MEM, q,
+   double h_rss = execd_get_task_limit<QU_h_rss>("h_rss", ocs::CEntry::Type::MEM, q,
                                        jep, jatep, petep, qualified_hostname);
-   double h_vmem = execd_get_task_limit(QU_h_vmem, "h_vmem", ocs::CEntry::Type::MEM, q,
+   double h_vmem = execd_get_task_limit<QU_h_vmem>("h_vmem", ocs::CEntry::Type::MEM, q,
                                         jep, jatep, petep, qualified_hostname);
    if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
        force_job_rlimit_apply_limit(maxrss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
@@ -334,11 +334,11 @@ force_job_rlimit_task(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs:
 
    // soft limits: the current usage - a job is signaled with SIGXCPU while it exceeds the limit,
    // a single peak would make it get the signal with every check
-   double s_cpu = execd_get_task_limit(QU_s_cpu, "s_cpu", ocs::CEntry::Type::TIME, q,
+   double s_cpu = execd_get_task_limit<QU_s_cpu>("s_cpu", ocs::CEntry::Type::TIME, q,
                                        jep, jatep, petep, qualified_hostname);
-   double s_rss = execd_get_task_limit(QU_s_rss, "s_rss", ocs::CEntry::Type::MEM, q,
+   double s_rss = execd_get_task_limit<QU_s_rss>("s_rss", ocs::CEntry::Type::MEM, q,
                                        jep, jatep, petep, qualified_hostname);
-   double s_vmem = execd_get_task_limit(QU_s_vmem, "s_vmem", ocs::CEntry::Type::MEM, q,
+   double s_vmem = execd_get_task_limit<QU_s_vmem>("s_vmem", ocs::CEntry::Type::MEM, q,
                                         jep, jatep, petep, qualified_hostname);
    bool signaled =
       force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jobid, jataskid) ||
@@ -380,15 +380,16 @@ static void force_job_rlimit(const char *qualified_hostname) {
 /**
  * @brief The earliest wallclock limit of the queue instances of this host an array task was granted
  *
+ * @tparam F the limit field of the queue instance, QU_s_rt or QU_h_rt
  * @param qualified_hostname the name of this host, as the granted destination list names it
  * @param gdil_list the granted destination identifier list of the array task
- * @param limit_nm the limit field of the queue instance, QU_s_rt or QU_h_rt
  * @param now the time the limit is measured from
  * @return the point in time the limit is reached, the maximum of uint64_t if there is no limit
  */
+template <auto F>
 static uint64_t
 execd_get_wallclock_limit(const char *qualified_hostname, const ocs::tom::ConstList<ocs::tom::JG> gdil_list,
-                          const int limit_nm, const uint64_t now) {
+                          const uint64_t now) {
    DENTER(TOP_LAYER);
 
    uint64_t ret = std::numeric_limits<uint64_t>::max();
@@ -399,8 +400,7 @@ execd_get_wallclock_limit(const char *qualified_hostname, const ocs::tom::ConstL
 
       const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(gdil));
       if (queue) {
-         // the limit field is known only at run time
-         limit = lGetString(queue, limit_nm);
+         limit = ocs::tom::get<F>(queue);
 
          if (strcasecmp(limit, INFINITY_STR) == 0) {
             clock_val = std::numeric_limits<uint64_t>::max();
@@ -442,9 +442,9 @@ execd_set_wallclock_limits(const ocs::tom::Element<ocs::tom::JB> jep, const ocs:
 
    const auto gdil_list = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
    ocs::tom::set<JB_soft_wallclock_gmt>(jep,
-               execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_s_rt, start_time));
+               execd_get_wallclock_limit<QU_s_rt>(qualified_hostname, gdil_list, start_time));
    ocs::tom::set<JB_hard_wallclock_gmt>(jep,
-               execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_h_rt, start_time));
+               execd_get_wallclock_limit<QU_h_rt>(qualified_hostname, gdil_list, start_time));
 
    uint64_t task_wallclock_limit = ocs::tom::get<JAT_wallclock_limit>(jatep);
    if (task_wallclock_limit != 0) {

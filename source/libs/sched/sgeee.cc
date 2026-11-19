@@ -879,6 +879,32 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
 
 
 /**
+ * @brief Count a job in or out of the pending or the running job count of a user, project or department
+ *
+ * The field is chosen per call from two known at compile time, so both are template arguments.
+ * Called per job in the scheduler, hence without DENTER.
+ *
+ * @tparam Pending the field counting the pending jobs, e.g. UU_pending_job_cnt
+ * @tparam Running the field counting the running jobs, e.g. UU_job_cnt
+ * @tparam T the object type, deduced from the element
+ * @param ep the user, project or department; nothing is counted for an empty handle
+ * @param queued nonzero for the pending count, 0 for the running count
+ * @param increase true to add 1, false to subtract 1 (wrapping as lAddUlong() with -1 did)
+ */
+template <auto Pending, auto Running, typename T>
+static void
+ocs_job_cnt_add(const ocs::tom::Element<T> ep, const int queued, const bool increase) {
+   if (ep) {
+      const uint32_t offset = increase ? 1U : static_cast<uint32_t>(-1);
+      if (queued) {
+         ocs::tom::add<Pending>(ep, offset);
+      } else {
+         ocs::tom::add<Running>(ep, offset);
+      }
+   }
+}
+
+/**
  * @brief Count a job in the job counts of its user, project and department
  *
  * @param ref the job's entry
@@ -887,18 +913,9 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
 static void
 sge_set_job_cnts(sge_ref_t *ref, const int queued) {
    DENTER(BASIS_LAYER);
-   int prj_job_cnt_nm = queued ? PR_pending_job_cnt : PR_job_cnt;
-   int user_job_cnt_nm = queued ? UU_pending_job_cnt : UU_job_cnt;
-   int us_job_cnt_nm = queued ? US_pending_job_cnt : US_job_cnt;
-   if (ref->user) {
-      lAddUlong(ref->user, user_job_cnt_nm, 1);
-   }
-   if (ref->project) {
-      lAddUlong(ref->project, prj_job_cnt_nm, 1);
-   }
-   if (ref->dept) {
-      lAddUlong(ref->dept, us_job_cnt_nm, 1);
-   }
+   ocs_job_cnt_add<UU_pending_job_cnt, UU_job_cnt>(ref->user, queued, true);
+   ocs_job_cnt_add<PR_pending_job_cnt, PR_job_cnt>(ref->project, queued, true);
+   ocs_job_cnt_add<US_pending_job_cnt, US_job_cnt>(ref->dept, queued, true);
    DRETURN_VOID;
 }
 
@@ -912,18 +929,9 @@ sge_set_job_cnts(sge_ref_t *ref, const int queued) {
 static void
 sge_unset_job_cnts(sge_ref_t *ref, const int queued) {
    DENTER(BASIS_LAYER);
-   int prj_job_cnt_nm = queued ? PR_pending_job_cnt : PR_job_cnt;
-   int user_job_cnt_nm = queued ? UU_pending_job_cnt : UU_job_cnt;
-   int us_job_cnt_nm = queued ? US_pending_job_cnt : US_job_cnt;
-   if (ref->user) {
-      lAddUlong(ref->user, user_job_cnt_nm, -1);
-   }
-   if (ref->project) {
-      lAddUlong(ref->project, prj_job_cnt_nm, -1);
-   }
-   if (ref->dept) {
-      lAddUlong(ref->dept, us_job_cnt_nm, -1);
-   }
+   ocs_job_cnt_add<UU_pending_job_cnt, UU_job_cnt>(ref->user, queued, false);
+   ocs_job_cnt_add<PR_pending_job_cnt, PR_job_cnt>(ref->project, queued, false);
+   ocs_job_cnt_add<US_pending_job_cnt, US_job_cnt>(ref->dept, queued, false);
    DRETURN_VOID;
 }
 

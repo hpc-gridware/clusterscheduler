@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
                                    ocs::gdi::SubCommand::NONE, refs);
 
    bool ok = false;
-   for_each_ep_lv(aep, alp) {
+   for (const auto aep : *alp) {
       const char *text = ocs::tom::get<AN_text>(aep);
       uint32_t status = ocs::tom::get<AN_status>(aep);
       printf("[%u] %s\n", status, text != nullptr ? text : "(null)");

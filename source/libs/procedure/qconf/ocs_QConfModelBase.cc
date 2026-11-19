@@ -525,7 +525,6 @@ ocs::QConfModelBase::make_list_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
    lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
    const bool ok = fetch(answer_list, desc_->target, nullptr, what);
-   lFreeWhat(&what);
 
    /* An empty result has to be an empty list, not no list at all. lSelect() hands
     * back nullptr when nothing matched, while the same read over GDI produces an
@@ -711,7 +710,6 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
 
    lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
    const bool ok = fetch(answer_list, desc_->target, nullptr, what);
-   lFreeWhat(&what);
    if (!ok) {
       DRETURN(false);
    }
@@ -905,7 +903,6 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
 
    lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
    const bool ok = fetch(answer_list, desc_->target, nullptr, what);
-   lFreeWhat(&what);
    if (!ok) {
       DRETURN(false);
    }
@@ -1071,7 +1068,6 @@ ocs::QConfModelBase::make_sharetree_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *an
 
    lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
    const bool ok = fetch(answer_list, desc_->target, nullptr, what);
-   lFreeWhat(&what);
    if (!ok) {
       DRETURN(false);
    }
@@ -1148,8 +1144,6 @@ ocs::QConfModelBase::make_processor_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *an
    lCondition *where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name,
                               SGE_TEMPLATE_NAME, EH_name, SGE_GLOBAL_NAME);
    const bool ok = fetch(answer_list, desc_->target, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
    if (!ok) {
       DRETURN(false);
    }
@@ -1201,7 +1195,6 @@ ocs::QConfModelBase::make_eventclient_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *
 
    lEnumeration *what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
    const bool ok = fetch(answer_list, desc_->target, nullptr, what);
-   lFreeWhat(&what);
    if (!ok) {
       DRETURN(false);
    }
@@ -1257,7 +1250,6 @@ ocs::QConfModelBase::make_sick_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_
     * reduced descriptor and lSelect() do not go together */
    lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
    const bool ok = fetch(answer_list, desc_->target, nullptr, what);
-   lFreeWhat(&what);
    if (!ok) {
       DRETURN(false);
    }
@@ -1403,8 +1395,6 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
     * saved nothing here anyway. */
    lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
    const bool ok = fetch(answer_list, desc_->target, cqueue_where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&cqueue_where);   /* fetch() does not take ownership, as in make_snapshot() */
    if (!ok) {
       DRETURN(false);
    }
@@ -1740,8 +1730,6 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       where = get_object_where(desc_->descr, key_nm_, parameter.get_operation().arg(0));
    }
    const bool ok = fetch(answer_list, desc_->target, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
    if (!ok) {
       DRETURN(false);
    }

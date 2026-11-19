@@ -61,10 +61,12 @@ ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] ocs::tom::ListPtr<ocs::tom
  * fail in a recoverable way here, which is why the client's
  * answer_exit_if_not_recoverable() has no equivalent.
  *
+ * The condition and the selection are taken over and freed on every path.
+ *
  * @param answer_list for error reporting
  * @param target      the master list to read
- * @param where       which elements, or nullptr for all
- * @param what        which fields
+ * @param where       which elements, or nullptr for all; taken over
+ * @param what        which fields; taken over
  * @return true on success
  */
 bool
@@ -79,6 +81,8 @@ ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
        * LISTENER data store. The call is MT safe and takes its own lock, so
        * whichever store this request runs under does not matter (CS-2808). */
       object_list_ = sge_select_event_clients("", where, what);
+      lFreeWhere(&where);
+      lFreeWhat(&what);
       DRETURN(true);
    }
 
@@ -91,11 +95,15 @@ ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
        * same way, without a catalogue entry. */
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "no master list for the object type in " SFQ, __func__);
+      lFreeWhere(&where);
+      lFreeWhat(&what);
       DRETURN(false);
    }
 
    const lList *master_list = *DataStore::get_master_list(type);
    object_list_ = lSelect("", master_list, where, what);
+   lFreeWhere(&where);
+   lFreeWhat(&what);
 
    DRETURN(true);
 }

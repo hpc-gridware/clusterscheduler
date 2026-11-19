@@ -1102,7 +1102,7 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
                */
                alp = cull_parse_cmdline(prog_number, (const char **)str_table, envp, lp_new_opts, 0);
 
-               for_each_rw_lv (aep, alp) {
+               for (const auto aep : *alp) {
                   answer_quality_t quality;
                   uint32_t status = STATUS_OK;
 

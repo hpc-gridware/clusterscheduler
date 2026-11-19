@@ -283,6 +283,20 @@ namespace ocs {
 
       virtual bool fetch_hgroups(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) = 0;
 
+      /**
+       * @brief Read the objects of the target into object_list_
+       *
+       * Takes over @p where and @p what: the model builds them for an object type
+       * chosen at run time, the client side wraps them at once into owning typed
+       * handles of that type, the server side frees them after lSelect(). Nothing
+       * is borrowed, so an exception in between cannot free them twice.
+       *
+       * @param answer_list for error reporting
+       * @param target the master list to read
+       * @param where which elements, nullptr for all; owned by fetch() from the call on
+       * @param what which fields; owned by fetch() from the call on
+       * @return true on success
+       */
       virtual bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
                          lCondition *where, lEnumeration *what) = 0;
 

@@ -153,7 +153,7 @@ qconf_answer_take(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::
 
 void
 qconf_answer_print(ocs::tom::ListPtr<ocs::tom::AN> *alpp, FILE *info_stream) {
-   for_each_ep_lv(aep, *alpp) {
+   for (const auto aep : **alpp) {
       const uint32_t quality = ocs::tom::get<AN_quality>(aep);
       if (quality == ANSWER_QUALITY_END) {
          continue;
