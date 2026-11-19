@@ -829,7 +829,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
 
    switch (ack_tag) {
       case ACK_SIGJOB: {
-         const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+         const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
@@ -858,8 +858,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
       }
 
       case ACK_SIGQUEUE: {
-         const auto master_cqueue_list =
-                 ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
          dstring host_domain = DSTRING_INIT;
          dstring cqueue_name = DSTRING_INIT;
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);

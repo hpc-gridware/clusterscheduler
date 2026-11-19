@@ -898,7 +898,7 @@ sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    switch (target) {
       case ocs::gdi::Target::EH_LIST:
          sge_del_host(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(ep), alpp, packet->user, packet->host, target,
-                      ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP)),
+                      ocs::DataStore::master_list<SGE_TYPE_HGROUP>(),
                       monitor);
          break;
 
@@ -925,25 +925,25 @@ sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
       case ocs::gdi::Target::UU_LIST:
          sge_del_userprj(packet, task, ocs::tom::ConstElement<ocs::tom::UU>(ep), alpp,
-                         ocs::tom::List<ocs::tom::UU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USER)),
+                         ocs::DataStore::master_list_rw<SGE_TYPE_USER>(),
                          packet->user, packet->host);
          break;
 
       case ocs::gdi::Target::US_LIST:
          sge_del_userset(packet, task, ocs::tom::ConstElement<ocs::tom::US>(ep), alpp,
-                         ocs::tom::List<ocs::tom::US>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET)),
+                         ocs::DataStore::master_list_rw<SGE_TYPE_USERSET>(),
                          packet->user, packet->host);
          break;
 
       case ocs::gdi::Target::PR_LIST:
          sge_del_userprj(packet, task, ocs::tom::ConstElement<ocs::tom::PR>(ep), alpp,
-                         ocs::tom::List<ocs::tom::PR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT)),
+                         ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>(),
                          packet->user, packet->host);
          break;
 
       case ocs::gdi::Target::RQS_LIST:
          rqs_del(packet, task, ocs::tom::ConstElement<ocs::tom::RQS>(ep), alpp,
-                 ocs::tom::List<ocs::tom::RQS>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS)), packet->user,
+                 ocs::DataStore::master_list_rw<SGE_TYPE_RQS>(), packet->user,
                  packet->host);
          break;
 
@@ -959,7 +959,7 @@ sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          break;
       case ocs::gdi::Target::AR_LIST:
          ar_del(packet, task, ocs::tom::ConstElement<ocs::tom::ID>(ep), alpp,
-                ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)), monitor);
+                ocs::DataStore::master_list_rw<SGE_TYPE_AR>(), monitor);
          break;
       case ocs::gdi::Target::RL_LIST:
          sge_del_role(packet, task, ocs::tom::ConstElement<ocs::tom::RL>(ep), alpp, packet->user, packet->host);
@@ -1480,8 +1480,7 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::to
          */
          break;
       case ocs::gdi::Target::AR_LIST: {
-         const auto master_userset_list =
-            ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+         const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
 
          // only managers and ARUSERS are allowed to create AR's
          if (!manop_is_manager(packet) && !user_is_ar_user(packet, master_userset_list)) {
@@ -1527,8 +1526,7 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::to
 
       switch (target) {
          case ocs::gdi::Target::EH_LIST: {
-            const auto master_exec_host_list =
-                    ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+            const auto master_exec_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
             bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr;
             bool is_execd = strcmp(packet->commproc, to_cstr(EXECD)) == 0;
 
@@ -1632,8 +1630,7 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
       switch (task->target) {
          case ocs::gdi::Target::CONF_LIST: {
-            const auto master_exec_host_list =
-                    ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+            const auto master_exec_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
             bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr;
 
             // host must be either admin/submit or exec host
@@ -1947,14 +1944,14 @@ ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
       const uint32_t id = ocs::tom::get<key>(request);
       sge_dstring_sprintf(&buffer, sge_u32, id);
       name = sge_dstring_get_string(&buffer);
-      old_obj = ocs::tom::find_first_rw<key>(*ocs::DataStore::get_master_list(H::list_type), id);
+      old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), id);
    } else if constexpr (key_type == ocs::tom::FieldType::Host) {
       name = ocs::tom::get<key>(request).c_str();
-      old_obj = ocs::tom::find_first_rw<key>(*ocs::DataStore::get_master_list(H::list_type), name);
+      old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), name);
    } else {
       static_assert(key_type == ocs::tom::FieldType::String, "the key is a number, a host or a string");
       name = ocs::tom::get<key>(request);
-      old_obj = ocs::tom::find_first_rw<key>(*ocs::DataStore::get_master_list(H::list_type), name);
+      old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), name);
    }
 
    if (const int status = ocs_gdi_add_mod_check_existence(alpp, object, add, name, static_cast<bool>(old_obj));
@@ -1987,19 +1984,15 @@ ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
 
    ocs_gdi_add_mod_take_answers(alpp, std::move(tmp_alp));
 
-   /* replace the old object by the new one; the data store keeps the master list raw */
-   lList **master_list = ocs::DataStore::get_master_list_rw(H::list_type);
+   /* replace the old object by the new one */
    ocs::tom::ElementPtr<T> old_owned;
    if (old_obj) {
       /* chain out the old object */
-      old_owned = ocs::tom::List<T>::from_typed(*master_list).extract(old_obj);
+      old_owned = ocs::DataStore::master_list_rw<H::list_type>().extract(old_obj);
    }
-   if (*master_list == nullptr) {
-      /* ensure our global list exists */
-      *master_list = ocs::tom::ListPtr<T>::create(object->object_name).release();
-   }
-   /* chain in new object */
-   const auto stored = ocs::tom::List<T>::from_typed(*master_list).push_back(std::move(new_obj));
+   /* chain in new object; ensure our global list exists */
+   const auto stored =
+      ocs::DataStore::master_list_create<H::list_type>(object->object_name).push_back(std::move(new_obj));
 
    /* once we successfully added/modified the object, do final steps (on_success callback) */
    H::on_success(packet, task, stored, old_owned.get(), object, post, monitor);

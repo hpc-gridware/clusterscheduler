@@ -23,9 +23,13 @@
  * @brief The per-thread copies of the cluster's object lists
  */
 
-#include "sge_object.h"
+#include <utility>
 
+#include "tom/ocs_List.h"
+
+#include "sge_object.h"
 #include "sge_event.h"
+#include "ocs_object_type.h"
 
 namespace ocs {
    /**
@@ -69,6 +73,93 @@ namespace ocs {
       static inline const lList **
       get_master_list(sge_object_type type) {
          return const_cast<const lList **>(ocs::DataStore::get_master_list_rw(type, true));
+      }
+
+      /// The object type of the elements of the master list of #sge_object_type value V, e.g. ocs::tom::JB
+      template <sge_object_type V>
+      using master_type_t = typename ocs_object_type_t<V>::type;
+
+      /**
+       * @brief The master list of a type known at compile time (read access), from the active data store
+       *
+       * Calls get_master_list(), so the lock checks of debug builds stay in place. The handle is only valid
+       * inside the lock scope of the data store it was obtained in; it must not be stored beyond it. A slot
+       * that holds no list gives an empty handle, which iterates over nothing and reads like an empty list.
+       *
+       * @tparam V the #sge_object_type value of the master list; it must carry an object
+       * @return the read-only handle on the list held in the slot, empty if the slot holds nullptr
+       */
+      template <sge_object_type V>
+      static ocs::tom::ConstList<master_type_t<V>>
+      master_list() {
+         static_assert(ocs_object_type_t<V>::has_object, "the master list of a type that carries objects");
+         // The owners create the list of a slot with the descriptor of its type, mirrors with a reduced
+         // descriptor of that type: no check per access, this is the hot path of every request and the scheduler.
+         return ocs::tom::ConstList<master_type_t<V>>::from_typed(*get_master_list(V));
+      }
+
+      /**
+       * @brief The master list of a type known at compile time (write access), from the active data store
+       *
+       * Calls get_master_list_rw(), so the lock checks of debug builds stay in place. The handle is only valid
+       * inside the lock scope of the data store it was obtained in; it must not be stored beyond it. The handle
+       * allows to change the list held in the slot, not to put another list into the slot: use
+       * replace_master_list() for that. A slot that holds no list gives an empty handle.
+       *
+       * @tparam V the #sge_object_type value of the master list; it must carry an object
+       * @param for_read true when the caller only reads, as for get_master_list_rw()
+       * @return the handle on the list held in the slot, empty if the slot holds nullptr
+       */
+      template <sge_object_type V>
+      static ocs::tom::List<master_type_t<V>>
+      master_list_rw(const bool for_read = false) {
+         static_assert(ocs_object_type_t<V>::has_object, "the master list of a type that carries objects");
+         // The owners create the list of a slot with the descriptor of its type, mirrors with a reduced
+         // descriptor of that type: no check per access, this is the hot path of every request and the scheduler.
+         return ocs::tom::List<master_type_t<V>>::from_typed(*get_master_list_rw(V, for_read));
+      }
+
+      /**
+       * @brief The master list of a type known at compile time (write access), created if the slot holds none
+       *
+       * Calls get_master_list_rw(), so the lock checks of debug builds stay in place. The caller must hold the
+       * lock of the data store for writing. The handle is only valid inside the lock scope of the data store it
+       * was obtained in; it must not be stored beyond it.
+       *
+       * @tparam V the #sge_object_type value of the master list; it must carry an object
+       * @param name the name of the list if it is created
+       * @return the handle on the list held in the slot, never empty
+       */
+      template <sge_object_type V>
+      static ocs::tom::List<master_type_t<V>>
+      master_list_create(const char *name) {
+         static_assert(ocs_object_type_t<V>::has_object, "the master list of a type that carries objects");
+         lList **slot = get_master_list_rw(V);
+         if (*slot == nullptr) {
+            *slot = ocs::tom::ListPtr<master_type_t<V>>::create(name).release();
+         }
+         // the list in the slot was created as a list of this type, by its owner or just above
+         return ocs::tom::List<master_type_t<V>>::from_typed(*slot);
+      }
+
+      /**
+       * @brief Put a list into the slot of a master list of a type known at compile time
+       *
+       * Calls get_master_list_rw(), so the lock checks of debug builds stay in place. The caller must hold the
+       * lock of the data store for writing.
+       *
+       * @tparam V the #sge_object_type value of the master list; it must carry an object
+       * @param list the list to put into the slot, may be empty; it is consumed
+       * @return the list the slot held before, owned by the caller; empty if the slot held nullptr
+       */
+      template <sge_object_type V>
+      static ocs::tom::ListPtr<master_type_t<V>>
+      replace_master_list(ocs::tom::ListPtr<master_type_t<V>> &&list) {
+         static_assert(ocs_object_type_t<V>::has_object, "the master list of a type that carries objects");
+         ocs::tom::ListPtr<master_type_t<V>> new_list(std::move(list));
+         lList **slot = get_master_list_rw(V);
+         // the list in the slot was put there as a list of this type, by its owner or by this function
+         return ocs::tom::ListPtr<master_type_t<V>>::from_typed(std::exchange(*slot, new_list.release()));
       }
 
       static void

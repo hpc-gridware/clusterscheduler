@@ -220,7 +220,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
     * the pre-CS-1239 implicit gate ("no UU/PR objects -> no work"; see
     * calc_usage.md) by checking the direct indicator. Matching gate is in
     * sge_book_finished_job_usage. */
-   if (!ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE)).front()) {
+   if (!ocs::DataStore::master_list<SGE_TYPE_SHARETREE>().front()) {
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
       const uint32_t next_in_s = static_cast<uint32_t>(mconf_get_sharetree_tick_interval());
@@ -247,21 +247,15 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    ocs::Usage::calculate_default_decay_constant(sconf_get_halftime());
 
    bool any_object = false;
-   lList **user_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
-   if (user_list != nullptr) {
-      for (const auto user : ocs::tom::List<ocs::tom::UU>(*user_list)) {
-         ocs::UserProject::decay_userprj_usage(user, *decay_list, tet_decay_run, curr_time);
-         ocs::SharetreeUsage::mark_user_event_dirty(user.get<UU_name>());
-         any_object = true;
-      }
+   for (const auto user : ocs::DataStore::master_list_rw<SGE_TYPE_USER>()) {
+      ocs::UserProject::decay_userprj_usage(user, *decay_list, tet_decay_run, curr_time);
+      ocs::SharetreeUsage::mark_user_event_dirty(user.get<UU_name>());
+      any_object = true;
    }
-   lList **project_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
-   if (project_list != nullptr) {
-      for (const auto project : ocs::tom::List<ocs::tom::PR>(*project_list)) {
-         ocs::UserProject::decay_userprj_usage(project, *decay_list, tet_decay_run, curr_time);
-         ocs::SharetreeUsage::mark_project_event_dirty(project.get<PR_name>());
-         any_object = true;
-      }
+   for (const auto project : ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>()) {
+      ocs::UserProject::decay_userprj_usage(project, *decay_list, tet_decay_run, curr_time);
+      ocs::SharetreeUsage::mark_project_event_dirty(project.get<PR_name>());
+      any_object = true;
    }
    if (any_object) {
       ocs::SharetreeUsage::mark_share_tree_dirty();
@@ -273,9 +267,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    const bool any_events = ocs::SharetreeUsage::has_event_dirty();
 
    if (tree_dirty || any_events) {
-      lList **master_stree_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
-      const auto root = master_stree_list != nullptr ? ocs::tom::List<ocs::tom::STN>(*master_stree_list).front()
-                                                     : ocs::tom::Element<ocs::tom::STN>();
+      const auto root = ocs::DataStore::master_list_rw<SGE_TYPE_SHARETREE>().front();
 
       sge_set_commit_required();
 
@@ -283,11 +275,9 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
       ocs::SharetreeUsage::emit_dirty_project_events(ocs::SessionManager::GDI_SESSION_NONE);
 
       if (root) {
-         const auto master_user_list =
-                 ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
-         const auto master_project_list =
-                 ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
-         const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+         const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+         const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+         const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
          sge_init_share_tree_nodes(root);
          ocs::ShareTree::set_node_project_flag(root, master_project_list);
@@ -416,7 +406,7 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
     * and if a JB is whole-removed at entry i then no other entry references
     * it (that would contradict the "last remaining JAT" precondition). */
    std::vector<PruneCandidate> finished;
-   const auto master_job_list = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    for (const auto job : master_job_list) {
       for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          if (ocs::tom::get<JAT_status>(ja_task) == JFINISHED) {

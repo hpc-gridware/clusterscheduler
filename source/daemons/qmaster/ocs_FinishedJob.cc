@@ -167,12 +167,12 @@ sge_book_finished_job_usage(const ocs::tom::Element<ocs::tom::JB> jep, const ocs
     * zero history for one tick. Matching gate is in sge_sharetree_tick_handler.
     * Caller holds LOCK_GLOBAL write (always via sge_commit_job), so reading
     * the SHARETREE master list without an extra lock is safe. */
-   if (ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE)).empty()) {
+   if (ocs::DataStore::master_list<SGE_TYPE_SHARETREE>().empty()) {
       DRETURN(0);
    }
 
-   const ocs::tom::ConstList<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
-   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+   const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
 
    const auto user = user_list_locate(master_user_list, ocs::tom::get<JB_owner>(jep));
    ocs::tom::Element<ocs::tom::PR> project;

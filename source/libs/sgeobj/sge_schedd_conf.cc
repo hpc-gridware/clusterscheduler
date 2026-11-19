@@ -392,7 +392,7 @@ static void ocs_sconf_reset_cache() {
 static ocs::tom::ConstElement<ocs::tom::SC> ocs_sconf_elem() {
    // the master list is a process-lifetime global and holds SC_Type elements only;
    // read on the scheduler hot path, so the handle is made without a check
-   return ocs::tom::ConstList<ocs::tom::SC>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)).front();
+   return ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>().front();
 }
 
 /**
@@ -404,7 +404,7 @@ static ocs::tom::ConstElement<ocs::tom::SC> ocs_sconf_elem() {
  */
 static ocs::tom::Element<ocs::tom::SC> ocs_sconf_elem_rw() {
    // the master list is a process-lifetime global and holds SC_Type elements only
-   return ocs::tom::List<ocs::tom::SC>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)).front();
+   return ocs::DataStore::master_list_rw<SGE_TYPE_SCHEDD_CONF>().front();
 }
 
 /**
@@ -1773,8 +1773,7 @@ ocs::tom::ListPtr<ocs::tom::SC> sconf_get_config_list() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    // the master list is a process-lifetime global holding SC_Type elements only
-   const auto master_list =
-      ocs::tom::ConstList<ocs::tom::SC>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const auto master_list = ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>();
    auto copy_list = master_list.clone("sched_conf_copy");
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2261,8 +2260,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    /* --- SC_load_formula */
    {
       // the master list is a process-lifetime global holding CE_Type elements only
-      const auto master_centry_list =
-         ocs::tom::ConstList<ocs::tom::CE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+      const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
       if (master_centry_list && !sconf_is_valid_load_formula(answer_list, master_centry_list)) {
          ret = false;
       }

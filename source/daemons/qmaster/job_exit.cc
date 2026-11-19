@@ -101,9 +101,9 @@ sge_job_exit(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom::Element<o
    uint32_t jobid, jataskid;
    uint32_t failed, general_failure;
 
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
-   const ocs::tom::List<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR));
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
+   const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
 
    /* JG: TODO: we'd prefer some more precise timestamp, e.g. from jr */
    uint64_t timestamp = sge_get_gmt64();
@@ -312,8 +312,7 @@ sge_job_exit(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom::Element<o
 
             found_host = true;
 
-            for (const auto cqueue : ocs::tom::List<ocs::tom::CQ>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE,
-                                                                                                      true))) {
+            for (const auto cqueue : ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>(true)) {
                const auto qinstance =
                   ocs::tom::get<CQ_qinstances>(cqueue).find_first<QU_qhostname>(ocs::tom::Host(host));
 

@@ -182,7 +182,7 @@ ar_initialize_timer(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, monitoring_t *
 
    uint64_t now = sge_get_gmt64();
 
-   const ocs::tom::List<ocs::tom::AR> ar_master_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR));
+   const auto ar_master_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
 
    auto next_ar = ar_master_list.front();
 
@@ -258,7 +258,7 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
    }
 
    // the project has to exist
-   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
    const auto pep = prj_list_locate(master_project_list, project);
    if (!pep) {
       ERROR(MSG_AR_PRJUNKNOWN_S, project);
@@ -267,7 +267,7 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
    }
 
    // the user has to have access to the project
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto grp_list = grp_list_array2list(packet->amount, packet->grp_array);
    bool has_access = sge_has_access_(packet->user, packet->group, *grp_list, ocs::tom::get<PR_acl>(pep),
                                      ocs::tom::get<PR_xacl>(pep), master_userset_list) != 0;
@@ -331,13 +331,13 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
 
    uint32_t ar_id;
    uint32_t max_advance_reservations = mconf_get_max_advance_reservations();
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
    if (!ar_validate(ar, alpp, true, false, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list,
                     master_pe_list, master_userset_list)) {
@@ -914,7 +914,7 @@ guess_highest_ar_id() {
       we do not need to monitor this lock */
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
    for (const auto ar : master_ar_list) {
       maxid = std::max(maxid, ocs::tom::get<AR_id>(ar));
@@ -955,7 +955,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
     */
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const ocs::tom::List<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR));
+   const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
 
    const auto ar = ar_list_locate(master_ar_list, ar_id);
    if (!ar) {
@@ -1050,17 +1050,17 @@ ar_reserve_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element
    bool ret = true;
    int i = 0;
    sge_assignment_t a{};
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const ocs::tom::ConstList<ocs::tom::CAL> master_cal_list(*ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_cal_list = ocs::DataStore::master_list<SGE_TYPE_CALENDAR>();
 
    /* These lists must be copied */
-   auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE)).clone("");
+   auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>().clone("");
    auto master_exechost_list =
-      ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)).clone("");
+      ocs::DataStore::master_list<SGE_TYPE_EXECHOST>().clone("");
 
    dispatch_t result = DISPATCH_NEVER_CAT;
 
@@ -1306,9 +1306,9 @@ ar_do_reservation(const ocs::tom::Element<ocs::tom::AR> ar, const bool incslots,
 
    uint64_t start_time = ocs::tom::get<AR_start_time>(ar);
    uint64_t duration = ocs::tom::get<AR_duration>(ar);
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    auto dummy_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    job_set_hard_resource_list(*dummy_job, ocs::tom::get<AR_resource_list>(ar).clone());
@@ -1396,7 +1396,7 @@ ar_do_reservation(const ocs::tom::Element<ocs::tom::AR> ar, const bool incslots,
 
    if (granted_pe != nullptr) {
       // The booking of slots into the PE's resource diagram needs to be done on the actual PE from the master pe list.
-      const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+      const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
       const auto master_pe = pe_list_locate(master_pe_list, granted_pe);
       if (!master_pe) {
          CRITICAL(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
@@ -1825,9 +1825,9 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
    DENTER(TOP_LAYER);
 
    const auto gdil = ocs::tom::get<AR_granted_slots>(ar);
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    dstring buffer = DSTRING_INIT;
 
    const lDescr *queue_descr = ocs_cull_descr_reduce(QU_Type, {QU_qhostname, QU_qname, QU_full_name, QU_job_slots,
@@ -2033,7 +2033,7 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
 
    bool ret = true;
 
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    auto nextjep = master_job_list.front();
    while (const auto jep = nextjep) {
       uint32_t task_number;

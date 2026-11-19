@@ -263,7 +263,7 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
     *
     * We can ignore this job because job is resend by qmaster.
     */
-   for (const auto jep : ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))
+   for (const auto jep : ocs::DataStore::master_list<SGE_TYPE_JOB>()
                             .find_all<JB_job_number>(jobid)) {
       if (job_search_task(jep, nullptr, jataskid) != nullptr) {
          // qmaster resends the job when it did not get the acknowledgement of a delivery in
@@ -351,7 +351,7 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
              * check wether there is another master task of the same job running
              * on this host. This is important in case of array pe-jobs.
              */
-             if (count_master_tasks(ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+             if (count_master_tasks(ocs::DataStore::master_list<SGE_TYPE_JOB>(),
                                     job_id) == 0) {
                int fd;
 
@@ -419,7 +419,7 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
    modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jelem, true);
 
    /* put into job list */
-   ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)).push_back(std::move(owned_job));
+   ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().push_back(std::move(owned_job));
 
    DRETURN(0);
 

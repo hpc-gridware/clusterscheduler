@@ -288,14 +288,13 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
          ocs::tom::ConstElement<ocs::tom::QU> master_qep;
          ocs::tom::Element<ocs::tom::EH> master_host;
          ocs::tom::Element<ocs::tom::PE> pe;
-         const ocs::tom::ConstList<ocs::tom::EH> exec_host_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
-         const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-         const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
-         const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-         const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-         const ocs::tom::ConstList<ocs::tom::US> master_userset_list(
-            *ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-         const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+         const auto exec_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
+         const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+         const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+         const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+         const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
 
          DPRINTF("ORDER ORT_start_job\n");
 
@@ -753,7 +752,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
 
       DPRINTF("ORDER ORT_clear_pri_info\n");
          {
-            const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+            const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
 
             job_number = ocs::tom::get<OR_job_number>(ep);
             if (job_number == 0) {
@@ -823,7 +822,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
       case ORT_ptickets:
       DPRINTF("ORDER ORT_ptickets\n");
          {
-            const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+            const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
 
             job_number = ocs::tom::get<OR_job_number>(ep);
             if (job_number == 0) {
@@ -932,7 +931,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
       case ORT_tickets:
       DPRINTF("ORDER ORT_tickets\n");
          {
-            const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+            const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
 
             job_number = ocs::tom::get<OR_job_number>(ep);
             if (job_number == 0) {
@@ -1105,7 +1104,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
           * shared "remove finished job" path.
           * ----------------------------------------------------------------------- */
       case ORT_remove_immediate_job: {
-         const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+         const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
          DPRINTF("ORDER: ORT_remove_immediate_job\n");
 
          job_number = ocs::tom::get<OR_job_number>(ep);
@@ -1198,9 +1197,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
                      sconf_set_weight_tickets_override(new_wto);
 
                      // no need to spool but other data stores need to be updated
-                     const auto sconfig =
-                        ocs::tom::List<ocs::tom::SC>(
-                           *ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF, true)).front();
+                     const auto sconfig = ocs::DataStore::master_list_rw<SGE_TYPE_SCHEDD_CONF>(true).front();
                      sge_add_event(now, sgeE_SCHED_CONF, 0, 0,
                                    "schedd_conf", nullptr, nullptr, sconfig, gdi_session);
                   }
@@ -1212,9 +1209,8 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
       case ORT_suspend_on_threshold: {
          uint32_t jobid;
          ocs::tom::Element<ocs::tom::JB> jep;
-         const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-         const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(
-            *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+         const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
          DPRINTF("ORDER: ORT_suspend_on_threshold\n");
 
@@ -1264,9 +1260,8 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
       case ORT_unsuspend_on_threshold: {
          uint32_t jobid;
          ocs::tom::Element<ocs::tom::JB> jep;
-         const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-         const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(
-            *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+         const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
          DPRINTF("ORDER: ORT_unsuspend_on_threshold\n");
 
@@ -1314,9 +1309,6 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
       case ORT_job_schedd_info: {
          // OR_joker names no sub-type in the model; for this order it holds the scheduler messages
          const ocs::tom::List<ocs::tom::SME> sub_order_list(ocs::tom::get<OR_joker>(ep));
-         // stays a raw reference: the master list slot may still be empty and is filled here
-         lList **master_job_schedd_info_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
-
          DPRINTF("ORDER: ORT_job_schedd_info\n");
 
          if (sub_order_list) {
@@ -1326,15 +1318,12 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
                DPRINTF("ORDER: got %d schedd infos\n",
                        static_cast<int>(ocs::tom::get<SME_message_list>(sme).size()));
 
-               const ocs::tom::List<ocs::tom::SME> info_list(*master_job_schedd_info_list);
+               // the master list slot may still hold no list, it is created here
+               const auto info_list = ocs::DataStore::master_list_create<SGE_TYPE_JOB_SCHEDD_INFO>("schedd info");
                while (!info_list.empty()) {
                   info_list.erase(info_list.front());
                }
-               if (*master_job_schedd_info_list == nullptr) {
-                  *master_job_schedd_info_list = ocs::tom::ListPtr<ocs::tom::SME>::create("schedd info").release();
-               }
-               ocs::tom::List<ocs::tom::SME>::from_typed(*master_job_schedd_info_list)
-                  .push_back(sub_order_list.extract(sme));
+               info_list.push_back(sub_order_list.extract(sme));
 
                /* this information is not spooled (but might be usefull in a db) */
                sge_add_event(now, sgeE_JOB_SCHEDD_INFO_MOD, 0, 0, nullptr, nullptr, nullptr, sme, gdi_session);
@@ -1369,7 +1358,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
    uint64_t now = sge_get_gmt64();
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
-   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    // the list is built by sge_follow_order() for the caller, so its type is guaranteed
    for (const auto ep : ocs::tom::ConstList<ocs::tom::RTIC>(ticket_orders)) {

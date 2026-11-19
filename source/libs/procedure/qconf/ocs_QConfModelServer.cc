@@ -47,7 +47,7 @@ bool
 ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*DataStore::get_master_list(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    hgroup_list_ = master_hgroup_list.clone("");
 
    DRETURN(true);
@@ -150,7 +150,7 @@ bool
 ocs::QConfModelServer::fetch_centries([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*DataStore::get_master_list(SGE_TYPE_CENTRY));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    centry_list_ = master_centry_list.clone("");
 
    DRETURN(true);

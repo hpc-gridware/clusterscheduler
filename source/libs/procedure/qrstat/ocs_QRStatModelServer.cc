@@ -44,7 +44,7 @@
  */
 bool ocs::QRStatModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
-   const lList *master_ar_list = *DataStore::get_master_list(SGE_TYPE_AR);
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
    lEnumeration *ar_what = get_ar_what(parameter);
    lCondition *ar_where = get_ar_where(parameter);

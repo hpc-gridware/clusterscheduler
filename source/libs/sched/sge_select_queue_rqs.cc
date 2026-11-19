@@ -875,7 +875,7 @@ static void rqs_expand_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
 
    const auto qfilter = ocs::tom::get<RQR_filter_queues>(rule);
 
-   for (const auto cq : ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+   for (const auto cq : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
       const char *cqname = ocs::tom::get<CQ_name>(cq);
       if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname))
          continue;
@@ -1000,7 +1000,7 @@ static void rqs_excluded_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rul
 
    int ignored = 0, excluded = 0;
 
-   for (const auto cq : ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+   for (const auto cq : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
       const char *cqname = ocs::tom::get<CQ_name>(cq);
       bool exclude = true;
 

@@ -288,7 +288,7 @@ static long get_next_addgrpid(const ocs::tom::ConstList<ocs::tom::RN> rlp, long 
 static int addgrpid_already_in_use(const long add_grp_id) {
    DENTER(TOP_LAYER);
 
-   for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))) {
+   for (const auto job : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
       for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          const char *id = ocs::tom::get<JAT_osjobid>(ja_task);
          if (id != nullptr && atol(id) == add_grp_id) {

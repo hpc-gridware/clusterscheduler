@@ -355,7 +355,7 @@ int job_write_spool_file(const ocs::tom::Element<ocs::tom::JB> job, const uint32
       start = sge_get_gmt64();
    }
 
-   const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    if (job_has_to_spool_one_file(job, master_pe_list, flags)) {
       ret = job_write_as_single_file(job, ja_taskid, flags);
    } else {
@@ -473,7 +473,7 @@ static int job_write_ja_task_part(const ocs::tom::Element<ocs::tom::JB> job, con
 
       if ((flags & SPOOL_WITHIN_EXECD) ||
          job_is_enrolled(job, ja_task.get<JAT_task_number>())) {
-         const ocs::tom::ConstList<ocs::tom::PE> pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+         const auto pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
          if (job_might_be_tight_parallel(job, pe_list)) {
             flags = (sge_spool_flags_t)((int)flags | SPOOL_HANDLE_PARALLEL_TASKS);
          }
@@ -685,7 +685,7 @@ int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
    char spoolpath_common[SGE_PATH_MAX] = "";
    int within_execd = flags & SPOOL_WITHIN_EXECD;
    int one_file;
-   const auto job = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))
+   const auto job = ocs::DataStore::master_list<SGE_TYPE_JOB>()
                        .find_first<JB_job_number>(jobid);
    int try_to_remove_sub_dirs = 0;
    dstring error_msg;
@@ -693,7 +693,7 @@ int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
 
    sge_dstring_init(&error_msg, error_msg_buffer, sizeof(error_msg_buffer));
 
-   const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    one_file = job_has_to_spool_one_file(job, master_pe_list, flags);
    if (ja_taskid != 0 && pe_task_id != nullptr && !one_file) {
        char pe_task_spool_file[SGE_PATH_MAX];
@@ -935,7 +935,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
                   job_list_add_job(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), "job list",
                                    ocs::tom::Element<ocs::tom::JB>::from_typed(job.release()), 0);
                   job_remove_spool_file(job_id, 0, nullptr, SPOOL_DEFAULT);
-                  ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)).erase(added_job);
+                  ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().erase(added_job);
                   continue;
                }
             }  
@@ -961,10 +961,9 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
             bool in_execd = (flags & SPOOL_WITHIN_EXECD) > 0;
             if (!in_execd) {
                job_list_register_new_job(
-                  ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+                  ocs::DataStore::master_list<SGE_TYPE_JOB>(),
                   mconf_get_max_jobs(), 1);
-               const auto master_suser_list =
-                  ocs::tom::List<ocs::tom::SU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER));
+               const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
                suser_register_new_job(added_job, mconf_get_max_u_jobs(), 1, master_suser_list);
             }
          }

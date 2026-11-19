@@ -72,7 +72,7 @@ static lListElem *sge_get_configuration_for_host(const char *aName) {
    DENTER(TOP_LAYER);
 
    char unique_name[CL_MAXHOSTNAMELEN];
-   const lList *cluster_config = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
+   const auto cluster_config = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
 
    SGE_ASSERT((nullptr != aName));
 
@@ -453,7 +453,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
    
    master_list = ocs::DataStore::get_master_list(type);
    key_nm      = object_type_get_key_nm(type);
-   master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    switch(action) {
       case SGE_EMA_LIST:

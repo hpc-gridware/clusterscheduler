@@ -109,8 +109,8 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
 
    int ret;
    const char *s, *pe_name;
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
    /* ---- PE_name */
    if (add) {
@@ -305,9 +305,9 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
            ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::List<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PE));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_pe_list = ocs::DataStore::master_list_rw<SGE_TYPE_PE>();
 
    if (!pep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -378,7 +378,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
 void
 debit_all_jobs_from_pes(const ocs::tom::List<ocs::tom::PE> pe_list) {
    DENTER(TOP_LAYER);
-   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    for (const auto pep : pe_list) {
       pe_set_slots_used(pep, 0);

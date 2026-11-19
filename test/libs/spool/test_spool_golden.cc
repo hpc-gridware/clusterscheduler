@@ -1995,10 +1995,8 @@ void run_classic() {
    }
 
    // the PE of the job, with control_slaves, so that its parallel tasks are spooled as files of their own
-   lList **master_pe_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
-   lFreeList(master_pe_list);
-   *master_pe_list = names<PE_name>({"golden_pe"}).release();
-   tom::set<PE_control_slaves>(lFirstRW(*master_pe_list), true);
+   static_cast<void>(ocs::DataStore::replace_master_list<SGE_TYPE_PE>(names<PE_name>({"golden_pe"})));
+   tom::set<PE_control_slaves>(ocs::DataStore::master_list_rw<SGE_TYPE_PE>().front(), true);
 
    auto job = build_job();
    auto ar = tom::ElementPtr<tom::AR>::from_typed(build_AR(Variant::FULL));
@@ -2052,7 +2050,8 @@ void run_classic() {
       lFreeList(&jobs);
    }
 
-   lFreeList(master_pe_list);
+   // the PE list of the data store is freed again
+   static_cast<void>(ocs::DataStore::replace_master_list<SGE_TYPE_PE>(tom::ListPtr<tom::PE>()));
    if (chdir(previous) != 0) {
       fail("classic", "cannot change back");
    }

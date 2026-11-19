@@ -3403,7 +3403,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
       }
    }
 
-   auto cq = ocs::tom::find_first<CQ_name>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), cqname);
+   auto cq = ocs::tom::find_first<CQ_name>(ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
    auto hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_GLOBAL);

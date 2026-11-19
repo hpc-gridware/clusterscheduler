@@ -614,33 +614,21 @@ sge_scheduler_main(void *arg) {
          // the snapshot owns its copies; they are freed at the end of the run, see below
          scheduler_all_data_t copy{};
          // the mirror's lists; the cluster queue, job, host and pe lists hold the reduced elements of the subscription
-         const auto master_cqueue_list =
-                 ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-         const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-         const auto master_userset_list =
-                 ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-         const auto master_project_list =
-                 ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
-         const auto master_exechost_list =
-                 ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
-         const auto master_rqs_list =
-                 ocs::tom::ConstList<ocs::tom::RQS>(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
-         const auto master_centry_list =
-                 ocs::tom::ConstList<ocs::tom::CE>(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-         const auto master_ckpt_list =
-                 ocs::tom::ConstList<ocs::tom::CK>(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
-         const auto master_user_list =
-                 ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
-         const auto master_ar_list = ocs::tom::ConstList<ocs::tom::AR>(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-         const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-         const auto master_hgrp_list =
-                 ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-         const auto master_sharetree_list =
-                 ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE));
-         const auto master_config_list =
-                 ocs::tom::ConstList<ocs::tom::CONF>(*ocs::DataStore::get_master_list(SGE_TYPE_CONFIG));
-         const auto master_category_list =
-                 ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+         const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+         const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+         const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+         const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
+         const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+         const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+         const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+         const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+         const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+         const auto master_hgrp_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+         const auto master_sharetree_list = ocs::DataStore::master_list<SGE_TYPE_SHARETREE>();
+         const auto master_config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
+         const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
 
          /* delay scheduling for test purposes, see issue GE-3306 */
          if (SGE_TEST_DELAY_SCHEDULING > 0) {

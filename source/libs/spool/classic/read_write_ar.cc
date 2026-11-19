@@ -110,16 +110,12 @@ namespace ocs::spool::classic {
       }
 
       if (ret) {
-         const auto master_centry_list =
-            ocs::tom::ConstList<ocs::tom::CE>(*DataStore::get_master_list(SGE_TYPE_CENTRY));
-         const auto master_ckpt_list = ocs::tom::ConstList<ocs::tom::CK>(*DataStore::get_master_list(SGE_TYPE_CKPT));
-         const auto master_cqueue_list =
-            ocs::tom::ConstList<ocs::tom::CQ>(*DataStore::get_master_list(SGE_TYPE_CQUEUE));
-         const auto master_hgroup_list =
-            ocs::tom::ConstList<ocs::tom::HGRP>(*DataStore::get_master_list(SGE_TYPE_HGROUP));
-         const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*DataStore::get_master_list(SGE_TYPE_PE));
-         const auto master_userset_list =
-            ocs::tom::ConstList<ocs::tom::US>(*DataStore::get_master_list(SGE_TYPE_USERSET));
+         const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+         const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+         const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+         const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
          ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
          const auto ars = ocs::tom::List<ocs::tom::AR>(*ar_list);

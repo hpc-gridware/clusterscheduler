@@ -85,7 +85,7 @@ calendar_initalize_timer(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const ocs::tom::List<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR));
+   const auto master_calendar_list = ocs::DataStore::master_list_rw<SGE_TYPE_CALENDAR>();
 
    for (const auto cep : master_calendar_list) {
       calendar_parse_year(cep, &answer_list);
@@ -129,8 +129,8 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
              ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const char *cal_name;
 
    /* ---- CAL_name cannot get changed - we just ignore it */
@@ -223,8 +223,8 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    DENTER(TOP_LAYER);
 
    const char *cal_name;
-   const ocs::tom::List<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_calendar_list = ocs::DataStore::master_list_rw<SGE_TYPE_CALENDAR>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    if (!cep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -293,7 +293,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const ocs::tom::List<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR));
+   const auto master_calendar_list = ocs::DataStore::master_list_rw<SGE_TYPE_CALENDAR>();
 
    const ocs::tom::Element<ocs::tom::CAL> cep = master_calendar_list.find_first<CAL_name>(cal_name);
    if (!cep) {

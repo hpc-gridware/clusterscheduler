@@ -276,8 +276,7 @@ ocs::ClassicAccountingFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom:
     */
    if (!intermediate) {
       // get the job category string
-      const auto master_category_list =
-              ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+      const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
       const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
       const auto category = master_category_list.find_first<CT_id>(category_id);
       const char *category_string = ocs::tom::get<CT_str>(category);
@@ -356,8 +355,7 @@ ocs::ClassicReportingFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom::
    DENTER(TOP_LAYER);
 
    // get the job category string
-   const auto master_category_list =
-           ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+   const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
    const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
    const auto category = master_category_list.find_first<CT_id>(category_id);
    const char *category_string = ocs::tom::get<CT_str>(category);
@@ -870,16 +868,12 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
       /* dump the sharetree data - only create sharelog entries if we have a sharetree */
       MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-      const auto master_stree_list =
-              ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE));
+      const auto master_stree_list = ocs::DataStore::master_list<SGE_TYPE_SHARETREE>();
       const bool has_sharetree = !master_stree_list.empty();
       if (has_sharetree) {
-         const auto master_user_list =
-                 ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
-         const auto master_userset_list =
-                 ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-         const auto master_project_list =
-                 ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+         const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+         const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+         const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
 
          sge_sharetree_print(&data_dstring, nullptr, master_stree_list, master_user_list, master_project_list,
                              master_userset_list,

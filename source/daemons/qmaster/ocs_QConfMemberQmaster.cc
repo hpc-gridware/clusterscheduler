@@ -157,8 +157,7 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
    bool all_ok = true;
    dstring buffer = DSTRING_INIT;
 
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    for (const auto list_arg : *lists) {
       const char *list_name = ocs::tom::get<US_name>(list_arg);
       const auto stored = master_userset_list.find_first<US_name>(list_name);

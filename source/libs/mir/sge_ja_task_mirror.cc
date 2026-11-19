@@ -165,12 +165,10 @@ ja_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-
    const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
    const uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
 
-   const auto job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+   const auto job = ocs::tom::find_first_rw<JB_job_number>(ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(), job_id);
    if (!job) {
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);

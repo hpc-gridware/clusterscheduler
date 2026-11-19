@@ -127,7 +127,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
       pack_ack(apb, ACK_SIGQUEUE, jobid, jataskid, qname);
 
       // the job list is accessed for reading as before, although the jobs are changed
-      const ocs::tom::List<ocs::tom::JB> job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+      const auto job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
       for (const auto jep : job_list) {
          const char *qnm;
 

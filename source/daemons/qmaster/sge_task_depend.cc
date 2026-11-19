@@ -200,8 +200,7 @@ sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::List
    DENTER(TOP_LAYER);
    uint32_t hold_state, new_state;
    int Depend = 0;
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    /* this should not really be necessary */
    if (!jep) {

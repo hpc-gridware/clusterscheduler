@@ -110,8 +110,8 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
 
    int prev_version;
    int adding;
-   const ocs::tom::ConstList<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
-   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+   const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
 
    /* do some checks */
    if (!ep || !ruser || !rhost) {

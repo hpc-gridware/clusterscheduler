@@ -383,8 +383,7 @@ int sge_execd_process_messages() {
 
                   // Check if we have to delay job reporting. This is the case if there are running qsub -sync jobs
                   bool delay_job_reporting = false;
-                  const ocs::tom::ConstList<ocs::tom::JB>
-                     master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+                  const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
                   for (const auto job : master_job_list) {
                      uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
                      if (sync_options != SYNC_NO) {

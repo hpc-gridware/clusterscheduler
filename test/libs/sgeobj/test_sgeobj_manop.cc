@@ -82,11 +82,10 @@ static int s_fail = 0;
 /** @brief Replace the userset master list with a list holding the given usersets. */
 static void
 set_master_usersets(std::initializer_list<lListElem *> usersets) {
-   lList **master_userset_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
-   lFreeList(master_userset_list);
-   *master_userset_list = lCreateList("usersets", US_Type);
+   ocs::DataStore::replace_master_list<SGE_TYPE_USERSET>(ocs::tom::ListPtr<ocs::tom::US>::create("usersets"));
+   const auto master_userset_list = ocs::DataStore::master_list_rw<SGE_TYPE_USERSET>();
    for (lListElem *us : usersets) {
-      lAppendElem(*master_userset_list, us);
+      lAppendElem(master_userset_list, us);
    }
 }
 

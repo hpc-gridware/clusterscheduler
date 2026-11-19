@@ -354,12 +354,9 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
 
    // create or assign a category
    lList** master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const auto master_project_list =
-           ocs::tom::ConstList<ocs::tom::PR>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
-   const auto master_rqs_list =
-           ocs::tom::ConstList<ocs::tom::RQS>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+   const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
    lret = ocs::CategoryQmaster::attach_job(master_category_list, job,
                                            master_userset_list, master_project_list, master_rqs_list,
                                            true, packet->gdi_session);
@@ -483,10 +480,8 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    uint32_t step = 0;
    int alltasks = 1;
    bool forced = false;
-   const auto master_cqueue_list =
-           ocs::tom::List<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
-   const auto master_job_list =
-           ocs::tom::List<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    if (!idep) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -979,8 +974,7 @@ static void
 get_rid_of_schedd_job_messages(const uint32_t job_number) {
    DENTER(TOP_LAYER);
 
-   const auto master_job_schedd_info_list =
-           ocs::tom::List<ocs::tom::SME>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO));
+   const auto master_job_schedd_info_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB_SCHEDD_INFO>();
 
    if (master_job_schedd_info_list) {
       const auto sme = master_job_schedd_info_list.front();
@@ -1090,8 +1084,7 @@ void get_rid_of_job_due_to_qdel(ocs::tom::Element<ocs::tom::JB> j,
    uint32_t task_number = ocs::tom::get<JAT_task_number>(t);
    bool is_array = job_is_array(j);
 
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const auto qep = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JAT_master_queue>(t));
    if (!qep) {
       ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, ocs::tom::get<JAT_master_queue>(t));
@@ -1269,7 +1262,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    bool job_name_flag = false;
    char *job_mod_name = nullptr;
    const char *job_name = nullptr;
-   const auto job_list = ocs::tom::List<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    if (!jep) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -1436,12 +1429,9 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          // if the job changed then check if also the category changed and trigger required events
          if ((trigger & (PRIO_EVENT | MOD_EVENT)) > 0) {
             // build the category string
-            const auto master_userset_list =
-                    ocs::tom::ConstList<ocs::tom::US>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-            const auto master_project_list =
-                    ocs::tom::ConstList<ocs::tom::PR>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
-            const auto master_rqs_list =
-                    ocs::tom::ConstList<ocs::tom::RQS>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+            const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+            const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+            const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
             dstring category_str = DSTRING_INIT;
             ocs::Category::build_string(&category_str, new_job, master_userset_list, master_project_list,
                                         master_rqs_list);
@@ -1658,8 +1648,7 @@ template <auto PRE, auto SUC>
 static void job_suc_pre_doit(const ocs::tom::Element<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
 
-   const auto master_job_list =
-           ocs::tom::List<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    /*
     * here we check whether every job
@@ -2060,21 +2049,14 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    uint32_t uval;
    uint32_t jobid = ocs::tom::get<JB_job_number>(new_job);
 
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const auto master_hgroup_list =
-           ocs::tom::ConstList<ocs::tom::HGRP>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const auto master_centry_list =
-           ocs::tom::ConstList<ocs::tom::CE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
 
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const auto master_ckpt_list =
-           ocs::tom::ConstList<ocs::tom::CK>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-   const auto master_pe_list =
-           ocs::tom::ConstList<ocs::tom::PE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
    /* is job running? */
    {
@@ -3107,8 +3089,7 @@ static bool contains_dependency_cycles(const ocs::tom::ConstElement<ocs::tom::JB
    const auto predecessor_list = ocs::tom::get<JB_jid_predecessor_list>(new_job);
    const auto predecessor_list_ad = ocs::tom::get<JB_ja_ad_predecessor_list>(new_job);
    uint32_t pre_nr;
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    for (const auto pre_elem : predecessor_list) {
       pre_nr = ocs::tom::get<JRE_job_number>(pre_elem);
@@ -3162,8 +3143,7 @@ int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom:
    DENTER(TOP_LAYER);
 
    uint32_t jobid = ocs::tom::get<JB_job_number>(job);
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    const auto predecessors_req = ocs::tom::get<JB_jid_request_list>(job);
    auto predecessors_id = ocs::tom::ListPtr<ocs::tom::JRE>::create("job_predecessors");
@@ -3239,8 +3219,7 @@ int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::t
    DENTER(TOP_LAYER);
 
    uint32_t jobid = ocs::tom::get<JB_job_number>(job);
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    const auto predecessors_req = ocs::tom::get<JB_ja_ad_request_list>(job);
    auto predecessors_id = ocs::tom::ListPtr<ocs::tom::JRE>::create("job_predecessors_ad");
@@ -3470,8 +3449,7 @@ static uint32_t guess_highest_job_number() {
 
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    for (const auto jep : master_job_list) {
       maxid = MAX(maxid, ocs::tom::get<JB_job_number>(jep));
@@ -3500,25 +3478,16 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
 
    int verify_mode = ocs::tom::get<JB_verify_suitable_queues>(jep);
    bool verify_only = (verify_mode == JUST_VERIFY || verify_mode == POKE_VERIFY) ? true : false;
-   const auto master_ckpt_list =
-           ocs::tom::ConstList<ocs::tom::CK>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
-   const auto master_centry_list =
-           ocs::tom::ConstList<ocs::tom::CE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const auto master_hgroup_list =
-           ocs::tom::ConstList<ocs::tom::HGRP>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    // sge_select_parallel_environment() takes the PE list writable
-   const auto master_pe_list =
-           ocs::tom::List<ocs::tom::PE>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PE));
-   const auto master_ar_list =
-           ocs::tom::List<ocs::tom::AR>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR));
-   const auto master_ehost_list =
-           ocs::tom::List<ocs::tom::EH>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
-   const auto master_rqs_list =
-           ocs::tom::List<ocs::tom::RQS>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS));
+   const auto master_pe_list = ocs::DataStore::master_list_rw<SGE_TYPE_PE>();
+   const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
+   const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>();
 
    if (verify_mode == SKIP_VERIFY) {
       DPRINTF("skip expensive verification of schedulability\n");
@@ -3773,8 +3742,7 @@ int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
    uint32_t seek_jid;
    int ret;
    int dummy_trigger = 0;
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    if (!jep) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -3969,10 +3937,8 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
    uint32_t existing_tasks;
    ocs::tom::ListPtr<ocs::tom::RN> range_list;
    uint32_t job_number = ocs::tom::get<JB_job_number>(job);
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const auto master_pe_list =
-           ocs::tom::ConstList<ocs::tom::PE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    uint64_t max_job_deletion_time = sge_gmt32_to_gmt64(mconf_get_max_job_deletion_time());
    bool get_enable_forced_qdel_if_unknown = mconf_get_enable_forced_qdel_if_unknown();
    bool simulate_execds = mconf_get_simulate_execds();
@@ -4365,10 +4331,8 @@ job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Lis
    int ret = STATUS_OK;
    const char *project = ocs::tom::get<JB_project>(job);
    const auto projects = mconf_get_projects();
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const auto master_project_list =
-           ocs::tom::ConstList<ocs::tom::PR>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
 
    /* job requests a project, verify existance, access rights, ... */
    if (project != nullptr) {
@@ -4534,19 +4498,13 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
    uint64_t now = sge_get_gmt64();
 
    // the hosts, queues, resource quotas and advance reservations are debited, so their lists are taken writable
-   const auto master_ar_list =
-           ocs::tom::List<ocs::tom::AR>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR));
-   const auto master_centry_list =
-           ocs::tom::ConstList<ocs::tom::CE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const auto master_hgroup_list =
-           ocs::tom::ConstList<ocs::tom::HGRP>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const auto master_rqs_list =
-           ocs::tom::List<ocs::tom::RQS>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS));
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
 
    uint32_t job_id = ocs::tom::get<JB_job_number>(job);
 

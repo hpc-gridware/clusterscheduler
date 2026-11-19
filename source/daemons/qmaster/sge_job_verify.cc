@@ -508,26 +508,16 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    int ret = STATUS_OK;
 
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const auto master_hgroup_list =
-           ocs::tom::ConstList<ocs::tom::HGRP>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const auto master_centry_list =
-           ocs::tom::ConstList<ocs::tom::CE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const auto master_job_list =
-           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const auto master_pe_list =
-           ocs::tom::ConstList<ocs::tom::PE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-   const auto master_ckpt_list =
-           ocs::tom::ConstList<ocs::tom::CK>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
-   const auto master_user_list =
-           ocs::tom::ConstList<ocs::tom::UU>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
-   const auto master_ar_list =
-           ocs::tom::ConstList<ocs::tom::AR>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-   const auto master_suser_list =
-           ocs::tom::List<ocs::tom::SU>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+   const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+   const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
 
    if (!jep) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);

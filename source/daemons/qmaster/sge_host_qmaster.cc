@@ -165,7 +165,7 @@ attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs:
 void
 host_initalitze_timer() {
    DENTER(TOP_LAYER);
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
 
    /* initiate timer for all hosts because they start in 'unknown' state */
    if (master_ehost_list) {
@@ -309,8 +309,8 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    ocs::tom::List<ocs::tom::EH> host_list = nullptr;
    const char *name = nullptr;
    int ret;
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    if (!hep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -495,10 +495,10 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    int nm;
    bool changed = false;
    bool update_qversion = false;
-   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
    // the key field comes from the gdi_object_t table at run time, the name handling stays generic
    nm = object->key_nm;
@@ -722,7 +722,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
    const uint64_t gdi_session = (packet != nullptr) ? packet->gdi_session
                                                     : ocs::SessionManager::GDI_SESSION_NONE;
 
-   const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
    const ocs::tom::Element<ocs::tom::HGRP> hgrp = hgroup_list_locate(master_hgroup_list, EXEC_HOSTGROUP);
 
    if (hgrp == nullptr) {
@@ -730,7 +730,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
       DRETURN(false);
    }
 
-   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    ocs::tom::ListPtr<ocs::tom::HR> wanted;
 
    for (const auto ehost : master_ehost_list) {
@@ -801,7 +801,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
       ret &= hgroup_find_all_referencees(hgrp, &answer_list, master_hgroup_list, &occupant_groups);
    }
 
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    for (const auto cqueue : master_cqueue_list) {
       if (!ret) {
@@ -971,7 +971,7 @@ host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Ele
              const ocs::tom::ConstElement<ocs::tom::EH> old_ep, gdi_object_t *object,
              [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
 
    // the key field comes from the table at run time; the table uses host_success() for EH_LIST alone
    switch (object->key_nm) {
@@ -1026,7 +1026,7 @@ sge_mark_unheard(const ocs::tom::Element<ocs::tom::EH> hep, const uint64_t gdi_s
    DENTER(TOP_LAYER);
 
    const char *host;
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    host = ocs::tom::get<EH_name>(hep);
 
@@ -1075,8 +1075,8 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
    ocs::tom::Element<ocs::tom::EH> real_ep = nullptr;
    bool statics_changed = false;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    /* JG: TODO: this time should better come with the report.
     *           it is the time when the reported values were valid.
@@ -1243,8 +1243,8 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const ocs::tom::List<ocs::tom::EH> master_exechost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_exechost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    // host_list_locate() has a raw form only; the list holds execution hosts
    /* get "global" element pointer */
@@ -1380,7 +1380,7 @@ exec_host_change_queue_version(const char *exechost_name, const uint64_t gdi_ses
    DENTER(TOP_LAYER);
 
    bool change_all = (strcasecmp(exechost_name, SGE_GLOBAL_NAME) == 0) ? true : false;
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    for (const auto cqueue : master_cqueue_list) {
       ocs::tom::List<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
@@ -1458,7 +1458,7 @@ master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    int kill_jobs;
    char host[CL_MAXHOSTNAMELEN];
    const char *hostname;
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
    // the request data is structure checked in the listener (CS-3125)
    const ocs::tom::ConstList<ocs::tom::ID> data_list(task->data_list);
 
@@ -1558,7 +1558,7 @@ notify(const ocs::tom::Element<ocs::tom::EH> lel, ocs::gdi::Packet *packet, ocs:
       char sge_mail_body[1024];
 
       /* mark killed jobs as deleted */
-      const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+      const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
       for (const auto jep : master_job_list) {
          ocs::tom::ConstList<ocs::tom::MR> mail_users = ocs::tom::get<JB_mail_list>(jep);
          uint32_t mail_options = ocs::tom::get<JB_mail_options>(jep);
@@ -1646,7 +1646,7 @@ host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *h
                    const char *hgroup_name, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup = hgroup_list_locate(master_hgroup_list, hgroup_name);
    int add = old_hgroup == nullptr ? 1 : 0;
    ocs::tom::ListPtr<ocs::tom::HR> href_list;
@@ -1701,13 +1701,12 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
 
    bool ret = true;
 
-   // the list itself is re-read on every pass below, because modifying a host group replaces the
-   // element and may even replace the list
-   const lList **master_hgroup_list = ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   // the list itself is re-read from the data store on every pass below, because modifying a host group
+   // replaces the element and may even replace the list
 
    // the host groups to change are collected first: the list is modified while we work on it
    std::vector<std::string> hgroup_names;
-   for (const auto hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(*master_hgroup_list)) {
+   for (const auto hgroup : ocs::DataStore::master_list<SGE_TYPE_HGROUP>()) {
       const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
 
       if (hgroup_is_reserved(hgroup_name)) {
@@ -1720,7 +1719,7 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
 
    for (const std::string &hgroup_name : hgroup_names) {
       const ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup =
-              hgroup_list_locate(ocs::tom::ConstList<ocs::tom::HGRP>(*master_hgroup_list), hgroup_name.c_str());
+              hgroup_list_locate(ocs::DataStore::master_list<SGE_TYPE_HGROUP>(), hgroup_name.c_str());
       if (old_hgroup == nullptr) {
          continue;
       }
@@ -1761,7 +1760,7 @@ static bool
 host_has_running_jobs(const char *hostname) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    for (const auto cqueue : master_cqueue_list) {
       const ocs::tom::ConstElement<ocs::tom::QU> qinstance =
@@ -1818,7 +1817,7 @@ sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    uint64_t limit = sge_gmt32_to_gmt64(remove_after);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
 
    // not a range-for: hosts are deleted from the list we walk
    ocs::tom::Element<ocs::tom::EH> next = master_ehost_list.front();
@@ -1868,8 +1867,7 @@ sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
          strncpy(rhost, component_get_qualified_hostname(), sizeof(rhost) - 1);
          rhost[sizeof(rhost) - 1] = '\0';
 
-         const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(
-                 *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+         const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
          removed = sge_del_host(&packet, &task, hep, &answer_list, ruser, rhost,
                                 ocs::gdi::Target::EH_LIST, master_hgroup_list,
                                 monitor) == STATUS_OK;
@@ -1923,8 +1921,8 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::t
    ocs::tom::Element<ocs::tom::EH> hep;
    dstring ds;
    char buffer[256];
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -2018,7 +2016,7 @@ static int
 verify_scaling_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstElement<ocs::tom::EH> host) {
    DENTER(TOP_LAYER);
    bool ret = true;
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
 
    for (const auto hs_elem : ocs::tom::get<EH_scaling_list>(host)) {
       const char *name = ocs::tom::get<HS_name>(hs_elem);
@@ -2192,10 +2190,10 @@ attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elemen
                    const char *attr_name, const char *object_name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
    /* ---- attribute EH_consumable_config_list */
    if (ocs::tom::has<EH_consumable_config_list>(ep)) {

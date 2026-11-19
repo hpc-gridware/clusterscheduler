@@ -331,9 +331,8 @@ void
 sge_setup_job_resend() {
    DENTER(TOP_LAYER);
 
-   const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    for (const auto job : master_job_list) {
       const uint32_t job_num = ocs::tom::get<JB_job_number>(job);
       for (const auto task : ocs::tom::get<JB_ja_tasks>(job)) {
@@ -344,7 +343,7 @@ sge_setup_job_resend() {
             const auto qinstance = cqueue_list_locate_qinstance(master_cqueue_list, qname);
             // host_list_locate() searches the EH_Type master list
             const auto host = ocs::tom::Element<ocs::tom::EH>::from_typed(
-                    host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
+                    host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(),
                                      ocs::tom::get<QU_qhostname>(qinstance)));
             uint64_t when = ocs::tom::get<JAT_start_time>(task);
             when += sge_gmt32_to_gmt64(std::max(load_report_interval(host), MAX_JOB_DELIVER_TIME));
@@ -675,8 +674,7 @@ sge_propagate_queue_suspension(const ocs::tom::Element<ocs::tom::JB> jep, dstrin
                                dstring *host_domain) {
    DENTER(TOP_LAYER);
 
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
       uint32_t jstate = ocs::tom::get<JAT_state>(jatep);
       bool is_suspended = false;
@@ -794,12 +792,8 @@ setup_qmaster() {
    /*
     * Initialize Master lists and hash tables, if necessary
     */
-   const lList **suser_list = ocs::DataStore::get_master_list(SGE_TYPE_SUSER);
-   if (*suser_list == nullptr) {
-      // a master list: the data store owns it
-      *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER) =
-              ocs::tom::ListPtr<ocs::tom::SU>::create("master submit user list").release();
-   }
+   // a master list: the data store owns it
+   ocs::DataStore::master_list_create<SGE_TYPE_SUSER>("master submit user list");
 
    if (!sge_initialize_persistence(&answer_list)) {
       answer_list_output(&answer_list);
@@ -855,9 +849,9 @@ setup_qmaster() {
       int i;
 
       for (i = 0; new_complexes[i].name != nullptr; i++) {
-         lList **centry_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
-         const auto entry_long = ocs::tom::find_first<CE_name>(*centry_list, new_complexes[i].name);
-         const auto entry_short = ocs::tom::find_first<CE_shortcut>(*centry_list, new_complexes[i].shortcut);
+         const auto centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
+         const auto entry_long = ocs::tom::find_first<CE_name>(centry_list, new_complexes[i].name);
+         const auto entry_short = ocs::tom::find_first<CE_shortcut>(centry_list, new_complexes[i].shortcut);
 
          if (entry_long == nullptr && entry_short == nullptr) {
             auto new_centry_ptr = ocs::tom::ElementPtr<ocs::tom::CE>::create();
@@ -873,8 +867,8 @@ setup_qmaster() {
             ocs::tom::set<CE_requestable>(new_centry, new_complexes[i].requestable);
 
             /* append and spool the object */
-            if (*centry_list != nullptr) {
-               ocs::tom::List<ocs::tom::CE>(*centry_list).push_back(std::move(new_centry_ptr));
+            if (centry_list) {
+               centry_list.push_back(std::move(new_centry_ptr));
             }
             // without a master list the element is only spooled and freed with its handle at the end of the
             // block, as it was before when lAppendElem() refused it (and leaked it)
@@ -890,7 +884,7 @@ setup_qmaster() {
                    SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
 
-   if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
+   if (!host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(), SGE_TEMPLATE_NAME)) {
       /* add an exec host "template" */
       ocs::gdi::Packet packet;
       ocs::gdi::Task task;
@@ -900,7 +894,7 @@ setup_qmaster() {
    }
 
    /* add host "global" to master exechost list as an exec host */
-   if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
+   if (!host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
       ocs::gdi::Packet packet;
       ocs::gdi::Task task;
@@ -916,7 +910,7 @@ setup_qmaster() {
     */
 
    // ensure that all exec hosts have defined slots
-   for (const auto ehost : ocs::tom::List<ocs::tom::EH>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST))) {
+   for (const auto ehost : ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>()) {
       uint32_t processors = ocs::tom::get<EH_processors>(ehost);
 
       host_ensure_slots_are_defined(ehost, processors);
@@ -1000,7 +994,7 @@ setup_qmaster() {
     * result in HGRP_cached_hosts. From here on the caches are maintained
     * incrementally in hgroup_success(); this is the only full rebuild.
     */
-   if (!hgroup_list_update_caches(ocs::tom::List<ocs::tom::HGRP>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP)),
+   if (!hgroup_list_update_caches(ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>(),
                                   &answer_list)) {
       answer_list_output(&answer_list);
    }
@@ -1014,7 +1008,7 @@ setup_qmaster() {
     * Reported at every start, because the state persists and a one-off message
     * would be lost in exactly the restart that caused it.
     */
-   const ocs::tom::ConstList<ocs::tom::HGRP> hgroups(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+   const auto hgroups = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    ocs::Matcher::report_ineffective(hgroups, &answer_list);
    answer_list_output(&answer_list);
 
@@ -1066,7 +1060,7 @@ setup_qmaster() {
    DPRINTF("cluster_queue_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
-   cqueue_list_set_unknown_state(ocs::tom::List<ocs::tom::CQ>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)),
+   cqueue_list_set_unknown_state(ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>(),
                                  nullptr, false, true, ocs::SessionManager::GDI_SESSION_NONE);
 
    /*
@@ -1081,11 +1075,10 @@ setup_qmaster() {
     * list said. The full migration belongs to the upgrade.
     */
    {
-      const auto master_hgroup_list =
-              ocs::tom::List<ocs::tom::HGRP>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
+      const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
       dstring name_buffer = DSTRING_INIT;
 
-      for (const auto cqueue : ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+      for (const auto cqueue : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
          const char *group_name = hgroup_queue_group_name(ocs::tom::get<CQ_name>(cqueue), &name_buffer);
 
          if (hgroup_list_locate(master_hgroup_list, group_name)) {
@@ -1119,7 +1112,7 @@ setup_qmaster() {
     *    - fullname
     *    - suspend_on_subordinate
     */
-   for (const auto tmpqep : ocs::tom::List<ocs::tom::CQ>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE))) {
+   for (const auto tmpqep : ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>()) {
       /*
        * Update cluster queue configuration from pre-6.2u5 to 6.2u5, i.e. from
        * cluster queues without slotwise suspend on subordinate to such with
@@ -1191,7 +1184,7 @@ setup_qmaster() {
 
    /* initialize cached advance reservations structures */
    {
-      for (const auto ar : ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR))) {
+      for (const auto ar : ocs::DataStore::master_list_rw<SGE_TYPE_AR>()) {
          ar_initialize_resource_booking(ar);
       }
    }
@@ -1207,7 +1200,7 @@ setup_qmaster() {
    {
       uint32_t saved_logginglevel = log_state_get_log_level();
       log_state_set_log_level(LOG_INFO);
-      const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+      const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
       INFO(MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU, static_cast<uint32_t>(master_job_list.size()),
            static_cast<uint32_t>(time_end - time_start));
       log_state_set_log_level(saved_logginglevel);
@@ -1217,9 +1210,8 @@ setup_qmaster() {
       dstring cqueue_name = DSTRING_INIT;
       dstring host_domain = DSTRING_INIT;
 
-      const auto master_centry_list =
-              ocs::tom::ConstList<ocs::tom::CE>(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-      for (const auto jep : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+      const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+      for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
 
          DPRINTF("JOB " sge_u32 " PRIORITY" sge_u32 "\n", ocs::tom::get<JB_job_number>(jep),
                  ocs::tom::get<JB_priority>(jep) - BASE_PRIORITY);
@@ -1258,16 +1250,15 @@ setup_qmaster() {
       parallel one
    */
    debit_all_jobs_from_qs();
-   debit_all_jobs_from_pes(ocs::tom::List<ocs::tom::PE>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PE)));
+   debit_all_jobs_from_pes(ocs::DataStore::master_list_rw<SGE_TYPE_PE>());
 
    /*
     * Initialize cached values for each qinstance:
     *    - update suspend on subordinate state according to running jobs
     *    - update cached QI values.
     */
-   const auto master_hgroup_list =
-           ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const auto master_cqueue_list = ocs::tom::List<ocs::tom::CQ>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    for (const auto tmpqep : master_cqueue_list) {
       ocs::gdi::Packet packet;
       ocs::gdi::Task task;
@@ -1312,27 +1303,24 @@ setup_qmaster() {
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
                    SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);
-   const auto ep = ocs::tom::List<ocs::tom::STN>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE)).front();
+   const auto ep = ocs::DataStore::master_list_rw<SGE_TYPE_SHARETREE>().front();
    if (ep) {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       ocs::tom::ListPtr<ocs::tom::STN> found;
-      check_sharetree(&alp, ep, ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER)),
-                      ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT)),
+      check_sharetree(&alp, ep, ocs::DataStore::master_list<SGE_TYPE_USER>(),
+                      ocs::DataStore::master_list<SGE_TYPE_PROJECT>(),
                       nullptr, found);
       alp.reset();
    }
 
    DPRINTF("post init of prj/uset and create of categories--------------------\n");
    lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
-   const auto master_job_list = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-   const auto master_userset_list =
-           ocs::tom::List<ocs::tom::US>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET));
-   const auto master_project_list =
-           ocs::tom::List<ocs::tom::PR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT));
-   const auto master_rqs_list = ocs::tom::List<ocs::tom::RQS>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS));
-   const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-   const auto master_host_list =
-           ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+   const auto master_userset_list = ocs::DataStore::master_list_rw<SGE_TYPE_USERSET>();
+   const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>();
+   const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(master_category_list, master_job_list,
                                                                    master_project_list, master_userset_list, master_rqs_list,
@@ -1352,8 +1340,8 @@ setup_qmaster() {
    // post-load integrity scan: warn about dangling role references (does not abort startup)
    {
       ocs::tom::ListPtr<ocs::tom::AN> integrity_answers;
-      ocs::Role::check_integrity(ocs::tom::ConstList<ocs::tom::RL>(*ocs::DataStore::get_master_list(SGE_TYPE_RL)),
-                                 ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET)),
+      ocs::Role::check_integrity(ocs::DataStore::master_list<SGE_TYPE_RL>(),
+                                 ocs::DataStore::master_list<SGE_TYPE_USERSET>(),
                                  &integrity_answers);
       answer_list_output(&integrity_answers);
       integrity_answers.reset();
@@ -1548,7 +1536,7 @@ static void
 remove_invalid_job_references(const sge_object_type object_type, const char *object_name) {
    DENTER(TOP_LAYER);
 
-   const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    for (const auto up : ocs::tom::List<T>(*ocs::DataStore::get_master_list_rw(object_type))) {
       bool spool_me = false;
       const auto debited_job_usage = ocs::tom::get<DebitedF>(up);
@@ -1595,7 +1583,7 @@ remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::
    DENTER(TOP_LAYER);
 
    if (user) {
-      for (const auto up : ocs::tom::List<ocs::tom::UU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USER))) {
+      for (const auto up : ocs::DataStore::master_list_rw<SGE_TYPE_USER>()) {
          bool changed = false;
 
          changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UU_usage>(up), usage_weight_list);
@@ -1615,7 +1603,7 @@ remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::
          }
       }
    } else {
-      for (const auto up : ocs::tom::List<ocs::tom::PR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT))) {
+      for (const auto up : ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>()) {
          bool changed = false;
 
          changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<PR_usage>(up), usage_weight_list);
@@ -1642,19 +1630,14 @@ remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::
 static void
 debit_all_jobs_from_qs() {
    DENTER(TOP_LAYER);
-   const auto master_job_list = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-   const auto master_centry_list =
-           ocs::tom::ConstList<ocs::tom::CE>(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const auto master_ar_list = ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR));
-   const auto master_rqs_list = ocs::tom::List<ocs::tom::RQS>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS));
-   const auto master_userset_list =
-           ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const auto master_hgroup_list =
-           ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const auto master_exechost_list =
-           ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
+   const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    auto next_jep = master_job_list.front();
    while (const auto jep = next_jep) {

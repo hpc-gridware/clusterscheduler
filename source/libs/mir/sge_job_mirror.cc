@@ -207,8 +207,7 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
              const bool has_category = ocs::tom::has<JB_category>(event_job);
              if (has_category && has_category_id) {
                 // the master category list (CT_Type), fetched with its fixed type
-                const auto master_category_list =
-                        ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+                const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
                 // JB_category is a reference field, which takes the raw element
                 lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
 
@@ -247,7 +246,7 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
  * The reason messages the scheduler produced for pending jobs.
  *
  * @param evc the event client the event arrived on
- * @param type event type
+ * @param type event type; always SGE_TYPE_JOB_SCHEDD_INFO, the mirror table calls this function for it only
  * @param action action to perform
  * @param event the event (ET_Type); its scheduler job info is taken over into the master list
  * @param clientdata client data
@@ -257,7 +256,8 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-job_schedd_info_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type,
+job_schedd_info_update_master_list([[maybe_unused]] sge_evc_class_t *evc,
+                                   [[maybe_unused]] const sge_object_type type,
                                    [[maybe_unused]] const sge_event_action action,
                                    const ocs::tom::Element<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
@@ -270,8 +270,7 @@ job_schedd_info_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const 
    }
 
    // the data store slot (never nullptr) gets the new list; the old one is freed
-   lList **slot = ocs::DataStore::get_master_list_rw(type);
-   static_cast<void>(ocs::tom::ListPtr<ocs::tom::SME>(std::exchange(*slot, info_list.release())));
+   ocs::DataStore::replace_master_list<SGE_TYPE_JOB_SCHEDD_INFO>(std::move(info_list));
 
    DRETURN(SGE_EMA_OK);
 }

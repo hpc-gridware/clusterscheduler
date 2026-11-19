@@ -102,7 +102,7 @@ static bool generate_jobs(int num) {
       ocs::tom::set<JB_group>(job, random_string(10));
       ocs::tom::set<JB_account>(job, random_string(20));
       ocs::tom::set<JB_cwd>(job, random_string(100));
-      lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job);
+      lAppendElem(ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(), job);
 
       if ((i % 10) == 0) {
          int j;
@@ -122,7 +122,7 @@ static bool update_jobs() {
    lListElem *job;
    int num_total = 0;
 
-   for_each_rw(job, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
+   for_each_rw(job, ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
       ocs::tom::set<JB_project>(job, random_string(20));
       num_total++;
    }
@@ -142,9 +142,9 @@ static bool spool_data() {
 
    context = spool_get_default_context();
 
-   fprintf(stdout, "spooling " sge_u32 " jobs\n", lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)));
+   fprintf(stdout, "spooling " sge_u32 " jobs\n", lGetNumberOfElem(ocs::DataStore::master_list<SGE_TYPE_JOB>()));
 
-   for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_rw(job, ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
       ocs::tom::ConstList<ocs::tom::JAT> ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
       if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) == 0) {
          key = job_get_key(ocs::tom::get<JB_job_number>(job), 0, nullptr, &key_ds);
@@ -191,7 +191,7 @@ static bool delete_spooled_data() {
    context = spool_get_default_context();
 
    /* jobs */
-   for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
+   for_each_rw(job, ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
       snprintf(key, sizeof(key),  sge_u32 ".0", ocs::tom::get<JB_job_number>(job));
       spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key);
       answer_list_output(&answer_list);
@@ -294,7 +294,7 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-   *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
+   ocs::DataStore::replace_master_list<SGE_TYPE_JOB>(ocs::tom::ListPtr<ocs::tom::JB>::create("job list"));
 
 #define defstring(str) #str
 
@@ -363,8 +363,7 @@ int main(int argc, char *argv[]) {
    prof_reset(SGE_PROF_SPOOLINGIO, nullptr);
 
    clear_caches();
-   lFreeList(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-   *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
+   ocs::DataStore::replace_master_list<SGE_TYPE_JOB>(ocs::tom::ListPtr<ocs::tom::JB>::create("job list"));
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    read_spooled_data();
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
@@ -383,7 +382,7 @@ int main(int argc, char *argv[]) {
    spool_shutdown_context(&answer_list, spooling_context);
    spool_startup_context(&answer_list, spooling_context, true);
 
-   lFreeList(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   ocs::DataStore::replace_master_list<SGE_TYPE_JOB>(nullptr);
 
    spool_shutdown_context(&answer_list, spooling_context);
    answer_list_output(&answer_list);

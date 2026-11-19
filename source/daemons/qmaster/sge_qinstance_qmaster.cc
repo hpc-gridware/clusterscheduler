@@ -179,10 +179,8 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
          const char *old_value = ocs::tom::get<QuF>(this_elem);
 
          if (old_value == nullptr || new_value == nullptr || strcmp(old_value, new_value)) {
-            const ocs::tom::ConstList<ocs::tom::AR>
-               master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-            const ocs::tom::ConstList<ocs::tom::CAL>
-               master_calendar_list(*ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR));
+            const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+            const auto master_calendar_list = ocs::DataStore::master_list<SGE_TYPE_CALENDAR>();
             const ocs::tom::ConstElement<ocs::tom::CAL> calendar =
                     ocs::tom::find_first<CAL_name>(master_calendar_list, new_value);
 
@@ -228,8 +226,7 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
          const auto old_value = ocs::tom::get<QuF>(this_elem);
 
          if (object_list_has_differences(old_value, answer_list, new_value)) {
-            const ocs::tom::ConstList<ocs::tom::AR>
-               master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+            const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
             /*
              * check if the modification is possible or if
@@ -253,9 +250,8 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
          }
       } else if constexpr (CqF == CQ_consumable_config_list) {
          const auto old_value = ocs::tom::get<QuF>(this_elem);
-         const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-         const ocs::tom::ConstList<ocs::tom::CE>
-            master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+         const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+         const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
          // the list of the cluster queue is completed in place, as it always was: the request data is filled in,
          // and an implicit slots entry is added for the comparison and removed again
          ocs::tom::List<ocs::tom::CE> value_list =
@@ -763,7 +759,7 @@ qinstance_change_state_on_calendar_all(const char *cal_name, const uint32_t cal_
                                        monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    bool ret = true;
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    for (const auto cqueue : master_cqueue_list) {
       for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
@@ -865,7 +861,7 @@ sge_qmaster_qinstance_state_set_manual_disabled(const ocs::tom::Element<ocs::tom
    changed = qinstance_state_set_manual_disabled(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
+      sge_ar_list_set_error_state(ocs::DataStore::master_list_rw<SGE_TYPE_AR>(),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_DISABLED, set_state, gdi_session);
    }
 
@@ -890,7 +886,7 @@ sge_qmaster_qinstance_state_set_manual_suspended(const ocs::tom::Element<ocs::to
    changed = qinstance_state_set_manual_suspended(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
+      sge_ar_list_set_error_state(ocs::DataStore::master_list_rw<SGE_TYPE_AR>(),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_SUSPENDED, set_state, gdi_session);
    }
 
@@ -917,10 +913,10 @@ sge_qmaster_qinstance_state_set_unknown(const ocs::tom::Element<ocs::tom::QU> th
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       if (mconf_get_simulate_execds()) {
-         sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
+         sge_ar_list_set_error_state(ocs::DataStore::master_list_rw<SGE_TYPE_AR>(),
                                      ocs::tom::get<QU_full_name>(this_elem), QI_UNKNOWN, false, gdi_session);
       } else {
-         sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
+         sge_ar_list_set_error_state(ocs::DataStore::master_list_rw<SGE_TYPE_AR>(),
                                      ocs::tom::get<QU_full_name>(this_elem), QI_UNKNOWN, set_state, gdi_session);
       }
    }
@@ -947,7 +943,7 @@ sge_qmaster_qinstance_state_set_error(const ocs::tom::Element<ocs::tom::QU> this
    changed = qinstance_state_set_error(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
+      sge_ar_list_set_error_state(ocs::DataStore::master_list_rw<SGE_TYPE_AR>(),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_ERROR, set_state, gdi_session);
    }
 
@@ -1061,7 +1057,7 @@ sge_qmaster_qinstance_state_set_ambiguous(const ocs::tom::Element<ocs::tom::QU> 
    changed = qinstance_state_set_ambiguous(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
+      sge_ar_list_set_error_state(ocs::DataStore::master_list_rw<SGE_TYPE_AR>(),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_AMBIGUOUS, set_state, gid_session);
    }
 
@@ -1123,10 +1119,10 @@ qinstance_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::QU> th
 
    if (this_elem != nullptr) {
       const char *name = ocs::tom::get<QU_full_name>(this_elem);
-      const ocs::tom::ConstList<ocs::tom::JB> job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-      const ocs::tom::ConstList<ocs::tom::CE> centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-      const ocs::tom::ConstList<ocs::tom::AR> ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
-      const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+      const auto job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+      const auto centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+      const auto ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
+      const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
       ocs::tom::set<QU_resource_utilization>(this_elem, nullptr);
       qinstance_set_conf_slots_used(this_elem);

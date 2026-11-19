@@ -146,7 +146,7 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
 
    // a cluster queue of the master list (CQ_Type)
    const auto cqueue = cqueue_list_locate(
-           ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), name);
+           ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), name);
 
    if (cqueue) {
       dstring key_buffer = DSTRING_INIT;

@@ -1543,9 +1543,8 @@ mir_event_root_missing(const ocs::tom::ConstElement<ocs::tom::ET> event) {
       return false;
    }
 
-   const lList **rlistp = ocs::DataStore::get_master_list(R);
-   const lList *rlist = (rlistp != nullptr) ? *rlistp : nullptr;
-   if (rlist == nullptr) {
+   const auto rlist = ocs::DataStore::master_list<R>();
+   if (!rlist) {
       return true; /* nothing of the root type mirrored -> event targets an object we lack */
    }
 

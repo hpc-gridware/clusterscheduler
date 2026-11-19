@@ -265,7 +265,7 @@ hgroup_mod_hostlist(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::Li
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
 
    if (hgroup != nullptr && reduced_elem != nullptr) {
       if (ocs::tom::has<HGRP_host_list>(reduced_elem)) {
@@ -418,7 +418,7 @@ void
 hgroup_commit(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    ocs::tom::List<ocs::tom::CQ> cqueue_list = ocs::tom::get<HGRP_cqueue_list>(hgroup);
    ocs::tom::Element<ocs::tom::CQ> next_cqueue = cqueue_list.front();
    ocs::tom::Element<ocs::tom::CQ> cqueue = nullptr;
@@ -492,9 +492,9 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    /*
     * CS-2451: only HGRP_name and HGRP_host_list are ever read out of
@@ -899,8 +899,8 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
    DENTER(TOP_LAYER);
 
    int ret = true;
-   const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    /*
     * Check all incoming parameter
@@ -1204,7 +1204,7 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::E
    DENTER(TOP_LAYER);
 
    const char *name = ocs::tom::get<HGRP_name>(hgroup);
-   const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
    ocs::tom::ListPtr<ocs::tom::HR> referencees;
 
    hgroup_refresh_caches(hgroup, master_hgroup_list, referencees);

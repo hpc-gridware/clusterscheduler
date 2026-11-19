@@ -172,8 +172,8 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    DENTER(TOP_LAYER);
    dstring buffer = DSTRING_INIT;
    const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-   const ocs::tom::ConstList<ocs::tom::CE> centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    auto ret = ocs::tom::ElementPtr<ocs::tom::QU>::create();
 
    /*
@@ -501,10 +501,9 @@ cqueue_hgroup_create(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *
 
    dstring name_buffer = DSTRING_INIT;
    const char *name = hgroup_queue_group_name(cqueue_name, &name_buffer);
-   lList **master_hgroup_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    bool ret = true;
 
-   if (hgroup_list_locate(ocs::tom::ConstList<ocs::tom::HGRP>(*master_hgroup_list), name) != nullptr) {
+   if (hgroup_list_locate(ocs::DataStore::master_list<SGE_TYPE_HGROUP>(), name) != nullptr) {
       /* the queue is new, so its group cannot be -- unless one was left behind */
       ERROR(MSG_SGETEXT_ALREADYEXISTS_SS, "host group", name);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -530,10 +529,7 @@ cqueue_hgroup_create(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *
 
    if (ret) {
       // the master list is a process-lifetime global, it is created here if missing, as before
-      if (*master_hgroup_list == nullptr) {
-         *master_hgroup_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("host group").release();
-      }
-      const ocs::tom::List<ocs::tom::HGRP> hgroup_list(*master_hgroup_list);
+      const auto hgroup_list = ocs::DataStore::master_list_create<SGE_TYPE_HGROUP>("host group");
       const ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list.push_back(std::move(new_hgroup));
 
       /* CS-2451: an element without a cache answers "no" to every membership
@@ -568,7 +564,7 @@ cqueue_hgroup_delete(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *
 
    dstring name_buffer = DSTRING_INIT;
    const char *name = hgroup_queue_group_name(cqueue_name, &name_buffer);
-   const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
    const ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list_locate(master_hgroup_list, name);
    bool ret = true;
 
@@ -613,7 +609,7 @@ cqueue_verify_hostlist(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
 
    const bool is_remove = (sub_command & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE;
    bool ret = href_list_resolve_hostnames(href_list, answer_list, true, !is_remove);
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
 
    for (const auto href : href_list) {
       const char *name = ocs::tom::get<HR_name>(href);
@@ -722,8 +718,8 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
    dstring buffer = DSTRING_INIT;
    bool ret = true;
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
    if (cqueue != nullptr && reduced_elem != nullptr) {
       /*
@@ -909,14 +905,14 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR));
-   const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_calendar_list = ocs::DataStore::master_list<SGE_TYPE_CALENDAR>();
+   const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    if (ocs::tom::has<CQ_name>(reduced_elem)) {
       const char *name = ocs::tom::get<CQ_name>(reduced_elem);
@@ -1073,7 +1069,7 @@ cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::E
                [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    /*
     * CS-2677: take the host list instruction off the element before anything
@@ -1295,7 +1291,7 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    if (this_elem != nullptr && remote_user != nullptr && remote_host != nullptr) {
       const char *name = ocs::tom::get<CQ_name>(this_elem);

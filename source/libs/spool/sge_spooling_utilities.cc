@@ -391,16 +391,13 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
    bool ret = true;
 
-   const auto master_cqueue_list = ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const auto master_hgroup_list =
-      ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const auto master_centry_list = ocs::tom::ConstList<ocs::tom::CE>(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const auto master_ehost_list =
-      ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
-   const auto master_ckpt_list = ocs::tom::ConstList<ocs::tom::CK>(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
-   const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-   const auto master_userset_list =
-      ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+   const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    // the rule (SPR_Type) of the context the framework passes in; no check, the signature is the table's
    const auto spool_rule = ocs::tom::ConstElement<ocs::tom::SPR>::from_typed(rule);
 
@@ -613,7 +610,7 @@ spool_default_validate_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
    switch (object_type) {
       case SGE_TYPE_EXECHOST:
-         host_list_merge(ocs::tom::List<ocs::tom::EH>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST)));
+         host_list_merge(ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>());
          break;
       case SGE_TYPE_CONFIG:
       case SGE_TYPE_USERSET:
@@ -621,7 +618,7 @@ spool_default_validate_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       case SGE_TYPE_PE:
          break;
       case SGE_TYPE_CENTRY:
-         centry_list_sort(ocs::tom::List<ocs::tom::CE>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY)));
+         centry_list_sort(ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>());
          break;
       case SGE_TYPE_HGROUP:
       case SGE_TYPE_CALENDAR:

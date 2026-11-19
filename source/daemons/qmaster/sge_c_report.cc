@@ -135,7 +135,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
    this_seqno = ocs::tom::get<REP_seqno>(reports.front());
 
    /* need exec host for all types of reports */
-   if (!(hep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
+   if (!(hep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(),
                                                                 rhost)))) {
       ERROR(MSG_GOTSTATUSREPORTOFUNKNOWNEXECHOST_S, rhost);
       DRETURN_VOID;
@@ -192,8 +192,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
                                          ocs::tom::get<REP_list>(report)), packet->gdi_session);
 
                if (mconf_get_simulate_execds()) {
-                  const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list(
-                     *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+                  const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
                   for (const auto shep : master_exechost_list) {
                      const auto simhostElem =

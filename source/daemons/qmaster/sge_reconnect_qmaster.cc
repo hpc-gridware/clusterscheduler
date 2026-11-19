@@ -156,7 +156,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
    }
 
    // Locate the job.
-   const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    INFO("qmaster_handle_reconnect_request: looking up job " sge_u32 " in master_job_list with %d entries",
         job_id, static_cast<int>(master_job_list.size()));
    const auto jep = master_job_list.find_first<JB_job_number>(job_id);
@@ -186,8 +186,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
       DRETURN(-1);
    }
 
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const ocs::tom::ConstElement<ocs::tom::QU> qinstance =
            cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JAT_master_queue>(jatep));
    if (qinstance == nullptr) {

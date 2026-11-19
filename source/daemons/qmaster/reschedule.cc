@@ -148,7 +148,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const ocs::tom::ConstList<ocs::tom::CQ> master_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    /*
     * is the automatic rescheduling disabled
@@ -161,7 +161,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    /*
     * locate the host object which went in unknown-state
     */
-   if (!(hep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
+   if (!(hep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(),
                                                                 hostname)))) {
       DTRACE;
       goto Error;
@@ -259,7 +259,7 @@ reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *
        * the current jep from this very list. A plain for_each_rw_lv would
        * dereference next through the freed element.
        */
-      auto next_jep = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)).front();
+      auto next_jep = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().front();
       while (next_jep) {
          const auto jep = next_jep;
          next_jep = jep.next();
@@ -384,7 +384,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
          qep = ocs::tom::Element<ocs::tom::QU>::from_typed(ep);   // object_has_type() checked it
          hostname = ocs::tom::get<QU_qhostname>(qep);
          hep = ocs::tom::Element<ocs::tom::EH>(
-            host_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST), hostname));
+            host_list_locate(ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>(), hostname));
       } else {
          qep = nullptr;
          hep = nullptr;
@@ -463,7 +463,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * contains an appropriate flag or when the forced flag is set
        */
       if (!force && ocs::tom::get<JB_checkpoint_name>(jep)) {
-         const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
+         const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
          const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, ocs::tom::get<JB_checkpoint_name>(jep));
          if (ckpt_ep) {
             uint32_t flags;
@@ -505,7 +505,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
             queue = qep;
          } else {
             queue = cqueue_list_locate_qinstance(
-                    ocs::tom::ConstList<ocs::tom::CQ>(*(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))),
+                    ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(),
                     ocs::tom::get<JG_qname>(first_granted_queue));
          }
          if (!queue || !ocs::tom::get<QU_rerun>(queue)) {
@@ -530,7 +530,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
       if (hep && !sge_hostcmp(ocs::tom::get<JG_qhostname>(first_granted_queue), ocs::tom::get<EH_name>(hep))) {
          host = hep;
       } else {
-         host = ocs::tom::Element<ocs::tom::EH>(host_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST),
+         host = ocs::tom::Element<ocs::tom::EH>(host_list_locate(ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>(),
                                                                  ocs::tom::get<JG_qhostname>(first_granted_queue)));
          hostname = ocs::tom::get<JG_qhostname>(first_granted_queue);
       }
@@ -864,7 +864,7 @@ static void
 clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const auto jep = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true))
+   const auto jep = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true)
                        .find_first<JB_job_number>(job_number);
    if (jep) {
       const auto jatep = ocs::tom::get<JB_ja_tasks>(jep).find_first<JAT_task_number>(task_number);
@@ -1015,7 +1015,7 @@ void
 update_reschedule_unknown_timout_values(const char *config_name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::EH> master_exechost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_exechost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
 
    if (strcmp(SGE_GLOBAL_NAME, config_name) == 0) {
       const ocs::tom::Element<ocs::tom::EH> global_exechost_elem(
@@ -1212,7 +1212,7 @@ void
 remove_from_reschedule_unknown_lists(uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   for (const auto host : ocs::tom::List<ocs::tom::EH>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST))) {
+   for (const auto host : ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>()) {
       remove_from_reschedule_unknown_list(host, job_number, task_number, gdi_session);
    }
 

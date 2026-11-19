@@ -398,7 +398,7 @@ int main(int argc, char **argv) {
 
    master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    // the data store holds the job list until the daemon goes down
-   *master_job_list = ocs::tom::ListPtr<ocs::tom::JB>::create("master job list").release();
+   ocs::DataStore::replace_master_list<SGE_TYPE_JOB>(ocs::tom::ListPtr<ocs::tom::JB>::create("master job list"));
    job_list_read_from_disk(master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
    /* clean up jobs hanging around (look in active_dir) */
@@ -423,7 +423,7 @@ int main(int argc, char **argv) {
    free_procList();
 #endif
    // the data store gives the job list up, as lFreeList() did
-   ocs::tom::ListPtr<ocs::tom::JB>(std::exchange(*master_job_list, nullptr)).reset();
+   ocs::DataStore::replace_master_list<SGE_TYPE_JOB>(nullptr);
 
    ocs::execd_profiling_cleanup();
 
@@ -701,7 +701,7 @@ bool execd_get_job_ja_task(const uint32_t job_id, const uint32_t ja_task_id, ocs
    /* in execd, we have exactly one ja_task per job,
     * therefore we can have multiple jobs with the same job_id
     */
-   const ocs::tom::List<ocs::tom::JB> job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    for (const auto jep : job_list.find_all<JB_job_number>(job_id)) {
       *ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(jep, nullptr, ja_task_id));
       if (*ja_task) {

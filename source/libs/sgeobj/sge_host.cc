@@ -163,7 +163,7 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
       DRETURN(false);
    }
 
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    /*
     * CS-2680. Not const, and that is the signature saying what happens here: a
     * hit in the matching cache advances the time of its last use, so asking

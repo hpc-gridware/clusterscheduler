@@ -152,9 +152,8 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
    DENTER(TOP_LAYER);
 
    constexpr bool user_flag = std::is_same_v<typename F::Type, ocs::tom::UU>;
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<typename F::Type> obj_master_list(
-      *ocs::DataStore::get_master_list(user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto obj_master_list = ocs::DataStore::master_list<user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT>();
 
    /* ---- UP_name */
    const char *userprj = ocs::tom::get<F::name>(ep);
@@ -213,8 +212,7 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
          /* make sure default project exists */
          const char *dproj = ocs::tom::get<UU_default_project>(ep);
          if (dproj) {
-            const ocs::tom::ConstList<ocs::tom::PR> master_project_list(
-               *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+            const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
             if (!master_project_list || !prj_list_locate(master_project_list, dproj)) {
                ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, dproj);
                answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -318,7 +316,7 @@ static void
 ocs_userprj_success(ocs::gdi::Packet *packet, const ocs::tom::Element<typename F::Type> ep, const bool is_mod) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+   const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
    bool reattach_categories = false;
    for (const auto rqs : master_rqs_list) {
       if (scope_is_referenced_rqs(rqs, F::filter, ocs::tom::get<F::name>(ep))) {
@@ -329,9 +327,9 @@ ocs_userprj_success(ocs::gdi::Packet *packet, const ocs::tom::Element<typename F
    }
 
    if (reattach_categories) {
-      const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-      const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-      const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+      const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+      const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+      const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
       ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list,
                                               master_rqs_list, true, packet->gdi_session);
    }
@@ -436,7 +434,7 @@ static int
 ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name) {
    DENTER(TOP_LAYER);
 
-   for (const auto cqueue : ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+   for (const auto cqueue : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
       for (const auto prj : ocs::tom::get<CQ_projects>(cqueue)) {
          if (ocs::tom::find_first<PR_name>(ocs::tom::get<APRJLIST_value>(prj), name)) {
             ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_QUEUE,
@@ -456,7 +454,7 @@ ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *n
    }
 
    /* check hosts */
-   for (const auto host : ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST))) {
+   for (const auto host : ocs::DataStore::master_list<SGE_TYPE_EXECHOST>()) {
       if (prj_list_locate(ocs::tom::get<EH_prj>(host), name)) {
          ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH,
                static_cast<const char *>(ocs::tom::get<EH_name>(host)));
@@ -484,7 +482,7 @@ ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *n
    }
 
    /* check user list for reference */
-   const ocs::tom::ConstList<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+   const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
    if (const auto user = ocs::tom::find_first<UU_default_project>(master_user_list, name); user) {
       ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, ocs::tom::get<UU_name>(user));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -539,7 +537,7 @@ ocs_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
    }
 
    /* ensure this u/p object is not referenced in actual share tree */
-   const ocs::tom::ConstList<ocs::tom::STN> share_tree(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE));
+   const auto share_tree = ocs::DataStore::master_list<SGE_TYPE_SHARETREE>();
    if (getNode(share_tree, name, F::node_type, 0)) {
       ERROR(MSG_SGETEXT_CANT_DELETE_UP_IN_SHARE_TREE_SS, user ? MSG_OBJ_USER : MSG_OBJ_PRJ, name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -657,8 +655,8 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       uint64_t next_delete = now + auto_user_delete_time;
 
       MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
-      const ocs::tom::List<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USER));
-      const ocs::tom::ConstList<ocs::tom::SU> master_suser_list(*ocs::DataStore::get_master_list(SGE_TYPE_SUSER));
+      const auto master_user_list = ocs::DataStore::master_list_rw<SGE_TYPE_USER>();
+      const auto master_suser_list = ocs::DataStore::master_list<SGE_TYPE_SUSER>();
 
       /*
        * Check each user for deletion time. We don't use a range-for
@@ -727,7 +725,7 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    int status = STATUS_OK;
    uint64_t auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
 
-   const auto uep = user_list_locate(ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER)),
+   const auto uep = user_list_locate(ocs::DataStore::master_list<SGE_TYPE_USER>(),
                                      user);
 
    /* if the user already exists */
@@ -844,13 +842,13 @@ void sge_userprj_spool(uint64_t gdi_session) {
    /* this function is used on qmaster shutdown, no need to monitor this lock */
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
-   for (const auto elem : ocs::tom::List<ocs::tom::UU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USER, true))) {
+   for (const auto elem : ocs::DataStore::master_list_rw<SGE_TYPE_USER>(true)) {
       const char *name = ocs::tom::get<UU_name>(elem);
       sge_event_spool(&answer_list, now, sgeE_USER_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false,
                       true, gdi_session);
    }
 
-   for (const auto elem : ocs::tom::List<ocs::tom::PR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT, true))) {
+   for (const auto elem : ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>(true)) {
       const char *name = ocs::tom::get<PR_name>(elem);
       sge_event_spool(&answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false,
                       true, gdi_session);
@@ -881,20 +879,20 @@ void sge_userprj_spool(uint64_t gdi_session) {
 static bool project_still_used(const char *p) {
    DENTER(TOP_LAYER);
 
-   for (const auto rqs : ocs::tom::ConstList<ocs::tom::RQS>(*ocs::DataStore::get_master_list(SGE_TYPE_RQS))) {
+   for (const auto rqs : ocs::DataStore::master_list<SGE_TYPE_RQS>()) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_projects, p)) {
          DRETURN(true);
       }
    }
 
-   for (const auto hep : ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST))) {
+   for (const auto hep : ocs::DataStore::master_list<SGE_TYPE_EXECHOST>()) {
       if (ocs::tom::find_first<PR_name>(ocs::tom::get<EH_prj>(hep), p) ||
           ocs::tom::find_first<PR_name>(ocs::tom::get<EH_xprj>(hep), p)) {
          DRETURN(true);
       }
    }
 
-   for (const auto cq : ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+   for (const auto cq : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
       for (const auto qc : ocs::tom::get<CQ_projects>(cq)) {
          if (ocs::tom::find_first<PR_name>(ocs::tom::get<APRJLIST_value>(qc), p)) {
             DRETURN(true);
@@ -928,8 +926,7 @@ void
 project_update_categories(const ocs::tom::ConstList<ocs::tom::PR> added,
                           const ocs::tom::ConstList<ocs::tom::PR> removed, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   const ocs::tom::List<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT,
-                                                                                               true));
+   const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>(true);
    bool reattach_categories = false;
 
    for (const auto ep : added) {
@@ -957,9 +954,9 @@ project_update_categories(const ocs::tom::ConstList<ocs::tom::PR> added,
 
    // reattach all jobs to categories and consider the new project attributes
    if (reattach_categories) {
-      const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-      const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-      const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+      const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+      const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+      const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
       ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list,
                                               master_rqs_list, true, gdi_session);
    }

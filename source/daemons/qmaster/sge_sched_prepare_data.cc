@@ -505,8 +505,7 @@ sge_process_job_event_after([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unuse
       // Find the job for which we received an event (ADD and MOD)
       job_id = ocs::tom::get<ET_intkey>(event);
       // the job is modified (JAT_status), so the list is taken writable; for_read keeps the read lock semantics
-      const auto master_job_list =
-         ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+      const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
       job = master_job_list.find_first<JB_job_number>(job_id);
       if (!job) {
          DSTRING_STATIC(id_dstring, 64);

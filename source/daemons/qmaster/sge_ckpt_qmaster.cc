@@ -272,7 +272,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
              ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::CK> ckpt_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT));
+   const auto ckpt_list = ocs::DataStore::master_list_rw<SGE_TYPE_CKPT>();
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -308,8 +308,8 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
       ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
 
       if (ckpt_is_referenced(found, &local_answer_list,
-                             ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
-                             ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)))) {
+                             ocs::DataStore::master_list<SGE_TYPE_JOB>(),
+                             ocs::DataStore::master_list<SGE_TYPE_CQUEUE>())) {
          const lListElem *answer = lFirst(local_answer_list);
 
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));

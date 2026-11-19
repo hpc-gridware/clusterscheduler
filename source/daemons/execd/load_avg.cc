@@ -1122,7 +1122,7 @@ get_reserved_usage(const char *qualified_hostname) {
 
    auto temp_job_usage_list = ocs::tom::ListPtr<ocs::tom::JB>::create("JobResUsageList");
 
-   for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))) {
+   for (const auto job : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
       uint32_t job_id = ocs::tom::get<JB_job_number>(job);
       ocs::tom::ElementPtr<ocs::tom::JB> new_job;
 

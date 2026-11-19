@@ -92,7 +92,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    // ---- RL_user_list: verify all referenced usersets exist, then apply
    if (ocs::tom::has<RL_user_list>(ep)) {
       normalize_sublist<RL_user_list>(ep);
-      const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+      const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
       if (userset_list_validate_acl_list(ocs::tom::get<RL_user_list>(ep), alpp, master_userset_list) != STATUS_OK) {
          // answer list already filled by userset_list_validate_acl_list()
          DRETURN(STATUS_EUNKNOWN);
@@ -103,7 +103,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    // ---- RL_parent_role_list: reject self-reference and unknown parents, then apply
    if (ocs::tom::has<RL_parent_role_list>(ep)) {
       normalize_sublist<RL_parent_role_list>(ep);
-      const ocs::tom::ConstList<ocs::tom::RL> master_role_list(*ocs::DataStore::get_master_list(SGE_TYPE_RL));
+      const auto master_role_list = ocs::DataStore::master_list<SGE_TYPE_RL>();
       for (const ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(ep)) {
          const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
          if (strcmp(parent_name, role_name) == 0) {

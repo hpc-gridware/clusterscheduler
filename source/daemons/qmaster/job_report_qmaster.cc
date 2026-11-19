@@ -253,7 +253,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                         char *rhost, [[maybe_unused]] char *commproc, sge_pack_buffer *pb, monitoring_t *monitor,
                         const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    // REP_list names no sub-type in the model; a job report holds JR elements, unpacked with their
    // descriptor - from_typed keeps the old tolerance for the data of an execd
    const auto jrl = ocs::tom::List<ocs::tom::JR>::from_typed(ocs::tom::get<REP_list>(report));
@@ -292,7 +292,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
       uint32_t rstate = ocs::tom::get<JR_state>(jr);
 
       // find the corresponding objects
-      const auto jep = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true))
+      const auto jep = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true)
                           .find_first<JB_job_number>(jobid);
       ocs::tom::Element<ocs::tom::JAT> jatep = nullptr;
       ocs::tom::Element<ocs::tom::PET> petask = nullptr;
@@ -630,8 +630,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                    * which contains an exit_status, releases the host.
                    */
                   if (ocs::tom::find_first_in<JR_usage, UA_name>(jr, "exit_status")) {
-                     const ocs::tom::ConstList<ocs::tom::EH> ehosts(
-                        *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+                     const auto ehosts = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
                      const ocs::tom::Element<ocs::tom::EH> host(host_list_locate(ehosts, rhost));
                      update_reschedule_unknown_list_for_job(host, jobid, jataskid);
 

@@ -161,9 +161,9 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
    int alltasks;
    dstring cqueue_buffer = DSTRING_INIT;
    dstring hostname_buffer = DSTRING_INIT;
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    // the request data is structure checked in the listener (CS-3125)
    const ocs::tom::List<ocs::tom::ID> data_list(task->data_list);
 
@@ -559,7 +559,7 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs
       case QI_DO_CLEAN:
       case QI_DO_RESCHEDULE:
          {
-            const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+            const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
             cqueue_list_del_all_orphaned(master_cqueue_list, answer, ocs::tom::get<QU_qname>(qep),
                                          ocs::tom::get<QU_qhostname>(qep), packet->gdi_session);
          }
@@ -643,7 +643,7 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
 
    ocs::tom::Element<ocs::tom::QU> queueep = nullptr;
    if (ocs::tom::get<JAT_master_queue>(jatep)) {
-      const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+      const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
       queueep = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JAT_master_queue>(jatep));
    }
 
@@ -748,7 +748,7 @@ qmod_queue_clean(const ocs::gdi::Packet *packet, const ocs::tom::ConstElement<oc
    DENTER(TOP_LAYER);
 
    const char *qname = nullptr;
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    qname = ocs::tom::get<QU_full_name>(qep);
 
@@ -1113,8 +1113,8 @@ void
 rebuild_signal_events() {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    /* J O B */
    for (const auto jep : master_job_list) {
@@ -1171,8 +1171,8 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    if (queue == nullptr) {
       ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, jobid);
@@ -1216,7 +1216,7 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
 static void
 sge_propagate_queue_suspension(const char *qnm, const int how) {
    DENTER(TOP_LAYER);
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    DPRINTF("searching for all jobs in queue %s due to %s\n", qnm, sge_sig2str(how));
    for (const auto jep : master_job_list) {
@@ -1394,9 +1394,9 @@ signal_slave_jobs_in_queue(const int how, const ocs::tom::ConstElement<ocs::tom:
 
    ocs::tom::ConstList<ocs::tom::JG> gdil_lp;
    const char *qname, *mqname, *pe_name;
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
    qname = ocs::tom::get<QU_full_name>(qep);
    /* test whether there are parallel jobs
@@ -1449,8 +1449,8 @@ signal_slave_tasks_of_job(const int how, const ocs::tom::Element<ocs::tom::JB> j
    ocs::tom::ConstList<ocs::tom::JG> gdil_lp;
    ocs::tom::ConstElement<ocs::tom::PE> pe;
    const char *qname, *pe_name;
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    /* do not signal slave tasks in case of checkpointing jobs with
       STOP/CONT when suspending means migration */

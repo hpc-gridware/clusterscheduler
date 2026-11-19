@@ -194,8 +194,7 @@ manop_is_manager(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
    // the master list of the data store holds US_Type elements
-   const auto master_userset_list =
-      ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    DRETURN(user_is_X_user(packet, master_userset_list, MANAGER_USERSET));
 }
 
@@ -216,8 +215,7 @@ manop_is_operator(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
    // the master list of the data store holds US_Type elements
-   const auto master_userset_list =
-      ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    if (user_is_X_user(packet, master_userset_list, OPERATOR_USERSET)) {
       DRETURN(true);
    }

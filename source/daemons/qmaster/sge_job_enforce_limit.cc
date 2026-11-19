@@ -135,8 +135,7 @@ static void
 sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
    DENTER(TOP_LAYER);
 
-   const auto master_job_list =
-           ocs::tom::List<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    /*
     * is the limit enforcment module enabled?
@@ -185,8 +184,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
                      }
                   }
                } else {
-                  const auto master_cqueue_list = ocs::tom::ConstList<ocs::tom::CQ>::from_typed(
-                          *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+                  const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
                   auto qinstance = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JG_qname>(gdil_ep));
 
                   /*
@@ -255,8 +253,7 @@ sge_add_check_limit_trigger() {
    DENTER(TOP_LAYER);
 
    // load_report_interval() caches the interval in the host, so the list is taken writable, as before
-   const auto master_host_list =
-           ocs::tom::List<ocs::tom::EH>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_host_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
    uint64_t now = sge_get_gmt64();
    uint32_t max_time = 0;
    uint32_t reconnect_timeout = EXECD_MAX_RECONNECT_TIMEOUT;
@@ -318,8 +315,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
       if (job_id == 0 && ja_task_id == 0) {
          sge_host_add_enforce_limit_trigger(nullptr);
       } else {
-         const auto master_job_list =
-                 ocs::tom::List<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+         const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
          auto job = master_job_list.find_first<JB_job_number>(job_id);
          auto ja_task = job_search_task(job, nullptr, ja_task_id);
 
@@ -335,10 +331,8 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
             if (gdil_ep) {
                bool do_action = false;
                uint64_t now = sge_get_gmt64();
-               const auto master_cqueue_list =
-                       ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-               const auto master_pe_list =
-                       ocs::tom::ConstList<ocs::tom::PE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+               const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+               const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
                const auto qinstance =
                        cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JG_qname>(gdil_ep));
 
@@ -505,10 +499,8 @@ sge_job_add_enforce_limit_trigger(const ocs::tom::Element<ocs::tom::JB> job,
        * and add a new timer which will trigger enforcement of limit
        */
       if (job && ja_task) {
-         const auto master_cqueue_list =
-                 ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-         const auto master_pe_list =
-                 ocs::tom::ConstList<ocs::tom::PE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
          /*
           * If the job is a tightly integrated parallel job than we have to take care
@@ -630,12 +622,9 @@ void
 sge_job_remove_enforce_limit_trigger(uint32_t job_id, uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
 
-   const auto master_cqueue_list =
-           ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const auto master_job_list =
-           ocs::tom::List<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
-   const auto master_pe_list =
-           ocs::tom::ConstList<ocs::tom::PE>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    const auto job = master_job_list.find_first<JB_job_number>(job_id);
    const auto ja_task = job_search_task(job, nullptr, ja_task_id);
    bool delete_trigger = false;

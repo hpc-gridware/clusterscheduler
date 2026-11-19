@@ -2566,7 +2566,7 @@ object_verify_pe_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *pe_nam
     jobs */
    if (range_list_get_number_of_ids(pe_range) > 1) {
       // the master list of the data store is a process-lifetime global; it holds parallel environments
-      const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+      const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
       const ocs::tom::ConstElement<ocs::tom::PE> reference_pe(pe_list_find_matching(master_pe_list, pe_name));
       const int nslots = pe_urgency_slots(reference_pe, ocs::tom::get<PE_urgency_slots>(reference_pe), pe_range);
       for (const auto pe : master_pe_list) {

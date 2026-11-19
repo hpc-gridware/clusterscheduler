@@ -439,7 +439,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    const lDescr *descr;
    const char *table_name;
    bdb_info info;
-   const auto master_suser_list = ocs::tom::List<ocs::tom::SU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER));
+   const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
 
    info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    descr = object_type_get_descr(object_type);
@@ -569,7 +569,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                         }
                      }
                      job_list_register_new_job(
-                        ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+                        ocs::DataStore::master_list<SGE_TYPE_JOB>(),
                         mconf_get_max_jobs(), 1);
                      suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
                      if (!ret) {

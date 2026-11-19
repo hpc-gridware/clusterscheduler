@@ -2904,9 +2904,7 @@ static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_clien
          const sge_object_type object_type = ocs_total_update_object_type(type);
          const bool dispatched = ocs_with_object_type(object_type, [&payload](const auto &entry) {
             using E = ocs_object_type_entry_t<decltype(entry)>;
-            using T = typename E::type;
-            // the master list of an object type holds objects of that type
-            const auto master_list = ocs::tom::ConstList<T>::from_typed(*ocs::DataStore::get_master_list(E::value));
+            const auto master_list = ocs::DataStore::master_list<E::value>();
             if (master_list) {
                // the typed handles have no clone() without the CULL_NO_TRANSFER fields, see
                // ocs_event_payload_clone(); the copy keeps the name of the master list

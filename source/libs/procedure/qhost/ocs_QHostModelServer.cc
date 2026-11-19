@@ -55,7 +55,7 @@ bool ocs::QHostModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
    DENTER(TOP_LAYER);
 
    // Fetch either all host or only the selected ones
-   const lList *master_host_list = *DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const auto master_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    lEnumeration *host_what = get_host_what();
    lCondition *host_where = get_host_where(hostname_list);
    exec_host_list_ = ocs::tom::ListPtr<ocs::tom::EH>(lSelect("", master_host_list, host_where, host_what));
@@ -63,14 +63,14 @@ bool ocs::QHostModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
    lFreeWhere(&host_where);
 
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      const lList *master_cqueue_list = *DataStore::get_master_list(SGE_TYPE_CQUEUE);
+      const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
       lEnumeration *queue_what = get_queue_what();
       queue_list_ = ocs::tom::ListPtr<ocs::tom::CQ>(lSelect("", master_cqueue_list, nullptr, queue_what));
       lFreeWhat(&queue_what);
    }
 
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
-      const lList *master_job_list = *DataStore::get_master_list(SGE_TYPE_JOB);
+      const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
       lEnumeration *job_what = get_job_what();
       lCondition *job_where = get_job_where(user_name_list, show);
       job_list_ = ocs::tom::ListPtr<ocs::tom::JB>(lSelect("", master_job_list, job_where, job_what));
@@ -78,17 +78,17 @@ bool ocs::QHostModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
       lFreeWhat(&job_what);
    }
 
-   const lList *master_centry_list = *DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    lEnumeration *centry_what = get_centry_what();
    centry_list_ = ocs::tom::ListPtr<ocs::tom::CE>(lSelect("", master_centry_list, nullptr, centry_what));
    lFreeWhat(&centry_what);
 
-   const lList *master_pe_list = *DataStore::get_master_list(SGE_TYPE_PE);
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    lEnumeration *pe_what = get_pe_what();
    pe_list_ = ocs::tom::ListPtr<ocs::tom::PE>(lSelect("", master_pe_list, nullptr, pe_what));
    lFreeWhat(&pe_what);
 
-   const auto sc = ocs::tom::ConstList<ocs::tom::SC>(*DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)).front();
+   const auto sc = ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>().front();
    if (sc != nullptr) {
       job_load_adjustments_ = ocs::tom::get<SC_job_load_adjustments>(sc).clone("load_adj_copy");
    }

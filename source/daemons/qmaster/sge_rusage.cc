@@ -380,8 +380,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    ocs::tom::ConstElement<ocs::tom::AR> ar;
    int exit_status = 0;
    bool do_accounting_summary = false;
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
-   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
    if (!jr || !job || !ja_task) {
       DRETURN(false);

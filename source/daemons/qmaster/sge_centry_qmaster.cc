@@ -379,10 +379,10 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const ocs::tom::List<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
-   const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+   const auto master_centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+   const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
 
    if (centry || remote_user != nullptr || remote_host != nullptr) {
       const char *name = ocs::tom::get<CE_name>(centry);
@@ -459,8 +459,8 @@ static void
 sge_change_queue_version_centry(const uint64_t gdi_version) {
    DENTER(TOP_LAYER);
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    for (const auto cqueue : master_cqueue_list) {
       for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
@@ -506,10 +506,10 @@ void
 centry_redebit_consumables(const ocs::tom::ConstList<ocs::tom::STU> centries, const uint64_t gdi_version) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
-   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    /* throw away all old actual values lists and rebuild them from scratch */
    for (const auto cqueue : master_cqueue_list) {

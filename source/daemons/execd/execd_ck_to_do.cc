@@ -163,7 +163,7 @@ static void notify_ptf() {
    if (waiting4osjid) {
       waiting4osjid = 0;
 
-      for (const auto jep : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+      for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
          for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
             write_job = 0;
             if (ocs::tom::get<JAT_status>(jatep) == JWAITING4OSJID) {
@@ -359,7 +359,7 @@ force_job_rlimit_task(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs:
 static void force_job_rlimit(const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
-   for (const auto jep : ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))) {
+   for (const auto jep : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
       for (ocs::tom::ConstElement<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
          // a signaled job is not checked further
          if (force_job_rlimit_task(jep, jatep, nullptr, qualified_hostname)) {
@@ -569,7 +569,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    }
    pdc_interval_old = pdc_interval;
 
-   const bool have_jobs = !ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)).empty();
+   const bool have_jobs = !ocs::DataStore::master_list<SGE_TYPE_JOB>().empty();
 
    // Registering a job at the PTF is what moves it from JWAITING4OSJID to
    // JRUNNING, so it must not depend on the usage collector's schedule. A task
@@ -607,7 +607,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    if (next_signal <= now) {
       next_signal = now + sge_gmt32_to_gmt64(SIGNAL_RESEND_INTERVAL);
       /* resend signals to shepherds */
-      for (const auto jep : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+      for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
          for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
 
             // don't update wallclock before a job actually started or after it ended */
@@ -687,7 +687,7 @@ int do_ck_to_do(bool is_qmaster_down) {
 
    /* check for end of simulated jobs */
    if (mconf_get_simulate_jobs()) {
-      for (const auto jep : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+      for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
          for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
             if (ocs::tom::get<JAT_end_time>(jatep) <= now) {
                simulated_job_exit(jep, jatep);
@@ -811,12 +811,12 @@ static int sge_start_jobs() {
    int state_changed;
    int jobs_started = 0;
 
-   if (ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)).empty()) {
+   if (ocs::DataStore::master_list<SGE_TYPE_JOB>().empty()) {
       DPRINTF("No jobs to start\n");
       DRETURN(0);
    }
 
-   for (const auto jep : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+   for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
       for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
          state_changed = exec_job_or_task(jep, jatep, nullptr);
 

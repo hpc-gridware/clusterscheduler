@@ -162,8 +162,7 @@ get_current_jatask_status(const u_long job_id, const u_long ja_task_id) {
    DENTER(TOP_LAYER);
    uint32_t ret = JIDLE;
    // the mirror keeps the job master list with JB_Type, so it is wrapped unchecked
-   const auto master_job_list =
-      ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    if (const auto job = master_job_list.find_first<JB_job_number>(job_id)) {
       if (const auto ja_task = ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(job, ja_task_id)) {
          ret = ocs::tom::get<JAT_status>(ja_task);

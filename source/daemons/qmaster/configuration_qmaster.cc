@@ -352,7 +352,7 @@ invalidate_load_report_intervals(const char *conf_name) {
    DENTER(TOP_LAYER);
 
    const bool is_global = strcmp(conf_name, SGE_GLOBAL_NAME) == 0;
-   for (const auto hep : ocs::tom::List<ocs::tom::EH>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST))) {
+   for (const auto hep : ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>()) {
       const char *host = ocs::tom::get<EH_name>(hep);
       if (is_global || sge_hostcmp(conf_name, host) == 0) {
          ocs::tom::set<EH_load_report_interval>(hep, 0);
@@ -386,7 +386,7 @@ notify_execds_about_conf_change(const char *conf_name) {
    }
 
    const bool is_global = strcmp(conf_name, SGE_GLOBAL_NAME) == 0;
-   for (const auto hep : ocs::tom::List<ocs::tom::EH>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST))) {
+   for (const auto hep : ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>()) {
       const char *host = ocs::tom::get<EH_name>(hep);
       if (strcmp(host, SGE_GLOBAL_NAME) == 0 || strcmp(host, SGE_TEMPLATE_NAME) == 0) {
          continue;
@@ -578,7 +578,7 @@ void
 sge_update_heard_from_timeout() {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::CONF> config_list(*ocs::DataStore::get_master_list(SGE_TYPE_CONFIG));
+   const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
    uint32_t max_load_report_time = 0;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -649,7 +649,7 @@ check_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement
    DENTER(TOP_LAYER);
 
    const char *name, *value;
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
 
    const char *conf_name = ocs::tom::get<CONF_name>(conf);
 
@@ -840,8 +840,7 @@ check_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement
          }
 
          /* .. checking project names */
-         const ocs::tom::ConstList<ocs::tom::PR>
-            master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+         const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
          if (verify_project_list(alpp, *tmp, master_project_list, name, "configuration", conf_name) != STATUS_OK) {
             DRETURN(STATUS_EEXIST);
          }
@@ -1031,7 +1030,7 @@ sge_get_configuration(const lCondition *condition, const lEnumeration *enumerati
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
+   const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
 
    conf = lSelectHashPack("", config_list, condition, enumeration, false, nullptr);
 
@@ -1056,7 +1055,7 @@ sge_get_config_version_for_host(const char *aName) {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   const ocs::tom::ConstList<ocs::tom::CONF> config_list(*ocs::DataStore::get_master_list(SGE_TYPE_CONFIG));
+   const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
 
    auto conf = ocs::tom::find_first<CONF_name>(config_list, aName);
    if (!conf) {
@@ -1115,7 +1114,7 @@ sge_get_configuration_for_host(const char *aName) {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   const ocs::tom::ConstList<ocs::tom::CONF> config_list(*ocs::DataStore::get_master_list(SGE_TYPE_CONFIG));
+   const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
    auto conf = ocs::tom::find_first<CONF_name>(config_list, unique_name).clone();
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1249,7 +1248,7 @@ exchange_conf_by_name(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CO
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   const ocs::tom::List<ocs::tom::CONF> config_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG));
+   const auto config_list = ocs::DataStore::master_list_rw<SGE_TYPE_CONFIG>();
 
    if (const auto old_elem = ocs::tom::find_first_rw<CONF_name>(config_list, old_conf_name); old_elem) {
       config_list.erase(old_elem);
@@ -1316,7 +1315,7 @@ do_add_config(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CONF> aCon
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   const ocs::tom::List<ocs::tom::CONF> config_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG));
+   const auto config_list = ocs::DataStore::master_list_rw<SGE_TYPE_CONFIG>();
    const auto elem = config_list.push_back(std::move(copy));
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
@@ -1339,7 +1338,7 @@ remove_conf_by_name(char *aConfName) {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   const ocs::tom::List<ocs::tom::CONF> config_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG));
+   const auto config_list = ocs::DataStore::master_list_rw<SGE_TYPE_CONFIG>();
 
    if (const auto elem = ocs::tom::find_first_rw<CONF_name>(config_list, aConfName); elem) {
       config_list.erase(elem);
@@ -1366,7 +1365,7 @@ conf_exists_by_name(const char *aConfName) {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   const ocs::tom::ConstList<ocs::tom::CONF> config_list(*ocs::DataStore::get_master_list(SGE_TYPE_CONFIG));
+   const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
 
    const bool exists = static_cast<bool>(ocs::tom::find_first<CONF_name>(config_list, aConfName));
 

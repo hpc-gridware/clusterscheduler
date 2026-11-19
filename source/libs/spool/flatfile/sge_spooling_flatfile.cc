@@ -1095,7 +1095,7 @@ bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
                /* job_write_spool_file takes a job, even if we only want
                 * to spool a ja_task or pe_task
                 */
-               job = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true))
+               job = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true)
                         .find_first<JB_job_number>(job_id);
 
                /* additional flags for job_write_spool_file

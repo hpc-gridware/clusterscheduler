@@ -133,7 +133,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
    const char *rqs_name = nullptr;
    bool rules_changed = false;
    bool previous_enabled = ocs::tom::get<RQS_enabled>(target);
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
 
    /* ---- RQS_name */
    if (add) {
@@ -352,11 +352,11 @@ rqs_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::RQS> rqs,
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
    if (rqs) {
       for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
@@ -705,8 +705,8 @@ rqs_update_categories(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
                       const ocs::tom::ConstElement<ocs::tom::RQS> old_rqs, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
 
    {
       ocs::tom::ListPtr<ocs::tom::PR> old_lp;

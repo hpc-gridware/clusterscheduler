@@ -241,7 +241,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
       ocs::tom::Element<ocs::tom::JB> jep;
       ocs::tom::Element<ocs::tom::JAT> jatep;
       ocs::tom::Element<ocs::tom::PET> petep;
-      for (const auto job : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+      for (const auto job : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
          for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             if ((int)ocs::tom::get<JAT_pid>(ja_task) == pid) {
                jatep = ja_task;
@@ -1136,7 +1136,7 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
                 * Unlink job_script if there are no other master tasks
                 * (e.g. task arrays) for this job present on execd
                 */
-               if (count_master_tasks(ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+               if (count_master_tasks(ocs::DataStore::master_list<SGE_TYPE_JOB>(),
                                       job_id) <= 1) {
                   DPRINTF("unlinking script file %s\n", ocs::tom::get<JB_exec_file>(jep));
                   unlink(ocs::tom::get<JB_exec_file>(jep));
@@ -1172,7 +1172,7 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
 
          if (used_slots == 0 || mconf_get_simulate_jobs()) {
             /* remove the jep element only if all slave tasks are gone, we need to job object to remove the tmpdir */
-            ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)).erase(jep);
+            ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().erase(jep);
          }
       }
 

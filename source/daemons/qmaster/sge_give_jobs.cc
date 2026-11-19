@@ -295,8 +295,8 @@ send_slave_jobs(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Eleme
    int ret = 0;
    bool is_pe_jobs = false;
    const lDescr *rdp = nullptr;
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    // do we still have pe slave tasks to be delivered?
    for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
@@ -391,7 +391,7 @@ send_slave_jobs_wc(const ocs::tom::Element<ocs::tom::JB> jep, monitoring_t *moni
    const auto jatep = ocs::tom::get<JB_ja_tasks>(jep).front();
    int ret = 0;
    int failed = CL_RETVAL_OK;
-   const ocs::tom::List<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
 
    const bool simulate_execd = mconf_get_simulate_execds();
 
@@ -490,8 +490,8 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
    const char *myprogname = component_get_component_name();
    const bool simulate_execd = mconf_get_simulate_execds();
    const lDescr *rdp = nullptr;
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    if (!simulate_execd) {
       cl_commlib_get_last_message_time(cl_com_get_handle(myprogname, 0), rhost, to_cstr(EXECD), 1,
@@ -731,8 +731,8 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    // stays a raw reference: the free erase() below frees the master job list when it becomes empty
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    const ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(*master_job_list, jobid);
    const auto jatep = job_search_task(jep, nullptr, jataskid);
@@ -900,7 +900,7 @@ create_timed_events_for_simulated_jobs() {
 
    if (mconf_get_simulate_execds()) {
       uint64_t now = sge_get_gmt64();
-      const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+      const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
       for (const auto job : master_job_list) {
          for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             if (ja_task_is_running(ja_task)) {
@@ -974,12 +974,12 @@ sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, cons
    uint64_t now = sge_get_gmt64();
    const char *session;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const ocs::tom::List<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS, true));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>(true);
 
    /* need hostname for job_log */
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -1002,7 +1002,7 @@ sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, cons
    switch (mode) {
       case COMMIT_ST_SENT: {
          bool master_task = true;
-         const ocs::tom::List<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR, true));
+         const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>(true);
 
          ocs::tom::set<JAT_state>(jatep, JRUNNING);
          ocs::tom::set<JAT_status>(jatep, JTRANSFERING);
@@ -1517,7 +1517,7 @@ release_successor_jobs(const ocs::tom::ConstElement<ocs::tom::JB> jep, const uin
    DENTER(TOP_LAYER);
 
    uint32_t job_ident;
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
 
    for (const auto jid : ocs::tom::get<JB_jid_successor_list>(jep)) {
       const auto suc_jep = master_job_list.find_first<JB_job_number>(ocs::tom::get<JRE_job_number>(jid));
@@ -1554,7 +1554,7 @@ release_successor_jobs_ad(const ocs::tom::ConstElement<ocs::tom::JB> jep, const 
    DENTER(TOP_LAYER);
 
    uint32_t job_ident;
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    for (const auto jid : ocs::tom::get<JB_ja_ad_successor_list>(jep)) {
       const auto suc_jep = master_job_list.find_first<JB_job_number>(ocs::tom::get<JRE_job_number>(jid));
@@ -1599,7 +1599,7 @@ release_successor_tasks_ad(const ocs::tom::ConstElement<ocs::tom::JB> jep, const
                            const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
    /* every successor job of this job might have tasks to be released */
    for (const auto jid : ocs::tom::get<JB_ja_ad_successor_list>(jep)) {
@@ -1660,14 +1660,14 @@ sge_clear_granted_resources(const ocs::tom::Element<ocs::tom::JB> job, const ocs
    uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    ocs::tom::ConstList<ocs::tom::JG> gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
-   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
-   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
-   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
-   const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
-   const ocs::tom::List<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS, true));
-   const ocs::tom::List<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR, true));
-   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
+   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+   const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>(true);
+   const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>(true);
+   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    bool master_task = true;
 
    if (!job_is_ja_task_defined(job, ja_task_id) ||
@@ -1916,7 +1916,7 @@ reduce_queue_limit(const ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
       /*really used to manage resources of this queue, host or globally */
       const auto dcep = centry_list_locate(master_centry_list, rlimit_name);
       if (dcep && ocs::tom::get<CE_consumable>(dcep)) {
-         const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+         const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
          if (ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, rlimit_name) ||
              ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host_list_locate(master_ehost_list, ocs::tom::get<QU_qhostname>(qep)), rlimit_name) ||
              ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host_list_locate(master_ehost_list, SGE_GLOBAL_NAME), rlimit_name)) {
@@ -2025,7 +2025,7 @@ sge_finish_ja_task([[maybe_unused]] const char *sge_root, ocs::tom::Element<ocs:
    DENTER(TOP_LAYER);
 
    if (!job) {
-      const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+      const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
       job = master_job_list.find_first<JB_job_number>(job_id);
    }
 
@@ -2077,7 +2077,7 @@ sge_finish_ja_task([[maybe_unused]] const char *sge_root, ocs::tom::Element<ocs:
       release_successor_jobs(job, gdi_session);
 
       // release the SUSER slot the JB held
-      const ocs::tom::ConstList<ocs::tom::SU> master_suser_list(*ocs::DataStore::get_master_list(SGE_TYPE_SUSER));
+      const auto master_suser_list = ocs::DataStore::master_list<SGE_TYPE_SUSER>();
       suser_unregister_job(job, master_suser_list);
 
       /* CS-1908: category detach is deferred to sge_bury_ja_task's remove_job
@@ -2119,7 +2119,7 @@ sge_bury_ja_task([[maybe_unused]] const char *sge_root, lListElem *raw_job, cons
    ocs::tom::Element<ocs::tom::JB> job(raw_job);
    const ocs::tom::Element<ocs::tom::JAT> ja_task(raw_ja_task);
 
-   const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    if (!job) {
       job = master_job_list.find_first<JB_job_number>(job_id);
    }
@@ -2283,7 +2283,7 @@ setCheckpointObj(const ocs::tom::Element<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
    int ret = 0;
-   const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
+   const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
 
    if (const char *ckpt_name = ocs::tom::get<JB_checkpoint_name>(job); ckpt_name != nullptr) {
       const auto ckpt = ckpt_list_locate(master_ckpt_list, ckpt_name);
@@ -2316,7 +2316,7 @@ gdil_del_all_orphaned(const lList *gdil_list, ocs::tom::ListPtr<ocs::tom::AN> *a
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    dstring cqueue_name = DSTRING_INIT;
    dstring host_name = DSTRING_INIT;

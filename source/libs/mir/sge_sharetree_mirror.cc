@@ -61,7 +61,7 @@
  * replaces an existing sharetree in the master list.
  *
  * @param evc the event client the event arrived on
- * @param type event type
+ * @param type event type; always SGE_TYPE_SHARETREE, the mirror table calls this function for it only
  * @param action action to perform
  * @param event the event (ET_Type); its share tree list is taken over into the master list
  * @param clientdata client data
@@ -71,7 +71,7 @@
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-sharetree_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type type,
+sharetree_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_object_type type,
                              [[maybe_unused]] const sge_event_action action,
                              const ocs::tom::Element<ocs::tom::ET> event, [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
@@ -84,8 +84,7 @@ sharetree_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_ob
    }
 
    // the data store slot of the share tree (never nullptr) gets the new tree; the old one is freed
-   lList **slot = ocs::DataStore::get_master_list_rw(type);
-   static_cast<void>(ocs::tom::ListPtr<ocs::tom::STN>(std::exchange(*slot, tree.release())));
+   ocs::DataStore::replace_master_list<SGE_TYPE_SHARETREE>(std::move(tree));
 
    DRETURN(SGE_EMA_OK);
 }
