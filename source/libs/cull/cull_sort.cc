@@ -123,33 +123,6 @@ int lResortElem(const lSortOrder *so, lListElem *ep, lList *lp) {
    return 0;
 }
 
-#if 0
-/* ------------------------------------------------------------ 
-
-   writes a sort order (for debugging purposes)
-
- */
-void lWriteSortOrder(
-        const lSortOrder *sp
-) {
-   DENTER(CULL_LAYER);
-
-   int i;
-
-   if (!sp) {
-      LERROR(LESORTORDNULL);
-      return;
-   }
-
-   for (i = 0; mt_get_type(sp[i].mt) != lEndT; i++) {
-      DPRINTF(("nm: %d mt: %d pos: %d asc/desc: %d\n", sp[i].nm, sp[i].mt,
-              sp[i].pos, sp[i].ad));
-   }
-
-   DRETURN_VOID;
-}
-#endif
-
 /**
  * @brief Compare two elements by a sort order
  *

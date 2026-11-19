@@ -230,7 +230,7 @@ ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA>
          ** resolve hostnames and replace them in list
          */
          for (const auto ep : *hostname_list_) {
-            if (sge_resolve_host(ep, ST_name) != CL_RETVAL_OK) {
+            if (ocs_resolve_host<ST_name>(ep) != CL_RETVAL_OK) {
                char buf[BUFSIZ];
                snprintf(buf, sizeof(buf), MSG_SGETEXT_CANTRESOLVEHOST_S, ocs::tom::get<ST_name>(ep) );
                answer_list_add(alpp, buf, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

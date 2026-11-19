@@ -411,9 +411,12 @@ ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cu
       DPRINTF("parse_name_list_to_cull: Adding %s type element\n", is_host ? "lHostT" : "lStringT");
       auto ep = ocs::tom::ElementPtr<T>::create();
       ocs::tom::set<F>(ep, cp2);
-      if (is_host && !first) {
-         // sge_resolve_host() works on any host field and has no typed form; it is given EH_name as always
-         sge_resolve_host(*ep, EH_name);
+      if constexpr (std::is_same_v<T, ocs::tom::EH>) {
+         // only an exec host is resolved: the resolution was asked for EH_name on every type, and an element
+         // without that field was left as it was
+         if (!first) {
+            ocs_resolve_host<EH_name>(*ep);
+         }
       }
       list->push_back(std::move(ep));
       first = false;

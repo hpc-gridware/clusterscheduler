@@ -317,7 +317,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
          continue;
       }
       if (ocs::classify_member(name) == ocs::MemberClass::LITERAL_HOST) {
-         if (sge_resolve_host(name_ep, HR_name) != CL_RETVAL_OK) {
+         if (ocs_resolve_host<HR_name>(name_ep) != CL_RETVAL_OK) {
             qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
             ok = false;
             continue;

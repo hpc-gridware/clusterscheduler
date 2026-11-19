@@ -88,7 +88,14 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    const char *old_spool = mconf_get_execd_spool_dir();
    keep_active_t old_keep_active = mconf_get_keep_active();
 
-   ret = ocs::gdi::ClientExecd::gdi_get_merged_configuration(&Execd_Config_List);
+   ocs::tom::ListPtr<ocs::tom::CONF> conf_list;
+   ret = ocs::gdi::ClientExecd::gdi_get_merged_configuration(&conf_list);
+   if (ret == 0) {
+      // the configuration list goes to a process-lifetime global of the execd, which stays untyped;
+      // the list it held before is freed
+      ocs::tom::ListPtr<ocs::tom::CONF> old_conf_list(Execd_Config_List);
+      Execd_Config_List = conf_list.release();
+   }
 
    // Set fake topology and trigger reinit of HWLOC
 #if defined(OCS_HWLOC)

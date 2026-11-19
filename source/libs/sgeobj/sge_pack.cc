@@ -77,15 +77,6 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) 
 }
 
 /**
- * @brief ocs_where_to_elem() for an untyped caller
- * @param where the condition to pack
- * @return the element, owned by the caller, or nullptr when the condition cannot be packed
- */
-lListElem *lWhereToElem(const lCondition *where) {
-   return ocs_where_to_elem(where).release();
-}
-
-/**
  * @brief Rebuild a selection condition from the element ocs_where_to_elem() produced
  *
  * @param where the element to unpack; an empty handle or an element of another kind is an error
@@ -152,15 +143,6 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) 
    clear_packbuffer(&pb);
 
    DRETURN(what_elem);
-}
-
-/**
- * @brief ocs_what_to_elem() for an untyped caller
- * @param what the selection to pack
- * @return the element, owned by the caller, or nullptr when the selection cannot be packed
- */
-lListElem *lWhatToElem(const lEnumeration *what) {
-   return ocs_what_to_elem(what).release();
 }
 
 /**

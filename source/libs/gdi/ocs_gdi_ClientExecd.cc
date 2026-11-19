@@ -37,6 +37,7 @@
  */
 
 #include <tuple>
+#include <utility>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -61,12 +62,10 @@
  *
  * Used at execd start-up, when qmaster may not be up yet.
  *
- * The out-parameter stays untyped: the caller stores the list in a process-lifetime global of the execd.
- *
- * @param[out] conf_list receives the configuration (CONF_Type); a list it points to is freed first
+ * @param[out] conf_list receives the configuration; a list it holds is freed first. Untouched on failure.
  * @return 0 once a configuration was received, -1 if the endpoint is not unique or the permission is missing
  */
-int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
+int ocs::gdi::ClientExecd::gdi_wait_for_conf(ocs::tom::ListPtr<ocs::tom::CONF> *conf_list) {
    DENTER(GDI_LAYER);
    static uint64_t last_qmaster_file_read = 0;
 
@@ -129,7 +128,7 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
     * the entries are freed
     */
    ocs::tom::set<CONF_entries>(global, nullptr);
-   lFreeList(conf_list);
+   conf_list->reset();
    auto confs = ocs::tom::ListPtr<ocs::tom::CONF>::create("config list");
    confs->push_back(std::move(global));
    // a host without a local configuration gets none
@@ -137,8 +136,7 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
       ocs::tom::set<CONF_entries>(local, nullptr);
       confs->push_back(std::move(local));
    }
-   // the list goes to a process-lifetime global of the execd, which is untyped
-   *conf_list = confs.release();
+   *conf_list = std::move(confs);
    DRETURN(0);
 }
 
@@ -147,13 +145,11 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
  *
  * Requests a new configuration set from the qmaster.
  *
- * The out-parameter stays untyped: the caller stores the list in a process-lifetime global of the execd.
- *
- * @param[out] conf_list receives the merged configuration (CONF_Type); a list it points to is freed first
+ * @param[out] conf_list receives the merged configuration; a list it holds is freed first. Untouched on failure.
  * @return 0 on success, -1 if the configuration could not be fetched from qmaster, -2 if the global and the
  *         local configuration could not be merged
  */
-int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
+int ocs::gdi::ClientExecd::gdi_get_merged_configuration(ocs::tom::ListPtr<ocs::tom::CONF> *conf_list) {
    DENTER(GDI_LAYER);
 
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -181,7 +177,7 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
     */
    ocs::tom::set<CONF_entries>(global, nullptr);
 
-   lFreeList(conf_list);
+   conf_list->reset();
    auto confs = ocs::tom::ListPtr<ocs::tom::CONF>::create("config list");
    confs->push_back(std::move(global));
    // a host without a local configuration gets none, as lAppendElem() refused the null element
@@ -189,8 +185,7 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
       ocs::tom::set<CONF_entries>(local, nullptr);
       confs->push_back(std::move(local));
    }
-   // the list goes to a process-lifetime global of the execd, which is untyped
-   *conf_list = confs.release();
+   *conf_list = std::move(confs);
 
    DRETURN(0);
 }

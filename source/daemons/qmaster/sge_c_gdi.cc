@@ -2030,8 +2030,7 @@ ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
 
    /* resolve host name in case of objects with hostnames as key before searching for the objects */
    if constexpr (std::is_same_v<T, ocs::tom::EH>) {
-      // sge_resolve_host() has no typed form: it takes the field number
-      if (sge_resolve_host(request, key) != CL_RETVAL_OK) {
+      if (ocs_resolve_host<key>(request) != CL_RETVAL_OK) {
          DRETURN(ocs_gdi_add_mod_unresolved_host(alpp, ocs::tom::get<key>(request).c_str()));
       }
    }

@@ -724,9 +724,9 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          select_field(JB_merge_stderr);
       }
 
-      parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
-      parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
-      parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
+      parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", job, JRS_SCOPE_GLOBAL);
+      parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", job, JRS_SCOPE_MASTER);
+      parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", job, JRS_SCOPE_SLAVE);
 
       if (job_request_set_remove_duplicates(job)) {
          select_field(JB_request_set_list);
@@ -816,10 +816,10 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          select_field(JB_override_tickets);
       }
 
-      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
-      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
-      parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
-      parse_list_hardsoft(cmdline, "-masterq", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
+      parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", job, JRS_SCOPE_GLOBAL);
+      parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", job, JRS_SCOPE_MASTER);
+      parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", job, JRS_SCOPE_SLAVE);
+      parse_list_hardsoft<JRS_hard_queue_list>(cmdline, "-masterq", job, JRS_SCOPE_MASTER);
       if (job_request_set_has_queue_requests(job)) {
          select_field(JB_request_set_list);
       }

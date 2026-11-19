@@ -58,8 +58,6 @@ int lReduceDescr(const lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp
 
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]);
 
-void nm_set(int job_field[], int nm);
-
 int lMergeWhat(lEnumeration **what1, lEnumeration **what2);
 
 int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2);

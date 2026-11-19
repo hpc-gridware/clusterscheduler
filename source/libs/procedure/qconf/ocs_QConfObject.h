@@ -62,12 +62,14 @@
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_EV.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_RL.h"
 #include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_SC.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
 
@@ -124,10 +126,8 @@ enum class QConfObj {
  * all the same, so QConfReadKind::MEMBER_LIST reuses the whole rendering and
  * empty-list machinery and only the source differs - this struct says how. */
 struct qconf_member_desc {
-   const char *owner;        ///< name of the reserved object, e.g. "@admin_hosts"
-   int list_nm;              ///< its sublist field, e.g. HGRP_host_list
-   int key_nm;               ///< the name field of a sublist element, e.g. HR_name
-   const lDescr *descr;      ///< the sublist element type, for the empty case
+   const char *owner;        ///< name of the reserved object, e.g. "@admin_hosts"; its sublist field and the
+                             ///< name field of a sublist element are the owner type's, see ocs_qconf_member_of
    bool split_matchers;      ///< plain output only: host names and @group references
                              ///< first, matchers after them, each block still sorted.
                              ///< A property of the reserved host groups (CS-2680) and
@@ -284,6 +284,47 @@ struct ocs_qconf_hooks {
     * no row for it (CS-2523). nullptr deletes everything the text omits; with a
     * predicate, qconf_write_desc::retain_msg is required */
    bool (*retain_on_replace)(ocs::tom::ConstElement<T>) = nullptr;
+};
+
+/** @brief The member sublist of a reserved object, for the owner types that have reserved objects (CS-2820)
+ *
+ * The four reserved member lists (#QConfObj AH, SH, MGR, OP) are read as "one
+ * named object, then its sublist". Which sublist and which name field is a
+ * property of the owner type, so it is said once here, as template arguments,
+ * and the read works on handles of the member type.
+ *
+ * @tparam T the owner's object type
+ */
+template <ocs::tom::ObjectType T>
+struct ocs_qconf_member_of {
+   /// whether the type owns reserved member lists
+   static constexpr bool has_member = false;
+};
+
+/** @brief The host groups @admin_hosts and @submit_hosts: their host list, named by HR_name */
+template <>
+struct ocs_qconf_member_of<ocs::tom::HGRP> {
+   /// whether the type owns reserved member lists
+   static constexpr bool has_member = true;
+   /// the sublist field
+   static constexpr auto list = HGRP_host_list;
+   /// the name field of a sublist element
+   static constexpr auto key = HR_name;
+   /// the object type of a sublist element
+   using type = ocs::tom::HR;
+};
+
+/** @brief The access lists manager and operator: their entries, named by UE_name */
+template <>
+struct ocs_qconf_member_of<ocs::tom::US> {
+   /// whether the type owns reserved member lists
+   static constexpr bool has_member = true;
+   /// the sublist field
+   static constexpr auto list = US_entries;
+   /// the name field of a sublist element
+   static constexpr auto key = UE_name;
+   /// the object type of a sublist element
+   using type = ocs::tom::UE;
 };
 
 /** @brief Whether a key field is a name - a string or a host field

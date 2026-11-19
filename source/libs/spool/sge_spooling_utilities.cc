@@ -411,7 +411,7 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
          /* try hostname resolving */
          if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
-            cl_ret = sge_resolve_host(ehost, EH_name);
+            cl_ret = ocs_resolve_host<EH_name>(ehost);
 
             /* if hostname resolving failed: create error */
             if (cl_ret != CL_RETVAL_OK) {
@@ -457,7 +457,7 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                   ocs::tom::ConstList<ocs::tom::GRU>(), ocs::tom::ConstElement<ocs::tom::PE>(), ehost,
                                   master_centry_list, 0, true, true, nullptr);
 
-            if (ensure_attrib_available(nullptr, ehost, EH_consumable_config_list, master_centry_list)) {
+            if (ensure_attrib_available(nullptr, ehost.get<EH_consumable_config_list>(), master_centry_list)) {
                ret = false;
             }
          }
@@ -478,7 +478,7 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
          /* try hostname resolving */
          if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
-            cl_ret = sge_resolve_host(config, CONF_name);
+            cl_ret = ocs_resolve_host<CONF_name>(config);
             /* if hostname resolving failed: create error */
             if (cl_ret != CL_RETVAL_OK) {
                if (cl_ret != CL_RETVAL_GETHOSTNAME_ERROR) {

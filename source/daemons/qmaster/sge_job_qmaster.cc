@@ -2326,7 +2326,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_stderr_path_list\n");
 
-      if ((status = job_resolve_host_for_path_list(jep, alpp, JB_stderr_path_list)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_stderr_path_list>(jep), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
       ocs::tom::set<JB_stderr_path_list>(new_job, ocs::tom::get<JB_stderr_path_list>(jep).clone(""));
@@ -2340,7 +2340,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_stdin_path_list\n");
 
-      if ((status = job_resolve_host_for_path_list(jep, alpp, JB_stdin_path_list)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_stdin_path_list>(jep), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
       ocs::tom::set<JB_stdin_path_list>(new_job, ocs::tom::get<JB_stdin_path_list>(jep).clone(""));
@@ -2747,7 +2747,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_stdout_path_list?\n");
 
-      if ((status = job_resolve_host_for_path_list(jep, alpp, JB_stdout_path_list)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_stdout_path_list>(jep), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
       ocs::tom::set<JB_stdout_path_list>(new_job, ocs::tom::get<JB_stdout_path_list>(jep).clone(""));
@@ -2949,7 +2949,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_shell_list\n");
 
-      if ((status = job_resolve_host_for_path_list(jep, alpp, JB_shell_list)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_shell_list>(jep), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
       ocs::tom::set<JB_shell_list>(new_job, ocs::tom::get<JB_shell_list>(jep).clone(""));

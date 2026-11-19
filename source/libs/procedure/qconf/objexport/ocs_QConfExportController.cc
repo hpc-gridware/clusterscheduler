@@ -106,7 +106,7 @@ ocs::QConfExportController::process_request([[maybe_unused]] QConfParameter &par
          ocs::tom::ListPtr<T> one;
          if (desc.read.write_as_list) {
             // the element's own descriptor, as the fetch may have reduced it
-            one = ocs::tom::ListPtr<T>::create("export object", lGetElemDescr(ep));
+            one = ocs::tom::ListPtr<T>::create_like("export object", ep);
             one->push_back(ep.clone());
          }
          ocs_qconf_export_one(*objects_, view, desc, ep, one.get(), ocs_qconf_key_of<E>(ep));

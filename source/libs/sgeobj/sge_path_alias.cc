@@ -190,7 +190,7 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
        * set the values of the element
        */
       ocs::tom::set<PA_submit_host>(pal, submit_host);
-      if ( strcmp(submit_host, "*") && (sge_resolve_host(pal, PA_submit_host) != CL_RETVAL_OK)) {
+      if ( strcmp(submit_host, "*") && (ocs_resolve_host<PA_submit_host>(pal) != CL_RETVAL_OK)) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_CANTRESOLVEHOST_S, submit_host);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = -1;
@@ -318,7 +318,7 @@ int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
  * "outpath" of size "outmax".
  *
  * The exec host of an entry is resolved in place, although the list is
- * passed as a constant one: sge_resolve_host() takes the raw element.
+ * passed as a constant one: ocs_resolve_host() writes through a writable handle of the entry.
  *
  * @param path_aliases alias table (PA_Type), may be an empty handle
  * @param alpp AN_Type list pointer, unused
@@ -362,8 +362,9 @@ int path_alias_list_get_path(const ocs::tom::ConstList<ocs::tom::PA> path_aliase
          if (*exec_host != '*') {
             /* no '*', so we have to look closer   */
             /* resolv the exec host from the alias */
-            // sge_resolve_host() takes the raw element and a run-time field number
-            if (sge_resolve_host(const_cast<lListElem *>(pap.raw()), PA_exec_host) != CL_RETVAL_OK) {
+            // the alias list is handed in read-only, but the resolved exec host is written back, as before
+            const auto writable_pap = ocs::tom::Element<ocs::tom::PA>::from_typed(const_cast<lListElem *>(pap.raw()));
+            if (ocs_resolve_host<PA_exec_host>(writable_pap) != CL_RETVAL_OK) {
                ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, exec_host);
                continue;
             }

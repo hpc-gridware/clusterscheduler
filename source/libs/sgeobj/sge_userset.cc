@@ -139,11 +139,7 @@ int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_l
  * All the user set names in the acl_list must be defined in the qmaster
  * user set lists. The user set is diferentiated from user names by @ sign
  *
- * The acl list stays untyped: its element type and field are given at run
- * time by @p nm.
- *
- * @param acl_list the acl list to check
- * @param nm field name
+ * @param acl_list the acl list to check, e.g. AR_acl_list or AR_xacl_list; may be an empty handle
  * @param alpp answer list pointer
  * @param master_userset_list the defined usersets to check against (US_Type)
  *
@@ -151,13 +147,13 @@ int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_l
  *
  * @note MT-NOTE: userset_list_validate_access() is not MT safe
  */
-int userset_list_validate_access(const lList *acl_list, const int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+int userset_list_validate_access(const ocs::tom::ConstList<ocs::tom::ARA> acl_list,
+                                 ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
 
-   const lListElem *usp;
-   for_each_ep(usp, acl_list) {
-      char *user = (char *) lGetString(usp, nm);
+   for (const auto usp : acl_list) {
+      const char *user = ocs::tom::get<ARA_name>(usp);
       if (ocs::is_hgroup_name(user)){
          user++;  /* jump ower the @ sign */
          if (!ocs::tom::find_first<US_name>(master_userset_list, user)) {

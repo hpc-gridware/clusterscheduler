@@ -52,6 +52,7 @@
 #include <optional>
 #include <string>
 #include <strings.h>
+#include <type_traits>
 #include <vector>
 
 #include "uti/sge_dstring.h"
@@ -324,11 +325,19 @@ bool
 ocs_object_parse_field(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep,
                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);
 
+template <auto F>
+   requires ocs::tom::FieldTraits<F>::has_sub &&
+            std::is_same_v<typename ocs::tom::FieldTraits<F>::Sub, ocs::tom::RN>
 void
-object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int rnm, uint32_t id);
+object_delete_range_id(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> object,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
 
-int 
-object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end, uint32_t step);
+template <auto F>
+   requires ocs::tom::FieldTraits<F>::has_sub &&
+            std::is_same_v<typename ocs::tom::FieldTraits<F>::Sub, ocs::tom::RN>
+int
+object_set_range_id(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> object, uint32_t start, uint32_t end,
+                    uint32_t step);
 
 bool  
 object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -432,7 +441,7 @@ template <auto F>
 int
 object_verify_name(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> object,
                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return ocs_object_verify_name_value(answer_list, ocs::tom::get<F>(object), lNm2Str(static_cast<int>(F)));
+   return ocs_object_verify_name_value(answer_list, ocs::tom::get<F>(object), ocs::tom::FieldTraits<F>::info.name);
 }
 
 int

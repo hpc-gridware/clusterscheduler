@@ -49,6 +49,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_CX.h"
@@ -58,6 +59,7 @@
 #include "sgeobj/tom/ocs_tom_JRS.h"
 #include "sgeobj/tom/ocs_tom_PA.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_QR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -467,8 +469,8 @@ int job_check_qsh_display(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Li
 
 int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, ocs::tom::ConstList<ocs::tom::JB> master_job_list);
 
-int job_resolve_host_for_path_list(ocs::tom::ConstElement<ocs::tom::JB> job,
-                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int name);
+int job_resolve_host_for_path_list(ocs::tom::List<ocs::tom::PN> path_list,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 ocs::tom::ConstElement<ocs::tom::CE> job_get_request(ocs::tom::ConstElement<ocs::tom::JB> job, const char *centry_name);
 
@@ -480,16 +482,13 @@ bool job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB> job,
 void adjust_slave_task_debit_slots(ocs::tom::ConstElement<ocs::tom::PE> pe, int &slave_debit_slots);
 
 /* unparse functions */
-bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem,
-                               int pos, const char *option);
+bool sge_unparse_string_option_dstring(dstring *category_str, const char *value, const char *option);
 
-bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem,
-                               int pos, const char *option);
+bool sge_unparse_ulong_option_dstring(dstring *category_str, uint32_t value, const char *option);
 
-bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, int pos);
+bool sge_unparse_binding_dstring(dstring *category_str, ocs::tom::ConstElement<ocs::tom::BN> binding_elem);
 
-bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, int pe_pos, int range_pos,
-                            const char *option);
+bool sge_unparse_pe_dstring(dstring *category_str, ocs::tom::ConstElement<ocs::tom::JB> job, const char *option);
 
 bool sge_unparse_resource_list_dstring(dstring *category_str, ocs::tom::List<ocs::tom::CE> resource_list,
                                        const char *option);

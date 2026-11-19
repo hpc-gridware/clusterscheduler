@@ -45,6 +45,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_ARA.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
@@ -101,7 +102,7 @@ int userset_validate_entries(ocs::tom::ConstElement<ocs::tom::US> object, ocs::t
 int userset_list_validate_acl_list(ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                    ocs::tom::ConstList<ocs::tom::US> master_userset_list);
 
-int userset_list_validate_access(const lList *acl_list, int nm, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+int userset_list_validate_access(ocs::tom::ConstList<ocs::tom::ARA> acl_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                                  ocs::tom::ConstList<ocs::tom::US> master_userset_list);
 
 const char *ocs_userset_type_append_to_dstring(uint32_t type, dstring *buffer);

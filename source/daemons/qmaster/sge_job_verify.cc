@@ -654,10 +654,10 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
    if (ret == STATUS_OK) {
       int s1, s2, s3, s4;
 
-      s1 = job_resolve_host_for_path_list(jep, alpp, JB_stdout_path_list);
-      s2 = job_resolve_host_for_path_list(jep, alpp, JB_stdin_path_list);
-      s3 = job_resolve_host_for_path_list(jep, alpp, JB_shell_list);
-      s4 = job_resolve_host_for_path_list(jep, alpp, JB_stderr_path_list);
+      s1 = job_resolve_host_for_path_list(ocs::tom::get<JB_stdout_path_list>(jep), alpp);
+      s2 = job_resolve_host_for_path_list(ocs::tom::get<JB_stdin_path_list>(jep), alpp);
+      s3 = job_resolve_host_for_path_list(ocs::tom::get<JB_shell_list>(jep), alpp);
+      s4 = job_resolve_host_for_path_list(ocs::tom::get<JB_stderr_path_list>(jep), alpp);
       if (s1 != STATUS_OK || s2 != STATUS_OK || s3 != STATUS_OK || s4 != STATUS_OK) {
          ret = STATUS_EUNKNOWN;
       }

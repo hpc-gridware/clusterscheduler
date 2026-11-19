@@ -261,11 +261,6 @@ namespace ocs {
       static const char *switch_for(QConfObj object, QConfReadKind kind);
 
    protected:
-      static lEnumeration *get_name_what(const lDescr *descr, int key_nm);
-      static lCondition *get_name_where(const lDescr *descr, int key_nm);
-      static lCondition *get_object_where(const lDescr *descr, int key_nm, const char *name);
-      static lCondition *get_names_where(const lDescr *descr, int key_nm, const qconf_op &op);
-
       /** @brief Fetch the qmaster thread pools (CS-2820)
        *
        * Its own fetch because the thread pools are not a data store object: they
@@ -338,6 +333,9 @@ namespace ocs {
       bool append_template(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name);
       [[nodiscard]] bool has_show_prepare() const;
       void show_prepare();
+      [[nodiscard]] std::size_t object_count() const;
+      void create_empty_object_list();
+      void sort_names();
 
    public:
       virtual bool make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);

@@ -219,7 +219,7 @@ bool centry_list_do_all_exists(ocs::tom::ConstList<ocs::tom::CE> this_list,
 
 bool centry_list_is_correct(ocs::tom::ConstList<ocs::tom::CE> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, int nm,
+int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::List<ocs::tom::CE> resource_list,
                             ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
 
 int host_ensure_slots_are_defined(ocs::tom::Element<ocs::tom::EH> ehost, uint32_t processors);

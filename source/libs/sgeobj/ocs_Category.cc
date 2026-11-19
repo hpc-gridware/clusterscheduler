@@ -128,23 +128,18 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
                                      "-scope slave -hard -l");
 
    // -scope global|master|slave -hard -par <allocation_rule>
-   // the unparse function takes a run-time position, as the request set may be reduced
-   int par_pos = -1;
    for (const auto request_set : ocs::tom::get<JB_request_set_list>(job)) {
-      // Get the position of JRS_allocation_rule only once.
-      if (par_pos == -1) {
-         par_pos = lGetPosViaElem(request_set, JRS_allocation_rule, SGE_NO_ABORT);
-      }
       // Add the -par switch(es) to the category string.
+      const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(request_set);
       switch (ocs::tom::get<JRS_scope>(request_set)) {
          case JRS_SCOPE_GLOBAL:
-            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope global -par");
+            sge_unparse_string_option_dstring(category_str, allocation_rule, "-scope global -par");
             break;
          case JRS_SCOPE_MASTER:
-            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope master -par");
+            sge_unparse_string_option_dstring(category_str, allocation_rule, "-scope master -par");
             break;
          case JRS_SCOPE_SLAVE:
-            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope slave -par");
+            sge_unparse_string_option_dstring(category_str, allocation_rule, "-scope slave -par");
             break;
       }
    }
@@ -160,18 +155,14 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
                                      "-scope global -soft -l");
 #endif
 
-   // the unparse functions below take run-time positions, as the job may be reduced
-
    // -btype -bunit -bamount -bsort -bstart -bstop
-   sge_unparse_binding_dstring(category_str, job, lGetPosViaElem(job, JB_binding, SGE_NO_ABORT));
+   sge_unparse_binding_dstring(category_str, ocs::tom::get<JB_binding>(job));
 
    // -pe pe_name pe_range
-   sge_unparse_pe_dstring(category_str, job, lGetPosViaElem(job, JB_pe, SGE_NO_ABORT),
-                          lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT), "-pe");
+   sge_unparse_pe_dstring(category_str, job, "-pe");
 
    // -ckpt ckpt_name
-   sge_unparse_string_option_dstring(category_str, job, lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT),
-                                     "-ckpt");
+   sge_unparse_string_option_dstring(category_str, ocs::tom::get<JB_checkpoint_name>(job), "-ckpt");
 
    // interactive job type
    const uint32_t job_type = ocs::tom::get<JB_type>(job);
@@ -186,12 +177,12 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
       const auto prj = prj_list.find_first<PR_name>(project);
 
       if (prj && ocs::tom::get<PR_consider_with_categories>(prj)) {
-         sge_unparse_string_option_dstring(category_str, job, lGetPosViaElem(job, JB_project, SGE_NO_ABORT), "-P");
+         sge_unparse_string_option_dstring(category_str, project, "-P");
       }
    }
 
    // -ar ar_id
-   sge_unparse_ulong_option_dstring(category_str, job, lGetPosViaElem(job, JB_ar, SGE_NO_ABORT), "-ar");
+   sge_unparse_ulong_option_dstring(category_str, ocs::tom::get<JB_ar>(job), "-ar");
 
    // remove the last white space that the last unparse function has written
    sge_dstring_strip_trailing_blanks(category_str);

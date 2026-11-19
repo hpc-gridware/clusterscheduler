@@ -188,8 +188,8 @@
  * event is sent at all.
  *
  * #sge_evc_class_str::ec_mod_subscription_where expects the `lListElem`
- * representation of the `lCondition` and `lEnumeration`; `lWhatToElem()` and
- * `lWhereToElem()` convert them.
+ * representation of the `lCondition` and `lEnumeration`; `ocs_what_to_elem()` and
+ * `ocs_where_to_elem()` convert them.
  *
  * Master and client both benefit, in speed and in memory, from requesting only
  * the data the client actually needs. Three constraints apply:
@@ -1450,7 +1450,7 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
  *
  * @return true, if everything went fine
  *
- * @see `lWhatToElem()`, `lWhatFromElem()`, `lWhereToElem()`, `lWhereFromElem()`
+ * @see `ocs_what_to_elem()`, `lWhatFromElem()`, `ocs_where_to_elem()`, `lWhereFromElem()`
  */
 static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where) {
    DENTER(EVC_LAYER);

@@ -1196,17 +1196,8 @@ lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
 
    const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint64, [] { return MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS; });
 
-   // std::atomic_ref would be the idiomatic form, but it cannot be used here:
-   // FreeBSD 14 ships libc++ 18, which does not implement it at all
-   // (__cpp_lib_atomic_ref is not defined), so the build fails on that platform.
-   // The builtins below are understood by gcc and clang alike, need no library
-   // support and emit the same instruction.
-   static_assert(__atomic_always_lock_free(sizeof(lUlong64), nullptr),
-                 "lUlong64 cannot be accessed atomically without a lock on this platform");
-   static_assert(alignof(lMultiType) >= sizeof(lUlong64),
-                 "a cull value is not aligned well enough to be accessed atomically");
-
-   DRETURN(__atomic_load_n(&ocs_cull_value(ep, pos).ul64, __ATOMIC_RELAXED));
+   // the builtin and why it is not std::atomic_ref: see ocs::tom::load_uint64_atomic()
+   DRETURN(ocs::tom::load_uint64_atomic(ocs_cull_value(ep, pos)));
 }
 
 /** @brief Write a 64 bit unsigned field without a reader being able to see it torn
@@ -1249,8 +1240,7 @@ int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
       DRETURN(-1);
    }
 
-   // see lGetUlong64Atomic() on why this is a builtin and not std::atomic_ref
-   __atomic_store_n(&ocs_cull_value(ep, pos).ul64, value, __ATOMIC_RELAXED);
+   ocs::tom::store_uint64_atomic(ocs_cull_value(ep, pos), value);
 
    DRETURN(0);
 }

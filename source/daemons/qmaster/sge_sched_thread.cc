@@ -940,7 +940,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   is_pjob_resort = false;
                } else {
                   uint32_t ja_task_number = range_list_get_first_id(ocs::tom::get<JB_ja_n_h_ids>(orig_job), nullptr);
-                  object_delete_range_id(orig_job, nullptr, JB_ja_n_h_ids, ja_task_number);
+                  object_delete_range_id<JB_ja_n_h_ids>(orig_job, nullptr, ja_task_number);
                   is_pjob_resort = true;
                }
                orig_job = nullptr;

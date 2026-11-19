@@ -68,8 +68,10 @@
 #define FLG_NO_VALUE_AS_EMPTY 4 ///< print an unset value as nothing rather than as `NONE`
 /** @} */
 
+template <auto Hard, auto Soft = NoName>
+   requires ocs::tom::FieldTraits<Hard>::has_sub
 void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job,
-                         uint32_t scope, int hard_field, int soft_field);
+                         uint32_t scope);
 
 int cull_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
 

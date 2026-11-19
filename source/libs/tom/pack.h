@@ -144,8 +144,6 @@ int pb_used(sge_pack_buffer *pb);
 
 bool pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2);
 
-void pb_print_to(sge_pack_buffer *pb, bool only_header, FILE *);
-
 int repackint(sge_pack_buffer *, uint32_t);
 
 int packint(sge_pack_buffer *, uint32_t);
@@ -167,13 +165,6 @@ int unpackdouble(sge_pack_buffer *, double *);
 int unpackstr(sge_pack_buffer *, char **);
 
 int unpackbuf(sge_pack_buffer *, char **, int);
-
-/**
- * @brief Switch tracing of every pack and unpack operation on or off
- *
- * @param on_off non-zero to trace, zero to stop
- */
-void debugpack(int on_off);
 
 /// Result of a pack or unpack operation; every such function returns one of these
 enum {

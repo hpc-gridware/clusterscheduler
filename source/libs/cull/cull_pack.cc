@@ -404,20 +404,3 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
    }
    return ocs::tom::hex_to_bytes(string, byte);
 }
-
-/**
- * @brief Pack a job to be sent to execd
- *
- * This function is used in qmaster and by qrsh -inherit to deliver
- * jobs to execd's.
- *
- * @param pb packing buffer
- * @param jep JB_Type
- *
- * @return PACK_SUCCESS on success
- *
- * @note MT-NOTE: pack_job_delivery() is MT safe
- */
-int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep) {
-   return cull_pack_elem(pb, jep);
-}

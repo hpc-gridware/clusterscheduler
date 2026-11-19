@@ -679,27 +679,31 @@ int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, co
  * switches is merged by the rule of its type (#ocs_object_list_add_unique): a
  * queue reference is kept once, a resource request keeps its last value.
  *
+ * @tparam Hard the request set attribute the hard requests go into
+ * @tparam Soft the request set attribute the soft requests go into, NoName if the switch has no soft form
  * @param cmdline the parsed option list to consume from
  * @param option the switch to look for
  * @param[in,out] job the job the requests are stored in
  * @param scope which request set the entries belong to
- * @param hard_field the request set attribute the hard requests go into
- * @param soft_field the request set attribute the soft requests go into, 0 if the switch has no soft form
  */
+template <auto Hard, auto Soft>
+   requires ocs::tom::FieldTraits<Hard>::has_sub
 void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
-                         const ocs::tom::Element<ocs::tom::JB> job, const uint32_t scope, const int hard_field,
-                         const int soft_field) {
+                         const ocs::tom::Element<ocs::tom::JB> job, const uint32_t scope) {
    DENTER(TOP_LAYER);
+   constexpr bool has_soft = ocs::tom::TypedField<decltype(Soft)>;
+   using T = typename ocs::tom::FieldTraits<Hard>::Sub;
    bool handled_option = false;
-   // the request lists are of the type of the runtime fields "hard_field" and "soft_field", so they stay untyped
+   // the merge below works on raw lists, ocs_object_list_add_unique() has no typed form: the copies are handed
+   // over raw and taken back typed when they are stored
    lList *hard_list = nullptr;
    lList *soft_list = nullptr;
 
    auto jrs = job_get_request_setRW(job, scope);
    if (jrs != nullptr) {
-      hard_list = lCopyList(nullptr, lGetList(jrs, hard_field));
-      if (soft_field) {
-         soft_list = lCopyList(nullptr, lGetList(jrs, soft_field));
+      hard_list = ocs::tom::get<Hard>(jrs).clone().release();
+      if constexpr (has_soft) {
+         soft_list = ocs::tom::get<Soft>(jrs).clone().release();
       }
    }
 
@@ -715,7 +719,7 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
          ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
          if (lp != nullptr) {
             // merged without ever holding a key twice (N-H-18)
-            if (!soft_field || ocs::tom::get<SPA_argval_lIntT>(ep) < 2) {
+            if (!has_soft || ocs::tom::get<SPA_argval_lIntT>(ep) < 2) {
                ocs_object_list_add_unique(&hard_list, &lp);
             } else {
                ocs_object_list_add_unique(&soft_list, &lp);
@@ -732,9 +736,9 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
       if (jrs == nullptr) {
          jrs = job_get_or_create_request_setRW(job, scope);
       }
-      lSetList(jrs, hard_field, hard_list);
-      if (soft_field) {
-         lSetList(jrs, soft_field, soft_list);
+      ocs::tom::set<Hard>(jrs, ocs::tom::ListPtr<T>::from_typed(hard_list));
+      if constexpr (has_soft) {
+         ocs::tom::set<Soft>(jrs, ocs::tom::ListPtr<T>::from_typed(soft_list));
       }
    }
 
@@ -751,6 +755,15 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
 
    DRETURN_VOID;
 }
+
+/// @cond explicit instantiations for the switches in use
+template void parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(
+   ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job, uint32_t scope);
+template void parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(
+   ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job, uint32_t scope);
+template void parse_list_hardsoft<JRS_hard_queue_list, NoName>(
+   ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job, uint32_t scope);
+/// @endcond
 
 
 /**

@@ -52,17 +52,9 @@ lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1);
 lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1);
 
 /**
- * @brief Rebuild a selection condition from the element #lWhereToElem produced
+ * @brief Rebuild a selection condition from the element ocs_where_to_elem() produced
  *
  * @param where the element to unpack
  * @return the condition, to be released with `lFreeWhere()`, or nullptr on error
  */
 lCondition *lWhereFromElem(const lListElem *where);
-
-/**
- * @brief Pack a selection condition into a cull element, so it can be sent
- *
- * @param where the condition to pack
- * @return the element, owned by the caller, or nullptr on error
- */
-lListElem *lWhereToElem(const lCondition *where);

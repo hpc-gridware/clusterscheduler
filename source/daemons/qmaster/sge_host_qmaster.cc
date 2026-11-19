@@ -2236,8 +2236,8 @@ attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elemen
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      /* check if corresponding complex attributes exist (the field is passed as a run-time number) */
-      if (ensure_attrib_available(alpp, ep, EH_consumable_config_list, master_centry_list)) {
+      /* check if corresponding complex attributes exist */
+      if (ensure_attrib_available(alpp, ocs::tom::get<EH_consumable_config_list>(ep), master_centry_list)) {
          DRETURN(STATUS_EUNKNOWN);
       }
 

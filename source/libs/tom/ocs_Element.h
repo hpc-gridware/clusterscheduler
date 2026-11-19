@@ -1766,6 +1766,74 @@ namespace ocs::tom {
       return detail::free_add<F, true>(ep.raw(), offset);
    }
 
+   namespace detail {
+
+      /** @brief A 64 bit unsigned field, which the atomic accessors read */
+      template <auto F>
+      concept AtomicReadable = FieldTraits<F>::type == FieldType::Uint64;
+
+      /** @brief A 64 bit unsigned field that is not declared hashed, which the atomic accessors write */
+      template <auto F>
+      concept AtomicWritable = AtomicReadable<F> && !FieldTraits<F>::hashed;
+
+   } // namespace detail
+
+   /**
+    * @brief Read a 64 bit unsigned field without being able to observe it torn; replaces lGetUlong64Atomic()
+    *
+    * For a field that several threads write while others read it, and that carries no invariant with any other
+    * field of the element (a time of last use). The guarantee is about the single load, not about ordering with
+    * anything else, so the access is relaxed; whoever needs ordering needs a lock.
+    *
+    * An Element<T> binds here too: Element derives from ConstElement, which deduction accepts.
+    *
+    * @tparam F the field number, of the handle's type and of type Uint64
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @return the value
+    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
+    * @see core: ocs::tom::load_uint64_atomic()
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && detail::AtomicReadable<F>
+   [[nodiscard]] std::uint64_t get_atomic(const ConstElement<T> &ep) {
+      detail::assert_field_of<F, T>();
+      const lListElem *raw = ep.raw();
+      // the slot first: it throws NullElement for an empty handle before raw is dereferenced
+      const int pos = detail::checked_slot<F, true>(raw);
+      return load_uint64_atomic(raw->cont[pos]);
+   }
+
+   /**
+    * @brief Write a 64 bit unsigned field without a reader being able to see it torn; replaces lSetUlong64Atomic()
+    *
+    * The store bypasses the hash table, so a field declared hashed does not compile, where lSetUlong64Atomic()
+    * refused it at run time. The declaration decides, not whether a table is built: the tables are built when an
+    * element enters a list.
+    *
+    * @tparam F the field number, of the handle's type, of type Uint64 and not hashed
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @param value the value to store
+    * @return 0 on success, -1 with LEELEMNULL for an empty handle, as lSetUlong64Atomic() on nullptr
+    * @throw FieldException with reason AbsentField if the element does not hold the field
+    * @see core: ocs::tom::store_uint64_atomic()
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && detail::AtomicWritable<F>
+   int set_atomic(const Element<T> &ep, const std::uint64_t value) {
+      detail::assert_field_of<F, T>();
+      lListElem *raw = ep.raw();
+      if (raw == nullptr) [[unlikely]] {
+         report_soft_path("ocs::tom::set_atomic", static_cast<int>(F), SoftPathReason::NullElement);
+         set_lerrno(LEELEMNULL);
+         return -1;
+      }
+      const int pos = detail::checked_slot<F, true>(raw);
+      store_uint64_atomic(raw->cont[pos], value);
+      return 0;
+   }
+
    // The owning element handle takes the free forms of the handle it owns: a local variable that owns its element
    // (rule L3) keeps its field access lines. Template deduction does not see conversions, hence one overload each.
 

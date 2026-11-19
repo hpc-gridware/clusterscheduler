@@ -353,7 +353,7 @@ qconf_conf_host_of(const char *filepath, const ocs::tom::Element<ocs::tom::EH> h
    const char *slash = strrchr(filepath, '/');
    const char *base = slash != nullptr ? slash + 1 : filepath;
    ocs::tom::set<EH_name>(host_ep, base);
-   sge_resolve_host(host_ep, EH_name);   /* best-effort, like -Aconf/-dconf */
+   ocs_resolve_host<EH_name>(host_ep);   /* best-effort, like -Aconf/-dconf */
    const char *hostname = ocs::tom::get<EH_name>(host_ep);
 
    DRETURN(hostname);
@@ -379,7 +379,7 @@ static bool
 qconf_resolve_one_host(const char *name, std::string &resolved, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    ocs::tom::set<EH_name>(host_ep, name);
-   const bool ok = (sge_resolve_host(*host_ep, EH_name) == CL_RETVAL_OK);
+   const bool ok = (ocs_resolve_host<EH_name>(*host_ep) == CL_RETVAL_OK);
    if (ok) {
       resolved = static_cast<const char *>(ocs::tom::get<EH_name>(host_ep));
    } else {
@@ -422,7 +422,7 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
    std::string arg = op.args[0];
    const auto hosts = parse_name_list_to_cull<EH_name>("hosts to change", arg.data());
    for (const auto host_ep : *hosts) {
-      if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
+      if (ocs_resolve_host<EH_name>(host_ep) != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S,
                       static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
          failed = true;
@@ -484,7 +484,7 @@ qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {
       ocs::tom::set<EH_name>(host_ep, cp);
-      const int ret = sge_resolve_host(*host_ep, EH_name);
+      const int ret = ocs_resolve_host<EH_name>(*host_ep);
       if (ret != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_SS, cp, cl_get_error_text(ret));
          if (!keep_unresolved) {

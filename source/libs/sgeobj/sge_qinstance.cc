@@ -616,9 +616,9 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::to
    }
 
    if (ret) {
-      if (ensure_attrib_available(nullptr, this_elem, QU_load_thresholds, master_centry_list) ||
-          ensure_attrib_available(nullptr, this_elem, QU_suspend_thresholds, master_centry_list) ||
-          ensure_attrib_available(nullptr, this_elem, QU_consumable_config_list, master_centry_list)) {
+      if (ensure_attrib_available(nullptr, ocs::tom::get<QU_load_thresholds>(this_elem), master_centry_list) ||
+          ensure_attrib_available(nullptr, ocs::tom::get<QU_suspend_thresholds>(this_elem), master_centry_list) ||
+          ensure_attrib_available(nullptr, ocs::tom::get<QU_consumable_config_list>(this_elem), master_centry_list)) {
          ret = false;
       }
    }

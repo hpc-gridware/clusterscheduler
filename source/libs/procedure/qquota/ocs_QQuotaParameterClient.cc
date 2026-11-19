@@ -229,7 +229,7 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
          ** resolve hostnames and replace them in list
          */
          for (const auto ep : *host_name_list_) {
-            sge_resolve_host(ep, ST_name);
+            ocs_resolve_host<ST_name>(ep);
          }
          continue;
       }

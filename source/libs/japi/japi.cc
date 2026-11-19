@@ -1230,7 +1230,7 @@ static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t i
       -  all tasks in JJ_not_yet_finished_ids
       -  no task in JJ_finished_jobs */
    ocs::tom::Element<ocs::tom::JJ> japi_job_jj = ocs::tom::emplace_back<JJ_jobid>(&Master_japi_job_list, jobid);
-   object_set_range_id(japi_job_jj, JJ_not_yet_finished_ids, start, end, incr);
+   object_set_range_id<JJ_not_yet_finished_ids>(japi_job_jj, start, end, incr);
 
    /* mark it as array job */
    if (is_array) {
@@ -3767,7 +3767,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                   if (!sge_job) {
                      while ((taskid = range_list_get_first_id(ocs::tom::get<JJ_not_yet_finished_ids>(japi_job), nullptr))) {
                         /* remove task from not yet finished job id list */
-                        object_delete_range_id(japi_job, nullptr, JJ_not_yet_finished_ids, taskid);
+                        object_delete_range_id<JJ_not_yet_finished_ids>(japi_job, nullptr, taskid);
 
                         /* add entry to the finished tasks */
                         DPRINTF("adding finished task " sge_u32 " for job " sge_u32 " existing not any longer\n", taskid, jobid);
@@ -3833,7 +3833,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                      ocs::tom::ConstList<ocs::tom::UA> usage = nullptr;
 
                      /* remove task from not yet finished job id list */
-                     object_delete_range_id(japi_job, nullptr, JJ_not_yet_finished_ids, intkey2);
+                     object_delete_range_id<JJ_not_yet_finished_ids>(japi_job, nullptr, intkey2);
 
                      /* add an entry to the finished tasks */
                      DPRINTF("adding finished task %ld for job %ld\n", intkey2, intkey);
@@ -4095,8 +4095,7 @@ static int japi_sync_job_tasks(const ocs::tom::Element<ocs::tom::JJ> japi_job,
          }
 
          /* remove task from not yet finished job id list */
-         object_delete_range_id(japi_job, nullptr, JJ_not_yet_finished_ids,
-                                taskid);
+         object_delete_range_id<JJ_not_yet_finished_ids>(japi_job, nullptr, taskid);
          /* add entry to the finished tasks */
          DPRINTF("adding finished task %ld for job %ld which still exists\n", taskid, ocs::tom::get<JJ_jobid>(japi_job));
          ocs::tom::emplace_back_in<JJ_finished_tasks, JJAT_task_id>(japi_job, taskid);

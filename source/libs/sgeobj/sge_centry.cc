@@ -306,7 +306,7 @@ int centry_fill_and_check(const ocs::tom::Element<ocs::tom::CE> this_elem, ocs::
       }
       case ocs::CEntry::Type::HOST:
          /* resolve hostname and store it */
-         ret = sge_resolve_host(this_elem, CE_stringval);
+         ret = ocs_resolve_host<CE_stringval>(this_elem);
          if (ret != CL_RETVAL_OK) {
             if (ret == CL_RETVAL_GETHOSTNAME_ERROR) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -1543,35 +1543,32 @@ bool centry_list_is_correct(const ocs::tom::ConstList<ocs::tom::CE> this_list,
  * A shortcut in the object's list is replaced by the full name.
  *
  * @param[out] alpp receives the name of the unknown resource
- * @param ep the object to check, of any type with a CE_Type list in @p nm; may be nullptr
- * @param nm the attribute of `ep` holding the resource list (CE_Type), given at run time
+ * @param resource_list the resource list of the object to check, e.g. its QU_load_thresholds or
+ *        EH_consumable_config_list; may be an empty handle
  * @param master_centry_list the defined complex entries, CE_Type
  * @return 0 when every referenced resource exists, STATUS_EUNKNOWN otherwise
  */
-int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *ep, const int nm,
+int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::List<ocs::tom::CE> resource_list,
                             const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    int ret = 0;
-   if (ep != nullptr) {
-      // the field is given at run time, the list it holds is checked to be CE_Type
-      for (const auto attr : ocs::tom::List<ocs::tom::CE>(lGetListRW(ep, nm))) {
-         const char *name = ocs::tom::get<CE_name>(attr);
-         const auto centry = centry_list_locate(master_centry_list, name);
+   for (const auto attr : resource_list) {
+      const char *name = ocs::tom::get<CE_name>(attr);
+      const auto centry = centry_list_locate(master_centry_list, name);
 
-         if (!centry) {
-            ERROR(MSG_GDI_NO_ATTRIBUTE_S, name != nullptr ? name : "<noname>");
-            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            ret = STATUS_EUNKNOWN;
-            break;
-         } else {
-            const char *fullname = ocs::tom::get<CE_name>(centry);
+      if (!centry) {
+         ERROR(MSG_GDI_NO_ATTRIBUTE_S, name != nullptr ? name : "<noname>");
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = STATUS_EUNKNOWN;
+         break;
+      } else {
+         const char *fullname = ocs::tom::get<CE_name>(centry);
 
-            /*
-             * Replace shortcuts by the fullname silently
-             */
-            if (strcmp(fullname, name) != 0) {
-               ocs::tom::set<CE_name>(attr, fullname);
-            }
+         /*
+          * Replace shortcuts by the fullname silently
+          */
+         if (strcmp(fullname, name) != 0) {
+            ocs::tom::set<CE_name>(attr, fullname);
          }
       }
    }

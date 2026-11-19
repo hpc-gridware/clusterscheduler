@@ -124,10 +124,49 @@
 #define LOAD_ATTR_DEVICES        "devices"
 /** @} */
 
-bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+bool host_is_referenced(ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::CQ> queue_list, ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list);
 
-int sge_resolve_host(lListElem *ep, int nm);
+int ocs_resolve_host_name(const char *hostname, int nm, bool is_string, std::string &unique, bool &store);
+
+/**
+ * @brief Replace a host name attribute with its resolved unique name
+ *
+ * Users write host names in whatever form they like; the object model stores
+ * exactly one form per host, so a name has to be resolved before it is
+ * compared or stored. A host expression is left as it is. Replaces
+ * sge_resolve_host(ep, nm), whose field was a run-time number.
+ *
+ * @note MT-NOTE: ocs_resolve_host() is MT safe
+ *
+ * @tparam F the host attribute to resolve, a host or a string field
+ * @param ep the element whose attribute is rewritten, may be an empty handle
+ * @return `CL_RETVAL_OK` on success, -1 for an empty handle or an element reduced without the field, otherwise a
+ *         commlib error code
+ */
+template <auto F>
+   requires ocs::tom::TypedField<decltype(F)> &&
+            (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::String ||
+             ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Host)
+int ocs_resolve_host(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep) {
+   constexpr bool is_string = ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::String;
+   // an element without the field is no host element
+   if (!ep || !ep.template has<F>()) {
+      return -1;
+   }
+   std::string unique;
+   bool store = false;
+   const int ret = ocs_resolve_host_name(static_cast<const char *>(ocs::tom::get<F>(ep)), static_cast<int>(F),
+                                         is_string, unique, store);
+   if (store) {
+      if constexpr (is_string) {
+         ocs::tom::set<F>(ep, unique.c_str());
+      } else {
+         ocs::tom::set<F>(ep, ocs::tom::Host(unique.c_str()));
+      }
+   }
+   return ret;
+}
 
 int sge_resolve_hostname(const char *hostname, char *unique, int nm);
 

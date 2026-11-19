@@ -145,8 +145,7 @@ qconf_role_validate(const ocs::tom::Element<ocs::tom::RL> ep, ocs::tom::ListPtr<
 static int
 qconf_eh_resolve(const ocs::tom::Element<ocs::tom::EH> ep, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
-   // sge_resolve_host() has no typed form; it takes the field number of a host field of any type
-   if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
+   if (ocs_resolve_host<EH_name>(ep) != CL_RETVAL_OK) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_SGETEXT_CANTRESOLVEHOST_S, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
       DRETURN(STATUS_ESEMANTIC);
@@ -817,25 +816,25 @@ const ocs_qconf_object_tuple ocs_qconf_objects{
    /* AH: @admin_hosts lives in the host group list */
    /* AH   */ { { ocs::gdi::Target::HGRP_LIST, nullptr,           &qconf_sfi,                nullptr,      ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,
                  { .list_name = "administrative host", .json_name_id = "adminhost", .json_name_id_when_empty = false,
-                   .member = { ADMIN_HOSTGROUP, HGRP_host_list, HR_name, HR_Type, true } } },
+                   .member = { ADMIN_HOSTGROUP, true } } },
                SGE_TYPE_HGROUP,
                { } },
    /* SH: @submit_hosts likewise */
    /* SH   */ { { ocs::gdi::Target::HGRP_LIST, nullptr,           &qconf_sfi,                nullptr,      ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,
                  { .list_name = "submit host", .json_name_id = "submithost", .json_name_id_when_empty = false,
-                   .member = { SUBMIT_HOSTGROUP, HGRP_host_list, HR_name, HR_Type, true } } },
+                   .member = { SUBMIT_HOSTGROUP, true } } },
                SGE_TYPE_HGROUP,
                { } },
    /* MGR: the reserved "manager" access list */
    /* MGR  */ { { ocs::gdi::Target::US_LIST,   nullptr,           &qconf_sfi,                nullptr,      ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,
                  { .list_name = "manager", .json_name_id = "manager", .json_name_id_when_empty = true,
-                   .member = { MANAGER_USERSET, US_entries, UE_name, UE_Type, false } } },
+                   .member = { MANAGER_USERSET, false } } },
                SGE_TYPE_USERSET,
                { } },
    /* OP: the reserved "operator" access list */
    /* OP   */ { { ocs::gdi::Target::US_LIST,   nullptr,           &qconf_sfi,                nullptr,      ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,
                  { .list_name = "operator", .json_name_id = "operator", .json_name_id_when_empty = true,
-                   .member = { OPERATOR_USERSET, US_entries, UE_name, UE_Type, false } } },
+                   .member = { OPERATOR_USERSET, false } } },
                SGE_TYPE_USERSET,
                { } },
 };

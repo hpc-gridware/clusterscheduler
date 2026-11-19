@@ -22,6 +22,8 @@
  * @brief Reading a `qconf` read operation's objects from the master lists
  */
 
+#include <utility>
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
@@ -57,7 +59,7 @@ ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] ocs::tom::ListPtr<ocs::tom
  * @brief Read the objects out of qmaster's own lists
  *
  * The counterpart of the GDI GET the client does: same filter, same fields, but
- * `lSelect()` over the master list instead of a round trip. There is nothing to
+ * a selection over the master list instead of a round trip. There is nothing to
  * fail in a recoverable way here, which is why the client's
  * answer_exit_if_not_recoverable() has no equivalent.
  *
@@ -100,8 +102,22 @@ ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
       DRETURN(false);
    }
 
-   const lList *master_list = *DataStore::get_master_list(type);
-   object_list_ = lSelect("", master_list, where, what);
+   // dispatched once on the read's object type: the model built the condition and the selection for it, and the
+   // master list holds objects of it; object_list_ stays untyped, its type is the read's
+   ocs_with_qconf_object(get_object(), [this, type, &where, &what](const auto &entry) {
+      using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+      // fetch() owns the condition and the selection: the handles free them
+      const auto typed_where = ocs::tom::Where<T>::from_typed(std::exchange(where, nullptr));
+      const auto typed_what = ocs::tom::What<T>::from_typed(std::exchange(what, nullptr));
+      const auto master_list = ocs::tom::ConstList<T>::from_typed(*DataStore::get_master_list(type));
+      auto selected = master_list.select(typed_where, typed_what, "");
+      // lSelect() gave no list where nothing matched, and the callers tell no list from an empty one
+      if (selected && selected->empty()) {
+         selected.reset();
+      }
+      object_list_ = selected.release();
+   });
+   // only for an object outside the dispatch table, which never reaches the lambda: nothing else frees them
    lFreeWhere(&where);
    lFreeWhat(&what);
 

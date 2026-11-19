@@ -463,9 +463,9 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       cmdline.erase(ep);
    }
 
-   parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
-   parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
-   parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
+   parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", job, JRS_SCOPE_GLOBAL);
+   parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", job, JRS_SCOPE_MASTER);
+   parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", job, JRS_SCOPE_SLAVE);
    job_request_set_remove_duplicates(job);
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-m"))) {
@@ -552,10 +552,10 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       cmdline.erase(ep);
    }
 
-   parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-masterq", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
+   parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", job, JRS_SCOPE_GLOBAL);
+   parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", job, JRS_SCOPE_MASTER);
+   parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", job, JRS_SCOPE_SLAVE);
+   parse_list_hardsoft<JRS_hard_queue_list>(cmdline, "-masterq", job, JRS_SCOPE_MASTER);
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-R"))) {
       ocs::tom::set<JB_reserve>(job, ocs::tom::get<SPA_argval_lIntT>(ep));

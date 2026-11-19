@@ -276,14 +276,12 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
       }
 
       /*   AR_acl_list, SGE_LIST */
-      if (userset_list_validate_access(ocs::tom::get<AR_acl_list>(ar), ARA_name, alpp,
-                                       master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ocs::tom::get<AR_acl_list>(ar), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       
       /*   AR_xacl_list, SGE_LIST */
-      if (userset_list_validate_access(ocs::tom::get<AR_xacl_list>(ar), ARA_name, alpp,
-                                       master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ocs::tom::get<AR_xacl_list>(ar), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 

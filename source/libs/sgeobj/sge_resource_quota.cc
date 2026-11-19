@@ -384,8 +384,7 @@ static bool rqs_verify_host_scope(const ocs::tom::List<ocs::tom::ST> scope,
          }
 
          case ocs::MemberClass::LITERAL_HOST:
-            // sge_resolve_host() takes the field number at run time and stays untyped
-            sge_resolve_host(host, ST_name);
+            ocs_resolve_host<ST_name>(host);
             break;
       }
    }

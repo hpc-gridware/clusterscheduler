@@ -311,7 +311,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
       hep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
       ocs::tom::set<EH_name>(hep, config_name);
 
-      if (const int ret = sge_resolve_host(*hep, EH_name); ret != CL_RETVAL_OK) {
+      if (const int ret = ocs_resolve_host<EH_name>(*hep); ret != CL_RETVAL_OK) {
          DPRINTF("get_configuration: error %d resolving host %s: %s\n", ret, config_name, cl_get_error_text(ret));
          hep.reset();
          ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, config_name);

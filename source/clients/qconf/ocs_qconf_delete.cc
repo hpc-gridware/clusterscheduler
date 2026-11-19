@@ -344,7 +344,7 @@ qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, o
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {
       ocs::tom::set<EH_name>(host_ep, cp);
-      if (sge_resolve_host(*host_ep, EH_name) != CL_RETVAL_OK) {
+      if (ocs_resolve_host<EH_name>(*host_ep) != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, cp);
          ret = 1;
       }

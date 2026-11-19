@@ -39,6 +39,7 @@
 
 #include "cull/cull.h"
 #include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_REP.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -47,9 +48,9 @@ namespace ocs::gdi {
    /// The GDI calls only an execution daemon makes
    class ClientExecd : public Client {
    public:
-      static int gdi_get_merged_configuration(lList **conf_list);
+      static int gdi_get_merged_configuration(ocs::tom::ListPtr<ocs::tom::CONF> *conf_list);
 
-      static int gdi_wait_for_conf(lList **conf_list);
+      static int gdi_wait_for_conf(ocs::tom::ListPtr<ocs::tom::CONF> *conf_list);
 
       static int report_list_send(ocs::tom::ConstList<ocs::tom::REP> rlp, const char *rhost, const char *commproc,
                                   int id, int synchron);

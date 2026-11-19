@@ -62,33 +62,6 @@
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app);
 
 /**
- * @brief Build a int vector
- *
- * Marks a field as selected, in the form #lIntVector2What consumes.
- *
- * @param[in,out] job_field the array to mark in, terminated by #NoName
- * @param nm field name id; ignored when already present
- */
-void nm_set(int job_field[], int nm) {
-   DENTER(TOP_LAYER);
-
-   int i;
-
-   /* seek it */
-   for (i = 0; job_field[i] != NoName; i++)
-      if (job_field[i] == nm) {
-         DRETURN_VOID; /*found*/
-      }
-
-   /* set it */
-   DPRINTF("%s\n", lNm2Str(nm));
-   job_field[i++] = nm;
-   job_field[i] = NoName;
-
-   DRETURN_VOID;
-}
-
-/**
  * @brief Build the shared reduced descriptor a field selection describes
  *
  * @param dst_dpp the shared descriptor, holding a reference for the caller, who

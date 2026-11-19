@@ -63,6 +63,7 @@
 #include <cstring>
 #include <fnmatch.h>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -207,8 +208,8 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
    {"-Ssconf", QConfObj::SC,   ocs::QConfReadKind::SINGLETON, true},
 
    /* group A: the singletons. A separate kind rather than a SINGLE_OBJECT row
-    * with name_nm == NoName: that would work - get_object_where() returns
-    * nullptr for NoName and arg(0) is null-safe - but a row whose switch takes
+    * with name_nm == NoName: that would work - ocs_qconf_object_where() returns
+    * an empty handle for NoName and arg(0) is null-safe - but a row whose switch takes
     * no name would be a trap for the next reader, and the empty case needs a
     * message that takes no argument (CS-2808). */
    {"-ssconf", QConfObj::SC,   ocs::QConfReadKind::SINGLETON},
@@ -275,13 +276,18 @@ ocs::QConfModelBase::switch_for(QConfObj object, QConfReadKind kind) {
  * Only the key. A name list has no business transporting whole objects, and
  * under output reduction it is also the one field there is nothing to hide in.
  *
- * @param descr  the CULL descriptor of the object type
- * @param key_nm the field holding the name
- * @return the enumeration, which the caller frees
+ * @tparam E the entry of the object type, see ocs_with_qconf_object(); every row that reads a name list has a key
+ * @return the selection
  */
-lEnumeration *
-ocs::QConfModelBase::get_name_what(const lDescr *descr, int key_nm) {
-   return lWhat("%T(%I)", descr, key_nm);
+template <typename E>
+static ocs::tom::What<typename E::type>
+ocs_qconf_name_what() {
+   if constexpr (E::has_key) {
+      return ocs::tom::what<E::key>();
+   } else {
+      // no row reads a name list of a type without a key
+      return ocs::tom::what_all<typename E::type>();
+   }
 }
 
 /**
@@ -291,22 +297,46 @@ ocs::QConfModelBase::get_name_what(const lDescr *descr, int key_nm) {
  * global execution hosts, the global configuration, and every event client
  * that is not the scheduler.
  *
- * @param descr  the CULL descriptor of the object type
- * @param key_nm the field holding the name
- * @return the condition, or nullptr when everything is listed; the caller frees
+ * @tparam E the entry of the object type, see ocs_with_qconf_object()
+ * @return the condition, or an empty handle when everything is listed
  */
-lCondition *
-ocs::QConfModelBase::get_name_where(const lDescr *descr, int key_nm) {
-   switch (key_nm) {
-      case EH_name:
-         return lWhere("%T(!(%Ic=%s || %Ic=%s))", descr, key_nm, SGE_TEMPLATE_NAME,
-                       key_nm, SGE_GLOBAL_NAME);
-      case CONF_name:
-         return lWhere("%T(!(%I c= %s))", descr, key_nm, SGE_GLOBAL_NAME);
-      case EV_host:
-         return lWhere("%T(%I==%u))", descr, EV_id, EV_ID_SCHEDD);
-      default:
-         return nullptr;
+template <typename E>
+static ocs::tom::Where<typename E::type>
+ocs_qconf_name_where() {
+   using T = typename E::type;
+   if constexpr (std::is_same_v<T, ocs::tom::EH>) {
+      return !(ocs::tom::field<EH_name>().equals_nocase(SGE_TEMPLATE_NAME) ||
+               ocs::tom::field<EH_name>().equals_nocase(SGE_GLOBAL_NAME));
+   } else if constexpr (std::is_same_v<T, ocs::tom::CONF>) {
+      return !ocs::tom::field<CONF_name>().equals_nocase(SGE_GLOBAL_NAME);
+   } else if constexpr (std::is_same_v<T, ocs::tom::EV>) {
+      return ocs::tom::field<EV_id>() == static_cast<uint32_t>(EV_ID_SCHEDD);
+   } else {
+      return {};
+   }
+}
+
+/**
+ * @brief Which element a single-object show asks for
+ *
+ * A type without a name field holds exactly one object, so there is nothing to
+ * filter on. A host name is matched with the host comparison, which folds the
+ * domain away - `qconf -se host` finds `host.example.com`.
+ *
+ * @tparam E the entry of the object type, see ocs_with_qconf_object()
+ * @param name the name that was asked for
+ * @return the condition, or an empty handle for a type that is not addressed by name
+ */
+template <typename E>
+static ocs::tom::Where<typename E::type>
+ocs_qconf_object_where([[maybe_unused]] const char *name) {
+   if constexpr (!E::has_name_key) {
+      // a singleton; the category, whose key is a number, is read by SINGLE_OBJECT_BY_ID and never by name
+      return {};
+   } else if constexpr (ocs::tom::FieldTraits<E::key>::type == ocs::tom::FieldType::Host) {
+      return ocs::tom::field<E::key>().same_host(name);
+   } else {
+      return ocs::tom::field<E::key>() == name;
    }
 }
 
@@ -317,53 +347,31 @@ ocs::QConfModelBase::get_name_where(const lDescr *descr, int key_nm) {
  * the type, which is a null filter - `-srqs` uses that, `-su` cannot, because its
  * option table entry demands a name.
  *
- * @param descr  the CULL descriptor of the type
- * @param key_nm the field holding the name
- * @param op     the operation, carrying the arguments
- * @return the condition, or nullptr for "everything"
+ * @tparam E the entry of the object type, see ocs_with_qconf_object()
+ * @param op the operation, carrying the arguments
+ * @return the condition, or an empty handle for "everything"
  */
-lCondition *
-ocs::QConfModelBase::get_names_where(const lDescr *descr, const int key_nm, const qconf_op &op) {
+template <typename E>
+static ocs::tom::Where<typename E::type>
+ocs_qconf_names_where([[maybe_unused]] const qconf_op &op) {
    DENTER(TOP_LAYER);
 
-   if (key_nm == NoName || op.arg_count() == 0) {
-      DRETURN(nullptr);
-   }
+   ocs::tom::Where<typename E::type> where;
+   if constexpr (E::has_name_key) {
+      if (op.arg_count() == 0) {
+         DRETURN(where);
+      }
 
-   /* one list for all arguments, so that a name given twice is skipped across
-    * them as lString2List() skips it within one */
-   const auto name_list = ocs_qconf_arg_names<ST_name>(op, "");
+      /* one list for all arguments, so that a name given twice is skipped across
+       * them as lString2List() skips it within one */
+      const auto name_list = ocs_qconf_arg_names<ST_name>(op, "");
 
-   lCondition *where = nullptr;
-   for (const auto name_elem : *name_list) {
-      lCondition *one = get_object_where(descr, key_nm, ocs::tom::get<ST_name>(name_elem));
-      where = (where == nullptr) ? one : lOrWhere(where, one);
+      for (const auto name_elem : *name_list) {
+         where |= ocs_qconf_object_where<E>(ocs::tom::get<ST_name>(name_elem));
+      }
    }
 
    DRETURN(where);
-}
-
-/**
- * @brief Which element a single-object show asks for
- *
- * A type without a name field holds exactly one object, so there is nothing to
- * filter on. A host name is matched with the host comparison, which folds the
- * domain away - `qconf -se host` finds `host.example.com`.
- *
- * @param descr  the CULL descriptor of the object type
- * @param key_nm the field holding the name, NoName for a singleton
- * @param name   the name that was asked for
- * @return the condition, or nullptr for a singleton; the caller frees
- */
-lCondition *
-ocs::QConfModelBase::get_object_where(const lDescr *descr, int key_nm, const char *name) {
-   if (key_nm == NoName) {
-      return nullptr;
-   }
-   const int pos = lGetPosInDescr(descr, key_nm);
-   const bool by_host = (lGetPosType(descr, pos) == lHostT);
-   return by_host ? lWhere("%T( %Ih=%s )", descr, key_nm, name)
-                  : lWhere("%T( %I==%s )", descr, key_nm, name);
 }
 
 /**
@@ -499,6 +507,73 @@ ocs::QConfModelBase::show_prepare() {
 }
 
 /**
+ * @brief How many objects the read holds
+ *
+ * The list is of the read's object type, or of the member type once a member list read has replaced the owner by
+ * its members.
+ *
+ * @return the number of objects, 0 for no list
+ */
+std::size_t
+ocs::QConfModelBase::object_count() const {
+   DENTER(TOP_LAYER);
+   const std::size_t count = ocs_with_qconf_object(object_, [this](const auto &entry) -> std::size_t {
+      using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+      if constexpr (ocs_qconf_member_of<T>::has_member) {
+         if (kind_ == QConfReadKind::MEMBER_LIST) {
+            using M = typename ocs_qconf_member_of<T>::type;
+            return ocs::tom::ConstList<M>::from_typed(object_list_).size();
+         }
+      }
+      // the list was fetched or created with the descriptor of the read's object type
+      return ocs::tom::ConstList<T>::from_typed(object_list_).size();
+   });
+   DRETURN(count);
+}
+
+/**
+ * @brief Sort a name list by its names, ascending
+ *
+ * The list is of the read's object type and sorted by its key, or of the member type once a member list read has
+ * replaced the owner by its members, and sorted by the member's name.
+ */
+void
+ocs::QConfModelBase::sort_names() {
+   DENTER(TOP_LAYER);
+   ocs_with_qconf_object(object_, [this](const auto &entry) {
+      using E = ocs_qconf_object_entry_t<decltype(entry)>;
+      using T = typename E::type;
+      if constexpr (ocs_qconf_member_of<T>::has_member) {
+         if (kind_ == QConfReadKind::MEMBER_LIST) {
+            using Member = ocs_qconf_member_of<T>;
+            ocs::tom::List<typename Member::type>::from_typed(object_list_).template sort<ocs::tom::asc<Member::key>>();
+            return;
+         }
+      }
+      if constexpr (E::has_key) {
+         // the list was fetched with the descriptor of the read's object type
+         ocs::tom::List<T>::from_typed(object_list_).template sort<ocs::tom::asc<E::key>>();
+      }
+   });
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Give the read an empty list of its object type, where it holds none
+ *
+ * object_list_ stays untyped, its type is the read's: the list is handed over raw.
+ */
+void
+ocs::QConfModelBase::create_empty_object_list() {
+   DENTER(TOP_LAYER);
+   object_list_ = ocs_with_qconf_object(object_, [](const auto &entry) -> lList * {
+      using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+      return ocs::tom::ListPtr<T>::create("").release();
+   });
+   DRETURN_VOID;
+}
+
+/**
  * @brief Fetch every object of one type, for a view that needs the whole list
  *
  * The bespoke views are not "one object by name": the host group views resolve
@@ -523,8 +598,10 @@ ocs::QConfModelBase::make_list_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    desc_ = &qconf_desc(object_);
    key_nm_ = desc_->name_nm;
 
-   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
-   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   const bool ok = ocs_with_qconf_object(object_, [this, answer_list](const auto &entry) {
+      using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+      return fetch(answer_list, desc_->target, ocs::tom::Where<T>(), ocs::tom::what_all<T>());
+   });
 
    /* An empty result has to be an empty list, not no list at all. lSelect() hands
     * back nullptr when nothing matched, while the same read over GDI produces an
@@ -533,7 +610,7 @@ ocs::QConfModelBase::make_list_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_
     * cluster without categories printed that header before the read moved, so the
     * two execution contexts disagreed until this line (CS-2819). */
    if (ok && object_list_ == nullptr) {
-      object_list_ = lCreateList("", desc_->descr);
+      create_empty_object_list();
    }
 
    DRETURN(ok);
@@ -590,7 +667,7 @@ ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
        * is what shows whether the two agree. */
       auto probe = ocs::tom::ElementPtr<ocs::tom::HR>::create();
       ocs::tom::set<HR_name>(probe, parameter.get_operation().arg(1));
-      sge_resolve_host(*probe, HR_name);
+      ocs_resolve_host<HR_name>(*probe);
 
       dstring found_in = DSTRING_INIT;
       dstring matcher = DSTRING_INIT;
@@ -1685,46 +1762,61 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       DRETURN(false);
    }
 
-   lEnumeration *what;
-   lCondition *where;
    bool bulk_export = false;   /* no name given and the read feeds an export */
-   if (kind_ == QConfReadKind::NAME_LIST) {
-      what = get_name_what(desc_->descr, key_nm_);
-      where = get_name_where(desc_->descr, key_nm_);
-   } else if (kind_ == QConfReadKind::SINGLE_OBJECT_BY_ID) {
-      what = lWhat("%T(ALL)", desc_->descr);
-      /* strtoull rather than a CULL conversion: the argument is whatever the
-       * user typed, and a value that is not a number becomes 0, which matches no
-       * category and is reported as "does not exist" - the wording the hand
-       * written switch produced for a bad id too. */
-      const char *arg = parameter.get_operation().arg(0);
-      requested_id_ = (arg != nullptr) ? static_cast<uint32_t>(strtoull(arg, nullptr, 10)) : 0;
-      where = lWhere("%T(%I==%u)", desc_->descr, key_nm_, requested_id_);
-   } else if (kind_ == QConfReadKind::OBJECT_LIST) {
-      /* The names may be one comma separated argument, several arguments, or
-       * none at all - and none means every object of the type. */
-      what = lWhat("%T(ALL)", desc_->descr);
-      where = get_names_where(desc_->descr, key_nm_, parameter.get_operation());
-      /* CS-2826: an export over everything leaves out what a restore cannot
-       * create, see drop_from_export() - which runs below, once the objects are
-       * there, because a predicate cannot be asked inside a condition.
-       *
-       * Only where no name was given: the user asking for one of those by name
-       * gets it, because a name is an instruction and not a sweep. That is also
-       * the boundary the refusal of a reduced export needs - a single export is
-       * a choice, a bulk export is a backup. */
-      bulk_export = (where == nullptr && parameter.get_for_export());
-   } else if (kind_ == QConfReadKind::MEMBER_LIST) {
-      /* One named object and its sublist. The name comes from the descriptor,
-       * not from the command line - the switch itself says which reserved
-       * object is meant, and the user cannot name another one. */
-      what = lWhat("%T(%I %I)", desc_->descr, key_nm_, desc_->read.member.list_nm);
-      where = get_object_where(desc_->descr, key_nm_, desc_->read.member.owner);
-   } else {
-      what = lWhat("%T(ALL)", desc_->descr);
-      where = get_object_where(desc_->descr, key_nm_, parameter.get_operation().arg(0));
-   }
-   const bool ok = fetch(answer_list, desc_->target, where, what);
+   // dispatched once on the read's object type: the condition and the selection are built for it
+   const bool ok = ocs_with_qconf_object(object_, [this, answer_list, &parameter, &bulk_export](const auto &entry) {
+      using E = ocs_qconf_object_entry_t<decltype(entry)>;
+      using T = typename E::type;
+      ocs::tom::What<T> what;
+      ocs::tom::Where<T> where;
+      if (kind_ == QConfReadKind::NAME_LIST) {
+         what = ocs_qconf_name_what<E>();
+         where = ocs_qconf_name_where<E>();
+      } else if (kind_ == QConfReadKind::SINGLE_OBJECT_BY_ID) {
+         what = ocs::tom::what_all<T>();
+         /* strtoull rather than a CULL conversion: the argument is whatever the
+          * user typed, and a value that is not a number becomes 0, which matches no
+          * category and is reported as "does not exist" - the wording the hand
+          * written switch produced for a bad id too. */
+         const char *arg = parameter.get_operation().arg(0);
+         requested_id_ = (arg != nullptr) ? static_cast<uint32_t>(strtoull(arg, nullptr, 10)) : 0;
+         // nested: FieldTraits of NoName (an entry without a key) must not be instantiated
+         if constexpr (E::has_key) {
+            if constexpr (ocs::tom::FieldTraits<E::key>::type == ocs::tom::FieldType::Uint32) {
+               where = ocs::tom::field<E::key>() == requested_id_;
+            }
+         }
+      } else if (kind_ == QConfReadKind::OBJECT_LIST) {
+         /* The names may be one comma separated argument, several arguments, or
+          * none at all - and none means every object of the type. */
+         what = ocs::tom::what_all<T>();
+         where = ocs_qconf_names_where<E>(parameter.get_operation());
+         /* CS-2826: an export over everything leaves out what a restore cannot
+          * create, see drop_from_export() - which runs below, once the objects are
+          * there, because a predicate cannot be asked inside a condition.
+          *
+          * Only where no name was given: the user asking for one of those by name
+          * gets it, because a name is an instruction and not a sweep. That is also
+          * the boundary the refusal of a reduced export needs - a single export is
+          * a choice, a bulk export is a backup. */
+         bulk_export = (!where && parameter.get_for_export());
+      } else if (kind_ == QConfReadKind::MEMBER_LIST) {
+         /* One named object and its sublist. The name comes from the descriptor,
+          * not from the command line - the switch itself says which reserved
+          * object is meant, and the user cannot name another one. */
+         if constexpr (ocs_qconf_member_of<T>::has_member && E::has_key) {
+            what = ocs::tom::what<E::key, ocs_qconf_member_of<T>::list>();
+         } else {
+            // no row reads the members of a type without reserved objects
+            what = ocs::tom::what_all<T>();
+         }
+         where = ocs_qconf_object_where<E>(desc_->read.member.owner);
+      } else {
+         what = ocs::tom::what_all<T>();
+         where = ocs_qconf_object_where<E>(parameter.get_operation().arg(0));
+      }
+      return fetch(answer_list, desc_->target, std::move(where), std::move(what));
+   });
    if (!ok) {
       DRETURN(false);
    }
@@ -1750,18 +1842,28 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
        * seeded at every qmaster startup and cannot be deleted, so not finding
        * one means an empty membership, which then takes the normal empty path.
        */
-      const lListElem *owner = lFirst(object_list_);
-      lList *members = (owner != nullptr)
-                       ? lCopyList("", lGetList(owner, desc_->read.member.list_nm))
-                       : nullptr;
-      lFreeList(&object_list_);
-      object_list_ = (members != nullptr) ? members
-                                         : lCreateList("", desc_->read.member.descr);
-      key_nm_ = desc_->read.member.key_nm;
+      ocs_with_qconf_object(object_, [this](const auto &entry) {
+         using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+         if constexpr (ocs_qconf_member_of<T>::has_member) {
+            using Member = ocs_qconf_member_of<T>;
+            using M = typename Member::type;
+            // the owner was fetched with the descriptor of the read's object type
+            auto fetched = ocs::tom::ListPtr<T>::from_typed(std::exchange(object_list_, nullptr));
+            const auto owner = fetched->front();
+            auto members = owner ? ocs::tom::get<Member::list>(owner).clone("") : ocs::tom::ListPtr<M>();
+            fetched.reset();
+            if (!members) {
+               members = ocs::tom::ListPtr<M>::create("");
+            }
+            // object_list_ stays untyped, its type is the read's: from here on the member type
+            object_list_ = members.release();
+            key_nm_ = static_cast<int>(Member::key);
+         }
+      });
    }
 
    if (kind_ == QConfReadKind::NAME_LIST || kind_ == QConfReadKind::MEMBER_LIST) {
-      lPSortList(object_list_, "%I+", key_nm_);
+      sort_names();
 
       /* An empty list is an error, whatever the output format. The hand written
        * engine made that an error for plain output only, so "-s<obj>l" exited 1
@@ -1780,7 +1882,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
        * The message travels back in the answer list rather than going to stderr,
        * because inside qmaster stderr is the daemon's log and not the caller's
        * terminal. */
-      if (lGetNumberOfElem(object_list_) == 0) {
+      if (object_count() == 0) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_QCONF_NOXDEFINED_S, desc_->read.list_name);
       }
@@ -1839,7 +1941,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
           * was refused, fails as a whole: there is nothing to render then, and
           * the empty-list message below would report the same names twice. */
          if (!all_found &&
-             (template_refused || object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0)) {
+             (template_refused || object_list_ == nullptr || object_count() == 0)) {
             DRETURN(false);
          }
       }
@@ -1869,7 +1971,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
        * without one is broken rather than new. */
       if ((kind_ == QConfReadKind::SINGLE_OBJECT || kind_ == QConfReadKind::SINGLETON) &&
           parameter.get_for_edit() && has_template() &&
-          (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0)) {
+          (object_list_ == nullptr || object_count() == 0)) {
          if (!append_template(answer_list, (kind_ == QConfReadKind::SINGLETON)
                                            ? nullptr
                                            : parameter.get_operation().arg(0))) {
@@ -1880,10 +1982,10 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          answered_with_template_ = true;
       }
 
-      /* lGetNumberOfElem() would flag a null list as a CULL error, so the list
+      /* lGetNumberOfElem() flagged a null list as a CULL error, so the list
        * itself is checked first - as the hand written engine did. The wording of
        * the "not found" message is per object type, its shape is not. */
-      if (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0) {
+      if (object_list_ == nullptr || object_count() == 0) {
          /* CS-2823: an edit read of a whole list finds nothing on a cluster that
           * has none, and that is not a failure - the editor opens on an empty
           * text, which is how "qconf -mrqs" let an administrator write the first
@@ -1892,7 +1994,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          if (kind_ == QConfReadKind::OBJECT_LIST && parameter.get_for_edit() &&
              parameter.get_operation().arg_count() == 0) {
             if (object_list_ == nullptr) {
-               object_list_ = lCreateList("", desc_->descr);
+               create_empty_object_list();
             }
             DRETURN(true);
          }
@@ -1909,7 +2011,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
           * client reporting again. */
          if (parameter.get_for_export()) {
             if (object_list_ == nullptr) {
-               object_list_ = lCreateList("", desc_->descr);
+               create_empty_object_list();
             }
             DRETURN(true);
          }

@@ -41,6 +41,7 @@
  * @see sge_host.h
  */
 #include <cstring>
+#include <string>
 
 #include "comm/commlib.h"
 
@@ -336,30 +337,22 @@ cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ
  * If this is the case than a corresponding message will be added
  * to the "answer_list".
  *
- * The host stays an untyped element: like host_list_locate() the function
- * finds out at run time whether it is an execution host (object_has_type()).
- *
- * @param host EH_Type object
+ * @param host EH_Type object, may be an empty handle
  * @param answer_list AN_Type list
  * @param queue_list CQ_Type list, may be an empty handle
  * @param hgrp_list HGRP_Type list (Master list), may be an empty handle
  *
  * @return true if the host is referenced, else false
  */
-bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+bool host_is_referenced(const ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const ocs::tom::ConstList<ocs::tom::CQ> queue_list,
                         const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
-   if (host != nullptr) {
-      int nm = NoName;
-
-      if (object_has_type(host, EH_Type)) {
-         nm = object_get_primary_key(EH_Type);
-      }
-      const char *hostname = lGetHost(host, nm);
+   if (host) {
+      const char *hostname = ocs::tom::get<EH_name>(host).c_str();
 
       /* look at all the queue instances and figure out, if one still references
          the host we are looking for */
@@ -375,8 +368,7 @@ bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *
              * can remove -- the group is system-maintained. Deleting the exec host
              * takes it out of @exec_hosts and the empty instance goes with it.
              */
-            if (object_has_type(host, EH_Type) &&
-                !cqueue_reaches_host_without_exec_hosts(cqueue, hostname, hgrp_list)) {
+            if (!cqueue_reaches_host_without_exec_hosts(cqueue, hostname, hgrp_list)) {
                continue;
             }
 
@@ -387,9 +379,8 @@ bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *
          }
       }
 
-      /* if we have not found a reference yet, we keep looking in the host groups, if
-         we have an exec host */
-      if (!ret && object_has_type(host, EH_Type)) {
+      /* if we have not found a reference yet, we keep looking in the host groups */
+      if (!ret) {
          for (const auto hgrp_elem : hgrp_list) {
             const char *hgrp_name = ocs::tom::get<HGRP_name>(hgrp_elem);
 
@@ -461,71 +452,45 @@ bool host_is_referenced(const lListElem *host, ocs::tom::ListPtr<ocs::tom::AN> *
 }
 
 
-/* MT-NOTE: sge_resolve_host() is MT safe */
 /**
- * @brief Replace a host name attribute with its resolved unique name
+ * @brief Resolve the host name a field holds: the part of ocs_resolve_host() that does not depend on the field
  *
  * Users write host names in whatever form they like; the object model stores
  * exactly one form per host, so a name has to be resolved before it is
- * compared or stored.
+ * compared or stored. A host expression is left as it is.
  *
- * @param[in,out] ep the element whose attribute is rewritten
- * @param nm the host attribute to resolve
- * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
+ * @note MT-NOTE: ocs_resolve_host_name() is MT safe
+ *
+ * @param hostname the name the field holds, or nullptr
+ * @param nm the field, for the special names sge_resolve_hostname() keeps as they are
+ * @param is_string true for a string field, which a host name should not be held in any more, false for a host field
+ * @param[out] unique receives the resolved name
+ * @param[out] store set to true if the field is to be set to @p unique, false if it is to be left as it is
+ * @return `CL_RETVAL_OK` on success, also for a host expression, which is left as it is; otherwise a commlib error
+ *         code
  */
-int sge_resolve_host(lListElem *ep, int nm) {
+int ocs_resolve_host_name(const char *hostname, const int nm, const bool is_string, std::string &unique,
+                          bool &store) {
    DENTER(TOP_LAYER);
 
-   int pos;
    int ret = CL_RETVAL_OK;
-   int dataType;
-   char unique[CL_MAXHOSTNAMELEN];
-   const char *hostname;
+   unique.clear();
+   store = false;
 
-   memset(unique, 0, CL_MAXHOSTNAMELEN);
-
-   if (ep == nullptr) {
-      DRETURN(-1);
+   if (is_string && nm != CE_stringval) {
+      DPRINTF("!!!!!!! ocs_resolve_host: WARNING call with old lStringT data type,\n");
+      DPRINTF("!!!!!!! this data type should be replaced with lHostT data type in\n");
+      DPRINTF("!!!!!!! the future! Nevertheless, just a warning! Function works fine!\n");
    }
 
-   /* ep is no host element, if ep has no nm */
-   if ((pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT)) < 0) {
-      DRETURN(-1);
-   }
-
-   dataType = lGetPosType(lGetElemDescr(ep), pos);
-   switch (dataType) {
-      case lStringT:
-         hostname = lGetPosString(ep, pos);
-         if (nm != CE_stringval) {
-            DPRINTF("!!!!!!! sge_resolve_host: WARNING call with old lStringT data type,\n");
-            DPRINTF("!!!!!!! this data type should be replaced with lHostT data type in\n");
-            DPRINTF("!!!!!!! the future! Nevertheless, just a warning! Function works fine!\n");
-         }
-         break;
-
-      case lHostT:
-         hostname = lGetPosHost(ep, pos);
-         break;
-
-      default:
-         hostname = nullptr;
-         ret = CL_RETVAL_GETHOSTNAME_ERROR;
-         break;
-   }
    /* Check to find hostname only if it was not contained in expression */
    if (!ocs::is_expression(hostname)) {
-      ret = sge_resolve_hostname(hostname, unique, nm);
-
+      char resolved[CL_MAXHOSTNAMELEN];
+      memset(resolved, 0, CL_MAXHOSTNAMELEN);
+      ret = sge_resolve_hostname(hostname, resolved, nm);
       if (ret == CL_RETVAL_OK) {
-         switch (dataType) {
-            case lStringT:
-               lSetPosString(ep, pos, unique);
-               break;
-            case lHostT:
-               lSetPosHost(ep, pos, unique);
-               break;
-         }
+         unique = resolved;
+         store = true;
       }
    }
 

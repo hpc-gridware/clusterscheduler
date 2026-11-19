@@ -109,7 +109,8 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
    char* spool_dir = nullptr;
    const char *unqualified_hostname = component_get_unqualified_hostname();
 
-   while (ocs::gdi::ClientExecd::gdi_wait_for_conf(&Execd_Config_List)) {
+   ocs::tom::ListPtr<ocs::tom::CONF> conf_list;
+   while (ocs::gdi::ClientExecd::gdi_wait_for_conf(&conf_list)) {
       if (allowed_get_conf_errors-- <= 0) {
          CRITICAL(SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT);
          /* TODO: remove */
@@ -118,6 +119,11 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
       sleep(1);
       ocs::gdi::ClientBase::gdi_get_act_master_host(true);
    }
+   // the configuration list goes to a process-lifetime global of the execd, which stays untyped;
+   // the list it held before is freed
+   ocs::tom::ListPtr<ocs::tom::CONF> old_conf_list(Execd_Config_List);
+   Execd_Config_List = conf_list.release();
+   old_conf_list.reset();
    sge_show_conf();
 
    // Set fake topology and trigger reinit of HWLOC

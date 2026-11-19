@@ -524,7 +524,7 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB
                                             const uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
-   object_delete_range_id(job, answer_list, JB_ja_n_h_ids, ja_task_number);
+   object_delete_range_id<JB_ja_n_h_ids>(job, answer_list, ja_task_number);
    auto ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_number);
    if (!ja_task) {
       auto ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
@@ -651,9 +651,6 @@ uint32_t job_count_pending_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job,
  *
  * Removes an unenrolled pending task from the id lists.
  *
- * The id lists are addressed by a table of field numbers, so they are
- * changed through the raw object_delete_range_id().
- *
  * @param job JB_Type
  * @param answer_list AN_Type
  * @param ja_task_number Task to be removed
@@ -662,13 +659,11 @@ void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job,
                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
-   const int attributes = 5;
-   const int attribute[] = {JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_o_h_ids,
-                            JB_ja_s_h_ids, JB_ja_a_h_ids};
-
-   for (int i = 0; i < attributes; i++) {
-      object_delete_range_id(job, answer_list, attribute[i], ja_task_number);
-   }
+   object_delete_range_id<JB_ja_n_h_ids>(job, answer_list, ja_task_number);
+   object_delete_range_id<JB_ja_u_h_ids>(job, answer_list, ja_task_number);
+   object_delete_range_id<JB_ja_o_h_ids>(job, answer_list, ja_task_number);
+   object_delete_range_id<JB_ja_s_h_ids>(job, answer_list, ja_task_number);
+   object_delete_range_id<JB_ja_a_h_ids>(job, answer_list, ja_task_number);
    DRETURN_VOID;
 }
 
@@ -1071,7 +1066,7 @@ std::tuple<uint32_t, uint32_t, uint32_t> job_get_submit_task_ids(const ocs::tom:
  */
 int job_set_submit_task_ids(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t start, const uint32_t end,
                             const uint32_t step) {
-   return object_set_range_id(job, JB_ja_structure, start, end, step);
+   return object_set_range_id<JB_ja_structure>(job, start, end, step);
 }
 
 
@@ -1906,23 +1901,20 @@ char *jobscript_parse_key(char *key, const char **exec_file) {
  *
  * Resolves hostnames in path lists.
  *
- * The path list is named by a field number given at run time, so it is read
- * through the raw lGetListRW() and only then wrapped.
- *
- * @param job the submited cull list (JB_Type)
+ * @param path_list a path list of a job (JB_stderr_path_list, JB_stdout_path_list, ...), may be an empty handle;
+ *        its host names are rewritten in place
  * @param answer_list AN_Type element
- * @param name a JB_Type PN_Type list field (JB_stderr_path_list, JB_stdout_path_list, ...)
  *
  * @return error code (STATUS_OK, or ...)
  */
-int job_resolve_host_for_path_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
-                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const int name) {
+int job_resolve_host_for_path_list(const ocs::tom::List<ocs::tom::PN> path_list,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    bool ret_error=false;
 
-   for (const auto ep : ocs::tom::List<ocs::tom::PN>(lGetListRW(job, name))) {
-      int res = sge_resolve_host(ep, PN_host);
-      DPRINTF("after sge_resolve_host() which returned %s\n", cl_get_error_text(res));
+   for (const auto ep : path_list) {
+      int res = ocs_resolve_host<PN_host>(ep);
+      DPRINTF("after ocs_resolve_host() which returned %s\n", cl_get_error_text(res));
       if (res != CL_RETVAL_OK) {
          const char *hostname = ocs::tom::get<PN_host>(ep);
          if (hostname != nullptr) {
@@ -1935,7 +1927,7 @@ int job_resolve_host_for_path_list(const ocs::tom::ConstElement<ocs::tom::JB> jo
             ret_error=true;
          }
       }
-      DPRINTF("after sge_resolve_host() - II\n");
+      DPRINTF("after ocs_resolve_host() - II\n");
 
       /* ensure, that each hostname is only specified once */
       if( !ret_error ){
@@ -2261,33 +2253,28 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, const ocs::tom::Li
  * @brief Creates a string from a pe request
  *
  * @param category_str target string
- * @param job_elem a job structure
- * @param pe_pos position of the pe name attribute in the job
- * @param range_pos position of the pe range request attribute in the job
+ * @param job the job, holding JB_pe and JB_pe_range
  * @param option string option to put in infront of the generated string
  *
- * @return true, if everything was fine
+ * @return true, if everything was fine; false for a parallel environment without ranges
  *
  * @note MT-NOTE: sge_unparse_pe_dstring() is MT safe
  */
-bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, int pe_pos, int range_pos,
-                            const char *option) {
+bool sge_unparse_pe_dstring(dstring *category_str, const ocs::tom::ConstElement<ocs::tom::JB> job, const char *option) {
    DENTER(TOP_LAYER);
 
-   const lList *range_list = nullptr;
-
-   if (lGetPosString(job_elem, pe_pos) != nullptr) {
-      if ((range_list = lGetPosList(job_elem, range_pos)) == nullptr) {
+   if (const char *pe_name = ocs::tom::get<JB_pe>(job); pe_name != nullptr) {
+      const auto range_list = ocs::tom::get<JB_pe_range>(job);
+      if (!range_list) {
          DPRINTF("Job has parallel environment with no ranges\n");
          DRETURN(false);
       } else {
          dstring range_string = DSTRING_INIT;
 
-         range_list_print_to_string(ocs::tom::ConstList<ocs::tom::RN>::from_typed(range_list), &range_string, true,
-                                    false, false);
+         range_list_print_to_string(range_list, &range_string, true, false, false);
          sge_dstring_append(category_str, option);
          sge_dstring_append_char(category_str, ' ');
-         sge_dstring_append(category_str, ocs::tom::get<JB_pe>(job_elem));
+         sge_dstring_append(category_str, pe_name);
          sge_dstring_append_char(category_str, ' ');
          sge_dstring_append_dstring(category_str, &range_string);
          sge_dstring_append_char(category_str, ' ');
@@ -2306,8 +2293,7 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
  * Copies a string into a dstring. Used for category string building
  *
  * @param category_str target string
- * @param job_elem a job structure
- * @param pos position of the string attribute in the job
+ * @param value the value of the string attribute, e.g. the job's JB_project; nullptr appends nothing
  * @param option string option to put in in front of the generated string
  *
  * @return always true
@@ -2316,25 +2302,24 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
  *
  * @see #sge_unparse_ulong_option_dstring
  */
-bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, int pos, const char *option) {
+bool sge_unparse_string_option_dstring(dstring *category_str, const char *value, const char *option) {
    DENTER(TOP_LAYER);
-   if (const char *string = lGetPosString(job_elem, pos); string != nullptr) {
+   if (value != nullptr) {
       sge_dstring_append(category_str, option);
       sge_dstring_append_char(category_str, ' ');
-      sge_dstring_append(category_str, string);
+      sge_dstring_append(category_str, value);
       sge_dstring_append_char(category_str, ' ');
    }
    DRETURN(true);
 }
 
 /**
- * @brief Copies a string into a dstring
+ * @brief Copies a number into a dstring
  *
- * Copies a string into a dstring. Used for category string building
+ * Copies a number into a dstring. Used for category string building
  *
  * @param category_str target string
- * @param job_elem a job structure
- * @param pos position of the ulong attribute in the job
+ * @param value the value of the number attribute, e.g. the job's JB_ar; 0 appends nothing
  * @param option string option to put in front of the generated string
  *
  * @return always true
@@ -2344,13 +2329,13 @@ bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *j
  * @see #sge_unparse_string_option_dstring
  */
 bool
-sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, int pos, const char *option) {
+sge_unparse_ulong_option_dstring(dstring *category_str, const uint32_t value, const char *option) {
    DENTER(TOP_LAYER);
 
-   if (const uint32_t ul = lGetPosUlong(job_elem, pos); ul != 0) {
+   if (value != 0) {
       sge_dstring_append(category_str, option);
       sge_dstring_append_char(category_str, ' ');
-      sge_dstring_sprintf_append(category_str, sge_u32, ul);
+      sge_dstring_sprintf_append(category_str, sge_u32, value);
       sge_dstring_append_char(category_str, ' ');
    }
    DRETURN(true);
@@ -2362,14 +2347,11 @@ sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_ele
  * Nothing is appended when the job has no binding request.
  *
  * @param[out] category_str receives the `-binding` switch and its value
- * @param job the job to read
- * @param pos position of the binding attribute within the job
+ * @param binding_elem the job's binding request (JB_binding), may be an empty handle
  * @return always true
  */
-bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, const int pos) {
+bool sge_unparse_binding_dstring(dstring *category_str, const ocs::tom::ConstElement<ocs::tom::BN> binding_elem) {
    DENTER(TOP_LAYER);
-   // pos is the position of a binding field (BN_Type), the type is guaranteed
-   const ocs::tom::ConstElement<ocs::tom::BN> binding_elem(lGetPosObject(job, pos));
    if (binding_elem) {
       std::string binding_switches_str;
       ocs::BindingIo::binding_print_to_string(binding_elem, binding_switches_str, true);

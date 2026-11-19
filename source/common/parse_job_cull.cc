@@ -572,9 +572,9 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
 
    parse_list_append<JB_job_identifier_list>(cmdline, "-jid", *pjob);
 
-   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
-   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
-   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
+   parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", *pjob, JRS_SCOPE_GLOBAL);
+   parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", *pjob, JRS_SCOPE_MASTER);
+   parse_list_hardsoft<JRS_hard_resource_list, JRS_soft_resource_list>(cmdline, "-l", *pjob, JRS_SCOPE_SLAVE);
    job_request_set_remove_duplicates(*pjob);
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-m"))) {
@@ -670,10 +670,10 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
       cmdline.erase(ep);
    }
 
-   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-masterq", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
+   parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", *pjob, JRS_SCOPE_GLOBAL);
+   parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", *pjob, JRS_SCOPE_MASTER);
+   parse_list_hardsoft<JRS_hard_queue_list, JRS_soft_queue_list>(cmdline, "-q", *pjob, JRS_SCOPE_SLAVE);
+   parse_list_hardsoft<JRS_hard_queue_list>(cmdline, "-masterq", *pjob, JRS_SCOPE_MASTER);
    
    while ((ep = cmdline.find_first<SPA_switch_val>("-R"))) {
       ocs::tom::set<JB_reserve>(*pjob, ocs::tom::get<SPA_argval_lIntT>(ep));

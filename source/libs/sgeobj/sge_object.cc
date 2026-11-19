@@ -94,6 +94,7 @@
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JJ.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PETR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -1275,27 +1276,41 @@ object_get_type_name(const lListElem *object) {
 /**
  * @brief Del certain id from an range_list
  *
- * Deletes a certain id from an objects sublist that is a range list.
+ * Deletes a certain id from an objects sublist that is a range list. The list
+ * is taken out of the field, changed and put back.
  *
+ * @tparam F the range list field (RN_Type) of the object's type
  * @param object the object to handle
  * @param answer_list error messages will be put here
- * @param rnm attribute containing the range list
  * @param id id to delete
  */
+template <auto F>
+   requires ocs::tom::FieldTraits<F>::has_sub &&
+            std::is_same_v<typename ocs::tom::FieldTraits<F>::Sub, ocs::tom::RN>
 void
-object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                       int rnm, uint32_t id) {
-   // rnm is a field number known only at run time, so the exchange itself stays raw
-   lList *raw_list = nullptr;
-   lXchgList(object, rnm, &raw_list);
-
-   ocs::tom::ListPtr<ocs::tom::RN> range_list(raw_list);
+object_delete_range_id(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> object,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t id) {
+   auto range_list = object.template exchange<F>(nullptr);
    range_list_remove_id(range_list, answer_list, id);
    range_list_compress(range_list);
-
-   raw_list = range_list.release();
-   lXchgList(object, rnm, &raw_list);
+   static_cast<void>(object.template exchange<F>(std::move(range_list)));
 }
+
+/// @cond explicit instantiations for the fields in use
+template void object_delete_range_id<JB_ja_n_h_ids>(ocs::tom::Element<ocs::tom::JB> object,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
+template void object_delete_range_id<JB_ja_u_h_ids>(ocs::tom::Element<ocs::tom::JB> object,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
+template void object_delete_range_id<JB_ja_o_h_ids>(ocs::tom::Element<ocs::tom::JB> object,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
+template void object_delete_range_id<JB_ja_s_h_ids>(ocs::tom::Element<ocs::tom::JB> object,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
+template void object_delete_range_id<JB_ja_a_h_ids>(ocs::tom::Element<ocs::tom::JB> object,
+                                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
+template void object_delete_range_id<JJ_not_yet_finished_ids>(ocs::tom::Element<ocs::tom::JJ> object,
+                                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                                              uint32_t id);
+/// @endcond
 
 /**
  * @brief Store the initial range ids in "job"
@@ -1306,8 +1321,8 @@ object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answe
  * list is overwritten; an object without a range list gets a new list
  * holding one range.
  *
+ * @tparam F the range list field (RN_Type) of the object's type
  * @param object object to handle
- * @param rnm attribute containing the range list (`RN_Type`); it varies per call
  * @param start first id
  * @param end last id
  * @param step step size
@@ -1316,23 +1331,32 @@ object_delete_range_id(lListElem *object, ocs::tom::ListPtr<ocs::tom::AN> *answe
  *
  * @note MT-NOTE: object_set_range_id() is MT safe
  */
+template <auto F>
+   requires ocs::tom::FieldTraits<F>::has_sub &&
+            std::is_same_v<typename ocs::tom::FieldTraits<F>::Sub, ocs::tom::RN>
 int
-object_set_range_id(lListElem *object, const int rnm, const uint32_t start, const uint32_t end,
-                    const uint32_t step) {
+object_set_range_id(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> object, const uint32_t start,
+                    const uint32_t end, const uint32_t step) {
    DENTER(OBJECT_LAYER);
 
-   // the field number varies per call, so the list is read raw and checked to hold ranges
-   auto range_elem = ocs::tom::List<ocs::tom::RN>(lGetListRW(object, rnm)).front();
+   auto range_elem = ocs::tom::get<F>(object).front();
    if (!range_elem) {
       auto range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("task_id_range");
       range_elem = range_list->push_back(ocs::tom::ElementPtr<ocs::tom::RN>::create());
-      lSetList(object, rnm, std::move(range_list));
+      ocs::tom::set<F>(object, std::move(range_list));
    }
    ocs::tom::set<RN_min>(range_elem, start);
    ocs::tom::set<RN_max>(range_elem, end);
    ocs::tom::set<RN_step>(range_elem, step);
    DRETURN(0);
 }
+
+/// @cond explicit instantiations for the fields in use
+template int object_set_range_id<JB_ja_structure>(ocs::tom::Element<ocs::tom::JB> object, uint32_t start,
+                                                  uint32_t end, uint32_t step);
+template int object_set_range_id<JJ_not_yet_finished_ids>(ocs::tom::Element<ocs::tom::JJ> object, uint32_t start,
+                                                          uint32_t end, uint32_t step);
+/// @endcond
 
 
 /**
@@ -2272,7 +2296,7 @@ object_verify_ulong_not_null(const ocs::tom::ConstElement<typename ocs::tom::Fie
 
    if (ocs::tom::get<F>(ep) == 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL_S,
-                              lNm2Str(F));
+                              ocs::tom::FieldTraits<F>::info.name);
       ret = false;
    }
 
@@ -2316,7 +2340,7 @@ object_verify_ulong_null(const ocs::tom::ConstElement<typename ocs::tom::FieldTr
 
    if (const uint32_t value = ocs::tom::get<F>(ep); value != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL_SU,
-                              lNm2Str(F), value);
+                              ocs::tom::FieldTraits<F>::info.name, value);
       ret = false;
    }
 
@@ -2353,7 +2377,7 @@ object_verify_ulong64_null(const ocs::tom::ConstElement<typename ocs::tom::Field
 
    if (const uint64_t value = ocs::tom::get<F>(ep); value != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG64_NULL_SU,
-                              lNm2Str(F), value);
+                              ocs::tom::FieldTraits<F>::info.name, value);
       ret = false;
    }
 
@@ -2391,7 +2415,7 @@ object_verify_double_null(const ocs::tom::ConstElement<typename ocs::tom::FieldT
 
    if (const double value = ocs::tom::get<F>(ep); value != 0.0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_DOUBLE_NULL_SD,
-                              lNm2Str(F), value);
+                              ocs::tom::FieldTraits<F>::info.name, value);
       ret = false;
    }
 
@@ -2435,7 +2459,7 @@ object_verify_string_not_null(const ocs::tom::ConstElement<typename ocs::tom::Fi
 
    if (ocs::tom::get<F>(ep) == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRING_NOT_NULL_S,
-                              lNm2Str(F));
+                              ocs::tom::FieldTraits<F>::info.name);
       ret = false;
    }
 

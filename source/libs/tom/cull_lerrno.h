@@ -114,4 +114,3 @@ int incompatibleType2(const char *fmt, ...);
  */
 int unknownType(const char *str);
 
-int lerror();

@@ -360,6 +360,42 @@ namespace ocs::tom {
 #endif
    }
 
+   // std::atomic_ref would be the idiomatic form of the two accessors below, but it cannot be used: FreeBSD 14
+   // ships libc++ 18, which does not implement it at all (__cpp_lib_atomic_ref is not defined), so the build fails
+   // on that platform. The builtins are understood by gcc and clang alike, need no library support and emit the
+   // same instruction.
+   static_assert(__atomic_always_lock_free(sizeof(lUlong64), nullptr),
+                 "lUlong64 cannot be accessed atomically without a lock on this platform");
+   static_assert(alignof(lMultiType) >= sizeof(lUlong64),
+                 "a cull value is not aligned well enough to be accessed atomically");
+
+   /**
+    * @brief Read a 64 bit unsigned value without being able to observe it torn
+    *
+    * The core of lGetUlong64Atomic() and ocs::tom::get_atomic(). For a field that several threads write while
+    * others read it, and that carries no invariant with any other field of the element (a time of last use).
+    * That is a guarantee about a single load, not about ordering with anything else, so the access is relaxed.
+    *
+    * @param value the value slot of the field, of type Uint64
+    * @return the value
+    */
+   inline std::uint64_t load_uint64_atomic(const lMultiType &value) noexcept {
+      return __atomic_load_n(&value.ul64, __ATOMIC_RELAXED);
+   }
+
+   /**
+    * @brief Write a 64 bit unsigned value without a reader being able to see it torn
+    *
+    * The core of lSetUlong64Atomic() and ocs::tom::set_atomic(). The store bypasses the hash table, so the field
+    * must not be declared hashed; the callers check that.
+    *
+    * @param value the value slot of the field, of type Uint64
+    * @param v the value to store
+    */
+   inline void store_uint64_atomic(lMultiType &value, const std::uint64_t v) noexcept {
+      __atomic_store_n(&value.ul64, v, __ATOMIC_RELAXED);
+   }
+
    /**
     * @brief Add an offset to a number field, as lAddUlong(), lAddUlong64() and lAddDouble() do
     *

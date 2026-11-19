@@ -94,7 +94,7 @@ static constexpr int MATCH_CACHE_PRUNE_BOUND = 64;
  * old entries are exactly the ones whose hosts are gone and which are therefore
  * never refreshed.
  *
- * The time of last use is read with the atomic accessor of the list library, which has no typed form.
+ * The time of last use is read with the atomic accessor, as concurrent lookups write it without a lock.
  *
  * @param cache the matching cache (HM_Type), already guarded by the caller; not an empty handle
  * @param now the current time as a 64 bit timestamp, that is in microseconds
@@ -119,7 +119,7 @@ match_cache_reclaim(const ocs::tom::List<ocs::tom::HM> cache, const uint64_t now
    for (int examined = 0; entry && examined < MATCH_CACHE_RECLAIM_BOUND; examined++) {
       const auto next = entry.next();
 
-      if (now > lGetUlong64Atomic(entry, HM_last_used) + ttl) {
+      if (now > ocs::tom::get_atomic<HM_last_used>(entry) + ttl) {
          cache.erase(entry);
       }
       entry = next;
@@ -140,8 +140,6 @@ match_cache_reclaim(const ocs::tom::List<ocs::tom::HM> cache, const uint64_t now
  * writing "now" produce competing values every one of which is a valid recent
  * time of use. Only a structural change takes the lock.
  *
- * The time of last use is written with the atomic accessor of the list library, which has no typed form.
- *
  * @param hgroup the group to ask; an empty handle answers no
  * @param hostname the host in question, already resolved by the caller
  *
@@ -161,7 +159,7 @@ ocs::MatchCache::lookup(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const ch
       DRETURN(false);
    }
 
-   lSetUlong64Atomic(entry, HM_last_used, sge_get_gmt64());
+   ocs::tom::set_atomic<HM_last_used>(entry, sge_get_gmt64());
 
    DRETURN(true);
 }
