@@ -73,6 +73,7 @@
 #include "sge_thread_scheduler.h"
 #include "sge_thread_timer.h"
 #include "sge_thread_worker.h"
+#include "sge_persistence_qmaster.h"
 #include "sge_thread_reader.h"
 #include "sge_thread_event_master.h"
 #include "sge_thread_utility.h"
@@ -351,6 +352,12 @@ int main(int argc, char *argv[]) {
    ocs::gdi::destroy_task_queues();
 
    sge_timer_terminate();
+
+   // after the last thread that spools (worker, timer) has terminated: a thread exiting later
+   // would no longer close its spooling connection (thread specific data of a deleted key)
+   sge_shutdown_persistence(nullptr);
+   DPRINTF("persistence module has been shutdown\n");
+
    ocs::event_mirror_terminate();
    sge_event_master_terminate();
    sge_signaler_terminate();

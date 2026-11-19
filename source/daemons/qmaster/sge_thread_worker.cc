@@ -165,8 +165,8 @@ sge_worker_terminate() {
       DPRINTF("final job and user/project spooling has been triggered\n");
    }
 
-   sge_shutdown_persistence(nullptr);
-   DPRINTF("persistence module has been shutdown\n");
+   // the persistence module is shut down in main() after the timer thread has terminated,
+   // the timer's event handlers still spool
 
    INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[WORKER_THREAD]);
 
