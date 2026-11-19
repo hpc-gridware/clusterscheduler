@@ -37,12 +37,17 @@
 # The child projects carry the short product name, as a project is identified by name and version
 # across Dependency-Track - "drmaaj" 9.1.7 of OCS and of GCS would otherwise be the same project.
 #
+# A VEX document vex.cyclonedx.json next to an SBOM states which vulnerabilities do not affect the
+# product. It is uploaded to the same project once the vulnerability analysis of the SBOM is done,
+# as Dependency-Track applies a VEX document to the findings the project has at that time.
+#
 # Reads dtrack.site and dtrack.token (an API key of a team with the permissions VIEW_PORTFOLIO,
-# PORTFOLIO_MANAGEMENT, BOM_UPLOAD and PROJECT_CREATION_UPLOAD) from $HOME/.dtrack.properties.
+# PORTFOLIO_MANAGEMENT, BOM_UPLOAD, PROJECT_CREATION_UPLOAD and VULNERABILITY_ANALYSIS) from
+# $HOME/.dtrack.properties.
 # Needs curl and jq.
 
 PROPERTIES="$HOME/.dtrack.properties"
-# how long to wait for Dependency-Track to process one uploaded SBOM
+# how long to wait for Dependency-Track to process one uploaded SBOM, VEX document or analysis
 PROCESSING_TIMEOUT=300
 
 dry_run=false
@@ -111,6 +116,18 @@ dt_project_uuid() {
       jq -r '.uuid // empty' 2>/dev/null
 }
 
+# wait for an asynchronous task (dt_wait <token>) - returns 1 when it is not done in time
+dt_wait() {
+   waited=0
+   while [ $waited -lt $PROCESSING_TIMEOUT ]; do
+      processing=`dt_call GET "/event/token/$1" | jq -r '.processing'`
+      [ "$processing" = "false" ] && return 0
+      sleep 2
+      waited=`expr $waited + 2`
+   done
+   return 1
+}
+
 # a lookup of a project which does not exist fails as well - so check the access itself first,
 # otherwise a wrong token or site would look like a project to be created
 dt_call GET "/project?pageSize=1" > /dev/null ||
@@ -150,9 +167,13 @@ sboms=`find "$SGE_ROOT" -maxdepth 3 -name sbom.cyclonedx.json -type f | sort`
 
 for sbom in $sboms; do
    project="$short_name `component_of "$sbom"`"
+   vex="`dirname "$sbom"`/vex.cyclonedx.json"
    if $dry_run; then
       uuid=`dt_project_uuid "$project" "$version"`
       echo "dry run: would upload $sbom to \"$project\" $version (${uuid:-would be created})"
+      if [ -f "$vex" ]; then
+         echo "dry run: would upload $vex to \"$project\" $version"
+      fi
       continue
    fi
 
@@ -166,20 +187,33 @@ for sbom in $sboms; do
    token=`echo "$result" | jq -r '.token'`
 
    # the upload is processed asynchronously - wait for it, so that errors are seen here
-   waited=0
-   while [ $waited -lt $PROCESSING_TIMEOUT ]; do
-      processing=`dt_call GET "/event/token/$token" | jq -r '.processing'`
-      [ "$processing" = "false" ] && break
-      sleep 2
-      waited=`expr $waited + 2`
-   done
-   if [ "$processing" = "false" ]; then
+   if dt_wait "$token"; then
       echo "uploaded $sbom to \"$project\" $version"
    else
       echo "error: \"$project\" $version: $sbom not processed after ${PROCESSING_TIMEOUT}s" >&2
       errors=`expr $errors + 1`
+      continue
+   fi
+
+   [ -f "$vex" ] || continue
+   # the VEX document applies to the findings only, so the analysis has to be finished first
+   uuid=`dt_project_uuid "$project" "$version"`
+   result=`dt_call POST "/finding/project/$uuid/analyze"` &&
+      dt_wait "`echo "$result" | jq -r '.token'`"
+   if [ $? -ne 0 ]; then
+      echo "error: \"$project\" $version: vulnerability analysis failed: $result" >&2
+      errors=`expr $errors + 1`
+      continue
+   fi
+   result=`dt_call POST /vex -F "project=$uuid" -F "vex=@$vex"` &&
+      dt_wait "`echo "$result" | jq -r '.token'`"
+   if [ $? -eq 0 ]; then
+      echo "uploaded $vex to \"$project\" $version"
+   else
+      echo "error: uploading $vex to \"$project\" $version failed: $result" >&2
+      errors=`expr $errors + 1`
    fi
 done
 
-[ $errors -eq 0 ] || fail "$errors SBOM(s) could not be uploaded"
+[ $errors -eq 0 ] || fail "$errors SBOM(s) or VEX document(s) could not be uploaded"
 exit 0

@@ -29,17 +29,26 @@ set(SGE_PACKAGE_MANAGER none)
 # The versions of the 3rdparty packages we build ourselves. Each version is installed to a
 # directory of its own,
 #
-#    ${PROJECT_3RDPARTY_HOME}/<package>-<version>/<arch>/<os>/<os-version>/<build-type>
+#    ${PROJECT_3RDPARTY_HOME}/<package>-<version>[-p<level>]/<arch>/<os>/<os-version>/<build-type>
 #
 # e.g. ~/3rd_party/jemalloc-5.3.0/lx-amd64/rocky/Linux_release_8.10/Debug, so a build expecting
 # another version than the one installed builds and installs that one instead of silently using
-# what it finds.
+# what it finds. A package we patch has a patch level, PROJECT_3RDPARTY_<PACKAGE>_PATCHLEVEL,
+# which is part of the directory for the same reason: increment it whenever its patches change.
 # The libdb5 repository has no releases or tags, so berkeleydb is built from a commit of its
 # master branch. The version is still the one master carries, see DB_VERSION_* in its
 # dist/RELEASE.
 set(PROJECT_3RDPARTY_BERKELEYDB_VERSION "5.3.28")
 set(PROJECT_3RDPARTY_JEMALLOC_VERSION "5.4.0")
 set(PROJECT_3RDPARTY_HWLOC_VERSION "2.10.0")
+
+# The patches applied to berkeleydb, from source/3rdparty/berkeleydb, as <file>=<CVE it resolves>
+# - security fixes the distributions apply to 5.3.28 as well. Oracle no longer fixes 5.x, and the
+# later versions are under the AGPL. The SBOM (cmake/Sbom.cmake) lists them with their CVE.
+set(PROJECT_3RDPARTY_BERKELEYDB_PATCHES "db-5.3.28-cwd-db_config.patch=CVE-2017-10140")
+# taken when this file is included, CMAKE_CURRENT_LIST_DIR is the caller's in a function
+set(PROJECT_3RDPARTY_BERKELEYDB_PATCH_DIR "${CMAKE_CURRENT_LIST_DIR}/../source/3rdparty/berkeleydb")
+set(PROJECT_3RDPARTY_BERKELEYDB_PATCHLEVEL "1")
 
 # What is fetched from a branch is pinned to a commit by its full hash, and a downloaded tarball
 # is verified by its hash - so that every build uses the same code, and the SBOM (cmake/Sbom.cmake)
@@ -70,6 +79,9 @@ string(APPEND PROJECT_3RDPARTY_HWLOC_URL "/hwloc-${PROJECT_3RDPARTY_HWLOC_VERSIO
 foreach (package BERKELEYDB JEMALLOC HWLOC)
     string(TOLOWER ${package} package_name)
     set(package_version ${PROJECT_3RDPARTY_${package}_VERSION})
+    if (DEFINED PROJECT_3RDPARTY_${package}_PATCHLEVEL)
+        string(APPEND package_version "-p${PROJECT_3RDPARTY_${package}_PATCHLEVEL}")
+    endif ()
     set(PROJECT_3RDPARTY_${package}_DIR
         "${PROJECT_3RDPARTY_HOME}/${package_name}-${package_version}/${PROJECT_3RDPARTY_PLATFORM}")
 endforeach ()
@@ -173,6 +185,15 @@ function(build_third_party 3rdparty_build_path)
                   set(CUSTOM_CFLAGS "CFLAGS=-Wno-implicit-int -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-return-type")
                 endif()
                 set(3rdparty_install_path ${PROJECT_3RDPARTY_BERKELEYDB_DIR})
+                # The patch step runs again whenever the build is redone on the same sources, so
+                # a patch which is applied already is skipped instead of failing.
+                set(bdb_patch_command "cp ${PROJECT_AUTOMAKE_SRC} dist")
+                foreach (entry ${PROJECT_3RDPARTY_BERKELEYDB_PATCHES})
+                    string(REGEX REPLACE "=.*$" "" patch "${entry}")
+                    set(patch_file "${PROJECT_3RDPARTY_BERKELEYDB_PATCH_DIR}/${patch}")
+                    string(APPEND bdb_patch_command " && (git apply --check -R ${patch_file}")
+                    string(APPEND bdb_patch_command " 2>/dev/null || git apply ${patch_file})")
+                endforeach ()
                 set(berkeleydb_lib ${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX})
                 set(berkeleydb_lib ${3rdparty_install_path}/lib/${berkeleydb_lib})
                 add_third_party_if_missing(berkeleydb 3rd_party_berkeleydb
@@ -186,8 +207,9 @@ function(build_third_party 3rdparty_build_path)
                         INSTALL_DIR ${3rdparty_install_path}
                         GIT_REPOSITORY https://github.com/Positeral/libdb5.git
                         GIT_TAG ${PROJECT_3RDPARTY_BERKELEYDB_COMMIT}
-                        # update config.guess and config.sub with current versions of the installed automake
-                        PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} dist"
+                        # update config.guess and config.sub with current versions of the installed
+                        # automake, and apply our patches
+                        PATCH_COMMAND /bin/sh -c "${bdb_patch_command}"
                         CONFIGURE_COMMAND ${3rdparty_env} dist/configure
                            --prefix ${3rdparty_install_path}
                            ${CUSTOM_CFLAGS}

@@ -1,0 +1,22 @@
+Do not read DB_CONFIG from the current working directory (CVE-2017-10140)
+
+Berkeley DB reads the configuration file DB_CONFIG from the current working directory when an
+environment is opened without a home directory, e.g. by db_create() with dbenv == NULL - and with
+it settings an untrusted user can place there. With this patch, DB_CONFIG is read only from the
+home directory of the environment.
+
+Origin: Fedora/Red Hat libdb, db-5.3.28-cwd-db_config.patch (Red Hat bug 1464032), also used by
+Debian as CVE-2017-10140-cwd-db_config.patch. Under the license of Berkeley DB 5.3.28.
+Applied by cmake/BuildThirdParty.cmake.
+
+--- a/src/env/env_open.c
++++ b/src/env/env_open.c
+@@ -473,7 +473,7 @@
+ 	env->db_mode = mode == 0 ? DB_MODE_660 : mode;
+ 
+ 	/* Read the DB_CONFIG file. */
+-	if ((ret = __env_read_db_config(env)) != 0)
++	if (env->db_home != NULL && (ret = __env_read_db_config(env)) != 0)
+ 		return (ret);
+ 
+ 	/*
