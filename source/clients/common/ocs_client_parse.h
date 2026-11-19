@@ -94,6 +94,8 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
                                   ocs::tom::ListPtr<ocs::tom::SPA> &&opts_scriptfile,
                                   ocs::tom::ListPtr<ocs::tom::SPA> &&opts_cmdline);
 
+void ocs_opt_list_override_queues(ocs::tom::List<ocs::tom::SPA> opts_all, ocs::tom::ListPtr<ocs::tom::SPA> &&other);
+
 bool opt_list_has_X(ocs::tom::ConstList<ocs::tom::SPA> opts, const char *option);
 
 bool opt_list_is_X_true(ocs::tom::ConstList<ocs::tom::SPA> opts, const char *option);

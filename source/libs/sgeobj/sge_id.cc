@@ -59,14 +59,15 @@
  * Every entry is parsed as job/task id when @p transition is no queue action;
  * an entry that does not parse that way is added as string (queue pattern).
  *
- * @param[out] id_list receives the parsed ids (`ID_Type`); stays raw since sge_parse_jobtasks() writes into it
+ * @param[in,out] id_list receives the parsed ids, created when the handle is empty; freed and left empty when an
+ *        entry could not be added
  * @param[out] answer_list receives the message naming an unparsable entry
  * @param str_list the texts to parse
  * @param transition the `QI_DO_*` action the ids are meant for
  * @param option the `QI_TRANSITION_*` option that goes with it
  * @return true when every entry could be parsed
  */
-bool id_list_build_from_str_list(lList **id_list,
+bool id_list_build_from_str_list(ocs::tom::ListPtr<ocs::tom::ID> &id_list,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const ocs::tom::ConstList<ocs::tom::ST> str_list,
                                  const uint32_t transition,
@@ -92,7 +93,15 @@ bool id_list_build_from_str_list(lList **id_list,
          }   
 
          if (!new_id) {
-            new_id = ocs::tom::emplace_back<ID_str>(id_list, string);
+            try {
+               if (!id_list) {
+                  // the name and hashing ocs::tom::emplace_back() gave a list it created
+                  id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+               }
+               new_id = id_list->emplace_back<ID_str>(string);
+            } catch (const ocs::RuntimeException &) {
+               // no memory: no element, as the soft path of ocs::tom::emplace_back() gave none
+            }
          }
          if (new_id) {
             ocs::tom::set<ID_action>(new_id, transition);
@@ -100,7 +109,7 @@ bool id_list_build_from_str_list(lList **id_list,
          } else {
             answer_list_add(answer_list, MSG_ID_UNABLETOCREATE, 
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
-            lFreeList(id_list);
+            id_list.reset();
             break;
          }
          

@@ -175,8 +175,9 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    ocs::tom::ElementPtr<ocs::tom::CQ> reduced;
    try {
       reduced = copy->select(what, ocs::tom::Hashing::Off);
-   } catch (const ocs::tom::ListCoreError &) {
-      // no reduced copy, as lSelectElemPack() gave none; a worker thread must not see the exception
+   } catch (const ocs::RuntimeException &) {
+      // no memory (ListCoreError, an ocs::RuntimeException): no reduced copy, as lSelectElemPack() gave none; a
+      // worker thread must not see the exception
    } catch (const ocs::tom::FieldException &) {
       // no reduced copy, as lSelectElemPack() gave none; a worker thread must not see the exception
    }

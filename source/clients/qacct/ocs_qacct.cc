@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
    sge_qacct_options options;
 
    sge_rusage_type dusage{}; // zeroed here, the exit code frees its other_usage
-   sge_rusage_type totals;
+   sge_rusage_type totals{};   // zeroed here: other_usage is an owning handle, so no memset
    int ii;
    ocs::tom::ListPtr<ocs::tom::CE> complex_options;
    ocs::tom::ListPtr<ocs::tom::CE> centry_list;
@@ -230,7 +230,6 @@ int main(int argc, char **argv) {
       goto QACCT_EXIT;
    }
 
-   memset(&totals, 0, sizeof(totals));
    memset(&options, 0, sizeof(options));
    options.begin_time = std::numeric_limits<uint64_t>::max();
    options.end_time = std::numeric_limits<uint64_t>::max();
@@ -1144,7 +1143,7 @@ int main(int argc, char **argv) {
 QACCT_EXIT:
    ret = 1;
 QACCT_EXIT_BUT_NO_ERROR:
-   lFreeList(&(dusage.other_usage));
+   dusage.other_usage.reset();
    sorted_list.reset();
    sort_order = ocs::tom::SortOrder<ocs::tom::QAJ>();
    sge_free(&(options.group));
@@ -1572,8 +1571,7 @@ static void showjob(sge_rusage_type *dusage) {
 
       // print the custom usage values (reporting_params usage_patterns) which are not
       // already printed as standard attribute. CS-849: a string value is printed as it is.
-      // the record parser builds the custom usage with UA_Type, so it is wrapped unchecked
-      for (const auto ep : ocs::tom::ConstList<ocs::tom::UA>::from_typed(dusage->other_usage)) {
+      for (const auto ep : *dusage->other_usage) {
          const char *name = ocs::tom::get<UA_name>(ep);
          if (!is_showjob_standard_name(name)) {
             const char *svalue = ocs::tom::get<UA_svalue>(ep);
@@ -1735,6 +1733,19 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
 static int
 sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *options);
 
+/**
+ * @brief Read the next accounting record of the accounting file, JSON or the old colon separated format
+ *
+ * Empty lines and comment lines are skipped. The custom usage of the record
+ * read before is freed first, so it is not shown for this one.
+ *
+ * @param acct_file_stream the accounting file
+ * @param d receives the record
+ * @param options the qacct options the record is filtered by
+ * @param acct_file_line receives the line read
+ * @return 2 at the end of the file, otherwise the result of sge_read_rusage_json() or
+ *         sge_read_rusage_classic()
+ */
 static int
 sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_options *options,
                 std::string &acct_file_line) {
@@ -1754,7 +1765,7 @@ sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_o
    } while (len <= 1 || acct_file_line[0] == COMMENT_CHAR);
 
    // the custom usage belongs to one record, don't show it for the following ones
-   lFreeList(&(d->other_usage));
+   d->other_usage.reset();
 
    /*
     * qname
@@ -2444,14 +2455,14 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin();
                     usage_itr != json_usage.MemberEnd(); ++usage_itr) {
                   const char *name = usage_itr->name.GetString();
-                  // other_usage is a raw member of sge_rusage_type; the free forms keep its creation
-                  if (ocs::tom::find_first<UA_name>(d->other_usage, name)) {
+                  if (d->other_usage->find_first<UA_name>(name)) {
                      continue;   // first-wins per pre-CS-849 semantics
                   }
-                  ocs::tom::Element<ocs::tom::UA> ep_ua = ocs::tom::emplace_back<UA_name>(&(d->other_usage), name);
-                  if (ep_ua == nullptr) {
-                     continue;
+                  if (!d->other_usage) {
+                     // the name and hashing ocs::tom::emplace_back() gave a list it created
+                     d->other_usage = ocs::tom::ListPtr<ocs::tom::UA>::create("");
                   }
+                  const auto ep_ua = d->other_usage->emplace_back<UA_name>(name);
                   if (usage_itr->value.IsString()) {
                      ocs::tom::set<UA_svalue>(ep_ua, usage_itr->value.GetString());
                   } else if (usage_itr->value.IsNumber()) {

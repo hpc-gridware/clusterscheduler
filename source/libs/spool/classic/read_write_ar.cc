@@ -45,6 +45,7 @@
 #include "uti/sge_log.h"
 
 #include "msg_spoollib_classic.h"
+#include "ocs_spool_disk.h"
 #include "read_write_ar.h"
 
 namespace ocs::spool::classic {
@@ -52,7 +53,8 @@ namespace ocs::spool::classic {
     * @brief Reads an advance reservation from a spool file
     *
     * The file holds an advance reservation (AR_Type) as lWriteElemToDisk()
-    * wrote it, so it is taken without a check.
+    * wrote it; a file that cannot be read, or holds another type, gives an
+    * empty handle.
     *
     * @param ar_id The ID of the advance reservation to read
     * @return the advance reservation, or an empty handle if reading failed
@@ -61,8 +63,7 @@ namespace ocs::spool::classic {
       DENTER(TOP_LAYER);
 
       std::string filename = std::to_string(ar_id);
-      auto ar = ocs::tom::ElementPtr<ocs::tom::AR>::from_typed(lReadElemFromDisk(AR_DIR, filename.c_str(), AR_Type,
-                                                                                 SGE_OBJ_AR));
+      auto ar = ocs_spool_read_elem<ocs::tom::AR>(AR_DIR, filename.c_str(), SGE_OBJ_AR);
 
       DRETURN(ar);
    }
@@ -80,7 +81,7 @@ namespace ocs::spool::classic {
 
       if (ret) {
          std::string filename = std::to_string(ar.get<AR_id>());
-         if (lWriteElemToDisk(ar, AR_DIR, filename.c_str(), SGE_OBJ_AR) != 0) {
+         if (ocs_spool_write_elem<ocs::tom::AR>(ar, AR_DIR, filename.c_str(), SGE_OBJ_AR) != 0) {
             ret = false;
          }
       }
@@ -93,7 +94,8 @@ namespace ocs::spool::classic {
     *
     * The list stays untyped: it is created through the pointer if it does not
     * exist yet. The files hold advance reservations (AR_Type) as
-    * lWriteElemToDisk() wrote them, so they are taken without a check.
+    * lWriteElemToDisk() wrote them; a file that cannot be read, or holds
+    * another type, counts as a failure.
     *
     * @param ar_list Pointer to the list pointer where advance reservations will be stored (AR_Type)
     * @param list_name Name for the created list
@@ -123,8 +125,7 @@ namespace ocs::spool::classic {
          try {
             std::filesystem::directory_iterator iter{AR_DIR};
             for (const auto &entry : iter) {
-               auto ar = ocs::tom::ElementPtr<ocs::tom::AR>::from_typed(lReadElemFromDisk(nullptr, entry.path().c_str(),
-                                                                                          AR_Type, SGE_OBJ_AR));
+               auto ar = ocs_spool_read_elem<ocs::tom::AR>(nullptr, entry.path().c_str(), SGE_OBJ_AR);
                if (ar) {
                   if (ar_validate(ar.get(), &answer_list, true, true, master_cqueue_list, master_hgroup_list,
                                   master_centry_list, master_ckpt_list, master_pe_list, master_userset_list)) {

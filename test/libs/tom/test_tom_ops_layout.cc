@@ -24,7 +24,8 @@
  *
  * This test is also an example of how the typed object model makes lists and
  * elements in the layout of others, reduces elements to a selection of
- * fields, splits a list at an element and adds a hash table on a field.
+ * fields, splits a list at an element, adds a hash table on a field and
+ * compares the layouts of two lists.
  * Every scenario does the same thing twice: a block marked CULL uses only the
  * old functions of the list library, a block marked TOM only the typed
  * handles. Each block builds its own data and reduces what came out to plain
@@ -50,6 +51,7 @@
 #include <vector>
 
 #include "cull/cull.h"
+#include "cull/cull_listP.h"
 #include "cull/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_all.h"
@@ -234,6 +236,81 @@ namespace {
          row.set<TEST_string>(("s" + std::to_string(i)).c_str());
       }
       return rows;
+   }
+
+   /**
+    * @brief Whether a list holds a built hash table on a field
+    *
+    * Tells a lookup that went through a table from a linear search, so a
+    * scenario can show that a table it relies on exists.
+    *
+    * @param lp the list, or nullptr
+    * @param nm the field
+    * @return true if the table on the field is built; false for nullptr, a field the list does not hash or a
+    *         table not built yet
+    */
+   bool has_table(const lList *lp, const int nm) {
+      if (lp == nullptr) {
+         return false;
+      }
+      const int pos = lGetPosInDescr(lp->descr, nm);
+      const cull_hash_slot *slot = pos >= 0 ? list_hash_slot(lp, pos) : nullptr;
+      return slot != nullptr && slot->get() != nullptr;
+   }
+
+   /**
+    * @brief The name of a numbered user set
+    * @param i the number
+    * @return "u<i>"
+    */
+   std::string set_name(const int i) {
+      return "u" + std::to_string(i);
+   }
+
+   /**
+    * @brief A list of user sets with the names u1 to un; US_name is a hashed unique field
+    * @param n the number of elements
+    * @return the list, owned by the caller
+    */
+   lList *old_named_sets(const int n) {
+      lList *lp = lCreateList("named", US_Type);
+      for (int i = 1; i <= n; i++) {
+         lAddElemStr(&lp, US_name, set_name(i).c_str(), US_Type);
+      }
+      return lp;
+   }
+
+   /**
+    * @brief The list of old_named_sets() as a typed list
+    * @param n the number of elements
+    * @return the owning handle
+    */
+   ListPtr<US> typed_named_sets(const int n) {
+      ListPtr<US> sets = ListPtr<US>::create("named");
+      for (int i = 1; i <= n; i++) {
+         sets->emplace_back<US_name>(set_name(i).c_str());
+      }
+      return sets;
+   }
+
+   /**
+    * @brief Look up a numbered user set by its hashed name in a list of the old interface
+    * @param lp the list
+    * @param i the number of the set
+    * @return "found" or "lost"
+    */
+   std::string old_lookup(const lList *lp, const int i) {
+      return lGetElemStr(lp, US_name, set_name(i).c_str()) != nullptr ? "found" : "lost";
+   }
+
+   /**
+    * @brief Look up a numbered user set by its hashed name in a typed list
+    * @param sets the list
+    * @param i the number of the set
+    * @return "found" or "lost"
+    */
+   std::string typed_lookup(const ConstList<US> sets, const int i) {
+      return sets.find_first<US_name>(set_name(i).c_str()) ? "found" : "lost";
    }
 
    /**
@@ -526,6 +603,66 @@ namespace {
          CHECK(5, "split_at() takes out what lDechainList moves, into a new list or spliced into an existing one",
                old_seen == expected && typed_seen == expected && foreign);
       }
+
+      // the same on a hashed unique field, US_name: every lookup below goes through a hash table, also on the
+      // short lists, so a table not kept up to date by split_at() or splice() would still find a moved element
+      // in the source or miss it in the target
+      ocs_cull_hash_set_min_elems(0);
+      for (const int n : {5, 40}) {
+         // --- CULL
+         std::vector<std::string> old_seen;
+         {
+            lList *source = old_named_sets(n);
+            // the first lookup builds the table of the source, before the split
+            old_seen.push_back(old_lookup(source, n));
+            lList *target = nullptr;
+            lDechainList(source, &target, lGetElemStrRW(source, US_name, set_name(n - 1).c_str()));
+            old_seen.push_back(old_lookup(source, n));
+            old_seen.push_back(old_lookup(source, 1));
+            old_seen.push_back(old_lookup(target, n));
+            lList *existing = lCreateList("existing", US_Type);
+            lAddElemStr(&existing, US_name, set_name(100).c_str(), US_Type);
+            old_seen.push_back(old_lookup(existing, 100));
+            lDechainList(source, &existing, lFirstRW(source));
+            old_seen.push_back(old_lookup(source, 1));
+            old_seen.push_back(old_lookup(existing, 1));
+            old_seen.push_back(old_lookup(existing, n - 2));
+            lFreeList(&existing);
+            lFreeList(&target);
+            lFreeList(&source);
+         }
+
+         // --- TOM
+         std::vector<std::string> typed_seen;
+         bool tables = false;
+         {
+            const ListPtr<US> source = typed_named_sets(n);
+            // the first lookup builds the table of the source, before the split
+            typed_seen.push_back(typed_lookup(*source, n));
+            const ListPtr<US> target = source->split_at(source->find_first<US_name>(set_name(n - 1).c_str()));
+            typed_seen.push_back(typed_lookup(*source, n));
+            typed_seen.push_back(typed_lookup(*source, 1));
+            typed_seen.push_back(typed_lookup(*target, n));
+            auto existing = ListPtr<US>::create("existing");
+            existing->emplace_back<US_name>(set_name(100).c_str());
+            typed_seen.push_back(typed_lookup(*existing, 100));
+            existing->splice(source->split_at(source->front()));
+            typed_seen.push_back(typed_lookup(*source, 1));
+            typed_seen.push_back(typed_lookup(*existing, 1));
+            typed_seen.push_back(typed_lookup(*existing, n - 2));
+            // the lookups above went through the tables: the source kept the one built before the split, the
+            // existing list the one built before the splice
+            tables = has_table(source->raw(), US_name) && has_table(target->raw(), US_name) &&
+                     has_table(existing->raw(), US_name);
+         }
+
+         const std::vector<std::string> expected{"found", "lost", "found", "found",
+                                                 "found", "lost", "found", "found"};
+         CHECK(7, "split_at() and splice() keep the hash tables of source and target up to date: a hashed lookup "
+               "finds what lDechainList leaves and moves",
+               old_seen == expected && typed_seen == expected && tables);
+      }
+      ocs_cull_hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
    }
 
    /**
@@ -566,6 +703,72 @@ namespace {
       }
    }
 
+   /**
+    * @brief Compare the layouts of two lists
+    */
+   void test_same_layout() {
+      // old:     lCompListDescr(lGetListDescr(a), lGetListDescr(b)) == 0
+      // typed:   a.same_layout(b)
+      // differs: the typed form sets no error number when the layouts differ or a list is missing
+
+      // --- CULL
+      std::vector<std::string> old_seen;
+      {
+         const auto same = [](const lList *a, const lList *b) {
+            return std::string(lCompListDescr(lGetListDescr(a), lGetListDescr(b)) == 0 ? "same" : "differs");
+         };
+         lList *sets = old_sets();
+         lList *others = old_sets();
+         lList *empty = lCreateList("empty", US_Type);
+         lEnumeration *what_name = lWhat("%T(%I)", US_Type, US_name);
+         lEnumeration *what_type = lWhat("%T(%I)", US_Type, US_type);
+         lList *by_name = lSelect("by name", sets, nullptr, what_name);
+         lList *by_name_too = lSelect("by name too", others, nullptr, what_name);
+         lList *by_type = lSelect("by type", sets, nullptr, what_type);
+         old_seen.push_back(same(sets, others));
+         old_seen.push_back(same(sets, empty));
+         old_seen.push_back(same(sets, by_name));
+         old_seen.push_back(same(by_name, by_name_too));
+         old_seen.push_back(same(by_name, by_type));
+         old_seen.push_back(same(sets, nullptr));
+         old_seen.push_back(same(nullptr, nullptr));
+         lFreeList(&by_type);
+         lFreeList(&by_name_too);
+         lFreeList(&by_name);
+         lFreeWhat(&what_type);
+         lFreeWhat(&what_name);
+         lFreeList(&empty);
+         lFreeList(&others);
+         lFreeList(&sets);
+      }
+
+      // --- TOM
+      std::vector<std::string> typed_seen;
+      {
+         const auto same = [](const ConstList<US> a, const ConstList<US> b) {
+            return std::string(a.same_layout(b) ? "same" : "differs");
+         };
+         const ListPtr<US> sets = typed_sets();
+         const ListPtr<US> others = typed_sets();
+         const ListPtr<US> empty = ListPtr<US>::create("empty");
+         const ListPtr<US> by_name = sets->select(what<US_name>(), "by name");
+         const ListPtr<US> by_name_too = others->select(what<US_name>(), "by name too");
+         const ListPtr<US> by_type = sets->select(what<US_type>(), "by type");
+         typed_seen.push_back(same(*sets, *others));
+         typed_seen.push_back(same(*sets, *empty));
+         typed_seen.push_back(same(*sets, *by_name));
+         typed_seen.push_back(same(*by_name, *by_name_too));
+         typed_seen.push_back(same(*by_name, *by_type));
+         typed_seen.push_back(same(*sets, nullptr));
+         typed_seen.push_back(same(nullptr, nullptr));
+      }
+
+      const std::vector<std::string> expected{"same", "same", "differs", "same", "differs", "differs", "differs"};
+      CHECK(8, "same_layout() tells the same layouts lCompListDescr tells, full and reduced, and refuses missing "
+            "lists",
+            old_seen == expected && typed_seen == expected);
+   }
+
 } // namespace
 
 /**
@@ -593,12 +796,16 @@ int main(int argc, char *argv[]) {
        {"reduce every user set to its name and entries, with and without a condition", "reduce no element"},
        "the same contents; NullElement for an empty selection", {{"OPS-01", "covers"}}, {4}, test_select_elem},
       {"OPS-LAY-05", "split at", "split_at() takes an element and the ones after it out of a list",
-       {"split a short and a long list before its last two elements", "split the rest into an existing list"},
+       {"split a short and a long list before its last two elements", "split the rest into an existing list",
+        "the same on a hashed unique field: hashed lookups before and after the split and the splice"},
        "the same keys in both lists; lookups by key still work; ForeignList for an element of another list",
-       {{"OPS-01", "covers"}}, {5}, test_split_at},
+       {{"OPS-01", "covers"}}, {5, 7}, test_split_at},
       {"OPS-LAY-06", "add hash", "add_hash<F>() adds a hash table on a field the type does not hash",
        {"add a table on the string field of a short and a long list, twice, and look up by it",
         "add one on an empty handle"},
        "the same results and the same element found", {{"OPS-01", "covers"}}, {6}, test_add_hash},
+      {"OPS-LAY-07", "same layout", "same_layout() compares the layouts of two lists as lCompListDescr does",
+       {"compare full lists, full and reduced lists, lists reduced alike and differently, and missing lists"},
+       "the same verdicts", {{"OPS-01", "covers"}}, {8}, test_same_layout},
    });
 }

@@ -501,10 +501,17 @@ namespace ocs::tom {
     * the type with the fields not given marked absent, so the checked
     * constructors of the handles accept elements and lists of it.
     *
+    * The reduction is built once, by the initialisation of a function-local
+    * static. A first build that fails for lack of memory is not retried: the
+    * static stays empty for the life of the process, and every later call for
+    * the same set of fields throws as well. A caller that must survive this
+    * catches the exception on every call, not only on the first.
+    *
     * @tparam F the first field
     * @tparam Fs the further fields, of the same type
     * @return the layout
-    * @throw ListCoreError with LEMALLOC if there is no memory to build it
+    * @throw ListCoreError with LEMALLOC if there is no memory to build it, on the first call and on every later
+    *        call once the first build failed
     * @see Old form: ocs_cull_descr_reduce(), lReduceDescr()
     */
    template <auto F, auto... Fs>

@@ -75,8 +75,8 @@ bool ja_task_add_finished_pe_task(ocs::tom::Element<ocs::tom::JAT> ja_task, cons
 bool ja_task_clear_finished_pe_tasks(ocs::tom::Element<ocs::tom::JAT> ja_task);
 
 [[nodiscard]] std::pair<int, ocs::tom::Element<ocs::tom::ID>>
-sge_parse_jobtasks(lList **lp, const char *str, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool include_names,
-                   ocs::tom::ConstList<ocs::tom::RN> arrayDefList);
+sge_parse_jobtasks(ocs::tom::ListPtr<ocs::tom::ID> &id_list, const char *str, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                   bool include_names, ocs::tom::ConstList<ocs::tom::RN> arrayDefList);
 
 bool ja_task_message_add(ocs::tom::Element<ocs::tom::JAT> this_elem, uint32_t type, const char *message);
 

@@ -38,6 +38,7 @@
  * @brief Following the scheduler's orders and booking the usage they imply
  */
 #include <cstring>
+#include <optional>
 #include <pthread.h>
 
 #include "uti/sge_bitfield.h"
@@ -170,12 +171,14 @@ ocs_follow_unenroll_task(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::El
  *
  * @param ticket_orders the ticket orders per host; the list is created if the handle is empty
  * @param hostname the host
- * @param like a reduced ticket order, whose layout a list created for the host gets
+ * @param what the fields a ticket order to an execd carries; a list created for the host gets the layout this
+ *        selection reduces the ticket orders to, the layout of the copies OR elements select() makes with it
  * @return the ticket orders of the host
+ * @throw ocs::RuntimeException if there is no memory
  */
 static ocs::tom::List<ocs::tom::OR>
 ocs_follow_host_ticket_orders(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_orders, const char *hostname,
-                              const ocs::tom::ConstElement<ocs::tom::OR> like) {
+                              const ocs::tom::What<ocs::tom::OR> &what) {
    DENTER(TOP_LAYER);
    if (!ticket_orders) {
       // the name and hashing ocs::tom::emplace_back() gave a list it created
@@ -187,10 +190,54 @@ ocs_follow_host_ticket_orders(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_orders, 
    }
    auto host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
    if (!host_tickets) {
-      ocs::tom::set<RTIC_tickets>(rtic_ep, ocs::tom::ListPtr<ocs::tom::OR>::create_like("ticket orders", like));
+      ocs::tom::set<RTIC_tickets>(rtic_ep, ocs::tom::ListPtr<ocs::tom::OR>::create("ticket orders", what));
       host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
    }
    DRETURN(host_tickets);
+}
+
+/**
+ * @brief Add a reduced copy of a ticket order to the ticket orders of one host, on the soft path of the old code
+ *
+ * Runs in a qmaster worker thread, where an exception that escapes
+ * terminates the daemon. A copy that cannot be made (no memory) is left out,
+ * as lSelectElemDPack() gave nullptr and lAppendElem() refused it; the entry
+ * of the host and its list are made all the same, as before. If even they
+ * cannot be made, nothing is added, where the old code went on with a null
+ * list as well.
+ *
+ * @param ticket_orders the ticket orders per host; the list is created if the handle is empty
+ * @param hostname the host
+ * @param order the ticket order to copy
+ * @param what the fields the copy carries
+ * @param tickets the tickets of the copy, or no value to keep those of @p order
+ */
+static void
+ocs_follow_add_host_ticket_order(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_orders, const char *hostname,
+                                 const ocs::tom::ConstElement<ocs::tom::OR> order,
+                                 const ocs::tom::What<ocs::tom::OR> &what, const std::optional<double> tickets) {
+   DENTER(TOP_LAYER);
+   try {
+      ocs::tom::ElementPtr<ocs::tom::OR> copy;
+      try {
+         // the selection caches its reduction, so every copy has the layout of the lists of the hosts
+         copy = order.select(what, ocs::tom::Hashing::Off);
+      } catch (const ocs::RuntimeException &) {
+         // no copy, as lSelectElemDPack() gave none; the entry of the host is made all the same
+      }
+      if (copy && tickets.has_value()) {
+         ocs::tom::set<OR_ticket>(copy, *tickets);
+      }
+      const auto host_tickets = ocs_follow_host_ticket_orders(ticket_orders, hostname, what);
+      if (copy) {
+         host_tickets.push_back(std::move(copy));
+      }
+   } catch (const ocs::RuntimeException &) {
+      // no memory for the entry or the list of the host; the old code went on without them
+   } catch (const ocs::tom::FieldException &) {
+      // cannot happen for a full ticket order and a selection of its fields; the old code went on as well
+   }
+   DRETURN_VOID;
 }
 
 /** @brief sets the next spooling time for stree/prj/user
@@ -1030,13 +1077,21 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   We use that as an identifier to go on, or not. */
                if (distribute_tickets && topp != nullptr) {
                   // the selection caches its reduction, so every ticket order of the host shares one layout
-                  const auto what = ocs::tom::what<ocs::tom::OR>(ticket_orders_field);
+                  ocs::tom::What<ocs::tom::OR> what;
+                  try {
+                     what = ocs::tom::what<ocs::tom::OR>(ticket_orders_field);
+                  } catch (const ocs::RuntimeException &) {
+                     // no memory: no ticket orders for the execds this time, a worker thread must not see the
+                     // exception
+                  }
 
                   /* If a ticket order has a queuelist, then this is a parallel job
                      with controlled sub-tasks. We generate a ticket order for
                      each host in the queuelist containing the total tickets for
                      all job slots being used on the host */
-                  if (ocs::tom::get<OR_queuelist>(ep)) {
+                  if (!what) {
+                     // no selection, no ticket orders to distribute
+                  } else if (ocs::tom::get<OR_queuelist>(ep)) {
                      /* cashed temporary hash list */
                      auto host_tickets_cache = ocs::tom::ListPtr<ocs::tom::UA>::create("");
                      /* set granted slot tickets */
@@ -1063,21 +1118,14 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                      /* map cached tickets back to RTIC_Type list */
                      for (const auto cached : *host_tickets_cache) {
                         const char *hostname = ocs::tom::get<UA_name>(cached);
-
-                        // the reduced copy has the layout of the selection
-                        auto newep = ep.select(what, ocs::tom::Hashing::Off);
-                        ocs::tom::set<OR_ticket>(newep, ocs::tom::get<UA_value>(cached));
-
-                        ocs_follow_host_ticket_orders(*topp, hostname, *newep).push_back(std::move(newep));
+                        ocs_follow_add_host_ticket_order(*topp, hostname, ep, what, ocs::tom::get<UA_value>(cached));
                      }
                      host_tickets_cache.reset();
                   } else {
                      ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatp);
                      if (gdil) {
-                        // the reduced copy has the layout of the selection
-                        auto newep = ep.select(what, ocs::tom::Hashing::Off);
                         const char *hostname = ocs::tom::get<JG_qhostname>(gdil.front());
-                        ocs_follow_host_ticket_orders(*topp, hostname, *newep).push_back(std::move(newep));
+                        ocs_follow_add_host_ticket_order(*topp, hostname, ep, what, std::nullopt);
                      }
 
                   }

@@ -385,12 +385,18 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
    /* we get a bunch of ack's */
    while (pb_unused(&(aMsg->buf)) > 0) {
-      lListElem *ack_raw = nullptr;
-      if (cull_unpack_elem(&(aMsg->buf), &ack_raw, nullptr)) {
+      ocs::tom::ElementPtr<ocs::tom::ACK> ack;
+      try {
+         ack = ocs::tom::ElementPtr<ocs::tom::ACK>::unpack(aMsg->buf);
+      } catch (const ocs::tom::PackException &) {
+         // the bytes cut off or no memory, where cull_unpack_elem() returned an error
+         ERROR(SFNMAX, MSG_COM_UNPACKJOB);
+         DRETURN(0);
+      } catch (const ocs::tom::FieldException &) {
+         // an element of another type than ACK: refused like a message that cannot be unpacked
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       }
-      ocs::tom::ElementPtr<ocs::tom::ACK> ack(ack_raw);
 
       switch (ocs::tom::get<ACK_type>(ack)) {
 

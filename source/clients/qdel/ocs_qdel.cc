@@ -462,14 +462,8 @@ static bool sge_parse_qdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom
          continue;
       }
 
-      {
-         // parse_multi_jobtaskslist() has no typed form for the destination list yet; it creates it with ID_Type
-         lList *refs = reflist.release();
-         const bool found = parse_multi_jobtaskslist(cmdline, "jobs", alpp, &refs, true, 0);
-         reflist = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(refs);
-         if (found) {
-            continue;
-         }
+      if (parse_multi_jobtaskslist(cmdline, "jobs", alpp, reflist, true, 0)) {
+         continue;
       }
 
        /* we get to this point, than there are -t options without job names. We have to write an error message */

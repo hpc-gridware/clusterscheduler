@@ -550,7 +550,7 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
       if (str == nullptr ||
          verify_str_key(
             answer_list, str, MAX_VERIFY_STRING,
-            lNm2Str(EV_name), KEY_TABLE) != STATUS_OK) {
+            ocs::tom::FieldTraits<EV_name>::info.name, KEY_TABLE) != STATUS_OK) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDNAME);
          DTRACE;

@@ -386,10 +386,11 @@ pe_validate_allocation_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
 
    if (allocation_rule == nullptr) {
       if (output_errors) {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "pe_validate_allocation_rule");
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<PE_allocation_rule>::info.name,
+               "pe_validate_allocation_rule");
       }
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                              lNm2Str(PE_allocation_rule), "pe_validate_allocation_rule");
+                              ocs::tom::FieldTraits<PE_allocation_rule>::info.name, "pe_validate_allocation_rule");
       ret = false;
    } else {
       // can be a number or one of the placeholders $pe_slots, $fill_up, $round_robin

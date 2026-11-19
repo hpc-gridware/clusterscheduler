@@ -480,7 +480,8 @@ ocs_scheduler_select(const ocs::tom::ConstList<T> list, const ocs::tom::Where<T>
    ocs::tom::ListPtr<T> selected;
    try {
       selected = list.select(where, what, name);
-   } catch (const ocs::tom::ListCoreError &) {
+   } catch (const ocs::RuntimeException &) {
+      // no memory: every allocation error of the list core is a ListCoreError, an ocs::RuntimeException
       return {};
    } catch (const ocs::tom::FieldException &) {
       return {};

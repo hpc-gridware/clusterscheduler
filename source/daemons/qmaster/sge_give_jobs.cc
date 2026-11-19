@@ -231,8 +231,9 @@ ocs_delivery_queue_copy(const ocs::tom::ConstElement<ocs::tom::QU> queue, const 
    try {
       // the selection caches its reduction, so every queue instance of a delivery shares one layout
       copy = queue.select(what, ocs::tom::Hashing::Off);
-   } catch (const ocs::tom::ListCoreError &) {
-      // no copy, as lSelectElemDPack() gave none
+   } catch (const ocs::RuntimeException &) {
+      // no memory, or an absent field (ListCoreError, an ocs::RuntimeException): no copy, as lSelectElemDPack()
+      // gave none
    } catch (const ocs::tom::FieldException &) {
       // no copy, as lSelectElemDPack() gave none
    }

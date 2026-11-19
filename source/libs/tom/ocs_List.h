@@ -401,6 +401,27 @@ namespace ocs::tom {
       }
 
       /**
+       * @brief Whether another list of the type has the same layout, as lCompListDescr() of their descriptors
+       *        gives 0
+       *
+       * Both lists hold the same fields of the type: both full, or both
+       * reduced to the same selection. Attributes other than the field type,
+       * such as the hash flags of a list, are not compared, as
+       * lCompListDescr() did not compare them. Use it before moving elements
+       * of one list into the other: an element linked into a list must have
+       * the layout of the list (CS-3112).
+       *
+       * @param other the other list
+       * @return true if both handles hold lists of the same layout; false if they differ or either handle is
+       *         empty, where lCompListDescr() gave -1
+       * @see Old form: lCompListDescr(lGetListDescr(a), lGetListDescr(b)) == 0; core:
+       *      ocs::tom::layout_difference()
+       */
+      [[nodiscard]] bool same_layout(const ConstList<T> other) const noexcept {
+         return layout_difference(descr(), other.descr()) == 0;
+      }
+
+      /**
        * @brief Whether the handle holds a list
        * @return true if not empty
        */

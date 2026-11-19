@@ -257,7 +257,7 @@ bool ja_task_clear_finished_pe_tasks(const ocs::tom::Element<ocs::tom::JAT> ja_t
  * The new element used to be an out-parameter; it is returned now, together
  * with the state.
  *
- * @param ipp ID_Type List, target list, created if *ipp is nullptr
+ * @param id_list the target list, created if the handle is empty
  * @param str_jobtask job id with task range or job name
  * @param alpp answer list
  * @param include_names true: job names are allowed
@@ -269,8 +269,9 @@ bool ja_task_clear_finished_pe_tasks(const ocs::tom::Element<ocs::tom::JAT> ja_t
  * @note MT-NOTE: sge_parse_jobtasks() is MT safe
  */
 std::pair<int, ocs::tom::Element<ocs::tom::ID>>
-sge_parse_jobtasks(lList **ipp, const char *str_jobtask, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                   const bool include_names, const ocs::tom::ConstList<ocs::tom::RN> arrayDefList) {
+sge_parse_jobtasks(ocs::tom::ListPtr<ocs::tom::ID> &id_list, const char *str_jobtask,
+                   ocs::tom::ListPtr<ocs::tom::AN> *alpp, const bool include_names,
+                   const ocs::tom::ConstList<ocs::tom::RN> arrayDefList) {
    DENTER(TOP_LAYER);
 
    char *token;
@@ -325,7 +326,15 @@ sge_parse_jobtasks(lList **ipp, const char *str_jobtask, ocs::tom::ListPtr<ocs::
       if (!include_names && !isdigit(job_str[0]) && (strcmp(job_str, "\"*\"") != 0)) {
          ret = -1;
       } else {
-         idp = ocs::tom::emplace_back<ID_str>(ipp, job_str);
+         try {
+            if (!id_list) {
+               // the name and hashing ocs::tom::emplace_back() gave a list it created
+               id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+            }
+            idp = id_list->emplace_back<ID_str>(job_str);
+         } catch (const ocs::RuntimeException &) {
+            // no memory: no element, as the soft path of ocs::tom::emplace_back() gave none
+         }
 
          if (idp) {
             range_list_sort_uniq_compress(*task_id_range_list, alpp, true);

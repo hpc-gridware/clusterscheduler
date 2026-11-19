@@ -65,6 +65,7 @@
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 #include "gdi/ocs_gdi_security.h"
@@ -710,14 +711,21 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
    }
 
 
-   lList *rep = nullptr;
-   if (cull_unpack_list(&(aMsg->buf), &rep)) {
+   ocs::tom::ListPtr<ocs::tom::REP> rep;
+   try {
+      rep = ocs::tom::ListPtr<ocs::tom::REP>::unpack(aMsg->buf);
+   } catch (const ocs::tom::PackException &) {
+      // the bytes cut off or no memory, where cull_unpack_list() returned an error
+      ERROR(SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT);
+      DRETURN_VOID;
+   } catch (const ocs::tom::FieldException &) {
+      // a list of another type than reports: refused here, so a worker thread never meets it
       ERROR(SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT);
       DRETURN_VOID;
    }
 
-   // store the request for a handling thread
-   ocs_store_packet(aMsg, rep, PACKET_REPORT_REQUEST);
+   // store the request for a handling thread; the pseudo GDI task of the packet holds its data raw
+   ocs_store_packet(aMsg, rep.release(), PACKET_REPORT_REQUEST);
 
    DRETURN_VOID;
 } /* do_report_request */

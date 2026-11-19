@@ -2534,7 +2534,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
-               lNm2Str(JB_session), KEY_TABLE) != STATUS_OK) {
+               ocs::tom::FieldTraits<JB_session>::info.name, KEY_TABLE) != STATUS_OK) {
             ret = false;
          }
       }
@@ -2546,7 +2546,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
       if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
-            lNm2Str(JB_project), KEY_TABLE) != STATUS_OK) {
+            ocs::tom::FieldTraits<JB_project>::info.name, KEY_TABLE) != STATUS_OK) {
             ret = false;
          }
       }
@@ -2558,7 +2558,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
       if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
-            lNm2Str(JB_department), KEY_TABLE) != STATUS_OK) {
+            ocs::tom::FieldTraits<JB_department>::info.name, KEY_TABLE) != STATUS_OK) {
             ret = false;
          }
       }
@@ -2619,7 +2619,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
       if (name != nullptr) {
          if(verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
-               lNm2Str(JB_account), QSUB_TABLE) != STATUS_OK) {
+               ocs::tom::FieldTraits<JB_account>::info.name, QSUB_TABLE) != STATUS_OK) {
             ret = false;
          }
       }
@@ -2658,7 +2658,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
-               lNm2Str(JB_checkpoint_name), KEY_TABLE) != STATUS_OK) {
+               ocs::tom::FieldTraits<JB_checkpoint_name>::info.name, KEY_TABLE) != STATUS_OK) {
             ret = false;
          }
       }
@@ -2702,7 +2702,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
-               lNm2Str(JB_pe), KEY_TABLE) != STATUS_OK) {
+               ocs::tom::FieldTraits<JB_pe>::info.name, KEY_TABLE) != STATUS_OK) {
             ret = false;
          }
       }

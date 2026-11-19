@@ -437,6 +437,42 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
 
 
 /**
+ * @brief Append the options of another command line, its queue requests (-q) replacing those held before
+ *
+ * Every option of @p other moves to the end of @p opts_all, in its order.
+ * When the first -q of @p other is met, every -q that @p opts_all holds is
+ * removed before it is appended: the queue requests of a later source
+ * override those of the earlier ones, all other options are simply merged.
+ *
+ * @param opts_all the command line to add to; nothing is added if it is an empty handle
+ * @param other the command line added, consumed on every path; also when the layouts differ, where the old
+ *        lOverrideStrList() left it unfreed
+ * @see Old form: lOverrideStrList(opts_all, other, SPA_switch_val, "-q")
+ */
+void ocs_opt_list_override_queues(const ocs::tom::List<ocs::tom::SPA> opts_all,
+                                  ocs::tom::ListPtr<ocs::tom::SPA> &&other) {
+   DENTER(TOP_LAYER);
+   // taken over on every path, also the early return
+   const auto options = std::move(other);
+   if (!options || !opts_all || !opts_all.same_layout(*options)) {
+      DRETURN_VOID;
+   }
+
+   bool overridden = false;
+   for (auto first = options->front(); first; first = options->front()) {
+      auto option = options->extract(first);
+      if (!overridden && sge_strnullcmp(ocs::tom::get<SPA_switch_val>(option), "-q") == 0) {
+         // every -q held so far, one by one as lRemoveElem() removed them
+         while (opts_all.erase<SPA_switch_val>("-q") > 0) {
+         }
+         overridden = true;
+      }
+      opts_all.push_back(std::move(option));
+   }
+   DRETURN_VOID;
+}
+
+/**
  * @brief Merge commandlines together
  *
  * Merge "opts_defaults", "opts_scriptfile" and "opts_cmdline" into
@@ -473,9 +509,8 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
       if (!opts_all) {
          opts_all = std::move(scriptfile);
       } else {
-         /* Override the queue (-q) values from defaults; lOverrideStrList() has no typed form yet, it takes
-          * the second list over and frees it */
-         lOverrideStrList(*opts_all, scriptfile.release(), SPA_switch_val, "-q");
+         /* Override the queue (-q) values from defaults */
+         ocs_opt_list_override_queues(*opts_all, std::move(scriptfile));
       }
    }
    if (cmdline) {
@@ -483,7 +518,7 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
          opts_all = std::move(cmdline);
       } else {
          /* Override queue (-q) values from both defaults and scriptfile */
-         lOverrideStrList(*opts_all, cmdline.release(), SPA_switch_val, "-q");
+         ocs_opt_list_override_queues(*opts_all, std::move(cmdline));
       }
    }
 

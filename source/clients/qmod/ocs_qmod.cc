@@ -373,9 +373,6 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_qmod(const ocs::tom::List<ocs::
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   /* parse_multi_jobtaskslist() and id_list_build_from_str_list() have no typed form for the destination list
-    * yet; they create it with ID_Type */
-   lList *refs = reflist.release();
    uint32_t helpflag;
    int usageshowed = 0;
 
@@ -450,11 +447,11 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_qmod(const ocs::tom::List<ocs::
       i = 0;
       while (options[i] != nullptr) {
          if ((transitions[i] & QUEUE_DO_ACTION) == 0) {
-            parse_multi_jobtaskslist(cmdline, options[i], &alp, &refs, true, transitions[i]);
+            parse_multi_jobtaskslist(cmdline, options[i], &alp, reflist, true, transitions[i]);
          } else {
             ocs::tom::ListPtr<ocs::tom::ST> queues;
             if (parse_multi_stringlist<ST_name>(cmdline, options[i], &alp, queues)) {
-               id_list_build_from_str_list(&refs, &alp, *queues, transitions[i], *pforce);
+               id_list_build_from_str_list(reflist, &alp, *queues, transitions[i], *pforce);
             }
          }
          i++;
@@ -478,7 +475,6 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_qmod(const ocs::tom::List<ocs::
                               SFNMAX, MSG_PARSE_TOOMANYOPTIONS);
    }
 
-   reflist = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(refs);
    DRETURN(alp);
 }
 

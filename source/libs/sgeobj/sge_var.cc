@@ -515,9 +515,9 @@ int var_list_add_as_set(const ocs::tom::List<ocs::tom::VA> lp0, ocs::tom::ListPt
       DRETURN(-1);
    }
 
-   /* Check if the two lists are equal */
+   // both lists must have the same layout: the elements of the second move into the first
    const auto src = *vars;
-   if (lCompListDescr(lGetListDescr(lp0), lGetListDescr(src)) != 0) {
+   if (!lp0.same_layout(src)) {
       DRETURN(-1);
    }
 

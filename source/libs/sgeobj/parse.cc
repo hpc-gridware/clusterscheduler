@@ -409,14 +409,15 @@ template bool parse_multi_stringlist<QR_name>(ocs::tom::List<ocs::tom::SPA> cmdl
  * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
  * @param[out] alpp receives error messages
- * @param[in,out] ppdestlist receives the collected ids (`ID_Type`), created when it is nullptr
+ * @param[in,out] destlist receives the collected ids, created when the handle is empty
  * @param include_names true to accept a job name where an id is expected
  * @param action what the caller intends to do with the jobs, recorded per entry
  * @return true when the switch was present and every argument was understood
  */
 bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
                               ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                              lList **ppdestlist, const bool include_names, const uint32_t action) {
+                              ocs::tom::ListPtr<ocs::tom::ID> &destlist, const bool include_names,
+                              const uint32_t action) {
    DENTER(TOP_LAYER);
    ocs::tom::Element<ocs::tom::SPA> ep;
    bool ret = false;
@@ -437,7 +438,7 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
          if (array_def_list && sep.next() == nullptr) {
             temp_array_list = array_def_list;
          }
-         const auto [parse_ret, idp] = sge_parse_jobtasks(ppdestlist, ocs::tom::get<ST_name>(sep), nullptr,
+         const auto [parse_ret, idp] = sge_parse_jobtasks(destlist, ocs::tom::get<ST_name>(sep), nullptr,
                                                           include_names, temp_array_list);
          if (parse_ret == -1) {
             answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,

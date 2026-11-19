@@ -44,6 +44,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"
@@ -108,7 +109,7 @@ std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>>
 parse_u_longlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal);
 
 bool parse_multi_jobtaskslist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
-                              ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **ppdestlist,
+                              ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::tom::ID> &destlist,
                               bool include_names, uint32_t action);
 
 uint32_t parse_group_options(ocs::tom::ConstList<ocs::tom::ST> string_list,

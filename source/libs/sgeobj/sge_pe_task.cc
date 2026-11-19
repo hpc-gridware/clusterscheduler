@@ -247,7 +247,7 @@ pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,
       if (queue_name != nullptr) {
          if (verify_str_key(
                answer_list, queue_name, MAX_VERIFY_STRING,
-               lNm2Str(PETR_queuename), KEY_TABLE) != STATUS_OK) {
+               ocs::tom::FieldTraits<PETR_queuename>::info.name, KEY_TABLE) != STATUS_OK) {
             ret = false;
          }
       }

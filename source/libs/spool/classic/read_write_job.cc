@@ -71,6 +71,7 @@
 #include <cinttypes>
 #include "msg_common.h"
 #include "msg_spoollib_classic.h"
+#include "ocs_spool_disk.h"
 #include "read_write_job.h"
 #include "sge_job_qmaster.h"
 
@@ -112,9 +113,9 @@ static char old_task_spool_dir[SGE_PATH_MAX] = "";
  * enrolled array tasks are read from the task files and appended to it. A job
  * spooled as one file is read from that file.
  *
- * The files hold jobs (JB_Type) as lWriteElemToDisk() wrote them, so they are
- * taken without a check; a file that cannot be read gives an empty handle, as
- * before.
+ * The files hold jobs (JB_Type) as lWriteElemToDisk() wrote them; a file
+ * that cannot be read, or holds another type, gives an empty handle, as an
+ * unreadable file did before.
  *
  * @param job_id the job
  * @param ja_task_id the array task the path is built for
@@ -136,8 +137,7 @@ job_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, const sge
 
       sge_get_file_path(spool_path_common, sizeof(spool_path_common), JOB_SPOOL_FILE, FORMAT_DEFAULT,
                         flags, job_id, ja_task_id, nullptr);
-      job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(lReadElemFromDisk(nullptr, spool_path_common, JB_Type,
-                                                                             "job"));
+      job = ocs::spool::classic::ocs_spool_read_elem<ocs::tom::JB>(nullptr, spool_path_common, "job");
       if (job) {
          auto ja_tasks = ja_task_list_create_from_file(job_id, ja_task_id, flags);
          if (ja_tasks) {
@@ -159,7 +159,7 @@ job_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, const sge
          }
       }
    } else {
-      job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(lReadElemFromDisk(nullptr, spool_path, JB_Type, "job"));
+      job = ocs::spool::classic::ocs_spool_read_elem<ocs::tom::JB>(nullptr, spool_path, "job");
    }
    DRETURN(job);
 }
@@ -171,8 +171,8 @@ job_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, const sge
  * is a directory itself; its parallel tasks are read into its task list.
  *
  * The directory entries are ST_Type lists; the files hold array tasks
- * (JAT_Type) and parallel tasks (PET_Type) as lWriteElemToDisk() wrote them,
- * so they are taken without a check.
+ * (JAT_Type) and parallel tasks (PET_Type) as lWriteElemToDisk() wrote them;
+ * one that cannot be read, or holds another type, gives an empty handle.
  *
  * @param job_id the job
  * @param ja_task_id the array task the path of the job directory is built for
@@ -218,9 +218,8 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
 
                   sge_get_file_path(spool_path_ja_task, sizeof(spool_path_ja_task), TASK_SPOOL_FILE,
                                     FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
-                  ja_task = ocs::tom::ElementPtr<ocs::tom::JAT>::from_typed(lReadElemFromDisk(nullptr,
-                                                                                              spool_path_ja_task,
-                                                                                              JAT_Type, "ja_task"));
+                  ja_task = ocs::spool::classic::ocs_spool_read_elem<ocs::tom::JAT>(nullptr, spool_path_ja_task,
+                                                                                    "ja_task");
                   const auto pe_task_entries = ocs_get_dirents(spool_dir_pe_tasks);
                   for (const ocs::tom::ConstElement<ocs::tom::ST> pe_task_entry : *pe_task_entries) {
                      const char *pe_task_string = pe_task_entry.get<ST_name>();
@@ -263,8 +262,8 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
 /**
  * @brief Read an array task spooled as one file
  *
- * The file holds an array task (JAT_Type) as lWriteElemToDisk() wrote it, so
- * it is taken without a check.
+ * The file holds an array task (JAT_Type) as lWriteElemToDisk() wrote it; a
+ * file that cannot be read, or holds another type, gives an empty handle.
  *
  * @param job_id the job
  * @param ja_task_id the array task
@@ -280,15 +279,14 @@ ja_task_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, [[may
 
    sge_get_file_path(spool_path_ja_task, sizeof(spool_path_ja_task), TASK_SPOOL_DIR_AS_FILE,
                      FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
-   return ocs::tom::ElementPtr<ocs::tom::JAT>::from_typed(lReadElemFromDisk(nullptr, spool_path_ja_task, JAT_Type,
-                                                                            "ja_task"));
+   return ocs::spool::classic::ocs_spool_read_elem<ocs::tom::JAT>(nullptr, spool_path_ja_task, "ja_task");
 }
 
 /**
  * @brief Read a parallel task from its spool file
  *
- * The file holds a parallel task (PET_Type) as lWriteElemToDisk() wrote it,
- * so it is taken without a check.
+ * The file holds a parallel task (PET_Type) as lWriteElemToDisk() wrote it; a
+ * file that cannot be read, or holds another type, gives an empty handle.
  *
  * @param job_id the job
  * @param ja_task_id the array task
@@ -304,8 +302,7 @@ pe_task_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, const
 
    sge_get_file_path(spool_path_pe_task, sizeof(spool_path_pe_task), PE_TASK_SPOOL_FILE,
                      FORMAT_DEFAULT, flags, job_id, ja_task_id, pe_task_id);
-   return ocs::tom::ElementPtr<ocs::tom::PET>::from_typed(lReadElemFromDisk(nullptr, spool_path_pe_task, PET_Type,
-                                                                            "pe_task"));
+   return ocs::spool::classic::ocs_spool_read_elem<ocs::tom::PET>(nullptr, spool_path_pe_task, "pe_task");
 }
 
 /**
@@ -437,7 +434,7 @@ static int job_write_as_single_file(const ocs::tom::ConstElement<ocs::tom::JB> j
                      nullptr);
    sge_get_file_path(tmp_spool_file, sizeof(tmp_spool_file), JOB_SPOOL_DIR_AS_FILE, FORMAT_DOT_FILENAME, flags, job_id,
                      ja_task_id, nullptr);
-   ret = lWriteElemToDisk(job, tmp_spool_file, nullptr, "job");
+   ret = ocs::spool::classic::ocs_spool_write_elem<ocs::tom::JB>(job, tmp_spool_file, nullptr, "job");
    if (!ret && (rename(tmp_spool_file, spool_file) == -1)) {
       ret = 1;
    }
@@ -517,7 +514,7 @@ int job_write_common_part(const ocs::tom::Element<ocs::tom::JB> job, const uint3
                      job_id, ja_task_id, nullptr);
 
    auto ja_tasks = job.exchange<JB_ja_tasks>(nullptr);
-   ret = lWriteElemToDisk(job, tmp_spoolpath_common, nullptr, "job");
+   ret = ocs::spool::classic::ocs_spool_write_elem<ocs::tom::JB>(job, tmp_spoolpath_common, nullptr, "job");
    static_cast<void>(job.exchange<JB_ja_tasks>(std::move(ja_tasks)));
 
    if (!ret && (rename(tmp_spoolpath_common, spoolpath_common) == -1)) {
@@ -575,7 +572,8 @@ static int ja_task_write_to_disk(const ocs::tom::Element<ocs::tom::JAT> ja_task,
          /* we do *not* want to spool the pe_tasks together with the ja_task */
          auto tmp_task_list = ja_task.exchange<JAT_task_list>(nullptr);
          /* spool ja_task to temporary file */
-         ret = lWriteElemToDisk(ja_task, tmp_task_spool_file, nullptr, "ja_task");
+         ret = ocs::spool::classic::ocs_spool_write_elem<ocs::tom::JAT>(ja_task, tmp_task_spool_file, nullptr,
+                                                                        "ja_task");
          static_cast<void>(ja_task.exchange<JAT_task_list>(std::move(tmp_task_list)));
          /* make spooling permanent = COMMIT */
          if (!ret && (rename(tmp_task_spool_file, task_spool_file) == -1)) {
@@ -611,7 +609,8 @@ static int ja_task_write_to_disk(const ocs::tom::Element<ocs::tom::JAT> ja_task,
                               FORMAT_DOT_FILENAME, flags, job_id, ja_task_id, pe_task_id_string);
 
             /* spool pe_task to temporary file */
-            ret = lWriteElemToDisk(pe_task, tmp_pe_task_spool_file, nullptr, "pe_task");
+            ret = ocs::spool::classic::ocs_spool_write_elem<ocs::tom::PET>(pe_task, tmp_pe_task_spool_file, nullptr,
+                                                                           "pe_task");
             /* make spooling permanent = COMMIT */
             if (!ret && (rename(tmp_pe_task_spool_file, pe_task_spool_file) == -1)) {
                DTRACE;
@@ -647,7 +646,8 @@ static int ja_task_write_to_disk(const ocs::tom::Element<ocs::tom::JAT> ja_task,
       }
 
       /* spool ja_task to temporary file */
-      ret = lWriteElemToDisk(ja_task, tmp_task_spool_file, nullptr, "ja_task");
+      ret = ocs::spool::classic::ocs_spool_write_elem<ocs::tom::JAT>(ja_task, tmp_task_spool_file, nullptr,
+                                                                     "ja_task");
       /* make spooling permanent = COMMIT */
       if (!ret && (rename(tmp_task_spool_file, task_spool_file) == -1)) {
          DTRACE;

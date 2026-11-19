@@ -63,6 +63,7 @@
 #include "sgeobj/tom/ocs_tom_ET.h"
 #include "sgeobj/tom/ocs_tom_EV.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
+#include "sgeobj/tom/ocs_tom_PACK.h"
 #include "sgeobj/tom/ocs_tom_REP.h"
 
 #include "evc/sge_event_client.h"
@@ -1466,8 +1467,20 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
          if (subscribed) {
             ocs::tom::Element<ocs::tom::EVS> sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
             if (sub_el) {
-               ocs::tom::set<EVS_what>(sub_el, lCopyElem(what));
-               ocs::tom::set<EVS_where>(sub_el, lCopyElem(where));
+               // the packed selection and condition of ocs_what_to_elem() and ocs_where_to_elem(), so their type
+               // is known; a copy that cannot be made (no memory) leaves the field empty, as lCopyElem() gave nullptr
+               ocs::tom::ElementPtr<ocs::tom::PACK> what_copy;
+               ocs::tom::ElementPtr<ocs::tom::PACK> where_copy;
+               try {
+                  what_copy = ocs::tom::ConstElement<ocs::tom::PACK>::from_typed(what).clone();
+               } catch (const ocs::RuntimeException &) {
+               }
+               try {
+                  where_copy = ocs::tom::ConstElement<ocs::tom::PACK>::from_typed(where).clone();
+               } catch (const ocs::RuntimeException &) {
+               }
+               ocs::tom::set<EVS_what>(sub_el, std::move(what_copy));
+               ocs::tom::set<EVS_where>(sub_el, std::move(where_copy));
                ocs::tom::set<EV_changed>(sge_evc->ec, true);
                ret = true;
             }
@@ -2549,14 +2562,14 @@ get_event_list(sge_evc_class_t *thiz, const int sync, int *commlib_error) {
                  cl_get_error_text(help));
       }
    } else {
-      // out-parameter of cull_unpack_list(), which does not throw on a broken buffer
-      lList *report_list = nullptr;
-      if (cull_unpack_list(&pb, &report_list)) {
+      try {
+         // qmaster always sends REP_Type; a list of another type is refused like a broken buffer
+         ret = ocs::tom::ListPtr<ocs::tom::REP>::unpack(pb);
+      } catch (const ocs::tom::PackException &) {
+         // the bytes cut off or no memory, where cull_unpack_list() returned an error and freed what it unpacked
          ERROR(SFNMAX, MSG_LIST_FAILEDINCULLUNPACKREPORT);
-         // report_list keeps nullptr: cull_unpack_list() frees what it unpacked on error
-      } else {
-         // the report arrived from the network: wrapped without a check, as qmaster always sends REP_Type
-         ret = ocs::tom::ListPtr<ocs::tom::REP>::from_typed(report_list);
+      } catch (const ocs::tom::FieldException &) {
+         ERROR(SFNMAX, MSG_LIST_FAILEDINCULLUNPACKREPORT);
       }
       clear_packbuffer(&pb);
    }

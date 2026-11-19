@@ -208,7 +208,11 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
 
          /* gdi_send_message_pb() consumes (frees) the packed buffer on every
           * attempt, so re-pack the task delivery for each try. */
-         pack_job_delivery(&pb, *petrep);
+         try {
+            petrep->pack(pb);
+         } catch (const ocs::tom::PackException &) {
+            // a failed pack is not handled here, as the result of pack_job_delivery() was not
+         }
 
          ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, to_cstr(EXECD), 1, hostname,
                                                            ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);

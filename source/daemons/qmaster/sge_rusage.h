@@ -56,6 +56,9 @@
 
 #include "uti/sge_dstring.h"
 
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+
 /** @brief Base of the architecture dependent usage records
  *
  * Only the architecture is common; a reader dispatches on it to reach the
@@ -169,7 +172,7 @@ struct drusage {
    double maxpss;       ///< Highest proportional set size seen
    uint32_t ar;         ///< The advance reservation the job ran in, 0 for none
    sge_all_rusage_type *arch_dep_usage;   ///< pointer to a structure with architecture dependend usage information
-   lList *other_usage;  ///< Anything else the execution host reported, as name/value pairs
+   ocs::tom::ListPtr<ocs::tom::UA> other_usage;  ///< Anything else the execution host reported, as name/value pairs
    bool is_classic;  ///< true if data was read from classic (colon-separated) accounting format
 };
 

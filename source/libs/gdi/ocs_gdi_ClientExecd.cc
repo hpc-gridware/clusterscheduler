@@ -223,7 +223,12 @@ int ocs::gdi::ClientExecd::report_list_send(const ocs::tom::ConstList<ocs::tom::
 
    /* prepare packing buffer */
    if ((ret = init_packbuffer(&pb, 1024)) == PACK_SUCCESS) {
-      ret = cull_pack_list(&pb, rlp);
+      try {
+         rlp.pack(pb);
+      } catch (const ocs::tom::PackException &e) {
+         // the code cull_pack_list() returned
+         ret = e.code();
+      }
    }
 
    switch (ret) {

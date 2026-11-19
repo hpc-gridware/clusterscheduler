@@ -1607,15 +1607,12 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
          }
 
          if (ref_list) {
-            lList *id_list_raw = nullptr;
-
-            // id_list_build_from_str_list() has no typed form yet; it builds an ID_Type list, taken over below
+            ocs::tom::ListPtr<ocs::tom::ID> id_list;
             if (drmaa_action == DRMAA_CONTROL_SUSPEND) {
-               id_list_build_from_str_list(&id_list_raw, &alp, *ref_list, QI_DO_SUSPEND, 0);
+               id_list_build_from_str_list(id_list, &alp, *ref_list, QI_DO_SUSPEND, 0);
             } else {
-               id_list_build_from_str_list(&id_list_raw, &alp, *ref_list, QI_DO_UNSUSPEND, 0);
+               id_list_build_from_str_list(id_list, &alp, *ref_list, QI_DO_UNSUSPEND, 0);
             }
-            auto id_list = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(id_list_raw);
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
                                             ocs::gdi::SubCommand::NONE, id_list);
             id_list.reset();
@@ -3574,7 +3571,6 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lList *event_list = nullptr;
    char buffer[1024];
    dstring buffer_wrapper;
    bool stop_ec = false;
@@ -3690,7 +3686,11 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
 
    while (!stop_ec) {
       /* read events and add relevant information into library session data */
-      int ec_get_ret = evc->ec_get(evc, &event_list, false);
+      // ec_get() is a function pointer of the event client class with a raw out-parameter; the events are taken
+      // over at once, so every path of this iteration frees them
+      lList *events_raw = nullptr;
+      const int ec_get_ret = evc->ec_get(evc, &events_raw, false);
+      auto event_list = ocs::tom::ListPtr<ocs::tom::ET>(events_raw);
       if (!ec_get_ret) {
          evc->ec_mark4registration(evc);
 
@@ -3702,7 +3702,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
          if (japi_ec_state == JAPI_EC_FINISHING) {
             JAPI_UNLOCK_EC_STATE();
             DPRINTF (("Received stop request while waiting for events.\n"));
-            lFreeList(&event_list);
+            event_list.reset();
             break;
          }
          JAPI_UNLOCK_EC_STATE();
@@ -3737,7 +3737,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
 
          DTRACE;
 
-         for (const auto event : ocs::tom::List<ocs::tom::ET>(event_list)) {
+         for (const auto event : *event_list) {
             uint32_t type, intkey, intkey2;
             type = ocs::tom::get<ET_type>(event);
             intkey = ocs::tom::get<ET_intkey>(event);
@@ -3938,7 +3938,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                disconnected = true;
             }
          } /* for_each */
-         lFreeList(&event_list);
+         event_list.reset();
 
          if (!up_and_running) {
             /* set japi_ec_state to JAPI_EC_UP and notify initialization thread */

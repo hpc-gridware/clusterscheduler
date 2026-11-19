@@ -1002,7 +1002,7 @@ bool qinstance_verify(const ocs::tom::ConstElement<ocs::tom::QU> qep, ocs::tom::
 
    if (ret) {
       if (verify_obj_name(answer_list, ocs::tom::get<QU_qname>(qep),
-                          MAX_VERIFY_STRING, lNm2Str(QU_qname)) != STATUS_OK) {
+                          MAX_VERIFY_STRING, ocs::tom::FieldTraits<QU_qname>::info.name) != STATUS_OK) {
          ret = false;
       }
    }

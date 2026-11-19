@@ -2993,7 +2993,7 @@ merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default_in,
       }
    }
 
-   // lOverrideStrList() has no typed form yet; it takes the second list over and frees it
+   // the queue requests (-q) of each later source override those of the earlier ones
    if (opts_scriptfile) {
       DPRINTF("Adding scriptfile options\n");
       prune_arg_list(*opts_scriptfile);
@@ -3001,7 +3001,7 @@ merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default_in,
       if (!opts_all) {
          opts_all = std::move(opts_scriptfile);
       } else {
-         lOverrideStrList(*opts_all, opts_scriptfile.release(), SPA_switch_val, "-q");
+         ocs_opt_list_override_queues(*opts_all, std::move(opts_scriptfile));
       }
    }
 
@@ -3012,7 +3012,7 @@ merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default_in,
       if (!opts_all) {
          opts_all = std::move(opts_job_cat);
       } else {
-         lOverrideStrList(*opts_all, opts_job_cat.release(), SPA_switch_val, "-q");
+         ocs_opt_list_override_queues(*opts_all, std::move(opts_job_cat));
       }
    }
 
@@ -3023,7 +3023,7 @@ merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default_in,
       if (!opts_all) {
          opts_all = std::move(opts_native);
       } else {
-         lOverrideStrList(*opts_all, opts_native.release(), SPA_switch_val, "-q");
+         ocs_opt_list_override_queues(*opts_all, std::move(opts_native));
       }
    }
 
@@ -3033,7 +3033,7 @@ merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default_in,
       if (!opts_all) {
          opts_all = std::move(opts_drmaa);
       } else {
-         lOverrideStrList(*opts_all, opts_drmaa.release(), SPA_switch_val, "-q");
+         ocs_opt_list_override_queues(*opts_all, std::move(opts_drmaa));
       }
    }
 
