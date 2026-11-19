@@ -42,6 +42,10 @@ target hosts.
 The cmake build checks for the OpenSSL header files having the correct version and fails if they are missing.
 To build without support for TLS encryption, pass `-DWITH_OPENSSL=OFF` to cmake.
 
+Spooling to PostgreSQL is built with `-DWITH_SPOOL_POSTGRES=ON` (off by default) and requires the development
+package of the PostgreSQL client library (libpq) on build hosts; the qmaster host needs the libpq runtime library
+when PostgreSQL spooling is used. The package names are given in the sections below where they are known.
+
 Documentation is written in Markdown. To be able to generate product man pages and PDF manuals, you need:
 
 * pandoc
@@ -87,6 +91,7 @@ yum install -y numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel
 yum install -y epel-release
 yum install -y tcsh expect
 yum install -y libdb libdb-devel hwloc hwloc-devel
+yum install -y postgresql-devel
 ```
 #### for repository drmaa-java
 
@@ -105,6 +110,7 @@ apt-get install -y doxygen graphviz
 apt-get install -y expect tcl tdom tcllib gnuplot vim
 apt-get install -y tcsh xterm expect gnuplot
 apt-get install -y libssl-dev
+apt-get install -y libpq-dev
 ```
 
 #### for repository drmaa-java
@@ -121,6 +127,7 @@ apt-get install -y doxygen graphviz pandoc
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
 apt-get install -y libudev-dev libmunge-dev libtirpc-dev libsystemd-dev
+apt-get install -y libpq-dev
 apt-get install -y pandoc texlive*
 apt-get install -y libssl-dev
 ```
@@ -136,6 +143,7 @@ apt-get install -y openjdk-21-jdk maven
 pkg install cmake git autoconf automake gettext bash libudev-devd
 pkg install expect xterm gnuplot vim mailx tcllib
 pkg install hs-pandoc texlive-full tex-xetex munge
+pkg install postgresql17-client
 ```
 
 #### for repository drmaa-java
@@ -230,6 +238,7 @@ dnf install -y --setopt=strict=0 automake autoconf cmake git patchelf
 dnf install -y --setopt=strict=0 gcc gcc-c++ make binutils
 dnf install -y --setopt=strict=0 systemd-devel libtirpc-devel openssl-devel
 dnf install -y --setopt=strict=0 munge-devel hwloc-devel
+dnf install -y --setopt=strict=0 libpq-devel
 dnf install -y --setopt=strict=0 expect tcl tcllib xterm perl-Env tcsh vim-enhanced
 dnf install -y --setopt=strict=0 doxygen graphviz
 ```
@@ -271,6 +280,7 @@ dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
 dnf install -y openssl3-devel
+dnf install -y libpq-devel
 ```
 
 Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provide versions < 3.24
@@ -290,6 +300,7 @@ dnf install epel-release    (or on RHEL 10: dnf install https://dl.fedoraproject
 dnf install -y pandoc 
 dnf install -y texlive*
 dnf install -y openssl-devel
+dnf install -y libpq-devel
 ```
 
 ### Solaris 11 (default for sol-amd64)
@@ -375,6 +386,7 @@ apt-get install -y doxygen graphviz pandoc
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev ocl-icd-opencl-dev
 apt-get install -y libudev-dev libmunge-dev libtirpc-dev libsystemd-dev
+apt-get install -y libpq-dev
 apt-get install -y pandoc texlive*
 ```
 
