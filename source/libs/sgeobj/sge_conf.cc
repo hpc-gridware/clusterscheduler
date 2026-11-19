@@ -304,8 +304,10 @@ static bool enable_submit_ld_preload = false;
 
 #define GPERF_NAME_DEFAULT "gperf"
 #define GPERF_THREADS_DEFAULT "none"
-std::string gperf_name = GPERF_NAME_DEFAULT;
-std::string gperf_threads = GPERF_THREADS_DEFAULT;
+// static: libsgeobj is linked statically into the executables and into the shared libraries
+// they load, an object with external linkage and a destructor would be destroyed once per module
+static std::string gperf_name = GPERF_NAME_DEFAULT;
+static std::string gperf_threads = GPERF_THREADS_DEFAULT;
 
 /*
  * notify_kill_default and notify_susp_default

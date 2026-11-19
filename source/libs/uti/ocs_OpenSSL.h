@@ -113,8 +113,9 @@ namespace ocs::uti {
       // handle and function pointers of the libssl.so
       static void *libssl_handle;
       // name of the loaded libssl and the OpenSSL version it reports
-      static std::string libssl_name;
-      static std::string libssl_version;
+      // accessors instead of static data members, see libssl_name() in ocs_OpenSSL.cc
+      static std::string &libssl_name();
+      static std::string &libssl_version();
 
       static ASN1_INTEGER_set_func_t ASN1_INTEGER_set_func;
       static ASN1_STRING_get0_data_func_t ASN1_STRING_get0_data_func;
@@ -198,7 +199,7 @@ namespace ocs::uti {
 
       // sub-classes
       class OpenSSLContext {
-         static std::vector<OpenSSLContext *> contexts_to_delete;
+         static std::vector<OpenSSLContext *> &contexts_to_delete();
          bool is_server;
          std::filesystem::file_time_type client_certificate_time;
          u_long64 renewal_time;

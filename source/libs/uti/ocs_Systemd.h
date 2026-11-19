@@ -117,12 +117,14 @@ namespace ocs::uti {
          static sd_bus_set_method_call_timeout_func_t sd_bus_set_method_call_timeout_func;
 
          // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
-         static std::string slice_name;
-         static std::string service_name;
+         // accessors instead of static data members, see slice_name() in ocs_Systemd.cc
+         static std::string &slice_name();
+         static std::string &service_name();
          static bool running_as_service;
          static int cgroup_version;
          static int systemd_version;
-         static std::map<std::string, bool>unclear_properties;   // properties that are not available on all OSes or Systemd versions
+         // properties that are not available on all OSes or Systemd versions
+         static std::map<std::string, bool> &unclear_properties();
 
       public:
          // What a failed call ran into. Every method still returns bool; a caller which has to
@@ -145,14 +147,16 @@ namespace ocs::uti {
          // SYSTEMD_TIMEOUT_DEFAULT in sge_conf.h.
          static constexpr uint64_t DEFAULT_METHOD_CALL_TIMEOUT = 2 * 1000000; // microseconds
 
-         static const std::string execd_service_name;
-         static const std::string shepherd_scope_name;
+         // literals, not std::string: an object with a destructor would be destroyed once per
+         // module which carries libuti, see slice_name() in ocs_Systemd.cc
+         static constexpr const char *execd_service_name = "execd.service";
+         static constexpr const char *shepherd_scope_name = "shepherds.scope";
 
          // static methods
          static bool initialize(const std::string &service_name_in, dstring *error_dstr);
          static bool is_systemd_available();  // we can load the systemd library and connect to systemd
          static bool is_running_as_service(); // the process is running as a systemd service
-         static std::string get_slice_name() { return slice_name; }
+         static std::string get_slice_name() { return slice_name(); }
          static int get_cgroup_version() { return cgroup_version; }
          static int get_systemd_version() { return systemd_version; }
 

@@ -42,10 +42,47 @@
 namespace ocs::uti {
    // static members
    void *OpenSSL::libssl_handle = nullptr;
-   std::string OpenSSL::libssl_name;
-   std::string OpenSSL::libssl_version;
 
-   std::vector<OpenSSL::OpenSSLContext *> OpenSSL::OpenSSLContext::contexts_to_delete;
+   /**
+    * @brief Name of the loaded libssl.
+    *
+    * A function-local static instead of a static data member. libuti is linked statically into
+    * the executables and into the shared libraries they load (e.g. the spooling libraries). A
+    * static data member with a destructor is defined in each of them; the executable's
+    * definition interposes the others, but every module registers its destructor for it, so the
+    * one object is destroyed several times at exit. A function-local static is constructed by
+    * the copy of the function which runs, and only that copy registers its destructor.
+    *
+    * @return the name, empty while no libssl is loaded
+    */
+   std::string &OpenSSL::libssl_name() {
+      static std::string name;
+      return name;
+   }
+
+   /**
+    * @brief OpenSSL version reported by the loaded libssl.
+    *
+    * A function-local static instead of a static data member, see libssl_name().
+    *
+    * @return the version, empty while no libssl is loaded
+    */
+   std::string &OpenSSL::libssl_version() {
+      static std::string version;
+      return version;
+   }
+
+   /**
+    * @brief Contexts which are no longer used, but still have connections.
+    *
+    * A function-local static instead of a static data member, see OpenSSL::libssl_name().
+    *
+    * @return the contexts waiting to be deleted
+    */
+   std::vector<OpenSSL::OpenSSLContext *> &OpenSSL::OpenSSLContext::contexts_to_delete() {
+      static std::vector<OpenSSLContext *> contexts;
+      return contexts;
+   }
 
    ASN1_INTEGER_set_func_t OpenSSL::ASN1_INTEGER_set_func = nullptr;
    ASN1_STRING_get0_data_func_t OpenSSL::ASN1_STRING_get0_data_func = nullptr;
@@ -766,9 +803,9 @@ namespace ocs::uti {
       }
 
       if (ret) {
-         libssl_name = libssl;
-         libssl_version = OpenSSL_version_func(OPENSSL_VERSION);
-         DPRINTF("loaded %s, %s\n", libssl_name.c_str(), libssl_version.c_str());
+         libssl_name() = libssl;
+         libssl_version() = OpenSSL_version_func(OPENSSL_VERSION);
+         DPRINTF("loaded %s, %s\n", libssl_name().c_str(), libssl_version().c_str());
       }
 
       // if the initialization failed, free everything again
@@ -795,8 +832,8 @@ namespace ocs::uti {
          dlclose(libssl_handle);
          libssl_handle = nullptr;
       }
-      libssl_name.clear();
-      libssl_version.clear();
+      libssl_name().clear();
+      libssl_version().clear();
       DRETURN_VOID;
    }
 
@@ -815,7 +852,7 @@ namespace ocs::uti {
       if (libssl_handle != nullptr) {
          u_long32 old_ll = log_state_get_log_level();
          log_state_set_log_level(LOG_INFO);
-         INFO(MSG_OPENSSL_LOADED_LIB_SS, libssl_name.c_str(), libssl_version.c_str());
+         INFO(MSG_OPENSSL_LOADED_LIB_SS, libssl_name().c_str(), libssl_version().c_str());
          log_state_set_log_level(old_ll);
       }
       DRETURN_VOID;
@@ -1666,7 +1703,7 @@ namespace ocs::uti {
       if (context->connection_count == 0) {
          delete context;
       } else {
-         contexts_to_delete.push_back(context);
+         contexts_to_delete().push_back(context);
       }
       DRETURN_VOID;
    }
@@ -1689,12 +1726,12 @@ namespace ocs::uti {
       DENTER(TOP_LAYER);
       // Remove and delete contexts with no active connections.
       // Use erase-remove idiom to safely delete elements while iterating.
-      auto it = contexts_to_delete.begin();
-      while (it != contexts_to_delete.end()) {
+      auto it = contexts_to_delete().begin();
+      while (it != contexts_to_delete().end()) {
          OpenSSLContext *context = *it;
          if (context->connection_count == 0) {
             DPRINTF("Deleting unused OpenSSLContext\n");
-            it = contexts_to_delete.erase(it);
+            it = contexts_to_delete().erase(it);
             delete context;
          } else {
             ++it;
