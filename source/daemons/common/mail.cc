@@ -100,7 +100,6 @@ void cull_mail(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR> us
    if (user_list) {
       for (const auto ep : user_list) {
          const char *user = ocs::tom::get<MR_user>(ep);
-         // a host field, handed into varargs below
          const char *host = ocs::tom::get<MR_host>(ep);
          if (!user && !host) {
             ERROR(SFNMAX, MSG_MAIL_EMPTYUSERHOST);

@@ -4294,8 +4294,7 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
          } else {
             sge_dstring_append_char(dstr, ',');
          }
-         sge_dstring_sprintf_append(dstr, "%s@%s", ocs::tom::get<MR_user>(ep),
-                                    static_cast<const char *>(ocs::tom::get<MR_host>(ep)));
+         sge_dstring_sprintf_append(dstr, "%s@%s", ocs::tom::get<MR_user>(ep), ocs::tom::get<MR_host>(ep));
       }
    }
 

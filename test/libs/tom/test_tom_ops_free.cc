@@ -1076,11 +1076,15 @@ void test_owning() {
    lListElem *const bound_raw = bound.get().raw();
    auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    const bool first_store = ocs::tom::set<JAT_pe_object>(other_task, std::move(bound)) == 0 && bound == nullptr;
-   // an element bound to a field is refused by a second one: the moved-in handle keeps it
+   // an element bound to a field is refused by a second one: the moved-in handle gives it up, the element stays
+   // bound to other_task (which frees it), and the refusing field keeps its own element
+   lListElem *const kept_raw = lGetObject(*task, JAT_pe_object);
    auto rebound = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(bound_raw);
-   const bool refused = ocs::tom::set<JAT_pe_object>(task, std::move(rebound)) == -1 && rebound != nullptr;
-   static_cast<void>(rebound.release());   // still bound to other_task, which frees it
-   CHECK(32, "a field refusing the element leaves it with the moved-in handle", first_store && refused);
+   const bool refused = ocs::tom::set<JAT_pe_object>(task, std::move(rebound)) == -1 && rebound == nullptr &&
+                        lGetObject(*other_task, JAT_pe_object) == bound_raw &&
+                        lGetObject(*task, JAT_pe_object) == kept_raw;
+   CHECK(32, "a field refusing a bound element leaves it where it is bound, the moved-in handle gives it up",
+         first_store && refused);
 
    auto freed = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    const bool tests = static_cast<bool>(freed) && freed != nullptr;
@@ -1194,61 +1198,108 @@ test_keyed_merge() {
 }
 
 /**
- * @brief Build a mail recipient list from user/host pairs
- * @param pairs the pairs, a nullptr host for a recipient without a host
+ * @brief Build a path list from host/path pairs, as `-o [host:]path,...` gives it
+ * @param pairs the pairs, a nullptr host for a path without a host
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::PN>
+make_paths(std::initializer_list<std::pair<const char *, const char *>> pairs) {
+   auto paths = ocs::tom::ListPtr<ocs::tom::PN>::create("paths");
+   for (const auto &[host, path] : pairs) {
+      auto pn = ocs::tom::ElementPtr<ocs::tom::PN>::create();
+      ocs::tom::set<PN_path>(pn, path);
+      ocs::tom::set<PN_host>(pn, ocs::tom::Host{host});
+      paths->push_back(std::move(pn));
+   }
+   return paths;
+}
+
+/**
+ * @brief The paths of a path list, in order, joined by ','
+ * @param paths the list
+ * @return the paths
+ */
+static std::string
+paths_of(const ocs::tom::ConstList<ocs::tom::PN> paths) {
+   std::string out;
+   for (const auto pn : paths) {
+      out += out.empty() ? "" : ",";
+      const char *path = ocs::tom::get<PN_path>(pn);
+      out += path != nullptr ? path : "-";
+   }
+   return out;
+}
+
+/**
+ * @brief Build a mail recipient list from user/mail domain pairs, as `-M user[@domain],...` gives it
+ * @param pairs the pairs, a nullptr domain for a recipient without one
  * @return the list
  */
 static ocs::tom::ListPtr<ocs::tom::MR>
 make_mails(std::initializer_list<std::pair<const char *, const char *>> pairs) {
    auto mails = ocs::tom::ListPtr<ocs::tom::MR>::create("mails");
-   for (const auto &[user, host] : pairs) {
+   for (const auto &[user, domain] : pairs) {
       auto mail = ocs::tom::ElementPtr<ocs::tom::MR>::create();
       ocs::tom::set<MR_user>(mail, user);
-      ocs::tom::set<MR_host>(mail, ocs::tom::Host{host});
+      ocs::tom::set<MR_host>(mail, domain);
       mails->push_back(std::move(mail));
    }
    return mails;
 }
 
 /**
- * @brief The users of a mail recipient list, in order, joined by ','
+ * @brief The recipients of a mail recipient list, in order, as user[@domain] joined by ','
  * @param mails the list
- * @return the users
+ * @return the recipients
  */
 static std::string
-users_of(const ocs::tom::ConstList<ocs::tom::MR> mails) {
+mails_of(const ocs::tom::ConstList<ocs::tom::MR> mails) {
    std::string out;
    for (const auto mail : mails) {
       out += out.empty() ? "" : ",";
       const char *user = ocs::tom::get<MR_user>(mail);
       out += user != nullptr ? user : "-";
+      if (const char *domain = ocs::tom::get<MR_host>(mail); domain != nullptr) {
+         out += "@";
+         out += domain;
+      }
    }
    return out;
 }
 
 /**
- * @brief OPS-FREE-19: host keys compare as host names in keep_last and merge_by_key
+ * @brief OPS-FREE-19: host keys compare as host names in keep_last and merge_by_key, string keys exactly
  *
  * find_first() and modify_sublist() compare host names with sge_hostcmp() (case-insensitive); keep_last and
  * merge_by_key do the same since the TOM completion, where cull_compress_definition_list() and
- * cull_merge_definition_list() compared them with strcmp().
+ * cull_merge_definition_list() compared them with strcmp(). The domain of a mail recipient (MR_host) is a
+ * string field, not a host field: it compares exactly, so two recipients in different mail domains stay apart.
  *
  * @return nothing; CHECK records the results
  */
 static void
 test_host_keys() {
    // "HostA" and "hosta" name one host: the later wins; two nullptr hosts are never a repetition
-   auto mails = make_mails({{"a", "HostA"}, {"b", "hosta"}, {"c", "HostB"}, {"d", nullptr}, {"e", nullptr}});
-   ocs::tom::keep_last<MR_host>(*mails);
+   auto paths = make_paths({{"HostA", "/a"}, {"hosta", "/b"}, {"HostB", "/c"}, {nullptr, "/d"}, {nullptr, "/e"}});
+   ocs::tom::keep_last<PN_host>(*paths);
    CHECK(44, "keep_last on a host key keeps one element per host name, compared as find_first compares it",
-         users_of(mails) == "b,c,d,e");
+         paths_of(paths) == "/b,/c,/d,/e");
 
    // a host known under another case takes the new value; two nullptr hosts are the same key
-   auto dst = make_mails({{"a", "HostA"}, {"n", nullptr}});
-   const auto src = make_mails({{"b", "HOSTA"}, {"c", "hostc"}, {"m", nullptr}});
-   ocs::tom::merge_by_key<MR_host, MR_user>(*dst, src);
+   auto dst = make_paths({{"HostA", "/a"}, {nullptr, "/n"}});
+   const auto src = make_paths({{"HOSTA", "/b"}, {"hostc", "/c"}, {nullptr, "/m"}});
+   ocs::tom::merge_by_key<PN_host, PN_path>(*dst, src);
    CHECK(45, "merge_by_key on a host key finds a host name in another case, appends a new one",
-         users_of(dst) == "b,m,c" && dst->find_first<MR_host>(ocs::tom::Host{"hosta"}).raw() == dst->front().raw());
+         paths_of(dst) == "/b,/m,/c" &&
+         dst->find_first<PN_host>(ocs::tom::Host{"hosta"}).raw() == dst->front().raw());
+
+   // mail domains are no cluster host names: neither the part after the first dot nor the case makes two the same
+   auto mails = make_mails({{"alice", "mail.example.com"}, {"carol", "Example.COM"}});
+   const auto more = make_mails({{"bob", "mail.example.org"}, {"dave", "example.com"}, {"erin", "Example.COM"}});
+   ocs::tom::merge_by_key<MR_host, MR_user>(*mails, more);
+   CHECK(51, "merge_by_key on the mail domain compares it exactly, a domain differing in a later label "
+             "or in case is another one",
+         mails_of(mails) == "alice@mail.example.com,erin@Example.COM,bob@mail.example.org,dave@example.com");
 }
 
 /**
@@ -1557,10 +1608,12 @@ int main(int argc, char *argv[]) {
         "a key held twice, a missing key and a request without the list field"},
        "the same lists, results and events in the same order; the request's sub-list consumed",
        {{"OPS-02", "covers"}}, {38, 39, 40, 41, 42, 43}, test_modify_sublist},
-      {"OPS-FREE-19", "host keys", "keep_last<Key> and merge_by_key<Key, Value> compare host keys as host names",
-       {"a mail recipient list with one host in two cases and recipients without a host, compressed and merged"},
-       "one element per host name; a host in another case takes the new value", {{"OPS-02", "covers"}}, {44, 45},
-       test_host_keys},
+      {"OPS-FREE-19", "host keys", "keep_last<Key> and merge_by_key<Key, Value> compare host keys as host names, "
+       "the mail domain of a recipient exactly",
+       {"a path list with one host in two cases and paths without a host, compressed and merged",
+        "a mail recipient list merged with recipients in other domains and one domain in another case"},
+       "one element per host name; a host in another case takes the new value; every mail domain spelled "
+       "differently stays a recipient of its own", {{"OPS-02", "covers"}}, {44, 45, 51}, test_host_keys},
       {"OPS-FREE-20", "contracts", "copy_if_present<F> into an empty destination, Element::set of a bound element",
        {"copy into an empty handle", "store an element bound to another object through the member setter"},
        "false from copy_if_present; BoundElement, the element stays bound", {{"OPS-02", "covers"}}, {46, 47},

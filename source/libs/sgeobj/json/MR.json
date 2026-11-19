@@ -29,9 +29,10 @@
          "name": "host",
          "summary": "Host Name",
          "description": [
-            "Host / Domain part of a mail receipient."
+            "Host / Domain part of a mail receipient.",
+            "It is a mail domain, not a cluster host: it is stored and compared as a plain string."
          ],
-         "type": "lHostT",
+         "type": "lStringT",
          "flags": [
             {
                "name": "SPOOL_SUBLIST"

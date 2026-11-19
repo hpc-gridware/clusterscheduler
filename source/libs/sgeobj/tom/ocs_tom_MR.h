@@ -48,6 +48,7 @@ enum MR_Field {
     * @brief Host Name
     *
     * Host / Domain part of a mail receipient.
+    * It is a mail domain, not a cluster host: it is stored and compared as a plain string.
     */
    MR_host,
 };
@@ -66,7 +67,7 @@ namespace ocs::tom {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
       static constexpr FieldInfo fields[] = {
          {MR_user, "MR_user", FieldType::String, Flag::PrimaryKey | Flag::SpoolSublist},
-         {MR_host, "MR_host", FieldType::Host, Flag::SpoolSublist},
+         {MR_host, "MR_host", FieldType::String, Flag::SpoolSublist},
       };
 
       /** @brief The descriptor of the list library, derived from the field table */

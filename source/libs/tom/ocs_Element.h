@@ -1634,7 +1634,8 @@ namespace ocs::tom {
        * @tparam V the value's type
        * @param ep the element, or nullptr
        * @param value the value; a list or an element is taken over, as by the old setter; an owning handle
-       *        (std::move) gives up its list or element once it is stored, and keeps it on an error
+       *        (std::move) gives up its list or element once it is stored, and also when the element is bound
+       *        elsewhere (it stays where it is bound; freeing it through the handle would free a bound element)
        * @return 0 on success, -1 for a null element, a string that cannot be copied or an element bound elsewhere
        * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field
        */
@@ -1675,6 +1676,10 @@ namespace ocs::tom {
             if (!store_object(ep, Tr::pos, object)) {
                report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::BoundElement);
                set_lerrno(LEBOUNDELEM);
+               if constexpr (is_element_ptr<Value>) {
+                  // bound elsewhere: it belongs to where it is bound, as Element::set() leaves it
+                  static_cast<void>(value.release());
+               }
                return -1;
             }
             if constexpr (is_element_ptr<Value>) {
