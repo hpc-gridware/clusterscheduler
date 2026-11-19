@@ -1150,7 +1150,7 @@ setup_qmaster() {
                    * initialize the new fields, remove the old subordinate list
                    * from the cluster queue and add the new one instead.
                    */
-                  const char *so_list_name = lGetListName(so_list);
+                  const char *so_list_name = so_list.name();
                   auto new_so_list = ocs::tom::ListPtr<ocs::tom::SO>::create(so_list_name);
 
                   for (const auto so : so_list) {

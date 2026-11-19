@@ -2088,12 +2088,12 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
        *    - multi tasks requests are only valid for array jobs
        */
       if (!ja_task) {
-         ERROR(MSG_SGETEXT_NEEDONEELEMENT_SS, lNm2Str(JB_ja_tasks), __func__);
+         ERROR(MSG_SGETEXT_NEEDONEELEMENT_SS, ocs::tom::FieldTraits<JB_ja_tasks>::info.name, __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
       if (!ja_task.has<JAT_task_number>()) {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(JAT_task_number), __func__);
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<JAT_task_number>::info.name, __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }

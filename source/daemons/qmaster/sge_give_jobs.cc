@@ -438,7 +438,11 @@ send_slave_jobs_wc(const ocs::tom::Element<ocs::tom::JB> jep, monitoring_t *moni
 
          init_packbuffer(&send_pb, 0);
 
-         pack_job_delivery(&send_pb, jep);
+         try {
+            jep.pack(send_pb);
+         } catch (const ocs::tom::PackException &) {
+            // a failed pack is not handled here, as the result of pack_job_delivery() was not
+         }
          if (simulate_execd) {
             failed = CL_RETVAL_OK;
          } else {
@@ -589,7 +593,11 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
       DRETURN(-1);
    }
 
-   pack_job_delivery(&pb, *tmpjep);
+   try {
+      tmpjep->pack(pb);
+   } catch (const ocs::tom::PackException &) {
+      // a failed pack is not handled here, as the result of pack_job_delivery() was not
+   }
    tmpjep.reset();
 
    if (simulate_execd) {

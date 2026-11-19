@@ -234,7 +234,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
 
    /* ep is no calendar element, if cep has no CAL_name */
    if (!ocs::tom::has<CAL_name>(cep)) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(QU_qname), __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CAL_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

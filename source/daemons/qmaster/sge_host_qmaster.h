@@ -51,6 +51,8 @@
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_LR.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/sge_answer.h"
 
 void
@@ -118,11 +120,11 @@ host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::
 
 void
 host_diff_projects(ocs::tom::ConstElement<ocs::tom::EH> new_host, ocs::tom::ConstElement<ocs::tom::EH> old,
-                   lList **new_prj, lList **old_prj);
+                   ocs::tom::ListPtr<ocs::tom::PR> *new_prj, ocs::tom::ListPtr<ocs::tom::PR> *old_prj);
 
 void
 host_diff_usersets(ocs::tom::ConstElement<ocs::tom::EH> new_host, ocs::tom::ConstElement<ocs::tom::EH> old,
-                   lList **new_acl, lList **old_acl);
+                   ocs::tom::ListPtr<ocs::tom::US> *new_acl, ocs::tom::ListPtr<ocs::tom::US> *old_acl);
 
 
 void

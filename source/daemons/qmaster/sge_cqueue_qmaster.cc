@@ -72,7 +72,9 @@
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_APRJLIST.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_AUSRLIST.h"
 #include "sgeobj/tom/ocs_tom_CAL.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
@@ -963,7 +965,7 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
          }
       }
    } else {
-      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CQ_name), __func__);
+      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CQ_name>::info.name, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -1387,7 +1389,7 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
             ret = false;
          }
       } else {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CQ_name), __func__);
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CQ_name>::info.name, __func__);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
@@ -1547,62 +1549,91 @@ cqueue_list_set_unknown_state(const ocs::tom::List<ocs::tom::CQ> this_list, cons
 
 
 /**
- * @brief Diff cluster queue sublists
+ * @brief Collect the references of the two attribute lists of a cluster queue
  *
- * Determine new/old refereneces in a cluster queue configuration sublist.
+ * Every key found in a sub-list of an entry of @p Snm1 or @p Snm2 is added
+ * once; the list is created, named "", with the first key.
  *
- * @param new_cqueue New cluster queue (CQ_Type)
- * @param old_cqueue Old cluster queue (CQ_Type)
- * @param snm1 First cluster queue sublist field
- * @param snm2 Second cluster queue sublist field
- * @param sublist_nm Subsub list field
- * @param key_nm Field with key in subsublist
- * @param dp Type for outgoing sublist arguments
- * @param new_sublist List of new references
- * @param old_sublist List of old references
- *
- * @note MT-NOTE: cqueue_diff_sublist() is MT safe
+ * @tparam Snm1 the first cluster queue attribute list field, e.g. CQ_projects
+ * @tparam Snm2 the second cluster queue attribute list field, e.g. CQ_xprojects
+ * @tparam SubF the reference list field of an attribute list entry, e.g. APRJLIST_value
+ * @tparam KeyF the key field of a reference, e.g. PR_name
+ * @param cqueue the cluster queue
+ * @param refs the references collected so far, extended in place
  */
+template <auto Snm1, auto Snm2, auto SubF, auto KeyF>
 static void
-cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *old_cqueue, int snm1, int snm2, int sublist_nm,
-                    int key_nm, const lDescr *dp, lList **new_sublist, lList **old_sublist) {
+ocs_cqueue_collect_refs(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                        ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type> &refs) {
    DENTER(TOP_LAYER);
 
-   const lListElem *qc, *ep;
-   const char *p;
-
-   /* collect 'old' entries in 'old_sublist' */
-   if (old_cqueue && old_sublist) {
-      for_each_ep(qc, lGetList(old_cqueue, snm1)) {
-         for_each_ep(ep, lGetList(qc, sublist_nm)) {
-            p = lGetString(ep, key_nm);
-            if (!lGetElemStr(*old_sublist, key_nm, p))
-               lAddElemStr(old_sublist, key_nm, p, dp);
-         }
-      }
-      for_each_ep(qc, lGetList(old_cqueue, snm2)) {
-         for_each_ep(ep, lGetList(qc, sublist_nm)) {
-            p = lGetString(ep, key_nm);
-            if (!lGetElemStr(*old_sublist, key_nm, p))
-               lAddElemStr(old_sublist, key_nm, p, dp);
+   for (const auto attr_list : {ocs::tom::get<Snm1>(cqueue), ocs::tom::get<Snm2>(cqueue)}) {
+      for (const auto qc : attr_list) {
+         for (const auto ep : ocs::tom::get<SubF>(qc)) {
+            const char *p = ocs::tom::get<KeyF>(ep);
+            // a reference without a name was not added, as lAddElemStr() refused a null key
+            if (p == nullptr) {
+               continue;
+            }
+            if (!refs) {
+               refs = ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type>::create("");
+            }
+            if (!refs->template find_first<KeyF>(p)) {
+               refs->template emplace_back<KeyF>(p);
+            }
          }
       }
    }
 
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Diff cluster queue sublists
+ *
+ * Determine new/old references in a cluster queue configuration sublist.
+ * Names in both lists are removed from both; a list that becomes empty then
+ * is freed, as lDiffListStr() did.
+ *
+ * @tparam Snm1 the first cluster queue attribute list field
+ * @tparam Snm2 the second cluster queue attribute list field
+ * @tparam SubF the reference list field of an attribute list entry
+ * @tparam KeyF the key field of a reference
+ * @param new_cqueue New cluster queue (CQ_Type), or an empty handle
+ * @param old_cqueue Old cluster queue (CQ_Type), or an empty handle
+ * @param new_sublist List of new references, extended; nullptr to collect none
+ * @param old_sublist List of old references, extended; nullptr to collect none
+ *
+ * @note MT-NOTE: cqueue_diff_sublist() is MT safe
+ */
+template <auto Snm1, auto Snm2, auto SubF, auto KeyF>
+static void
+cqueue_diff_sublist(const ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
+                    const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue,
+                    ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type> *new_sublist,
+                    ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type> *old_sublist) {
+   DENTER(TOP_LAYER);
+
+   /* collect 'old' entries in 'old_sublist' */
+   if (old_cqueue && old_sublist) {
+      ocs_cqueue_collect_refs<Snm1, Snm2, SubF, KeyF>(old_cqueue, *old_sublist);
+   }
+
    /* collect 'new' entries in 'new_sublist' */
    if (new_cqueue && new_sublist) {
-      for_each_ep(qc, lGetList(new_cqueue, snm1)) {
-         for_each_ep(ep, lGetList(qc, sublist_nm)) {
-            p = lGetString(ep, key_nm);
-            if (!lGetElemStr(*new_sublist, key_nm, p))
-               lAddElemStr(new_sublist, key_nm, p, dp);
+      ocs_cqueue_collect_refs<Snm1, Snm2, SubF, KeyF>(new_cqueue, *new_sublist);
+   }
+
+   if (new_sublist != nullptr && old_sublist != nullptr && *new_sublist && *old_sublist) {
+      const std::size_t new_size = (*new_sublist)->size();
+      (*new_sublist)->template remove_common<KeyF>(**old_sublist);
+      if ((*new_sublist)->size() != new_size) {
+         // lDiffListStr() freed a list that a removal emptied
+         if ((*new_sublist)->empty()) {
+            new_sublist->reset();
          }
-      }
-      for_each_ep(qc, lGetList(new_cqueue, snm2)) {
-         for_each_ep(ep, lGetList(qc, sublist_nm)) {
-            p = lGetString(ep, key_nm);
-            if (!lGetElemStr(*new_sublist, key_nm, p))
-               lAddElemStr(new_sublist, key_nm, p, dp);
+         if ((*old_sublist)->empty()) {
+            old_sublist->reset();
          }
       }
    }
@@ -1616,20 +1647,20 @@ cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *old_cqueue, in
  * A diff new/old is made regarding cluster queue projects/xprojects.
  * Project references are returned in new_prj/old_prj.
  *
- * @param new_cqueue New cluster queue (CQ_Type)
- * @param old_cqueue Old cluster queue (CQ_Type)
- * @param new_prj New project references (PR_Type)
- * @param old_prj Old project references (PR_Type)
+ * @param new_cqueue New cluster queue (CQ_Type), or an empty handle
+ * @param old_cqueue Old cluster queue (CQ_Type), or an empty handle
+ * @param new_prj New project references (PR_Type), extended; nullptr to collect none
+ * @param old_prj Old project references (PR_Type), extended; nullptr to collect none
  *
  * @note MT-NOTE: cqueue_diff_projects() is MT safe
  */
 void
 cqueue_diff_projects(const ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
-                     const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, lList **new_prj, lList **old_prj) {
-   // the lists accumulate over several calls of the caller, so the out-parameters stay raw
-   cqueue_diff_sublist(new_cqueue, old_cqueue, CQ_projects, CQ_xprojects,
-                       APRJLIST_value, PR_name, PR_Type, new_prj, old_prj);
-   lDiffListStr(PR_name, new_prj, old_prj);
+                     const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue,
+                     ocs::tom::ListPtr<ocs::tom::PR> *new_prj, ocs::tom::ListPtr<ocs::tom::PR> *old_prj) {
+   DENTER(TOP_LAYER);
+   cqueue_diff_sublist<CQ_projects, CQ_xprojects, APRJLIST_value, PR_name>(new_cqueue, old_cqueue, new_prj, old_prj);
+   DRETURN_VOID;
 }
 
 /**
@@ -1638,20 +1669,20 @@ cqueue_diff_projects(const ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
  * A diff new/old is made regarding cluster queue acl/xacl.
  * Userset references are returned in new_acl/old_acl.
  *
- * @param new_cqueue New cluster queue (CQ_Type)
- * @param old_cqueue Old cluster queue (CQ_Type)
- * @param new_acl New userset references (US_Type)
- * @param old_acl Old userset references (US_Type)
+ * @param new_cqueue New cluster queue (CQ_Type), or an empty handle
+ * @param old_cqueue Old cluster queue (CQ_Type), or an empty handle
+ * @param new_acl New userset references (US_Type), extended; nullptr to collect none
+ * @param old_acl Old userset references (US_Type), extended; nullptr to collect none
  *
  * @note MT-NOTE: cqueue_diff_usersets() is MT safe
  */
 void
 cqueue_diff_usersets(const ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
-                     const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, lList **new_acl, lList **old_acl) {
-   // the lists accumulate over several calls of the caller, so the out-parameters stay raw
-   cqueue_diff_sublist(new_cqueue, old_cqueue, CQ_acl, CQ_xacl,
-                       AUSRLIST_value, US_name, US_Type, new_acl, old_acl);
-   lDiffListStr(US_name, new_acl, old_acl);
+                     const ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue,
+                     ocs::tom::ListPtr<ocs::tom::US> *new_acl, ocs::tom::ListPtr<ocs::tom::US> *old_acl) {
+   DENTER(TOP_LAYER);
+   cqueue_diff_sublist<CQ_acl, CQ_xacl, AUSRLIST_value, US_name>(new_cqueue, old_cqueue, new_acl, old_acl);
+   DRETURN_VOID;
 }
 
 
@@ -1674,21 +1705,16 @@ cqueue_update_categories(const ocs::tom::ConstElement<ocs::tom::CQ> new_cq,
    DENTER(TOP_LAYER);
 
    {
-      // cqueue_diff_projects() fills raw out-parameters, the lists are owned right after
-      lList *raw_new = nullptr;
-      lList *raw_old = nullptr;
-      cqueue_diff_projects(new_cq, old_cq, &raw_new, &raw_old);
-      const ocs::tom::ListPtr<ocs::tom::PR> new_lp(raw_new);
-      const ocs::tom::ListPtr<ocs::tom::PR> old_lp(raw_old);
+      ocs::tom::ListPtr<ocs::tom::PR> new_lp;
+      ocs::tom::ListPtr<ocs::tom::PR> old_lp;
+      cqueue_diff_projects(new_cq, old_cq, &new_lp, &old_lp);
       project_update_categories(new_lp.get(), old_lp.get(), gdi_session);
    }
 
    {
-      lList *raw_new = nullptr;
-      lList *raw_old = nullptr;
-      cqueue_diff_usersets(new_cq, old_cq, &raw_new, &raw_old);
-      const ocs::tom::ListPtr<ocs::tom::US> new_lp(raw_new);
-      const ocs::tom::ListPtr<ocs::tom::US> old_lp(raw_old);
+      ocs::tom::ListPtr<ocs::tom::US> new_lp;
+      ocs::tom::ListPtr<ocs::tom::US> old_lp;
+      cqueue_diff_usersets(new_cq, old_cq, &new_lp, &old_lp);
       userset_update_categories(new_lp.get(), old_lp.get(), gdi_session);
    }
    DRETURN_VOID;

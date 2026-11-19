@@ -2891,7 +2891,9 @@ int sge_split_queue_load(const bool monitor_next_run, const ocs::tom::List<ocs::
          } else if (!granted || (sconf_get_global_load_correction() ||
                               ocs::tom::find_first<JG_qhostname>(granted, ocs::tom::get<QU_qhostname>(qep)))) {
             // ttype is QU_load_thresholds or QU_suspend_thresholds
-            auto thresholds = ocs::tom::ConstList<ocs::tom::CE>(lGetList(qep, ttype));
+            const ocs::tom::ConstList<ocs::tom::CE> thresholds = ttype == QU_suspend_thresholds
+                                                                       ? ocs::tom::get<QU_suspend_thresholds>(qep)
+                                                                       : ocs::tom::get<QU_load_thresholds>(qep);
             nverified++;
 
             if (sge_load_alarm(reason, sizeof(reason), qep, thresholds, exechost_list, centry_list, load_adjustments,

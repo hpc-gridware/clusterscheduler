@@ -137,24 +137,14 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(const ocs::tom::Lis
       pe_diff_usersets(pe, nullptr, &u_list, nullptr);
    }
 
-   {
-      // cqueue_diff_*() and host_diff_*() still fill untyped lists; the lists move out and back in.
-      // They hold project (PR) and user set (US) references as the typed diff functions above do.
-      lList *raw_p_list = p_list.release();
-      lList *raw_u_list = u_list.release();
+   for (const auto cq : master_cqueue_list) {
+      cqueue_diff_projects(cq, nullptr, &p_list, nullptr);
+      cqueue_diff_usersets(cq, nullptr, &u_list, nullptr);
+   }
 
-      for (const auto cq : master_cqueue_list) {
-         cqueue_diff_projects(cq, nullptr, &raw_p_list, nullptr);
-         cqueue_diff_usersets(cq, nullptr, &raw_u_list, nullptr);
-      }
-
-      for (const auto hep : master_host_list) {
-         host_diff_projects(hep, nullptr, &raw_p_list, nullptr);
-         host_diff_usersets(hep, nullptr, &raw_u_list, nullptr);
-      }
-
-      p_list = ocs::tom::ListPtr<ocs::tom::PR>::from_typed(raw_p_list);
-      u_list = ocs::tom::ListPtr<ocs::tom::US>::from_typed(raw_u_list);
+   for (const auto hep : master_host_list) {
+      host_diff_projects(hep, nullptr, &p_list, nullptr);
+      host_diff_usersets(hep, nullptr, &u_list, nullptr);
    }
 
    /*

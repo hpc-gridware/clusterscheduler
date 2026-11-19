@@ -260,7 +260,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    }
 
    if ((tmp_name = ocs::tom::get<CONF_name>(aConf)) == nullptr) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CONF_name>::info.name, __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -450,7 +450,7 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::L
    }
 
    if ((tmp_name = ocs::tom::get<CONF_name>(aConf)) == nullptr) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CONF_name>::info.name, __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

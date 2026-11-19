@@ -38,6 +38,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Select.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
@@ -168,12 +169,11 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    if (hostlist_wanted && static_cast<uint32_t>(ocs::tom::get<CQ_hostlist>(copy).size()) != hostlist_before) {
       fields.push_back(CQ_hostlist);
    }
-   fields.push_back(NoName);
 
-   // the reduction is given at run time by the fields that lost an entry
-   lEnumeration *what = lIntVector2What(CQ_Type, fields.data());
-   auto reduced = ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(lSelectElemPack(*copy, nullptr, what, false, nullptr));
-   lFreeWhat(&what);
+   // the reduction is given at run time by the fields that lost an entry; the element selection has no typed form
+   const auto what = ocs::tom::what<ocs::tom::CQ>(fields);
+   auto reduced =
+           ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(lSelectElemPack(*copy, nullptr, what.get(), false, nullptr));
    copy.reset();
 
    // the on_success hook of cluster queues leaves nothing for after the request

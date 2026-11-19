@@ -583,7 +583,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElem
 
    /* ep is no ar_del element, if ep has no ID_str */
    if (!ocs::tom::has<ID_str>(ep)) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(ID_str), __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<ID_str>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);
@@ -642,7 +642,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElem
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             error = true;
          } else if (verify_str_key(alpp, id_str, MAX_VERIFY_STRING,
-                                   lNm2Str(AR_name), KEY_TABLE) != STATUS_OK) {
+                                   ocs::tom::FieldTraits<AR_name>::info.name, KEY_TABLE) != STATUS_OK) {
             error = true;
          } else {
             new_where = ocs::tom::field<AR_name>().like(id_str);

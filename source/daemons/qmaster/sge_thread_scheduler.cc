@@ -63,6 +63,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
@@ -456,6 +457,67 @@ sge_scheduler_terminate(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DRETURN_VOID;
 }
 
+/** @brief Select from a list of the scheduler's mirror, with the results lSelect() gave
+ *
+ * The scheduler thread must not end in an exception, and its callers tell
+ * "no list" from an empty one. So unlike ConstList<T>::select() this gives an
+ * empty handle when nothing is selected, and an empty handle instead of an
+ * exception when the selection fails (no memory, a field the source does not
+ * hold) - as lSelect() did.
+ *
+ * @tparam T the object type
+ * @param list the list of the mirror; an empty handle selects nothing
+ * @param where the condition; an empty one selects every element
+ * @param what the fields to copy
+ * @param name the name of the result, or nullptr for the name of @p list
+ * @return the selection with the reduced descriptor of @p what, an empty handle if nothing was selected or the
+ *         selection failed
+ */
+template <ocs::tom::ObjectType T>
+static ocs::tom::ListPtr<T>
+ocs_scheduler_select(const ocs::tom::ConstList<T> list, const ocs::tom::Where<T> &where,
+                     const ocs::tom::What<T> &what, const char *name = nullptr) {
+   ocs::tom::ListPtr<T> selected;
+   try {
+      selected = list.select(where, what, name);
+   } catch (const ocs::tom::ListCoreError &) {
+      return {};
+   } catch (const ocs::tom::FieldException &) {
+      return {};
+   }
+   if (selected && selected->empty()) {
+      selected.reset();
+   }
+   return selected;
+}
+
+/** @brief Add the queue instances a condition selects to one of the scheduler's queue lists
+ *
+ * The first selection becomes the list, named @p name and with the reduced
+ * descriptor of the selection; every further one is moved to its end.
+ *
+ * @param dst the queue list of the snapshot, created by the first selection
+ * @param qinstance_list the queue instances of a cluster queue of the mirror
+ * @param where the condition; an empty one selects every queue instance
+ * @param what the fields to copy
+ * @param name the name of the queue list
+ */
+static void
+ocs_scheduler_append_selection(ocs::tom::ListPtr<ocs::tom::QU> &dst,
+                               const ocs::tom::ConstList<ocs::tom::QU> qinstance_list,
+                               const ocs::tom::Where<ocs::tom::QU> &where, const ocs::tom::What<ocs::tom::QU> &what,
+                               const char *name) {
+   auto selected = ocs_scheduler_select(qinstance_list, where, what, name);
+   if (!selected) {
+      return;
+   }
+   if (!dst) {
+      dst = std::move(selected);
+   } else {
+      dst->splice(std::move(selected));
+   }
+}
+
 /**
  * @brief Main function of the scheduler thread
  *
@@ -481,12 +543,10 @@ sge_scheduler_main(void *arg) {
    monitoring_t monitor;
    sge_evc_class_t *evc = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   sge_where_what_t where_what;
+   sge_where_what_t where_what{};
 #ifdef WITH_GPERF
    sge_gperf_per_thread_t gperf_data;
 #endif
-
-   memset(&where_what, 0, sizeof(where_what));
 
    // set thread name and id used by logging an others
    const char *thread_name = thread_config->thread_name;
@@ -652,11 +712,9 @@ sge_scheduler_main(void *arg) {
           * copy/filter data necessary for the scheduler run
           * and run the scheduler method
           */
-         // the selections have the reduced descriptor of the subscription, hence the checked handles
-         copy.dept_list = ocs::tom::ListPtr<ocs::tom::US>(
-                 lSelect(nullptr, master_userset_list, where_what.where_dept, where_what.what_acldept));
-         copy.acl_list = ocs::tom::ListPtr<ocs::tom::US>(
-                 lSelect(nullptr, master_userset_list, where_what.where_acl, where_what.what_acldept));
+         // the selections keep the reduced descriptor of the subscription
+         copy.dept_list = ocs_scheduler_select(master_userset_list, where_what.where_dept, where_what.what_acldept);
+         copy.acl_list = ocs_scheduler_select(master_userset_list, where_what.where_acl, where_what.what_acldept);
 
          DPRINTF("RAW CQ:%d, J:%d, H:%d, C:%d, A:%d, D:%d, P:%d, CKPT:%d,"
                   " US:%d, PR:%d, RQS:%d, AR:%d, S:nd:%d/lf:%d\n",
@@ -720,10 +778,14 @@ sge_scheduler_main(void *arg) {
 
          // within the scheduler we only need QIs create one big qinstance list
          {
-            // the selection is built from the descriptor of the first qinstance list, which is the reduced one of
-            // the subscription; the three result lists have reduced descriptors, hence the raw lWhat() and the lists
-            // created with the descriptor of the first selection
-            lEnumeration *what_queue3 = nullptr;
+            // the selections keep the reduced descriptor of the subscription; a reduced descriptor keeps the
+            // positions of the full type, so the selection of the full name and the state serves every list
+            ocs::tom::What<ocs::tom::QU> what_queue3;
+            try {
+               what_queue3 = ocs::tom::what<QU_full_name, QU_state>();
+            } catch (const ocs::tom::ListCoreError &) {
+               // no memory: all_queue_list stays empty, as it did when lWhat() returned nullptr
+            }
 
             for (const auto cqueue : master_cqueue_list) {
                const auto qinstance_list = cqueue.get<CQ_qinstances>();
@@ -733,44 +795,18 @@ sge_scheduler_main(void *arg) {
                }
 
                /* all_queue_list contains all queue instances with state and full queue name only */
-               if (!what_queue3) {
-                  what_queue3 = lWhat("%T(%I%I)", lGetListDescr(qinstance_list), QU_full_name, QU_state);
-               }
-               auto t = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(
-                       lSelect(nullptr, qinstance_list, nullptr, what_queue3));
-               if (t) {
-                  if (copy.all_queue_list == nullptr) {
-                     // the list gets the reduced descriptor of the selection
-                     copy.all_queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("all", lGetListDescr(*t));
-                  }
-                  copy.all_queue_list->splice(std::move(t));
+               if (what_queue3) {
+                  ocs_scheduler_append_selection(copy.all_queue_list, qinstance_list,
+                                                 ocs::tom::Where<ocs::tom::QU>(), what_queue3, "all");
                }
 
                // ensure_valid_what_and_where()
-               auto t_qu = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(
-                       lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2));
-               if (t_qu) {
-                  if (copy.queue_list == nullptr) {
-                     // the list gets the reduced descriptor of the selection
-                     copy.queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("enabled", lGetListDescr(*t_qu));
-                  }
-                  copy.queue_list->splice(std::move(t_qu));
-               }
+               ocs_scheduler_append_selection(copy.queue_list, qinstance_list, where_what.where_queue,
+                                              where_what.what_queue2, "enabled");
 
                // ensure_valid_what_and_where()
-               auto t_qu_2 = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(
-                       lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2));
-               if (t_qu_2) {
-                  if (copy.dis_queue_list == nullptr) {
-                     // the list gets the reduced descriptor of the selection
-                     copy.dis_queue_list =
-                             ocs::tom::ListPtr<ocs::tom::QU>::create("disabled", lGetListDescr(*t_qu_2));
-                  }
-                  copy.dis_queue_list->splice(std::move(t_qu_2));
-               }
-            }
-            if (what_queue3) {
-               lFreeWhat(&what_queue3);
+               ocs_scheduler_append_selection(copy.dis_queue_list, qinstance_list, where_what.where_queue2,
+                                              where_what.what_queue2, "disabled");
             }
          }
 

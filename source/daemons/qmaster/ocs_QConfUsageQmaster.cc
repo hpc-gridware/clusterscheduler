@@ -99,8 +99,7 @@ namespace {
           * when the client did it, and one line per user would bury a failure */
          if (ret != STATUS_OK) {
             all_ok = false;
-            const lListElem *aep;
-            for_each_ep(aep, alp) {
+            for (const auto aep : *alp) {
                if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
                   answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), ocs::tom::get<AN_status>(aep),
                                   ANSWER_QUALITY_ERROR);

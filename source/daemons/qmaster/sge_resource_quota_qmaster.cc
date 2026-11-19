@@ -297,7 +297,7 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstEle
 
    /* ep is no rqs element, if ep has no RQS_name */
    if (!ep.has<RQS_name>()) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(RQS_name), __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<RQS_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

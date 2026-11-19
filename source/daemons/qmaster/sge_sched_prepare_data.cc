@@ -45,8 +45,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/ocs_cull_descr.h"
-
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_qinstance.h"
@@ -101,8 +99,7 @@ static const int cqueue_field_ids[] = {
         CQ_s_rt,
         CQ_s_rss,
         CQ_s_stack,
-        CQ_s_vmem,
-        NoName
+        CQ_s_vmem
 };
 
 static const int qinstance_field_ids[] = {
@@ -155,9 +152,7 @@ static const int qinstance_field_ids[] = {
         QU_pe_list,
         QU_ckpt_list,
 
-        QU_state_changes,
-
-        NoName
+        QU_state_changes
 };
 
 static const int job_nm[] = {
@@ -202,8 +197,7 @@ static const int job_nm[] = {
         JB_ja_tasks,
         JB_ar,
         JB_ja_task_concurrency,
-        JB_binding,
-        NoName
+        JB_binding
 };
 
 static const int jat_nm[] = {
@@ -227,8 +221,7 @@ static const int jat_nm[] = {
         JAT_prio,
         JAT_ntix,
         JAT_wallclock_limit,
-        JAT_granted_resources_list,
-        NoName
+        JAT_granted_resources_list
 };
 
 static const int pet_nm[] = {
@@ -237,8 +230,7 @@ static const int pet_nm[] = {
         PET_granted_destin_identifier_list,
         PET_usage,
         PET_scaled_usage,
-        PET_previous_usage,
-        NoName
+        PET_previous_usage
 };
 
 static const int eh_nm[] = {
@@ -256,8 +248,7 @@ static const int eh_nm[] = {
         EH_seq_no,
         EH_resource_utilization,
         EH_reschedule_unknown_list,
-        EH_internal_topology,
-        NoName
+        EH_internal_topology
 };
 
 static const int pe_nm[] = {
@@ -270,177 +261,136 @@ static const int pe_nm[] = {
         PE_job_is_first_task,
         PE_resource_utilization,
         PE_urgency_slots,
-        PE_ignore_slave_requests_on_master_host,
-        NoName
+        PE_ignore_slave_requests_on_master_host
 };
 
 
 /** @brief Build whatever of the subscription is not built yet
+ *
+ * A selection that cannot be built (no memory) stays empty; the missing ones are reported as critical, as before.
+ *
  * @param where_what the subscription, filled in place
  */
 void
 ensure_valid_what_and_where(sge_where_what_t *where_what) {
    DENTER(GDI_LAYER);
 
-   const lDescr *tmp_what_descr = nullptr;
+   try {
+      /* acl */
+      if (!where_what->where_acl) {
+         where_what->where_acl = ocs::tom::field<US_type>().has_bits(US_ACL);
+      }
+      if (!where_what->what_acldept) {
+         where_what->what_acldept = ocs::tom::what_all<ocs::tom::US>();
+      }
 
-   /* prepare temp data used to create new lists with partial descriptor */
-   if (where_what->what_queue2 == nullptr || where_what->where_queue2 == nullptr ||
-       where_what->what_queue == nullptr || where_what->where_queue == nullptr) {
-      lEnumeration *tmp_what_queue = lIntVector2What(QU_Type, qinstance_field_ids);
-      tmp_what_descr = lGetReducedDescr(QU_Type, tmp_what_queue);
-      lFreeWhat(&tmp_what_queue);
-   }
+      /* cqueues */
+      if (!where_what->what_cqueue) {
+         where_what->what_cqueue = ocs::tom::what<ocs::tom::CQ>(cqueue_field_ids);
+      }
 
-   /* acl */
-   if (where_what->where_acl == nullptr) {
-      where_what->where_acl = lWhere("%T(%I m= %u)", US_Type, US_type, US_ACL);
-   }
-   if (where_what->what_acldept == nullptr) {
-      where_what->what_acldept = lWhat("%T(ALL)", US_Type);
-   }
+      /* departments */
+      if (!where_what->where_dept) {
+         where_what->where_dept = ocs::tom::field<US_type>().has_bits(US_DEPT);
+      }
 
-   /* cqueues */
-   if (where_what->what_cqueue == nullptr) {
-      where_what->what_cqueue = lIntVector2What(CQ_Type, cqueue_field_ids);
-   }
+      /* configuration */
+      if (!where_what->where_config) {
+         const char *hostname = component_get_qualified_hostname();
+         where_what->where_config = ocs::tom::field<CONF_name>().equals_nocase(SGE_GLOBAL_NAME) ||
+                                    ocs::tom::field<CONF_name>().same_host(hostname);
+         where_what->what_config = ocs::tom::what_all<ocs::tom::CONF>();
+      }
 
-   /* departments */
-   if (where_what->where_dept == nullptr) {
-      where_what->where_dept = lWhere("%T(%I m= %u)", US_Type, US_type, US_DEPT);
-   }
+      /* host */
+      if (!where_what->where_host) {
+         where_what->where_host = !ocs::tom::field<EH_name>().equals_nocase(SGE_TEMPLATE_NAME);
+      }
+      if (!where_what->what_host) {
+         where_what->what_host = ocs::tom::what<ocs::tom::EH>(eh_nm);
+      }
 
-   /* configuration */
-   if (where_what->where_config == nullptr) {
-      const char *hostname = component_get_qualified_hostname();
-      where_what->where_config = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name, hostname);
-      where_what->what_config = lWhat("%T(ALL)", CONF_Type);
-   }
+      /* job */
+      if (!where_what->what_job) {
+         where_what->what_job = ocs::tom::what<ocs::tom::JB>(job_nm);
+      }
 
-   /* host */
-   if (where_what->where_host == nullptr) {
-      where_what->where_host = lWhere("%T(!(%Ic=%s))", EH_Type, EH_name, SGE_TEMPLATE_NAME);
-   }
-   if (where_what->what_host == nullptr) {
-      where_what->what_host = lIntVector2What(EH_Type, eh_nm);
-   }
+      /* jat */
+      if (!where_what->what_jat) {
+         where_what->what_jat = ocs::tom::what<ocs::tom::JAT>(jat_nm);
+      }
 
-   /* job */
-   if (where_what->what_job == nullptr) {
-      where_what->what_job = lIntVector2What(JB_Type, job_nm);
-   }
+      /* pet */
+      if (!where_what->what_pet) {
+         where_what->what_pet = ocs::tom::what<ocs::tom::PET>(pet_nm);
+      }
 
-   /* jat */
-   if (where_what->what_jat == nullptr) {
-      where_what->what_jat = lIntVector2What(JAT_Type, jat_nm);
-   }
+      /* pe */
+      if (!where_what->what_pe) {
+         where_what->what_pe = ocs::tom::what<ocs::tom::PE>(pe_nm);
+      }
 
-   /* pet */
-   if (where_what->what_pet == nullptr) {
-      where_what->what_pet = lIntVector2What(PET_Type, pet_nm);
-   }
+      // qinstances (remaining are available, disabled, calendar disabled, orphaned, alarm, suspend alarm)
+      // A reduced descriptor keeps the positions of the full type, so the conditions on QU_state built on the
+      // full type hold for the reduced queue instances of the subscription as well.
+      if (!where_what->where_queue) {
+         where_what->where_queue =
+                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) &&                // only not suspended queues
+                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED_ON_SUBORDINATE) && // not suspended on subordinate
+                 !ocs::tom::field<QU_state>().has_bits(QI_CAL_SUSPENDED) &&            // not suspended on calendar
+                 !ocs::tom::field<QU_state>().has_bits(QI_ERROR) &&                    // not in error state
+                 !ocs::tom::field<QU_state>().has_bits(QI_UNKNOWN) &&                  // not in unknown state
+                 !ocs::tom::field<QU_state>().has_bits(QI_AMBIGUOUS);                  // not in ambiguous state
+                 // @todo: what about the QI_ORPHANED, QI_ALARM, QI_SUSPEND_ALARM ???
+      }
+      if (!where_what->what_queue) {
+         where_what->what_queue = ocs::tom::what<ocs::tom::QU>(qinstance_field_ids);
+      }
 
-   /* pe */
-   if (where_what->what_pe == nullptr) {
-      where_what->what_pe = lIntVector2What(PE_Type, pe_nm);
-   }
-
-   // qinstances (remaining are available, disabled, calendar disabled, orphaned, alarm, suspend alarm)
-   if (where_what->where_queue == nullptr) {
-      where_what->where_queue = lWhere("%T("
-                                       " !(%I m= %u) &&"
-                                       " !(%I m= %u) &&"
-                                       " !(%I m= %u) &&"
-                                       " !(%I m= %u) &&"
-                                       " !(%I m= %u) &&"
-                                       " !(%I m= %u))",
-                                       tmp_what_descr,
-                                       QU_state, QI_SUSPENDED,                // only not suspended queues
-                                       QU_state, QI_SUSPENDED_ON_SUBORDINATE, // not suspended on subordinate
-                                       QU_state, QI_CAL_SUSPENDED,            // not suspended on calendar
-                                       QU_state, QI_ERROR,                    // not in error state
-                                       QU_state, QI_UNKNOWN,                  // not in unknown state
-                                       QU_state, QI_AMBIGUOUS                 // not in ambiguous state
-
-                                       // @todo: what about the QI_ORPHANED, QI_ALARM, QI_SUSPEND_ALARM ???
-      );
-   }
-   if (where_what->what_queue == nullptr) {
-      where_what->what_queue = lIntVector2What(QU_Type, qinstance_field_ids);
-   }
-
-   // qinstances (remaining are calendar suspended (possibly also orphaned, alarm, suspend alarm) but not also ...)
-   if (where_what->where_queue2 == nullptr) {
-      where_what->where_queue2 = lWhere("%T("
-                                        "  (%I m= %u) &&"                        // todo: only calendar suspended queues ???
-                                        " !(%I m= %u) &&"
-                                        " !(%I m= %u) &&"
-                                        " !(%I m= %u) &&"
-                                        " !(%I m= %u) &&"
-                                        " !(%I m= %u) &&"
-                                        " !(%I m= %u) &&"
-                                        " !(%I m= %u))",
-                                        tmp_what_descr,
-                                        QU_state, QI_CAL_SUSPENDED,              // only calendar suspended queues
-                                        QU_state, QI_CAL_DISABLED,               // not calendar disabled
-                                        QU_state, QI_SUSPENDED,                  // not suspended
-                                        QU_state, QI_SUSPENDED_ON_SUBORDINATE,   // not suspended on subordinate
-                                        QU_state, QI_ERROR,                      // not in error state
-                                        QU_state, QI_UNKNOWN,                    // not in unknown state
-                                        QU_state, QI_DISABLED,                   // not disabled
-                                        QU_state, QI_AMBIGUOUS                   // not in ambiguous state
-      );
-   }
-   if (where_what->what_queue2 == nullptr) {
-      where_what->what_queue2 = lWhat("%T(ALL)", tmp_what_descr);
-   }
-   if (where_what->where_all_queue == nullptr) {
-      where_what->where_all_queue = lWhere("%T(%I!=%s)", QU_Type,
-                                           QU_qname, SGE_TEMPLATE_NAME);
+      // qinstances (remaining are calendar suspended (possibly also orphaned, alarm, suspend alarm) but not also ...)
+      if (!where_what->where_queue2) {
+         where_what->where_queue2 =
+                 ocs::tom::field<QU_state>().has_bits(QI_CAL_SUSPENDED) &&             // todo: only calendar suspended?
+                 !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED) &&             // not calendar disabled
+                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) &&                // not suspended
+                 !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED_ON_SUBORDINATE) && // not suspended on subordinate
+                 !ocs::tom::field<QU_state>().has_bits(QI_ERROR) &&                    // not in error state
+                 !ocs::tom::field<QU_state>().has_bits(QI_UNKNOWN) &&                  // not in unknown state
+                 !ocs::tom::field<QU_state>().has_bits(QI_DISABLED) &&                 // not disabled
+                 !ocs::tom::field<QU_state>().has_bits(QI_AMBIGUOUS);                  // not in ambiguous state
+      }
+      if (!where_what->what_queue2) {
+         where_what->what_queue2 = ocs::tom::what_all<ocs::tom::QU>();
+      }
+      if (!where_what->where_all_queue) {
+         where_what->where_all_queue = ocs::tom::field<QU_qname>() != SGE_TEMPLATE_NAME;
+      }
+   } catch (const std::exception &) {
+      // no memory: what could not be built stays empty and is reported below, as lWhere()/lWhat() failing was
    }
 
-   if (tmp_what_descr == nullptr ||
-       where_what->where_acl == nullptr || where_what->what_acldept == nullptr ||
-       where_what->what_cqueue == nullptr || where_what->where_dept == nullptr ||
-       where_what->where_host == nullptr || where_what->what_host == nullptr ||
-       where_what->what_job == nullptr || where_what->what_jat == nullptr ||
-       where_what->what_pet == nullptr || where_what->where_queue == nullptr ||
-       where_what->what_queue == nullptr || where_what->where_queue2 == nullptr ||
-       where_what->what_queue2 == nullptr || where_what->where_all_queue == nullptr ||
-       where_what->what_pe == nullptr) {
+   if (!where_what->where_acl || !where_what->what_acldept ||
+       !where_what->what_cqueue || !where_what->where_dept ||
+       !where_what->where_host || !where_what->what_host ||
+       !where_what->what_job || !where_what->what_jat ||
+       !where_what->what_pet || !where_what->where_queue ||
+       !where_what->what_queue || !where_what->where_queue2 ||
+       !where_what->what_queue2 || !where_what->where_all_queue ||
+       !where_what->what_pe) {
       CRITICAL(SFNMAX, MSG_SCHEDD_UNABLE_TO_SETUP_FILTER);
    }
-   /* cleanup tmp data */
-   ocs_cull_descr_release(&tmp_what_descr);
    DRETURN_VOID;
 }
 
 /** @brief Release the subscription
+ *
+ * Every selection is freed and its handle left empty, so the subscription can be built again.
+ *
  * @param where_what the subscription
  */
 void
 free_what_and_where(sge_where_what_t *where_what) {
-   lFreeWhere(&(where_what->where_queue));
-   lFreeWhere(&(where_what->where_queue2));
-   lFreeWhere(&(where_what->where_all_queue));
-   lFreeWhere(&(where_what->where_cqueue));
-   lFreeWhere(&(where_what->where_job));
-   lFreeWhere(&(where_what->where_host));
-   lFreeWhere(&(where_what->where_dept));
-   lFreeWhere(&(where_what->where_acl));
-   lFreeWhere(&(where_what->where_jat));
-   lFreeWhere(&(where_what->where_config));
-
-   lFreeWhat(&(where_what->what_queue));
-   lFreeWhat(&(where_what->what_queue2));
-   lFreeWhat(&(where_what->what_cqueue));
-   lFreeWhat(&(where_what->what_job));
-   lFreeWhat(&(where_what->what_host));
-   lFreeWhat(&(where_what->what_acldept));
-   lFreeWhat(&(where_what->what_jat));
-   lFreeWhat(&(where_what->what_pet));
-   lFreeWhat(&(where_what->what_pe));
-   lFreeWhat(&(where_what->what_config));
+   *where_what = sge_where_what_t{};
 }
 
 /** @brief React to a request that the next scheduling run be profiled

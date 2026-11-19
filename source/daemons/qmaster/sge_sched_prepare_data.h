@@ -49,37 +49,48 @@
 #include "sgeobj/sge_object.h"
 #include "mir/sge_mirror.h"
 #include "cull/cull.h"
+#include "tom/ocs_Select.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 /** @brief Which objects the scheduler subscribes to, and which of their fields
  *
  * Built once and reused for every subscription; ensure_valid_what_and_where()
- * rebuilds whatever is missing.
+ * rebuilds whatever is missing. Every member owns its selection; an empty
+ * handle stands for "no condition" or "not built yet".
  */
 typedef struct {
-   lCondition *where_queue;      ///< Which queue instances are of interest
-   lCondition *where_queue2;     ///< The same, for the second queue subscription
-   lCondition *where_all_queue;  ///< Which queue instances go into the all-queue list
-   lCondition *where_cqueue;     ///< Which cluster queues are of interest
-   lCondition *where_job;        ///< Which jobs are of interest
-   lCondition *where_host;       ///< Which hosts are of interest
-   lCondition *where_dept;       ///< Which departments are of interest
-   lCondition *where_acl;        ///< Which access control lists are of interest
-   lCondition *where_jat;        ///< Which array tasks are of interest
-   lCondition *where_config;     ///< Which configuration entries are of interest
+   ocs::tom::Where<ocs::tom::QU> where_queue;      ///< Which queue instances are of interest
+   ocs::tom::Where<ocs::tom::QU> where_queue2;     ///< The same, for the second queue subscription
+   ocs::tom::Where<ocs::tom::QU> where_all_queue;  ///< Which queue instances go into the all-queue list
+   ocs::tom::Where<ocs::tom::CQ> where_cqueue;     ///< Which cluster queues are of interest
+   ocs::tom::Where<ocs::tom::JB> where_job;        ///< Which jobs are of interest
+   ocs::tom::Where<ocs::tom::EH> where_host;       ///< Which hosts are of interest
+   ocs::tom::Where<ocs::tom::US> where_dept;       ///< Which departments are of interest
+   ocs::tom::Where<ocs::tom::US> where_acl;        ///< Which access control lists are of interest
+   ocs::tom::Where<ocs::tom::JAT> where_jat;       ///< Which array tasks are of interest
+   ocs::tom::Where<ocs::tom::CONF> where_config;   ///< Which configuration entries are of interest
 
-   lEnumeration *what_queue;     ///< Which queue instance fields to receive
-   lEnumeration *what_queue2;    ///< The same, for the second queue subscription
-   lEnumeration *what_cqueue;    ///< Which cluster queue fields to receive
-   lEnumeration *what_job;       ///< Which job fields to receive
-   lEnumeration *what_host;      ///< Which host fields to receive
-   lEnumeration *what_acldept;   ///< Which access control list and department fields to receive
-   lEnumeration *what_jat;       ///< Which array task fields to receive
-   lEnumeration *what_pet;       ///< Which PE task fields to receive
-   lEnumeration *what_pe;        ///< Which parallel environment fields to receive
-   lEnumeration *what_config;    ///< Which configuration fields to receive
+   ocs::tom::What<ocs::tom::QU> what_queue;        ///< Which queue instance fields to receive
+   ocs::tom::What<ocs::tom::QU> what_queue2;       ///< The same, for the second queue subscription
+   ocs::tom::What<ocs::tom::CQ> what_cqueue;       ///< Which cluster queue fields to receive
+   ocs::tom::What<ocs::tom::JB> what_job;          ///< Which job fields to receive
+   ocs::tom::What<ocs::tom::EH> what_host;         ///< Which host fields to receive
+   ocs::tom::What<ocs::tom::US> what_acldept;      ///< Which access control list and department fields to receive
+   ocs::tom::What<ocs::tom::JAT> what_jat;         ///< Which array task fields to receive
+   ocs::tom::What<ocs::tom::PET> what_pet;         ///< Which PE task fields to receive
+   ocs::tom::What<ocs::tom::PE> what_pe;           ///< Which parallel environment fields to receive
+   ocs::tom::What<ocs::tom::CONF> what_config;     ///< Which configuration fields to receive
 } sge_where_what_t;
 
-void 
+void
 ensure_valid_what_and_where(sge_where_what_t *where_what);
 
 void

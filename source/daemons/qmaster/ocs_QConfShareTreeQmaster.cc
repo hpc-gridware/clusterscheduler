@@ -335,9 +335,8 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
          answer_list_add(answer_list, MSG_TREE_MODIFIEDSHARETREE, STATUS_OK, ANSWER_QUALITY_INFO);
          ok = true;
       } else {
-         const lListElem *aep;
          bool reported = false;
-         for_each_ep(aep, alp) {
+         for (const auto aep : *alp) {
             if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
                answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), ocs::tom::get<AN_status>(aep),
                                ANSWER_QUALITY_ERROR);

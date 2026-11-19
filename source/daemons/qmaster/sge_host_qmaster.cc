@@ -328,7 +328,7 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    }
    /* ep is no host element, if ep has no EH_name */
    if (!ocs::tom::has<EH_name>(hep)) {
-      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(EH_name), __func__);
+      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<EH_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -2034,54 +2034,89 @@ verify_scaling_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom
 }
 
 /**
+ * @brief Collect the references of two reference lists of an exec host
+ *
+ * Every key found in @p Snm1 or @p Snm2 is added once; the list is created,
+ * named "", with the first key.
+ *
+ * @tparam Snm1 the first exec host reference list field, e.g. EH_prj
+ * @tparam Snm2 the second exec host reference list field, e.g. EH_xprj
+ * @tparam KeyF the key field of a reference, e.g. PR_name
+ * @param host the exec host
+ * @param refs the references collected so far, extended in place
+ */
+template <auto Snm1, auto Snm2, auto KeyF>
+static void
+ocs_host_collect_refs(const ocs::tom::ConstElement<ocs::tom::EH> host,
+                      ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type> &refs) {
+   DENTER(TOP_LAYER);
+   for (const auto ref_list : {ocs::tom::get<Snm1>(host), ocs::tom::get<Snm2>(host)}) {
+      for (const auto ep : ref_list) {
+         const char *p = ocs::tom::get<KeyF>(ep);
+         // a reference without a name was not added, as lAddElemStr() refused a null key
+         if (p == nullptr) {
+            continue;
+         }
+         if (!refs) {
+            refs = ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type>::create("");
+         }
+         if (!refs->template find_first<KeyF>(p)) {
+            refs->template emplace_back<KeyF>(p);
+         }
+      }
+   }
+   DRETURN_VOID;
+}
+
+/**
  * @brief Diff exechost sublists
  *
- * Makes a diff userset/project sublists of an exec host.
+ * Makes a diff userset/project sublists of an exec host. Names in both lists
+ * are removed from both; a list that becomes empty then is freed, as
+ * lDiffListStr() did.
  *
- * @param new_host New exec host (EH_Type)
- * @param old_host Old exec host (EH_Type)
- * @param snm1 First exec host sublist field
- * @param snm2 Second exec host sublist field
- * @param key_nm Field with key in sublist
- * @param dp Type for outgoing sublist arguments
- * @param new_sublist List of new references
- * @param old_sublist List of old references
+ * @tparam Snm1 the first exec host reference list field
+ * @tparam Snm2 the second exec host reference list field
+ * @tparam KeyF the key field of a reference
+ * @param new_host New exec host (EH_Type), or an empty handle
+ * @param old_host Old exec host (EH_Type), or an empty handle
+ * @param new_sublist List of new references, extended; nullptr to collect none
+ * @param old_sublist List of old references, extended; nullptr to collect none
  *
  * @note MT-NOTE: host_diff_sublist() is MT safe
  */
+template <auto Snm1, auto Snm2, auto KeyF>
 static void
-host_diff_sublist(const lListElem *new_host, const lListElem *old_host, int snm1, int snm2, int key_nm,
-                  const lDescr *dp, lList **new_sublist, lList **old_sublist) {
-   const lListElem *ep;
-   const char *p;
+host_diff_sublist(const ocs::tom::ConstElement<ocs::tom::EH> new_host,
+                  const ocs::tom::ConstElement<ocs::tom::EH> old_host,
+                  ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type> *new_sublist,
+                  ocs::tom::ListPtr<typename ocs::tom::FieldTraits<KeyF>::Type> *old_sublist) {
+   DENTER(TOP_LAYER);
 
    /* collect 'old' entries in 'old_sublist' */
    if (old_host && old_sublist) {
-      for_each_ep(ep, lGetList(old_host, snm1)) {
-         p = lGetString(ep, key_nm);
-         if (!lGetElemStr(*old_sublist, key_nm, p))
-            lAddElemStr(old_sublist, key_nm, p, dp);
-      }
-      for_each_ep(ep, lGetList(old_host, snm2)) {
-         p = lGetString(ep, key_nm);
-         if (!lGetElemStr(*old_sublist, key_nm, p))
-            lAddElemStr(old_sublist, key_nm, p, dp);
-      }
+      ocs_host_collect_refs<Snm1, Snm2, KeyF>(old_host, *old_sublist);
    }
 
    /* collect 'new' entries in 'new_sublist' */
    if (new_host && new_sublist) {
-      for_each_ep(ep, lGetList(new_host, snm1)) {
-         p = lGetString(ep, key_nm);
-         if (!lGetElemStr(*new_sublist, key_nm, p))
-            lAddElemStr(new_sublist, key_nm, p, dp);
-      }
-      for_each_ep(ep, lGetList(new_host, snm2)) {
-         p = lGetString(ep, key_nm);
-         if (!lGetElemStr(*new_sublist, key_nm, p))
-            lAddElemStr(new_sublist, key_nm, p, dp);
+      ocs_host_collect_refs<Snm1, Snm2, KeyF>(new_host, *new_sublist);
+   }
+
+   if (new_sublist != nullptr && old_sublist != nullptr && *new_sublist && *old_sublist) {
+      const std::size_t new_size = (*new_sublist)->size();
+      (*new_sublist)->template remove_common<KeyF>(**old_sublist);
+      if ((*new_sublist)->size() != new_size) {
+         // lDiffListStr() freed a list that a removal emptied
+         if ((*new_sublist)->empty()) {
+            new_sublist->reset();
+         }
+         if ((*old_sublist)->empty()) {
+            old_sublist->reset();
+         }
       }
    }
+   DRETURN_VOID;
 }
 
 
@@ -2091,19 +2126,20 @@ host_diff_sublist(const lListElem *new_host, const lListElem *old_host, int snm1
  * A diff new/old is made regarding exec host projects/xprojects.
  * Project references are returned in new_prj/old_prj.
  *
- * @param new_host New exec host (EH_Type)
- * @param old_host Old exec host (EH_Type)
- * @param new_prj New project references (US_Type)
- * @param old_prj Old project references (US_Type)
+ * @param new_host New exec host (EH_Type), or an empty handle
+ * @param old_host Old exec host (EH_Type), or an empty handle
+ * @param new_prj New project references (PR_Type), extended; nullptr to collect none
+ * @param old_prj Old project references (PR_Type), extended; nullptr to collect none
  *
  * @note MT-NOTE: host_diff_projects() is not MT safe
  */
 void
 host_diff_projects(const ocs::tom::ConstElement<ocs::tom::EH> new_host,
-                   const ocs::tom::ConstElement<ocs::tom::EH> old_host, lList **new_prj, lList **old_prj) {
-   // the lists accumulate over several calls of the caller, so the out-parameters stay raw
-   host_diff_sublist(new_host, old_host, EH_prj, EH_xprj, PR_name, PR_Type, new_prj, old_prj);
-   lDiffListStr(PR_name, new_prj, old_prj);
+                   const ocs::tom::ConstElement<ocs::tom::EH> old_host,
+                   ocs::tom::ListPtr<ocs::tom::PR> *new_prj, ocs::tom::ListPtr<ocs::tom::PR> *old_prj) {
+   DENTER(TOP_LAYER);
+   host_diff_sublist<EH_prj, EH_xprj, PR_name>(new_host, old_host, new_prj, old_prj);
+   DRETURN_VOID;
 }
 
 /**
@@ -2112,19 +2148,20 @@ host_diff_projects(const ocs::tom::ConstElement<ocs::tom::EH> new_host,
  * A diff new/old is made regarding exec host acl/xacl.
  * Userset references are returned in new_acl/old_acl.
  *
- * @param new_host New exec host (EH_Type)
- * @param old_host Old exec host (EH_Type)
- * @param new_acl New userset references (US_Type)
- * @param old_acl Old userset references (US_Type)
+ * @param new_host New exec host (EH_Type), or an empty handle
+ * @param old_host Old exec host (EH_Type), or an empty handle
+ * @param new_acl New userset references (US_Type), extended; nullptr to collect none
+ * @param old_acl Old userset references (US_Type), extended; nullptr to collect none
  *
  * @note MT-NOTE: host_diff_usersets() is not MT safe
  */
 void
 host_diff_usersets(const ocs::tom::ConstElement<ocs::tom::EH> new_host,
-                   const ocs::tom::ConstElement<ocs::tom::EH> old_host, lList **new_acl, lList **old_acl) {
-   // the lists accumulate over several calls of the caller, so the out-parameters stay raw
-   host_diff_sublist(new_host, old_host, EH_acl, EH_xacl, US_name, US_Type, new_acl, old_acl);
-   lDiffListStr(US_name, new_acl, old_acl);
+                   const ocs::tom::ConstElement<ocs::tom::EH> old_host,
+                   ocs::tom::ListPtr<ocs::tom::US> *new_acl, ocs::tom::ListPtr<ocs::tom::US> *old_acl) {
+   DENTER(TOP_LAYER);
+   host_diff_sublist<EH_acl, EH_xacl, US_name>(new_host, old_host, new_acl, old_acl);
+   DRETURN_VOID;
 }
 
 
@@ -2147,21 +2184,16 @@ host_update_categories(const ocs::tom::ConstElement<ocs::tom::EH> new_hep,
    DENTER(TOP_LAYER);
 
    {
-      // host_diff_projects() fills raw out-parameters, the lists are owned right after
-      lList *raw_new = nullptr;
-      lList *raw_old = nullptr;
-      host_diff_projects(new_hep, old_hep, &raw_new, &raw_old);
-      const ocs::tom::ListPtr<ocs::tom::PR> new_lp(raw_new);
-      const ocs::tom::ListPtr<ocs::tom::PR> old_lp(raw_old);
+      ocs::tom::ListPtr<ocs::tom::PR> new_lp;
+      ocs::tom::ListPtr<ocs::tom::PR> old_lp;
+      host_diff_projects(new_hep, old_hep, &new_lp, &old_lp);
       project_update_categories(new_lp.get(), old_lp.get(), gdi_session);
    }
 
    {
-      lList *raw_new = nullptr;
-      lList *raw_old = nullptr;
-      host_diff_usersets(new_hep, old_hep, &raw_new, &raw_old);
-      const ocs::tom::ListPtr<ocs::tom::US> new_lp(raw_new);
-      const ocs::tom::ListPtr<ocs::tom::US> old_lp(raw_old);
+      ocs::tom::ListPtr<ocs::tom::US> new_lp;
+      ocs::tom::ListPtr<ocs::tom::US> old_lp;
+      host_diff_usersets(new_hep, old_hep, &new_lp, &old_lp);
       userset_update_categories(new_lp.get(), old_lp.get(), gdi_session);
    }
    DRETURN_VOID;

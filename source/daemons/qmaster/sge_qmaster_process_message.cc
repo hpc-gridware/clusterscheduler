@@ -154,16 +154,17 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
    }
 
    while (pb_unused(&(message->buf)) > 0) {
-      lListElem *raw_ack = nullptr;
+      ocs::tom::ElementPtr<ocs::tom::ACK> ack;
 
-      // get the ACK element; stays raw: cull_unpack_elem() returns an error instead of throwing on bad bytes
-      if (cull_unpack_elem(&message->buf, &raw_ack, nullptr)) {
+      // get the ACK element; bytes that cannot be unpacked end the request, as cull_unpack_elem() failing did.
+      // The element type comes from the wire: an element of another type throws here, as the checked handle on
+      // the unpacked element threw before.
+      try {
+         ack = ocs::tom::ElementPtr<ocs::tom::ACK>::unpack(message->buf);
+      } catch (const ocs::tom::PackException &) {
          ERROR("failed unpacking ACK");
          DRETURN_VOID;
       }
-      // checked: the element type comes from the wire; an element of another type throws here as the
-      // first field access threw before
-      auto ack = ocs::tom::ElementPtr<ocs::tom::ACK>(raw_ack);
 
       // check the tag and the sender
       uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);

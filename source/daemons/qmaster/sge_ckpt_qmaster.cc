@@ -115,7 +115,7 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
          DRETURN(STATUS_EUNKNOWN);
       }
    } else {
-      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CK_name), __func__);
+      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CK_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       goto ERROR;
    }
@@ -282,7 +282,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
 
    /* ep is no ckpt element, if ep has no CK_name */
    if (!ocs::tom::has<CK_name>(ep)) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CK_name), __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CK_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

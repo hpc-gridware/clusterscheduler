@@ -46,6 +46,8 @@
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/sge_answer.h"
 
 bool
@@ -111,7 +113,9 @@ cqueue_list_set_unknown_state(ocs::tom::List<ocs::tom::CQ> this_list, const char
                               bool send_events, bool is_unknown, uint64_t gdi_session);
 
 void cqueue_diff_projects(ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
-                          ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, lList **new_prj, lList **old_prj);
+                          ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue,
+                          ocs::tom::ListPtr<ocs::tom::PR> *new_prj, ocs::tom::ListPtr<ocs::tom::PR> *old_prj);
 
 void cqueue_diff_usersets(ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
-                          ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, lList **new_acl, lList **old_acl);
+                          ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue,
+                          ocs::tom::ListPtr<ocs::tom::US> *new_acl, ocs::tom::ListPtr<ocs::tom::US> *old_acl);
