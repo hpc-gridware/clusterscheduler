@@ -83,6 +83,21 @@ namespace ocs::tom {
    lList *split_off(lList *lp, const lCondition *cp, const char *name);
 
    /**
+    * @brief Take an element and every element after it out of a list, as lDechainList() into a new list did
+    *
+    * The elements keep their order. Unlike lDechainList(), the hash tables of
+    * the list stay and are kept up to date.
+    *
+    * @param lp the list, not nullptr
+    * @param ep the first element to take out; an element of @p lp
+    * @param name the name of the new list
+    * @return the elements taken out, in a new list of the layout of @p lp owned by the caller
+    * @throw FieldException with reason NullElement if @p ep is null, ForeignList if it is not in @p lp
+    * @throw ListCoreError if there is no memory; no element is taken out then
+    */
+   lList *split_from(lList *lp, lListElem *ep, const char *name);
+
+   /**
     * @brief Split a list by a condition, as lSplit() did
     *
     * The elements that do not fulfil the condition go to @p ulp, created

@@ -535,8 +535,8 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB
       }
 
       if (!ja_task_list) {
-         // the list gets the descriptor of the (possibly reduced) template task
-         auto created = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", lGetElemDescr(template_task));
+         // the list gets the layout of the (possibly reduced) template task
+         auto created = ocs::tom::ListPtr<ocs::tom::JAT>::create_like("ulong_sublist", template_task);
          ja_task_list = created.get();
          ocs::tom::set<JB_ja_tasks>(job, std::move(created));
       }

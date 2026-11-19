@@ -1035,7 +1035,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
                } else {
                   if (!ja_task_list) {
                      // the copies keep the reduced layout the tasks were fetched with
-                     ja_task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("", lGetElemDescr(jatep));
+                     ja_task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create_like("", jatep);
                   }
                   ja_task_list->push_back(jatep.clone());
                   FoundTasks = 1;
@@ -1131,7 +1131,7 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
          } else {
             if (ja_task_list == nullptr) {
                // the copies keep the reduced layout the tasks were fetched with
-               ja_task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("", lGetElemDescr(jatep));
+               ja_task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create_like("", jatep);
             }
             ja_task_list->push_back(jatep.clone());
             FoundTasks = true;

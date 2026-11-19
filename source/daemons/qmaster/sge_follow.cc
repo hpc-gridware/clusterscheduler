@@ -48,7 +48,6 @@
 #include "uti/sge_signal.h"
 #include "uti/sge_time.h"
 #include "uti/sge_stdlib.h"
-#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_ShareTree.h"
 #include "sgeobj/sge_conf.h"
@@ -171,12 +170,12 @@ ocs_follow_unenroll_task(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::El
  *
  * @param ticket_orders the ticket orders per host; the list is created if the handle is empty
  * @param hostname the host
- * @param rdp the reduced descriptor of the ticket orders, for a list created for the host
+ * @param like a reduced ticket order, whose layout a list created for the host gets
  * @return the ticket orders of the host
  */
 static ocs::tom::List<ocs::tom::OR>
 ocs_follow_host_ticket_orders(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_orders, const char *hostname,
-                              const lDescr *rdp) {
+                              const ocs::tom::ConstElement<ocs::tom::OR> like) {
    DENTER(TOP_LAYER);
    if (!ticket_orders) {
       // the name and hashing ocs::tom::emplace_back() gave a list it created
@@ -188,7 +187,7 @@ ocs_follow_host_ticket_orders(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_orders, 
    }
    auto host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
    if (!host_tickets) {
-      ocs::tom::set<RTIC_tickets>(rtic_ep, ocs::tom::ListPtr<ocs::tom::OR>::create("ticket orders", rdp));
+      ocs::tom::set<RTIC_tickets>(rtic_ep, ocs::tom::ListPtr<ocs::tom::OR>::create_like("ticket orders", like));
       host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
    }
    DRETURN(host_tickets);
@@ -1030,11 +1029,8 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   those intervales does the ticket order structure contain a JAT_granted_destin_identifier_list.
                   We use that as an identifier to go on, or not. */
                if (distribute_tickets && topp != nullptr) {
-                  const lDescr *rdp = nullptr;
-
+                  // the selection caches its reduction, so every ticket order of the host shares one layout
                   const auto what = ocs::tom::what<ocs::tom::OR>(ticket_orders_field);
-                  // lReduceDescr() takes the selection non-const, but only reads it
-                  lReduceDescr(&rdp, OR_Type, const_cast<lEnumeration *>(what.get()));
 
                   /* If a ticket order has a queuelist, then this is a parallel job
                      with controlled sub-tasks. We generate a ticket order for
@@ -1068,26 +1064,23 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                      for (const auto cached : *host_tickets_cache) {
                         const char *hostname = ocs::tom::get<UA_name>(cached);
 
-                        // the reduced copy has the descriptor of the selection
-                        auto newep = ocs::tom::ElementPtr<ocs::tom::OR>::from_typed(
-                           lSelectElemDPack(ep, nullptr, rdp, what.get(), false, nullptr));
+                        // the reduced copy has the layout of the selection
+                        auto newep = ep.select(what, ocs::tom::Hashing::Off);
                         ocs::tom::set<OR_ticket>(newep, ocs::tom::get<UA_value>(cached));
 
-                        ocs_follow_host_ticket_orders(*topp, hostname, rdp).push_back(std::move(newep));
+                        ocs_follow_host_ticket_orders(*topp, hostname, *newep).push_back(std::move(newep));
                      }
                      host_tickets_cache.reset();
                   } else {
                      ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatp);
                      if (gdil) {
-                        // the reduced copy has the descriptor of the selection
-                        auto newep = ocs::tom::ElementPtr<ocs::tom::OR>::from_typed(
-                           lSelectElemDPack(ep, nullptr, rdp, what.get(), false, nullptr));
+                        // the reduced copy has the layout of the selection
+                        auto newep = ep.select(what, ocs::tom::Hashing::Off);
                         const char *hostname = ocs::tom::get<JG_qhostname>(gdil.front());
-                        ocs_follow_host_ticket_orders(*topp, hostname, rdp).push_back(std::move(newep));
+                        ocs_follow_host_ticket_orders(*topp, hostname, *newep).push_back(std::move(newep));
                      }
 
                   }
-                  ocs_cull_descr_release(&rdp);
                }
             }
             sge_add_event(now, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);

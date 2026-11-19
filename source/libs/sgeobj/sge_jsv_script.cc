@@ -2381,7 +2381,7 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
             // Transform CULL fields into a list of corresponding qalter switch names
             // or switch combinations as accepted in JSV scripts. There are some exceptions that are handled
             // in the following code. The fields come from the descriptor of the (reduced) job at run time.
-            const lDescr *descr = lGetElemDescr(job);
+            const lDescr *descr = job.descr();
             for (const auto f : ocs_cull_present_fields(descr)) {
                // JB_context and JB_context_change both map to ac, which is listed once
                if (const char *switch_name = jsv_cull_attr2switch_name(descr[f.pos].nm, job);

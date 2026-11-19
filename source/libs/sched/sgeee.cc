@@ -70,7 +70,6 @@
 #include "uti/sge_time.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
-#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_ShareTree.h"
 #include "sgeobj/ocs_Usage.h"
@@ -3374,13 +3373,12 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
        *-----------------------------------------------------------------*/
 
       if (sconf_is()) {
-         // built once and never released, so every use only takes a reference; the order carries
-         // SC_weight_tickets_override only, which is all qmaster's ORT_sched_conf handling (sge_follow.cc) reads.
-         // A reduced descriptor keeps the full length of SC_Type, so the typed handles accept it.
-         static const lDescr *const schedConfDesc = ocs_cull_descr_reduce(SC_Type, {SC_weight_tickets_override});
+         // built once for the life of the process; the order carries SC_weight_tickets_override only, which is
+         // all qmaster's ORT_sched_conf handling (sge_follow.cc) reads
+         const auto sched_conf_layout = ocs::tom::layout<SC_weight_tickets_override>();
 
-         auto up_list = ocs::tom::ListPtr<ocs::tom::SC>::create("sched_conf_update", schedConfDesc);
-         const auto node = up_list->push_back(ocs::tom::ElementPtr<ocs::tom::SC>::create(schedConfDesc));
+         auto up_list = ocs::tom::ListPtr<ocs::tom::SC>::create("sched_conf_update", sched_conf_layout);
+         const auto node = up_list->push_back(ocs::tom::ElementPtr<ocs::tom::SC>::create(sched_conf_layout));
 
          ocs::tom::set<SC_weight_tickets_override>(node, sconf_get_weight_tickets_override());
 

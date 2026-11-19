@@ -44,6 +44,7 @@
 #include "tom/cull_lerrno.h"
 #include "tom/cull_listP.h"
 #include "tom/cull_multitypeP.h"
+#include "tom/ocs_cull_descr.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_DumpCore.h"
 #include "tom/ocs_FieldTraits.h"
@@ -444,6 +445,81 @@ namespace ocs::tom {
 
    } // namespace detail
 
+   /** @brief Whether a new list keeps hash tables for its hashed fields */
+   enum class Hashing : bool {
+      Off,   ///< no hash tables, as lCreateListHash() with false; lookups search linearly
+      On     ///< hash tables, built when the list grows beyond the threshold, as lCreateList()
+   };
+
+   /**
+    * @brief The layout of the elements of a type reduced to some of its fields: the typed form of a reduced
+    *        descriptor
+    *
+    * Made by layout<F...>() and taken by ElementPtr<T>::create() and
+    * ListPtr<T>::create(). The descriptor behind it lives as long as the
+    * process, as the descriptors of the types do, so the handle owns nothing
+    * and is copied freely.
+    *
+    * @tparam T the struct of the object type, e.g. ocs::tom::JAT
+    */
+   template <ObjectType T>
+   class Layout {
+   public:
+      using Type = T;   ///< the object type
+
+      /**
+       * @brief Take a descriptor of the type that lives as long as the process, without a check
+       * @param descr the descriptor, the full one of the type or a reduction of it
+       * @return the handle
+       */
+      [[nodiscard]] static constexpr Layout from_typed(const lDescr *descr) noexcept {
+         Layout handle;
+         handle.descr_ = descr;
+         return handle;
+      }
+
+      /**
+       * @brief The descriptor, as an opaque token for the functions of the old interface
+       * @return the descriptor, or nullptr for a default-constructed handle
+       */
+      [[nodiscard]] const lDescr *get() const noexcept {
+         return descr_;
+      }
+
+   private:
+      const lDescr *descr_ = nullptr;   ///< the descriptor, not owned
+   };
+
+   /**
+    * @brief The layout of a type reduced to the fields given as template arguments, as
+    *        ocs_cull_descr_reduce() builds it
+    *
+    * Built on the first call for each set of fields and kept for the life of
+    * the process, so a call on a hot path costs no allocation: the typed form
+    * of `static const lDescr *const d = ocs_cull_descr_reduce(T_Type, {...})`.
+    * The fields may be given in any order; the layout keeps the full length of
+    * the type with the fields not given marked absent, so the checked
+    * constructors of the handles accept elements and lists of it.
+    *
+    * @tparam F the first field
+    * @tparam Fs the further fields, of the same type
+    * @return the layout
+    * @throw ListCoreError with LEMALLOC if there is no memory to build it
+    * @see Old form: ocs_cull_descr_reduce(), lReduceDescr()
+    */
+   template <auto F, auto... Fs>
+      requires TypedField<decltype(F)> && (detail::SelectFieldOf<Fs, typename FieldTraits<F>::Type> && ...)
+   [[nodiscard]] Layout<typename FieldTraits<F>::Type> layout() {
+      using T = typename FieldTraits<F>::Type;
+      // built once per set of fields and never released, like the descriptor blocks of the types
+      static const lDescr *const descr =
+              ocs_cull_descr_reduce(T::descriptor.e, {static_cast<int>(F), static_cast<int>(Fs)...});
+      if (descr == nullptr) [[unlikely]] {
+         throw ListCoreError(LEMALLOC, "out of memory reducing the descriptor of a layout");
+      }
+      return Layout<T>::from_typed(descr);
+   }
+
    /**
     * @brief A read-only typed handle on an element
     *
@@ -500,6 +576,20 @@ namespace ocs::tom {
        */
       [[nodiscard]] const lListElem *raw() const noexcept {
          return ep_;
+      }
+
+      /**
+       * @brief The layout of the element, as lGetElemDescr() gives it
+       *
+       * An opaque token: the full descriptor of the type or a reduction of it.
+       * To make a list or element of the same layout, ListPtr<T>::create_like()
+       * and ElementPtr<T>::create_like() take the handle itself.
+       *
+       * @return the descriptor, nullptr if the handle is empty
+       * @see Old form: lGetElemDescr()
+       */
+      [[nodiscard]] const lDescr *descr() const noexcept {
+         return ep_ != nullptr ? ep_->descr : nullptr;
       }
 
       /**
@@ -656,6 +746,54 @@ namespace ocs::tom {
             return {};
          }
          return ElementPtr<T>::from_typed(copy_elem(ep_, true, false));
+      }
+
+      /**
+       * @brief A copy of the element reduced to a selection of fields, as lSelectElemPack() and
+       *        lSelectElemDPack() without a pack buffer make it
+       *
+       * The copy has the layout the selection reduces the layout of this
+       * element to; the selection caches that reduction, so selecting from many
+       * elements of one layout builds it once, as the descriptor passed to
+       * lSelectElemDPack() did. The packing variants of the old forms (a pack
+       * buffer instead of a copy) are pack(pb, what).
+       *
+       * @param what the selection of fields
+       * @param hashing whether copied sub-lists keep hash tables, the isHash argument of the old forms
+       * @return the owning handle on the copy, a free element; empty if this handle is empty, as the old forms
+       *         give nullptr for a null element
+       * @throw FieldException with reason NullElement if @p what is empty
+       * @throw ListCoreError if this element does not hold a selected field or a copy fails, where the old forms
+       *        gave nullptr
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lSelectElemPack(), lSelectElemDPack() with lReduceDescr(); core: ocs::tom::select_elem()
+       */
+      [[nodiscard]] ElementPtr<T> select(const What<T> &what, const Hashing hashing = Hashing::On) const {
+         if (ep_ == nullptr) {
+            return {};
+         }
+         return ElementPtr<T>::from_typed(select_elem(ep_, what.get(), hashing == Hashing::On, false));
+      }
+
+      /**
+       * @brief A copy of the element reduced to a selection of fields if it fulfils a condition, as
+       *        lSelectElemPack() with a condition makes it
+       * @param where the condition; an empty one is fulfilled by every element
+       * @param what the selection of fields
+       * @param hashing whether copied sub-lists keep hash tables, the isHash argument of the old forms
+       * @return the owning handle on the copy; empty if this handle is empty or the element does not fulfil
+       *         the condition
+       * @throw FieldException with reason NullElement if @p what is empty
+       * @throw ListCoreError if this element does not hold a selected field or a copy fails
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lSelectElemPack(); core: ocs::tom::compare(), ocs::tom::select_elem()
+       */
+      [[nodiscard]] ElementPtr<T> select(const Where<T> &where, const What<T> &what,
+                                         const Hashing hashing = Hashing::On) const {
+         if (ep_ == nullptr || !compare(ep_, where.get())) {
+            return {};
+         }
+         return ElementPtr<T>::from_typed(select_elem(ep_, what.get(), hashing == Hashing::On, false));
       }
 
 
@@ -1125,6 +1263,90 @@ namespace ocs::tom {
          }
          ElementPtr handle;
          handle.ep_ = create_elem(descr);
+         return handle;
+      }
+
+      /**
+       * @brief Create an element of a reduced layout, with every field at its default, as lCreateElem() with a
+       *        descriptor of ocs_cull_descr_reduce() does
+       * @param layout the layout, from layout<F...>()
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p layout is default-constructed
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ElementPtr create(const Layout<T> layout) {
+         ElementPtr handle;
+         handle.ep_ = create_elem(layout.get());
+         return handle;
+      }
+
+      /**
+       * @brief Create an element of the layout a selection reduces the type to, with every field at its default,
+       *        as lCreateElem() with the descriptor of lReduceDescr() does
+       *
+       * For a selection known only at run time; a fixed set of fields is
+       * layout<F...>(). The selection caches the reduction, so creating many
+       * elements with one selection builds it once.
+       *
+       * @param what the selection of fields
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p what is empty or selects no field of the type,
+       *        where lReduceDescr() gave no descriptor
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lReduceDescr() and lCreateElem(); core: ocs::tom::reduced_descr()
+       */
+      [[nodiscard]] static ElementPtr create(const What<T> &what) {
+         const lDescr *descr = reduced_descr(T::descriptor.e, what.get());
+         if (descr == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::NullDescriptor, NoName, T::descriptor.e);
+         }
+         ElementPtr handle;
+         try {
+            // the element takes a reference of its own on the reduction
+            handle.ep_ = create_elem(descr);
+         } catch (...) {
+            ocs_cull_descr_release(&descr);
+            throw;
+         }
+         ocs_cull_descr_release(&descr);
+         return handle;
+      }
+
+      /**
+       * @brief Create an element with the layout of another element, with every field at its default, as
+       *        lCreateElem(lGetElemDescr(ep)) does
+       *
+       * For an element that must go into a list of a reduced element, or must
+       * take the fields of one.
+       *
+       * @param like the element whose layout the new one gets
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p like is empty, as lCreateElem() of the null
+       *        descriptor lGetElemDescr() gave for it
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ElementPtr create_like(const ConstElement<T> like) {
+         ElementPtr handle;
+         handle.ep_ = create_elem(like.descr());
+         return handle;
+      }
+
+      /**
+       * @brief Create an element with the layout of a list, with every field at its default, as
+       *        lCreateElem(lGetListDescr(lp)) does
+       *
+       * An element linked into a list must have the layout of the list
+       * (CS-3112); this makes one for a list that may be reduced.
+       *
+       * @param like the list whose layout the new element gets
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p like is empty, as lCreateElem() of the null
+       *        descriptor lGetListDescr() gave for it
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ElementPtr create_like(const ConstList<T> like) {
+         ElementPtr handle;
+         handle.ep_ = create_elem(like.descr());
          return handle;
       }
 

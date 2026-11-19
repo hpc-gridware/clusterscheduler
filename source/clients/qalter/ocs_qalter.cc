@@ -38,6 +38,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
+#include <span>
 #include <sstream>
 
 #include "uti/ocs_TerminationManager.h"
@@ -45,7 +46,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
-#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/ocs_Job.h"
@@ -329,8 +329,6 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
 
    ocs::tom::Element<ocs::tom::SPA> ep;
    uint32_t jobid;
-   lEnumeration *what = nullptr;
-   const lDescr *rdp = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> answer;
    enum {NOTINIT, JOB, ALL} all_or_jidlist = NOTINIT;
    int users_flag = 0;
@@ -969,21 +967,22 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          using only these job fields that are in our job_field array 
    */
 
-   if (!(what = lIntVector2What(JB_Type, job_field))) {
-      answer_list_add(&answer, MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR, 
-                        STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+   // the requests carry the job fields the options selected, known only at run time; the selection caches the
+   // layout it reduces the jobs to, so every request shares one
+   std::size_t n_fields = 0;
+   while (job_field[n_fields] != NoName) {
+      n_fields++;
+   }
+   ocs::tom::What<ocs::tom::JB> what;
+   try {
+      what = ocs::tom::what<ocs::tom::JB>(std::span<const int>(job_field, n_fields));
+   } catch (const ocs::RuntimeException &) {
+      answer_list_add(&answer, MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(answer);
+   } catch (const ocs::LogicException &) {
+      answer_list_add(&answer, MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(answer);
    }
-
-   rdp = nullptr;
-   lReduceDescr(&rdp, JB_Type, what);
-   if (rdp == nullptr) {
-      answer_list_add(&answer, MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR, 
-                      STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DRETURN(answer);
-   }
-
-   lFreeWhat(&what);
 
    /* if a user uses -u or -uall flag and does not enter jids
       we will add a dummy job to send other parameters to qmaster */
@@ -998,8 +997,8 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       // created with the first task, reduced as lAddElemUlong() created it
       ocs::tom::ListPtr<ocs::tom::JAT> task_list;
       ocs::tom::Element<ocs::tom::JB> rep;
-      // built once and never released, so every use only takes a reference
-      static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
+      // built once for the life of the process
+      const auto task_layout = ocs::tom::layout<JAT_task_number, JAT_hold>();
 
       jobid = atol(ocs::tom::get<ID_str>(jid));
 /*
@@ -1017,14 +1016,12 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          if (!strcmp(ocs::tom::get<ID_str>(jid), "all") || (all_or_jidlist == ALL)) {
             answer_list_add(&answer, MSG_ANSWER_ALLANDJOBIDSARENOTVALID, 
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            ocs_cull_descr_release(&rdp);
             DRETURN(answer);
          } else if (!strcmp(ocs::tom::get<ID_str>(jid), "dummy")) {
             /* we will add a dummy-object to send parameters to qmaster */ 
          } else {
             answer_list_add(&answer, MSG_ANSWER_0ISNOTAVALIDJOBID,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            ocs_cull_descr_release(&rdp);
             DRETURN(answer);
          }
       }
@@ -1033,9 +1030,9 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
 
          // the requests carry reduced jobs, created as lAddElemUlong() created them
          if (!requestlist) {
-            requestlist = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist", rdp);
+            requestlist = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist", what);
          }
-         auto new_rep = ocs::tom::ElementPtr<ocs::tom::JB>::create(rdp);
+         auto new_rep = ocs::tom::ElementPtr<ocs::tom::JB>::create(what);
          ocs::tom::set<JB_job_number>(new_rep, jobid);
          rep = requestlist->push_back(std::move(new_rep));
          if (job_name != nullptr) {
@@ -1056,9 +1053,9 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          snprintf(name, size, "%s%s%s%s", JOB_NAME_DEL, ocs::tom::get<ID_str>(jid), JOB_NAME_DEL, job_name?job_name:"");
          // the requests carry reduced jobs, created as lAddElemStr() created them
          if (!requestlist) {
-            requestlist = ocs::tom::ListPtr<ocs::tom::JB>::create("", rdp);
+            requestlist = ocs::tom::ListPtr<ocs::tom::JB>::create("", what);
          }
-         auto new_rep = ocs::tom::ElementPtr<ocs::tom::JB>::create(rdp);
+         auto new_rep = ocs::tom::ElementPtr<ocs::tom::JB>::create(what);
          ocs::tom::set<JB_job_name>(new_rep, name);
          rep = requestlist->push_back(std::move(new_rep));
          sge_free(&name);
@@ -1067,15 +1064,14 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       if (!rep) {   
          answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                                  MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-         ocs_cull_descr_release(&rdp);
          DRETURN(answer);
       }
 
       /* build task list from ID_Type from JB_job_identifier */
       
       if (is_hold_option && !ocs::tom::get<ID_ja_structure>(jid)) {
-         task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_descr);
-         auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
+         task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_layout);
+         auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_layout);
          ocs::tom::set<JAT_task_number>(task, 0);
          ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(jid));
          task_list->push_back(std::move(task));
@@ -1086,9 +1082,9 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
             uint32_t step = ocs::tom::get<RN_step>(range);
             for (;start<=end; start += step) {
                if (!task_list) {
-                  task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_descr);
+                  task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_layout);
                }
-               auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
+               auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_layout);
                ocs::tom::set<JAT_task_number>(task, start);
                ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(jid));
                task_list->push_back(std::move(task));
@@ -1098,7 +1094,6 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       if (!ocs::tom::has<JB_ja_tasks>(rep) && task_list->size() > 0) {
          answer_list_add_sprintf(&answer, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  SFNMAX, MSG_OPTIONWORKSONLYONJOB);
-         ocs_cull_descr_release(&rdp);
          DRETURN(answer);
       }
       ocs::tom::set<JB_ja_tasks>(job, std::move(task_list));
@@ -1118,6 +1113,5 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
                               JB_binding>(job, rep);
    }
 
-   ocs_cull_descr_release(&rdp);
    DRETURN(answer);
 }

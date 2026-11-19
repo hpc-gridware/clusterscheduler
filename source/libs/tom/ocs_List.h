@@ -34,6 +34,7 @@
 #include <iterator>
 #include <utility>
 
+#include "tom/cull_hash.h"
 #include "tom/cull_listP.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_ListOpsCore.h"
@@ -383,6 +384,20 @@ namespace ocs::tom {
        */
       [[nodiscard]] const lList *raw() const noexcept {
          return lp_;
+      }
+
+      /**
+       * @brief The layout of the elements of the list, as lGetListDescr() gives it
+       *
+       * An opaque token: the full descriptor of the type or a reduction of it.
+       * To make a list or element of the same layout, ListPtr<T>::create_like()
+       * and ElementPtr<T>::create_like() take the handle itself.
+       *
+       * @return the descriptor, nullptr if the handle is empty
+       * @see Old form: lGetListDescr()
+       */
+      [[nodiscard]] const lDescr *descr() const noexcept {
+         return lp_ != nullptr ? lp_->descr : nullptr;
       }
 
       /**
@@ -1067,6 +1082,51 @@ namespace ocs::tom {
       }
 
       /**
+       * @brief Take an element and every element after it out of the list, as lDechainList() does
+       *
+       * The elements keep their order and the layout of this list, and this
+       * list keeps the elements before @p element, also when none is left.
+       * lDechainList() appended them to a target list, creating it if there was
+       * none; with an existing target, splice() the result into it. Unlike
+       * lDechainList(), the hash tables of this list are kept up to date
+       * rather than dropped.
+       *
+       * @param element the first element to take out
+       * @param name the name of the list taken out, or nullptr for the name of this list
+       * @return the owning handle on the elements taken out, a list with hash tables, as lCreateList() makes one
+       * @throw FieldException with reason EmptyHandle if this handle or @p element is empty, ForeignList if
+       *        @p element is not in this list, where lDechainList() aborted
+       * @throw ocs::RuntimeException if there is no memory; nothing is taken out then
+       * @see Old form: lDechainList(); core: ocs::tom::split_from()
+       */
+      [[nodiscard]] ListPtr<T> split_at(const ConstElement<T> element, const char *name = nullptr) const {
+         check_member(element);
+         return ListPtr<T>::from_typed(split_from(this->lp_, const_cast<lListElem *>(element.raw()),
+                                                  name != nullptr ? name : list_name(this->lp_)));
+      }
+
+      /**
+       * @brief Give the list a hash table on a field if it has none, as cull_hash_new_check() does
+       *
+       * For a field the type does not hash, to speed up the lookups by it on
+       * this list; like every other table, it is built by the first lookup.
+       * A list that holds the field in a hash table already, and a list whose
+       * layout does not hold the field, are left as they are.
+       *
+       * @tparam F a string, host or number field of the type
+       * @param unique true if no two elements hold the same value in the field
+       * @return true on success or if there was nothing to do, also for an empty handle; false if the table
+       *         could not be added, as cull_hash_new_check() gives 0
+       * @see Old form: cull_hash_new_check()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (detail::Textual<F> || FieldTraits<F>::type == FieldType::Uint32 ||
+                                    FieldTraits<F>::type == FieldType::Uint64)
+      bool add_hash(const bool unique = false) const {
+         return cull_hash_new_check(this->lp_, static_cast<int>(F), unique) != 0;
+      }
+
+      /**
        * @brief Remove the elements this list and another share by a string key from both, as lDiffListStr() does
        *
        * For each element of this list whose key the other holds, the first
@@ -1301,12 +1361,6 @@ namespace ocs::tom {
       }
    };
 
-   /** @brief Whether a new list keeps hash tables for its hashed fields */
-   enum class Hashing : bool {
-      Off,   ///< no hash tables, as lCreateListHash() with false; lookups search linearly
-      On     ///< hash tables, built when the list grows beyond the threshold, as lCreateList()
-   };
-
    /**
     * @brief A list owned by the handle, freed with its elements when the handle goes out of scope
     *
@@ -1415,6 +1469,99 @@ namespace ocs::tom {
          }
          ListPtr handle;
          handle.lp_ = create_list(name, descr, hashing == Hashing::On);
+         return handle;
+      }
+
+      /**
+       * @brief Create an empty list of a reduced layout, as lCreateList() with a descriptor of
+       *        ocs_cull_descr_reduce() does
+       * @param name the name of the list, for dumps and messages
+       * @param layout the layout of the elements, from layout<F...>()
+       * @param hashing whether the list keeps hash tables for its hashed fields
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p layout is default-constructed
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ListPtr create(const char *name, const Layout<T> layout,
+                                          const Hashing hashing = Hashing::On) {
+         ListPtr handle;
+         handle.lp_ = create_list(name, layout.get(), hashing == Hashing::On);
+         return handle;
+      }
+
+      /**
+       * @brief Create an empty list of the layout a selection reduces the type to, as lCreateList() with the
+       *        descriptor of lReduceDescr() does
+       *
+       * For a selection known only at run time; a fixed set of fields is
+       * layout<F...>().
+       *
+       * @param name the name of the list, for dumps and messages
+       * @param what the selection of fields
+       * @param hashing whether the list keeps hash tables for its hashed fields
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p what is empty or selects no field of the type,
+       *        where lReduceDescr() gave no descriptor
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lReduceDescr() and lCreateList(); core: ocs::tom::reduced_descr()
+       */
+      [[nodiscard]] static ListPtr create(const char *name, const What<T> &what, const Hashing hashing = Hashing::On) {
+         const lDescr *descr = reduced_descr(T::descriptor.e, what.get());
+         if (descr == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::NullDescriptor, NoName, T::descriptor.e);
+         }
+         ListPtr handle;
+         try {
+            // the list takes a reference of its own on the reduction
+            handle.lp_ = create_list(name, descr, hashing == Hashing::On);
+         } catch (...) {
+            ocs_cull_descr_release(&descr);
+            throw;
+         }
+         ocs_cull_descr_release(&descr);
+         return handle;
+      }
+
+      /**
+       * @brief Create an empty list with the layout of another list, as lCreateList(name, lGetListDescr(lp))
+       *        does
+       *
+       * For a list that takes elements out of another, possibly reduced, list:
+       * an element linked into a list must have the layout of the list
+       * (CS-3112).
+       *
+       * @param name the name of the list, for dumps and messages
+       * @param like the list whose layout the new one gets
+       * @param hashing whether the list keeps hash tables for its hashed fields
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p like is empty, as lCreateList() of the null
+       *        descriptor lGetListDescr() gave for it
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ListPtr create_like(const char *name, const ConstList<T> like,
+                                               const Hashing hashing = Hashing::On) {
+         ListPtr handle;
+         handle.lp_ = create_list(name, like.descr(), hashing == Hashing::On);
+         return handle;
+      }
+
+      /**
+       * @brief Create an empty list with the layout of an element, as lCreateList(name, lGetElemDescr(ep)) does
+       *
+       * For a list that takes a possibly reduced element, or copies of it.
+       *
+       * @param name the name of the list, for dumps and messages
+       * @param like the element whose layout the new list gets
+       * @param hashing whether the list keeps hash tables for its hashed fields
+       * @return the owning handle
+       * @throw FieldException with reason NullDescriptor if @p like is empty, as lCreateList() of the null
+       *        descriptor lGetElemDescr() gave for it
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ListPtr create_like(const char *name, const ConstElement<T> like,
+                                               const Hashing hashing = Hashing::On) {
+         ListPtr handle;
+         handle.lp_ = create_list(name, like.descr(), hashing == Hashing::On);
          return handle;
       }
 

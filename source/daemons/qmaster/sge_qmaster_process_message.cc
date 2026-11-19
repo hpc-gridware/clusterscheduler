@@ -193,7 +193,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
          sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
       } else {
          // sge_c_ack() will be called by the worker thread to execute the ACK request stored here
-         auto ack_list = ocs::tom::ListPtr<ocs::tom::ACK>::create("ACK list", lGetElemDescr(ack.get()));
+         auto ack_list = ocs::tom::ListPtr<ocs::tom::ACK>::create_like("ACK list", ack.get());
          ack_list->push_back(std::move(ack));
          ocs_store_packet(message, ack_list.release(), PACKET_ACK_REQUEST);
       }

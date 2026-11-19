@@ -170,10 +170,16 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       fields.push_back(CQ_hostlist);
    }
 
-   // the reduction is given at run time by the fields that lost an entry; the element selection has no typed form
+   // the reduction is given at run time by the fields that lost an entry
    const auto what = ocs::tom::what<ocs::tom::CQ>(fields);
-   auto reduced =
-           ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(lSelectElemPack(*copy, nullptr, what.get(), false, nullptr));
+   ocs::tom::ElementPtr<ocs::tom::CQ> reduced;
+   try {
+      reduced = copy->select(what, ocs::tom::Hashing::Off);
+   } catch (const ocs::tom::ListCoreError &) {
+      // no reduced copy, as lSelectElemPack() gave none; a worker thread must not see the exception
+   } catch (const ocs::tom::FieldException &) {
+      // no reduced copy, as lSelectElemPack() gave none; a worker thread must not see the exception
+   }
    copy.reset();
 
    // the on_success hook of cluster queues leaves nothing for after the request

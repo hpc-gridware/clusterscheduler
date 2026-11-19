@@ -54,7 +54,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
-#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Session.h"
@@ -212,6 +211,34 @@ static constexpr int queue_field[] = {QU_qhostname,
                             QU_s_vmem,
                             QU_h_vmem};
 
+/**
+ * @brief A copy of a queue instance reduced to the fields a job delivery carries, with the result
+ *        lSelectElemDPack() gave
+ *
+ * A job delivery runs in a qmaster worker thread, where an exception that
+ * escapes terminates the daemon. So a copy that cannot be made (no memory, a
+ * field the queue instance does not hold) gives an empty handle, as
+ * lSelectElemDPack() gave nullptr.
+ *
+ * @param queue the queue instance of the master list
+ * @param what the fields to copy, a selection of queue_field
+ * @return the owning handle on the copy, a free element; empty if it could not be made
+ */
+static ocs::tom::ElementPtr<ocs::tom::QU>
+ocs_delivery_queue_copy(const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::tom::What<ocs::tom::QU> &what) {
+   DENTER(TOP_LAYER);
+   ocs::tom::ElementPtr<ocs::tom::QU> copy;
+   try {
+      // the selection caches its reduction, so every queue instance of a delivery shares one layout
+      copy = queue.select(what, ocs::tom::Hashing::Off);
+   } catch (const ocs::tom::ListCoreError &) {
+      // no copy, as lSelectElemDPack() gave none
+   } catch (const ocs::tom::FieldException &) {
+      // no copy, as lSelectElemDPack() gave none
+   }
+   DRETURN(copy);
+}
+
 
 /** @brief Send a job to the execution host that was granted it
  *
@@ -294,7 +321,6 @@ send_slave_jobs(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Eleme
    DENTER(TOP_LAYER);
    int ret = 0;
    bool is_pe_jobs = false;
-   const lDescr *rdp = nullptr;
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
@@ -333,8 +359,6 @@ send_slave_jobs(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Eleme
     * (so the execd can decide on which processors (-sets) the job will be run).
     */
    const auto what = ocs::tom::what<ocs::tom::QU>(queue_field);
-   // lReduceDescr() takes the selection non-const, but only reads it
-   lReduceDescr(&rdp, QU_Type, const_cast<lEnumeration *>(what.get()));
 
    const auto tmpjatep = ocs::tom::get<JB_ja_tasks>(tmpjep).front();
    const bool is_pe_job = ocs::tom::get<JAT_pe_object>(tmpjatep) != nullptr;
@@ -344,7 +368,6 @@ send_slave_jobs(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Eleme
       const auto src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
 
       if (!src_qep) {
-         ocs_cull_descr_release(&rdp);
          DRETURN(-1);
       }
 
@@ -353,19 +376,17 @@ send_slave_jobs(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Eleme
        */
       ocs::tom::set<JG_processors>(gdil_ep, ocs::tom::get<QU_processors>(src_qep));
 
-      // copy the referenced queue instance; the reduced copy has the descriptor of the selection
-      const auto qep = ocs::tom::Element<ocs::tom::QU>::from_typed(
-         lSelectElemDPack(src_qep, nullptr, rdp, what.get(), false, nullptr));
+      // copy the referenced queue instance; the reduced copy has the layout of the selection
+      auto qep_copy = ocs_delivery_queue_copy(src_qep, what);
+      const auto qep = qep_copy.get();
       // JG_queue names no sub-type in the model (it holds a reduced queue instance), so it takes the raw element
-      ocs::tom::set<JG_queue>(gdil_ep, qep.raw());
+      ocs::tom::set<JG_queue>(gdil_ep, qep_copy.release());
 
       // build minimum of job request and queue resource limit
       reduce_queue_limits(master_centry_list, gdil_ep, qep, *tmpjep, tmpjatep, is_pe_job, is_first_gdil_entry);
 
       is_first_gdil_entry = false;
    }
-
-   ocs_cull_descr_release(&rdp);
 
    ret = send_slave_jobs_wc(*tmpjep, monitor, gdi_session);
 
@@ -493,7 +514,6 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
    unsigned long last_heard_from;
    const char *myprogname = component_get_component_name();
    const bool simulate_execd = mconf_get_simulate_execds();
-   const lDescr *rdp = nullptr;
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
@@ -545,8 +565,6 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
     * (so the execd can decide on which processors (-sets) the job will be run).
     */
    const auto what = ocs::tom::what<ocs::tom::QU>(queue_field);
-   // lReduceDescr() takes the selection non-const, but only reads it
-   lReduceDescr(&rdp, QU_Type, const_cast<lEnumeration *>(what.get()));
 
    // @todo CS-1273 YES: We need to deliver the whole GDIL to the master execd (e.g. for building the PE_HOSTFILE)
    //               BUT: Do we need to do the reduce_job_limit for all queues? Wouldn't only the master queue be enough?
@@ -561,7 +579,6 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
       const auto src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
 
       if (!src_qep) {
-         ocs_cull_descr_release(&rdp);
          DRETURN(-1);
       }
 
@@ -570,19 +587,17 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
        */
       ocs::tom::set<JG_processors>(gdil_ep, ocs::tom::get<QU_processors>(src_qep));
 
-      // copy the referenced queue instance; the reduced copy has the descriptor of the selection
-      const auto qep = ocs::tom::Element<ocs::tom::QU>::from_typed(
-         lSelectElemDPack(src_qep, nullptr, rdp, what.get(), false, nullptr));
+      // copy the referenced queue instance; the reduced copy has the layout of the selection
+      auto qep_copy = ocs_delivery_queue_copy(src_qep, what);
+      const auto qep = qep_copy.get();
       // JG_queue names no sub-type in the model (it holds a reduced queue instance), so it takes the raw element
-      ocs::tom::set<JG_queue>(gdil_ep, qep.raw());
+      ocs::tom::set<JG_queue>(gdil_ep, qep_copy.release());
 
       // build minimum of job request and queue resource limit
       reduce_queue_limits(master_centry_list, gdil_ep, qep, *tmpjep, tmpjatep, is_pe_job, is_first_gdil_entry);
 
       is_first_gdil_entry = false;
    }
-
-   ocs_cull_descr_release(&rdp);
 
    /*
    ** remove some data not used at execd side
@@ -2267,8 +2282,8 @@ copyJob(const ocs::tom::Element<ocs::tom::JB> job, const ocs::tom::ConstElement<
       DRETURN(ocs::tom::ElementPtr<ocs::tom::JB>());
    }
 
-   // the array task list of the copy gets the descriptor of the array task
-   auto tmp_ja_task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("cp_ja_task_list", lGetElemDescr(ja_task_copy));
+   // the array task list of the copy gets the layout of the array task
+   auto tmp_ja_task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create_like("cp_ja_task_list", ja_task_copy);
    tmp_ja_task_list->push_back(ja_task_copy.clone());
    ocs::tom::set<JB_ja_tasks>(job_copy, std::move(tmp_ja_task_list));
 

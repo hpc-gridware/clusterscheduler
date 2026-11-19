@@ -144,6 +144,26 @@ namespace ocs::tom {
       return rest;
    }
 
+   lList *split_from(lList *lp, lListElem *ep, const char *name) {
+      // the member check before the list is created, so a foreign element leaves nothing behind
+      if (ep == nullptr) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::NullElement, NoName, lp->descr);
+      }
+      // descriptors are shared between lists, so only the owner tells the list of an element
+      if (elem_list(ep) != lp) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::ForeignList, NoName, ep->descr);
+      }
+      lList *tail = create_list(name, lp->descr, true);
+      while (ep != nullptr) {
+         lListElem *next = ep->next;
+         dechain_elem(lp, ep);
+         // the same layout and keys checked in the list they leave: appending cannot fail
+         append_elem(tail, ep);
+         ep = next;
+      }
+      return tail;
+   }
+
    void split_list(lList *&slp, lList **ulp, const char *ulp_name, const lCondition *cp) {
       if (slp == nullptr) {
          return;

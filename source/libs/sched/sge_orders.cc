@@ -38,7 +38,6 @@
 #include <stdio.h>
 
 #include "uti/sge_rmon_macros.h"
-#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_order.h"
@@ -172,24 +171,21 @@ void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t 
 
    if (type == ORT_tickets || type == ORT_ptickets) {
 
-      // built once and never released, so every use only takes a reference
-      static const lDescr *const tixDesc =
-         ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_tix, JAT_oticket, JAT_fticket, JAT_sticket, JAT_share,
-                                          JAT_prio, JAT_ntix, JAT_granted_destin_identifier_list});
-      static const lDescr *const tix2Desc =
-         ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_tix, JAT_oticket, JAT_fticket, JAT_sticket, JAT_share,
-                                          JAT_prio, JAT_ntix});
-      static const lDescr *const jobDesc =
-         ocs_cull_descr_reduce(JB_Type, {JB_nurg, JB_urg, JB_rrcontr, JB_dlcontr, JB_wtcontr, JB_ja_tasks});
+      // built once for the life of the process, so no use allocates
+      const auto tix_layout = ocs::tom::layout<JAT_task_number, JAT_tix, JAT_oticket, JAT_fticket, JAT_sticket,
+                                               JAT_share, JAT_prio, JAT_ntix, JAT_granted_destin_identifier_list>();
+      const auto tix2_layout = ocs::tom::layout<JAT_task_number, JAT_tix, JAT_oticket, JAT_fticket, JAT_sticket,
+                                                JAT_share, JAT_prio, JAT_ntix>();
+      const auto job_layout = ocs::tom::layout<JB_nurg, JB_urg, JB_rrcontr, JB_dlcontr, JB_wtcontr, JB_ja_tasks>();
       // the job and its task are reductions to the fields an order carries
-      auto jep = ocs::tom::ElementPtr<ocs::tom::JB>::create(jobDesc);
-      auto jlist = ocs::tom::ListPtr<ocs::tom::JB>::create("", jobDesc);
+      auto jep = ocs::tom::ElementPtr<ocs::tom::JB>::create(job_layout);
+      auto jlist = ocs::tom::ListPtr<ocs::tom::JB>::create("", job_layout);
 
       /* Create a reduced task list with only the required fields */
       {
-         const lDescr *const task_descr = update_execd ? tixDesc : tix2Desc;
-         auto tlist = ocs::tom::ListPtr<ocs::tom::JAT>::create("", task_descr);
-         auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
+         const auto task_layout = update_execd ? tix_layout : tix2_layout;
+         auto tlist = ocs::tom::ListPtr<ocs::tom::JAT>::create("", task_layout);
+         auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_layout);
          if (update_execd) {
             ocs::tom::set<JAT_granted_destin_identifier_list>(
                new_task, ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).clone(""));

@@ -111,7 +111,6 @@
 #include "sgeobj/sge_usage.h"
 
 #include "cull/cull_list.h"
-#include "cull/ocs_cull_descr.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Select.h"
@@ -1452,10 +1451,9 @@ static int japi_user_hold_add_jobid(const uint32_t gdi_action, ocs::tom::ListPtr
                                     dstring *diag) {
    DENTER(TOP_LAYER);
 
-   // built once and never released, so every use only takes a reference
-   static const lDescr *const job_descr =
-      ocs_cull_descr_reduce(JB_Type, {JB_job_number, JB_verify_suitable_queues, JB_ja_tasks, JB_ja_structure});
-   static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
+   // built once for the life of the process
+   const auto job_layout = ocs::tom::layout<JB_job_number, JB_verify_suitable_queues, JB_ja_tasks, JB_ja_structure>();
+   const auto task_layout = ocs::tom::layout<JAT_task_number, JAT_hold>();
 
    if (!array) {
       taskid = 0;
@@ -1466,9 +1464,9 @@ static int japi_user_hold_add_jobid(const uint32_t gdi_action, ocs::tom::ListPtr
 
    if (jep == nullptr) {
       if (!request_list) {
-         request_list = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist", job_descr);
+         request_list = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist", job_layout);
       }
-      auto new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create(job_descr);
+      auto new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create(job_layout);
       ocs::tom::set<JB_job_number>(new_job, jobid);
       jep = request_list->push_back(std::move(new_job));
    }
@@ -1487,10 +1485,10 @@ static int japi_user_hold_add_jobid(const uint32_t gdi_action, ocs::tom::ListPtr
    // the task list carries reduced tasks, created as lAddSubUlong() created them
    auto tasks = ocs::tom::get<JB_ja_tasks>(jep);
    if (!tasks) {
-      ocs::tom::set<JB_ja_tasks>(jep, ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_descr));
+      ocs::tom::set<JB_ja_tasks>(jep, ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_layout));
       tasks = ocs::tom::get<JB_ja_tasks>(jep);
    }
-   auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
+   auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_layout);
    ocs::tom::set<JAT_task_number>(new_task, taskid);
    const auto tep = tasks.push_back(std::move(new_task));
 

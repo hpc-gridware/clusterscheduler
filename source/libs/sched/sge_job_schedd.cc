@@ -210,8 +210,8 @@ bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_
     * Create list for running jobs
     */
    if (*(splitted_jobs[SPLIT_RUNNING]) == nullptr) {
-      // the list belongs to the caller and gets the descriptor of the (possibly reduced) job
-      *(splitted_jobs[SPLIT_RUNNING]) = ocs::tom::ListPtr<ocs::tom::JB>::create("", lGetElemDescr(pending));
+      // the list belongs to the caller and gets the layout of the (possibly reduced) job
+      *(splitted_jobs[SPLIT_RUNNING]) = ocs::tom::ListPtr<ocs::tom::JB>::create_like("", pending);
    }
    const auto running_list = splitted_jobs[SPLIT_RUNNING]->get();
    auto running_job = running_list.find_first<JB_job_number>(job_id);
@@ -263,8 +263,8 @@ bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_
     */
    auto r_ja_task_list = ocs::tom::get<JB_ja_tasks>(running_job);
    if (r_ja_task_list == nullptr) {
-      // the list gets the descriptor of the (possibly reduced) task
-      auto created = ocs::tom::ListPtr<ocs::tom::JAT>::create("", lGetElemDescr(ja_task));
+      // the list gets the layout of the (possibly reduced) task
+      auto created = ocs::tom::ListPtr<ocs::tom::JAT>::create_like("", ja_task);
       r_ja_task_list = created.get();
       ocs::tom::set<JB_ja_tasks>(running_job, std::move(created));
    }
@@ -388,7 +388,7 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
        * create a hash table on JB_owner to speedup
        * searching for jobs of a specific owner
        */
-      cull_hash_new_check(pending_list, JB_owner, false);
+      pending_list.add_hash<JB_owner>();
 #endif
 
       if (user_name == nullptr) {
@@ -420,9 +420,9 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
 
                auto excluded_job = pending_list.extract(user_job);
                if (*(job_lists[SPLIT_PENDING_EXCLUDED]) == nullptr) {
-                  // the list belongs to the caller and gets the descriptor of the (possibly reduced) job
+                  // the list belongs to the caller and gets the layout of the (possibly reduced) job
                   *(job_lists[SPLIT_PENDING_EXCLUDED]) =
-                          ocs::tom::ListPtr<ocs::tom::JB>::create("", lGetElemDescr(user_job));
+                          ocs::tom::ListPtr<ocs::tom::JB>::create_like("", user_job);
                }
 
                (*(job_lists[SPLIT_PENDING_EXCLUDED]))->push_back(std::move(excluded_job));
@@ -637,8 +637,8 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
           */
          if (target != nullptr) {
             if (*target == nullptr) {
-               // the list gets the descriptor of the (possibly reduced) task
-               *target = ocs::tom::ListPtr<ocs::tom::JAT>::create(nullptr, lGetElemDescr(ja_task));
+               // the list gets the layout of the (possibly reduced) task
+               *target = ocs::tom::ListPtr<ocs::tom::JAT>::create_like(nullptr, ja_task);
             }
             if (do_copy) {
                (*target)->push_back(ja_task.clone());
@@ -703,8 +703,8 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
 #ifdef JOB_SPLIT_DEBUG               
                   DPRINTF("Create " SFN "-list\n", get_name_of_split_value(i));
 #endif
-                  // the list belongs to the caller and gets the descriptor of the (possibly reduced) job
-                  *(result_list[i]) = ocs::tom::ListPtr<ocs::tom::JB>::create("", lGetElemDescr(job));
+                  // the list belongs to the caller and gets the layout of the (possibly reduced) job
+                  *(result_list[i]) = ocs::tom::ListPtr<ocs::tom::JB>::create_like("", job);
                } 
                if (move_job == 1) {
 #ifdef JOB_SPLIT_DEBUG

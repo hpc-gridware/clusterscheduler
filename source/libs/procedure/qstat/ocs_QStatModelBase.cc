@@ -1147,7 +1147,7 @@ int ocs::QStatModelBase::select_by_pe_list(const ocs::tom::List<ocs::tom::CQ> qu
       }
       if (pe_selected == nullptr) {
          // the selected PEs keep the reduced layout the PE list was fetched with
-         pe_selected = ocs::tom::ListPtr<ocs::tom::PE>::create("", lGetElemDescr(ref_pe));
+         pe_selected = ocs::tom::ListPtr<ocs::tom::PE>::create_like("", ref_pe);
       }
       pe_selected->push_back(ref_pe.clone());
    }

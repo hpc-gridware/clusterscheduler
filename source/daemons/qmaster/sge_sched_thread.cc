@@ -522,10 +522,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                                  rqs_list, centry_list, acl_list, hgrp_list, ar_list, true, now);
 
       if (move_dis_queues) {
-         // the disabled queue list exists, so lDechainList() appends to it and does not create one;
-         // there is no typed form of moving the tail of a list from an element on
-         lList *dis_queues = *lists->dis_queue_list;
-         lDechainList(*lists->queue_list, &dis_queues, dis_queue_elem);
+         // the disabled queues go back from their first one on; the disabled queue list exists and is not
+         // replaced, it takes them at its end
+         lists->dis_queue_list->splice(lists->queue_list->split_at(dis_queue_elem));
       }
    }
 
@@ -933,9 +932,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 
                   auto not_started_job = pending_jobs.extract(orig_job);
                   if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == nullptr) {
-                     // the list belongs to the caller and gets the descriptor of the (possibly reduced) jobs
+                     // the list belongs to the caller and gets the layout of the (possibly reduced) jobs
                      *(splitted_job_lists[SPLIT_NOT_STARTED]) =
-                             ocs::tom::ListPtr<ocs::tom::JB>::create("", lGetListDescr(pending_jobs));
+                             ocs::tom::ListPtr<ocs::tom::JB>::create_like("", pending_jobs);
                   }
                   (*(splitted_job_lists[SPLIT_NOT_STARTED]))->push_back(std::move(not_started_job));
                   is_pjob_resort = false;
@@ -985,9 +984,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   /* prevent that we get the same job next time again */
                   auto not_started_job = pending_jobs.extract(orig_job);
                   if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == nullptr) {
-                     // the list belongs to the caller and gets the descriptor of the (possibly reduced) jobs
+                     // the list belongs to the caller and gets the layout of the (possibly reduced) jobs
                      *(splitted_job_lists[SPLIT_NOT_STARTED]) =
-                             ocs::tom::ListPtr<ocs::tom::JB>::create("", lGetListDescr(pending_jobs));
+                             ocs::tom::ListPtr<ocs::tom::JB>::create_like("", pending_jobs);
                   }
                   (*(splitted_job_lists[SPLIT_NOT_STARTED]))->push_back(std::move(not_started_job));
                }
@@ -1136,8 +1135,8 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
 
    if (is_reserve) {
       if (queue_list == nullptr) {
-         // the list gets the reduced descriptor of the disabled queues
-         queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("temp queue", lGetListDescr(*dis_queue_list));
+         // the list gets the reduced layout of the disabled queues
+         queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create_like("temp queue", *dis_queue_list);
          a.queue_list = queue_list.get();
       }
       is_computed_reservation = true;

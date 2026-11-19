@@ -54,7 +54,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_hostname.h"
-#include "cull/ocs_cull_descr.h"
 
 #include "spool/sge_spooling.h"
 
@@ -1830,16 +1829,16 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
    const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    dstring buffer = DSTRING_INIT;
 
-   const lDescr *queue_descr = ocs_cull_descr_reduce(QU_Type, {QU_qhostname, QU_qname, QU_full_name, QU_job_slots,
-                                                               QU_consumable_config_list, QU_resource_utilization,
-                                                               QU_message_list, QU_state});
-   const lDescr *host_descr = ocs_cull_descr_reduce(EH_Type, {EH_name, EH_consumable_config_list,
-                                                              EH_resource_utilization});
+   // the reduced layouts of the reserved queues and hosts, built once for the life of the process
+   const auto queue_layout = ocs::tom::layout<QU_qhostname, QU_qname, QU_full_name, QU_job_slots,
+                                              QU_consumable_config_list, QU_resource_utilization, QU_message_list,
+                                              QU_state>();
+   const auto host_layout = ocs::tom::layout<EH_name, EH_consumable_config_list, EH_resource_utilization>();
 
    // these are the AR's AR_reserved_queues and AR_reserved_hosts lists
    // the AR_reserved_hosts list gets a global host element
    ocs::tom::ListPtr<ocs::tom::QU> queue_list;
-   auto host_list = ocs::tom::ListPtr<ocs::tom::EH>::create("", host_descr);
+   auto host_list = ocs::tom::ListPtr<ocs::tom::EH>::create("", host_layout);
    const auto global_host = host_list->emplace_back<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
    const auto master_global_host = ocs::tom::find_first<EH_name>(master_exechost_list, SGE_GLOBAL_NAME);
 
@@ -1860,7 +1859,7 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
 
       // create queue with slot booking
       if (!queue_list) {
-         queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("", queue_descr);
+         queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("", queue_layout);
       }
       const auto queue = queue_list->emplace_back<QU_full_name>(queue_name);
       ocs::tom::set<QU_qname>(queue, cqueue_name);
@@ -2005,8 +2004,6 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
    ocs::tom::set<AR_reserved_queues>(ar, std::move(queue_list));
    ocs::tom::set<AR_reserved_hosts>(ar, std::move(host_list));
 
-   ocs_cull_descr_release(&queue_descr);
-   ocs_cull_descr_release(&host_descr);
    sge_dstring_free(&buffer);
 
    DRETURN_VOID;

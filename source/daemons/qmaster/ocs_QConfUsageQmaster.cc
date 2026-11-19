@@ -32,7 +32,6 @@
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
 #include "tom/ocs_Element.h"
-#include "tom/ocs_cull_descr.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "msg_common.h"
@@ -83,11 +82,11 @@ namespace {
       }
 
       /* the name and the two lists, as lSelectElemPack() reduced the element before */
-      static const lDescr *const reduced_descr = ocs_cull_descr_reduce(T::descriptor.e, {KeyF, UsageF, ProjectF});
+      const auto reduced_layout = ocs::tom::layout<KeyF, UsageF, ProjectF>();
       bool all_ok = true;
       for (const std::string &name : names) {
          /* A fresh element's list fields are empty, and empty is the payload. */
-         auto reduced = ocs::tom::ElementPtr<T>::create(reduced_descr);
+         auto reduced = ocs::tom::ElementPtr<T>::create(reduced_layout);
          ocs::tom::set<KeyF>(reduced, name.c_str());
 
          ocs::tom::ListPtr<ocs::tom::AN> alp;
