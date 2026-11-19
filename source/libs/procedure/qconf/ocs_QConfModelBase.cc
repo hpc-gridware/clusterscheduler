@@ -708,8 +708,8 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
    key_nm_ = desc_->name_nm;
    kind_ = QConfReadKind::NAME_LIST;
 
-   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
-   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   const bool ok = fetch(answer_list, desc_->target, ocs::tom::Where<ocs::tom::EH>(),
+                         ocs::tom::what_all<ocs::tom::EH>());
    if (!ok) {
       DRETURN(false);
    }
@@ -901,8 +901,8 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
       DRETURN(false);
    }
 
-   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
-   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   const bool ok = fetch(answer_list, desc_->target, ocs::tom::Where<ocs::tom::CQ>(),
+                         ocs::tom::what_all<ocs::tom::CQ>());
    if (!ok) {
       DRETURN(false);
    }
@@ -1066,8 +1066,8 @@ ocs::QConfModelBase::make_sharetree_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *an
    desc_ = &qconf_desc(object_);
    key_nm_ = desc_->name_nm;
 
-   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
-   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   const bool ok = fetch(answer_list, desc_->target, ocs::tom::Where<ocs::tom::STN>(),
+                         ocs::tom::what_all<ocs::tom::STN>());
    if (!ok) {
       DRETURN(false);
    }
@@ -1140,10 +1140,10 @@ ocs::QConfModelBase::make_processor_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *an
    desc_ = &qconf_desc(object_);
    key_nm_ = desc_->name_nm;
 
-   lEnumeration *what = lWhat("%T(%I %I %I)", EH_Type, EH_name, EH_processors, EH_load_list);
-   lCondition *where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name,
-                              SGE_TEMPLATE_NAME, EH_name, SGE_GLOBAL_NAME);
-   const bool ok = fetch(answer_list, desc_->target, where, what);
+   auto what = ocs::tom::what<EH_name, EH_processors, EH_load_list>();
+   auto where = !(ocs::tom::field<EH_name>().equals_nocase(SGE_TEMPLATE_NAME) ||
+                  ocs::tom::field<EH_name>().equals_nocase(SGE_GLOBAL_NAME));
+   const bool ok = fetch(answer_list, desc_->target, std::move(where), std::move(what));
    if (!ok) {
       DRETURN(false);
    }
@@ -1193,8 +1193,8 @@ ocs::QConfModelBase::make_eventclient_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *
    desc_ = &qconf_desc(object_);
    key_nm_ = desc_->name_nm;
 
-   lEnumeration *what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
-   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   const bool ok = fetch(answer_list, desc_->target, ocs::tom::Where<ocs::tom::EV>(),
+                         ocs::tom::what<EV_id, EV_name, EV_host>());
    if (!ok) {
       DRETURN(false);
    }
@@ -1248,8 +1248,8 @@ ocs::QConfModelBase::make_sick_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
    /* every attribute, for the reason spelled out in make_cqueue_snapshot(): a
     * reduced descriptor and lSelect() do not go together */
-   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
-   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   const bool ok = fetch(answer_list, desc_->target, ocs::tom::Where<ocs::tom::CQ>(),
+                         ocs::tom::what_all<ocs::tom::CQ>());
    if (!ok) {
       DRETURN(false);
    }
@@ -1348,7 +1348,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
       DRETURN(true);
    }
 
-   lCondition *cqueue_where = nullptr;
+   ocs::tom::Where<ocs::tom::CQ> cqueue_where;
    for (const auto qref_pattern : *qref_pattern_list_) {
       dstring cqueue_name = DSTRING_INIT;
       dstring host_domain = DSTRING_INIT;
@@ -1361,7 +1361,6 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
                                  MSG_CQUEUE_NOQMATCHING_S, name);
          sge_dstring_free(&cqueue_name);
          sge_dstring_free(&host_domain);
-         lFreeWhere(&cqueue_where);
          DRETURN(false);
       }
       const char *cqueue_name_str = sge_dstring_get_string(&cqueue_name);
@@ -1370,18 +1369,15 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
                                  MSG_CQUEUE_NAMENOTCORRECT_SS, name, name);
          sge_dstring_free(&cqueue_name);
          sge_dstring_free(&host_domain);
-         lFreeWhere(&cqueue_where);
          DRETURN(false);
       }
-      lCondition *add_where = lWhere("%T(%I p= %s)", CQ_Type, CQ_name, cqueue_name_str);
-      cqueue_where = (cqueue_where == nullptr) ? add_where : lOrWhere(cqueue_where, add_where);
+      cqueue_where |= ocs::tom::field<CQ_name>().like(cqueue_name_str);
 
       sge_dstring_free(&cqueue_name);
       sge_dstring_free(&host_domain);
    }
 
    if (!fetch_hgroups(answer_list)) {
-      lFreeWhere(&cqueue_where);
       DRETURN(false);
    }
 
@@ -1393,8 +1389,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
     * CULL answers by aborting the daemon ("ASTRLIST_href not found in element",
     * CS-2818). Inside qmaster the copy never leaves the process, so the selection
     * saved nothing here anyway. */
-   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
-   const bool ok = fetch(answer_list, desc_->target, cqueue_where, what);
+   const bool ok = fetch(answer_list, desc_->target, std::move(cqueue_where), ocs::tom::what_all<ocs::tom::CQ>());
    if (!ok) {
       DRETURN(false);
    }

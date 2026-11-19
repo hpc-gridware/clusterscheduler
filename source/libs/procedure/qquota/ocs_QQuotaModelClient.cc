@@ -69,7 +69,7 @@ bool ocs::QQuotaModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
    // RQS
    // the selections and the condition below are built for the type of their target by the base class
-   const auto rqs_what = ocs::tom::What<ocs::tom::RQS>::from_typed(get_rqs_what());
+   const auto rqs_what = get_rqs_what();
    const int rqs_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::RQS_LIST,
                                         gdi::Command::GET, gdi::SubCommand::NONE,
                                         nullptr, ocs::tom::Where<ocs::tom::RQS>(), rqs_what);
@@ -78,7 +78,7 @@ bool ocs::QQuotaModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    }
 
    // CEntry
-   const auto ce_what = ocs::tom::What<ocs::tom::CE>::from_typed(get_centry_what());
+   const auto ce_what = get_centry_what();
    const int ce_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CE_LIST,
                                        gdi::Command::GET, gdi::SubCommand::NONE,
                                        nullptr, ocs::tom::Where<ocs::tom::CE>(), ce_what);
@@ -87,7 +87,7 @@ bool ocs::QQuotaModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    }
 
    // User Set
-   const auto user_set_what = ocs::tom::What<ocs::tom::US>::from_typed(get_user_set_what());
+   const auto user_set_what = get_user_set_what();
    const int userset_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::US_LIST,
                                             gdi::Command::GET, gdi::SubCommand::NONE,
                                             nullptr, ocs::tom::Where<ocs::tom::US>(), user_set_what);
@@ -96,7 +96,7 @@ bool ocs::QQuotaModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    }
 
    // Hostgroup
-   const auto hgroup_what = ocs::tom::What<ocs::tom::HGRP>::from_typed(get_hgroup_what());
+   const auto hgroup_what = get_hgroup_what();
    const int hgroup_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::HGRP_LIST,
                                            gdi::Command::GET, gdi::SubCommand::NONE,
                                            nullptr, ocs::tom::Where<ocs::tom::HGRP>(), hgroup_what);
@@ -106,8 +106,8 @@ bool ocs::QQuotaModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
 
    // Hosts (fetch all specified + global host but not the template host)
-   const auto eh_where = ocs::tom::Where<ocs::tom::EH>::from_typed(get_host_where(host_list));
-   const auto eh_what = ocs::tom::What<ocs::tom::EH>::from_typed(get_host_what());
+   const auto eh_where = get_host_where(host_list);
+   const auto eh_what = get_host_what();
    const int eh_id = gdi_multi.request(answer_list, gdi::Mode::SEND, gdi::Target::EH_LIST, gdi::Command::GET,
                                        gdi::SubCommand::NONE, nullptr, eh_where, eh_what);
    if (answer_list_has_error(answer_list)) {

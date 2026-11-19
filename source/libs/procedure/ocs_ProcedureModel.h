@@ -175,4 +175,38 @@ namespace ocs {
       virtual ~ProcedureModel() = default;
 #pragma endregion
    };
+
+   /** @brief Select from a master list for a server model, with the results lSelect() gave
+    *
+    * The server models (`*ModelServer::fetch_data()`) run in a qmaster worker
+    * thread, where an exception that escapes terminates the daemon, and their
+    * views tell "no list" from an empty one. So unlike ConstList<T>::select()
+    * this gives an empty handle, not an empty list, when nothing is selected,
+    * and an empty handle instead of an exception when the selection fails
+    * (no memory, a field the source does not hold) - as lSelect() did. The
+    * result is named "", as the callers named it with lSelect().
+    *
+    * @tparam T the object type
+    * @param list the master list; an empty handle selects nothing
+    * @param where the condition; an empty one selects every element
+    * @param what the fields to copy
+    * @return the selection, an empty handle if nothing was selected or the selection failed
+    */
+   template <ocs::tom::ObjectType T>
+   [[nodiscard]] ocs::tom::ListPtr<T> ocs_procedure_select(const ocs::tom::ConstList<T> list,
+                                                           const ocs::tom::Where<T> &where,
+                                                           const ocs::tom::What<T> &what) {
+      ocs::tom::ListPtr<T> selected;
+      try {
+         selected = list.select(where, what, "");
+      } catch (const ocs::tom::ListCoreError &) {
+         return {};
+      } catch (const ocs::tom::FieldException &) {
+         return {};
+      }
+      if (selected != nullptr && selected->empty()) {
+         selected.reset();
+      }
+      return selected;
+   }
 }

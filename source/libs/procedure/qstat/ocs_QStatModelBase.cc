@@ -57,10 +57,13 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
 #include "sgeobj/tom/ocs_tom_MES.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
@@ -194,197 +197,81 @@ void ocs::QStatModelBase::calc_longest_queue_length(QStatParameter &parameter) c
    DRETURN_VOID;
 }
 
-lEnumeration *
+/** @brief The job fields of the plain listing, without the sub-selections of the array tasks
+ *
+ * Which fields those are depends on the parameters - the extra priority,
+ * urgency and resource columns are only fetched when they are printed.
+ *
+ * @param parameter the parsed parameters
+ * @return the selection
+ */
+ocs::tom::What<ocs::tom::JB>
 ocs::QStatModelBase::get_sub_job_filter(const QStatParameter &parameter) {
-   lEnumeration *what_JB_Type = nullptr; // job
-
-   lEnumeration *tmp_what = nullptr;
-   constexpr int nm_JB_Type[] = {
-      JB_job_number,
-      JB_owner,
-      JB_type,
-      JB_pe,
-      JB_jid_predecessor_list,
-      JB_ja_ad_predecessor_list,
-      JB_job_name,
-      JB_submission_time,
-      JB_pe_range,
-      JB_ja_structure,
-      JB_ja_tasks,
-      JB_ja_n_h_ids,
-      JB_ja_u_h_ids,
-      JB_ja_o_h_ids,
-      JB_ja_s_h_ids,
-      JB_ja_a_h_ids,
-      JB_ja_template,
-      JB_execution_time,
-      JB_request_set_list,
-      JB_project,
-      JB_jobshare,
-      JB_checkpoint_name,
-      NoName
-   };
-   tmp_what = lIntVector2What(JB_Type, nm_JB_Type);
-   lMergeWhat(&what_JB_Type, &tmp_what);
+   auto what = ocs::tom::what<JB_job_number, JB_owner, JB_type, JB_pe, JB_jid_predecessor_list,
+                              JB_ja_ad_predecessor_list, JB_job_name, JB_submission_time, JB_pe_range,
+                              JB_ja_structure, JB_ja_tasks, JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_o_h_ids,
+                              JB_ja_s_h_ids, JB_ja_a_h_ids, JB_ja_template, JB_execution_time,
+                              JB_request_set_list, JB_project, JB_jobshare, JB_checkpoint_name>();
    if (parameter.show_ & QSTAT_DISPLAY_EXTENDED) {
-      constexpr int nm_JB_Type_ext[] = {
-         JB_department,
-         JB_override_tickets,
-         NoName
-      };
-      tmp_what = lIntVector2What(JB_Type, nm_JB_Type_ext);
-      lMergeWhat(&what_JB_Type, &tmp_what);
-
+      what = std::move(what).merge(ocs::tom::what<JB_department, JB_override_tickets>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_URGENCY) {
-      constexpr int nm_JB_Type_urg[] = {
-         JB_deadline,
-         JB_nurg,
-         JB_urg,
-         JB_rrcontr,
-         JB_dlcontr,
-         JB_wtcontr,
-         NoName
-      };
-      tmp_what = lIntVector2What(JB_Type, nm_JB_Type_urg);
-      lMergeWhat(&what_JB_Type, &tmp_what);
+      what = std::move(what).merge(
+         ocs::tom::what<JB_deadline, JB_nurg, JB_urg, JB_rrcontr, JB_dlcontr, JB_wtcontr>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_PRIORITY) {
-      constexpr int nm_JB_Type_prio[] = {
-         JB_nppri,
-         JB_nurg,
-         JB_priority,
-         NoName
-      };
-      tmp_what = lIntVector2What(JB_Type, nm_JB_Type_prio);
-      lMergeWhat(&what_JB_Type, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JB_nppri, JB_nurg, JB_priority>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_RESOURCES) {
-      constexpr int nm_JB_Type_res[] = {
-         JB_checkpoint_name,
-         JB_request_set_list,
-         JB_jid_request_list,
-         JB_ja_ad_request_list,
-         JB_binding,
-         NoName
-      };
-      tmp_what = lIntVector2What(JB_Type, nm_JB_Type_res);
-      lMergeWhat(&what_JB_Type, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JB_checkpoint_name, JB_request_set_list, JB_jid_request_list,
+                                                  JB_ja_ad_request_list, JB_binding>());
    }
-   return what_JB_Type;
+   return what;
 }
 
-lEnumeration *
+/** @brief The fields of the array task template of a job (`JB_ja_template`) the listing needs
+ * @param parameter the parsed parameters
+ * @return the selection
+ */
+ocs::tom::What<ocs::tom::JAT>
 ocs::QStatModelBase::get_sub_ja_task_template_filter(const QStatParameter &parameter) {
-   lEnumeration *what_JAT_Type_template = nullptr; // task template
-   constexpr int nm_JAT_Type_template[] = {
-      JAT_task_number,
-      JAT_prio,
-      JAT_hold,
-      JAT_state,
-      JAT_status,
-      JAT_job_restarted,
-      JAT_start_time,
-      NoName
-   };
-   lEnumeration *tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template);
-   lMergeWhat(&what_JAT_Type_template, &tmp_what);
+   auto what = ocs::tom::what<JAT_task_number, JAT_prio, JAT_hold, JAT_state, JAT_status, JAT_job_restarted,
+                              JAT_start_time>();
    if (parameter.show_ & QSTAT_DISPLAY_EXTENDED) {
-      constexpr int nm_JAT_Type_template_ext[] = {
-         JAT_ntix,
-         JAT_scaled_usage_list,
-         JAT_granted_pe,
-         JAT_tix,
-         JAT_oticket,
-         JAT_fticket,
-         JAT_sticket,
-         JAT_share,
-         NoName
-      };
-      tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template_ext);
-      lMergeWhat(&what_JAT_Type_template, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JAT_ntix, JAT_scaled_usage_list, JAT_granted_pe, JAT_tix,
+                                                  JAT_oticket, JAT_fticket, JAT_sticket, JAT_share>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_PRIORITY) {
-      constexpr int nm_JAT_Type_template_prio[] = {
-         JAT_ntix,
-         NoName
-      };
-      tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template_prio);
-      lMergeWhat(&what_JAT_Type_template, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JAT_ntix>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_RESOURCES) {
-      constexpr int nm_JAT_Type_template_res[] = {
-         JAT_granted_pe,
-         NoName
-      };
-      tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template_res);
-      lMergeWhat(&what_JAT_Type_template, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JAT_granted_pe>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_TASKS) {
-      constexpr int nm_JAT_Type_template_task[] = {
-         JAT_task_list,
-         JAT_usage_list,
-         JAT_scaled_usage_list,
-         NoName
-      };
-      tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template_task);
-      lMergeWhat(&what_JAT_Type_template, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JAT_task_list, JAT_usage_list, JAT_scaled_usage_list>());
    }
-   return what_JAT_Type_template;
+   return what;
 }
 
-lEnumeration *
+/** @brief The fields of the enrolled array tasks of a job (`JB_ja_tasks`) the listing needs
+ * @param parameter the parsed parameters
+ * @return the selection
+ */
+ocs::tom::What<ocs::tom::JAT>
 ocs::QStatModelBase::get_sub_ja_task_filter(const QStatParameter &parameter) {
-   lEnumeration *what_JAT_Type_list = nullptr; // task
-   constexpr int nm_JAT_Type_list[] = {
-      JAT_task_number,
-      JAT_status,
-      JAT_granted_destin_identifier_list,
-      JAT_suitable,
-      JAT_granted_pe,
-      JAT_state,
-      JAT_prio,
-      JAT_hold,
-      JAT_job_restarted,
-      JAT_start_time,
-      NoName
-   };
-   lEnumeration *tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_list);
-   lMergeWhat(&what_JAT_Type_list, &tmp_what);
+   auto what = ocs::tom::what<JAT_task_number, JAT_status, JAT_granted_destin_identifier_list, JAT_suitable,
+                              JAT_granted_pe, JAT_state, JAT_prio, JAT_hold, JAT_job_restarted, JAT_start_time>();
    if (parameter.show_ & QSTAT_DISPLAY_EXTENDED) {
-      constexpr int nm_JAT_Type_list_ext[] = {
-         JAT_ntix,
-         JAT_scaled_usage_list,
-         JAT_task_list,
-         JAT_tix,
-         JAT_oticket,
-         JAT_fticket,
-         JAT_sticket,
-         JAT_share,
-         NoName
-      };
-      tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_list_ext);
-      lMergeWhat(&what_JAT_Type_list, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JAT_ntix, JAT_scaled_usage_list, JAT_task_list, JAT_tix,
+                                                  JAT_oticket, JAT_fticket, JAT_sticket, JAT_share>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_PRIORITY) {
-      constexpr int nm_JAT_Type_list_prio[] = {
-         JAT_ntix,
-         NoName
-      };
-      tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_list_prio);
-      lMergeWhat(&what_JAT_Type_list, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JAT_ntix>());
    }
    if (parameter.show_ & QSTAT_DISPLAY_TASKS) {
-      constexpr int nm_JAT_Type_list_task[] = {
-         JAT_task_list,
-         JAT_usage_list,
-         JAT_scaled_usage_list,
-         NoName
-      };
-      tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_list_task);
-      lMergeWhat(&what_JAT_Type_list, &tmp_what);
+      what = std::move(what).merge(ocs::tom::what<JAT_task_list, JAT_usage_list, JAT_scaled_usage_list>());
    }
-   return what_JAT_Type_list;
+   return what;
 }
 
 /** @brief The job fields the report needs
@@ -393,71 +280,55 @@ ocs::QStatModelBase::get_sub_ja_task_filter(const QStatParameter &parameter) {
  * and usage columns are only fetched when they are going to be printed.
  *
  * @param parameter the parsed parameters
- * @return the enumeration, which the caller owns
+ * @return the selection, with the enrolled tasks and the task template narrowed to the fields needed
  */
-lEnumeration *
+ocs::tom::What<ocs::tom::JB>
 ocs::QStatModelBase::get_job_what(const QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   // job attribute filter
-   lEnumeration *job_what = get_sub_job_filter(parameter);
-
-   // add array task filter for enrolled tasks as sub filter
-   lEnumeration *task_what = get_sub_ja_task_filter(parameter);
-   if (task_what != nullptr) {
-      lWhatSetSubWhat(job_what, JB_ja_tasks, &task_what);
-   }
-
-   // add array task template filter as sub filter
-   lEnumeration *task_template_what = get_sub_ja_task_template_filter(parameter);
-   if (task_template_what != nullptr) {
-      lWhatSetSubWhat(job_what, JB_ja_template, &task_template_what);
-   }
+   // job attribute filter, with the array task filter for enrolled tasks and the one for the task template as
+   // sub filters
+   auto job_what = get_sub_job_filter(parameter)
+                      .nest<JB_ja_tasks>(get_sub_ja_task_filter(parameter))
+                      .nest<JB_ja_template>(get_sub_ja_task_template_filter(parameter));
 
    DRETURN(job_what);
 }
 
-/** @brief Build the CULL condition selecting the jobs of the users given with `-u`
+/** @brief Build the condition selecting the jobs of the users given with `-u`
  *
  * The default `-u $user` and the wildcard `*` have already been resolved, see
  * str_list_transform_user_list(). A user name may be a wildcard pattern.
  *
  * @param user_list the users whose jobs are selected
- * @return the condition, which the caller owns, or nullptr if the job owner is not restricted
+ * @return the condition; empty if the job owner is not restricted
  */
-lCondition *
+ocs::tom::Where<ocs::tom::JB>
 ocs::QStatModelBase::get_job_owner_where(const ocs::tom::ConstList<ocs::tom::ST> user_list) {
    DENTER(TOP_LAYER);
-   lCondition *where = nullptr;
+   ocs::tom::Where<ocs::tom::JB> where;
 
    for (const auto ep : user_list) {
-      lCondition *nw = nullptr;
-
       if (const char *user = ocs::tom::get<ST_name>(ep); is_pattern(user)) {
-         nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user);
+         where |= ocs::tom::field<JB_owner>().like(user);
       } else {
-         nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user);
-      }
-      if (where == nullptr) {
-         where = nw;
-      } else {
-         where = lOrWhere(where, nw);
+         where |= ocs::tom::field<JB_owner>() == user;
       }
    }
    DRETURN(where);
 }
 
-/** @brief Build the CULL condition selecting the jobs to report
+/** @brief Build the condition selecting the jobs to report
  * @param parameter the parsed parameters, holding the user and state filters
- * @return the condition, which the caller owns
+ * @return the condition; empty if neither users nor states restrict the jobs
  */
-lCondition *
+ocs::tom::Where<ocs::tom::JB>
 ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   lCondition *nw = nullptr;
+   ocs::tom::Where<ocs::tom::JB> nw;
 
    // Retrieve jobs only for those users specified via -u switch
-   lCondition *jw = get_job_owner_where(parameter.get_user_list());
+   auto jw = get_job_owner_where(parameter.get_user_list());
 
    // Pending jobs (all that are not running)
    if ((parameter.show_ & QSTAT_DISPLAY_PENDING) == QSTAT_DISPLAY_PENDING) {
@@ -469,155 +340,57 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
          /*
           * All jobs not running (= all pending)
           */
-         lCondition *tmp_nw = lWhere("%T(!(%I -> %T((%I m= %u))))", JB_Type, JB_ja_tasks, JAT_Type, JAT_status, JRUNNING);
-         if (nw == nullptr) {
-            nw = tmp_nw;
-         } else {
-            nw = lOrWhere(nw, tmp_nw);
-         }
+         nw |= !ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JRUNNING));
          /*
           * Array Jobs with one or more tasks pending
           */
-         tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_n_h_ids,
-                     RN_Type, RN_min, 0);
-         if (nw == nullptr) {
-            nw = tmp_nw;
-         } else {
-            nw = lOrWhere(nw, tmp_nw);
-         }
-         tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_u_h_ids,
-                     RN_Type, RN_min, 0);
-         if (nw == nullptr) {
-            nw = tmp_nw;
-         } else {
-            nw = lOrWhere(nw, tmp_nw);
-         }
-         tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_s_h_ids,
-                     RN_Type, RN_min, 0);
-         if (nw == nullptr) {
-            nw = tmp_nw;
-         } else {
-            nw = lOrWhere(nw, tmp_nw);
-         }
-         tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_o_h_ids,
-                     RN_Type, RN_min, 0);
-         if (nw == nullptr) {
-            nw = tmp_nw;
-         } else {
-            nw = lOrWhere(nw, tmp_nw);
-         }
+         nw |= ocs::tom::field<JB_ja_n_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
+         nw |= ocs::tom::field<JB_ja_u_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
+         nw |= ocs::tom::field<JB_ja_s_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
+         nw |= ocs::tom::field<JB_ja_o_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
       } else {
          // User Hold
          if ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) == QSTAT_DISPLAY_USERHOLD) {
             /* unenrolled jobs in user hold state ... */
-            lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_u_h_ids, RN_Type, RN_min, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_ja_u_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
             /* ... or enrolled jobs with an user  hold */
-            tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
-                            JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_USER);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_USER));
          }
          // Operator Hold
          if ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) == QSTAT_DISPLAY_OPERATORHOLD) {
-            lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_o_h_ids, RN_Type, RN_min, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
-            tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
-                            JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_OPERATOR);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_ja_o_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_OPERATOR));
          }
          // System Hold
          if ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) == QSTAT_DISPLAY_SYSTEMHOLD) {
-            lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_s_h_ids, RN_Type, RN_min, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
-            tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
-                            JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_SYSTEM);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_ja_s_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_SYSTEM));
          }
          // Job Array Dependency Hold
          if ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) == QSTAT_DISPLAY_JOBARRAYHOLD) {
-            lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_a_h_ids, RN_Type, RN_min, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
-            tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
-                            JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_JA_AD);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_ja_a_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_hold>().has_bits(MINUS_H_TGT_JA_AD));
          }
          /*
           * Start Time Hold
           */
          if ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) == QSTAT_DISPLAY_STARTTIMEHOLD) {
-            lCondition *tmp_nw = lWhere("%T(%I > %lu)", JB_Type, JB_execution_time, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_execution_time>() > std::uint64_t{0};
          }
          /*
           * Job Dependency Hold
           */
          if ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) == QSTAT_DISPLAY_JOBHOLD) {
-            lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_jid_predecessor_list, JRE_Type, JRE_job_number, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_jid_predecessor_list>().any(ocs::tom::field<JRE_job_number>() > 0U);
          }
          /*
           * Rescheduled and jobs in error state (not in hold/no start time/no dependency)
           * and regular pending jobs
           */
          if ((parameter.show_ & QSTAT_DISPLAY_PEND_REMAIN) == QSTAT_DISPLAY_PEND_REMAIN) {
-            lCondition *tmp_nw = lWhere("%T(%I -> %T((%I != %u)))", JB_Type, JB_ja_tasks, JAT_Type, JAT_job_restarted, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
-            tmp_nw = lWhere("%T(%I -> %T((%I m= %u)))", JB_Type, JB_ja_tasks, JAT_Type, JAT_state, JERROR);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
-            tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_n_h_ids, RN_Type, RN_min, 0);
-            if (nw == nullptr) {
-               nw = tmp_nw;
-            } else {
-               nw = lOrWhere(nw, tmp_nw);
-            }
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_job_restarted>() != 0U);
+            nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_bits(JERROR));
+            nw |= ocs::tom::field<JB_ja_n_h_ids>().any(ocs::tom::field<RN_min>() > 0U);
          }
       }
    }
@@ -638,229 +411,178 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
     *    As a result to many jobs will be requested by qsub.
     */
    if ((parameter.show_ & QSTAT_DISPLAY_RUNNING) == QSTAT_DISPLAY_RUNNING) {
-      lCondition *tmp_nw = lWhere("%T(((%I -> %T(%I m= %u)) || (%I -> %T(%I m= %u))) && !(%I -> %T((%I m= %u))))", JB_Type,
-                      JB_ja_tasks, JAT_Type, JAT_status, JRUNNING,
-                      JB_ja_tasks, JAT_Type, JAT_status, JTRANSFERING,
-                      JB_ja_tasks, JAT_Type, JAT_state, JSUSPENDED);
-      if (nw == nullptr) {
-         nw = tmp_nw;
-      } else {
-         nw = lOrWhere(nw, tmp_nw);
-      }
+      nw |= (ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JRUNNING)) ||
+             ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JTRANSFERING))) &&
+            !ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_bits(JSUSPENDED));
    }
 
    // Suspended jobs
    if ((parameter.show_ & QSTAT_DISPLAY_SUSPENDED) == QSTAT_DISPLAY_SUSPENDED) {
-      lCondition *tmp_nw = lWhere("%T((%I -> %T(%I m= %u)) || (%I -> %T(%I m= %u)) || (%I -> %T(%I m= %u)))", JB_Type,
-                      JB_ja_tasks, JAT_Type, JAT_status, JRUNNING,
-                      JB_ja_tasks, JAT_Type, JAT_status, JTRANSFERING,
-                      JB_ja_tasks, JAT_Type, JAT_state, JSUSPENDED);
-      if (nw == nullptr) {
-         nw = tmp_nw;
-      } else {
-         nw = lOrWhere(nw, tmp_nw);
-      }
+      nw |= ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JRUNNING)) ||
+            ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_status>().has_bits(JTRANSFERING)) ||
+            ocs::tom::field<JB_ja_tasks>().any(ocs::tom::field<JAT_state>().has_bits(JSUSPENDED));
    }
 
-   if (nw != nullptr) {
-      if (jw == nullptr) {
-         jw = nw;
-      } else {
-         jw = lAndWhere(jw, nw);
-      }
-   }
+   // the state condition restricts the owner condition; an empty one leaves it as it is
+   jw &= std::move(nw);
 
    DRETURN(jw);
 }
 
-/** @brief The queue instance fields the model needs
- * @return the enumeration, which the caller owns
+/** @brief The cluster queue fields the model needs
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_queue_what() {
-   return lWhat("%T(ALL)", CQ_Type);
+ocs::tom::What<ocs::tom::CQ> ocs::QStatModelBase::get_queue_what() {
+   return ocs::tom::what_all<ocs::tom::CQ>();
 }
 
 /** @brief The complex entry fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_centry_what() {
-   return lWhat("%T(ALL)", CE_Type);
+ocs::tom::What<ocs::tom::CE> ocs::QStatModelBase::get_centry_what() {
+   return ocs::tom::what_all<ocs::tom::CE>();
 }
 
-/** @brief Build the CULL condition selecting the execution hosts to fetch
- * @return the condition, which the caller owns
+/** @brief Build the condition selecting the execution hosts to fetch
+ * @return the condition: every host but the template host
  */
-lCondition *ocs::QStatModelBase::get_ehost_where() {
-   return lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
+ocs::tom::Where<ocs::tom::EH> ocs::QStatModelBase::get_ehost_where() {
+   return ocs::tom::field<EH_name>() != SGE_TEMPLATE_NAME;
 }
 
 /** @brief The execution host fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_ehost_what() {
-   return lWhat("%T(ALL)", EH_Type);
+ocs::tom::What<ocs::tom::EH> ocs::QStatModelBase::get_ehost_what() {
+   return ocs::tom::what_all<ocs::tom::EH>();
 }
 
 /** @brief The parallel environment fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection
  */
-lEnumeration *ocs::QStatModelBase::get_pe_what() {
-   return lWhat("%T(%I%I%I%I%I)", PE_Type, PE_name, PE_slots, PE_job_is_first_task, PE_control_slaves, PE_urgency_slots);
+ocs::tom::What<ocs::tom::PE> ocs::QStatModelBase::get_pe_what() {
+   return ocs::tom::what<PE_name, PE_slots, PE_job_is_first_task, PE_control_slaves, PE_urgency_slots>();
 }
 
 /** @brief The checkpointing environment fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection
  */
-lEnumeration *ocs::QStatModelBase::get_ckpt_what() {
-   return lWhat("%T(%I)", CK_Type, CK_name);
+ocs::tom::What<ocs::tom::CK> ocs::QStatModelBase::get_ckpt_what() {
+   return ocs::tom::what<CK_name>();
 }
 
 /** @brief The user set fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_uset_what() {
-   return lWhat("%T(ALL)", US_Type);
+ocs::tom::What<ocs::tom::US> ocs::QStatModelBase::get_uset_what() {
+   return ocs::tom::what_all<ocs::tom::US>();
 }
 
 /** @brief The project fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_prj_what() {
-   return lWhat("%T(ALL)", PR_Type);
+ocs::tom::What<ocs::tom::PR> ocs::QStatModelBase::get_prj_what() {
+   return ocs::tom::what_all<ocs::tom::PR>();
 }
 
 /** @brief The scheduler configuration fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_sconf_what() {
-   return lWhat("%T(ALL)", SC_Type);
+ocs::tom::What<ocs::tom::SC> ocs::QStatModelBase::get_sconf_what() {
+   return ocs::tom::what_all<ocs::tom::SC>();
 }
 
 /** @brief The host group fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_hgrp_what() {
-   return lWhat("%T(ALL)", HGRP_Type);
+ocs::tom::What<ocs::tom::HGRP> ocs::QStatModelBase::get_hgrp_what() {
+   return ocs::tom::what_all<ocs::tom::HGRP>();
 }
 
-/** @brief Build the CULL condition selecting the configuration entries to fetch
- * @return the condition, which the caller owns
+/** @brief Build the condition selecting the configuration entries to fetch
+ * @return the condition: the global configuration, its name compared without regard to case
  */
-lCondition *ocs::QStatModelBase::get_conf_where() {
-   return lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
+ocs::tom::Where<ocs::tom::CONF> ocs::QStatModelBase::get_conf_where() {
+   return ocs::tom::field<CONF_name>().equals_nocase(SGE_GLOBAL_NAME);
 }
 
 /** @brief The configuration fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_conf_what() {
-   return lWhat("%T(ALL)", CONF_Type);
+ocs::tom::What<ocs::tom::CONF> ocs::QStatModelBase::get_conf_what() {
+   return ocs::tom::what_all<ocs::tom::CONF>();
 }
 
-/** @brief Build the CULL condition selecting the jobs of a `qstat -j` call
+/** @brief Build the condition selecting the jobs of a `qstat -j` call
  * @param job_view_list the jobs the user named, by number or pattern
  * @param user_list the users given with `-u`, by default the current user, see get_job_owner_where()
- * @return the condition, which the caller owns
+ * @return the condition; empty if neither jobs nor users were named
  */
-lCondition *ocs::QStatModelBase::get_job_view_where(const ocs::tom::ConstList<ocs::tom::ST> job_view_list,
-                                                   const ocs::tom::ConstList<ocs::tom::ST> user_list) {
+ocs::tom::Where<ocs::tom::JB>
+ocs::QStatModelBase::get_job_view_where(const ocs::tom::ConstList<ocs::tom::ST> job_view_list,
+                                        const ocs::tom::ConstList<ocs::tom::ST> user_list) {
    DENTER(TOP_LAYER);
-   lCondition *where = nullptr;
+   ocs::tom::Where<ocs::tom::JB> where;
 
    for (const auto j_elem : job_view_list) {
       const char *job_name = ocs::tom::get<ST_name>(j_elem);
-      lCondition *new_where;
 
       if (job_name != nullptr && isdigit(static_cast<unsigned char>(job_name[0]))) {
          char *end = nullptr;
          errno = 0;
          unsigned long raw = strtoul(job_name, &end, 10);
          if (errno == 0 && end != job_name && *end == '\0' && raw <= std::numeric_limits<uint32_t>::max()) {
-            new_where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, static_cast<uint32_t>(raw));
+            where |= ocs::tom::field<JB_job_number>() == static_cast<uint32_t>(raw);
          } else {
-            new_where = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
+            where |= ocs::tom::field<JB_job_name>().like(job_name);
          }
       } else if (job_name != nullptr) {
-         new_where = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
-      } else {
-         new_where = nullptr;
-      }
-      if (new_where) {
-         if (!where) {
-            where = new_where;
-         } else {
-            where = lOrWhere(where, new_where);
-         }
+         where |= ocs::tom::field<JB_job_name>().like(job_name);
       }
    }
 
    // like plain qstat, -j shows only the jobs of the users given with -u
-   if (lCondition *owner_where = get_job_owner_where(user_list); owner_where != nullptr) {
-      where = where == nullptr ? owner_where : lAndWhere(where, owner_where);
-   }
+   where &= get_job_owner_where(user_list);
    DRETURN(where);
 }
+
 /** @brief The scheduler job info fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QStatModelBase::get_sme_what() {
-   return lWhat("%T(ALL)", SME_Type);
+ocs::tom::What<ocs::tom::SME> ocs::QStatModelBase::get_sme_what() {
+   return ocs::tom::what_all<ocs::tom::SME>();
 }
 
 /** @brief The `qstat -j` fields the model needs
- * @return the enumeration, which the caller owns
+ *
+ * JB_ja_ad_request_list is named twice, as the selection always did; the
+ * selection holds it twice, which selects it once.
+ *
+ * @return the selection, with the enrolled tasks and the job references narrowed to the fields needed
  */
-lEnumeration *ocs::QStatModelBase::get_job_view_what() {
-   lEnumeration *what = lWhat( "%T(%I%I%I%I"
-                                   "%I%I%I%I%I"
-                                   "%I%I%I%I"
-                                   "%I%I%I%I"
-                                   "%I%I%I"
-
-                                   "%I%I%I"
-                                   "%I->%T(%I%I%I"
-                                   "%I%I%I%I"
-                                   "%I%I%I%I"
-                                   "%I)%I"
-
-                                   "%I%I%I->%T"
-                                   "(%I)%I->%T(%I)%I"
-                                   "%I%I%I%I%I"
-                                   "%I%I%I%I"
-                                   "%I%I%I%I%I"
-
-                                   "%I%I%I"
-                                   "%I%I%I%I%I"
-                                   "%I%I%I%I%I"
-                                   "%I%I%I%I"
-                                   "%I%I%I%I%I"
-                                   "%I%I)",
-
-            JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time,
-            JB_submission_command_line, JB_owner, JB_uid, JB_group, JB_gid,
-            JB_account, JB_merge_stderr, JB_mail_list, JB_project,
-            JB_department, JB_notify, JB_job_name, JB_stdout_path_list,
-            JB_jobshare, JB_request_set_list, JB_shell_list,
-
-            JB_env_list, JB_job_args, JB_script_file,
-            JB_ja_tasks, JAT_Type, JAT_state, JAT_status, JAT_hold,
-            JAT_task_number, JAT_scaled_usage_list, JAT_job_restarted, JAT_task_list,
-            JAT_message_list, JAT_start_time, JAT_end_time, JAT_granted_resources_list,
-            JAT_granted_destin_identifier_list, JB_context,
-
-            JB_cwd, JB_stderr_path_list, JB_jid_predecessor_list, JRE_Type,
-            JRE_job_number, JB_jid_successor_list, JRE_Type, JRE_job_number, JB_deadline,
-            JB_execution_time, JB_checkpoint_name, JB_checkpoint_attr, JB_checkpoint_interval, JB_directive_prefix,
-            JB_reserve, JB_mail_options, JB_stdin_path_list, JB_priority,
-            JB_restart, JB_verify, JB_script_size, JB_pe, JB_pe_range,
-
-            JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
-            JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version, JB_ja_structure,
-            JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids,
-            JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
-            JB_grp_list, JB_sync_options, JB_category_id, JB_path_aliases, JB_ja_ad_predecessor_list,
-            JB_ja_ad_request_list, JB_ja_ad_successor_list);
-   return what;
+ocs::tom::What<ocs::tom::JB> ocs::QStatModelBase::get_job_view_what() {
+   return ocs::tom::what<JB_job_number, JB_ar, JB_exec_file, JB_submission_time,
+                         JB_submission_command_line, JB_owner, JB_uid, JB_group, JB_gid,
+                         JB_account, JB_merge_stderr, JB_mail_list, JB_project,
+                         JB_department, JB_notify, JB_job_name, JB_stdout_path_list,
+                         JB_jobshare, JB_request_set_list, JB_shell_list,
+                         JB_env_list, JB_job_args, JB_script_file, JB_context,
+                         JB_cwd, JB_stderr_path_list, JB_deadline,
+                         JB_execution_time, JB_checkpoint_name, JB_checkpoint_attr, JB_checkpoint_interval,
+                         JB_directive_prefix, JB_reserve, JB_mail_options, JB_stdin_path_list, JB_priority,
+                         JB_restart, JB_verify, JB_script_size, JB_pe, JB_pe_range,
+                         JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
+                         JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version,
+                         JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids,
+                         JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
+                         JB_grp_list, JB_sync_options, JB_category_id, JB_path_aliases, JB_ja_ad_predecessor_list,
+                         JB_ja_ad_request_list, JB_ja_ad_successor_list>()
+      .with<JB_ja_tasks>(ocs::tom::what<JAT_state, JAT_status, JAT_hold, JAT_task_number, JAT_scaled_usage_list,
+                                        JAT_job_restarted, JAT_task_list, JAT_message_list, JAT_start_time,
+                                        JAT_end_time, JAT_granted_resources_list,
+                                        JAT_granted_destin_identifier_list>())
+      .with<JB_jid_predecessor_list>(ocs::tom::what<JRE_job_number>())
+      .with<JB_jid_successor_list>(ocs::tom::what<JRE_job_number>());
 }
 
 /** @brief Normalise parameter flags before any data is fetched.

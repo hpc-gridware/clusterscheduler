@@ -27,10 +27,12 @@
 
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
@@ -184,47 +186,47 @@ namespace ocs {
    private:
       static void apply_state_filter(QStatParameter &parameter);
 
-      static lEnumeration *get_sub_job_filter(const QStatParameter &parameter);
-      static lEnumeration *get_sub_ja_task_template_filter(const QStatParameter &parameter);
-      static lEnumeration *get_sub_ja_task_filter(const QStatParameter &parameter);
+      static ocs::tom::What<ocs::tom::JB> get_sub_job_filter(const QStatParameter &parameter);
+      static ocs::tom::What<ocs::tom::JAT> get_sub_ja_task_template_filter(const QStatParameter &parameter);
+      static ocs::tom::What<ocs::tom::JAT> get_sub_ja_task_filter(const QStatParameter &parameter);
 
    protected:
-      static lEnumeration *get_queue_what();
+      static ocs::tom::What<ocs::tom::CQ> get_queue_what();
 
-      static lEnumeration *get_centry_what();
+      static ocs::tom::What<ocs::tom::CE> get_centry_what();
 
-      static lCondition *get_ehost_where();
+      static ocs::tom::Where<ocs::tom::EH> get_ehost_where();
 
-      static lEnumeration *get_ehost_what();
+      static ocs::tom::What<ocs::tom::EH> get_ehost_what();
 
-      static lEnumeration *get_pe_what();
+      static ocs::tom::What<ocs::tom::PE> get_pe_what();
 
-      static lEnumeration *get_ckpt_what();
+      static ocs::tom::What<ocs::tom::CK> get_ckpt_what();
 
-      static lEnumeration *get_uset_what();
+      static ocs::tom::What<ocs::tom::US> get_uset_what();
 
-      static lEnumeration *get_prj_what();
+      static ocs::tom::What<ocs::tom::PR> get_prj_what();
 
-      static lEnumeration *get_sconf_what();
+      static ocs::tom::What<ocs::tom::SC> get_sconf_what();
 
-      static lEnumeration *get_hgrp_what();
+      static ocs::tom::What<ocs::tom::HGRP> get_hgrp_what();
 
-      static lCondition *get_conf_where();
+      static ocs::tom::Where<ocs::tom::CONF> get_conf_where();
 
-      static lEnumeration *get_conf_what();
+      static ocs::tom::What<ocs::tom::CONF> get_conf_what();
 
-      static lCondition *get_job_where(const QStatParameter &parameter);
+      static ocs::tom::Where<ocs::tom::JB> get_job_where(const QStatParameter &parameter);
 
-      static lEnumeration *get_job_what(const QStatParameter &parameter);
+      static ocs::tom::What<ocs::tom::JB> get_job_what(const QStatParameter &parameter);
 
-      static lCondition *get_job_owner_where(ocs::tom::ConstList<ocs::tom::ST> user_list);
+      static ocs::tom::Where<ocs::tom::JB> get_job_owner_where(ocs::tom::ConstList<ocs::tom::ST> user_list);
 
-      static lCondition *get_job_view_where(ocs::tom::ConstList<ocs::tom::ST> job_view_list,
-                                            ocs::tom::ConstList<ocs::tom::ST> user_list);
+      static ocs::tom::Where<ocs::tom::JB> get_job_view_where(ocs::tom::ConstList<ocs::tom::ST> job_view_list,
+                                                              ocs::tom::ConstList<ocs::tom::ST> user_list);
 
-      static lEnumeration *get_job_view_what();
+      static ocs::tom::What<ocs::tom::JB> get_job_view_what();
 
-      static lEnumeration *get_sme_what();
+      static ocs::tom::What<ocs::tom::SME> get_sme_what();
 
 #pragma endregion
 

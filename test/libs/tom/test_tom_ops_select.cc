@@ -656,6 +656,99 @@ void test_errors() {
 }
 
 /**
+ * @brief Collect conditions in a loop with |= and &=, and narrow a merged selection with nest()
+ */
+void test_collect_and_nest() {
+   // old:     where = where == nullptr ? nw : lOrWhere(where, nw); the same with lAndWhere()
+   // typed:   where |= std::move(nw); where &= std::move(nw)
+   // old:     lMergeWhat(&what, &more); lWhatSetSubWhat(what, US_entries, &sub)
+   // typed:   std::move(what).merge(std::move(more)).nest<US_entries>(std::move(sub))
+   // differs: an empty side of |= and &= is left out, where || and && throw; nest() on a selection that does
+   //          not select the field throws ForeignField where lWhatSetSubWhat() returns -1
+
+   // --- CULL
+   std::vector<std::string> old_seen;
+   Contents old_nested;
+   {
+      lList *rows = old_rows();
+      lCondition *where = nullptr;
+      for (const std::uint32_t key : {1U, 3U, 4U}) {
+         lCondition *nw = lWhere("%T(%I == %u)", TEST_Type, TEST_uint32, key);
+         where = where == nullptr ? nw : lOrWhere(where, nw);
+      }
+      lCondition *below = lWhere("%T(%I < %u)", TEST_Type, TEST_uint32, 4U);
+      where = where == nullptr ? below : lAndWhere(where, below);
+      old_seen.push_back(old_keys(rows, where));
+      lCondition *none = nullptr;
+      lCondition *odd = lWhere("%T(%I m= %u)", TEST_Type, TEST_uint32, 1U);
+      none = none == nullptr ? odd : lAndWhere(none, odd);
+      old_seen.push_back(old_keys(rows, none));
+      lFreeList(&rows);
+
+      lList *sets = old_sets();
+      lEnumeration *what_sets = lWhat("%T(%I)", US_Type, US_name);
+      lEnumeration *more = lWhat("%T(%I)", US_Type, US_entries);
+      lMergeWhat(&what_sets, &more);
+      lEnumeration *sub = lWhat("%T(%I)", UE_Type, UE_name);
+      lWhatSetSubWhat(what_sets, US_entries, &sub);
+      lList *selected = lSelect("selected", sets, nullptr, what_sets);
+      old_nested = old_contents(selected);
+      lFreeList(&selected);
+      lFreeWhat(&what_sets);
+      lFreeList(&sets);
+   }
+
+   // --- TOM
+   std::vector<std::string> typed_seen;
+   Contents typed_nested;
+   bool nest_refused = false;
+   bool empty_collect = false;
+   bool kept_collect = false;
+   bool renested_same = false;
+   {
+      const ListPtr<TEST> rows = typed_rows();
+      Where<TEST> where;
+      for (const std::uint32_t key : {1U, 3U, 4U}) {
+         where |= field<TEST_uint32>() == key;
+      }
+      where &= field<TEST_uint32>() < 4U;
+      typed_seen.push_back(typed_keys(*rows, where));
+      Where<TEST> none;
+      none &= field<TEST_uint32>().has_bits(1U);
+      typed_seen.push_back(typed_keys(*rows, none));
+      Where<TEST> empty;
+      empty |= Where<TEST>();
+      empty &= Where<TEST>();
+      empty_collect = !empty;
+      // a non-empty side keeps its condition when the other side is empty
+      Where<TEST> kept_or = field<TEST_uint32>() == 1U;
+      kept_or |= Where<TEST>();
+      Where<TEST> kept_and = field<TEST_uint32>() == 1U;
+      kept_and &= Where<TEST>();
+      kept_collect = typed_keys(*rows, kept_or) == "1" && typed_keys(*rows, kept_and) == "1";
+
+      const ListPtr<US> sets = typed_sets();
+      const What<US> what_sets = what<US_name>().merge(what<US_entries>()).nest<US_entries>(what<UE_name>());
+      typed_nested = typed_contents(*sets->select(what_sets, "selected"));
+      // nest() on a field that has a sub-selection already replaces it (the old one is freed)
+      const What<US> renested = what<US_name>().merge(what<US_entries>()).nest<US_entries>(what_all<UE>())
+                                   .nest<US_entries>(what<UE_name>());
+      renested_same = typed_contents(*sets->select(renested, "selected")) == typed_nested;
+      nest_refused = throws([] { static_cast<void>(what<US_name>().nest<US_entries>(what<UE_name>())); },
+                            FieldException::Reason::ForeignField) &&
+                     throws([] { static_cast<void>(what_all<US>().nest<US_entries>(what<UE_name>())); },
+                            FieldException::Reason::ForeignField);
+   }
+
+   const std::vector<std::string> expected{"1,3", "1,3"};
+   report_difference("collected conditions", old_seen, typed_seen, expected);
+   CHECK(10, "|= and &= collect as lOrWhere and lAndWhere in a loop; nest() narrows as lWhatSetSubWhat",
+         old_seen == expected && typed_seen == expected && empty_collect && old_nested == typed_nested &&
+         typed_nested.size() == 3 && typed_nested[0] == "acl:alice,bob," && nest_refused && kept_collect &&
+         renested_same);
+}
+
+/**
  * @brief In a Release build, time building a condition and selecting with both forms
  */
 void test_timing() {
@@ -759,6 +852,11 @@ int main(int argc, char *argv[]) {
       {"OPS-SEL-08", "errors", "the typed form throws on an empty operand and on with() on ALL",
        {"combine an empty condition; extend the selection of every field"}, "NullElement and ForeignField thrown",
        {{"OPS-01", "covers"}}, {8}, test_errors},
+      {"OPS-SEL-10", "collect and nest", "|= and &= collect conditions, nest() narrows a field selected before",
+       {"or three key conditions together in a loop and and a bound onto them, starting from no condition",
+        "merge two selections of user sets and narrow their entries"},
+       "the same keys and contents; ForeignField for nest() on a field not selected and on ALL",
+       {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {10}, test_collect_and_nest},
       {"OPS-SEL-09", "timing", "a Release build times both forms",
        {"build a condition a million times; select 100 times from 10 000 jobs with a condition and a reduction"},
        "ratios printed", {{"OPS-01", "covers"}}, {9}, test_timing},

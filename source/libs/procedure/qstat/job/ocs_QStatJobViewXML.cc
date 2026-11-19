@@ -112,9 +112,8 @@ void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parame
    // each message gets the text that summarizes its jobs, as the plain view prints it above their ids
    if (const auto sme = model.ilp->front(); sme != nullptr) {
       for (const auto mes : ocs::tom::get<SME_message_list>(sme)) {
-         // "I+" lacks the '%', so this sorts by no key and leaves the order as it is; kept raw rather than
-         // turned into a real sort, which would change the output
-         lPSortList(ocs::tom::get<MES_job_number_list>(mes), "I+", ULNG_value);
+         // the job ids keep their stored order: the lPSortList(..., "I+", ULNG_value) that stood here lacked the
+         // '%' and sorted by no key; a real sort would change the output
          const uint32_t mid = ocs::tom::get<MES_message_number>(mes);
          ocs::tom::set<MES_message>(mes, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
       }

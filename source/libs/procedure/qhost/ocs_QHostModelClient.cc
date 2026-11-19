@@ -85,8 +85,8 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    int eh_id;
    {
       // the condition and the selections below are built for the type of their target by the base class
-      const auto where = ocs::tom::Where<ocs::tom::EH>::from_typed(get_host_where(hostname_list));
-      const auto what = ocs::tom::What<ocs::tom::EH>::from_typed(get_host_what());
+      const auto where = get_host_where(hostname_list);
+      const auto what = get_host_what();
 
       eh_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::EH_LIST,
                                 gdi::Command::GET, gdi::SubCommand::NONE,
@@ -101,7 +101,7 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    int q_id = 0;
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
       // the selection of all fields, built for QU_Type, takes all of a cluster queue
-      const auto what = ocs::tom::What<ocs::tom::CQ>::from_typed(get_queue_what());
+      const auto what = get_queue_what();
 
       q_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CQ_LIST,
                                gdi::Command::GET, gdi::SubCommand::NONE,
@@ -115,8 +115,8 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Jobs
    int j_id = 0;
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
-      const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(get_job_where(user_name_list, show));
-      const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(get_job_what());
+      const auto where = get_job_where(user_name_list, show);
+      const auto what = get_job_what();
 
       j_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::JB_LIST, gdi::Command::GET,
                                gdi::SubCommand::NONE, nullptr, where, what);
@@ -129,7 +129,7 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Complexes
    int ce_id;
    {
-      const auto what = ocs::tom::What<ocs::tom::CE>::from_typed(get_centry_what());
+      const auto what = get_centry_what();
       ce_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CE_LIST, gdi::Command::GET,
                                 gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::CE>(), what);
 
@@ -141,7 +141,7 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Parallel environments
    int pe_id;
    {
-      const auto what = ocs::tom::What<ocs::tom::PE>::from_typed(get_pe_what());
+      const auto what = get_pe_what();
       pe_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::PE_LIST, gdi::Command::GET,
                                 gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::PE>(), what);
       if (answer_list_has_error(answer_list)) {
@@ -154,7 +154,7 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    */
    int acl_id;
    {
-      const auto what = ocs::tom::What<ocs::tom::US>::from_typed(get_user_set_what());
+      const auto what = get_user_set_what();
       acl_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::US_LIST, gdi::Command::GET,
                                  gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::US>(), what);
 

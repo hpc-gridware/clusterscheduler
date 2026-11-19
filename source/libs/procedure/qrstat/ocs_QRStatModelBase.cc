@@ -44,150 +44,61 @@
  * fewer than a full listing.
  *
  * @param parameter the parsed parameters
- * @return the enumeration, which the caller owns
+ * @return the selection
  */
-lEnumeration *ocs::QRStatModelBase::get_ar_what(QRStatParameter& parameter) {
+ocs::tom::What<ocs::tom::AR> ocs::QRStatModelBase::get_ar_what(QRStatParameter& parameter) {
    // Core attributes
-   constexpr int core_nm[] = {
-      AR_id,
-      AR_name,
-      AR_owner,
-      AR_start_time,
-      AR_end_time,
-      AR_duration,
-      AR_state,
-      AR_reserved_queues,
-      AR_reserved_hosts,
-      NoName
-   };
-   lEnumeration *what = lIntVector2What(AR_Type, core_nm);
+   auto what = ocs::tom::what<AR_id, AR_name, AR_owner, AR_start_time, AR_end_time, AR_duration, AR_state,
+                              AR_reserved_queues, AR_reserved_hosts>();
 
    // for XML or JSON output
    if (parameter.get_output_format() != QRStatParameterClient::OutputFormat::PLAIN) {
-      constexpr int xml_nm[] = {
-         AR_account,
-         AR_project,
-         AR_owner,
-         AR_group,
-         AR_submission_time,
-         AR_verify,
-         AR_error_handling,
-         AR_checkpoint_name,
-         AR_resource_list,
-         AR_resource_utilization,
-         AR_queue_list,
-         AR_granted_slots,
-         AR_mail_options,
-         AR_mail_list,
-         AR_pe,
-         AR_pe_range,
-         AR_allocation_rule,
-         AR_acl_list,
-         AR_xacl_list,
-         AR_type,
-         NoName
-      };
-      lEnumeration *more_what = lIntVector2What(AR_Type, xml_nm);
-      lMergeWhat(&what, &more_what);
+      what = std::move(what).merge(
+         ocs::tom::what<AR_account, AR_project, AR_owner, AR_group, AR_submission_time, AR_verify,
+                        AR_error_handling, AR_checkpoint_name, AR_resource_list, AR_resource_utilization,
+                        AR_queue_list, AR_granted_slots, AR_mail_options, AR_mail_list, AR_pe, AR_pe_range,
+                        AR_allocation_rule, AR_acl_list, AR_xacl_list, AR_type>());
    }
 
    // required for full AR output
    if (!parameter.is_summary()) {
-      constexpr int full_nm[] = {
-         AR_account,
-         AR_project,
-         AR_owner,
-         AR_group,
-         AR_submission_time,
-         AR_verify,
-         AR_error_handling,
-         AR_checkpoint_name,
-         AR_resource_list,
-         AR_resource_utilization,
-         AR_queue_list,
-         AR_granted_slots,
-         AR_mail_options,
-         AR_mail_list,
-         AR_pe,
-         AR_pe_range,
-         AR_allocation_rule,
-         AR_master_queue_list,
-         AR_acl_list,
-         AR_xacl_list,
-         AR_type,
-         AR_reserved_queues,
-         AR_reserved_hosts,
-         AR_binding,
-         AR_granted_resources_list,
-         NoName
-      };
-      lEnumeration *more_what = lIntVector2What(AR_Type, full_nm);
-      lMergeWhat(&what, &more_what);
+      what = std::move(what).merge(
+         ocs::tom::what<AR_account, AR_project, AR_owner, AR_group, AR_submission_time, AR_verify,
+                        AR_error_handling, AR_checkpoint_name, AR_resource_list, AR_resource_utilization,
+                        AR_queue_list, AR_granted_slots, AR_mail_options, AR_mail_list, AR_pe, AR_pe_range,
+                        AR_allocation_rule, AR_master_queue_list, AR_acl_list, AR_xacl_list, AR_type,
+                        AR_reserved_queues, AR_reserved_hosts, AR_binding, AR_granted_resources_list>());
    }
 
    // required for -explain
    if (parameter.is_explain()) {
-      constexpr int explain_nm[] = {
-         AR_error_handling,
-         NoName
-      };
-
-      lEnumeration *more_what = lIntVector2What(AR_Type, explain_nm);
-      lMergeWhat(&what, &more_what);
+      what = std::move(what).merge(ocs::tom::what<AR_error_handling>());
    }
    return what;
 }
 
-/** @brief Build the CULL condition selecting the reservations to report
+/** @brief Build the condition selecting the reservations to report
  * @param parameter the parsed parameters, holding the id and user filters
- * @return the condition, which the caller owns; nullptr when nothing was filtered
+ * @return the condition; empty when nothing was filtered
  */
-lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
+ocs::tom::Where<ocs::tom::AR> ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
-   lCondition *where_AR_Type = nullptr;
+   ocs::tom::Where<ocs::tom::AR> where;
 
    // Summay or full view
    if (!parameter.is_summary()) {
-      lCondition *where = nullptr;
-
       for (const auto elem : parameter.get_ar_id_list()) {
-         lCondition *tmp_where = nullptr;
-         uint32_t value = ocs::tom::get<ULNG_value>(elem);
-
-         tmp_where = lWhere("%T(%I == %u)", AR_Type, AR_id, value);
-         if (tmp_where != nullptr) {
-            if (where == nullptr) {
-               where = tmp_where;
-            } else {
-               where = lOrWhere(where, tmp_where);
-            }
-         }
+         where |= ocs::tom::field<AR_id>() == ocs::tom::get<ULNG_value>(elem);
       }
-      where_AR_Type = where;
    } else {
       // filter users
       parameter.transform_user_list();
 
-      lCondition *where = nullptr;
       for (const auto elem : parameter.get_user_list()) {
-         const char *name = ocs::tom::get<ST_name>(elem);
-
-         lCondition *tmp_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, name);
-         if (tmp_where != nullptr) {
-            if (where == nullptr) {
-               where = tmp_where;
-            } else {
-               where = lOrWhere(where, tmp_where);
-            }
-         }
-      }
-      if (where_AR_Type == nullptr) {
-         where_AR_Type = where;
-      } else {
-         where_AR_Type = lAndWhere(where_AR_Type, where);
+         where |= ocs::tom::field<AR_owner>().like(ocs::tom::get<ST_name>(elem));
       }
    }
-   DRETURN(where_AR_Type);
+   DRETURN(where);
 }
 
 /** @brief Fetch the AR list into ar_list_.

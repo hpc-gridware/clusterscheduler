@@ -32,12 +32,14 @@
 #include "sgeobj/tom/ocs_tom_SC.h"
 
 #include "ocs_QQuotaModelServer.h"
+#include "procedure/ocs_ProcedureModel.h"
 #include "sgeobj/sge_answer.h"
 
 /** @brief Fetch the lists from the master lists of qmaster
  *
- * Every list is a selection of a master list of a fixed type, so it is
- * wrapped with a check of its type.
+ * Every list is a typed selection of a master list, with the results
+ * lSelect() gave: an empty handle when nothing was selected, see
+ * ocs_procedure_select().
  *
  * @param answer_list receives error messages
  * @param host_name_list the hosts the user asked for; all hosts when empty
@@ -49,36 +51,24 @@ bool ocs::QQuotaModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
    // Fetch all resource quota sets
    const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
-   lEnumeration *rqs_what = get_rqs_what();
-   rqs_list_ = ocs::tom::ListPtr<ocs::tom::RQS>(lSelect("", master_rqs_list, nullptr, rqs_what));
-   lFreeWhat(&rqs_what);
+   rqs_list_ = ocs_procedure_select(master_rqs_list, ocs::tom::Where<ocs::tom::RQS>(), get_rqs_what());
    DPRINTF("rqs: " sge_u32"\n", static_cast<uint32_t>(rqs_list_->size()));
 
    const auto master_ce_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
-   lEnumeration *ce_what = get_centry_what();
-   centry_list_ = ocs::tom::ListPtr<ocs::tom::CE>(lSelect("", master_ce_list, nullptr, ce_what));
-   lFreeWhat(&ce_what);
+   centry_list_ = ocs_procedure_select(master_ce_list, ocs::tom::Where<ocs::tom::CE>(), get_centry_what());
    DPRINTF("complex entries: " sge_u32"\n", static_cast<uint32_t>(centry_list_->size()));
 
    const auto master_user_set_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
-   lEnumeration *user_set_what = get_user_set_what();
-   user_set_list_ = ocs::tom::ListPtr<ocs::tom::US>(lSelect("", master_user_set_list, nullptr, user_set_what));
-   lFreeWhat(&user_set_what);
+   user_set_list_ =
+      ocs_procedure_select(master_user_set_list, ocs::tom::Where<ocs::tom::US>(), get_user_set_what());
    DPRINTF("user sets: " sge_u32"\n", static_cast<uint32_t>(user_set_list_->size()));
 
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
-   lEnumeration *hgroup_what = get_hgroup_what();
-   hgroup_list_ = ocs::tom::ListPtr<ocs::tom::HGRP>(lSelect("", master_hgroup_list, nullptr, hgroup_what));
-   lFreeWhat(&hgroup_what);
+   hgroup_list_ = ocs_procedure_select(master_hgroup_list, ocs::tom::Where<ocs::tom::HGRP>(), get_hgroup_what());
    DPRINTF("host groups: " sge_u32"\n", static_cast<uint32_t>(hgroup_list_->size()));
 
    const auto master_exec_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
-   lEnumeration *exec_host_what = get_host_what();
-   lCondition *exec_host_where = get_host_where(host_name_list);
-   exec_host_list_ =
-      ocs::tom::ListPtr<ocs::tom::EH>(lSelect("", master_exec_host_list, exec_host_where, exec_host_what));
-   lFreeWhat(&exec_host_what);
-   lFreeWhere(&exec_host_where);
+   exec_host_list_ = ocs_procedure_select(master_exec_host_list, get_host_where(host_name_list), get_host_what());
    DPRINTF("execution hosts: " sge_u32"\n", static_cast<uint32_t>(exec_host_list_->size()))
 
    // QHostModelClient fetches the configuration additionally which is not required in the server context

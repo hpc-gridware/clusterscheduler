@@ -54,9 +54,9 @@ namespace ocs {
       ocs::tom::ListPtr<ocs::tom::AR> ar_list_; ///< Advance reservation list; populated by fetch_data().
 
    protected:
-      static lEnumeration *get_ar_what(QRStatParameter& parameter);
+      static ocs::tom::What<ocs::tom::AR> get_ar_what(QRStatParameter& parameter);
 
-      static lCondition *get_ar_where(QRStatParameter& parameter);
+      static ocs::tom::Where<ocs::tom::AR> get_ar_where(QRStatParameter& parameter);
 
       virtual bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter);
 

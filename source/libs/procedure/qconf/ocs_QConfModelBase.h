@@ -300,6 +300,27 @@ namespace ocs {
       virtual bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
                          lCondition *where, lEnumeration *what) = 0;
 
+      /**
+       * @brief Read the objects of the target into object_list_, for a read whose object type is known at compile
+       *        time
+       *
+       * The per-type snapshots build their condition and selection as owning
+       * typed handles; they are handed over here, in one place, to the read
+       * above, whose object type is a run-time parameter.
+       *
+       * @tparam T the object type of the target
+       * @param answer_list for error reporting
+       * @param target the master list to read
+       * @param where which elements, an empty handle for all; taken over
+       * @param what which fields; taken over
+       * @return true on success
+       */
+      template <ocs::tom::ObjectType T>
+      bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const gdi::Target target, ocs::tom::Where<T> &&where,
+                 ocs::tom::What<T> &&what) {
+         return fetch(answer_list, target, where.release(), what.release());
+      }
+
    protected:
       bool make_list_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfObj object);
       bool make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QConfParameter &parameter);

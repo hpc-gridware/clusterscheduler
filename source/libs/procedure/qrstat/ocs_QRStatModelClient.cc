@@ -48,8 +48,8 @@ bool ocs::QRStatModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    DENTER(TOP_LAYER);
 
    // both are built for AR_Type by the base class
-   const auto what_ar = ocs::tom::What<ocs::tom::AR>::from_typed(get_ar_what(parameter));
-   const auto where_ar = ocs::tom::Where<ocs::tom::AR>::from_typed(get_ar_where(parameter));
+   const auto what_ar = get_ar_what(parameter);
+   const auto where_ar = get_ar_where(parameter);
    ocs::tom::ListPtr<ocs::tom::AR> ar_list;
    *answer_list = gdi::Client::sge_gdi(gdi::Target::AR_LIST, gdi::Command::GET, gdi::SubCommand::NONE, ar_list,
                                        where_ar, what_ar);

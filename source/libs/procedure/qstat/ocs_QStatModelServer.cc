@@ -25,6 +25,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QStatModelServer.h"
+#include "procedure/ocs_ProcedureModel.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_manop.h"
@@ -37,8 +38,9 @@
 
 /** @brief Fetch the lists from the master lists of qmaster
  *
- * Every list is a selection of a master list of a fixed type, so it is
- * wrapped with a check of its type.
+ * Every list is a typed selection of a master list, with the results
+ * lSelect() gave: an empty handle when nothing was selected, see
+ * ocs_procedure_select().
  *
  * @param answer_list receives error messages
  * @param parameter the parsed parameters
@@ -50,70 +52,44 @@ ocs::QStatModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
    is_manager_ = manop_is_manager(packet);
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
-   lEnumeration* sme_what = get_sme_what();
    const auto master_sme_list = ocs::DataStore::master_list<SGE_TYPE_JOB_SCHEDD_INFO>();
-   ilp = ocs::tom::ListPtr<ocs::tom::SME>(lSelect("", master_sme_list, nullptr, sme_what));
-   lFreeWhat(&sme_what);
+   ilp = ocs_procedure_select(master_sme_list, ocs::tom::Where<ocs::tom::SME>(), get_sme_what());
 
    if (parameter.get_jid_list() != nullptr) {
-      lCondition *job_view_where = get_job_view_where(parameter.get_jid_list(), parameter.get_user_list());
-      lEnumeration *job_view_what = get_job_view_what();
-      jlp = ocs::tom::ListPtr<ocs::tom::JB>(lSelect("", master_job_list, job_view_where, job_view_what));
-      lFreeWhere(&job_view_where);
-      lFreeWhat(&job_view_what);
+      jlp = ocs_procedure_select(master_job_list,
+                                 get_job_view_where(parameter.get_jid_list(), parameter.get_user_list()),
+                                 get_job_view_what());
    }
 
    if (parameter.need_queues_) {
       const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
-      lEnumeration *queue_what = get_queue_what();
-      cqueue_list_ = ocs::tom::ListPtr<ocs::tom::CQ>(lSelect("", master_cqueue_list, nullptr, queue_what));
-      lFreeWhat(&queue_what);
+      cqueue_list_ = ocs_procedure_select(master_cqueue_list, ocs::tom::Where<ocs::tom::CQ>(), get_queue_what());
    }
 
    if (parameter.need_job_list_) {
-      lEnumeration *job_what = get_job_what(parameter);
-      lCondition *job_where = get_job_where(parameter);
-      job_list_ = ocs::tom::ListPtr<ocs::tom::JB>(lSelect("", master_job_list, job_where, job_what));
-      lFreeWhere(&job_where);
-      lFreeWhat(&job_what);
+      job_list_ = ocs_procedure_select(master_job_list, get_job_where(parameter), get_job_what(parameter));
    }
 
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
-   lEnumeration *centry_what = get_centry_what();
-   centry_list_ = ocs::tom::ListPtr<ocs::tom::CE>(lSelect("", master_centry_list, nullptr, centry_what));
-   lFreeWhat(&centry_what);
+   centry_list_ = ocs_procedure_select(master_centry_list, ocs::tom::Where<ocs::tom::CE>(), get_centry_what());
 
    const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
-   lCondition *ehost_where = get_ehost_where();
-   lEnumeration *ehost_what = get_ehost_what();
-   exechost_list_ = ocs::tom::ListPtr<ocs::tom::EH>(lSelect("", master_ehost_list, ehost_where, ehost_what));
-   lFreeWhat(&ehost_what);
-   lFreeWhere(&ehost_where);
+   exechost_list_ = ocs_procedure_select(master_ehost_list, get_ehost_where(), get_ehost_what());
 
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
-   lEnumeration *pe_what = get_pe_what();
-   pe_list_ = ocs::tom::ListPtr<ocs::tom::PE>(lSelect("", master_pe_list, nullptr, pe_what));
-   lFreeWhat(&pe_what);
+   pe_list_ = ocs_procedure_select(master_pe_list, ocs::tom::Where<ocs::tom::PE>(), get_pe_what());
 
    const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
-   lEnumeration *ckpt_what = get_ckpt_what();
-   ckpt_list_ = ocs::tom::ListPtr<ocs::tom::CK>(lSelect("", master_ckpt_list, nullptr, ckpt_what));
-   lFreeWhat(&ckpt_what);
+   ckpt_list_ = ocs_procedure_select(master_ckpt_list, ocs::tom::Where<ocs::tom::CK>(), get_ckpt_what());
 
    const auto master_uset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
-   lEnumeration *uset_what = get_uset_what();
-   acl_list_ = ocs::tom::ListPtr<ocs::tom::US>(lSelect("", master_uset_list, nullptr, uset_what));
-   lFreeWhat(&uset_what);
+   acl_list_ = ocs_procedure_select(master_uset_list, ocs::tom::Where<ocs::tom::US>(), get_uset_what());
 
    const auto master_prj_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
-   lEnumeration *prj_what = get_prj_what();
-   project_list_ = ocs::tom::ListPtr<ocs::tom::PR>(lSelect("", master_prj_list, nullptr, prj_what));
-   lFreeWhat(&prj_what);
+   project_list_ = ocs_procedure_select(master_prj_list, ocs::tom::Where<ocs::tom::PR>(), get_prj_what());
 
    const auto master_sconf_list = ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>();
-   lEnumeration *sconf_what = get_sconf_what();
-   schedd_config_ = ocs::tom::ListPtr<ocs::tom::SC>(lSelect("", master_sconf_list, nullptr, sconf_what));
-   lFreeWhat(&sconf_what);
+   schedd_config_ = ocs_procedure_select(master_sconf_list, ocs::tom::Where<ocs::tom::SC>(), get_sconf_what());
    if (const auto sc = schedd_config_->front(); sc != nullptr) {
       job_load_adjustments_ = ocs::tom::get<SC_job_load_adjustments>(sc).clone("load_adj_copy");
    }
@@ -129,9 +105,7 @@ ocs::QStatModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
    config_xuser_lists_ = mconf_get_xuser_lists();
 
    const auto master_hgrp_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
-   lEnumeration *hgrp_what = get_hgrp_what();
-   hgrp_list_ = ocs::tom::ListPtr<ocs::tom::HGRP>(lSelect("", master_hgrp_list, nullptr, hgrp_what));
-   lFreeWhat(&hgrp_what);
+   hgrp_list_ = ocs_procedure_select(master_hgrp_list, ocs::tom::Where<ocs::tom::HGRP>(), get_hgrp_what());
 
    DRETURN(true);
 }

@@ -30,13 +30,15 @@
 #include "sgeobj/tom/ocs_tom_AR.h"
 
 #include "ocs_QRStatModelServer.h"
+#include "procedure/ocs_ProcedureModel.h"
 
 #include "msg_qrstat.h"
 
 /** @brief Fetch the advance reservations from the master list of qmaster
  *
- * The list is a selection of the master list, of a fixed type, so it is
- * wrapped with a check of its type.
+ * The list is a typed selection of the master list, with the results
+ * lSelect() gave: an empty handle when nothing was selected, see
+ * ocs_procedure_select().
  *
  * @param answer_list receives error messages
  * @param parameter the parsed parameters
@@ -46,11 +48,7 @@ bool ocs::QRStatModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    DENTER(TOP_LAYER);
    const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
 
-   lEnumeration *ar_what = get_ar_what(parameter);
-   lCondition *ar_where = get_ar_where(parameter);
-   ar_list_ = ocs::tom::ListPtr<ocs::tom::AR>(lSelect("", master_ar_list, ar_where, ar_what));
-   lFreeWhat(&ar_what);
-   lFreeWhere(&ar_where);
+   ar_list_ = ocs_procedure_select(master_ar_list, get_ar_where(parameter), get_ar_what(parameter));
 
    if (!parameter.is_summary() && ar_list_->empty()) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_GDI_AR_DOES_NOT_EXIT);

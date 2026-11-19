@@ -166,10 +166,9 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
          }
       }
 
+      // the messages are summarized in the order they were stored in; a sort by MES_message_number would change
+      // the output (the lPSortList(mlp, "I+", ...) that stood here lacked the '%' and sorted by no key)
       auto mlp = ocs::tom::get<SME_message_list>(sme);
-      // "I+" lacks the '%', so this sorts by no key and leaves the order as it is; kept raw rather than turned
-      // into a real sort, which would change the output
-      lPSortList(mlp, "I+", MES_message_number);
 
       /*
        * Remove all jids which have more than one entry for a MES_message_number
@@ -229,9 +228,7 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
       int initialized = 0;
       first_run = true;
       for (const auto mes : mlp) {
-         // a no-op as well, see above
-         lPSortList(ocs::tom::get<MES_job_number_list>(mes), "I+", ULNG_value);
-
+         // the job ids keep their stored order as well, see above
          for (const auto jid_ulng : ocs::tom::get<MES_job_number_list>(mes)) {
             bool skip = false;
             bool header = false;
@@ -1007,7 +1004,8 @@ void ocs::QStatJobViewPlain::report_job_identifier_list(std::ostream &os,
    if (ocs::tom::has<JB_job_identifier_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::ID> list = ocs::tom::get<JB_job_identifier_list>(job)) {
          std::ostringstream ss_list;
-         int fields[] = {JRE_job_number, 0};
+         // the identifiers are ID elements, as the JSON view reads them
+         int fields[] = {ID_str, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
          os << std::format("{:<{}} {}", ocs::ascii_width("job_identifier_list:"), left_width, ss_list.str());

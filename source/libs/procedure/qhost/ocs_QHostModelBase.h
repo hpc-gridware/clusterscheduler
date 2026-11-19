@@ -122,20 +122,21 @@ namespace ocs {
 
 #pragma region Data Retrieval
    protected:
-      static lCondition *get_host_where(ocs::tom::ConstList<ocs::tom::ST> hostname_list);
-      static lCondition *get_job_where(ocs::tom::ConstList<ocs::tom::ST> user_name_list, uint32_t show);
+      static ocs::tom::Where<ocs::tom::EH> get_host_where(ocs::tom::ConstList<ocs::tom::ST> hostname_list);
+      static ocs::tom::Where<ocs::tom::JB> get_job_where(ocs::tom::ConstList<ocs::tom::ST> user_name_list,
+                                                         uint32_t show);
 
-      static lEnumeration *get_host_what();
+      static ocs::tom::What<ocs::tom::EH> get_host_what();
 
-      static lEnumeration *get_queue_what();
+      static ocs::tom::What<ocs::tom::CQ> get_queue_what();
 
-      static lEnumeration *get_job_what();
+      static ocs::tom::What<ocs::tom::JB> get_job_what();
 
-      static lEnumeration *get_centry_what();
+      static ocs::tom::What<ocs::tom::CE> get_centry_what();
 
-      static lEnumeration *get_pe_what();
+      static ocs::tom::What<ocs::tom::PE> get_pe_what();
 
-      static lEnumeration *get_user_set_what();
+      static ocs::tom::What<ocs::tom::US> get_user_set_what();
 
       virtual bool fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               ocs::tom::ConstList<ocs::tom::ST> hostname_list,

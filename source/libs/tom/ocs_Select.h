@@ -276,6 +276,38 @@ namespace ocs::tom {
          return from_typed(make_logic(LogicOp::Not, a.release(), nullptr));
       }
 
+      /**
+       * @brief Add a condition as a further alternative, as the loops that collect conditions with lOrWhere() do
+       *
+       * Collecting form: `where |= field<JB_owner>() == user;` in a loop gives
+       * the first condition alone and every further one or'ed in. An empty side
+       * is left out, so this handle stays empty only if both were empty - unlike
+       * `||`, which throws on an empty operand.
+       *
+       * @param other the condition, taken over; empty afterwards
+       * @return this handle
+       * @throw ocs::RuntimeException if there is no memory; both conditions are freed then
+       */
+      Where &operator|=(Where &&other) {
+         collect(LogicOp::Or, other);
+         return *this;
+      }
+
+      /**
+       * @brief Add a condition that must hold as well, as the code that collects conditions with lAndWhere() does
+       *
+       * An empty side is left out: `where &= cond` on an empty handle gives
+       * `cond` alone, which is what "no condition yet, then this one" means.
+       *
+       * @param other the condition, taken over; empty afterwards
+       * @return this handle
+       * @throw ocs::RuntimeException if there is no memory; both conditions are freed then
+       */
+      Where &operator&=(Where &&other) {
+         collect(LogicOp::And, other);
+         return *this;
+      }
+
 
       /**
        * @brief Pack the condition, as cull_pack_cond() does; an empty handle packs a null condition
@@ -306,6 +338,24 @@ namespace ocs::tom {
       }
 
    private:
+      /**
+       * @brief Combine another condition into this one, leaving an empty side out
+       * @param op And or Or
+       * @param other the condition, taken over; empty afterwards
+       * @throw ocs::RuntimeException if there is no memory; both conditions are freed then
+       */
+      void collect(const LogicOp op, Where &other) {
+         if (other.cp_ == nullptr) {
+            return;
+         }
+         if (cp_ == nullptr) {
+            cp_ = other.release();
+            return;
+         }
+         // make_logic() takes both over, also when it throws, so this handle never holds a freed condition
+         cp_ = make_logic(op, std::exchange(cp_, nullptr), other.release());
+      }
+
       lCondition *cp_ = nullptr;   ///< the condition owned, or nullptr
    };
 
@@ -550,6 +600,33 @@ namespace ocs::tom {
          entries.push_back({static_cast<int>(F), sub.release()});
          free_what(ep_);
          return from_typed(make_what(T::descriptor.e, entries));
+      }
+
+      /**
+       * @brief Give a list or object field this selection already selects a selection of the fields of its
+       *        elements, as lWhatSetSubWhat() does
+       *
+       * Where with() adds the field, nest() narrows a field selected before,
+       * e.g. by a merge: `std::move(job_what).nest<JB_ja_tasks>(what<JAT_status>())`.
+       * A nested selection the field held is freed.
+       *
+       * @tparam F a list or object field of this type whose sub-type the model names
+       * @param sub the selection on the sub-type, taken over
+       * @return the narrowed selection; this handle is empty afterwards
+       * @throw FieldException with reason ForeignField if this selection is empty, ALL or NONE or does not select
+       *        @p F; this handle and @p sub are freed then
+       * @see Old form: lWhatSetSubWhat(); core: ocs::tom::set_sub_what()
+       */
+      template <auto F>
+         requires detail::SelectFieldOf<F, T> && detail::Nestable<F>
+      [[nodiscard]] What nest(What<typename FieldTraits<F>::Sub> &&sub) && {
+         What self = from_typed(release());
+         if (self.ep_ == nullptr || self.ep_[0].pos < 0) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::ForeignField, static_cast<int>(F), T::descriptor.e);
+         }
+         // set_sub_what() frees the sub-selection when it throws; self frees the selection
+         set_sub_what(self.ep_, static_cast<int>(F), sub.release());
+         return self;
       }
 
 

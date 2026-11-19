@@ -67,8 +67,8 @@ namespace ocs {
       void report_X_resource_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JRS> jrs, const char *name);
       template <auto F>
       void report_X_queue_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JRS> jrs, const char *name);
-      void report_X_string_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int list_nm, int value_nm,
-                                const char *name);
+      template <auto LF, auto VF>
+      void report_X_string_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
       template <auto LF, auto VF>
       void report_X_uint32_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, const char *name);
       template <auto F>

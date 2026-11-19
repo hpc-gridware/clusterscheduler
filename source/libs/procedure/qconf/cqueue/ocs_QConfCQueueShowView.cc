@@ -33,7 +33,9 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
+#include "spool/flatfile/ocs_spool_fields.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
@@ -68,20 +70,18 @@ cqueue_text(const char *s) noexcept {
  * the value was appended through a `strdup()` that nothing freed, although
  * sge_dstring_append() copies.
  *
- * The signature is the flatfile writer callback's, so the element and the field
- * stay untyped; the list the field holds is a `CE_Type` list and is read typed.
+ * A typed field writer; ocs_spool_write_thunk() hangs it into the writer slot of the field.
  *
- * @param ep     the QU element holding the complex values
- * @param nm     the field, `QU_consumable_config_list`
+ * @param qu     the queue instance holding the complex values
  * @param buffer the dstring the field is printed into
  * @param alp    unused; this writer cannot fail
- * @return 1, the flatfile writer's "written" answer
+ * @return true, the value was written
  */
-static int
-write_QU_consumable_config_list(const lListElem *ep, const int nm, dstring *buffer,
+static bool
+write_QU_consumable_config_list(const ocs::tom::ConstElement<ocs::tom::QU> qu, dstring *buffer,
                                 [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
-   const ocs::tom::ConstList<ocs::tom::CE> lp(lGetList(ep, nm));
+   const auto lp = ocs::tom::get<QU_consumable_config_list>(qu);
    bool first = true;
    bool has_elems = false;
 
@@ -115,7 +115,7 @@ write_QU_consumable_config_list(const lListElem *ep, const int nm, dstring *buff
    if (!has_elems) {
       sge_dstring_append(buffer, NONE_STR);
    }
-   DRETURN(1);
+   DRETURN(true);
 }
 
 /** @brief Give the complex_values field of a QU field list its own writer
@@ -133,7 +133,7 @@ insert_custom_complex_values_writer(spooling_field *fields) {
       count++;
    }
    if (fields[count].nm == QU_consumable_config_list) {
-      fields[count].write_func = write_QU_consumable_config_list;
+      fields[count].write_func = &ocs_spool_write_thunk<ocs::tom::QU, write_QU_consumable_config_list>;
    }
 
    DRETURN_VOID;

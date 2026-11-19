@@ -70,65 +70,54 @@ bool ocs::QQuotaModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer
 }
 
 /** @brief The resource quota set fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QQuotaModelBase::get_rqs_what() {
-   return lWhat("%T(ALL)", RQS_Type);
+ocs::tom::What<ocs::tom::RQS> ocs::QQuotaModelBase::get_rqs_what() {
+   return ocs::tom::what_all<ocs::tom::RQS>();
 }
 
 /** @brief The complex entry fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QQuotaModelBase::get_centry_what() {
-   return lWhat("%T(ALL)", CE_Type);
+ocs::tom::What<ocs::tom::CE> ocs::QQuotaModelBase::get_centry_what() {
+   return ocs::tom::what_all<ocs::tom::CE>();
 }
 
 /** @brief The user set fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QQuotaModelBase::get_user_set_what() {
-   return lWhat("%T(ALL)", US_Type);
+ocs::tom::What<ocs::tom::US> ocs::QQuotaModelBase::get_user_set_what() {
+   return ocs::tom::what_all<ocs::tom::US>();
 }
 
 /** @brief The host group fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QQuotaModelBase::get_hgroup_what() {
-   return lWhat("%T(ALL)", HGRP_Type);
+ocs::tom::What<ocs::tom::HGRP> ocs::QQuotaModelBase::get_hgroup_what() {
+   return ocs::tom::what_all<ocs::tom::HGRP>();
 }
 
 /** @brief The execution host fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection
  */
-lEnumeration *ocs::QQuotaModelBase::get_host_what() {
-   return lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
+ocs::tom::What<ocs::tom::EH> ocs::QQuotaModelBase::get_host_what() {
+   return ocs::tom::what<EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization>();
 }
 
-/** @brief Build the CULL condition selecting the hosts to fetch
+/** @brief Build the condition selecting the hosts to fetch
  * @param host_list the hosts the user asked for; all hosts when empty
- * @return the condition, which the caller owns
+ * @return the condition: the hosts named and the global host, never the template host
  */
-lCondition *ocs::QQuotaModelBase::get_host_where(const ocs::tom::ConstList<ocs::tom::ST> host_list) {
+ocs::tom::Where<ocs::tom::EH> ocs::QQuotaModelBase::get_host_where(const ocs::tom::ConstList<ocs::tom::ST> host_list) {
    DENTER(TOP_LAYER);
-   lCondition *where = nullptr;
+   ocs::tom::Where<ocs::tom::EH> where;
 
    for (const auto ep : host_list) {
-      lCondition *nw = lWhere("%T(%I h= %s)", EH_Type, EH_name, ocs::tom::get<ST_name>(ep));
-      if (!where) {
-         where = nw;
-      } else {
-         where = lOrWhere(where, nw);
-      }
+      where |= ocs::tom::field<EH_name>().same_host(ocs::tom::get<ST_name>(ep));
    }
-   if (where != nullptr) {
-      const lCondition *nw = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME);
-      where = lOrWhere(where, nw);
-   }
-   lCondition *nw = lWhere("%T(%I != %s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
    if (where) {
-      where = lAndWhere(where, nw);
-   } else {
-      where = nw;
+      where |= ocs::tom::field<EH_name>() == SGE_GLOBAL_NAME;
    }
+   where &= ocs::tom::field<EH_name>() != SGE_TEMPLATE_NAME;
    DRETURN(where);
 }

@@ -230,123 +230,97 @@ ocs::QHostModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 /** @brief Returns a hostname filter.
  *
  * @param hostname_list the hosts the user asked for
- * @return the condition, which the caller owns; nullptr when no host was named
+ * @return the condition: the hosts named and the global host, never the template host
  */
-lCondition *
+ocs::tom::Where<ocs::tom::EH>
 ocs::QHostModelBase::get_host_where(const ocs::tom::ConstList<ocs::tom::ST> hostname_list) {
    DENTER(TOP_LAYER);
-   lCondition *where= nullptr;
+   ocs::tom::Where<ocs::tom::EH> where;
 
    for (const auto host : hostname_list) {
-      lCondition *new_where = lWhere("%T(%I h= %s)", EH_Type, EH_name, ocs::tom::get<ST_name>(host));
-      if (!where) {
-         where = new_where;
-      } else {
-         where = lOrWhere(where, new_where);
-      }
+      where |= ocs::tom::field<EH_name>().same_host(ocs::tom::get<ST_name>(host));
    }
 
    // without host request from the user we include the global host, too.
-   if (where != nullptr) {
-      const lCondition *new_where = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME);
-      where = lOrWhere(where, new_where);
+   if (where) {
+      where |= ocs::tom::field<EH_name>() == SGE_GLOBAL_NAME;
    }
 
    // But we do not want the template host
-   lCondition *new_where = lWhere("%T(%I != %s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
-   if (where != nullptr) {
-      where = lAndWhere(where, new_where);
-   } else {
-      where = new_where;
-   }
+   where &= ocs::tom::field<EH_name>() != SGE_TEMPLATE_NAME;
 
    DRETURN(where);
 }
 
 /** @brief The execution host fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QHostModelBase::get_host_what() {
-   return lWhat("%T(ALL)", EH_Type);
+ocs::tom::What<ocs::tom::EH> ocs::QHostModelBase::get_host_what() {
+   return ocs::tom::what_all<ocs::tom::EH>();
 }
 
-/** @brief The queue instance fields the model needs
- * @return the enumeration, which the caller owns
+/** @brief The cluster queue fields the model needs
+ * @return the selection of every field
  */
-lEnumeration *ocs::QHostModelBase::get_queue_what() {
-   return lWhat("%T(ALL)", QU_Type);
+ocs::tom::What<ocs::tom::CQ> ocs::QHostModelBase::get_queue_what() {
+   return ocs::tom::what_all<ocs::tom::CQ>();
 }
 
-/** @brief Build the CULL condition selecting the jobs to report
+/** @brief Build the condition selecting the jobs to report
  * @param user_name_list the users the user asked for; all users when empty
  * @param show which of queues, jobs and resources were requested
- * @return the condition, which the caller owns
+ * @return the condition; empty when neither users nor a state restrict the jobs
  */
-lCondition *ocs::QHostModelBase::get_job_where(const ocs::tom::ConstList<ocs::tom::ST> user_name_list,
-                                               const uint32_t show) {
+ocs::tom::Where<ocs::tom::JB> ocs::QHostModelBase::get_job_where(const ocs::tom::ConstList<ocs::tom::ST> user_name_list,
+                                                                 const uint32_t show) {
    DENTER(TOP_LAYER);
-   lCondition *where = nullptr;
+   ocs::tom::Where<ocs::tom::JB> where;
 
    for (const auto user : user_name_list) {
-      lCondition *new_where = nullptr;
       if (const char *user_name = ocs::tom::get<ST_name>(user); is_pattern(user_name)) {
-         new_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
+         where |= ocs::tom::field<JB_owner>().like(user_name);
       } else {
-         new_where = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
-      }
-      if (where == nullptr) {
-         where = new_where;
-      } else {
-         where = lOrWhere(where, new_where);
+         where |= ocs::tom::field<JB_owner>() == user_name;
       }
    }
 
    if (!(show & QSTAT_DISPLAY_PENDING)) {
-      lCondition *new_where = lWhere("%T(%I->%T(!(%I m= %u)))", JB_Type, JB_ja_tasks, JAT_Type, JAT_state,
-                                     JQUEUED);
-      if (where == nullptr) {
-         where = new_where;
-      } else {
-         where = lAndWhere(where, new_where);
-      }
+      where &= ocs::tom::field<JB_ja_tasks>().any(!ocs::tom::field<JAT_state>().has_bits(JQUEUED));
    }
 
    DRETURN(where);
 }
 
 /** @brief The job fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection
  */
-lEnumeration *ocs::QHostModelBase::get_job_what() {
-   //                    1           5              10             15             20             25
-   return  lWhat("%T(%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I)",
-                         JB_Type,
-                         JB_job_number, JB_script_file, JB_owner, JB_group, JB_type,
+ocs::tom::What<ocs::tom::JB> ocs::QHostModelBase::get_job_what() {
+   return ocs::tom::what<JB_job_number, JB_script_file, JB_owner, JB_group, JB_type,
                          JB_pe, JB_checkpoint_name, JB_jid_predecessor_list, JB_env_list, JB_priority,
                          JB_jobshare, JB_job_name, JB_project, JB_department, JB_submission_time,
                          JB_deadline, JB_override_tickets, JB_pe_range, JB_request_set_list, JB_ja_structure,
                          JB_ja_tasks, JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids,
-                         JB_ja_a_h_ids);
+                         JB_ja_a_h_ids>();
 }
 
 /** @brief The complex entry fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QHostModelBase::get_centry_what() {
-   return lWhat("%T(ALL)", CE_Type);
+ocs::tom::What<ocs::tom::CE> ocs::QHostModelBase::get_centry_what() {
+   return ocs::tom::what_all<ocs::tom::CE>();
 }
 
 /** @brief The parallel environment fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QHostModelBase::get_pe_what() {
-   return lWhat("%T(ALL)", PE_Type);
+ocs::tom::What<ocs::tom::PE> ocs::QHostModelBase::get_pe_what() {
+   return ocs::tom::what_all<ocs::tom::PE>();
 }
 
 /** @brief The user set fields the model needs
- * @return the enumeration, which the caller owns
+ * @return the selection of every field
  */
-lEnumeration *ocs::QHostModelBase::get_user_set_what() {
-   return lWhat("%T(ALL)", US_Type);
+ocs::tom::What<ocs::tom::US> ocs::QHostModelBase::get_user_set_what() {
+   return ocs::tom::what_all<ocs::tom::US>();
 }
 

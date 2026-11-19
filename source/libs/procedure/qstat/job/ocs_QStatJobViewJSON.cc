@@ -48,6 +48,7 @@
 #include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_JRE.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
@@ -1069,22 +1070,24 @@ void ocs::QStatJobViewJSON::report_job_args(std::ostream &os, const ocs::tom::Co
  * @brief Write one string field of the elements of a list of the job as an array member of the job object
  *
  * Nothing is written if the (reduced) job does not hold the list or has no
- * such list. The elements stay untyped: the callers pass lists of different
- * types (`JRE_Type`, `ID_Type`).
+ * such list.
  *
  * @param os stream to write to
  * @param job the job
- * @param list_nm the list field of `JB_Type`
- * @param value_nm the string field of the list's elements
+ * @tparam LF the list field of `JB_Type`
+ * @tparam VF the string field of the list's elements; its type is the type of the elements
  * @param name the name of the member
  */
+template <auto LF, auto VF>
 void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
-                                                 const int list_nm, const int value_nm, const char *name) {
+                                                 const char *name) {
    DENTER(TOP_LAYER);
-   if (lGetPosViaElem(job, list_nm, SGE_NO_ABORT) < 0) {
+   using Elem = typename ocs::tom::FieldTraits<VF>::Type;
+   if (!ocs::tom::has<LF>(job)) {
       DRETURN_VOID;
    }
-   const lList *list = lGetList(job, list_nm);
+   // the list field gives a handle of its sub-type; the checked handle confirms it is the element type of VF
+   const auto list = ocs::tom::ConstList<Elem>(ocs::tom::get<LF>(job));
    if (list == nullptr) {
       DRETURN_VOID;
    }
@@ -1099,14 +1102,14 @@ void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const ocs::to
    indent++;
 
    bool is_first = true;
-   for_each_ep_lv(elem, list) {
+   for (const ocs::tom::ConstElement<Elem> elem : list) {
       if (is_first) {
          os << "\n";
          is_first = false;
       } else {
          os << ",\n";
       }
-      const char *value = lGetString(elem, value_nm);
+      const char *value = ocs::tom::get<VF>(elem);
       os << std::string(indent * 3, ' ') << raw2quotedJSON(value ? value : "");
    }
 
@@ -1174,7 +1177,7 @@ void ocs::QStatJobViewJSON::report_X_uint32_list(std::ostream &os, const ocs::to
 void ocs::QStatJobViewJSON::report_job_identifier_list(std::ostream &os,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   report_X_string_list(os, job, JB_job_identifier_list, JRE_job_number, "job_identifier_list");
+   report_X_string_list<JB_job_identifier_list, ID_str>(os, job, "job_identifier_list");
    DRETURN_VOID;
 }
 
@@ -1254,7 +1257,7 @@ void ocs::QStatJobViewJSON::report_pe(std::ostream &os, const ocs::tom::ConstEle
  */
 void ocs::QStatJobViewJSON::report_jid_request_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   report_X_string_list(os, job, JB_jid_request_list, JRE_job_name, "jid_request_list");
+   report_X_string_list<JB_jid_request_list, JRE_job_name>(os, job, "jid_request_list");
    DRETURN_VOID;
 }
 
@@ -1290,7 +1293,7 @@ void ocs::QStatJobViewJSON::report_jid_successor_list(std::ostream &os,
 void ocs::QStatJobViewJSON::report_ja_ad_request_list(std::ostream &os,
                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   report_X_string_list(os, job, JB_ja_ad_request_list, JRE_job_name, "ja_ad_request_list");
+   report_X_string_list<JB_ja_ad_request_list, JRE_job_name>(os, job, "ja_ad_request_list");
    DRETURN_VOID;
 }
 
