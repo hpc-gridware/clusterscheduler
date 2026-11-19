@@ -131,22 +131,17 @@ void simulate_project_update(const char *host) {
 }
 
 
-void *thread1(void *data) {
-   thread_arg_t *thread = (thread_arg_t *)data;
-   dstring thread_name = DSTRING_INIT;
-
-   sge_dstring_sprintf(&thread_name, "thread%d", thread->id);
+void *thread1(void * /* data */) {
    DENTER(TOP_LAYER);
-   //sge_dstring_free(&thread_name);
 
-   lInit(nmv); 
+   lInit(nmv);
 
    while (true) {
       pthread_mutex_lock(&request_mtx);
-      if (request > REQUESTS) {
+      if (request >= REQUESTS) {
          pthread_mutex_unlock(&request_mtx);
          DRETURN(nullptr);
-      } 
+      }
       long request_id = requests[request];
       request++;
       pthread_mutex_unlock(&request_mtx);
@@ -307,6 +302,7 @@ int main(int argc, char *argv[]) {
    dstring stats_str = DSTRING_INIT;
    fgl_dump_stats(&stats_str);
    fprintf(stderr, "%s", sge_dstring_get_string(&stats_str));
+   sge_dstring_free(&stats_str);
 
    DRETURN(ret ? EXIT_SUCCESS : EXIT_FAILURE);
 }

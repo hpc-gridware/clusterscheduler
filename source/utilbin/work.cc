@@ -126,7 +126,7 @@ static void usage(int exit_code)
 int main(int argc, char *argv[])
 {
    int i;
-   char *kmp = nullptr, *mmp = nullptr; /* pointers for mallocing */
+   char *kmp = nullptr, *mmp = nullptr, *tmp = nullptr; /* pointers for mallocing */
 
    while (argc>1 && argv[1][0] == '-') {
       /* ---------------------- cpu load cmd line options ------- */
@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
    if (touch_mb) {
       printf("going to alloc and write %d mb\n", touch_mb); fflush(stdout);
       size_t size = static_cast<size_t>(touch_mb) * 1024 * 1024;
-      char *tmp = static_cast<char *>(sge_malloc(size));
+      tmp = static_cast<char *>(sge_malloc(size));
       if (tmp == nullptr) {
          printf("failed getting %d mb mem via malloc\n", touch_mb); fflush(stdout);
          return 1;
@@ -379,6 +379,8 @@ int main(int argc, char *argv[])
       sge_free(&kmp);
    if (mmp)
       sge_free(&mmp);
+   if (tmp)
+      sge_free(&tmp);
 
    return 0;
 }
@@ -400,8 +402,8 @@ void work(char *mmp) {
          c = *miter + 1;
          *miter = c;
          miter += 8;
-         if (miter>miter_max)
-         miter =  mmp;
+         if (miter >= miter_max)
+            miter = mmp;
       }
       if (in >= 0) {
          if (read(in, buffer, 1) == -1) {
