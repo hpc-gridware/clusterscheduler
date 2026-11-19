@@ -42,6 +42,11 @@ target_include_directories(test_spool PRIVATE "./")
 target_link_libraries(test_spool PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool COMMAND test_spool)
 
+# test_spool, test_spool_mt and test_spool_performance require arguments (a spooling
+# method, its shared lib and its arguments) and cannot be run by a bare ctest, so they
+# are always disabled (kept registered only for discoverability).
+set_tests_properties(test_spool test_spool_mt test_spool_performance PROPERTIES DISABLED TRUE)
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_spool DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_spool_mt DESTINATION testbin/${SGE_ARCH})
