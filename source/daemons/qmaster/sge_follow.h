@@ -40,14 +40,18 @@
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_OR.h"
+#include "sgeobj/tom/ocs_tom_RTIC.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sge_qmaster_timed_event.h"
 
 int
-sge_follow_order(lListElem *raw_ep, char *ruser, char *rhost, lList **topp, monitoring_t *monitor,
-                 uint64_t gdi_session);
+sge_follow_order(ocs::tom::Element<ocs::tom::OR> ep, char *ruser, char *rhost, ocs::tom::ListPtr<ocs::tom::RTIC> *topp,
+                 monitoring_t *monitor, uint64_t gdi_session);
 
 int
-distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor);
+distribute_ticket_orders(ocs::tom::ConstList<ocs::tom::RTIC> ticket_orders, monitoring_t *monitor);
 
 void
 set_next_stree_spooling_time();

@@ -44,12 +44,12 @@ extern char **environ;
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QHostParameter::QHostParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
+ocs::QHostParameter::QHostParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+   : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
    // initialize local member variables
-   // the request data is structure-checked in qmaster's listener (CS-3125)
-   QHostParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
+   QHostParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }
@@ -92,11 +92,11 @@ void ocs::QHostParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
 /** @brief Marshal the parameters into a bundle for the server
  * @return the bundle, which the caller owns; the switch lists are copies
  */
-lList *ocs::QHostParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::QHostParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
    // Get the name-value-list that was initialized by the base class with the procedure name
-   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   auto bundle = ProcedureParameter::get_bundle();
 
    // -h
    add_parameter_bundle(*bundle, HOSTNAME_LIST, hostname_list_->clone());
@@ -113,6 +113,6 @@ lList *ocs::QHostParameter::get_bundle() {
    // flags for used switches: -F -q -j -u
    add_parameter_bundle(*bundle, SHOW, ulong_value_list(show_));
 
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }
 

@@ -47,8 +47,9 @@
  * has no way left to report. Anything that can fail meaningfully is checked in
  * the model.
  *
- * The element stays untyped: this overrides the generic show_object(), whose
- * element type is only known at run time. The derived lists are `HR_Type`.
+ * The parameter stays untyped: this overrides the generic show_object(), whose
+ * element type is only known at run time; it is taken into a host group handle
+ * once. The derived lists are `HR_Type`.
  *
  * @param os   the stream to write to
  * @param ep   the host group
@@ -60,12 +61,13 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
                                           const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
-   const auto [has_matcher, derived_hosts, derived_groups, derived_matchers] =
-      hgroup_split_members(ocs::tom::ConstElement<ocs::tom::HGRP>(ep));
+   // the view of -shgrp renders host groups only, see QConfHGroupShowController
+   const auto hgroup = ocs::tom::ConstElement<ocs::tom::HGRP>(ep);
+   const auto [has_matcher, derived_hosts, derived_groups, derived_matchers] = hgroup_split_members(hgroup);
 
    if (!has_matcher) {
       /* no matchers: the generic rendering is the whole answer */
-      QConfViewBase::show_object(os, ep, desc);
+      QConfViewBase::show_object(os, hgroup, desc);
       DRETURN_VOID;
    }
 
@@ -83,7 +85,7 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    dstring document = DSTRING_INIT;
-   if (spool_json_write_object_ex(&alp, ep, fields, derived, &document)) {
+   if (spool_json_write_object_ex(&alp, hgroup, fields, derived, &document)) {
       const char *text = sge_dstring_get_string(&document);
       if (text != nullptr) {
          os << text;

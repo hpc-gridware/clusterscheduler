@@ -37,6 +37,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_tmpnam.h"
 #include "uti/sge.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/config.h"
 #include "sgeobj/sge_answer.h"
@@ -105,6 +106,74 @@ write_attr_tmp_file(const char *name, const char *value, const char *delimiter, 
 FCLOSE_ERROR:
    sge_free(&filename);
    DRETURN(nullptr);
+}
+
+/**
+ * @brief Send the modify request of an attribute change for a target whose object type is known only at run time
+ *
+ * The attribute table names the target per object kind; the request list was created with the descriptor of the
+ * target's type, so it is taken into a handle of that type unchecked, as is the selection built for it.
+ *
+ * @tparam T the object type of the target
+ * @param target the target, of type @p T
+ * @param sub_command the sub command of the modify request
+ * @param qlp the request list, replaced by the answer data of the request (may be nullptr afterwards)
+ * @param what the selection of the fields to modify, still owned by the caller afterwards
+ * @return the answer list of the request
+ */
+template <ocs::tom::ObjectType T>
+static ocs::tom::ListPtr<ocs::tom::AN>
+ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, lList *&qlp,
+                          lEnumeration *what) {
+   DENTER(TOP_LAYER);
+   auto data = ocs::tom::ListPtr<T>::from_typed(std::exchange(qlp, nullptr));
+   auto selection = ocs::tom::What<T>::from_typed(what);
+   auto alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::MOD, sub_command, data, ocs::tom::Where<T>(),
+                                        selection);
+   static_cast<void>(selection.release());
+   qlp = data.release();
+   DRETURN(alp);
+}
+
+/**
+ * @brief Send the modify request of an attribute change, dispatching once on the target of the attribute table
+ *
+ * @param target the target of the attribute table entry
+ * @param sub_command the sub command of the modify request
+ * @param qlp the request list, replaced by the answer data of the request (may be nullptr afterwards)
+ * @param what the selection of the fields to modify, still owned by the caller afterwards
+ * @return the answer list of the request; an error for a target the attribute table does not name
+ */
+static ocs::tom::ListPtr<ocs::tom::AN>
+ocs_qconf_attr_send(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, lList *&qlp,
+                    lEnumeration *what) {
+   DENTER(TOP_LAYER);
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   switch (target) {
+      case ocs::gdi::Target::CQ_LIST:
+         alp = ocs_qconf_attr_send_typed<ocs::tom::CQ>(target, sub_command, qlp, what);
+         break;
+      case ocs::gdi::Target::EH_LIST:
+         alp = ocs_qconf_attr_send_typed<ocs::tom::EH>(target, sub_command, qlp, what);
+         break;
+      case ocs::gdi::Target::PE_LIST:
+         alp = ocs_qconf_attr_send_typed<ocs::tom::PE>(target, sub_command, qlp, what);
+         break;
+      case ocs::gdi::Target::CK_LIST:
+         alp = ocs_qconf_attr_send_typed<ocs::tom::CK>(target, sub_command, qlp, what);
+         break;
+      case ocs::gdi::Target::HGRP_LIST:
+         alp = ocs_qconf_attr_send_typed<ocs::tom::HGRP>(target, sub_command, qlp, what);
+         break;
+      case ocs::gdi::Target::RQS_LIST:
+         alp = ocs_qconf_attr_send_typed<ocs::tom::RQS>(target, sub_command, qlp, what);
+         break;
+      default:
+         answer_list_add_sprintf(&alp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_INVALID_OBJECT_TYPE_SI,
+                                 __func__, static_cast<int>(target));
+         break;
+   }
+   DRETURN(alp);
 }
 
 /**
@@ -294,7 +363,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
    }
 
    if (info_entry->pre_gdi_function == nullptr || info_entry->pre_gdi_function(qlp, alpp)) {
-      *alpp = ocs::gdi::Client::sge_gdi(info_entry->target, ocs::gdi::Command::MOD, sub_command, &qlp, nullptr, what);
+      *alpp = ocs_qconf_attr_send(info_entry->target, sub_command, qlp, what);
    }
    lFreeElem(&ep);
    lFreeWhat(&what);

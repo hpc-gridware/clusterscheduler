@@ -245,13 +245,11 @@ namespace ocs {
       }
 
    public:
-      /** @brief Serialise this object into a parameter bundle (SPP_Type) for GDI transport
-       *
-       * Untyped by contract: qmaster's response path takes the bundle as a raw list.
+      /** @brief Serialise this object into a parameter bundle for GDI transport
        *
        * @return the bundle, which the caller owns
        */
-      [[nodiscard]] virtual lList *get_bundle();
+      [[nodiscard]] virtual ocs::tom::ListPtr<ocs::tom::SPP> get_bundle();
 
       /** @brief Add one named entry to a bundle
        *
@@ -317,9 +315,9 @@ namespace ocs {
          return ocs::tom::ListPtr<T>::from_typed(taken);
       }
 
-      static std::string get_procedure_from_bundle(const lList *parameter_bundle);
+      static std::string get_procedure_from_bundle(ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle);
 
-      static std::string get_sub_procedure_from_bundle(const lList *parameter_bundle);
+      static std::string get_sub_procedure_from_bundle(ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle);
 #pragma endregion
 
 #pragma region Constructor/Destructor

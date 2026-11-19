@@ -59,11 +59,10 @@ ocs::QConfWriteParameter::add_item(const char *label, const std::string &text) {
  *
  * @return the bundle, owned by the caller
  */
-lList *
-ocs::QConfWriteParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::QConfWriteParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
-   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   auto bundle = ProcedureParameter::get_bundle();
 
    add_parameter_bundle(*bundle, OBJECT_SET, items_->clone(""));
 
@@ -87,7 +86,7 @@ ocs::QConfWriteParameter::get_bundle() {
       add_parameter_bundle(*bundle, OBJECT_NAME, std::move(name_list));
    }
 
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }
 
 /** @brief Read the items and the batch policy back out of the request bundle

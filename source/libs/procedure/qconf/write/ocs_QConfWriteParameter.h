@@ -144,10 +144,9 @@ namespace ocs {
        * @param bundle the request bundle received over GDI
        * @param packet the client request
        */
-      explicit QConfWriteParameter(lList *bundle, gdi::Packet *packet)
+      explicit QConfWriteParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
          : ProcedureParameter("", packet) {
-         // the request data is structure-checked in qmaster's listener (CS-3125)
-         QConfWriteParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
+         QConfWriteParameter::set_bundle(bundle);
       }
 
       ~QConfWriteParameter() override = default;
@@ -234,7 +233,7 @@ namespace ocs {
       /// @return true when what the text omits is to be deleted, see MODE_REPLACE
       [[nodiscard]] bool is_replace() const { return (mode_ & MODE_REPLACE) != 0; }
 
-      lList *get_bundle() override;
+      ocs::tom::ListPtr<ocs::tom::SPP> get_bundle() override;
 
       void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle) override;
    };

@@ -166,6 +166,34 @@ ocs_follow_unenroll_task(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::El
    DRETURN_VOID;
 }
 
+/**
+ * @brief The ticket orders collected for one host, with the host's entry and the lists created if needed
+ *
+ * @param ticket_orders the ticket orders per host; the list is created if the handle is empty
+ * @param hostname the host
+ * @param rdp the reduced descriptor of the ticket orders, for a list created for the host
+ * @return the ticket orders of the host
+ */
+static ocs::tom::List<ocs::tom::OR>
+ocs_follow_host_ticket_orders(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_orders, const char *hostname,
+                              const lDescr *rdp) {
+   DENTER(TOP_LAYER);
+   if (!ticket_orders) {
+      // the name and hashing ocs::tom::emplace_back() gave a list it created
+      ticket_orders = ocs::tom::ListPtr<ocs::tom::RTIC>::create("");
+   }
+   auto rtic_ep = ticket_orders->find_first<RTIC_host>(ocs::tom::Host(hostname));
+   if (!rtic_ep) {
+      rtic_ep = ticket_orders->emplace_back<RTIC_host>(ocs::tom::Host(hostname));
+   }
+   auto host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
+   if (!host_tickets) {
+      ocs::tom::set<RTIC_tickets>(rtic_ep, ocs::tom::ListPtr<ocs::tom::OR>::create("ticket orders", rdp));
+      host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
+   }
+   DRETURN(host_tickets);
+}
+
 /** @brief sets the next spooling time for stree/prj/user
  *
  *  This function sets the next spooling time. It is called by the scheduler
@@ -241,9 +269,7 @@ do_stree_spooling() {
 /**
  * @brief Execute one order of the scheduler.
  *
- * The signature stays raw while the callers outside this module pass raw orders.
- *
- * @param raw_ep      the order (OR_Type)
+ * @param ep          the order; request data, structure checked by the listener (CS-3125)
  * @param ruser       user who sent the order list
  * @param rhost       host the order list came from
  * @param topp        ticket orders that are collected here and sent to the
@@ -259,12 +285,10 @@ do_stree_spooling() {
  *         -3 if the delivery to an execd failed
  */
 int
-sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused]] char *rhost, lList **topp,
-                 monitoring_t *monitor, const uint64_t gdi_session) {
+sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char *ruser, [[maybe_unused]] char *rhost,
+                 ocs::tom::ListPtr<ocs::tom::RTIC> *topp, monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   // the order list is request data, structure-checked by the listener
-   const ocs::tom::Element<ocs::tom::OR> ep(raw_ep);
    uint32_t job_number, task_number;
    const char *or_pe, *q_name = nullptr;
    uint32_t or_type;
@@ -1049,17 +1073,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
                            lSelectElemDPack(ep, nullptr, rdp, what.get(), false, nullptr));
                         ocs::tom::set<OR_ticket>(newep, ocs::tom::get<UA_value>(cached));
 
-                        ocs::tom::Element<ocs::tom::RTIC> rtic_ep = ocs::tom::find_first_rw<RTIC_host>(*topp, hostname);
-                        if (!rtic_ep) {
-                           rtic_ep = ocs::tom::emplace_back<RTIC_host>(topp, hostname);
-                        }
-                        auto host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
-                        if (!host_tickets) {
-                           ocs::tom::set<RTIC_tickets>(rtic_ep,
-                                                       ocs::tom::ListPtr<ocs::tom::OR>::create("ticket orders", rdp));
-                           host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
-                        }
-                        host_tickets.push_back(std::move(newep));
+                        ocs_follow_host_ticket_orders(*topp, hostname, rdp).push_back(std::move(newep));
                      }
                      host_tickets_cache.reset();
                   } else {
@@ -1069,17 +1083,7 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
                         auto newep = ocs::tom::ElementPtr<ocs::tom::OR>::from_typed(
                            lSelectElemDPack(ep, nullptr, rdp, what.get(), false, nullptr));
                         const char *hostname = ocs::tom::get<JG_qhostname>(gdil.front());
-                        ocs::tom::Element<ocs::tom::RTIC> rtic_ep = ocs::tom::find_first_rw<RTIC_host>(*topp, hostname);
-                        if (!rtic_ep) {
-                           rtic_ep = ocs::tom::emplace_back<RTIC_host>(topp, hostname);
-                        }
-                        auto host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
-                        if (!host_tickets) {
-                           ocs::tom::set<RTIC_tickets>(rtic_ep,
-                                                       ocs::tom::ListPtr<ocs::tom::OR>::create("ticket orders", rdp));
-                           host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
-                        }
-                        host_tickets.push_back(std::move(newep));
+                        ocs_follow_host_ticket_orders(*topp, hostname, rdp).push_back(std::move(newep));
                      }
 
                   }
@@ -1345,23 +1349,20 @@ sge_follow_order(lListElem *raw_ep, [[maybe_unused]] char *ruser, [[maybe_unused
  * nice values, so an order that never arrives leaves that host scheduling on
  * stale entitlement.
  *
- * The signature stays raw while the caller outside this module passes a raw list.
- *
- * @param ticket_orders the orders to distribute (`RTIC_Type`)
+ * @param ticket_orders the orders to distribute, as sge_follow_order() collected them
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  *
  * @note MT-NOTE: distribute_ticket_orders() is NOT MT safe
  */
-int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
+int distribute_ticket_orders(const ocs::tom::ConstList<ocs::tom::RTIC> ticket_orders, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    uint64_t now = sge_get_gmt64();
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
    const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
-   // the list is built by sge_follow_order() for the caller, so its type is guaranteed
-   for (const auto ep : ocs::tom::ConstList<ocs::tom::RTIC>(ticket_orders)) {
+   for (const auto ep : ticket_orders) {
       ocs::tom::ConstList<ocs::tom::OR> to_send = ocs::tom::get<RTIC_tickets>(ep);
       const char *host_name = ocs::tom::get<RTIC_host>(ep);
       const ocs::tom::ConstElement<ocs::tom::EH> hep(host_list_locate(master_ehost_list, host_name));

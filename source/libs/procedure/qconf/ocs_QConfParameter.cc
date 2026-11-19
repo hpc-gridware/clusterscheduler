@@ -68,13 +68,11 @@ qconf_op::as_argv() {
  * @param bundle the marshalled parameters, as `get_bundle()` produced them
  * @param packet the originating client packet, for user, host and permissions
  */
-ocs::QConfParameter::QConfParameter(const lList *bundle, gdi::Packet *packet)
+ocs::QConfParameter::QConfParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
    : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
-   // the request data is structure-checked in qmaster's listener (CS-3125), and the procedure name was read
-   // out of it already
-   QConfParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
+   QConfParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }
@@ -88,12 +86,11 @@ ocs::QConfParameter::QConfParameter(const lList *bundle, gdi::Packet *packet)
  *
  * @return the bundle, which the caller owns
  */
-lList *
-ocs::QConfParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::QConfParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
    // procedure name, output format (-fmt), environment
-   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   auto bundle = ProcedureParameter::get_bundle();
 
    // the switch that was typed, which for the prefix matched ones carries its
    // suffix (-ke, -kej) and is therefore not the same as the table's name
@@ -130,7 +127,7 @@ ocs::QConfParameter::get_bundle() {
    value_format_list->emplace_back<ULNG_value>(static_cast<uint32_t>(value_format_));
    add_parameter_bundle(*bundle, VALUE_FORMAT, std::move(value_format_list));
 
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }
 
 /**

@@ -38,11 +38,11 @@
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QQuotaParameter::QQuotaParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
+ocs::QQuotaParameter::QQuotaParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+   : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
-   // the request data is structure-checked in qmaster's listener (CS-3125)
-   QQuotaParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
+   QQuotaParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }
@@ -86,11 +86,11 @@ void ocs::QQuotaParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> b
 /** @brief Marshal the parameters into a bundle for the server
  * @return the bundle, which the caller owns; the switch lists are copies
  */
-lList *ocs::QQuotaParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::QQuotaParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
    // Parent: -fmt, procedure name
-   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   auto bundle = ProcedureParameter::get_bundle();
 
    // -q
    add_parameter_bundle(*bundle, QUEUE_NAME_LIST, queue_name_list_->clone());
@@ -110,5 +110,5 @@ lList *ocs::QQuotaParameter::get_bundle() {
    // -u
    add_parameter_bundle(*bundle, USER_NAME_LIST, user_name_list->clone());
 
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }

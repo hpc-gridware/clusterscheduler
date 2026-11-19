@@ -39,6 +39,7 @@
  */
 
 #include <cstring>
+#include <new>
 #include <csignal>
 #include <ctime>
 
@@ -397,7 +398,7 @@ process_cmdline(char **anArgv) {
       /*
       ** high level parsing error! show answer list
       */
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
       alp.reset();
@@ -410,7 +411,7 @@ process_cmdline(char **anArgv) {
       /*
       ** low level parsing error! show answer list
       */
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
       alp.reset();
@@ -935,19 +936,17 @@ setup_qmaster() {
     * to master admin host list" step further below gave while admin hosts were
     * their own list.
     */
-   {
-      lList **master_hgroup_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+   try {
+      // an empty spool leaves no list; it is created as ocs::tom::emplace_back() created it, as one group is missing
+      const auto master_hgroup_list = ocs::DataStore::master_list_create<SGE_TYPE_HGROUP>("");
 
       for (const char *hgrp_name : {ADMIN_HOSTGROUP, SUBMIT_HOSTGROUP, EXEC_HOSTGROUP}) {
-         auto hgrp = ocs::tom::find_first_rw<HGRP_name>(*master_hgroup_list, hgrp_name);
+         auto hgrp = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(hgrp_name));
          bool changed = false;
 
-         if (hgrp == nullptr) {
-            hgrp = ocs::tom::emplace_back<HGRP_name>(master_hgroup_list, hgrp_name);
-            if (hgrp == nullptr) {
-               CRITICAL(SFNMAX, MSG_SGETEXT_NOMEM);
-               DRETURN(-1);
-            }
+         if (!hgrp) {
+            // throws on no memory, caught at the end of the block
+            hgrp = master_hgroup_list.emplace_back<HGRP_name>(ocs::tom::Host(hgrp_name));
             changed = true;
          }
 
@@ -965,6 +964,10 @@ setup_qmaster() {
             DRETURN(-1);
          }
       }
+   } catch (const std::bad_alloc &) {
+      // the seeding creates objects; the startup stops with the message it gave before the typed forms threw
+      CRITICAL(SFNMAX, MSG_SGETEXT_NOMEM);
+      DRETURN(-1);
    }
 
    /*
@@ -1022,16 +1025,18 @@ setup_qmaster() {
     * clusters carry their members across an upgrade via the qconf -am/-ao replay
     * in load_config.sh. Idempotent: an existing reserved userset is left as-is.
     */
-   {
-      lList **master_userset_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
+   try {
+      // an empty spool leaves no list; it is created as ocs::tom::emplace_back() created it, as both usersets
+      // are missing then
+      const auto master_userset_list = ocs::DataStore::master_list_create<SGE_TYPE_USERSET>("");
       const char *admin_user_name = ocs::Bootstrap::get_admin_user();
 
       for (const char *us_name : {MANAGER_USERSET, OPERATOR_USERSET}) {
-         if (ocs::tom::find_first<US_name>(*master_userset_list, us_name)) {
+         if (master_userset_list.find_first<US_name>(us_name)) {
             continue;
          }
 
-         const auto us = ocs::tom::emplace_back<US_name>(master_userset_list, us_name);
+         const auto us = master_userset_list.emplace_back<US_name>(us_name);
          ocs::tom::set<US_type>(us, US_ACL);
          ocs::tom::emplace_back_in<US_entries, UE_name>(us, "root");
          if (admin_user_name != nullptr && sge_strnullcasecmp(admin_user_name, NONE_STR) != 0 &&
@@ -1046,6 +1051,10 @@ setup_qmaster() {
             DRETURN(-1);
          }
       }
+   } catch (const std::bad_alloc &) {
+      // the seeding creates objects; the startup stops with the message it gave before the typed forms threw
+      CRITICAL(SFNMAX, MSG_SGETEXT_NOMEM);
+      DRETURN(-1);
    }
 
    DPRINTF("calendar list ------------------------------\n");
@@ -1353,24 +1362,21 @@ setup_qmaster() {
 /**
  * @brief The key of a spooled object as text
  *
- * Compiled per object type, so the key field and its type are known at compile time; the object is taken raw
- * because the repair of the spooled objects around it is descriptor-generic.
+ * Compiled per object type, so the key field and its type are known at compile time.
  *
  * @tparam E the entry of the object type in #ocs_object_types
- * @param ep the object, from the master list of the entry's type
+ * @param object the object, from the master list of the entry's type
  * @return the value of the type's key attribute; empty if the type has none, the object does not hold it or the
  *         key is neither a string, a host nor a 32 bit number
  */
 template <typename E>
 static std::string
-ocs_qmaster_object_key(const lListElem *ep) {
+ocs_qmaster_object_key([[maybe_unused]] const ocs::tom::ConstElement<typename E::type> object) {
    DENTER(TOP_LAYER);
    std::string ret;
    if constexpr (E::has_key) {
       constexpr auto key = E::key;
       constexpr ocs::tom::FieldType key_type = ocs::tom::FieldTraits<key>::type;
-      // the element comes from the master list of the entry's type
-      const auto object = ocs::tom::ConstElement<typename E::type>::from_typed(ep);
       if (object.template has<key>()) {
          if constexpr (key_type == ocs::tom::FieldType::String) {
             const char *value = ocs::tom::get<key>(object);
@@ -1404,7 +1410,7 @@ ocs_qmaster_append_entry(std::string &text, const char *entry) {
  *
  * A repaired object is logged with one warning and spooled again.
  *
- * @param ep the object
+ * @param ep the object; taken raw, the repair and the spooling are descriptor-generic
  * @param type its object type
  * @param spool_key the key it is spooled with
  * @param[in,out] unrepaired receives one entry per repeated key that is not repaired
@@ -1434,12 +1440,51 @@ ocs_qmaster_repair_spooled_object(lListElem *ep, const sge_object_type type, con
       spool_write_object(&spool_answers, spool_get_default_context(), ep, spool_key.c_str(), type);
       answer_list_output(&spool_answers);
    }
-   for_each_ep_lv(error, errors) {
+   for (const auto error : *errors) {
       ocs_qmaster_append_entry(unrepaired, ocs::tom::get<AN_text>(error));
    }
    errors.reset();
 
    DRETURN(repaired);
+}
+
+/**
+ * @brief Repair the repeated keys in the objects of one spooled master list, and collect those that are not repaired
+ *
+ * The queue instances of a cluster queue are spooled on their own, so they are repaired on their own, not with
+ * the queue.
+ *
+ * @tparam E the entry of the object type in #ocs_object_types
+ * @param[in,out] unrepaired receives one entry per repeated key that is not repaired
+ * @param job_key a buffer for the spool key of a job
+ */
+template <typename E>
+static void
+ocs_qmaster_repair_master_list(std::string &unrepaired, [[maybe_unused]] dstring *job_key) {
+   DENTER(TOP_LAYER);
+   using T = typename E::type;
+   for (const auto ep : ocs::DataStore::master_list_rw<E::value>()) {
+      int skip_nm = NoName;
+      if constexpr (std::is_same_v<T, ocs::tom::CQ>) {
+         for (const auto qinstance : ocs::tom::get<CQ_qinstances>(ep)) {
+            const std::string key = std::string(ocs::tom::get<QU_qname>(qinstance)) + "/" +
+                                    static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance));
+            ocs_qmaster_repair_spooled_object(qinstance, SGE_TYPE_QINSTANCE, key, unrepaired);
+         }
+         skip_nm = CQ_qinstances;
+      }
+
+      std::string key;
+      if constexpr (std::is_same_v<T, ocs::tom::JB>) {
+         key = job_get_key(ocs::tom::get<JB_job_number>(ep), 0, nullptr, job_key);
+      } else if constexpr (E::value == SGE_TYPE_SCHEDD_CONF) {
+         key = "schedd_conf";
+      } else {
+         key = ocs_qmaster_object_key<E>(ep);
+      }
+      ocs_qmaster_repair_spooled_object(ep, E::value, key, unrepaired, skip_nm);
+   }
+   DRETURN_VOID;
 }
 
 /**
@@ -1478,34 +1523,10 @@ ocs_qmaster_check_unique_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       SGE_TYPE_CKPT, SGE_TYPE_AR, SGE_TYPE_JOB, SGE_TYPE_USER, SGE_TYPE_PROJECT, SGE_TYPE_SHARETREE
    };
    for (const sge_object_type type : spooled_types) {
-      // the key of an object of this type as text, chosen once per type
-      const auto key_of = ocs_with_object_type(type, [](const auto &entry) {
-         return &ocs_qmaster_object_key<ocs_object_type_entry_t<decltype(entry)>>;
-      }).value_or(nullptr);
-      // stays raw: the repair below is descriptor-generic, the type of the master list is given at run time
-      lList *master_list = *ocs::DataStore::get_master_list_rw(type);
-      for_each_rw_lv(ep, master_list) {
-         int skip_nm = NoName;
-         if (type == SGE_TYPE_CQUEUE) {
-            // the queue instances are spooled on their own, so they are repaired on their own, not with the queue
-            for (ocs::tom::Element<ocs::tom::QU> qinstance : ocs::tom::get<CQ_qinstances>(ep)) {
-               const std::string key = std::string(ocs::tom::get<QU_qname>(qinstance)) + "/" +
-                                       static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance));
-               ocs_qmaster_repair_spooled_object(qinstance, SGE_TYPE_QINSTANCE, key, unrepaired);
-            }
-            skip_nm = CQ_qinstances;
-         }
-
-         std::string key;
-         if (type == SGE_TYPE_JOB) {
-            key = job_get_key(ocs::tom::get<JB_job_number>(ep), 0, nullptr, &entry);
-         } else if (type == SGE_TYPE_SCHEDD_CONF) {
-            key = "schedd_conf";
-         } else {
-            key = key_of != nullptr ? key_of(ep) : "";
-         }
-         ocs_qmaster_repair_spooled_object(ep, type, key, unrepaired, skip_nm);
-      }
+      // dispatched once per type, every spooled type carries objects; the master list is walked typed
+      ocs_with_object_type(type, [&unrepaired, &entry](const auto &type_entry) {
+         ocs_qmaster_repair_master_list<ocs_object_type_entry_t<decltype(type_entry)>>(unrepaired, &entry);
+      });
    }
    sge_dstring_free(&entry);
 

@@ -68,8 +68,7 @@ ocs::ProcedureParameter::string_value_list(const char *value) {
  *
  * @return the bundle, which the caller owns
  */
-lList *
-ocs::ProcedureParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::ProcedureParameter::get_bundle() {
    DENTER(TOP_LAYER);
    // the bundle and its value lists are created with their first entry, named as the free emplace_back()
    // created them before
@@ -98,7 +97,7 @@ ocs::ProcedureParameter::get_bundle() {
 
    // exec_context can be ignored here. It is evaluated on client side only
    // the virtual interface hands the bundle over untyped: qmaster's response path takes it as a raw list
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }
 
 /** @brief Populate this object from a received CULL SPP_Type parameter bundle.
@@ -142,26 +141,29 @@ void ocs::ProcedureParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP
 
 /** @brief Read the command name out of a bundle without building a parameter object
  *
- * This is what lets the server pick the right subclass before it has one. The
- * bundle comes untyped from qmaster's dispatcher, so the free lookups take the
- * soft path on a list of another type, as before.
+ * This is what lets the server pick the right subclass before it has one.
  *
  * @param parameter_bundle the received bundle
  * @return the procedure name
  */
-std::string ocs::ProcedureParameter::get_procedure_from_bundle(const lList *parameter_bundle) {
+std::string
+ocs::ProcedureParameter::get_procedure_from_bundle(const ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle) {
+   DENTER(TOP_LAYER);
    const auto name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
    // the value list is of any type (CULL_ANY_SUBTYPE): the free lookup checks it
    const lList *name_value_list = ocs::tom::get<SPP_value_list>(name_value_param);
    const auto procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, PROCEDURE);
-   return ocs::tom::get<VA_value>(procedure_elem);
+   std::string ret = ocs::tom::get<VA_value>(procedure_elem);
+   DRETURN(ret);
 }
 
 /** @brief Read the sub-command name out of a bundle
- * @param parameter_bundle the received bundle, untyped as for get_procedure_from_bundle()
+ * @param parameter_bundle the received bundle
  * @return the sub-procedure name, empty when there is none
  */
-std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *parameter_bundle) {
+std::string
+ocs::ProcedureParameter::get_sub_procedure_from_bundle(const ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle) {
+   DENTER(TOP_LAYER);
    const auto name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
    // the value list is of any type (CULL_ANY_SUBTYPE): the free lookup checks it
    const lList *name_value_list = ocs::tom::get<SPP_value_list>(name_value_param);
@@ -169,9 +171,10 @@ std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *
    // Not every request contains sub-procedure requests
    if (const auto sub_procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, SUB_PROCEDURE);
        sub_procedure_elem) {
-      return bundle_string(ocs::tom::get<VA_value>(sub_procedure_elem));
+      std::string ret = bundle_string(ocs::tom::get<VA_value>(sub_procedure_elem));
+      DRETURN(ret);
    }
-   return "";
+   DRETURN(std::string());
 }
 
 /** @brief Add one environment variable

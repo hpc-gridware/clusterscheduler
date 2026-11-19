@@ -102,9 +102,8 @@ static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::List
    const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = component_get_qualified_hostname();
    uint32_t progid = component_get_component_id();
-   lList *cluster_config = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
-
-   spool_read_list(anAnswer, aSpoolContext, &cluster_config, SGE_TYPE_CONFIG);
+   // read into the data store slot itself: a list created for an empty slot belongs to the data store
+   spool_read_list(anAnswer, aSpoolContext, ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG), SGE_TYPE_CONFIG);
 
    answer_list_output(anAnswer);
 
@@ -132,6 +131,27 @@ static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::List
 }
 
 /**
+ * @brief Read one master list from the spool into its data store slot
+ *
+ * The list is read into the slot itself, not into a copy of the slot's pointer: a list the read creates for an
+ * empty slot then belongs to the data store instead of a local.
+ *
+ * @tparam V the object type of the list
+ * @param answer_list receives the messages, which are written out
+ * @param context the spooling context
+ * @param name what the list is called in the trace
+ */
+template <sge_object_type V>
+static void
+read_master_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, const char *name) {
+   DENTER(TOP_LAYER);
+   spool_read_list(answer_list, context, ocs::DataStore::get_master_list_rw(V), V);
+   answer_list_output(answer_list);
+   DPRINTF("read %d entries to master %s list\n", static_cast<int>(ocs::DataStore::master_list<V>().size()), name);
+   DRETURN_VOID;
+}
+
+/**
  * @brief Read every object list of the cluster from the spooling context
  *
  * Should become a public interface of libspool usable by every module that unspools data; that needs the
@@ -148,15 +168,14 @@ static bool read_spooled_data() {
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context;
-   lList *master_list = nullptr;
-   lList **cluster_configuration = ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    context = spool_get_default_context();
 
    /* cluster configuration */
    sge_read_configuration(context, &answer_list);
    answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master config list\n", lGetNumberOfElem(*cluster_configuration));
+   DPRINTF("read %d entries to master config list\n",
+           static_cast<int>(ocs::DataStore::master_list<SGE_TYPE_CONFIG>().size()));
 
    /* cluster configuration */
    {
@@ -173,79 +192,43 @@ static bool read_spooled_data() {
       DPRINTF("read %d entries to master scheduler configuration list\n", static_cast<int>(sconf_get_config_list().get().size()));
    }
    /* complexes */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CENTRY);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master complex entry list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_CENTRY>(&answer_list, context, "complex entry");
 
    /* hosts */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_EXECHOST);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master exechost list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_EXECHOST>(&answer_list, context, "exechost");
 
    /* CS-2394: managers/operators are no longer spooled as own lists - they are
     * members of the reserved "manager"/"operator" usersets, covered below. */
 
    /* host groups */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_HGROUP);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master host group list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_HGROUP>(&answer_list, context, "host group");
 
    /* usersets */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USERSET);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master user set list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_USERSET>(&answer_list, context, "user set");
 
    /* calendars */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CALENDAR);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master calendar list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_CALENDAR>(&answer_list, context, "calendar");
 
    /* queues */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CQUEUE);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master cluster queue list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_CQUEUE>(&answer_list, context, "cluster queue");
 
    /* pes */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PE);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master parallel environment list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_PE>(&answer_list, context, "parallel environment");
 
    /* ckpt */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CKPT);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master ckpt list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_CKPT>(&answer_list, context, "ckpt");
 
    /* jobs */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_JOB);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master job list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_JOB>(&answer_list, context, "job");
 
    /* user list */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USER);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master user list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_USER>(&answer_list, context, "user");
 
    /* project list */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PROJECT);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master project list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_PROJECT>(&answer_list, context, "project");
 
    /* sharetree */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SHARETREE);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master sharetree list\n", lGetNumberOfElem(master_list));
+   read_master_list<SGE_TYPE_SHARETREE>(&answer_list, context, "sharetree");
 
    DRETURN(true);
 }

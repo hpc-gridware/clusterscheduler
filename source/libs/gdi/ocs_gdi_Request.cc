@@ -38,12 +38,11 @@
 /// rmon layer the multi GDI code logs under
 #define GDI_MULTI_LAYER GDI_LAYER
 
-ocs::gdi::Request::Request() : packet(nullptr), multi_answer_list(nullptr) {
+ocs::gdi::Request::Request() : packet(nullptr) {
 }
 
 ocs::gdi::Request::~Request() {
    delete packet;
-   lFreeList(&multi_answer_list);
 }
 
 void
@@ -53,9 +52,9 @@ ocs::gdi::Request::wait() {
    // wait for the result of the packet
    if (packet != nullptr) {
       if (component_is_qmaster_internal()) {
-         packet->wait_for_result_internal(&multi_answer_list);
+         packet->wait_for_result_internal(multi_answer_list);
       } else {
-         packet->wait_for_result_external(&multi_answer_list);
+         packet->wait_for_result_external(multi_answer_list);
       }
       delete packet;
       packet = nullptr;
@@ -141,7 +140,7 @@ ocs::gdi::Request::get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Com
    }
 
    // get the response for the given id
-   ocs::tom::Element<ocs::tom::MA> map = ocs::tom::find_first_rw<MA_id>(multi_answer_list, id);
+   ocs::tom::Element<ocs::tom::MA> map = ocs::tom::find_first_rw<MA_id>(multi_answer_list.get(), id);
    if (!map) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, to_string(target).c_str());
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

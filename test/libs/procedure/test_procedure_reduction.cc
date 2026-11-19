@@ -83,8 +83,8 @@ namespace {
        * @param bundle the bundle; the model takes ownership
        */
       void adopt(lList *bundle) {
-         lFreeList(&procedure_response);
-         procedure_response = bundle;
+         // the test builds an SPP_Type bundle, see make_response()
+         procedure_response = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(bundle);
       }
    };
 

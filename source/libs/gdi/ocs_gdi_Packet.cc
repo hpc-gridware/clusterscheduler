@@ -181,10 +181,10 @@ ocs::gdi::Packet::append_task(gdi::Task *task) {
 
 /**
  * @brief Build the multi answer list from the tasks' individual answers
- * @param[out] malpp receives one entry per task
+ * @param[out] malp receives one entry per task; created with the first entry if it is empty
  */
 void
-ocs::gdi::Packet::create_multi_answer(lList **malpp) {
+ocs::gdi::Packet::create_multi_answer(ocs::tom::ListPtr<ocs::tom::MA> &malp) {
    DENTER(TOP_LAYER);
 
    /*
@@ -193,7 +193,11 @@ ocs::gdi::Packet::create_multi_answer(lList **malpp) {
     */
    for (size_t id = 0; id < tasks.size(); ++id) {
       Task *task = tasks[id];
-      ocs::tom::Element<ocs::tom::MA> map = ocs::tom::emplace_back<MA_id>(malpp, id);
+      if (!malp) {
+         // named and hashed as the free emplace_back() created a list with a 32 bit key
+         malp = ocs::tom::ListPtr<ocs::tom::MA>::create("ulong_sublist");
+      }
+      const auto map = malp->emplace_back<MA_id>(static_cast<uint32_t>(id));
 
       if (get_response_from_master(task->command, task->sub_command)) {
          ocs::tom::set<MA_objects>(map, task->data_list);
@@ -573,30 +577,30 @@ ocs::gdi::Packet::execute_internal(ocs::tom::ListPtr<ocs::tom::AN> *answer_list)
 
 /**
  * @brief Wait for the reply to a packet sent by #execute_external
- * @param[out] malpp receives the multi answer list
+ * @param[out] malp receives the multi answer list
  */
 void
-ocs::gdi::Packet::wait_for_result_external(lList **malpp) {
+ocs::gdi::Packet::wait_for_result_external(ocs::tom::ListPtr<ocs::tom::MA> &malp) {
    DENTER(TOP_LAYER);
 
    /*
     * The packet itself has already be executed in ocs::gdi::Client::sge_gdi_packet_execute_external()
     * so it is only necessary to create the multi answer and do cleanup
     */
-   create_multi_answer(malpp);
+   create_multi_answer(malp);
 
    DRETURN_VOID;
 }
 
 /**
  * @brief Wait for a packet queued by #execute_internal and take its answers
- * @param[out] malpp receives the multi answer list
+ * @param[out] malp receives the multi answer list
  */
 void
-ocs::gdi::Packet::wait_for_result_internal(lList **malpp) {
+ocs::gdi::Packet::wait_for_result_internal(ocs::tom::ListPtr<ocs::tom::MA> &malp) {
    DENTER(TOP_LAYER);
    wait_till_handled();
-   create_multi_answer(malpp);
+   create_multi_answer(malp);
    DRETURN_VOID;
 }
 

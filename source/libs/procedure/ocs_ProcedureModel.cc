@@ -59,7 +59,7 @@ ocs::ProcedureModel::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    DENTER(TOP_LAYER);
 
    // Fetch the SPP_Type list and pass it to qmaster; the bundle is replaced by the response, which is SPP_Type too
-   auto request_and_response = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(parameter.get_bundle());
+   auto request_and_response = parameter.get_bundle();
 
    *answer_list = gdi::Client::sge_gdi(get_target(), get_command(), gdi::SubCommand::NONE, request_and_response);
 
@@ -71,8 +71,7 @@ ocs::ProcedureModel::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
     * the text here discarded half of what the server had decided to send. A read
     * that really failed renders nothing, so its response is empty and the
     * caller prints nothing extra. */
-   // the response stays a raw member, see the class
-   procedure_response = request_and_response.release();
+   procedure_response = std::move(request_and_response);
 
    DRETURN(!answer_list_has_error(answer_list));
 }
@@ -88,7 +87,7 @@ ocs::ProcedureModel::get_reduction() const {
     * zero, so a reading of zero alone cannot tell "qmaster said nothing was
     * reduced" from "the entry never arrived" - and the second would mean the
     * channel is broken while looking exactly like the healthy case. */
-   const auto entry = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::REDUCTION);
+   const auto entry = ocs::tom::find_first<SPP_name>(procedure_response.get(), ProcedureParameter::REDUCTION);
    if (entry == nullptr) {
       DPRINTF("no reduction entry in the response\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
@@ -115,9 +114,9 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
                                       uint32_t *elements) const {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstElement<ocs::tom::SPP> applied_entry = ocs::tom::find_first<SPP_name>(procedure_response,
+   ocs::tom::ConstElement<ocs::tom::SPP> applied_entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
                                                 ProcedureParameter::WRITE_APPLIED);
-   ocs::tom::ConstElement<ocs::tom::SPP> failed_entry = ocs::tom::find_first<SPP_name>(procedure_response,
+   ocs::tom::ConstElement<ocs::tom::SPP> failed_entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
                                                ProcedureParameter::WRITE_PARSE_FAILED);
    if (applied_entry == nullptr || failed_entry == nullptr) {
       DPRINTF("no write result in the response\n");
@@ -140,7 +139,7 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
     * response that carries only the two older entries is still a complete
     * write result - the counts a caller must have are those two. */
    if (elements != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::SPP> elements_entry = ocs::tom::find_first<SPP_name>(procedure_response,
+      ocs::tom::ConstElement<ocs::tom::SPP> elements_entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
                                                     ProcedureParameter::WRITE_ELEMENTS);
       const auto elements_value =
               elements_entry
@@ -155,27 +154,25 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
 }
 
 /** @brief Return the exported objects received from qmaster, see the header
- * @param objects receives the name/value pairs
- * @return true when the response carried an export result
+ * @return the name/value pairs; std::nullopt when the response carried no export result
  */
-bool
-ocs::ProcedureModel::get_export_objects(const lList **objects) const {
+std::optional<ocs::tom::ConstList<ocs::tom::VA>>
+ocs::ProcedureModel::get_export_objects() const {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstElement<ocs::tom::SPP> entry = ocs::tom::find_first<SPP_name>(procedure_response,
+   ocs::tom::ConstElement<ocs::tom::SPP> entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
                                         ProcedureParameter::EXPORT_OBJECTS);
    if (entry == nullptr) {
       DPRINTF("no export entry in the response\n");
-      DRETURN(false);
+      DRETURN(std::nullopt);
    }
 
    /* An empty export is stored by CULL as no list at all, so the null check
     * comes before the count - lGetNumberOfElem() flags a null list as an error
     * of its own. The handle is only counted here, so it is not checked; the caller checks it. */
    const auto exported = ocs::tom::ConstList<ocs::tom::VA>::from_typed(ocs::tom::get<SPP_value_list>(entry));
-   *objects = exported;
    DPRINTF("export entry holds %d object(s)\n", static_cast<int>(exported.size()));
-   DRETURN(true);
+   DRETURN(exported);
 }
 
 /** @brief Return the pre-rendered output text received from qmaster.
@@ -191,7 +188,7 @@ ocs::ProcedureModel::get_export_objects(const lList **objects) const {
 const char *
 ocs::ProcedureModel::get_output_text() const {
    DENTER(TOP_LAYER);
-   const auto response_elem = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::RESPONSE);
+   const auto response_elem = ocs::tom::find_first<SPP_name>(procedure_response.get(), ProcedureParameter::RESPONSE);
    if (!response_elem) {
       DRETURN("");
    }

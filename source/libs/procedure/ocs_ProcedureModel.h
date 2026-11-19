@@ -23,7 +23,10 @@
  * @brief Base of the models: fetching or computing what a command reports
  */
 
+#include <optional>
+
 #include "cull/cull.h"
+#include "tom/ocs_List.h"
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_Target.h"
 
@@ -55,7 +58,7 @@ namespace ocs {
        * it built itself and check the readers against it (CS-2821). Ownership is
        * unchanged - the destructor still frees whatever is here.
        */
-      lList *procedure_response = nullptr;
+      ocs::tom::ListPtr<ocs::tom::SPP> procedure_response;
 
    public:
       [[nodiscard]] const char *get_output_text() const;
@@ -115,10 +118,10 @@ namespace ocs {
        *
        * The list belongs to this object and lives as long as it does.
        *
-       * @param objects receives the pairs, left untouched when there is no entry
-       * @return true when the response carried an export result
+       * @return the pairs, an empty handle for an empty export; std::nullopt when the response carried no
+       *         export result
        */
-      [[nodiscard]] bool get_export_objects(const lList **objects) const;
+      [[nodiscard]] std::optional<ocs::tom::ConstList<ocs::tom::VA>> get_export_objects() const;
 
       /** @brief Write what the model holds to the log
        *
@@ -169,9 +172,7 @@ namespace ocs {
    public:
       ProcedureModel() = default;
 
-      virtual ~ProcedureModel() {
-         ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(procedure_response).reset();
-      };
+      virtual ~ProcedureModel() = default;
 #pragma endregion
    };
 }

@@ -74,14 +74,13 @@ ocs::QConfActionParameter::get_arg(const char *name) const {
  *
  * @return the bundle, owned by the caller
  */
-lList *
-ocs::QConfActionParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::QConfActionParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
-   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   auto bundle = ProcedureParameter::get_bundle();
    add_parameter_bundle(*bundle, ACTION_ARGS, args_->clone(""));
 
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }
 
 /** @brief Read the arguments back out of the request bundle

@@ -49,12 +49,12 @@ ocs::QStatParameter::~QStatParameter() {
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QStatParameter::QStatParameter(const lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
+ocs::QStatParameter::QStatParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+   : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
    // initialize local member variables with data received from client
-   // the request data is structure-checked in qmaster's listener (CS-3125)
-   QStatParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
+   QStatParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }
@@ -180,11 +180,11 @@ void ocs::QStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
 /** @brief Marshal the parameters into a bundle for the server
  * @return the bundle, which the caller owns; the switch lists are copies
  */
-lList *ocs::QStatParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::QStatParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
    // Get the name-value-list that was initialized by the base class with the procedure name
-   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   auto bundle = ProcedureParameter::get_bundle();
 
    // -j
    DPRINTF("jid_list_: " sge_u32 " elements\n", static_cast<uint32_t>(jid_list_->size()));
@@ -254,7 +254,7 @@ lList *ocs::QStatParameter::get_bundle() {
    add_parameter_bundle(*bundle, LOAD_AVG_VARIABLE, string_value_list(load_avg_variable_.c_str()));
    DPRINTF("load_avg_variable_=%s\n", load_avg_variable_.c_str());
 
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }
 
 

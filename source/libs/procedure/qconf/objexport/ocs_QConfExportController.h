@@ -72,13 +72,12 @@ namespace ocs {
       /** @brief Hand the rendered pairs to the caller
        *
        * Ownership moves with them, because the response bundle takes the list as
-       * it is rather than copying it. Raw, because the response bundle in
-       * qmaster is untyped.
+       * it is rather than copying it.
        *
-       * @return the pairs (`VA_Type`), nullptr when nothing was rendered
+       * @return the pairs, an empty handle when nothing was rendered
        */
-      lList *take_export_objects() {
-         return objects_.release();
+      ocs::tom::ListPtr<ocs::tom::VA> take_export_objects() {
+         return std::move(objects_);
       }
    };
 }

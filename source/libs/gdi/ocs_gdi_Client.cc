@@ -64,25 +64,29 @@
 #include "msg_common.h"
 
 /**
- * @brief Send a single-task GDI request and wait for the answer
+ * @brief Send a single-task GDI request and wait for the answer; the type independent core of the typed sge_gdi()
+ *
+ * Not a template, so that it is compiled once for all object types.
  *
  * @param target which object list to act on
  * @param cmd what to do
  * @param sub_cmd modifiers refining @p cmd
- * @param lpp the objects to send; receives the ones read back
- * @param cp which objects to act on, from `lWhere()`
- * @param enp which fields to transfer, from `lWhat()`
+ * @param lpp the objects to send, of the target's type; receives the ones read back
+ * @param cp which objects to act on; the request copies it
+ * @param enp which fields to transfer; the request copies it
  * @return the answer list; the caller owns it
  */
 ocs::tom::ListPtr<ocs::tom::AN>
-ocs::gdi::Client::sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
-                          lList **lpp, lCondition *cp, lEnumeration *enp) {
+ocs::gdi::Client::ocs_gdi_single_task(const Target target, const Command cmd, const SubCommand sub_cmd,
+                                      lList **lpp, const lCondition *cp, const lEnumeration *enp) {
    DENTER(GDI_LAYER);
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    Request gdi_multi{};
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
-   int id = gdi_multi.request(&alp, Mode::SEND, target, cmd, sub_cmd, lpp, cp, enp, true);
+   // the request copies the condition and the selection, it does not change them
+   int id = gdi_multi.request(&alp, Mode::SEND, target, cmd, sub_cmd, lpp, const_cast<lCondition *>(cp),
+                              const_cast<lEnumeration *>(enp), true);
    if (id != -1) {
       gdi_multi.wait();
       gdi_multi.get_response(&alp, cmd, sub_cmd, target, id, lpp);
@@ -106,12 +110,39 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_tsm() {
 }
 
 /**
+ * @brief Send a trigger with an ID list, either one gdi_kill() created or the caller's
+ *
+ * @param target the event clients or the threads
+ * @param own_ids the list gdi_kill() created, an empty handle if it created none; a non-const reference because
+ *                sge_gdi() takes the handle so, a trigger returns no data that would replace it
+ * @param id_list the caller's list (ID_Type), sent when gdi_kill() created none; nullptr for none
+ * @return the answer list; the caller owns it
+ */
+static ocs::tom::ListPtr<ocs::tom::AN>
+ocs_gdi_trigger_ids(const ocs::gdi::Target target, ocs::tom::ListPtr<ocs::tom::ID> &own_ids,
+                    const lList *id_list) {
+   DENTER(GDI_LAYER);
+   if (own_ids) {
+      auto alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::TRIGGER, ocs::gdi::SubCommand::NONE, own_ids);
+      DRETURN(alp);
+   }
+   // the caller's list stays the caller's: a copy is sent, the request copied it for sending before as well;
+   // the checked handle refuses a list that is not an ID list; every caller passes ID lists (or none) - qmaster
+   // would also take objects of the target type for some triggers, which no client sends
+   auto ids = ocs::tom::ConstList<ocs::tom::ID>(id_list).clone();
+   auto alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::TRIGGER, ocs::gdi::SubCommand::NONE, ids);
+   DRETURN(alp);
+}
+
+/**
  * @brief Shut components down, or start a qmaster thread
  *
  * Sends the shutdown/kill requests to scheduler, master and execds.
  *
  * The id list stays untyped: its type depends on the action (EH_Type for
  * #EXECD_KILL and #JOB_KILL, ID_Type for the event clients and the thread start).
+ * A list created here for the scheduler or for all event clients replaces the
+ * caller's for the actions that follow, as it always did.
  *
  * @param id_list which instances to act on, e.g. host names; nullptr for all
  * @param action_flag a combination of #MASTER_KILL, #SCHEDD_KILL, #EXECD_KILL, #JOB_KILL and their neighbours
@@ -119,9 +150,9 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_tsm() {
  *
  * @note MT-NOTE: gdi_kill() is MT safe (assumptions)
  */
-ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
+ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, const uint32_t action_flag) {
    DENTER(GDI_LAYER);
-   bool id_list_created = false;
+   ocs::tom::ListPtr<ocs::tom::ID> own_ids;
    auto alp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
 
    if (action_flag & MASTER_KILL) {
@@ -135,17 +166,15 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, uint3
       char buffer[10];
 
       snprintf(buffer, sizeof(buffer), "%d", EV_ID_SCHEDD);
-      id_list = lCreateList("kill scheduler", ID_Type);
-      id_list_created = true;
-      ocs::tom::emplace_back<ID_str>(&id_list, buffer);
-      auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
-                              ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
+      own_ids = ocs::tom::ListPtr<ocs::tom::ID>::create("kill scheduler");
+      own_ids->emplace_back<ID_str>(buffer);
+      id_list = own_ids.get();
+      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::EV_LIST, own_ids, id_list);
       alp->splice(std::move(tmpalp));
    }
 
    if (action_flag & THREAD_START) {
-      auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::DUMMY_LIST, ocs::gdi::Command::TRIGGER,
-                              ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
+      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::DUMMY_LIST, own_ids, id_list);
       alp->splice(std::move(tmpalp));
    }
 
@@ -153,12 +182,11 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, uint3
       if (id_list == nullptr) {
          char buffer[10];
          snprintf(buffer, sizeof(buffer), "%d", EV_ID_ANY);
-         id_list = lCreateList("kill all event clients", ID_Type);
-         id_list_created = true;
-         ocs::tom::emplace_back<ID_str>(&id_list, buffer);
+         own_ids = ocs::tom::ListPtr<ocs::tom::ID>::create("kill all event clients");
+         own_ids->emplace_back<ID_str>(buffer);
+         id_list = own_ids.get();
       }
-      auto tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
-                              ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
+      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::EV_LIST, own_ids, id_list);
       alp->splice(std::move(tmpalp));
    }
 
@@ -188,10 +216,6 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, uint3
       }
       auto tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, hosts);
       alp->splice(std::move(tmpalp));
-   }
-
-   if (id_list_created) {
-      lFreeList(&id_list);
    }
 
    DRETURN(alp);

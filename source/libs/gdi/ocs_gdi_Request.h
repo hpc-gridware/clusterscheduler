@@ -46,7 +46,7 @@ namespace ocs::gdi {
    class Request {
    public:
       Packet *packet;             ///< the tasks, in the form they travel in
-      lList *multi_answer_list;   ///< qmaster's answers, one entry per task
+      ocs::tom::ListPtr<ocs::tom::MA> multi_answer_list;   ///< qmaster's answers, one entry per task
 
       Request();   ///< Build an empty request
       ~Request();  ///< Release the packet and the answers

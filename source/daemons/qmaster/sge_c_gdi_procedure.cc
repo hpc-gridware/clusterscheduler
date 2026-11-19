@@ -762,7 +762,8 @@ namespace {
       using Controller = typename Traits::Controller;
 
       // Create parameter object containing the parsed switch information from the client
-      Parameter parameter(task->data_list, packet);
+      // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP_Type
+      Parameter parameter(ocs::tom::ConstList<ocs::tom::SPP>(task->data_list), packet);
       lFreeList(&task->data_list);
 
       if constexpr (std::is_same_v<Parameter, ocs::QConfParameter>) {
@@ -839,8 +840,7 @@ namespace {
        * the model - detected rather than imposed, so no other controller needs
        * an empty accessor for it. */
       if constexpr (requires { controller.take_export_objects(); }) {
-         // the controller hands over a VA_Type list it built itself
-         outcome.export_objects = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(controller.take_export_objects());
+         outcome.export_objects = controller.take_export_objects();
          outcome.has_export_result = true;
       }
 
@@ -888,8 +888,7 @@ namespace {
 
       // Prepare a response
       ocs::ProcedureParameter response(to_string(Traits::prog_number), packet);
-      // the parameter builds the SPP_Type bundle itself
-      auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(response.get_bundle());
+      auto bundle = response.get_bundle();
 
       // Add the procedures output to the bundle, named and hashed as the free emplace_back() created it before
       auto output_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
@@ -1213,8 +1212,10 @@ void sge_c_gdi_procedure(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::T
    DENTER(TOP_LAYER);
 
    // get the name of the procedure that should be called
-   const std::string name = ocs::ProcedureParameter::get_procedure_from_bundle(task->data_list);
-   const std::string sub_name = ocs::ProcedureParameter::get_sub_procedure_from_bundle(task->data_list);
+   // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP_Type
+   const auto bundle = ocs::tom::ConstList<ocs::tom::SPP>(task->data_list);
+   const std::string name = ocs::ProcedureParameter::get_procedure_from_bundle(bundle);
+   const std::string sub_name = ocs::ProcedureParameter::get_sub_procedure_from_bundle(bundle);
    DPRINTF("requested procedure: \"" SFN "/" SFN "\"\n", name.c_str(), sub_name.c_str());
 
    // Find and trigger the procedures handler

@@ -35,6 +35,8 @@
 
 #include "gdi/ocs_gdi_Task.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_MA.h"
+#include "tom/ocs_List.h"
 
 /// Queue the worker threads take GDI packets from
 extern sge_tq_queue_t *GlobalRequestQueue;
@@ -162,7 +164,7 @@ namespace ocs::gdi {
 
       int append_task(Task *task);
 
-      void create_multi_answer(lList **malpp);
+      void create_multi_answer(ocs::tom::ListPtr<ocs::tom::MA> &malp);
 
       /// Has a worker finished this packet?
       bool get_is_handled();
@@ -172,10 +174,10 @@ namespace ocs::gdi {
       void broadcast_that_handled();
 
       bool execute_internal(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-      void wait_for_result_internal(lList **malpp);
+      void wait_for_result_internal(ocs::tom::ListPtr<ocs::tom::MA> &malp);
 
       bool execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-      void wait_for_result_external(lList **malpp);
+      void wait_for_result_external(ocs::tom::ListPtr<ocs::tom::MA> &malp);
 
       uint32_t get_pb_size();
       bool unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb);

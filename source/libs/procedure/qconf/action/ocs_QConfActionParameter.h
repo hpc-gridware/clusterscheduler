@@ -115,10 +115,9 @@ namespace ocs {
        * @param bundle the request bundle received over GDI
        * @param packet the client request
        */
-      explicit QConfActionParameter(lList *bundle, gdi::Packet *packet)
+      explicit QConfActionParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
          : ProcedureParameter("", packet) {
-         // the request data is structure-checked in qmaster's listener (CS-3125)
-         QConfActionParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
+         QConfActionParameter::set_bundle(bundle);
       }
 
       ~QConfActionParameter() override = default;
@@ -138,7 +137,7 @@ namespace ocs {
        */
       [[nodiscard]] std::string get_arg(const char *name) const;
 
-      lList *get_bundle() override;
+      ocs::tom::ListPtr<ocs::tom::SPP> get_bundle() override;
 
       void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle) override;
    };

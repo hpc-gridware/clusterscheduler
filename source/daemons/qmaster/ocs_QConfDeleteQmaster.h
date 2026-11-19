@@ -23,7 +23,7 @@
  * @brief The `qconf` delete action (CS-2983)
  *
  * Lives here for the reason every action does: the delete goes through
- * `sge_c_gdi_del_element()`, which is the daemon's. Registered as the action
+ * `ocs_gdi_del_object()`, which is the daemon's. Registered as the action
  * ocs::QConfActionParameter::OBJECT_DELETE at startup.
  */
 

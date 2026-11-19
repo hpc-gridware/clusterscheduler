@@ -54,6 +54,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -79,9 +80,9 @@ pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;   ///< serialises the threads w
 
 static bool add_job(int job_id) {
    bool write_ok;
-   lListElem *job;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   // the data store slot itself: a list created for an empty slot belongs to the data store, not to a local
+   const auto master_job_list = ocs::DataStore::master_list_create<SGE_TYPE_JOB>("");
 
    const char *key;
    dstring key_dstring;
@@ -89,7 +90,7 @@ static bool add_job(int job_id) {
 
    sge_dstring_init(&key_dstring, key_buffer, sizeof(key_buffer));
 
-   job = ocs::tom::emplace_back<JB_job_number>(&master_job_list, job_id);
+   const auto job = master_job_list.emplace_back<JB_job_number>(job_id);
    key = job_get_key(job_id, 0, nullptr, &key_dstring);
 #if LOCAL_TRANSACTION
    spool_transaction(&answer_list, spool_get_default_context(),
@@ -116,7 +117,6 @@ static bool add_job(int job_id) {
 static bool del_job(int job_id) {
    bool del_ok;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    const char *key;
    dstring key_dstring;
@@ -134,7 +134,8 @@ static bool del_job(int job_id) {
                                SGE_TYPE_JOB, key);
    answer_list_output(&answer_list);
 
-   ocs::tom::erase<JB_job_number>(&master_job_list, job_id);
+   // the data store slot itself, not a copy of its pointer
+   ocs::tom::erase<JB_job_number>(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
 
    if (delay > 0) {
       usleep(delay * 1000);

@@ -39,12 +39,12 @@
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QRStatParameter::QRStatParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
+ocs::QRStatParameter::QRStatParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+   : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
    // initialize local member variables
-   // the request data is structure-checked in qmaster's listener (CS-3125)
-   QRStatParameter::set_bundle(ocs::tom::ConstList<ocs::tom::SPP>(bundle));
+   QRStatParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }
@@ -105,11 +105,11 @@ void ocs::QRStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> b
 /** @brief Marshal the parameters into a bundle for the server
  * @return the bundle, which the caller owns; the switch lists are copies
  */
-lList * ocs::QRStatParameter::get_bundle() {
+ocs::tom::ListPtr<ocs::tom::SPP> ocs::QRStatParameter::get_bundle() {
    DENTER(TOP_LAYER);
 
    // Get the name-value-list that was initialized by the base class with the procedure name
-   auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(ProcedureParameter::get_bundle());
+   auto bundle = ProcedureParameter::get_bundle();
 
    // -ar
    add_parameter_bundle(*bundle, AR_ID_LIST, ar_id_list_->clone());
@@ -126,5 +126,5 @@ lList * ocs::QRStatParameter::get_bundle() {
    // -explain
    add_parameter_bundle(*bundle, EXPLAIN, ulong_value_list(is_explain()));
 
-   DRETURN(bundle.release());
+   DRETURN(bundle);
 }

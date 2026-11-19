@@ -43,7 +43,6 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Select.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_CONF.h"
 
 #include "gdi/ocs_gdi_Command.h"
@@ -66,11 +65,11 @@ namespace ocs::gdi {
     * Everything here goes to qmaster and waits for the answer.
     */
    class Client : public ClientBase {
-   public:
-      OCS_TRANSITIONAL static ocs::tom::ListPtr<ocs::tom::AN> sge_gdi(Target target, Command cmd, SubCommand,
-                                                                      lList **lpp, lCondition *cp,
-                                                               lEnumeration *enp);
+      static ocs::tom::ListPtr<ocs::tom::AN> ocs_gdi_single_task(Target target, Command cmd, SubCommand sub_cmd,
+                                                                 lList **lpp, const lCondition *cp,
+                                                                 const lEnumeration *enp);
 
+   public:
       template <ocs::tom::ObjectType T>
       static ocs::tom::ListPtr<ocs::tom::AN> sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
                                                      ocs::tom::ListPtr<T> &data,
@@ -111,9 +110,7 @@ namespace ocs::gdi {
                                             const ocs::tom::What<T> &what) {
       lList *const request = data.get();
       lList *lp = request;
-      // the request copies the condition and the selection, it does not change them
-      auto alp = sge_gdi(target, cmd, sub_cmd, &lp, const_cast<lCondition *>(where.get()),
-                           const_cast<lEnumeration *>(what.get()));
+      auto alp = ocs_gdi_single_task(target, cmd, sub_cmd, &lp, where.get(), what.get());
       if (lp != request) {
          // the answer of a task is a list of the target's type (reduced by the selection) that qmaster packed;
          // it is unpacked with the descriptor it travelled with, so it is taken over unchecked

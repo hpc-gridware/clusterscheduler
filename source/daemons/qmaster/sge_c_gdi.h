@@ -131,25 +131,56 @@ bool
 sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Target target,
                        ocs::gdi::Command command);
 
-/** @brief Delete one object, or the whole share tree, the way a GDI delete does
+/**
+ * @brief The object types a GDI delete takes elements of their own type for (CS-3125)
  *
- * What sge_c_gdi_del() does for each object of its data list, for the qconf
- * delete procedure (CS-2983).
+ * Jobs and advance reservations are deleted by ID elements and are not among them; exactly the types for which
+ * ocs_gdi_del_object() is instantiated in sge_c_gdi.cc.
  *
- * @param packet      the client request
- * @param task        the GDI task being answered
- * @param target      the object list
- * @param ep          the object to delete, carrying its name; nullptr deletes the
- *                    whole list, which only the share tree supports
- * @param alpp        receives what the delete has to say
- * @param cmd         the command of the request
- * @param sub_command what kind of delete this is
- * @param monitor     for monitoring qmaster threads
+ * @tparam T the object type
+ */
+template <typename T>
+concept OcsGdiDeletableType =
+   std::same_as<T, ocs::tom::EH> || std::same_as<T, ocs::tom::CQ> || std::same_as<T, ocs::tom::CE> ||
+   std::same_as<T, ocs::tom::PE> || std::same_as<T, ocs::tom::CONF> || std::same_as<T, ocs::tom::UU> ||
+   std::same_as<T, ocs::tom::US> || std::same_as<T, ocs::tom::PR> || std::same_as<T, ocs::tom::RQS> ||
+   std::same_as<T, ocs::tom::CK> || std::same_as<T, ocs::tom::CAL> || std::same_as<T, ocs::tom::HGRP> ||
+   std::same_as<T, ocs::tom::RL>;
+
+/** @brief Delete one object the way a GDI delete does
+ *
+ * What sge_c_gdi_del() does for each object of its data list, also for the
+ * qconf delete procedure (CS-2983).
+ *
+ * @tparam T      the object type
+ * @param packet  the client request
+ * @param task    the GDI task being answered
+ * @param ep      the object to delete, carrying its name
+ * @param alpp    receives what the delete has to say
+ * @param monitor for monitoring qmaster threads
+ */
+template <OcsGdiDeletableType T>
+void
+ocs_gdi_del_object(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<T> ep,
+                   ocs::tom::ListPtr<ocs::tom::AN> *alpp, monitoring_t *monitor);
+
+/** @brief Delete a whole object list the way a GDI delete without data does; only the share tree supports it
+ *
+ * @param packet the client request
+ * @param task   the GDI task being answered
+ * @param target the object list
+ * @param alpp   receives what the delete has to say
  */
 void
-sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Target target, lListElem *ep,
-                      ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-                      monitoring_t *monitor);
+ocs_gdi_del_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Target target,
+                 ocs::tom::ListPtr<ocs::tom::AN> *alpp);
+
+/** @brief Refuse the delete of one object of a list that cannot be deleted from
+ *
+ * @param alpp receives the refusal
+ */
+void
+ocs_gdi_del_unsupported(ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 
 void
 sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,

@@ -27,6 +27,8 @@
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/ocs_gdi_Client.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "tom/ocs_Select.h"
 
 #include "sgeobj/sge_centry.h"
 
@@ -51,8 +53,22 @@ ocs::QConfModelClient::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
                              lCondition *where, lEnumeration *what) {
    DENTER(TOP_LAYER);
 
-   auto alp = gdi::Client::sge_gdi(target, gdi::Command::GET, gdi::SubCommand::NONE,
-                                     &object_list_, where, what);
+   // dispatched once on the read's object type: every caller builds the condition and the selection for it and
+   // reads the target of its row; object_list_ stays untyped, its type is the read's
+   auto alp = ocs_with_qconf_object(get_object(), [this, target, where, what](const auto &entry) {
+      using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
+      // the condition and the selection stay the caller's: the handles only lend them to the request
+      auto typed_where = ocs::tom::Where<T>::from_typed(where);
+      auto typed_what = ocs::tom::What<T>::from_typed(what);
+      // a list held before goes out as the request data, as before, and is freed when the answer replaces it
+      auto data = ocs::tom::ListPtr<T>::from_typed(std::exchange(object_list_, nullptr));
+      auto answers = gdi::Client::sge_gdi(target, gdi::Command::GET, gdi::SubCommand::NONE, data, typed_where,
+                                          typed_what);
+      static_cast<void>(typed_where.release());
+      static_cast<void>(typed_what.release());
+      object_list_ = data.release();
+      return answers;
+   });
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);
@@ -103,8 +119,10 @@ bool
 ocs::QConfModelClient::fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   auto alp = gdi::Client::sge_gdi(gdi::Target::DUMMY_LIST, gdi::Command::GET,
-                                     gdi::SubCommand::NONE, &object_list_, nullptr, nullptr);
+   // qmaster answers with the names of its threads; object_list_ stays untyped, its type is the read's
+   auto data = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(std::exchange(object_list_, nullptr));
+   auto alp = gdi::Client::sge_gdi(gdi::Target::DUMMY_LIST, gdi::Command::GET, gdi::SubCommand::NONE, data);
+   object_list_ = data.release();
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);

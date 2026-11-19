@@ -163,13 +163,13 @@ qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const c
    /* The entry being absent is not an empty export - it is a response that never
     * answered the question, and reporting "0 objects exported" for it would hand
     * back a successful exit code for a backup that did not happen. */
-   const lList *objects = nullptr;
-   if (!model.get_export_objects(&objects)) {
+   const auto objects = model.get_export_objects();
+   if (!objects) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNORESULT_S, sw);
       DRETURN(std::nullopt);
    }
 
-   DRETURN(ocs::tom::ConstList<ocs::tom::VA>::from_typed(objects));
+   DRETURN(*objects);
 }
 
 /**

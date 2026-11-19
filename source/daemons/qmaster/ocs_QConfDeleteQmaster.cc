@@ -154,7 +154,7 @@ namespace {
  * looked exactly like one that does not exist. Here both happen under the lock,
  * after qmaster has checked the permission for the list.
  *
- * Each object is deleted on its own through sge_c_gdi_del_element(), the
+ * Each object is deleted on its own through ocs_gdi_del_object(), the
  * function a GDI delete uses, so the checks and messages are the same: an
  * object qmaster refuses - one that is still referenced, say - stays, the
  * others of the request are deleted, and the action fails. A request is not a
@@ -199,8 +199,7 @@ qconf_delete_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
          DRETURN(true);
       }
       ocs::tom::ListPtr<ocs::tom::AN> alp;
-      sge_c_gdi_del_element(packet, task, task->target, nullptr, &alp, ocs::gdi::Command::DEL,
-                            ocs::gdi::SubCommand::NONE, monitor);
+      ocs_gdi_del_list(packet, task, task->target, &alp);
       const bool ok = !answer_list_has_error(&alp);
       answer_list_append_list(answer_list, &alp);
       DRETURN(ok);
@@ -237,10 +236,14 @@ qconf_delete_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
       /* a missing object of a name list is left to the delete, which words the refusal per type */
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       ocs_with_qconf_object(type, [&](const auto &entry) {
-         auto ep = delete_element<ocs_qconf_object_entry_t<decltype(entry)>>(name);
-         // the delete serves every target, so its element is untyped
-         sge_c_gdi_del_element(packet, task, task->target, *ep, &alp, ocs::gdi::Command::DEL,
-                               ocs::gdi::SubCommand::NONE, monitor);
+         using E = ocs_qconf_object_entry_t<decltype(entry)>;
+         if constexpr (OcsGdiDeletableType<typename E::type>) {
+            const auto ep = delete_element<E>(name);
+            ocs_gdi_del_object<typename E::type>(packet, task, *ep, &alp, monitor);
+         } else {
+            // not reached: deletable_types holds deletable types only, the share tree is deleted as a whole above
+            ocs_gdi_del_unsupported(&alp);
+         }
       });
       if (answer_list_has_error(&alp)) {
          ok = false;

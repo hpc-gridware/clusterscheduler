@@ -95,7 +95,7 @@ namespace ocs {
       void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle) override;
 
    public:
-      [[nodiscard]] lList *get_bundle() override;
+      [[nodiscard]] ocs::tom::ListPtr<ocs::tom::SPP> get_bundle() override;
 
 #pragma endregion
 
@@ -103,7 +103,7 @@ namespace ocs {
 
    public:
 
-      explicit QRStatParameter(lList *bundle, gdi::Packet *packet);
+      explicit QRStatParameter(ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet);
 
       /** @brief Build empty parameters, to be filled in by the client
        * @param procedure_name the command being run
