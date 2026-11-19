@@ -1003,8 +1003,12 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
          ** TODO: thread locking needed here ?
          */
          // only overwrite the master host name in gdi if it actually changed
-         if (old_master_host == nullptr || strcmp(old_master_host, master_name) != 0) {
+         // gdi_set_master_host() frees the old name, old_master_host must not be used afterwards
+         [[maybe_unused]] bool master_host_changed =
+            old_master_host != nullptr && strcmp(old_master_host, master_name) != 0;
+         if (old_master_host == nullptr || master_host_changed) {
             gdi_set_master_host(master_name);
+            old_master_host = nullptr;
          }
 
          // Update the client certificate if the qmaster host name changed.
@@ -1017,7 +1021,6 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
             // Only update the SSL context if we already had one == when commlib was already initialized.
             cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
             if (handle != nullptr) {
-               bool master_host_changed = old_master_host != nullptr && strcmp(old_master_host, master_name) != 0;
                bool certificate_updated = cl_commlib_handle_ssl_client_context_refreshed(handle);
                // Also retry while the client certificate is still pending —
                // i.e. prepare_enroll() deferred client TLS setup because the
