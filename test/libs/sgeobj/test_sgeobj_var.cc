@@ -42,9 +42,9 @@
  */
 static const char *
 nth_var(const ocs::tom::ConstList<ocs::tom::VA> lp, const int n) {
-   ocs::tom::ConstElement<ocs::tom::VA> ep = lFirst(lp);
+   ocs::tom::ConstElement<ocs::tom::VA> ep = lp.front();
    for (int i = 0; i < n && ep != nullptr; ++i) {
-      ep = lNext(ep);
+      ep = ep.next();
    }
    const char *s = (ep != nullptr) ? ocs::tom::get<VA_variable>(ep) : nullptr;
    return (s != nullptr) ? s : "";

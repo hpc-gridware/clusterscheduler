@@ -46,7 +46,6 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 #include "sge_orders.h"
 
 void remove_immediate_job(ocs::tom::List<ocs::tom::JB> job_list, ocs::tom::Element<ocs::tom::JB> job, order_t *orders,

@@ -43,6 +43,7 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 #include "ocs_module_test.h"
 
@@ -196,7 +197,7 @@ test_accessors() {
    // a reduced element, as a what selects it
    lEnumeration *what = lWhat("%T(%I %I %I)", TEST_Type, TEST_uint32, TEST_string, TEST_double);
    lList *reduced = lSelect("reduced", list, nullptr, what);
-   const ConstElement<TEST> r{lFirst(reduced)};
+   const ConstElement<TEST> r{ConstRawList{reduced}.front().raw()};
    CHECK(8, "the template accessors read a reduced element",
          r.get<TEST_uint32>() == 17 && std::strcmp(r.get<TEST_string>(), "other") == 0 && r.get<TEST_double>() == 2.5);
    const bool presence = r.has<TEST_uint32>() && r.has<TEST_double>() && !r.has<TEST_int>() && !r.has<TEST_host>() &&
@@ -219,7 +220,7 @@ test_errors() {
    lAppendElem(list, lCreateElem(TEST_Type));
    lEnumeration *what = lWhat("%T(%I)", TEST_Type, TEST_uint32);
    lList *reduced = lSelect("reduced", list, nullptr, what);
-   lListElem *r = lFirstRW(reduced);
+   lListElem *r = RawList{reduced}.front();
    lListElem *queue = lCreateElem(QU_Type);
 
    CHECK(10, "reading an absent field throws, naming field and type",

@@ -42,6 +42,7 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 #include "ocs_module_test.h"
 #include "cull/cull_test_api.h"
@@ -159,9 +160,8 @@ tasks_consistent(const lList *tasks, const std::uint32_t n) {
    if (lGetNumberOfElem(tasks) != n) {
       return false;
    }
-   const lListElem *ep;
-   for_each_ep(ep, tasks) {
-      if (lGetElemUlong(tasks, JAT_task_number, lGetUlong(ep, JAT_task_number)) != ep) {
+   for (const ConstRawElement ep : ConstRawList{tasks}) {
+      if (lGetElemUlong(tasks, JAT_task_number, lGetUlong(ep, JAT_task_number)) != ep.raw()) {
          return false;
       }
    }
@@ -185,7 +185,7 @@ test_debug_checks() {
       task.get().set<JAT_task_number>(3u);
       const bool typed_append = throws_duplicate([&] { typed.push_back(std::move(task)); }, "JAT_task_number", "3", "tasks") &&
                                 task && lGetNumberOfElem(tasks) == n;
-      const Element<JAT> last{lLastRW(tasks)};
+      const Element<JAT> last{RawList{tasks}.back().raw()};
       const bool typed_set = throws_duplicate([&] { last.set<JAT_task_number>(3u); }, "JAT_task_number", "3", "tasks") &&
                              last.get<JAT_task_number>() == n;
       CHECK(check++, (std::string{"a typed append and a typed set of a duplicate number throw, "} + size).c_str(),
@@ -195,23 +195,25 @@ test_debug_checks() {
          lListElem *ep = lCreateElem(JAT_Type);
          lSetUlong(ep, JAT_task_number, 3);
          lAppendElem(tasks, ep);
-      }) && aborts([&] { lSetUlong(lLastRW(tasks), JAT_task_number, 3); }) &&
-                              aborts([&] { lAddUlong(lLastRW(tasks), JAT_task_number, 3 - n); });
+      }) && aborts([&] { lSetUlong(RawList{tasks}.back().raw(), JAT_task_number, 3); }) &&
+                              aborts([&] { lAddUlong(RawList{tasks}.back().raw(), JAT_task_number, 3 - n); });
       lFreeList(&tasks);
 
       lList *entries = make_entries(n);
       const bool typed_string =
-         throws_duplicate([&] { Element<UE>{lLastRW(entries)}.set<UE_name>("u2"); }, "UE_name", "u2", "entries");
+         throws_duplicate([&] { Element<UE>{RawList{entries}.back().raw()}.set<UE_name>("u2"); }, "UE_name", "u2",
+                          "entries");
       const bool old_string = aborts([&] { lAddElemStr(&entries, UE_name, "u2", UE_Type); }) &&
-                              aborts([&] { lSetString(lLastRW(entries), UE_name, "u2"); });
+                              aborts([&] { lSetString(RawList{entries}.back().raw(), UE_name, "u2"); });
       lFreeList(&entries);
 
       // host names are compared as the table compares them: a name in upper case is the same host
       lList *hosts = make_hosts(n);
-      const bool typed_host = throws_duplicate([&] { Element<EH>{lLastRW(hosts)}.set<EH_name>(Host{"HOST-2"}); },
-                                               "EH_name", "HOST-2", "hosts");
+      const bool typed_host =
+         throws_duplicate([&] { Element<EH>{RawList{hosts}.back().raw()}.set<EH_name>(Host{"HOST-2"}); },
+                          "EH_name", "HOST-2", "hosts");
       const bool old_host = aborts([&] { lAddElemHost(&hosts, EH_name, "HOST-2", EH_Type); }) &&
-                            aborts([&] { lSetHost(lLastRW(hosts), EH_name, "HOST-2"); });
+                            aborts([&] { lSetHost(RawList{hosts}.back().raw(), EH_name, "HOST-2"); });
       lFreeList(&hosts);
 
       CHECK(check++, (std::string{"a typed set of a duplicate string and host name throws, "} + size).c_str(),
@@ -256,14 +258,14 @@ test_dropped_table() {
    lList *entries = make_entries(LONG_LIST);
    static_cast<void>(lGetElemStr(entries, UE_name, "u1"));
    const bool string_built = has_table(entries, UE_name);
-   lSetString(lLastRW(entries), UE_name, "u2");
+   lSetString(RawList{entries}.back().raw(), UE_name, "u2");
    const bool string_dropped = !has_table(entries, UE_name);
    CHECK(8, "a set of a duplicate string drops the table", string_built && string_dropped);
    lFreeList(&entries);
 
    lList *unique = make_tasks(LONG_LIST);
    static_cast<void>(lGetElemUlong(unique, JAT_task_number, 1));
-   lListElem *renamed = lLastRW(unique);
+   lListElem *renamed = RawList{unique}.back().raw();
    lSetUlong(renamed, JAT_task_number, 1000);
    lListElem *more = lCreateElem(JAT_Type);
    lSetUlong(more, JAT_task_number, 1001);
@@ -284,7 +286,7 @@ static lList *
 make_tasks_with_duplicate(const std::uint32_t n) {
    const UniqueCheckSuspension suspension;
    lList *tasks = make_tasks(n);
-   lSetUlong(lLastRW(tasks), JAT_task_number, 2);
+   lSetUlong(RawList{tasks}.back().raw(), JAT_task_number, 2);
    return tasks;
 }
 
@@ -347,7 +349,7 @@ test_lookup() {
       const bool other = n == LONG_LIST
                             ? throws_duplicate([&] { static_cast<void>(typed.find_first<JAT_task_number>(1u)); },
                                                "JAT_task_number", "2", "tasks")
-                            : lGetElemUlong(tasks, JAT_task_number, 1) == lFirst(tasks);
+                            : lGetElemUlong(tasks, JAT_task_number, 1) == ConstRawList{tasks}.front().raw();
       CHECK(check++, (std::string{"a lookup of another key "} +
                       (n == LONG_LIST ? "throws as well, the table cannot be built, " : "finds its element, ") + size)
                         .c_str(), other);
@@ -363,7 +365,7 @@ test_lookup() {
    const lListElem *first = lGetElemStrFirst(changes, CX_variable, "a", &iterator);
    const lListElem *second = lGetElemStrNext(changes, CX_variable, "a", &iterator);
    CHECK(20, "a non unique hashed field holding a key many times is looked up and iterated as before",
-         first == lFirst(changes) && second != nullptr && second != first &&
+         first == ConstRawList{changes}.front().raw() && second != nullptr && second != first &&
          std::strcmp(lGetString(second, CX_variable), "a") == 0);
    lFreeList(&changes);
 }
@@ -395,20 +397,20 @@ test_valid_after_throw() {
 
    thrown = false;
    try {
-      Element<JAT>{lFirstRW(tasks)}.set<JAT_task_number>(7u);
+      Element<JAT>{RawList{tasks}.front().raw()}.set<JAT_task_number>(7u);
    } catch (const FieldException &) {
       thrown = true;
    }
    CHECK(11, "after a throw from a set the list, its elements and its table are consistent",
          thrown && has_table(tasks, JAT_task_number) && tasks_consistent(tasks, LONG_LIST) &&
-         lGetUlong(lFirst(tasks), JAT_task_number) == 1);
+         lGetUlong(ConstRawList{tasks}.front().raw(), JAT_task_number) == 1);
 
    lEnumeration *what = lWhat("%T(%I)", JAT_Type, JAT_task_number);
    lList *reduced = lSelect("reduced", tasks, nullptr, what);
    lFreeWhat(&what);
    thrown = false;
    try {
-      Element<JAT>{lFirstRW(reduced)}.set<JAT_status>(1u);
+      Element<JAT>{RawList{reduced}.front().raw()}.set<JAT_status>(1u);
    } catch (const FieldException &e) {
       thrown = e.reason() == FieldException::Reason::AbsentField;
    }
@@ -416,8 +418,8 @@ test_valid_after_throw() {
          thrown && tasks_consistent(reduced, LONG_LIST));
    lFreeList(&reduced);
 
-   Element<JAT>{lFirstRW(tasks)}.set<JAT_task_number>(500u);
-   const bool usable = lGetElemUlong(tasks, JAT_task_number, 500) == lFirst(tasks) &&
+   Element<JAT>{RawList{tasks}.front().raw()}.set<JAT_task_number>(500u);
+   const bool usable = lGetElemUlong(tasks, JAT_task_number, 500) == ConstRawList{tasks}.front().raw() &&
                        lGetElemUlong(tasks, JAT_task_number, 1) == nullptr && tasks_consistent(tasks, LONG_LIST);
    CHECK(13, "the list stays usable for a change and a lookup", usable);
    lFreeList(&tasks);

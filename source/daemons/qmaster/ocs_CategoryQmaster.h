@@ -26,7 +26,6 @@
 #include "cull/cull.h"
 
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_CT.h"
 #include "sgeobj/tom/ocs_tom_EH.h"

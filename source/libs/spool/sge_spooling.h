@@ -49,7 +49,6 @@
 #include "sgeobj/cull/sge_spooling_SPTR_L.h"
 
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_SPC.h"
 #include "sgeobj/tom/ocs_tom_SPR.h"
 #include "sgeobj/tom/ocs_tom_SPT.h"

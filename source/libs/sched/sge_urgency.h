@@ -48,7 +48,6 @@
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 
 void sge_do_urgency(uint64_t now, ocs::tom::List<ocs::tom::JB> running_jobs, ocs::tom::List<ocs::tom::JB> pending_jobs,
                     scheduler_all_data_t *lists);

@@ -40,6 +40,7 @@
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Sort.h"
+#include "tom/ocs_Raw.h"
 
 #include "ocs_module_test.h"
 #include "cull/cull_test_api.h"
@@ -84,22 +85,21 @@ test_ranges_and_lookups() {
    lSetList(job, JB_ja_tasks, make_tasks(5));
 
    std::vector<const lListElem *> old_order;
-   const lListElem *ep;
-   for_each_ep(ep, lGetList(job, JB_ja_tasks)) {
-      old_order.push_back(ep);
+   for (ConstRawElement ep = ConstRawList{lGetList(job, JB_ja_tasks)}.front(); ep; ep = ep.next()) {
+      old_order.push_back(ep.raw());
    }
    std::vector<const lListElem *> new_order;
    for (const auto task : Element<JB>{job}.get<JB_ja_tasks>()) {
       new_order.push_back(task);
    }
-   CHECK(1, "range-for over the task list of a job yields the elements of for_each_ep, in order",
+   CHECK(1, "range-for over the task list of a job yields the elements of a walk with front() and next(), in order",
          new_order == old_order && new_order.size() == 5);
 
    for (const std::uint32_t n : {5u, 40u}) {
       lList *raw = make_tasks(n);
       // a second task 3, so that find_all has two matches; task numbers are unique, so take another field
-      lSetUlong(lFirstRW(raw), JAT_status, 7);
-      lSetUlong(lLastRW(raw), JAT_status, 7);
+      lSetUlong(RawList{raw}.front(), JAT_status, 7);
+      lSetUlong(RawList{raw}.back(), JAT_status, 7);
       const ConstList<JAT> tasks{raw};
       const bool lookups = tasks.find_first<JAT_task_number>(3u).raw() == lGetElemUlong(raw, JAT_task_number, 3) &&
                            tasks.find_first<JAT_task_number>(3u).get<JAT_task_number>() == 3 &&
@@ -734,7 +734,7 @@ int main(int argc, char *argv[]) {
    return ocs::module_test::run(argc, argv, {
       {"LIST-01", "ranges and lookups",
        "a typed list iterates and looks up like the old interface",
-       {"iterate the task list of a job with range-for and with for_each_ep",
+       {"iterate the task list of a job with range-for and with front() and next()",
         "look up present and absent keys with find_first and find_all, below and above the hash threshold",
         "in a debug build, read a task list that holds queues"},
        "the same elements in the same order; an absent key gives an empty handle or range; "

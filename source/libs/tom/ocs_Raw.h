@@ -123,7 +123,8 @@
  *
  * Walking a list as a range: erase() and take() of the current element invalidate the range iterator, which
  * steps through the element's successor pointer. Fetch the successor first and walk by hand, as with the
- * typed handles: `for (RawElement ep = list.front(); ep;) { RawElement next(ep.raw()->next); ...; ep = next; }`.
+ * typed handles: `for (RawElement ep = list.front(); ep;) { RawElement next = ep.next(); ...; ep = next; }`.
+ * The handles walk as the typed ones do: front() and back() of a list, next() and prev() of an element.
  *
  * What needs the field as a template argument stays typed: sorting, typed
  * conditions and selections, layouts, keyed merges.
@@ -1131,6 +1132,24 @@ namespace ocs::tom {
       }
 
       /**
+       * @brief The next element of the list, read only
+       * @return the handle on it, empty at the end of the list or for an empty handle
+       * @see Old form: lNext()
+       */
+      [[nodiscard]] ConstRawElement next() const noexcept {
+         return ConstRawElement(ep_ != nullptr ? ep_->next : nullptr);
+      }
+
+      /**
+       * @brief The previous element of the list, read only
+       * @return the handle on it, empty at the front of the list or for an empty handle
+       * @see Old form: lPrev()
+       */
+      [[nodiscard]] ConstRawElement prev() const noexcept {
+         return ConstRawElement(ep_ != nullptr ? ep_->prev : nullptr);
+      }
+
+      /**
        * @brief Read a field given at run time; forwards to ocs::tom::get<V>(const lListElem *, int)
        * @tparam V the value type, which names the field type
        * @param nm the field number
@@ -1239,6 +1258,24 @@ namespace ocs::tom {
        */
       [[nodiscard]] lListElem *raw() const noexcept {
          return ep_;
+      }
+
+      /**
+       * @brief The next element of the list
+       * @return the mutable handle on it, empty at the end of the list or for an empty handle
+       * @see Old form: lNextRW()
+       */
+      [[nodiscard]] RawElement next() const noexcept {
+         return RawElement(ep_ != nullptr ? ep_->next : nullptr);
+      }
+
+      /**
+       * @brief The previous element of the list
+       * @return the mutable handle on it, empty at the front of the list or for an empty handle
+       * @see Old form: lPrevRW()
+       */
+      [[nodiscard]] RawElement prev() const noexcept {
+         return RawElement(ep_ != nullptr ? ep_->prev : nullptr);
       }
 
       /**
@@ -1391,6 +1428,15 @@ namespace ocs::tom {
       }
 
       /**
+       * @brief The last element
+       * @return the handle on it, empty for an empty list or an empty handle
+       * @see Old form: lLast()
+       */
+      [[nodiscard]] ConstRawElement back() const noexcept {
+         return ConstRawElement(lp_ != nullptr ? lp_->last : nullptr);
+      }
+
+      /**
        * @brief The start of the range of elements
        * @return the iterator; equal to end() for an empty list or an empty handle
        */
@@ -1495,6 +1541,15 @@ namespace ocs::tom {
        */
       [[nodiscard]] RawElement front() const noexcept {
          return RawElement(lp_ != nullptr ? lp_->first : nullptr);
+      }
+
+      /**
+       * @brief The last element
+       * @return the mutable handle on it, empty for an empty list or an empty handle
+       * @see Old form: lLastRW()
+       */
+      [[nodiscard]] RawElement back() const noexcept {
+         return RawElement(lp_ != nullptr ? lp_->last : nullptr);
       }
 
       /**

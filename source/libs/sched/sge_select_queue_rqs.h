@@ -51,7 +51,6 @@
 
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 
 /* parallel assignments */
 dispatch_t

@@ -36,7 +36,7 @@
 #include <string>
 
 #include "tom/cull_types.h"
-#include "tom/pack.h"
+#include "tom/ocs_PackBuffer.h"
 #include "uti/sge_dstring.h"
 #include "uti/ocs_Exception.h"
 

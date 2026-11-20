@@ -41,7 +41,6 @@
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/sge_answer.h"
 

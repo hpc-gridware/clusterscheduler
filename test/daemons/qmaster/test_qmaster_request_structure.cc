@@ -100,7 +100,7 @@ refused(const ocs::gdi::Target target, const ocs::gdi::Command command, ocs::tom
    auto data = std::move(lp);
    auto alp = ocs::gdi::Client::sge_gdi(target, command, ocs::gdi::SubCommand::NONE, data);
    bool error = false;
-   for (const lListElem *aep = lFirst(alp); aep != nullptr; aep = lNext(aep)) {
+   for (const ocs::tom::ConstElement<ocs::tom::AN> aep : alp.get()) {
       if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR &&
           (!syntax_only || lGetUlong(aep, AN_status) == STATUS_ESYNTAX)) {
          error = true;

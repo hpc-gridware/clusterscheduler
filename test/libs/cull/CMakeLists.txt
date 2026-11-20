@@ -120,8 +120,8 @@ add_test(NAME test_ocs_cull_perf COMMAND test_ocs_cull_perf)
 
 # CS-3103 M6: the old function interface of the list library is not public. No file outside libs/cull,
 # libs/tom, libs/sgeobj/tom and the tests includes its headers, and only tests include cull/cull_test_api.h
-# (errors); the remaining users of the transitional cull/cull_transitional.h are listed as a warning. See
-# check_cull_api.cmake. Checked on every build (target check_cull_api) and by ctest (test check_cull_api).
+# (errors); no product file calls a function of the old interface (errors). See check_cull_api.cmake.
+# Checked on every build (target check_cull_api) and by ctest (test check_cull_api).
 set(cull_api_extensions_dir "")
 if (NOT PROJECT_EXTENSIONS STREQUAL "None")
    get_filename_component(cull_api_extensions_dir "${PROJECT_EXTENSIONS}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")

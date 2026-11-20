@@ -42,7 +42,6 @@
 #include "uti/sge_spool.h"
 
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 
 int job_write_spool_file(ocs::tom::Element<ocs::tom::JB> job, uint32_t ja_taskid, const char *pe_task_id,

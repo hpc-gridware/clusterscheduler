@@ -43,6 +43,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -176,13 +177,14 @@ namespace {
          return false;
       }
       auto it = selected.begin();
-      for (const lListElem *ep = lFirst(old); ep != nullptr; ep = lNext(ep), ++it) {
+      for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList{old}) {
          const auto other = *it;
          if (lGetUlong(ep, TEST_uint32) != other.get<std::uint32_t>(TEST_uint32) ||
              std::strcmp(lGetString(ep, TEST_string), other.get<const char *>(TEST_string)) != 0) {
             std::printf("the selections differ in element %u\n", lGetUlong(ep, TEST_uint32));
             return false;
          }
+         ++it;
       }
       return true;
    }
@@ -243,8 +245,9 @@ namespace {
          std::printf("%s: the lists differ in their hash slots (%u, %u)\n", label, old->nslots, selected->nslots);
          return false;
       }
-      const lListElem *other = lFirst(selected);
-      for (const lListElem *ep = lFirst(old); ep != nullptr; ep = lNext(ep), other = lNext(other)) {
+      ocs::tom::ConstRawElement other = ocs::tom::ConstRawList{selected}.front();
+      for (ocs::tom::ConstRawElement ep = ocs::tom::ConstRawList{old}.front(); ep;
+           ep = ep.next(), other = other.next()) {
          if (ocs::tom::has(ep, TEST_uint32) &&
              lGetUlong(ep, TEST_uint32) != ocs::tom::get<std::uint32_t>(other, TEST_uint32)) {
             std::printf("%s: the lists differ in an element\n", label);
@@ -533,7 +536,7 @@ test_iteration() {
    }
    bool written = true;
    const lList *clp = owner.get();
-   for (const lListElem *ep = lFirst(clp); ep != nullptr; ep = lNext(ep)) {
+   for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList{clp}) {
       written = written && lGetUlong64(ep, TEST_uint64) == lGetUlong(ep, TEST_uint32) % 3 + 10;
    }
    const ocs::tom::ConstRawList empty;
@@ -785,7 +788,7 @@ static void
 test_write_to() {
    const ocs::tom::RawListPtr owner(make_test_list(3, false));
    lList *lp = owner.get();
-   lListElem *first = lFirstRW(lp);
+   lListElem *first = ocs::tom::RawList{lp}.front();
    const ocs::tom::RawWherePtr where(
       lWhere("%T(%I > %u && %I == %s)", TEST_Type, TEST_uint32, 0U, TEST_string, "s2"));
    const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
@@ -2408,6 +2411,60 @@ test_try_get() {
          read && end && no_buffer);
 }
 
+/**
+ * @brief front(), back(), next() and prev() of the raw handles walk a list both ways, as the list links it
+ * @return nothing; CHECK records the results
+ */
+static void
+test_walk() {
+   const ocs::tom::RawListPtr owner(make_test_list(4, false));
+   lList *lp = owner.get();
+
+   // read only, front to back and back to front; the list's own links are the reference
+   const ocs::tom::ConstRawList clist{lp};
+   std::vector<const lListElem *> forward;
+   for (ocs::tom::ConstRawElement ep = clist.front(); ep; ep = ep.next()) {
+      forward.push_back(ep.raw());
+   }
+   std::vector<const lListElem *> backward;
+   for (ocs::tom::ConstRawElement ep = clist.back(); ep; ep = ep.prev()) {
+      backward.push_back(ep.raw());
+   }
+   std::vector<const lListElem *> linked;
+   for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+      linked.push_back(ep);
+   }
+   const bool read_only = forward == linked && forward.size() == 4 &&
+                          std::equal(backward.rbegin(), backward.rend(), linked.begin(), linked.end()) &&
+                          clist.front().raw() == lp->first && clist.back().raw() == lp->last &&
+                          clist.front().get<std::uint32_t>(TEST_uint32) == 0 &&
+                          clist.back().get<std::uint32_t>(TEST_uint32) == 3 && !clist.front().prev() &&
+                          !clist.back().next();
+
+   // mutable: the handles of a RawList and a RawElement stay mutable along the walk
+   const ocs::tom::RawList list{lp};
+   const ocs::tom::RawElement second = list.front().next();
+   const ocs::tom::RawElement third = list.back().prev();
+   second.set(TEST_uint64, std::uint64_t{20});
+   third.set(TEST_uint64, std::uint64_t{30});
+   const bool mutable_walk = second.raw() == lp->first->next && third.raw() == lp->last->prev &&
+                             third.prev().raw() == second.raw() && second.next().raw() == third.raw() &&
+                             lGetUlong64(lp->first->next, TEST_uint64) == 20 &&
+                             lGetUlong64(lp->last->prev, TEST_uint64) == 30;
+
+   // empty handles and an empty list give empty handles
+   const ocs::tom::ConstRawList none;
+   const ocs::tom::RawListPtr empty_owner(lCreateList("empty", TEST_Type));
+   const ocs::tom::RawList empty{empty_owner.get()};
+   const bool empty_ok = !none.front() && !none.back() && !empty.front() && !empty.back() &&
+                         !ocs::tom::ConstRawElement{}.next() && !ocs::tom::ConstRawElement{}.prev() &&
+                         !ocs::tom::RawElement{}.next() && !ocs::tom::RawElement{}.prev();
+
+   CHECK(55, "front(), back(), next() and prev() of the raw handles walk a list as its links do, both ways, read "
+             "only and mutable; empty handles and an empty list give empty handles",
+         read_only && mutable_walk && empty_ok);
+}
+
 int main(int argc, char *argv[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
@@ -2590,5 +2647,10 @@ int main(int argc, char *argv[]) {
       {"RAW-OPS-41", "try_get", "try_get_uint32(), try_get_double() and try_get_str() read what the old ones read",
        {"read a number, a double, a string and a null string, then read past the end, then read from no buffer"},
        "the same values and codes; 0 for the numbers and the string kept on an error", {}, {54}, test_try_get},
+      {"RAW-OPS-42", "walk", "front(), back(), next() and prev() of the raw handles walk a list both ways",
+       {"walk a list of four front to back and back to front with the read-only handles, compare with the links",
+        "step from both ends with the mutable handles and write through them",
+        "walk an empty handle, an empty list and empty element handles"},
+       "the order of the links; mutable handles along the walk; empty handles at the ends", {}, {55}, test_walk},
    });
 }

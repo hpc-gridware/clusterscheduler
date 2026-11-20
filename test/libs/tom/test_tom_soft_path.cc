@@ -169,7 +169,7 @@ namespace {
          lAppendElem(list, full);
          what = lWhat("%T(%I)", TEST_Type, TEST_obj_any);
          reduced_list = lSelect("reduced", list, nullptr, what);
-         reduced = lFirstRW(reduced_list);
+         reduced = ocs::tom::RawList{reduced_list}.front();
          job = lCreateElem(JB_Type);
       }
 

@@ -166,7 +166,7 @@ test_variable_parser() {
 
    const int ret3 = var_list_parse_from_string(vars, "A,A", 0);
    CHECK(10, "a name without a value, given twice, is kept once without a value",
-         ret3 == 0 && lGetNumberOfElem(*vars) == 1 && ocs::tom::get<VA_value>(lFirst(vars)) == nullptr);
+         ret3 == 0 && lGetNumberOfElem(*vars) == 1 && ocs::tom::get<VA_value>(vars->front()) == nullptr);
    vars.reset();
 }
 
@@ -381,9 +381,9 @@ test_repair() {
    CHECK(23, "variables and resources keep the last value, a repeated queue is dropped, the first stays",
          repaired && answer_list == nullptr && lGetNumberOfElem(ocs::tom::get<JB_env_list>(job)) == 2 && a != nullptr &&
          strcmp(ocs::tom::get<VA_value>(a), "3") == 0 && lGetNumberOfElem(repaired_queues) == 2 &&
-         strcmp(ocs::tom::get<QR_name>(lFirst(repaired_queues)), "all.q") == 0 &&
+         strcmp(ocs::tom::get<QR_name>(repaired_queues.front()), "all.q") == 0 &&
          lGetNumberOfElem(repaired_resources) == 1 &&
-         strcmp(ocs::tom::get<CE_stringval>(lFirst(repaired_resources)), "2G") == 0);
+         strcmp(ocs::tom::get<CE_stringval>(repaired_resources.front()), "2G") == 0);
    CHECK(24, "the repairs name the path of each list and the key",
          repairs.find("JB_env_list \"A\"") != std::string::npos &&
          repairs.find("JB_request_set_list/JRS_hard_queue_list \"all.q\"") != std::string::npos &&
@@ -514,10 +514,10 @@ add_arch_request(ocs::tom::ListPtr<ocs::tom::CE> &lp, const char *name, const ch
  */
 static const char *
 only_arch_value(const ocs::tom::ConstList<ocs::tom::CE> lp) {
-   if (lGetNumberOfElem(lp) != 1 || strcmp(ocs::tom::get<CE_name>(lFirst(lp)), "arch") != 0) {
+   if (lGetNumberOfElem(lp) != 1 || strcmp(ocs::tom::get<CE_name>(lp.front()), "arch") != 0) {
       return nullptr;
    }
-   return ocs::tom::get<CE_stringval>(lFirst(lp));
+   return ocs::tom::get<CE_stringval>(lp.front());
 }
 
 /**

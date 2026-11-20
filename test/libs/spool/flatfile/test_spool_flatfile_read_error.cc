@@ -102,8 +102,7 @@ read_hgroup(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char *path, const char *
    lListElem *ep = spool_flatfile_read_object(use_alp, HGRP_Type, nullptr, HGRP_fields, nullptr,
                                               true, &qconf_sfi, SP_FORM_ASCII, nullptr, path);
    int i = 0;
-   const lListElem *aep;
-   for_each_ep(aep, *use_alp) {
+   for (const ocs::tom::ConstElement<ocs::tom::AN> aep : use_alp->get()) {
       if (i++ >= before) {
          printf("      %s: %s\n", what, ocs::tom::get<AN_text>(aep));
       }
@@ -126,7 +125,7 @@ has_single_member(const lListElem *ep, const char *expected) {
    }
    ocs::tom::ConstList<ocs::tom::HR> hosts = ocs::tom::get<HGRP_host_list>(ep);
    return lGetNumberOfElem(hosts) == 1 &&
-          strcmp(ocs::tom::get<HR_name>(lFirst(hosts)), expected) == 0;
+          strcmp(ocs::tom::get<HR_name>(hosts.front()), expected) == 0;
 }
 
 int main(int /*argc*/, char * /*argv*/[]) {

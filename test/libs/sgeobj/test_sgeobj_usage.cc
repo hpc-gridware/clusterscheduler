@@ -203,7 +203,7 @@ test_sum_usage_user_only(int *id) {
    auto user = make_user("u1");
    auto job = make_job(/*job_number=*/1, /*owner=*/"u1",
                        /*project=*/nullptr, /*cpu=*/10.0);
-   ocs::tom::Element<ocs::tom::JAT> ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
+   ocs::tom::Element<ocs::tom::JAT> ja_task = job->get<JB_ja_tasks>().front();
 
    ocs::Usage::sum_usage(*job, ja_task, *user, /*project=*/ocs::tom::Element<ocs::tom::PR>(),
                          /*usage_weight_list=*/ocs::tom::ConstList<ocs::tom::UA>());
@@ -240,7 +240,7 @@ test_sum_usage_user_and_project(int *id) {
    auto project = make_project("p1");
    auto job = make_job(/*job_number=*/2, /*owner=*/"u1",
                        /*project=*/"p1", /*cpu=*/7.0);
-   ocs::tom::Element<ocs::tom::JAT> ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
+   ocs::tom::Element<ocs::tom::JAT> ja_task = job->get<JB_ja_tasks>().front();
 
    ocs::Usage::sum_usage(*job, ja_task, *user, *project,
                          /*usage_weight_list=*/ocs::tom::ConstList<ocs::tom::UA>());

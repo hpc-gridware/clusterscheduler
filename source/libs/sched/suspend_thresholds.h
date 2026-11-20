@@ -46,7 +46,6 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 
 void suspend_job_in_queues(ocs::tom::List<ocs::tom::QU> susp_queues, ocs::tom::List<ocs::tom::JB> job_list,
                            order_t *orders);

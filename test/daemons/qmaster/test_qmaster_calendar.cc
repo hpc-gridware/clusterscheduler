@@ -371,18 +371,18 @@ static bool check_state_change_list(date_entry_t *t, const ocs::tom::ConstList<o
          printf("wrong number of elements in state change list: expected 2, got %d\n", nr);
          return false;
       }
-      ocs::tom::ConstElement<ocs::tom::CQU> state = lFirst(state_changes);
+      ocs::tom::ConstElement<ocs::tom::CQU> state = state_changes.front();
       if (!check_state_change(state, t->state1, &t->result1, 1)) {
          return false;
       }
-      state = lNext(state);
+      state = state.next();
       return check_state_change(state, t->state2, &t->result2, 2);
    } else {
       if ((nr = lGetNumberOfElem(state_changes)) != 1) {
          printf("wrong number of elements in state change list: expected 1, got %d\n", nr);
          return false;
       }
-      ocs::tom::ConstElement<ocs::tom::CQU> state = lFirst(state_changes);
+      ocs::tom::ConstElement<ocs::tom::CQU> state = state_changes.front();
       return check_state_change(state, t->state1, &t->result1, 1);
    }
 }

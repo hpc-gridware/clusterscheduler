@@ -43,7 +43,6 @@
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 
 /**
  * Load value used when the load of a host cannot be computed. It is high

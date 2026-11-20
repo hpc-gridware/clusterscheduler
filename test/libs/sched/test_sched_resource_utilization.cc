@@ -400,7 +400,7 @@ rde_at_time(const lListElem *cr, uint64_t time) {
    const lListElem *hit = nullptr;
    ocs::tom::ConstElement<ocs::tom::RDE> ep;
 
-   for_each_ep (ep, ocs::tom::get<RUE_utilized>(cr)) {
+   for (ep = ocs::tom::get<RUE_utilized>(cr).front(); ep; ep = ep.next()) {
       if (ocs::tom::get<RDE_time>(ep) > time) {
          break;
       }

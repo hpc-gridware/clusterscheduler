@@ -23,11 +23,12 @@
  * @brief The old function interface of the list library, complete; not public
  *
  * Everything the umbrella header cull/cull.h pulled in before CS-3103 (M6): the
- * list and element functions, field access, where/what, sort, dump, pack of
- * objects, hashing and the cull state. Product code includes cull/cull.h
- * instead, which keeps only the data types (and, for now, the transitional
- * cull/cull_transitional.h with list walking and the pack buffer primitives);
- * objects are reached through the typed object model and the raw API (tom/ocs_*.h).
+ * list and element functions with list walking (lFirst(), lNext(), the
+ * for_each_* macros), field access, where/what, sort, dump, pack of objects,
+ * the pack buffer primitives (cull/pack.h, tom/pack.h), hashing and the cull
+ * state. Product code includes cull/cull.h instead, which keeps only the data
+ * types; objects are reached through the typed object model and the raw API
+ * (tom/ocs_*.h), packbuffers through tom/ocs_PackCore.h.
  *
  * Included only by libs/cull and libs/tom, which implement the old interface,
  * and by the tests through cull/cull_test_api.h (libs/sgeobj/tom may include

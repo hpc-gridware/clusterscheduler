@@ -50,7 +50,6 @@
 #include "uti/sge_bootstrap_files.h"
 
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"

@@ -25,7 +25,6 @@
 
 #include "qstat/ocs_QStatModelBase.h"
 
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "ocs_QStatJobViewBase.h"

@@ -64,11 +64,11 @@ check_conf(const char *test, lListElem *conf, const char *expected[]) {
    ocs::tom::ConstElement<ocs::tom::CF> ep;
    int i = 0;
 
-   for_each_ep(ep, entries) {
+   for (ep = entries.front(); ep; ep = ep.next()) {
       if (expected[i] == nullptr || strcmp(ocs::tom::get<CF_name>(ep), expected[i]) != 0) {
          printf("FAILED: %s\n", test);
          printf("   got:     ");
-         for_each_ep(ep, entries) {
+         for (ep = entries.front(); ep; ep = ep.next()) {
             printf("%s ", ocs::tom::get<CF_name>(ep));
          }
          printf("\n   expected:");

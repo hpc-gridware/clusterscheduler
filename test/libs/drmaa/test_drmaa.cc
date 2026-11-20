@@ -3042,7 +3042,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
-               job_ep = lFirst(job_lp);
+               job_ep = job_lp->front();
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3523,7 +3523,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
-               job_ep = lFirst(job_lp);
+               job_ep = job_lp->front();
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3627,7 +3627,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
-               job_ep = lFirst(job_lp);
+               job_ep = job_lp->front();
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3747,7 +3747,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
-               job_ep = lFirst(job_lp);
+               job_ep = job_lp->front();
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");
@@ -3851,7 +3851,7 @@ static int test(int *argc, char **argv[], int parse_args) {
                const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
-               job_ep = lFirst(job_lp);
+               job_ep = job_lp->front();
             }
             {
                int tmp_ret = answer_list_print_err_warn(&alp, "GDI Critical", "GDI Error: ", "Message from GDI: ");

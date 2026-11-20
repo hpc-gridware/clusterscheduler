@@ -46,7 +46,6 @@
 #include "uti/sge_dstring.h"
 
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/sge_answer.h"
 

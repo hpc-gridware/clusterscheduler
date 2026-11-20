@@ -177,16 +177,16 @@ cache_matches_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
    bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(*walked);
 
    if (ok) {
-      ocs::tom::ConstElement<ocs::tom::HR> c = lFirst(cached);
-      ocs::tom::ConstElement<ocs::tom::HR> w = lFirst(walked);
+      ocs::tom::ConstElement<ocs::tom::HR> c = cached.front();
+      ocs::tom::ConstElement<ocs::tom::HR> w = walked->front();
 
       while (c != nullptr && w != nullptr) {
          if (sge_hostcmp(ocs::tom::get<HR_name>(c), ocs::tom::get<HR_name>(w)) != 0) {
             ok = false;
             break;
          }
-         c = lNext(c);
-         w = lNext(w);
+         c = c.next();
+         w = w.next();
       }
    }
    if (!ok) {

@@ -38,9 +38,10 @@
 /** @file
  * @brief The list and element functions of the old interface; not public
  *
- * Included through cull/cull_old_api.h. The navigation part (lFirst(), lNext(), the
- * for_each_* macros, lGetElemDescr(), lGetListDescr(), lGetListName()) moved to the
- * transitional cull/cull_transitional.h, which this header includes.
+ * Included through cull/cull_old_api.h, which only libs/cull, libs/tom,
+ * libs/sgeobj/tom and the tests (through cull/cull_test_api.h) may include. Product
+ * code walks a list with the handles of tom (range-for, front(), back(), next(),
+ * prev()).
  */
 
 #include <atomic>
@@ -53,8 +54,96 @@
 #include <cinttypes>
 #include "tom/cull_types.h"
 #include "cull/pack.h"
-#include "cull/cull_transitional.h"
 #include "uti/sge_dstring.h"
+
+// ---- walking a list and its run-time type (product code: the handles of tom)
+
+/**
+ * @brief The name of a list
+ * @param lp the list, may be nullptr
+ * @return the name; "No List specified" for a nullptr list (the cull error is set)
+ */
+const char *lGetListName(const lList *lp);
+
+/**
+ * @brief The descriptor (the run-time type and layout) of the elements of a list
+ * @param lp the list, may be nullptr
+ * @return the descriptor, nullptr for a nullptr list
+ */
+const lDescr *lGetListDescr(const lList *lp);
+
+/**
+ * @brief The descriptor (the run-time type and layout) of an element
+ * @param ep the element, may be nullptr
+ * @return the descriptor, nullptr for a nullptr element
+ */
+const lDescr *lGetElemDescr(const lListElem *ep);
+
+/**
+ * @brief The first element of a list, modifiable
+ * @param lp the list, may be nullptr
+ * @return the first element, nullptr for an empty or a nullptr list
+ */
+lListElem *lFirstRW(const lList *lp);
+
+/**
+ * @brief The first element of a list, read only
+ * @param lp the list, may be nullptr
+ * @return the first element, nullptr for an empty or a nullptr list
+ */
+const lListElem *lFirst(const lList *lp);
+
+/**
+ * @brief The last element of a list, modifiable
+ * @param lp the list, may be nullptr
+ * @return the last element, nullptr for an empty or a nullptr list
+ */
+lListElem *lLastRW(const lList *lp);
+
+/**
+ * @brief The last element of a list, read only
+ * @param lp the list, may be nullptr
+ * @return the last element, nullptr for an empty or a nullptr list
+ */
+const lListElem *lLast(const lList *lp);
+
+/**
+ * @brief The element after an element, modifiable
+ * @param ep the element, may be nullptr
+ * @return the next element, nullptr at the end of the list or for a nullptr element
+ */
+lListElem *lNextRW(const lListElem *ep);
+
+/**
+ * @brief The element after an element, read only
+ * @param ep the element, may be nullptr
+ * @return the next element, nullptr at the end of the list or for a nullptr element
+ */
+const lListElem *lNext(const lListElem *ep);
+
+/**
+ * @brief The element before an element, modifiable
+ * @param ep the element, may be nullptr
+ * @return the previous element, nullptr at the head of the list or for a nullptr element
+ */
+lListElem *lPrevRW(const lListElem *ep);
+
+/**
+ * @brief The element before an element, read only
+ * @param ep the element, may be nullptr
+ * @return the previous element, nullptr at the head of the list or for a nullptr element
+ */
+const lListElem *lPrev(const lListElem *ep);
+
+#define for_each_ep(ep, lp) for (ep=lFirst(lp);ep;ep=lNext(ep))                          ///< walk a list front to back, read only
+#define for_each_rev(ep, lp) for (ep=lLast(lp);ep;ep=lPrev(ep))                          ///< walk a list back to front, read only
+#define for_each_rw(ep, lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))                      ///< walk a list front to back, elements modifiable
+#define for_each_rev_rw(ep, lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))                   ///< walk a list back to front, elements modifiable
+// same macros as the ones without _lv (local variable) suffix with the difference that the
+// object variable does not have to be declared before the loop, but is declared in
+// the for loop itself. This allows to use the same variable name in code after the loop.
+#define for_each_ep_lv(ep, lp) for (auto ep=lFirst(lp);ep;ep=lNext(ep))                   ///< like #for_each_ep, declaring @p ep in the loop itself
+#define for_each_rw_lv(ep, lp) for (auto ep=lFirstRW(lp);ep;ep=lNextRW(ep))               ///< like #for_each_rw, declaring @p ep in the loop itself
 
 /* LIST SPECIFIC FUNCTIONS */
 uint32_t lGetNumberOfElem(const lList *lp);

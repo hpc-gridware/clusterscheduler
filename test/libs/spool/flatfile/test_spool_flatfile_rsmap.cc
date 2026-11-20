@@ -394,7 +394,7 @@ test_characteristics_on_numeric_id() {
    ocs::tom::ConstElement<ocs::tom::RESL> resl = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(ce, "0");
    T_ASSERT(resl != nullptr);
    T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(resl)) == 1);
-   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(lFirst(ocs::tom::get<RESL_properties>(resl))),
+   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(ocs::tom::get<RESL_properties>(resl).front()),
                    "/dev/nvidia0") == 0);
 
    lFreeElem(&ce);

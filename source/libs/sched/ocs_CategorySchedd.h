@@ -35,7 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
-#include "tom/ocs_Transitional.h"
 
 namespace ocs {
    /** @brief Marks and queries the rejected state of a job's category */

@@ -329,13 +329,13 @@ cache_equals_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
 
    ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
    bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(*walked);
-   ocs::tom::ConstElement<ocs::tom::HR> c = lFirst(cached);
-   ocs::tom::ConstElement<ocs::tom::HR> w = lFirst(walked);
+   ocs::tom::ConstElement<ocs::tom::HR> c = cached.front();
+   ocs::tom::ConstElement<ocs::tom::HR> w = walked->front();
 
    while (ok && c != nullptr && w != nullptr) {
       ok = (sge_hostcmp(ocs::tom::get<HR_name>(c), ocs::tom::get<HR_name>(w)) == 0);
-      c = lNext(c);
-      w = lNext(w);
+      c = c.next();
+      w = w.next();
    }
    return ok;
 }
@@ -707,7 +707,7 @@ test_member_classes() {
       CHECK(84, "the collapse is reported",
             answer_list->size() == 1);
       CHECK(85, "and the report cannot fail the client",
-            ocs::tom::get<AN_status>(lFirst(answer_list)) == STATUS_OK);
+            ocs::tom::get<AN_status>(answer_list->front()) == STATUS_OK);
 
       answer_list.reset();
    }

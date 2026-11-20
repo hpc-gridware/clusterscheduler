@@ -44,15 +44,16 @@
  *   definition macros LISTDEF/SGE_* (tom/cull_types.h),
  * - the packbuffer sge_pack_buffer and the PACK_* result codes (tom/ocs_PackBuffer.h).
  *
- * Walking a list and the pack buffer primitives are in the transitional
- * cull/cull_transitional.h; the rest of the old function interface is in
- * cull/cull_old_api.h, which only libs/cull, libs/tom, libs/sgeobj/tom and the
- * tests (through cull/cull_test_api.h) may include. The build checks the
- * includes, see test/libs/cull/check_cull_api.cmake. The TOM headers still need
- * internal headers of the list library for their inline code, so internals
- * (hash tables, descriptor registry, the raw value slot) and the pack buffer
- * primitives remain reachable through them until the next CS-3103 steps move
- * them behind TOM's own detail headers; product code must not call them.
+ * The old function interface, list walking and the pack buffer primitives
+ * included, is in cull/cull_old_api.h, which only libs/cull, libs/tom,
+ * libs/sgeobj/tom and the tests (through cull/cull_test_api.h) may include. The
+ * old functions are not declared in product code. The TOM headers still need
+ * internal headers of the list library for their inline code, so only the
+ * internals (hash tables, element ownership, descriptor registry, the raw value
+ * slot) remain reachable through them until a later CS-3103 step moves them
+ * behind TOM's own detail headers; product code must not call them. The build
+ * checks both, the includes and the calls of the internals, see
+ * test/libs/cull/check_cull_api.cmake.
  */
 
 #include <cstdio>

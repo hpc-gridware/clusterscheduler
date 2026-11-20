@@ -115,7 +115,7 @@ test_expand_implicit_ids() {
       ocs::tom::ListPtr<ocs::tom::AN> al;
       auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 2);
       centry_rsmap_expand_implicit_ids(&al, *centry, 512);
-      ocs::tom::ConstElement<ocs::tom::RESL> first = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
+      ocs::tom::ConstElement<ocs::tom::RESL> first = ocs::tom::get<CE_resource_map_list>(centry).front();
       CHECK(2, "implicit id has amount 1", ocs::tom::get<RESL_amount>(first) == 1);
       centry.reset();
       al.reset();
@@ -271,8 +271,8 @@ test_check_characteristics() {
       ocs::tom::ListPtr<ocs::tom::AN> al;
       auto centry = make_map_with_characteristics(names, values, 1);
       bool ok = centry_check_rsmap_characteristics(&al, *centry, *master);
-      ocs::tom::ConstElement<ocs::tom::RESL> resl = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
-      ocs::tom::ConstElement<ocs::tom::CE> prop = lFirst(ocs::tom::get<RESL_properties>(resl));
+      ocs::tom::ConstElement<ocs::tom::RESL> resl = ocs::tom::get<CE_resource_map_list>(centry).front();
+      ocs::tom::ConstElement<ocs::tom::CE> prop = ocs::tom::get<RESL_properties>(resl).front();
       CHECK(11, "a string characteristic is accepted and typed",
             ok && static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(prop)) ==
                   ocs::CEntry::Type::STR);

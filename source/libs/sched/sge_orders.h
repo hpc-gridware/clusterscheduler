@@ -51,7 +51,6 @@
 #include "sgeobj/tom/ocs_tom_OR.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
-#include "tom/ocs_Transitional.h"
 
 /**
  * @brief The orders of one scheduling run, grouped by kind

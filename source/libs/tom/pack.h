@@ -39,6 +39,10 @@
  * @brief The pack buffer primitives: initialise, fill and read a packbuffer
  *
  * The buffer type, its version control and the result codes are in tom/ocs_PackBuffer.h.
+ *
+ * Not public (CS-3103, M6): part of the old function interface, reached through
+ * cull/cull_old_api.h (as cull/pack.h) by libs/cull, libs/tom and the tests. Product
+ * code fills and reads a packbuffer with the functions of tom/ocs_PackCore.h.
  */
 
 
