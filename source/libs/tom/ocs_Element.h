@@ -327,6 +327,26 @@ namespace ocs::tom {
       };
 
       /**
+       * @brief Let an owning element handle give up an element that is bound in a list or another object
+       *
+       * A setter of an object field calls it before its first check: a bound element belongs to what it is
+       * bound to, so no throw and no early return may let the handle free it. A free element stays with the
+       * handle, which frees it when the setter fails. The raw set() of an object field does the same.
+       *
+       * @tparam P the owning element handle type
+       * @param owner the handle; empty afterwards if its element was bound
+       * @return the element the handle held, or nullptr; the caller stores this pointer
+       */
+      template <typename P>
+      lListElem *release_if_bound(P &owner) {
+         lListElem *const elem = owner.get().raw();
+         if (elem != nullptr && elem_kind(elem) != FREE_ELEM && elem_kind(elem) != TRANS_BOUND_ELEM) {
+            static_cast<void>(owner.release());
+         }
+         return elem;
+      }
+
+      /**
        * @brief Store a value into a field the element holds
        *
        * Numbers that are not hashed are stored inline. A hashed number goes
@@ -1086,14 +1106,22 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T>
       void set(typename detail::SetterArg<F>::type value) const {
-         if (!detail::write<F>(this->ep_, this->template present_slot<F>(), std::move(value))) [[unlikely]] {
-            if constexpr (FieldTraits<F>::type == FieldType::Object && FieldTraits<F>::has_sub) {
-               // the element is owned by the list or the object it is bound to: the parameter must not free it
-               static_cast<void>(value.release());
+         if constexpr (FieldTraits<F>::type == FieldType::Object && FieldTraits<F>::has_sub) {
+            // a bound element is given up before present_slot() can throw EmptyHandle or AbsentField, so
+            // that the parameter never frees it; a free element stays with the parameter until it is stored
+            lListElem *const object = detail::release_if_bound(value);
+            static_cast<void>(this->template present_slot<F>());
+            if (!store_object(this->ep_, FieldTraits<F>::pos, object)) [[unlikely]] {
+               throw_field_exception(FieldException::Reason::BoundElement, F, this->ep_->descr);
             }
-            throw_field_exception(FieldTraits<F>::type == FieldType::Object ? FieldException::Reason::BoundElement
-                                                                       : FieldException::Reason::OutOfMemory,
-                              F, this->ep_->descr);
+            static_cast<void>(value.release());   // stored: the element now belongs to the field
+         } else {
+            if (!detail::write<F>(this->ep_, this->template present_slot<F>(), std::move(value))) [[unlikely]] {
+               throw_field_exception(FieldTraits<F>::type == FieldType::Object
+                                        ? FieldException::Reason::BoundElement
+                                        : FieldException::Reason::OutOfMemory,
+                                     F, this->ep_->descr);
+            }
          }
       }
 
@@ -1680,6 +1708,12 @@ namespace ocs::tom {
                              "the owning handle holds another type than the field's sub-type");
             }
          }
+         // a bound element is given up before the null check and check_holds(), so that neither the early
+         // return nor a throw leaves it in the caller's handle, whose destructor would free it
+         [[maybe_unused]] lListElem *object = nullptr;
+         if constexpr (is_element_ptr<Value>) {
+            object = release_if_bound(value);
+         }
          if (ep == nullptr) [[unlikely]] {
             report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::NullElement);
             set_lerrno(LEELEMNULL);
@@ -1696,19 +1730,13 @@ namespace ocs::tom {
             }
             return 0;
          } else if constexpr (Tr::type == FieldType::Object) {
-            lListElem *object = nullptr;
-            if constexpr (is_element_ptr<Value>) {
-               object = value.get().raw();
-            } else {
+            if constexpr (!is_element_ptr<Value>) {
                object = static_cast<lListElem *>(value);
             }
             if (!store_object(ep, Tr::pos, object)) {
+               // bound elsewhere: an owning handle gave it up above, it stays where it is bound
                report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::BoundElement);
                set_lerrno(LEBOUNDELEM);
-               if constexpr (is_element_ptr<Value>) {
-                  // bound elsewhere: it belongs to where it is bound, as Element::set() leaves it
-                  static_cast<void>(value.release());
-               }
                return -1;
             }
             if constexpr (is_element_ptr<Value>) {

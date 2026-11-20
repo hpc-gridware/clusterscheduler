@@ -1305,7 +1305,7 @@ test_host_keys() {
 
 /**
  * @brief OPS-FREE-20: the contracts settled by the TOM completion: copy_if_present into an empty destination,
- *        Element::set of an element bound elsewhere
+ *        Element::set of an element bound elsewhere, a bound element through a setter whose first check fails
  * @return nothing; CHECK records the results
  */
 static void
@@ -1332,6 +1332,23 @@ test_completed_contracts() {
    CHECK(47, "Element::set of an element bound elsewhere throws BoundElement and leaves it where it is bound",
          bound_refused && rebound == nullptr && other_task->get<JAT_pe_object>().raw() == pe_raw &&
             task->get<JAT_pe_object>().raw() == nullptr);
+
+   // a check that fails before the store - an empty handle, a null element - must not free a bound element
+   // either: the setters give it up before their first check
+   auto rebound_empty = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(pe_raw);
+   bool empty_refused = false;
+   try {
+      ocs::tom::Element<ocs::tom::JAT>().set<JAT_pe_object>(std::move(rebound_empty));
+   } catch (const ocs::tom::FieldException &e) {
+      empty_refused = e.reason() == ocs::tom::FieldException::Reason::EmptyHandle;
+   }
+   CHECK(52, "Element::set on an empty handle throws EmptyHandle and leaves a bound element where it is bound",
+         empty_refused && rebound_empty == nullptr && other_task->get<JAT_pe_object>().raw() == pe_raw);
+
+   auto rebound_null = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(pe_raw);
+   const int null_rc = ocs::tom::set<JAT_pe_object>(static_cast<lListElem *>(nullptr), std::move(rebound_null));
+   CHECK(53, "the free set on a null element returns -1 and leaves a bound element where it is bound",
+         null_rc == -1 && rebound_null == nullptr && other_task->get<JAT_pe_object>().raw() == pe_raw);
 }
 
 /**
@@ -1617,8 +1634,10 @@ int main(int argc, char *argv[]) {
        "one element per host name; a host in another case takes the new value; every mail domain spelled "
        "differently stays a recipient of its own", {{"OPS-02", "covers"}}, {44, 45, 51}, test_host_keys},
       {"OPS-FREE-20", "contracts", "copy_if_present<F> into an empty destination, Element::set of a bound element",
-       {"copy into an empty handle", "store an element bound to another object through the member setter"},
-       "false from copy_if_present; BoundElement, the element stays bound", {{"OPS-02", "covers"}}, {46, 47},
+       {"copy into an empty handle", "store an element bound to another object through the member setter",
+        "store a bound element through an empty handle and into a null element"},
+       "false from copy_if_present; BoundElement, EmptyHandle or -1, the element stays bound",
+       {{"OPS-02", "covers"}}, {46, 47, 52, 53},
        test_completed_contracts},
       {"OPS-FREE-21", "take object", "take<F>() moves the element out of an object field, as lDechainObject",
        {"take a sub-object and store it in another object", "take from an empty field, a reduced element and "
