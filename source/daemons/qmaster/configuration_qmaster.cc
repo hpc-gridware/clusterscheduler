@@ -1019,9 +1019,9 @@ get_entry_from_conf(const ocs::tom::ConstElement<ocs::tom::CONF> aConf, const ch
  * Return a *COPY* of the master configuration.
  *
  * The condition and the selection come from a GDI client and are not checked against the configuration type;
- * lSelectHashPack() stays for that reason: with a selection, one that does not fit gives no list instead of an
- * exception and the result is named ""; without a selection the list is copied under its own name and the
- * condition is not applied (as before).
+ * ocs::tom::select_as() keeps the old contract of lSelectHashPack() for that reason: with a selection, one that
+ * does not fit gives no list instead of an exception and the result is named ""; without a selection the list is
+ * copied under its own name and the condition is not applied (as before).
  *
  * @param condition which configurations to return, or nullptr for all
  * @param enumeration which fields to include, or nullptr for all
@@ -1035,7 +1035,7 @@ sge_get_configuration(const lCondition *condition, const lEnumeration *enumerati
 
    const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
 
-   ocs::tom::RawListPtr conf(lSelectHashPack("", config_list, condition, enumeration, false, nullptr));
+   auto conf = ocs::tom::select_as("", config_list, condition, enumeration, ocs::tom::Hashing::Off);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 

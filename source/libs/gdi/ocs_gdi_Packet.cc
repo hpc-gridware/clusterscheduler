@@ -819,9 +819,9 @@ ocs::gdi::Packet::pack_task(Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_
        * (which will be packed below).
        */
       if (task->do_select_pack_simultaneous) {
-         // stays raw: no op of the typed object model selects straight into a pack buffer; data_list points to
-         // the master list here and is not owned
-         lSelectHashPack("", task->data_list, task->condition.get(), task->enumeration.get(), false, pb);
+         // straight into the pack buffer with the bytes and the silent errors of lSelectHashPack(); data_list
+         // points to the master list here and is not owned
+         ocs::tom::select_pack(pb, "", task->data_list, task->condition.get(), task->enumeration.get());
          task->enumeration.reset();
          task->condition.reset();
          task->data_list = nullptr;

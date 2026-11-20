@@ -47,6 +47,11 @@
  *   `find_first<V>`, `select`, `matches`, `unpack_raw_list`, `unpack_raw_elem`,
  *   `write_to`: thin fronts of the core in ocs_ListCore.h, ocs_SelectCore.h,
  *   ocs_PackCore.h and ocs_PrintCore.h.
+ * - **Selections with the old contract.** `select_as`, `select_elem_as`,
+ *   `select_into_descr`, `select_elem_into_descr`, `select_pack`: the results
+ *   of lSelect() and its kin (result name, no list for no match, a reduced
+ *   descriptor of the caller, straight into a pack buffer), for the GDI and
+ *   event paths whose result goes onto the wire; they throw nothing.
  * - **Member form.** `ConstRawElement`/`RawElement` and `ConstRawList`/`RawList`
  *   carry the same operations as methods, after the model of the typed
  *   handles, with the field as a method argument instead of a template
@@ -744,7 +749,8 @@ namespace ocs::tom {
     * @return the owner of the result, empty if @p lp is nullptr
     * @throw FieldException with reason NullElement if @p what is nullptr
     * @throw ListCoreError if the reduction or a copy fails
-    * @see Old form: lSelect(), lSelectHashPack() and lSelectDPack() without a pack buffer; core: select_list()
+    * @see Old form: lSelect(), lSelectHashPack() and lSelectDPack() without a pack buffer; core: select_list();
+    *      with the old contract: select_as(), select_into_descr(), select_pack()
     */
    [[nodiscard]] RawListPtr select(const lList *lp, const lCondition *where, const lEnumeration *what,
                                    Hashing hashing = Hashing::On);
@@ -757,7 +763,8 @@ namespace ocs::tom {
     * @return the owner of the copy, a free element; empty if @p ep is nullptr
     * @throw FieldException with reason NullElement if @p what is nullptr
     * @throw ListCoreError if the element does not hold a selected field or a copy fails
-    * @see Old form: lSelectElemPack() without a pack buffer; core: select_elem()
+    * @see Old form: lSelectElemPack() without a pack buffer; core: select_elem(); with the old contract:
+    *      select_elem_as(), select_elem_into_descr()
     */
    [[nodiscard]] RawElementPtr select(const lListElem *ep, const lEnumeration *what, Hashing hashing = Hashing::On);
 
@@ -770,6 +777,139 @@ namespace ocs::tom {
     * @see Old form: lCompare(); core: ocs::tom::compare()
     */
    [[nodiscard]] bool matches(const lListElem *ep, const lCondition *where);
+
+   // ---------------------------------------------------------------------------------------------------------------
+   // selections with the contract of the old interface
+   //
+   // The ops below keep exactly what the old select functions gave, for the callers whose result goes onto the
+   // wire and whose condition and selection may come from a client: the result is named as the caller says (the
+   // name is packed), no match is no list when hashing is on, no selection copies every field, a precomputed
+   // reduced descriptor is taken as it is, and a condition or selection that does not fit the list gives no list
+   // and an error number instead of an exception. They throw no exception of the object model; every error the
+   // old function survived they survive the same way.
+
+   /**
+    * @brief Copy the elements of a list that fulfil a condition, reduced to a selection, as lSelect() did
+    *
+    * Differences from select(): the result is named @p name, not after the
+    * source list; with Hashing::On no match gives no list (error number
+    * LEGETNROFELEM) instead of an empty one, with Hashing::Off an empty list;
+    * @p what == nullptr copies the whole list instead of throwing - then under
+    * the name of the source list and without applying @p where, as
+    * lSelectHashPack() did; a selection that does not fit the list's type gives
+    * no list and sets the error number instead of throwing. An element whose
+    * fields cannot be copied is left out.
+    *
+    * @param name the name of the result, nullptr for the default name of a list; ignored when @p what is nullptr
+    * @param lp the list, or nullptr for no list (reported as a soft path)
+    * @param where the condition, or nullptr for every element; not applied when @p what is nullptr
+    * @param what the selection of fields, or nullptr for every field
+    * @param hashing whether the result and its copied sub-lists keep hash tables; Hashing::On also turns an
+    *        empty result into no list
+    * @return the owner of the result; empty for a null list, on an error (the CULL error number is set), and
+    *         with Hashing::On for no match
+    * @see Old form: lSelect() (Hashing::On), lSelectHashPack() without a pack buffer; core: select_list(),
+    *      copy_list()
+    */
+   [[nodiscard]] RawListPtr select_as(const char *name, const lList *lp, const lCondition *where,
+                                      const lEnumeration *what, Hashing hashing);
+
+   /**
+    * @brief A copy of one element reduced to a selection if it fulfils a condition, as lSelectElemPack() did
+    *
+    * Differences from select(const lListElem *, ...): the condition is
+    * applied (no match gives no copy); @p what == nullptr copies the whole
+    * element - then without applying @p where - instead of throwing; a
+    * selection that does not fit gives no copy and sets the error number
+    * instead of throwing.
+    *
+    * @param ep the element, or nullptr for no copy
+    * @param where the condition, or nullptr; not applied when @p what is nullptr
+    * @param what the selection of fields, or nullptr for every field
+    * @param hashing whether copied sub-lists keep hash tables
+    * @return the owner of the copy, a free element; empty for nullptr, no match, or an error (error number set)
+    * @see Old form: lSelectElemPack() without a pack buffer; core: compare(), select_elem(), copy_elem()
+    */
+   [[nodiscard]] RawElementPtr select_elem_as(const lListElem *ep, const lCondition *where, const lEnumeration *what,
+                                              Hashing hashing);
+
+   /**
+    * @brief Copy the elements of a list that fulfil a condition into a list of a given reduced descriptor, as
+    *        lSelectDPack() did
+    *
+    * For a caller that keeps the reduced descriptor of a selection (the event
+    * master caches one per subscription), so that the reduction is not looked
+    * up per call. Differences from select(): the descriptor is the caller's
+    * (it must hold every field @p what selects; an element whose copy fails is
+    * left out); the result is named @p name; with Hashing::On no match gives no
+    * list; @p what == nullptr leaves every element out (error number
+    * LEENUMNULL); nothing throws.
+    *
+    * @param name the name of the result, nullptr for the default name of a list
+    * @param lp the list, or nullptr for no list
+    * @param where the condition, or nullptr for every element
+    * @param descr the descriptor of the result, the reduction @p what makes of the list's type; nullptr for no
+    *        list
+    * @param what the selection of fields
+    * @param hashing whether the result and its copied sub-lists keep hash tables; Hashing::On also turns an
+    *        empty result into no list
+    * @return the owner of the result; empty for a null list or descriptor, if the list cannot be created or an
+    *         element cannot be linked into it (error number LECREATELIST, LEAPPENDELEM), and with Hashing::On for
+    *         no match (LEGETNROFELEM)
+    * @see Old form: lSelectDPack() without a pack buffer; core: create_list(), compare(), copy_elem_partial()
+    */
+   [[nodiscard]] RawListPtr select_into_descr(const char *name, const lList *lp, const lCondition *where,
+                                              const lDescr *descr, const lEnumeration *what,
+                                              Hashing hashing);
+
+   /**
+    * @brief A copy of one element in a given reduced descriptor if it fulfils a condition, as lSelectElemDPack()
+    *        did
+    *
+    * The element form of select_into_descr(): no copy for a null element or
+    * descriptor, for no match, or for a copy that fails (@p what nullptr, a
+    * selected field the descriptor or the element does not hold); nothing
+    * throws.
+    *
+    * @param ep the element, or nullptr
+    * @param where the condition, or nullptr
+    * @param descr the descriptor of the copy; nullptr for no copy
+    * @param what the selection of fields
+    * @param hashing whether copied sub-lists keep hash tables
+    * @return the owner of the copy, a free element; empty as described (error number set on a failed copy)
+    * @see Old form: lSelectElemDPack() without a pack buffer; core: create_elem(), compare(), copy_elem_partial()
+    */
+   [[nodiscard]] RawElementPtr select_elem_into_descr(const lListElem *ep, const lCondition *where,
+                                                      const lDescr *descr, const lEnumeration *what,
+                                                      Hashing hashing);
+
+   /**
+    * @brief Pack the elements of a list that fulfil a condition, reduced to a selection, without a copy, as
+    *        lSelectHashPack() with a pack buffer did
+    *
+    * Writes the bytes of a list that unpack_raw_list() reads. With a
+    * selection: whether there is a list; if there is one, @p name (the name of
+    * the source list for nullptr) and the selection as descriptor, each
+    * matching element preceded by a 1 (a selection of every field writes the
+    * whole element, the selection of no field nothing after the 1), then a 0.
+    * Without a selection the whole list is packed as pack_list() packs it:
+    * under its own name and without applying @p where.
+    *
+    * Errors are not reported, as before: a header write that fails ends the
+    * write, an element write that fails is skipped, a failed final 0 is lost;
+    * the buffer then holds what was written. No exception of the object
+    * model leaves it.
+    *
+    * @param pb the buffer to write to
+    * @param name the name packed for the list, nullptr for the name of @p lp; ignored when @p what is nullptr
+    * @param lp the list, or nullptr, which is packed as no list
+    * @param where the condition, or nullptr for every element; not applied when @p what is nullptr
+    * @param what the selection of fields, or nullptr for every field
+    * @see Old form: lSelectHashPack() with a pack buffer (its hash flag had no effect there); core: compare(),
+    *      put_uint32(), put_str(), pack_what_as_descr(), pack_elem(), pack_list()
+    */
+   void select_pack(sge_pack_buffer *pb, const char *name, const lList *lp, const lCondition *where,
+                    const lEnumeration *what);
 
    /**
     * @brief Unpack a list of the type the buffer names

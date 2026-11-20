@@ -611,11 +611,11 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
       case ocs::gdi::Target::SC_LIST: /* TODO EB: move this into the scheduler configuration,
                                     and pack the list right away */ {
          const auto conf = sconf_get_config_list();
-         // stays lSelectHashPack(): the condition and the selection of the client are not checked against the
-         // type; with a selection a misfit gives no list instead of an exception and the result is named "",
-         // without one the list is copied under its own name and the condition is not applied (as before)
-         task->reset_data_list(ocs::tom::RawListPtr(
-               lSelectHashPack("", conf.get(), task->condition.get(), task->enumeration.get(), false, nullptr)));
+         // the old contract of lSelectHashPack(): the condition and the selection of the client are not checked
+         // against the type; with a selection a misfit gives no list instead of an exception and the result is
+         // named "", without one the list is copied under its own name and the condition is not applied
+         task->reset_data_list(ocs::tom::select_as("", conf.get(), task->condition.get(), task->enumeration.get(),
+                                                   ocs::tom::Hashing::Off));
          task->do_select_pack_simultaneous = false;
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
          break;
@@ -642,10 +642,9 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
 
             if (packet->is_intern_request) {
                /* intern requests need no pb so it is not necessary to postpone the operation */
-               // stays lSelectHashPack(), as for SC_LIST above
-               task->reset_data_list(ocs::tom::RawListPtr(lSelectHashPack("", data_source, task->condition.get(),
-                                                                          task->enumeration.get(), false,
-                                                                          nullptr)));
+               // the old contract of lSelectHashPack(), as for SC_LIST above
+               task->reset_data_list(ocs::tom::select_as("", data_source, task->condition.get(),
+                                                         task->enumeration.get(), ocs::tom::Hashing::Off));
                task->do_select_pack_simultaneous = false;
 
                /*

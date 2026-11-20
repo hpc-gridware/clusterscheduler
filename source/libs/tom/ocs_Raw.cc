@@ -32,6 +32,10 @@
 
 #include <utility>
 
+#include "uti/sge_profiling.h"
+
+#include "tom/cull_hash.h"
+#include "tom/cull_lerrnoP.h"
 #include "tom/cull_listP.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
@@ -40,10 +44,31 @@
 #include "tom/ocs_PackCore.h"
 #include "tom/ocs_PrintCore.h"
 #include "tom/ocs_SelectCore.h"
+#include "tom/ocs_SoftPath.h"
 
 namespace ocs::tom {
 
    namespace {
+
+      /**
+       * @brief Time the writes of select_pack() for the profiling of SGE_PROF_PACKING, as lSelectHashPack() timed
+       *        them, also when a write throws
+       */
+      class PackingTime {
+      public:
+         /** @brief Start the measurement */
+         PackingTime() {
+            PROF_START_MEASUREMENT(SGE_PROF_PACKING);
+         }
+
+         /** @brief Stop the measurement */
+         ~PackingTime() {
+            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+         }
+
+         PackingTime(const PackingTime &) = delete;
+         PackingTime &operator=(const PackingTime &) = delete;
+      };
 
       /**
        * @brief Check that a list or element to be stored into a field is of the sub-type the model names for it
@@ -257,6 +282,221 @@ namespace ocs::tom {
 
    bool matches(const lListElem *ep, const lCondition *where) {
       return compare(ep, where);
+   }
+
+   RawListPtr select_as(const char *name, const lList *lp, const lCondition *where, const lEnumeration *what,
+                        const Hashing hashing) {
+      if (lp == nullptr) {
+         report_soft_path("select_as", SoftPathNoName, SoftPathReason::NullList);
+         return {};
+      }
+      const bool hash = hashing == Hashing::On;
+      if (what == nullptr) {
+         // no selection: the whole list under its own name, the condition not applied - as lSelectHashPack() did
+         try {
+            return RawListPtr(copy_list(lp->listname, lp, hash, false));
+         } catch (const FieldException &e) {
+            // the list is not null, so no reason is left that lCopyListHash() survived
+            legacy_abort("select_as", e);
+         } catch (const ListCoreError &e) {
+            LERROR(e.lerrno());
+         }
+         return {};
+      }
+      RawListPtr result;
+      try {
+         result = RawListPtr(select_list(name, lp, where, what, hash, false));
+      } catch (const FieldException &) {
+         // a null list or selection, both excluded above: nothing to select from
+         report_soft_path("select_as", SoftPathNoName, SoftPathReason::NullList);
+         return {};
+      } catch (const ListCoreError &e) {
+         // e.g. a selection the list's type does not hold
+         LERROR(e.lerrno());
+         return {};
+      }
+      // an empty result of a list that may be hashed is no list, as it always was
+      if (hash && result.get().raw()->nelem == 0) {
+         LERROR(LEGETNROFELEM);
+         result.reset();
+      }
+      return result;
+   }
+
+   RawElementPtr select_elem_as(const lListElem *ep, const lCondition *where, const lEnumeration *what,
+                                const Hashing hashing) {
+      if (ep == nullptr) {
+         return {};
+      }
+      const bool hash = hashing == Hashing::On;
+      if (what == nullptr) {
+         // no selection: a copy of the whole element, the condition not applied - as lSelectElemPack() did
+         try {
+            return RawElementPtr(copy_elem(ep, hash, false));
+         } catch (const FieldException &) {
+            report_soft_path("select_elem_as", SoftPathNoName, SoftPathReason::NullElement);
+            LERROR(LEELEMNULL);
+         } catch (const ListCoreError &e) {
+            LERROR(e.lerrno());
+         }
+         return {};
+      }
+      try {
+         if (!compare(ep, where)) {
+            return {};
+         }
+         return RawElementPtr(select_elem(ep, what, hash, false));
+      } catch (const FieldException &) {
+         LERROR(LEELEMNULL);
+      } catch (const ListCoreError &e) {
+         LERROR(e.lerrno());
+      }
+      return {};
+   }
+
+   RawListPtr select_into_descr(const char *name, const lList *lp, const lCondition *where, const lDescr *descr,
+                                const lEnumeration *what, const Hashing hashing) {
+      if (lp == nullptr || descr == nullptr) {
+         return {};
+      }
+      const bool hash = hashing == Hashing::On;
+      RawListPtr result;
+      try {
+         result = RawListPtr(create_list(name, descr, false));
+      } catch (const FieldException &) {
+         LERROR(LECREATELIST);
+         return {};
+      } catch (const ListCoreError &) {
+         LERROR(LECREATELIST);
+         return {};
+      }
+      lList *dst = result.get().raw();
+
+      // a selection from a list that was checked for duplicate keys when it was filled cannot create one
+      const UniqueCheckSuspension suspension;
+      for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+         // the element form, with the list's descriptor, as lSelectDPack() called lSelectElemDPack()
+         RawElementPtr copy = select_elem_into_descr(ep, where, dst->descr, what, hashing);
+         if (!copy) {
+            continue;
+         }
+         try {
+            append_elem(dst, copy.get().raw());
+            static_cast<void>(copy.release());
+         } catch (const FieldException &) {
+            // a new free element of the list's own descriptor: as lAppendElem() refusing it
+            LERROR(LEAPPENDELEM);
+            return {};
+         }
+      }
+
+      if (hash) {
+         // the list may be hashed from now on; its tables are built by the first lookups
+         cull_hash_create_hashtables(dst);
+         // no match is no list, as lSelectDPack() decided it
+         if (dst->nelem == 0) {
+            LERROR(LEGETNROFELEM);
+            return {};
+         }
+      }
+      return result;
+   }
+
+   RawElementPtr select_elem_into_descr(const lListElem *ep, const lCondition *where, const lDescr *descr,
+                                        const lEnumeration *what, const Hashing hashing) {
+      if (ep == nullptr || descr == nullptr) {
+         return {};
+      }
+      // compare() throws only for a null element, excluded above; a comparison that cannot be made is false
+      if (!compare(ep, where)) {
+         return {};
+      }
+      RawElementPtr copy;
+      try {
+         copy = RawElementPtr(create_elem(descr));
+      } catch (const FieldException &) {
+         LERROR(LECOUNTDESCR);
+         return {};
+      } catch (const ListCoreError &e) {
+         LERROR(e.lerrno());
+         return {};
+      }
+      if (what == nullptr) {
+         // lCopyElemPartialPack() refused a missing selection
+         LERROR(LEENUMNULL);
+         return {};
+      }
+      try {
+         copy_elem_partial(copy.get().raw(), ep, what, hashing == Hashing::On, false);
+      } catch (const FieldException &) {
+         LERROR(LEELEMNULL);
+         return {};
+      } catch (const ListCoreError &e) {
+         LERROR(e.lerrno());
+         return {};
+      }
+      return copy;
+   }
+
+   void select_pack(sge_pack_buffer *pb, const char *name, const lList *lp, const lCondition *where,
+                    const lEnumeration *what) {
+      if (what == nullptr) {
+         // no selection: the whole list under its own name, the condition not applied - as cull_pack_list()
+         try {
+            pack_list(pb, lp, nullptr, 0);
+         } catch (const PackException &) {
+            // not reported, as lSelectHashPack() did not report it
+         }
+         return;
+      }
+
+      // the header: whether there is a list, its name and the selection as descriptor; a failure ends the write
+      try {
+         const PackingTime timing;
+         put_uint32(pb, lp != nullptr ? 1 : 0);
+         if (lp == nullptr) {
+            return;
+         }
+         put_str(pb, name != nullptr ? name : lp->listname);
+         pack_what_as_descr(pb, what, lp->descr, 0);
+      } catch (const PackException &) {
+         return;
+      }
+
+      for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+         // compare() throws only for a null element; a comparison that cannot be made is false
+         if (!compare(ep, where)) {
+            continue;
+         }
+         // each element is preceded by a 1; if that fails the element is skipped
+         try {
+            const PackingTime timing;
+            put_uint32(pb, 1);
+         } catch (const PackException &) {
+            continue;
+         }
+         // a failed element write is not reported, as lCopyElemPartialPack() did not report it
+         try {
+            switch (what[0].pos) {
+               case WHAT_ALL:
+                  pack_elem(pb, ep, nullptr, 0);
+                  break;
+               case WHAT_NONE:
+                  break;
+               default:
+                  pack_elem(pb, ep, what, 0);
+                  break;
+            }
+         } catch (const PackException &) {
+         }
+      }
+
+      // after the last element a 0: no more elements follow
+      try {
+         const PackingTime timing;
+         put_uint32(pb, 0);
+      } catch (const PackException &) {
+      }
    }
 
    RawListPtr unpack_raw_list(sge_pack_buffer *pb, const int flags) {

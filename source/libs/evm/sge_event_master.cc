@@ -1138,7 +1138,8 @@ sge_select_event_clients(const char *list_name, const lCondition *where, const l
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    if (Event_Master_Control.clients != nullptr) {
-      lst = lSelect(list_name, Event_Master_Control.clients, where, what);
+      // named as the caller says, no list for no match (hashed), every field for no selection - as lSelect()
+      lst = ocs::tom::select_as(list_name, Event_Master_Control.clients, where, what, ocs::tom::Hashing::On).release();
    }
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
@@ -2739,10 +2740,10 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
 
          if (!list_select(subscription, type, &clp, lp.get(), selection, fields,
                           descr, internal_client)) {
-            // the reduction with the cached descriptor, the list name sent to the client and no list for no
-            // match: the old form, as no front of ocs_Raw.h selects with a given descriptor
-            clp = ocs::tom::RawListPtr(lSelectDPack("updating list", lp.get(), selection, descr, fields,
-                                                    internal_client, nullptr));
+            // the reduction with the cached descriptor, the list name sent to the client and, for an internal
+            // client (hashed), no list for no match
+            clp = ocs::tom::select_into_descr("updating list", lp.get(), selection, descr, fields,
+                                              internal_client ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off);
          }
 
          /* no elements in the event list, no need for an event */
@@ -2982,7 +2983,8 @@ struct OcsEventSubListFields {
  * still contains their fields.
  *
  * The selections are cull's where and what of the subscription, which work on a descriptor, so the
- * selection calls themselves stay raw; their results keep the types of the element and of @p F.
+ * selection calls are the raw ops of ocs_Raw.h with the old contract; their results keep the types of the
+ * element and of @p F.
  *
  * @tparam F the list fields holding the subscribable sub-list, of one object type and one sub-type
  * @param subscription subscription array
@@ -3023,8 +3025,8 @@ ocs_event_select_elem(subscription_t *subscription,
    if (!sub_fields) {
       DPRINTF("no sub filter specified\n");
       // the selection keeps the type of the element
-      DRETURN(ocs::tom::ElementPtr<T>::from_typed(lSelectElemDPack(element, selection, dp, fields, false,
-                                                                   nullptr)));
+      DRETURN(ocs::tom::ElementPtr<T>::from_typed(
+         ocs::tom::select_elem_into_descr(element.raw(), selection, dp, fields, ocs::tom::Hashing::Off).release()));
    }
 
    /* remove the sub-lists from the main element */
@@ -3051,9 +3053,11 @@ ocs_event_select_elem(subscription_t *subscription,
       el = ocs::tom::ElementPtr<T>::from_typed(ocs::tom::copy_elem(element.raw(), false, false));
    } else if (!dp) {
       /* for some reason, we did not get a descriptor for the target element */
-      el = ocs::tom::ElementPtr<T>::from_typed(lSelectElemPack(element, selection, fields, false, nullptr));
+      el = ocs::tom::ElementPtr<T>::from_typed(
+         ocs::tom::select_elem_as(element.raw(), selection, fields, ocs::tom::Hashing::Off).release());
    } else {
-      el = ocs::tom::ElementPtr<T>::from_typed(lSelectElemDPack(element, selection, dp, fields, false, nullptr));
+      el = ocs::tom::ElementPtr<T>::from_typed(
+         ocs::tom::select_elem_into_descr(element.raw(), selection, dp, fields, ocs::tom::Hashing::Off).release());
    }
 
    /* if we have a new reduced main element, copy the sub-lists, if they are still part of it */
@@ -3063,7 +3067,8 @@ ocs_event_select_elem(subscription_t *subscription,
          if (sub_lists[i] && ocs::tom::has<G>(el)) {
             // the selection keeps the type of the sub-list
             ocs::tom::set<G>(el, ocs::tom::ListPtr<Sub>::from_typed(
-               lSelectDPack("", sub_lists[i].get(), sub_selection, sub_descr, sub_fields, false, nullptr)));
+               ocs::tom::select_into_descr("", sub_lists[i].get(), sub_selection, sub_descr, sub_fields,
+                                           ocs::tom::Hashing::Off).release()));
          }
          i++;
       };
