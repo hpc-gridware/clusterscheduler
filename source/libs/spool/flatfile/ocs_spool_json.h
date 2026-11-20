@@ -94,7 +94,7 @@ spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::to
 
 /* Like spool_json_write_name_list but with an explicit @p type_name for the envelope, for
  * lists whose element type is not a registered object and would otherwise be reported as
- * "unknown" (CS-2431: -sm/-so now read UE_Type entries of the reserved access lists). */
+ * "unknown" (CS-2431: -sm/-so now read UE entries of the reserved access lists). */
 bool
 spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list, int keynm,
                               const char *type_name, dstring *out);

@@ -53,19 +53,19 @@ enum XMLH_Field {
    /**
     * @brief Stylesheets
     *
-    * Stylesheet processing instructions (`XMLS_Type`) emitted before the root element.
+    * Stylesheet processing instructions (`XMLS`) emitted before the root element.
     */
    XMLH_Stylesheet,
    /**
     * @brief Root Attributes
     *
-    * Attributes (`XMLA_Type`) placed on the root element, such as the schema location.
+    * Attributes (`XMLA`) placed on the root element, such as the schema location.
     */
    XMLH_Attribute,
    /**
     * @brief Content
     *
-    * The document body (`XMLE_Type`).
+    * The document body (`XMLE`).
     */
    XMLH_Element,
 };
@@ -117,6 +117,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of XMLH for the list library: a synonym for ocs::tom::XMLH::descriptor */
-inline constexpr const lDescr *XMLH_Type = ocs::tom::XMLH::descriptor.e;

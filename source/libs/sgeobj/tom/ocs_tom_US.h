@@ -77,7 +77,7 @@ enum US_Field {
    /**
     * @brief Members
     *
-    * The users and UNIX groups in the set (`UE_Type`). A name starting with `@` is a group.
+    * The users and UNIX groups in the set (`UE`). A name starting with `@` is a group.
     */
    US_entries,
    /**
@@ -147,6 +147,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of US for the list library: a synonym for ocs::tom::US::descriptor */
-inline constexpr const lDescr *US_Type = ocs::tom::US::descriptor.e;

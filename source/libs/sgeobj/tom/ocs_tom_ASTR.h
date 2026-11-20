@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ASTR for the list library: a synonym for ocs::tom::ASTR::descriptor */
-inline constexpr const lDescr *ASTR_Type = ocs::tom::ASTR::descriptor.e;

@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Declarations and limits for range lists (`RN_Type`)
+ * @brief Declarations and limits for range lists (`RN`)
  *
  * @see sge_range.cc
  */

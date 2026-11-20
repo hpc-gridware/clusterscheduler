@@ -56,7 +56,7 @@ nth_var(const ocs::tom::ConstList<ocs::tom::VA> lp, const int n) {
  * @brief Regression tests for var_list_parse_from_string() [T01–T09].
  *
  * var_list_parse_from_string() parses an attacker-controlled comma-separated
- * variable list (qsub/qalter -v/-V/-ac/-dc, JSV job context) into a VA_Type
+ * variable list (qsub/qalter -v/-V/-ac/-dc, JSV job context) into a VA
  * list.
  *
  * SECURITY REGRESSION (CS-2350, MEDIUM-SGEOBJ-002, CWE-476/CWE-617): a token

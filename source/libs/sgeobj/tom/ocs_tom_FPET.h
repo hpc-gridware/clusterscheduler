@@ -76,6 +76,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of FPET for the list library: a synonym for ocs::tom::FPET::descriptor */
-inline constexpr const lDescr *FPET_Type = ocs::tom::FPET::descriptor.e;

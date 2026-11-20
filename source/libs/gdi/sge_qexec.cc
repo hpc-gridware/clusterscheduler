@@ -98,8 +98,8 @@ const char *qexec_last_err() {
  * @param queuename queue to start the task in, or nullptr to let qmaster choose
  * @param cwd working directory for the task, or nullptr for the job's
  * @param environment list containing environment variable settings for the task that override the default
- *        environment (VA_Type), may be an empty handle
- * @param path_aliases optional a path alias list (PA_Type), may be an empty handle
+ *        environment (VA), may be an empty handle
+ * @param path_aliases optional a path alias list (PA), may be an empty handle
  * @param cert the security credential to pass to the execution host, or nullptr
  *
  * @return the task id, if the task can be executed, a value <= 0 indicates an error.

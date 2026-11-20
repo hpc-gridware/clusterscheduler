@@ -44,7 +44,7 @@ uint32_t ocs::Category::next_id = 0;
 /**
  * @brief Hand out an unused category id
  *
- * @param master_category_list the categories in use (CT_Type), so no id is handed out twice; may be an empty handle
+ * @param master_category_list the categories in use (CT), so no id is handed out twice; may be an empty handle
  *
  * @return an id that is neither 0 nor already taken
  */
@@ -74,10 +74,10 @@ ocs::Category::get_next_id(const ocs::tom::ConstList<ocs::tom::CT> master_catego
  * The queue and resource request lists of the job are sorted in place.
  *
  * @param category_str   The target string, contains the category or nothing
- * @param job            The job for the category creating (JB_Type, possibly reduced)
- * @param acl_list       Global access list (US_Type), may be an empty handle
- * @param prj_list       Project list (PR_Type), may be an empty handle
- * @param rqs_list       Resource quota set list (RQS_Type), may be an empty handle
+ * @param job            The job for the category creating (JB, possibly reduced)
+ * @param acl_list       Global access list (US), may be an empty handle
+ * @param prj_list       Project list (PR), may be an empty handle
+ * @param rqs_list       Resource quota set list (RQS), may be an empty handle
  */
 void
 ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::tom::JB> job,

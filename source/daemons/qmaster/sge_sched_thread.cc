@@ -393,8 +393,8 @@ void scheduler_method(sge_evc_class_t *evc, ocs::tom::ListPtr<ocs::tom::AN> *ans
  * started before the load adjustment decay time (configuration value load_adjustment_decay_time).
  *
  * @param lists the scheduler's snapshot of the cluster
- * @param running_jobs the running jobs (`JB_Type`)
- * @param job_load_adjustments the configured job load adjustments (`CE_Type`)
+ * @param running_jobs the running jobs (`JB`)
+ * @param job_load_adjustments the configured job load adjustments (`CE`)
  * @param monitor_next_run whether the scheduling run is monitored
  */
 static void
@@ -444,7 +444,7 @@ do_load_adjustment(scheduler_all_data_t *lists, const ocs::tom::ConstList<ocs::t
  * @param evc the event client
  * @param lists the scheduler's snapshot of the cluster
  * @param orders receives the orders of the run
- * @param splitted_job_lists the job lists split by job state (`JB_Type`), see split_jobs()
+ * @param splitted_job_lists the job lists split by job state (`JB`), see split_jobs()
  * @return 0 on success, -1 if the queue list could not be split or the ticket calculation failed
  */
 static int
@@ -601,7 +601,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
    DPRINTF("STARTING FILTERING JOBS WITH " sge_u32 " PENDING JOBS\n",
            static_cast<uint32_t>(splitted_job_lists[SPLIT_PENDING]->get().size()));
 
-   // update the running jobs per user (in JC_Type objects)
+   // update the running jobs per user (in JC objects)
    user_list_init_jc(user_list, splitted_job_lists);
 
    /*--------------------------------------------------------------------
@@ -1068,9 +1068,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 /**
  * @brief Selects resources for 'job', add appropriate order to the 'orders_list',
  *
- * @param queue_list the queues that can take jobs (`QU_Type`); queues that become full move to @p dis_queue_list,
+ * @param queue_list the queues that can take jobs (`QU`); queues that become full move to @p dis_queue_list,
  *        a list left empty is freed, and for a reservation a missing one is created
- * @param dis_queue_list the queues that cannot take jobs now (`QU_Type`), created when the first queue moves there
+ * @param dis_queue_list the queues that cannot take jobs now (`QU`), created when the first queue moves there
  * @param job a copy of the job being scheduled
  * @param ja_task the task being scheduled
  * @param pe_list the parallel environments
@@ -1079,15 +1079,15 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
  * @param host_list the execution hosts
  * @param acl_list the access lists
  * @param load_adjustments the job load adjustments
- * @param user_list the running jobs per user (`JC_Type`), increased for a started job, created with the first one
- * @param group_list the running jobs per group (`JC_Type`), unused
+ * @param user_list the running jobs per user (`JC`), increased for a started job, created with the first one
+ * @param group_list the running jobs per group (`JC`), unused
  * @param orders receives the start order
  * @param total_running_job_tickets increased by the tickets of a started job
  * @param sort_hostlist set when the host list has to be sorted again
  * @param is_start try to find a now assignment
  * @param is_reserve try to find a reservation assignment
  * @param is_schedule_based whether resource availability is checked in the resource diagram
- * @param load_list the consumable load list (`LDR_Type`), queues that become unusable are removed from it; freed
+ * @param load_list the consumable load list (`LDR`), queues that become unusable are removed from it; freed
  *        when it becomes empty
  * @param hgrp_list the host groups
  * @param rqs_list the resource quota sets

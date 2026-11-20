@@ -26,7 +26,7 @@
          "name": "scope",
          "summary": "Scope",
          "description": [
-            "The names the filter matches (`ST_Type`). A single `*` entry means everything."
+            "The names the filter matches (`ST`). A single `*` entry means everything."
          ],
          "type": "lListT",
          "subClassName": "ST",

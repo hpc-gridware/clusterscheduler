@@ -58,7 +58,7 @@
 /**
  * @brief Find project in list
  *
- * @param lp PR_Type list, may be an empty handle
+ * @param lp PR list, may be an empty handle
  * @param name project name
  *
  * @return the project, or an empty handle
@@ -73,7 +73,7 @@ ocs::tom::Element<ocs::tom::PR> prj_list_locate(const ocs::tom::ConstList<ocs::t
 /**
  * @brief Find user in list
  *
- * @param lp UU_Type list, may be an empty handle
+ * @param lp UU list, may be an empty handle
  * @param name user name
  *
  * @return the user, or an empty handle
@@ -90,7 +90,7 @@ ocs::tom::Element<ocs::tom::UU> user_list_locate(const ocs::tom::ConstList<ocs::
  *
  * Append all projects in list lp to dstring string.
  *
- * @param this_list PR_Type list, may be an empty handle
+ * @param this_list PR list, may be an empty handle
  * @param string dstring to append to
  *
  * @return nullptr or resulting string of dstring
@@ -122,9 +122,9 @@ const char *prj_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::PR> t
 /**
  * @brief Is every project of a list defined?
  *
- * @param this_list the defined projects to check against (PR_Type), may be an empty handle
+ * @param this_list the defined projects to check against (PR), may be an empty handle
  * @param[out] answer_list receives the name of the first project that is missing
- * @param prj_list the projects to look for (PR_Type), may be an empty handle
+ * @param prj_list the projects to look for (PR), may be an empty handle
  * @return true when all of them exist
  */
 bool prj_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PR> this_list,

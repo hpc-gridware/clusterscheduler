@@ -78,7 +78,7 @@
  * task priority, submit time and job number. The sorting is done in descending order
  * of task priority, and in ascending order of submit time and job number for jobs with the same priority.
  *
- * @param job_list the list of jobs to be sorted (JB_Type), may be an empty handle
+ * @param job_list the list of jobs to be sorted (JB), may be an empty handle
  */
 void ocs::Job::sgeee_sort_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
    DENTER(TOP_LAYER);
@@ -132,9 +132,9 @@ void ocs::Job::sgeee_sort_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
 /**
  * @brief The systemd slice and scope names a job's processes run under
  *
- * @param job the job (JB_Type)
- * @param ja_task the array task (JAT_Type), may be an empty handle
- * @param pe_task the parallel task (PET_Type), an empty handle for the master task
+ * @param job the job (JB)
+ * @param ja_task the array task (JAT), may be an empty handle
+ * @param pe_task the parallel task (PET), an empty handle for the master task
  * @param[out] slice receives the slice name
  * @param[out] scope receives the scope name
  * @param[out] error_dstr receives the reason on failure
@@ -225,14 +225,14 @@ ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom:
 /**
  * @brief The binding sub-object, created on first access
  *
- * @param job the job to read or extend (JB_Type)
+ * @param job the job to read or extend (JB)
  * @param[out] answer_list receives the reason when it could not be created
  * @return the binding sub-object, or nullptr on error
  */
 ocs::tom::Element<ocs::tom::BN>
 ocs::Job::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::JB> job,
                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   // JB_binding holds a BN_Type object
+   // JB_binding holds a BN object
    return Binding::binding_get_or_create_elem<JB_binding>(job, answer_list);
 }
 
@@ -240,7 +240,7 @@ ocs::Job::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief Who applies the binding
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the requested @ref ocs::BindingType::Type
  */
 ocs::BindingType::Type
@@ -252,7 +252,7 @@ ocs::Job::binding_get_type(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief The hardware unit the binding counts in
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the requested @ref ocs::BindingUnit::Unit
  */
 ocs::BindingUnit::Unit
@@ -264,7 +264,7 @@ ocs::Job::binding_get_unit(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief How the selected hardware is ordered
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the sort specification, empty when none was given
  */
 std::string
@@ -276,7 +276,7 @@ ocs::Job::binding_get_sort(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief Where on the topology the binding starts
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the requested @ref ocs::BindingStart::Start
  */
 ocs::BindingStart::Start
@@ -288,7 +288,7 @@ ocs::Job::binding_get_start(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief Where the binding stops
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the requested @ref ocs::BindingStop::Stop
  */
 ocs::BindingStop::Stop
@@ -300,7 +300,7 @@ ocs::Job::binding_get_stop(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief How the binding walks the topology
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the requested @ref ocs::BindingStrategy::Strategy
  */
 ocs::BindingStrategy::Strategy
@@ -312,7 +312,7 @@ ocs::Job::binding_get_strategy(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief Which instance of the job the binding applies to
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the requested @ref ocs::BindingInstance::Instance
  */
 ocs::BindingInstance::Instance
@@ -324,7 +324,7 @@ ocs::Job::binding_get_instance(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief Which hardware the binding is restricted to
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the filter expression, empty when none was given
  */
 std::string
@@ -336,7 +336,7 @@ ocs::Job::binding_get_filter(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief How many units the binding asks for
  *
- * @param job the job carrying the binding request (JB_Type)
+ * @param job the job carrying the binding request (JB)
  * @return the requested amount
  */
 uint32_t
@@ -348,7 +348,7 @@ ocs::Job::binding_get_amount(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 /**
  * @brief Fill in the binding fields the request left out
  *
- * @param job the job whose binding request is completed (JB_Type)
+ * @param job the job whose binding request is completed (JB)
  * @param[out] answer_list receives the reason on failure
  */
 void

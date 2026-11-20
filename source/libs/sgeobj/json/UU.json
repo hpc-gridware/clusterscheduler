@@ -115,7 +115,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            "List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this user."
+            "List of UA objects storing accumulated and decayed usage of jobs belonging to this user."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -162,7 +162,7 @@
          "name": "long_term_usage",
          "summary": "Long Term Usage",
          "description": [
-            "List of UA_Type objects holding long term accumulated non-decayed usage."
+            "List of UA objects holding long term accumulated non-decayed usage."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -180,7 +180,7 @@
          "name": "project",
          "summary": "Project",
          "description": [
-            "UPP_Type list @todo add description."
+            "UPP list @todo add description."
          ],
          "type": "lListT",
          "subClassName": "UPP",
@@ -198,7 +198,7 @@
          "name": "debited_job_usage",
          "summary": "Debited Job Usage",
          "description": [
-            "List of UPU_Type, still debited usage per job."
+            "List of UPU, still debited usage per job."
          ],
          "type": "lListT",
          "subClassName": "UPU",

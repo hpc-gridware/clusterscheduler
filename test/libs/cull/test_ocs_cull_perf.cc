@@ -57,9 +57,9 @@ measure_short_lookups() {
    printf("lookup of JAT_task_number (unique, linear search below the hash threshold), ns per lookup\n");
    printf("%8s %8s %8s %8s %8s\n", "tasks", "front", "middle", "end", "miss");
    for (const lUlong n : {4u, 8u, 15u}) {
-      lList *tasks = lCreateList("tasks", JAT_Type);
+      lList *tasks = lCreateList("tasks", ocs::tom::JAT::descriptor.e);
       for (lUlong i = 1; i <= n; i++) {
-         lAddElemUlong(&tasks, JAT_task_number, i, JAT_Type);
+         lAddElemUlong(&tasks, JAT_task_number, i, ocs::tom::JAT::descriptor.e);
       }
       double ns[4];
       const lUlong keys[4] = {1, n / 2 + 1, n, n + 1};
@@ -102,9 +102,9 @@ static constexpr int num_walks = 2000;
  */
 static void
 measure_template_path() {
-   lList *jobs = lCreateList("jobs", JB_Type);
+   lList *jobs = lCreateList("jobs", ocs::tom::JB::descriptor.e);
    for (lUlong i = 1; i <= num_jobs; i++) {
-      lListElem *job = lAddElemUlong(&jobs, JB_job_number, i, JB_Type);
+      lListElem *job = lAddElemUlong(&jobs, JB_job_number, i, ocs::tom::JB::descriptor.e);
       lSetString(job, JB_owner, "user");
    }
    const ocs::tom::List<ocs::tom::JB> typed{jobs};
@@ -168,7 +168,7 @@ measure_template_path() {
  * @return 0, always - this test measures, it does not assert
  */
 int main() {
-   lListElem *elem = lCreateElem(JB_Type);
+   lListElem *elem = lCreateElem(ocs::tom::JB::descriptor.e);
    lSetUlong(elem, JB_job_number, job_value);
 
    uint64_t sum = 0;

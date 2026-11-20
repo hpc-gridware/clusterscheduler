@@ -132,7 +132,7 @@ stn_cstr(const char *s) {
  * Writes `name=shares` per node, one level of indentation per depth.
  *
  * @param os     the stream to write to
- * @param ep     the node to start at (STN_Type), may be an empty handle
+ * @param ep     the node to start at (STN), may be an empty handle
  * @param indent the string one level of depth is indented by
  * @param level  the depth `ep` sits at, 0 for the root; the recursion passes
  *               its own depth down (CS-1841: it used to live in a function
@@ -165,7 +165,7 @@ int show_sharetree(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::STN>
  * Writes the full path of every node, which is the form `qconf` accepts back.
  *
  * @param os   the stream to write to
- * @param root the node to start at (STN_Type), may be an empty handle
+ * @param root the node to start at (STN), may be an empty handle
  * @param path the path prefix the printed paths start with
  * @return 0 on success, 1 when `root` is nullptr or `path` names no node
  *
@@ -349,7 +349,7 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
  * This identifies exactly one node even when the same name occurs several
  * times in the tree.
  *
- * @param ep root of the tree (STN_Type), not empty
+ * @param ep root of the tree (STN), not empty
  * @param path the path to resolve
  * @param[out] ancestors receives the nodes from the root down to the match;
  *             may be nullptr. The caller frees it with #free_ancestors.
@@ -370,7 +370,7 @@ search_named_node_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *pa
  * Searches depth first from `ep`; the first match wins. Fills `ancestors`
  * with the nodes from the root down to the match, in that order.
  *
- * @param ep root of the [sub]tree (STN_Type), may be an empty handle
+ * @param ep root of the [sub]tree (STN), may be an empty handle
  * @param name the node name to look for
  * @param[out] ancestors receives the path; the caller frees it with
  *             #free_ancestors

@@ -74,8 +74,8 @@ static bool job_update_master_list_usage(ocs::tom::List<ocs::tom::JB> job_list, 
  * the updated usage report and passes the event
  * information to the corresponding update functions.
  *
- * @param job_list master job list (JB_Type)
- * @param event the event (ET_Type) containing the new usage list, which is taken over
+ * @param job_list master job list (JB)
+ * @param event the event (ET) containing the new usage list, which is taken over
  *
  * @return true, if the operation succeeds, else false
  *
@@ -125,7 +125,7 @@ static bool job_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the event (ET_Type); its job is taken over into the master list
+ * @param event the event (ET); its job is taken over into the master list
  * @param clientdata client data
  *
  * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
@@ -167,7 +167,7 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
          * Preferable would probably be to send MOD events for the different
          * object types.
          */
-         // the master job list (JB_Type), fetched with its fixed type
+         // the master job list (JB), fetched with its fixed type
          const bool ret = job_update_master_list_usage(ocs::tom::List<ocs::tom::JB>(*list), event);
          DRETURN(ret?SGE_EMA_OK:SGE_EMA_FAILURE);
       } else if (event_type == sgeE_JOB_FINISH) {
@@ -179,11 +179,11 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
           * - JB_ja_tasks is the task list - it is maintained by JATASK events
           * - JB_host and JB_category are scheduler internal attributes
           *   they may not be overwritten.
-          *   Better would be to move them from JB_Type to some scheduler specific
+          *   Better would be to move them from JB to some scheduler specific
           *   object.
           */
 
-          // a job event carries jobs (JB_Type)
+          // a job event carries jobs (JB)
           const auto event_job = ocs_mirror_event_objects<ocs::tom::JB>(event).front();
           if (event_job) {
              // Preserve old ja_tasks list. Job update events will not contain them
@@ -206,7 +206,7 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
              // (scheduler, reader, ...)
              const bool has_category = ocs::tom::has<JB_category>(event_job);
              if (has_category && has_category_id) {
-                // the master category list (CT_Type), fetched with its fixed type
+                // the master category list (CT), fetched with its fixed type
                 const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
                 // JB_category is a reference field, which takes the raw element
                 lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
@@ -248,7 +248,7 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
  * @param evc the event client the event arrived on
  * @param type event type; always SGE_TYPE_JOB_SCHEDD_INFO, the mirror table calls this function for it only
  * @param action action to perform
- * @param event the event (ET_Type); its scheduler job info is taken over into the master list
+ * @param event the event (ET); its scheduler job info is taken over into the master list
  * @param clientdata client data
  *
  * @return always SGE_EMA_OK

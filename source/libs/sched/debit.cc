@@ -268,10 +268,10 @@ static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * the load correction of the hosts while load adjustments are in effect, and
  * re-sorts a host whose combined load changed.
  *
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param ja_task the array task, for its granted resources
  * @param pe the granted parallel environment, or an empty handle
- * @param granted the granted destination identifiers (JG_Type)
+ * @param granted the granted destination identifiers (JG)
  * @param host_list the execution hosts, debited and re-sorted
  * @param centry_list the complex entries
  * @param load_adjustments the load adjustments; the load correction is only raised while there are any
@@ -358,15 +358,15 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * its `EH_consumable_config_list` - that is how the utilization of a host is
  * initialized.
  *
- * @param[in]     jep                     the job (`JB_Type`), or nullptr to
+ * @param[in]     jep                     the job (`JB`), or nullptr to
  *                                        only initialize the utilization
- * @param[in]     jatep                   the array task (`JAT_Type`), or
+ * @param[in]     jatep                   the array task (`JAT`), or
  *                                        nullptr
  * @param[in]     granted_resources_list  the granted resources, used for the
  *                                        RSMAP and binding bookings
- * @param[in]     pe                      the granted PE (`PE_Type`)
- * @param[in,out] hep                     the host to debit on (`EH_Type`)
- * @param[in]     centry_list             the complex entries (`CE_Type`)
+ * @param[in]     pe                      the granted PE (`PE`)
+ * @param[in,out] hep                     the host to debit on (`EH`)
+ * @param[in]     centry_list             the complex entries (`CE`)
  * @param[in]     slots                   number of slots granted on this host
  * @param[in]     is_master_task          whether the master task runs here
  * @param[in]     do_per_host_booking     whether the per host consumables have
@@ -401,11 +401,11 @@ int debit_host_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep,
  *
  * The function debits in all relevant rule the requested amout of resources.
  *
- * @param job job request (JB_Type)
- * @param granted granted list (JG_Type)
+ * @param job job request (JB)
+ * @param granted granted list (JG)
  * @param rqs_list the resource quota sets to debit
- * @param pe granted pe (PE_Type)
- * @param centry_list consumable resouces list (CE_Type)
+ * @param pe granted pe (PE)
+ * @param centry_list consumable resouces list (CE)
  * @param acl_list the access lists, to find the matching rules
  * @param hgrp_list the host groups, to find the matching rules
  *
@@ -449,11 +449,11 @@ static int debit_job_from_rqs(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * reserved; the job is debited there, not in the master lists.
  *
  * @param ar          the advance reservation of the job, or nullptr for a job outside one
- * @param job         the job (JB_Type)
- * @param ja_task     the array task (JAT_Type)
+ * @param job         the job (JB)
+ * @param ja_task     the array task (JAT)
  * @param pe          the granted parallel environment, or nullptr
- * @param granted     the granted destination identifiers (JG_Type)
- * @param centry_list the system wide attribute configuration (CE_Type)
+ * @param granted     the granted destination identifiers (JG)
+ * @param centry_list the system wide attribute configuration (CE)
  *
  * @return always 0
  */

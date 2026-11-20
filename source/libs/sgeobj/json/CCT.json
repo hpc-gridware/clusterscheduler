@@ -20,7 +20,7 @@
          "name": "ignore_queues",
          "summary": "Rejected Queues",
          "description": [
-            "Cluster queues already known not to suit this category (`CTI_Type`), so later jobs skip them."
+            "Cluster queues already known not to suit this category (`CTI`), so later jobs skip them."
          ],
          "type": "lListT",
          "subClassName": "SkipListEntry",
@@ -42,7 +42,7 @@
          "name": "job_messages",
          "summary": "Scheduler Messages",
          "description": [
-            "The \"why not\" messages (`MES_Type`) produced for this category, reused rather than regenerated per job."
+            "The \"why not\" messages (`MES`) produced for this category, reused rather than regenerated per job."
          ],
          "type": "lListT",
          "subClassName": "JobSchedulingMessage",

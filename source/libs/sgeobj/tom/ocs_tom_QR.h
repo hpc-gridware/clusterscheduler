@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of QR for the list library: a synonym for ocs::tom::QR::descriptor */
-inline constexpr const lDescr *QR_Type = ocs::tom::QR::descriptor.e;

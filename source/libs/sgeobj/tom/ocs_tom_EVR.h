@@ -71,13 +71,13 @@ enum EVR_Field {
    /**
     * @brief Event Client
     *
-    * The event client object (`EV_Type`), for the register and modify operations.
+    * The event client object (`EV`), for the register and modify operations.
     */
    EVR_event_client,
    /**
     * @brief Events
     *
-    * The events to deliver (`ET_Type`), for `EVR_ADD_EVENT`.
+    * The events to deliver (`ET`), for `EVR_ADD_EVENT`.
     */
    EVR_event_list,
 };
@@ -131,6 +131,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of EVR for the list library: a synonym for ocs::tom::EVR::descriptor */
-inline constexpr const lDescr *EVR_Type = ocs::tom::EVR::descriptor.e;

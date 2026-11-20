@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Turns the parsed command line of a submit client into a job (`JB_Type`) object
+ * @brief Turns the parsed command line of a submit client into a job (`JB`) object
  */
 #include <cstring>
 #include <climits>
@@ -125,7 +125,7 @@ const char *default_prefix = "#$";
  * @param sync_options receives the `-sync` bits
  *
  * @return `nullptr` when everything was fine, otherwise an answer list
- *         (`AN_Type`) carrying one of
+ *         (`AN`) carrying one of
  *         - `STATUS_EUNKNOWN` - an internal error, a null pointer or out of memory
  *         - `STATUS_EDISK` - `getcwd()` failed
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
@@ -362,7 +362,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
     */
    ep = cmdline.find_first<SPA_switch_val>("-t");
    if (ep != nullptr) {
-      /* the -t argument is a range list (RN_Type), parsed by cull_parse_cmdline() or drmaa_set_bulk_range() */
+      /* the -t argument is a range list (RN), parsed by cull_parse_cmdline() or drmaa_set_bulk_range() */
       const auto range_list = ocs::tom::ConstList<ocs::tom::RN>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep));
       ocs::tom::set<JB_ja_structure>(*pjob, range_list.clone("task_id_range"));
       cmdline.erase(ep);
@@ -478,7 +478,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    }
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-jsv"))) {
-      /* the -jsv argument is a path list (PN_Type) built by cull_parse_cmdline() */
+      /* the -jsv argument is a path list (PN) built by cull_parse_cmdline() */
       const auto list = ocs::tom::ConstList<ocs::tom::PN>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep));
       const char *file = ocs::tom::get<PN_path>(list.front());
 
@@ -533,7 +533,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    if (cmdline.find_first<SPA_switch_val>("-hold_jid")) {
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
-         /* the argument is a job name list (ST_Type) built by cull_parse_jid_hold_list() */
+         /* the argument is a job name list (ST) built by cull_parse_jid_hold_list() */
          for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
             DPRINTF("-hold_jid %s\n", ocs::tom::get<ST_name>(sep));
             if (!jref_list) {
@@ -551,7 +551,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    if (cmdline.find_first<SPA_switch_val>("-hold_jid_ad")) {
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
-         /* the argument is a job name list (ST_Type) built by cull_parse_jid_hold_list() */
+         /* the argument is a job name list (ST) built by cull_parse_jid_hold_list() */
          for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
             DPRINTF("-hold_jid_ad %s\n", ocs::tom::get<ST_name>(sep));
             if (!jref_list) {
@@ -662,7 +662,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-pe"))) {
       ocs::tom::set<JB_pe>(*pjob, ocs::tom::get<SPA_argval_lStringT>(ep));
-      // SPA_argval_lListT carries lists of several types; for -pe it is the range list (RN_Type) built by
+      // SPA_argval_lListT carries lists of several types; for -pe it is the range list (RN) built by
       // cull_parse_cmdline(), so it is taken over unchecked; the old range list is freed as before with the option
       lList *pe_range = nullptr;
       ocs::tom::exchange<SPA_argval_lListT>(ep, &pe_range);
@@ -728,7 +728,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
          // ocs_context_change_add() takes the change list raw (no typed form)
          lList *change = nullptr;
          ocs::tom::exchange<JB_context_change>(*pjob, &change);
-         // the argument of -ac/-dc/-sc is a variable list (VA_Type) built by cull_parse_cmdline()
+         // the argument of -ac/-dc/-sc is a variable list (VA) built by cull_parse_cmdline()
          ocs_context_change_add(&change,
                                 ocs::tom::ConstList<ocs::tom::VA>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep)));
          ocs::tom::exchange<JB_context_change>(*pjob, &change);
@@ -877,7 +877,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
  *        the beginning of list; FLG_USE_NO_PSEUDOS: do not create pseudoargs for script pointer and length;
  *        FLG_IGN_NO_FILE: do not show an error if script_file was not found
  *
- * @return answer list, AN_Type, or nullptr if everything was ok, the following stati can occur:
+ * @return answer list, AN, or nullptr if everything was ok, the following stati can occur:
  *         STATUS_EUNKNOWN - bad internal error like nullptr pointer received or no memory;
  *         STATUS_EDISK - file could not be opened
  *

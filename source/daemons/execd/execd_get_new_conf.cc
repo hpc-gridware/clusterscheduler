@@ -122,56 +122,7 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       set_enforce_cleanup_old_jobs();
    }
 
-// @todo CS-1232
-// In order to be able to enable this code we need information when the reprioritize_interval
-// in the scheduler configuration is changed (set to 0). This is not implemented. (CS-1232)
-//
-// Additionally the code would also reset the queue priorities of all running jobs to the priority
-// that was set during job start and not to the current queue priority in the queue configuration.
-#if 0
-#ifdef COMPILE_DC
-   if (false) {
-      /* Here we will make sure that each job which was started
-         in SGEEE-Mode (reprioritization) will get its initial
-         queue priority if this execd alternates to SGE-Mode */
-      lListElem *job, *jatask, *petask;
-
-      sge_switch2start_user();
-
-      for_each_rw (job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-         lListElem *master_queue;
-
-         for_each_rw (jatask, lGetList(job, JB_ja_tasks)) {
-            int priority;
-
-            master_queue = responsible_queue(job, jatask, nullptr);
-            priority = atoi(lGetString(master_queue, QU_priority));
-
-            DPRINTF("Set priority of job " sge_u32 "." sge_u32 " running in queue  %s to %d\n",
-            lGetUlong(job, JB_job_number), 
-            lGetUlong(jatask, JAT_task_number),
-            lGetString(master_queue, QU_full_name), priority);
-            ptf_reinit_queue_priority(lGetUlong(job, JB_job_number),
-                                      lGetUlong(jatask, JAT_task_number),
-                                      nullptr, priority);
-
-            for_each_rw(petask, lGetList(jatask, JAT_task_list)) {
-               master_queue = responsible_queue(job, jatask, petask);
-               priority = atoi(lGetString(master_queue, QU_priority));
-               DPRINTF("Set priority of task " sge_u32 "." sge_u32 "-%s running in queue %s to %d\n",
-               lGetUlong(job, JB_job_number), lGetUlong(jatask, JAT_task_number),
-               lGetString(petask, PET_id), lGetString(master_queue, QU_full_name), priority);
-               ptf_reinit_queue_priority(lGetUlong(job, JB_job_number),
-                                         lGetUlong(jatask, JAT_task_number),
-                                          lGetString(petask, PET_id),
-                                          priority);
-            }
-         }
-      }
-      sge_switch2admin_user();
-   }
-#endif
-#endif
+   // @todo CS-1232 reset the priorities of the running jobs when reprioritization is switched off
 
    /*
    ** admin mail block is released on new conf

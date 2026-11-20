@@ -224,7 +224,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    // build a single-entry complex with num_proc = 4
    auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
-   lListElem *centry = lCreateElem(CE_Type);
+   lListElem *centry = lCreateElem(ocs::tom::CE::descriptor.e);
    ocs::tom::set<CE_name>(centry, "num_proc");
    ocs::tom::set<CE_stringval>(centry, "4");
    ocs::tom::set<CE_doubleval>(centry, 4);

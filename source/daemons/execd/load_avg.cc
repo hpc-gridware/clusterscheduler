@@ -240,7 +240,7 @@ void execd_trash_load_report() {
  *
  * Only the load values that changed since the last report are sent, unless a full report is due.
  *
- * @param report_list the reports to send (`REP_Type`)
+ * @param report_list the reports to send (`REP`)
  * @param now the current time
  * @param next_send when the next load report is due; updated when one is added
  * @return 0
@@ -330,7 +330,7 @@ execd_add_load_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
 /**
  * @brief Add the report of the configuration versions to the reports to send, if it is due
  *
- * @param report_list the reports to send (`REP_Type`)
+ * @param report_list the reports to send (`REP`)
  * @param now the current time
  * @param next_send when the next configuration report is due; updated when one is added
  * @return 0
@@ -366,7 +366,7 @@ execd_add_conf_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
 /**
  * @brief Add the report of the number of processors to the reports to send, once
  *
- * @param report_list the reports to send (`REP_Type`)
+ * @param report_list the reports to send (`REP`)
  * @param now the current time
  * @param next_send 0 as long as the report was not added; set when it is
  * @return 0
@@ -408,7 +408,7 @@ execd_add_license_report(const ocs::tom::List<ocs::tom::REP> report_list, const 
 /**
  * @brief Add the job report to the reports to send, if it is due or reports are to be flushed
  *
- * @param report_list the reports to send (`REP_Type`)
+ * @param report_list the reports to send (`REP`)
  * @param now the current time
  * @param next_send when the next complete job report is due; updated when one is added
  * @return 0
@@ -1115,7 +1115,7 @@ get_reserved_usage(const char *qualified_hostname) {
 
    uint64_t now = sge_get_gmt64();
    const auto what = ocs::tom::what<JB_job_number, JB_ja_tasks>();
-   /* JG: TODO: why use JB_Type etc.? We only need an object containing
+   /* JG: TODO: why use JB etc.? We only need an object containing
     * job_id, ja_task_id, pe_task_id and a usage_list.
     * Same structure is delivered from PTF.
     */
@@ -1161,7 +1161,7 @@ get_reserved_usage(const char *qualified_hostname) {
       }
    }
 
-   // the same reduced descriptor as lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks) gave
+   // the same reduced descriptor as lWhat("%T(%I %I)", ocs::tom::JB::descriptor.e, JB_job_number, JB_ja_tasks) gave
    auto job_usage_list = temp_job_usage_list->select(what, "PtfJobUsageList");
 
    DRETURN(job_usage_list);

@@ -87,7 +87,7 @@ update_license_data(ocs::tom::Element<ocs::tom::EH> hep, ocs::tom::ConstList<ocs
  * @param rhost the host the execution daemon sent the report from
  * @param commproc the commlib component name of the sender (`execd`)
  * @param id the commlib component id of the sender
- * @param report_list the reports (`REP_Type`) to process
+ * @param report_list the reports (`REP`) to process
  * @param monitor for monitoring qmaster threads
  *
  * The signature stays raw while the callers outside this module pass the raw data list of a packet.

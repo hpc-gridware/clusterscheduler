@@ -974,9 +974,9 @@ create_timed_events_for_simulated_jobs() {
  *
  * The signature stays raw while callers outside this module pass raw elements.
  *
- * @param raw_jep the job (`JB_Type`)
- * @param raw_jatep the array task (`JAT_Type`), may be nullptr
- * @param raw_jr the job report (`JR_Type`), may be nullptr
+ * @param raw_jep the job (`JB`)
+ * @param raw_jatep the array task (`JAT`), may be nullptr
+ * @param raw_jr the job report (`JR`), may be nullptr
  * @param mode the 'mode' - actually the state transition
  * @param commit_flags additional flags for parametrizing, a `COMMIT_*` bitmask
  * @param monitor for monitoring qmaster threads
@@ -2128,9 +2128,9 @@ sge_finish_ja_task([[maybe_unused]] const char *sge_root, ocs::tom::Element<ocs:
  * stays raw while the retention sweep outside this module passes raw elements.
  *
  * @param sge_root the cluster root
- * @param raw_job the job (`JB_Type`), or nullptr to look it up by @p job_id
+ * @param raw_job the job (`JB`), or nullptr to look it up by @p job_id
  * @param job_id the job id
- * @param raw_ja_task the array task (`JAT_Type`)
+ * @param raw_ja_task the array task (`JAT`)
  * @param spool_job whether the job has to be spooled afterwards
  * @param no_events whether to skip announcing the change
  * @param gdi_session the session the change belongs to
@@ -2331,7 +2331,7 @@ setCheckpointObj(const ocs::tom::Element<ocs::tom::JB> job) {
  *
  * The signature stays raw while the caller outside this module passes a raw list.
  *
- * @param gdil_list the granted destination list (`JG_Type`)
+ * @param gdil_list the granted destination list (`JG`)
  * @param alpp receives messages for the caller
  * @param gdi_session the session the change belongs to
  * @return true when anything was released

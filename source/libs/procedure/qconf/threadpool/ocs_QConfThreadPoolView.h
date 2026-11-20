@@ -65,7 +65,7 @@ namespace ocs {
 
       /** @brief Write the thread pools, as a table or as a JSON array
        * @param os   the stream to write to
-       * @param list the pools (`ST_Type`), sorted by name by the provider
+       * @param list the pools (`ST`), sorted by name by the provider
        * @return none
        */
       void show_pools(std::ostream &os, const ocs::tom::ConstList<ocs::tom::ST> list) {

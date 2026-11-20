@@ -136,7 +136,7 @@ namespace ocs::tom {
     * @brief Commandline Argument
     *
     * Used in clients for parsing the commandline.
-    * One commandline argument (including data) is one SPA_Type object.
+    * One commandline argument (including data) is one SPA object.
     */
    struct SPA {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -170,6 +170,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SPA for the list library: a synonym for ocs::tom::SPA::descriptor */
-inline constexpr const lDescr *SPA_Type = ocs::tom::SPA::descriptor.e;

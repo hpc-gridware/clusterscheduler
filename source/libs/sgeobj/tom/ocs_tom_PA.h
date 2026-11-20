@@ -96,6 +96,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PA for the list library: a synonym for ocs::tom::PA::descriptor */
-inline constexpr const lDescr *PA_Type = ocs::tom::PA::descriptor.e;

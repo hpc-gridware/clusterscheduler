@@ -45,7 +45,7 @@
 /**
  * @brief Report one job: nothing, the XML view writes the whole job list in show_jobs_and_reasons()
  * @param os stream to write to
- * @param ilp the scheduler job info list (`SME_Type`), holding the reasons a job is not running
+ * @param ilp the scheduler job info list (`SME`), holding the reasons a job is not running
  * @param job the job
  * @param flags which parts of the listing were requested
  */
@@ -915,7 +915,7 @@ void ocs::QStatJobViewXML::report_task_error_reason(std::ostream &os, const ocs:
 /**
  * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
  * @param os stream to write to
- * @param ilp the scheduler job info list (`SME_Type`), holding the reasons a job is not running
+ * @param ilp the scheduler job info list (`SME`), holding the reasons a job is not running
  * @param job the job
  */
 void ocs::QStatJobViewXML::report_schedd_job_info(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,

@@ -42,7 +42,7 @@ enum ST_Field {
     * @brief String Name
     *
     * This field holds the string contents.
-    * @todo The primary key property is misleading. The string needn't be unique - we have STU_Type for that.
+    * @todo The primary key property is misleading. The string needn't be unique - we have STU for that.
     */
    ST_name = ST_LOWERBOUND,
    /**
@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ST for the list library: a synonym for ocs::tom::ST::descriptor */
-inline constexpr const lDescr *ST_Type = ocs::tom::ST::descriptor.e;

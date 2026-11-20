@@ -113,7 +113,7 @@ static std::string get_attribute_line(const std::string &content, const char *na
 }
 
 /*
- * Regression test for the flatfile representation of UA_Type sublists.
+ * Regression test for the flatfile representation of UA sublists.
  *
  * UA_svalue (string usage values, CS-849) must not be part of UA_sub_fields.
  * Every list spooled through that table - the scheduler config weight list and
@@ -145,7 +145,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(id, "usage_weight_list carries no NONE placeholder for UA_svalue",
             line.find("NONE") == std::string::npos); id++;
 
-      lListElem *reread = spool_flatfile_read_object(&alp, SC_Type, nullptr,
+      lListElem *reread = spool_flatfile_read_object(&alp, ocs::tom::SC::descriptor.e, nullptr,
                                                      SC_fields, nullptr, true, &qconf_comma_sfi,
                                                      SP_FORM_ASCII, nullptr, file1);
       CHECK(id, "scheduler config read returns non-null", reread != nullptr); id++;

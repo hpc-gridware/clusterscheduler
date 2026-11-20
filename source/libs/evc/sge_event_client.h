@@ -120,7 +120,7 @@ struct sge_evc_class_str {
    bool (*ec_ack)(sge_evc_class_t *thiz);
    /// true once the client has been set up, i.e. its event client object exists
    bool (*ec_is_initialized)(sge_evc_class_t *thiz);
-   /// return the underlying `EV_Type` event client object, or an empty handle
+   /// return the underlying `EV` event client object, or an empty handle
    ocs::tom::Element<ocs::tom::EV> (*ec_get_event_client)(sge_evc_class_t *thiz);
 
    /// subscribe one event, or all of them when passed #sgeE_ALL_EVENTS

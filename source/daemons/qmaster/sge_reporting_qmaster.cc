@@ -211,8 +211,8 @@ reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
  * is about, is created when the first intermediate accounting record is
  * written, so its existence answers the question.
  *
- * @param job_report the job report (`JR_Type`); its PE task id selects the PE task
- * @param ja_task the array task (`JAT_Type`)
+ * @param job_report the job report (`JR`); its PE task id selects the PE task
+ * @param ja_task the array task (`JAT`)
  * @return true if an intermediate accounting record has been written before
  *
  * @note MT-NOTE: intermediate_usage_written() is MT-safe
@@ -256,9 +256,9 @@ intermediate_usage_written(const ocs::tom::ConstElement<ocs::tom::JR> job_report
  * record at job end.
  *
  * @param answer_list used to report error messages
- * @param job_report the job report the execution host sent (`JR_Type`)
- * @param job the job (`JB_Type`)
- * @param ja_task the array task that finished (`JAT_Type`)
+ * @param job_report the job report the execution host sent (`JR`)
+ * @param job the job (`JB`)
+ * @param ja_task the array task that finished (`JAT`)
  * @param intermediate whether this is an interim record for a job that is still running
  * @return true on success, false on error
  */
@@ -391,7 +391,7 @@ ocs::ClassicReportingFileWriter::create_acct_record(ocs::tom::ListPtr<ocs::tom::
  * Nothing is written unless job logging is enabled.
  *
  * @param answer_list used to report error messages
- * @param job the job (`JB_Type`), may be an empty handle
+ * @param job the job (`JB`), may be an empty handle
  * @return true on success
  */
 bool
@@ -461,10 +461,10 @@ ocs::ClassicReportingFileWriter::create_new_job_record(ocs::tom::ListPtr<ocs::to
  * @param type which change it was
  * @param user who caused it
  * @param host the host it happened on
- * @param job_report the job report the execution host sent (`JR_Type`), not used here
- * @param job the job (`JB_Type`), may be an empty handle
- * @param ja_task the array task (`JAT_Type`), may be an empty handle
- * @param pe_task the PE task (`PET_Type`), may be an empty handle
+ * @param job_report the job report the execution host sent (`JR`), not used here
+ * @param job the job (`JB`), may be an empty handle
+ * @param ja_task the array task (`JAT`), may be an empty handle
+ * @param pe_task the PE task (`PET`), may be an empty handle
  * @param message a description of what happened, may be nullptr
  * @return true on success
  */
@@ -906,8 +906,8 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
  *
  * @param answer_list used to return error messages
  * @param buffer the record being built; the list is appended to it
- * @param load_list the reported load values (`HL_Type`)
- * @param variables the load values to write (`STU_Type`), from the reporting
+ * @param load_list the reported load values (`HL`)
+ * @param variables the load values to write (`STU`), from the reporting
  *                  configuration
  * @return true on success
  *

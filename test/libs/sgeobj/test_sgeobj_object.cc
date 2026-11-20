@@ -98,13 +98,13 @@ static void test_object_has_type(lListElem *queue) {
    printf("\n--- object_has_type ---\n");
 
    // T01: element descriptor matches the expected type
-   CHECK(1,  "queue matches QU_Type",          object_has_type(queue, QU_Type) == true);
+   CHECK(1,  "queue matches QU",          object_has_type(queue, ocs::tom::QU::descriptor.e) == true);
 
    // T02: element descriptor does NOT match a different type
-   CHECK(2,  "queue does not match JB_Type",   object_has_type(queue, JB_Type) == false);
+   CHECK(2,  "queue does not match JB",   object_has_type(queue, ocs::tom::JB::descriptor.e) == false);
 
    // T03: nullptr element → false without crash
-   CHECK(3,  "nullptr element → false",        object_has_type(nullptr, QU_Type) == false);
+   CHECK(3,  "nullptr element → false",        object_has_type(nullptr, ocs::tom::QU::descriptor.e) == false);
 
    // T04: nullptr descriptor → false without crash
    CHECK(4,  "nullptr descr → false",          object_has_type(queue, nullptr) == false);
@@ -118,7 +118,7 @@ static void test_object_get_type(lListElem *queue) {
    printf("\n--- object_get_type ---\n");
 
    // T05: valid element returns its own descriptor
-   CHECK(5,  "queue → QU_Type descriptor",     object_get_type(queue) == QU_Type);
+   CHECK(5,  "queue → QU descriptor",     object_get_type(queue) == ocs::tom::QU::descriptor.e);
 
    // T06: nullptr element → nullptr
    CHECK(6,  "nullptr element → nullptr",      object_get_type(nullptr) == nullptr);
@@ -134,8 +134,8 @@ static void test_object_get_type(lListElem *queue) {
 static void test_object_get_subtype() {
    printf("\n--- object_get_subtype ---\n");
 
-   // T07: sub-list attribute QU_acl carries US_Type elements
-   CHECK(7,  "QU_acl sub-type → US_Type",      object_get_subtype(QU_acl) == US_Type);
+   // T07: sub-list attribute QU_acl carries US elements
+   CHECK(7,  "QU_acl sub-type → US",      object_get_subtype(QU_acl) == ocs::tom::US::descriptor.e);
 
    // T08: scalar attribute has no sub-type
    CHECK(8,  "QU_qname (scalar) → nullptr",    object_get_subtype(QU_qname) == nullptr);
@@ -151,8 +151,8 @@ static void test_object_get_subtype() {
 static void test_object_get_primary_key() {
    printf("\n--- object_get_primary_key ---\n");
 
-   // T10: JB_Type is keyed by JB_job_number
-   CHECK(10, "JB_Type key → JB_job_number",    object_get_primary_key(JB_Type) == JB_job_number);
+   // T10: JB is keyed by JB_job_number
+   CHECK(10, "JB key → JB_job_number",    object_get_primary_key(ocs::tom::JB::descriptor.e) == JB_job_number);
 
    // T11: nullptr descriptor → NoName
    CHECK(11, "nullptr → NoName",               object_get_primary_key(nullptr) == NoName);
@@ -169,11 +169,11 @@ static void test_object_get_primary_key() {
 static void test_object_get_name() {
    printf("\n--- object_get_name ---\n");
 
-   // T12: JB_Type descriptor is registered as "JOB"
-   CHECK(12, "JB_Type → \"JOB\"",              strcmp(object_get_name(JB_Type), "JOB") == 0);
+   // T12: JB descriptor is registered as "JOB"
+   CHECK(12, "JB → \"JOB\"",              strcmp(object_get_name(ocs::tom::JB::descriptor.e), "JOB") == 0);
 
-   // T13: QU_Type descriptor is registered as "QINSTANCE"
-   CHECK(13, "QU_Type → \"QINSTANCE\"",        strcmp(object_get_name(QU_Type), "QINSTANCE") == 0);
+   // T13: QU descriptor is registered as "QINSTANCE"
+   CHECK(13, "QU → \"QINSTANCE\"",        strcmp(object_get_name(ocs::tom::QU::descriptor.e), "QINSTANCE") == 0);
 
    // T14: nullptr → "unknown" (safe fallback, no crash)
    CHECK(14, "nullptr → \"unknown\"",          strcmp(object_get_name(nullptr), "unknown") == 0);
@@ -192,17 +192,17 @@ static void test_object_get_name_prefix() {
 
    dstring buf = DSTRING_INIT;
 
-   // T15: QU_Type first attribute is QU_qname → prefix "QU_"
-   CHECK(15, "QU_Type → \"QU_\"",              strcmp(object_get_name_prefix(QU_Type, &buf), "QU_") == 0);
+   // T15: QU first attribute is QU_qname → prefix "QU_"
+   CHECK(15, "QU → \"QU_\"",              strcmp(object_get_name_prefix(ocs::tom::QU::descriptor.e, &buf), "QU_") == 0);
 
-   // T16: JB_Type first attribute is JB_job_number → prefix "JB_"
-   CHECK(16, "JB_Type → \"JB_\"",              strcmp(object_get_name_prefix(JB_Type, &buf), "JB_") == 0);
+   // T16: JB first attribute is JB_job_number → prefix "JB_"
+   CHECK(16, "JB → \"JB_\"",              strcmp(object_get_name_prefix(ocs::tom::JB::descriptor.e, &buf), "JB_") == 0);
 
    // T17: nullptr descriptor → nullptr
    CHECK(17, "nullptr descr → nullptr",        object_get_name_prefix(nullptr, &buf) == nullptr);
 
    // T18: nullptr buffer → nullptr
-   CHECK(18, "nullptr buffer → nullptr",       object_get_name_prefix(JB_Type, nullptr) == nullptr);
+   CHECK(18, "nullptr buffer → nullptr",       object_get_name_prefix(ocs::tom::JB::descriptor.e, nullptr) == nullptr);
 
    sge_dstring_free(&buf);
 }
@@ -263,8 +263,8 @@ static void test_object_name_get_type() {
 static void test_object_type_get_descr_and_key() {
    printf("\n--- object_type_get_descr / object_type_get_key_nm ---\n");
 
-   // T26: SGE_TYPE_JOB maps to the JB_Type descriptor
-   CHECK(26, "SGE_TYPE_JOB descr → JB_Type",       object_type_get_descr(SGE_TYPE_JOB) == JB_Type);
+   // T26: SGE_TYPE_JOB maps to the JB descriptor
+   CHECK(26, "SGE_TYPE_JOB descr → JB",       object_type_get_descr(SGE_TYPE_JOB) == ocs::tom::JB::descriptor.e);
 
    // T27: synthetic type SHUTDOWN carries no descriptor
    CHECK(27, "SGE_TYPE_SHUTDOWN descr → nullptr",   object_type_get_descr(SGE_TYPE_SHUTDOWN) == nullptr);
@@ -298,7 +298,8 @@ static_assert(ocs_object_type_t<SGE_TYPE_EXECHOST>::key == EH_name, "execution h
 static_assert(ocs_object_type_t<SGE_TYPE_SCHEDD_CONF>::has_object && !ocs_object_type_t<SGE_TYPE_SCHEDD_CONF>::has_key,
               "the scheduler configuration has an object, but no key");
 static_assert(!ocs_object_type_t<SGE_TYPE_SHUTDOWN>::has_object, "the shutdown carries no object");
-static_assert(ocs_object_descriptions[SGE_TYPE_CQUEUE].descr == CQ_Type, "the run-time table is generated");
+static_assert(ocs_object_descriptions[SGE_TYPE_CQUEUE].descr == ocs::tom::CQ::descriptor.e,
+              "the run-time table is generated");
 
 /** @brief What the dispatch test's callable reports about the entry it was called with */
 struct DispatchedEntry {
@@ -417,18 +418,18 @@ static void test_object_verify_cull(lListElem *queue, lList *st_list) {
    CHECK(33, "queue, nullptr descr → true",           object_verify_cull(queue, nullptr) == true);
 
    // T34: element type matches the given descriptor → true
-   CHECK(34, "queue matches QU_Type → true",          object_verify_cull(queue, QU_Type) == true);
+   CHECK(34, "queue matches QU → true",          object_verify_cull(queue, ocs::tom::QU::descriptor.e) == true);
 
    // T35: element type does NOT match the given descriptor → false
-   CHECK(35, "queue vs JB_Type → false",              object_verify_cull(queue, JB_Type) == false);
+   CHECK(35, "queue vs JB → false",              object_verify_cull(queue, ocs::tom::JB::descriptor.e) == false);
 
-   // T36: sub-list with the correct element type (QU_pe_list expects ST_Type) → true
+   // T36: sub-list with the correct element type (QU_pe_list expects ST) → true
    ocs::tom::set<QU_pe_list>(queue, lCopyList("pe_list", st_list));
-   CHECK(36, "QU_pe_list with ST_Type elements → true",  object_verify_cull(queue, QU_Type) == true);
+   CHECK(36, "QU_pe_list with ST elements → true",  object_verify_cull(queue, ocs::tom::QU::descriptor.e) == true);
 
-   // T37: sub-list with wrong element type — QU_owner_list expects US_Type, not ST_Type → false
+   // T37: sub-list with wrong element type — QU_owner_list expects US, not ST → false
    ocs::tom::set<QU_owner_list>(queue, lCopyList("owner_list", st_list));
-   CHECK(37, "QU_owner_list with ST_Type elements → false", object_verify_cull(queue, QU_Type) == false);
+   CHECK(37, "QU_owner_list with ST elements → false", object_verify_cull(queue, ocs::tom::QU::descriptor.e) == false);
 }
 
 // ---------------------------------------------------------------------------
@@ -445,10 +446,10 @@ static void test_object_list_verify_cull(lList *st_list) {
    CHECK(39, "st_list, nullptr descr → true",         object_list_verify_cull(st_list, nullptr) == true);
 
    // T40: list element type matches the expected descriptor → true
-   CHECK(40, "st_list matches ST_Type → true",        object_list_verify_cull(st_list, ST_Type) == true);
+   CHECK(40, "st_list matches ST → true",        object_list_verify_cull(st_list, ocs::tom::ST::descriptor.e) == true);
 
    // T41: list element type does NOT match the expected descriptor → false
-   CHECK(41, "st_list vs QU_Type → false",            object_list_verify_cull(st_list, QU_Type) == false);
+   CHECK(41, "st_list vs QU → false",            object_list_verify_cull(st_list, ocs::tom::QU::descriptor.e) == false);
 }
 
 // ---------------------------------------------------------------------------
@@ -514,7 +515,7 @@ static void test_object_has_differences() {
    CHECK(102, "host field in another case → false",   object_has_differences(*h1, &alp, *h2) == false);
 
    // T103/T104: a reduced element differs from the full one in both directions, two equal reductions do not
-   lEnumeration *what = lWhat("%T(%I)", PRO_Type, PRO_vsize);
+   lEnumeration *what = lWhat("%T(%I)", ocs::tom::PRO::descriptor.e, PRO_vsize);
    auto reduced = ocs::tom::select(p.get().raw(), what);
    auto reduced_too = ocs::tom::select(p.get().raw(), what);
    lFreeWhat(&what);
@@ -660,32 +661,32 @@ static void test_object_verify_name() {
 }
 
 // ---------------------------------------------------------------------------
-// spooled job of a shorter JB_Type — types grown at the end  [T61–T62]
+// spooled job of a shorter JB — types grown at the end  [T61–T62]
 //
-// A job spooled by a release whose JB_Type ended four fields earlier is read
+// A job spooled by a release whose JB ended four fields earlier is read
 // into a full job; the added fields hold their initial values (N-W-6). The
 // old special case for jobs in the unpack code is gone, the rule is generic.
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Pack a job as a release with a JB_Type shorter by some fields would have spooled it
+ * @brief Pack a job as a release with a JB shorter by some fields would have spooled it
  *
  * The job is packed with a selection of the leading fields; clearing the reduced
  * mark of the packed descriptor turns it into the full type of the older release.
  *
  * @param pb the buffer to pack into
  * @param job the job
- * @param dropped how many fields at the end the older JB_Type lacks
+ * @param dropped how many fields at the end the older JB lacks
  * @return true on success
  */
 static bool pack_job_as_shorter(sge_pack_buffer *pb, const lListElem *job, const int dropped) {
-   const int n = lCountDescr(JB_Type) - dropped;
+   const int n = lCountDescr(ocs::tom::JB::descriptor.e) - dropped;
    std::vector<int> nms;
    for (int i = 0; i < n; i++) {
-      nms.push_back(JB_Type[i].nm);
+      nms.push_back(ocs::tom::JB::descriptor.e[i].nm);
    }
    nms.push_back(NoName);
-   lEnumeration *what = lIntVector2What(JB_Type, nms.data());
+   lEnumeration *what = lIntVector2What(ocs::tom::JB::descriptor.e, nms.data());
    const size_t start = pb->bytes_used;
    const bool ok = cull_pack_elem_partial(pb, job, what, CULL_SPOOL) == PACK_SUCCESS;
    lFreeWhat(&what);
@@ -700,9 +701,9 @@ static bool pack_job_as_shorter(sge_pack_buffer *pb, const lListElem *job, const
    return ok;
 }
 
-/** @brief A job spooled with a JB_Type shorter by four fields is read into a full job [T61–T62] */
+/** @brief A job spooled with a JB shorter by four fields is read into a full job [T61–T62] */
 static void test_spooled_job_of_shorter_type() {
-   printf("\n--- spooled job of a shorter JB_Type ---\n");
+   printf("\n--- spooled job of a shorter JB ---\n");
 
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_job_number>(job, 42);
@@ -718,16 +719,16 @@ static void test_spooled_job_of_shorter_type() {
          memcpy(buf, pb.head_ptr, pb.bytes_used);
          sge_pack_buffer in;
          if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            ret = cull_unpack_elem_partial(&in, &read, JB_Type, CULL_SPOOL);
+            ret = cull_unpack_elem_partial(&in, &read, ocs::tom::JB::descriptor.e, CULL_SPOOL);
          }
          clear_packbuffer(&in);
       }
       clear_packbuffer(&pb);
    }
 
-   // T61: the job is read into the full JB_Type with its values
-   CHECK(61, "shorter spooled job → full JB_Type",
-         ret == PACK_SUCCESS && read != nullptr && lGetElemDescr(read) == JB_Type &&
+   // T61: the job is read into the full JB with its values
+   CHECK(61, "shorter spooled job → full JB",
+         ret == PACK_SUCCESS && read != nullptr && lGetElemDescr(read) == ocs::tom::JB::descriptor.e &&
          ocs::tom::get<JB_job_number>(read) == 42 && strcmp(ocs::tom::get<JB_owner>(read), "owner") == 0);
 
    // T62: a spooled field the older type lacked holds its initial value
@@ -762,29 +763,30 @@ static int pack_roundtrip(const lListElem *ep, lListElem **back) {
    return ret;
 }
 
-/** @brief A what and a where packed into PACK_Type elements survive the wire, as event clients send them [T63–T66] */
+/** @brief A what and a where packed into PACK elements survive the wire, as event clients send them [T63–T66] */
 static void test_pack_type_roundtrip() {
-   printf("\n--- PACK_Type over the wire ---\n");
+   printf("\n--- PACK over the wire ---\n");
 
-   // T63: PACK_Type is known to the installed object model
+   // T63: PACK is known to the installed object model
    CHECK(63, "PACK_id is known to the object model", strcmp(ocs::tom::field_name(PACK_id), "PACK_id") == 0);
 
-   lEnumeration *what = lWhat("%T(%I %I)", QU_Type, QU_qname, QU_qhostname);
+   lEnumeration *what = lWhat("%T(%I %I)", ocs::tom::QU::descriptor.e, QU_qname, QU_qhostname);
    auto what_elem = ocs_what_to_elem(what);
    lListElem *what_back = nullptr;
    const int what_ret = pack_roundtrip(*what_elem, &what_back);
 
-   // T64: the element comes back with the static PACK_Type descriptor
-   CHECK(64, "packed what → PACK_Type element",
-         what_ret == PACK_SUCCESS && what_back != nullptr && lGetElemDescr(what_back) == PACK_Type);
+   // T64: the element comes back with the static PACK descriptor
+   CHECK(64, "packed what → PACK element",
+         what_ret == PACK_SUCCESS && what_back != nullptr && lGetElemDescr(what_back) == ocs::tom::PACK::descriptor.e);
 
    // T65: the what read from it selects the same fields
    lEnumeration *what_read =
       what_back != nullptr ? ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK>(what_back)) : nullptr;
    CHECK(65, "what from the element → same fields",
-         what_read != nullptr && lCountWhat(what_read, QU_Type) == 2 && lCountWhat(what, QU_Type) == 2);
+         what_read != nullptr && lCountWhat(what_read, ocs::tom::QU::descriptor.e) == 2 &&
+         lCountWhat(what, ocs::tom::QU::descriptor.e) == 2);
 
-   lCondition *where = lWhere("%T(%I==%s)", QU_Type, QU_qname, "all.q");
+   lCondition *where = lWhere("%T(%I==%s)", ocs::tom::QU::descriptor.e, QU_qname, "all.q");
    auto where_elem = ocs_where_to_elem(where);
    lListElem *where_back = nullptr;
    const int where_ret = pack_roundtrip(*where_elem, &where_back);
@@ -988,19 +990,20 @@ static void test_object_unpack_elem_verify(const ocs::tom::ConstElement<ocs::tom
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    lListElem *back = nullptr;
-   const bool accepted = unpack_verify_roundtrip(queue.raw(), QU_Type, &alp, &back);
-   CHECK(110, "queue checked as QU_Type → true, the element is handed out",
-         accepted && back != nullptr && lGetElemDescr(back) == QU_Type && !alp);
+   const bool accepted = unpack_verify_roundtrip(queue.raw(), ocs::tom::QU::descriptor.e, &alp, &back);
+   CHECK(110, "queue checked as QU → true, the element is handed out",
+         accepted && back != nullptr && lGetElemDescr(back) == ocs::tom::QU::descriptor.e && !alp);
    lFreeElem(&back);
 
-   const bool rejected = !unpack_verify_roundtrip(queue.raw(), JB_Type, &alp, &back);
-   CHECK(111, "queue checked as JB_Type → false, the element is freed, one error",
+   const bool rejected = !unpack_verify_roundtrip(queue.raw(), ocs::tom::JB::descriptor.e, &alp, &back);
+   CHECK(111, "queue checked as JB → false, the element is freed, one error",
          rejected && back == nullptr && alp && alp->size() == 1);
    alp.reset();
 
    lListElem *none = nullptr;
    CHECK(112, "no pack buffer → false, one error",
-         !object_unpack_elem_verify(&alp, nullptr, &none, QU_Type) && none == nullptr && alp && alp->size() == 1);
+         !object_unpack_elem_verify(&alp, nullptr, &none, ocs::tom::QU::descriptor.e) && none == nullptr && alp &&
+         alp->size() == 1);
 }
 
 /**
@@ -1059,7 +1062,7 @@ static void test_object_list_add_unique_layouts() {
    lFreeList(&created);
 
    // a reduced list of the same type has another layout: as lAddList() it is not joined, but freed
-   lEnumeration *what = lWhat("%T(%I)", ST_Type, ST_name);
+   lEnumeration *what = lWhat("%T(%I)", ocs::tom::ST::descriptor.e, ST_name);
    ocs::tom::RawListPtr reduced = ocs::tom::select(target, nullptr, what);
    lList *reduced_raw = reduced.release();
    ocs_object_list_add_unique(&target, &reduced_raw);

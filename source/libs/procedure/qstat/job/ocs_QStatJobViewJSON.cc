@@ -139,7 +139,7 @@ void ocs::QStatJobViewJSON::report_job_finished(std::ostream &os, QStatParameter
  *
  * @param os stream to write to
  * @param job the job
- * @tparam F the field, a `uint32_t` field of `JB_Type`
+ * @tparam F the field, a `uint32_t` field of `JB`
  * @param name the name of the member
  */
 template <auto F>
@@ -228,7 +228,7 @@ void ocs::QStatJobViewJSON::report_exec_file(std::ostream &os, const ocs::tom::C
  *
  * @param os stream to write to
  * @param job the job
- * @tparam F the field, a `uint64_t` time field of `JB_Type`
+ * @tparam F the field, a `uint64_t` time field of `JB`
  * @param name the name of the member
  */
 template <auto F>
@@ -260,7 +260,7 @@ void ocs::QStatJobViewJSON::report_X_ISO_8601_timestamp(std::ostream &os,
  *
  * @param os stream to write to
  * @param task the array task the row is about
- * @tparam F the field, a `uint64_t` time field of `JAT_Type`
+ * @tparam F the field, a `uint64_t` time field of `JAT`
  * @param name the name of the member
  */
 template <auto F>
@@ -583,7 +583,7 @@ void ocs::QStatJobViewJSON::report_directive_prefix(std::ostream &os, const ocs:
  *
  * @param os stream to write to
  * @param job the job
- * @tparam F the field, a path list field (`PN_Type`) of `JB_Type`
+ * @tparam F the field, a path list field (`PN`) of `JB`
  * @param name the name of the member
  */
 template <auto F>
@@ -670,7 +670,7 @@ void ocs::QStatJobViewJSON::report_stderr_path_list(std::ostream &os, const ocs:
  * @brief Write a boolean field of the job as a member of the job object
  * @param os stream to write to
  * @param job the job
- * @tparam F the field, a `bool` field of `JB_Type`
+ * @tparam F the field, a `bool` field of `JB`
  * @param name the name of the member
  */
 template <auto F>
@@ -715,7 +715,7 @@ void ocs::QStatJobViewJSON::report_merge_stderr(std::ostream &os, const ocs::tom
  * @brief Write a resource request list of a request set as an array member of the job object
  * @param os stream to write to
  * @param jrs the request set of the job
- * @tparam F the field, a resource list field (`CE_Type`) of `JRS_Type`
+ * @tparam F the field, a resource list field (`CE`) of `JRS`
  * @param name the name of the member
  */
 template <auto F>
@@ -761,7 +761,7 @@ void ocs::QStatJobViewJSON::report_X_resource_list(std::ostream &os, const ocs::
  * @brief Write a queue request list of a request set as an array member of the job object
  * @param os stream to write to
  * @param jrs the request set of the job
- * @tparam F the field, a queue reference list field (`QR_Type`) of `JRS_Type`
+ * @tparam F the field, a queue reference list field (`QR`) of `JRS`
  * @param name the name of the member
  */
 template <auto F>
@@ -1074,7 +1074,7 @@ void ocs::QStatJobViewJSON::report_job_args(std::ostream &os, const ocs::tom::Co
  *
  * @param os stream to write to
  * @param job the job
- * @tparam LF the list field of `JB_Type`
+ * @tparam LF the list field of `JB`
  * @tparam VF the string field of the list's elements; its type is the type of the elements
  * @param name the name of the member
  */
@@ -1126,8 +1126,8 @@ void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const ocs::to
  *
  * @param os stream to write to
  * @param job the job
- * @tparam LF the list field of `JB_Type`, a job reference list (`JRE_Type`)
- * @tparam VF the `uint32_t` field of `JRE_Type`
+ * @tparam LF the list field of `JB`, a job reference list (`JRE`)
+ * @tparam VF the `uint32_t` field of `JRE`
  * @param name the name of the member
  */
 template <auto LF, auto VF>
@@ -1872,9 +1872,9 @@ void ocs::QStatJobViewJSON::report_task_exec_binding_list(std::ostream &os,
  * @brief Write a granted destination list of an array task as an array of objects with a string and a number
  * @param os stream to write to
  * @param task the array task the row is about
- * @tparam F the field, a granted destination list field (`JG_Type`) of `JAT_Type`
- * @tparam SF the string field of `JG_Type`
- * @tparam UF the `uint32_t` field of `JG_Type`
+ * @tparam F the field, a granted destination list field (`JG`) of `JAT`
+ * @tparam SF the string field of `JG`
+ * @tparam UF the `uint32_t` field of `JG`
  * @param name the name of the member
  * @param str_name the name of the string member of each object
  * @param uint32_name the name of the number member of each object
@@ -2130,7 +2130,7 @@ void ocs::QStatJobViewJSON::report_task_error_reason(std::ostream &os, const ocs
 /**
  * @brief Report why the job has not been scheduled yet, as JSON
  * @param os stream to write to
- * @param ilp the scheduler job info list (`SME_Type`), holding the reasons a job is not running
+ * @param ilp the scheduler job info list (`SME`), holding the reasons a job is not running
  * @param job the job
  */
 void ocs::QStatJobViewJSON::report_schedd_job_info(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,

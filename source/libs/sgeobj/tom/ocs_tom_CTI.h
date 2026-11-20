@@ -51,7 +51,7 @@ namespace ocs::tom {
    /**
     * @brief Category Ignore Entry
     *
-    * One name a category has already been rejected by, held in the ignore lists of `CCT_Type`.
+    * One name a category has already been rejected by, held in the ignore lists of `CCT`.
     */
    struct CTI {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CTI for the list library: a synonym for ocs::tom::CTI::descriptor */
-inline constexpr const lDescr *CTI_Type = ocs::tom::CTI::descriptor.e;

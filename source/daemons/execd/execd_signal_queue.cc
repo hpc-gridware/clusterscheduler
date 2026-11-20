@@ -266,11 +266,6 @@ int sge_execd_deliver_signal(const uint32_t sig, const ocs::tom::ConstElement<oc
       DRETURN(0);
    }
 
-/*
-   DPRINTF(("(sig==SGE_MIGRATE) = %d (ckpt on suspend) = %d %d\n",
-      (sig == SGE_MIGRATE), lGetUlong(jep, JB_checkpoint_attr)|CHECKPOINT_SUSPEND,
-         lGetUlong(jep, JB_checkpoint_attr)));
-*/
    /* Simply apply signal to all subtasks of the job
       except in case of SGE_MIGRATE when there is a
       ckpt env with "migrate on suspend" configured */

@@ -35,7 +35,7 @@
 /** @file
  * @brief Range lists: compact sets of numbers such as array task ids
  *
- * A range is a `min`-`max`-`step` triple (`RN_Type`); a range list holds
+ * A range is a `min`-`max`-`step` triple (`RN`); a range list holds
  * several of them and is kept sorted in descending order with no two ranges
  * overlapping. That representation is what lets an array job with a million
  * tasks be stored, spooled and printed as `1-1000000:1` instead of a million
@@ -77,8 +77,8 @@ static void ocs_range_list_insert_id(ocs::tom::List<ocs::tom::RN> list, uint32_t
  * is either linked into the list or, when the list covers it already or it
  * was merged into a range of the list, freed.
  *
- * @param r the range (`RN_Type`), which the function takes over
- * @param rl in-out: the `RN_Type` list, created if the handle is empty
+ * @param r the range (`RN`), which the function takes over
+ * @param rl in-out: the `RN` list, created if the handle is empty
  *
  * @note MT-NOTE: expand_range_list() is MT safe
  */
@@ -207,7 +207,7 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::
  * 1-6:2 (1,3,5) will be modified to 1-5:2
  * @endcode
  *
- * @param this_range the range (`RN_Type`); an empty handle is a no-op
+ * @param this_range the range (`RN`); an empty handle is a no-op
  *
  * @note 'this_range' will be modified
  */
@@ -244,8 +244,8 @@ void range_correct_end(const ocs::tom::Element<ocs::tom::RN> this_range) {
  * 1-5:3    6-10:4      => false
  * @endcode
  *
- * @param this_elem the first range (`RN_Type`)
- * @param range the second range (`RN_Type`)
+ * @param this_elem the first range (`RN`)
+ * @param range the second range (`RN`)
  *
  * @return false or true; false if one of the handles is empty
  *
@@ -276,8 +276,8 @@ static bool range_is_overlapping(const ocs::tom::ConstElement<ocs::tom::RN> this
  * 'this_list' will be created if it does not exist. If it already
  * exists all elements contained in this list will be removed.
  *
- * @param this_list in-out: the RN_Type list; afterwards an empty list
- * @param answer_list Pointer to a AN_Type-list or nullptr; unused since creating the list throws on a lack
+ * @param this_list in-out: the RN list; afterwards an empty list
+ * @param answer_list Pointer to a AN-list or nullptr; unused since creating the list throws on a lack
  *                    of memory instead of failing
  */
 void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
@@ -310,7 +310,7 @@ void range_list_initialize(ocs::tom::ListPtr<ocs::tom::RN> &this_list,
  * 1-5:2, 7-10:3, 20-23:1 (1, 3, 5, 7, 10, 20, 21, 22, 23) => 9
  * @endcode
  *
- * @param this_list RN_Type list, may be an empty handle
+ * @param this_list RN list, may be an empty handle
  *
  * @return number of ids
  *
@@ -328,7 +328,7 @@ uint32_t range_list_get_number_of_ids(const ocs::tom::ConstList<ocs::tom::RN> th
 
 
 /**
- * @brief Count the distinct id values in a single RN_Type range element.
+ * @brief Count the distinct id values in a single RN range element.
  *
  * Computes @c 1 + (max - min) / step using unsigned integer division.
  * Integer division truncates towards zero, so a stored @c max that falls off
@@ -339,7 +339,7 @@ uint32_t range_list_get_number_of_ids(const ocs::tom::ConstList<ocs::tom::RN> th
  *      initialised via range_set_all_ids()).  Calling this on a freshly
  *      created zeroed element (step == 0) causes division by zero.
  *
- * @param this_elem  The RN_Type element to query.
+ * @param this_elem  The RN element to query.
  * @return           Number of distinct ids in the range.
  *
  * @see range_correct_end
@@ -363,7 +363,7 @@ uint32_t range_get_number_of_ids(const ocs::tom::ConstElement<ocs::tom::RN> this
  * to 'string'. If 'ignore_step' is 'true' then the stepsize of all
  * ranges will be suppressed.
  *
- * @param this_list RN_Type list, may be an empty handle
+ * @param this_list RN list, may be an empty handle
  * @param string dynamic string; nothing happens for nullptr
  * @param ignore_step ignore step for printing
  * @param comma_as_separator use the format 1,2,3 instead of 1-2:
@@ -400,8 +400,8 @@ void range_list_print_to_string(const ocs::tom::ConstList<ocs::tom::RN> this_lis
  * returned and 'answer_list' will be filled with an error
  * message.
  *
- * @param range_list RN_Type list, may be an empty handle
- * @param answer_list Pointer to an AN_Type list
+ * @param range_list RN list, may be an empty handle
+ * @param answer_list Pointer to an AN list
  *
  * @return First id or 0
  *
@@ -436,8 +436,8 @@ uint32_t range_list_get_first_id(const ocs::tom::ConstList<ocs::tom::RN> range_l
  * returned and 'answer_list' will be filled with an error
  * message.
  *
- * @param range_list RN_Type list, may be an empty handle
- * @param answer_list Pointer to an AN_Type list
+ * @param range_list RN list, may be an empty handle
+ * @param answer_list Pointer to an AN list
  *
  * @return Last id or 0
  *
@@ -467,7 +467,7 @@ uint32_t range_list_get_last_id(const ocs::tom::ConstList<ocs::tom::RN> range_li
  * The average of all numbers in the range is returned. For an empty
  * range 0 is returned.
  *
- * @param this_list RN_Type list, may be an empty handle
+ * @param this_list RN list, may be an empty handle
  * @param upperbound This is used as range upperbound if non-0
  *
  * @return the average
@@ -507,8 +507,8 @@ double range_list_get_average(const ocs::tom::ConstList<ocs::tom::RN> this_list,
  * 12-12:7,1-7:1,3-5:2,14-16:2   => 1-7:1,12-16:2
  * @endcode
  *
- * @param range_list RN_Type list; nothing happens for an empty handle
- * @param answer_list Pointer to an AN_Type list
+ * @param range_list RN list; nothing happens for an empty handle
+ * @param answer_list Pointer to an AN list
  * @param correct_end if true, range_list is treated as id enumeration
  *
  * @note range_list will be modified
@@ -591,7 +591,7 @@ void range_list_sort_uniq_compress(const ocs::tom::List<ocs::tom::RN> range_list
  * 1-3:1,4-5:1,6-8:2,8-10:2   => 1-5:1,6-10:2
  * @endcode
  *
- * @param range_list RN_Type list; nothing happens for an empty handle
+ * @param range_list RN list; nothing happens for an empty handle
  *
  * @note 'range_list' will be modified
  *
@@ -651,7 +651,7 @@ void range_list_compress(const ocs::tom::List<ocs::tom::RN> range_list) {
  * True is returned by this function if 'id' is part of at least
  * one range element of 'range_list'
  *
- * @param range_list RN_Type list, may be an empty handle
+ * @param range_list RN list, may be an empty handle
  * @param id id
  *
  * @return true or false
@@ -677,7 +677,7 @@ bool range_list_is_id_within(const ocs::tom::ConstList<ocs::tom::RN> range_list,
  *
  * Is at least one id in the "range_list" less than "id"
  *
- * @param range_list RN_Type list, may be an empty handle
+ * @param range_list RN list, may be an empty handle
  * @param id number
  *
  * @return true or false
@@ -702,7 +702,7 @@ bool range_list_containes_id_less_than(const ocs::tom::ConstList<ocs::tom::RN> r
  *
  * Returns true if "range_list" containes no ids.
  *
- * @param range_list RN_Type list, may be an empty handle
+ * @param range_list RN list, may be an empty handle
  *
  * @return true or false
  */
@@ -723,7 +723,7 @@ bool range_list_is_empty(const ocs::tom::ConstList<ocs::tom::RN> range_list) {
  * @note This is a start-only comparison.  It does NOT test whether @p id
  *       itself is within the range.  Use range_is_id_within() for that.
  *
- * @param range  RN_Type element.  An empty handle returns false.
+ * @param range  RN element.  An empty handle returns false.
  * @param id     The exclusive lower-bound threshold.
  * @return       true when @c range.min < @p id, false otherwise.
  *
@@ -760,7 +760,7 @@ bool range_containes_id_less_than(const ocs::tom::ConstElement<ocs::tom::RN> ran
  *       @c range_is_id_within(r, 6) returns @c false because (6-1)%2 == 1.
  *       Call range_correct_end() first if canonical @c max values are required.
  *
- * @param range  RN_Type element.  An empty handle returns false.
+ * @param range  RN element.  An empty handle returns false.
  * @param id     The id to test for membership.
  * @return       true if @p id is a member of @p range, false otherwise.
  *
@@ -789,8 +789,8 @@ bool range_is_id_within(const ocs::tom::ConstElement<ocs::tom::RN> range, const 
  * 'id' will be removed from 'range_list'. A list that becomes empty is
  * freed and the handle emptied.
  *
- * @param range_list in-out: the RN_Type list; nothing happens for an empty handle
- * @param answer_list pointer to a AN_Type list
+ * @param range_list in-out: the RN list; nothing happens for an empty handle
+ * @param answer_list pointer to a AN list
  * @param id the id to remove
  *
  * @note range_list and answer_list may be modified
@@ -852,9 +852,9 @@ void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, ocs::tom:
  *
  * The destination may be created and the source freed when it becomes empty.
  *
- * @param range_list in-out: the RN_Type list (source); nothing happens for an empty handle
- * @param answer_list pointer to an AN_Type list
- * @param range_list2 in-out: the RN_Type list (destination), created if the handle is empty
+ * @param range_list in-out: the RN list (source); nothing happens for an empty handle
+ * @param answer_list pointer to an AN list
+ * @param range_list2 in-out: the RN list (destination), created if the handle is empty
  * @param n number of ids
  *
  * @note range_list, range_list2, answer_list may be modified
@@ -898,8 +898,8 @@ void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
  * 'id' will be inserted into 'range_list'. The list is created if
  * the handle is empty.
  *
- * @param range_list in-out: the RN_Type list
- * @param answer_list pointer to a AN_Type list; unused since creating the list throws on a lack of memory
+ * @param range_list in-out: the RN list
+ * @param answer_list pointer to a AN list; unused since creating the list throws on a lack of memory
  *                    instead of failing
  * @param id new id
  *
@@ -929,7 +929,7 @@ void range_list_insert_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
  *
  * The core of range_list_insert_id(), for a list that exists already.
  *
- * @param list the RN_Type list; must not be an empty handle
+ * @param list the RN list; must not be an empty handle
  * @param id new id
  */
 static void ocs_range_list_insert_id(const ocs::tom::List<ocs::tom::RN> list, const uint32_t id) {
@@ -1033,13 +1033,13 @@ static void ocs_range_list_insert_id(const ocs::tom::List<ocs::tom::RN> list, co
 }
 
 /**
- * @brief Read the (min, max, step) triple from an RN_Type range element.
+ * @brief Read the (min, max, step) triple from an RN range element.
  *
  * If @p range is an empty handle all three output parameters are set to 0.
  * If any output parameter pointer is nullptr the function returns without
  * writing anything — all three must be non-null for any write to occur.
  *
- * @param range  The RN_Type element to read.  May be an empty handle.
+ * @param range  The RN element to read.  May be an empty handle.
  * @param min    Receives the start of the range; set to 0 for an empty handle.
  * @param max    Receives the end of the range (field value, may be off the step grid);
  *               set to 0 for an empty handle.
@@ -1065,7 +1065,7 @@ void range_get_all_ids(const ocs::tom::ConstElement<ocs::tom::RN> range, uint32_
 
 
 /**
- * @brief Write (min, max, step) into an RN_Type range element.
+ * @brief Write (min, max, step) into an RN range element.
  *
  * An empty @p range handle is a silent no-op.
  *
@@ -1073,7 +1073,7 @@ void range_get_all_ids(const ocs::tom::ConstElement<ocs::tom::RN> range, uint32_
  *       as 1, regardless of the @p step argument.  This keeps single-element
  *       ranges in canonical form (e.g. 5-5:3 becomes 5-5:1).
  *
- * @param range  The RN_Type element to modify.  May be an empty handle (no-op).
+ * @param range  The RN element to modify.  May be an empty handle (no-op).
  * @param min    Start of the range.
  * @param max    End of the range (field value; may be off the step grid —
  *               call range_correct_end() afterwards if canonical storage is needed).
@@ -1105,10 +1105,10 @@ void range_set_all_ids(const ocs::tom::Element<ocs::tom::RN> range, const uint32
  * contained in 'range_list' after a call of this function.
  * Nothing happens if both sources are empty handles.
  *
- * @param range_list in-out: the union set RN_Type list; a list it held before is freed
- * @param answer_list pointer to AN_Type list
- * @param range_list1 first source RN_Type list, may be an empty handle
- * @param range_list2 second source RN_Type list, may be an empty handle
+ * @param range_list in-out: the union set RN list; a list it held before is freed
+ * @param answer_list pointer to AN list
+ * @param range_list1 first source RN list, may be an empty handle
+ * @param range_list2 second source RN list, may be an empty handle
  *
  * @note range_list and answer_list may be modified
  */
@@ -1158,10 +1158,10 @@ void range_list_calculate_union_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
  * contained in 'range_list2'. Nothing happens if 'range_list1' is an
  * empty handle.
  *
- * @param range_list in-out: the result RN_Type list; a list it held before is freed
- * @param answer_list pointer to AN_Type list
- * @param range_list1 first source RN_Type list, may be an empty handle
- * @param range_list2 second source RN_Type list, may be an empty handle
+ * @param range_list in-out: the result RN list; a list it held before is freed
+ * @param answer_list pointer to AN list
+ * @param range_list1 first source RN list, may be an empty handle
+ * @param range_list2 second source RN list, may be an empty handle
  */
 void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -1207,12 +1207,12 @@ void range_list_calculate_difference_set(ocs::tom::ListPtr<ocs::tom::RN> &range_
  * 'range_list' will contain all ids which are contained in
  * 'range_list1' and also in 'range_list2'.
  *
- * @param range_list in-out: the result RN_Type list; a list it held before is freed, an empty handle if
+ * @param range_list in-out: the result RN list; a list it held before is freed, an empty handle if
  *                   the intersection is empty
- * @param answer_list pointer to AN_Type list; unused since creating lists and elements throws on a lack of
+ * @param answer_list pointer to AN list; unused since creating lists and elements throws on a lack of
  *                    memory instead of failing
- * @param range_list1 first source RN_Type list, may be an empty handle
- * @param range_list2 second source RN_Type list, may be an empty handle
+ * @param range_list1 first source RN list, may be an empty handle
+ * @param range_list2 second source RN list, may be an empty handle
  */
 void range_list_calculate_intersection_set(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
                                            [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -1297,7 +1297,7 @@ void range_to_dstring(uint32_t start, uint32_t end, int step,
  * @param rstr the text to parse
  * @param step_allowed whether a `:step` suffix may appear
  * @param inf_allowed whether an open upper bound may appear
- * @return the new range (`RN_Type`), or an empty handle for `UNDEFINED`, for an
+ * @return the new range (`RN`), or an empty handle for `UNDEFINED`, for an
  *         open bound that is not allowed and on a parse error
  *
  * @note MT-NOTE: range_parse_from_string() is MT safe

@@ -41,19 +41,19 @@ enum CA_Field {
    /**
     * @brief YearDay Range List
     *
-    * TMR_Type with begin/end using TM_mday/TM_mon/TM_year.
+    * TMR with begin/end using TM_mday/TM_mon/TM_year.
     */
    CA_yday_range_list = CA_LOWERBOUND,
    /**
     * @brief WeekDay Range List
     *
-    * TMR_Type with begin/end using TM_wday.
+    * TMR with begin/end using TM_wday.
     */
    CA_wday_range_list,
    /**
     * @brief DayTime Range List
     *
-    * TMR_Type with begin/end using TM_sec/TM_min/TM_hour.
+    * TMR with begin/end using TM_sec/TM_min/TM_hour.
     */
    CA_daytime_range_list,
    /**
@@ -114,6 +114,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CA for the list library: a synonym for ocs::tom::CA::descriptor */
-inline constexpr const lDescr *CA_Type = ocs::tom::CA::descriptor.e;

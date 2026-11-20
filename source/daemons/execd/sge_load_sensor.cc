@@ -91,7 +91,7 @@ static int read_ls();
  * of the corresponding load sensor; it lives as long as the process,
  * so it stays a raw pointer and is read through checked handles
  */
-static lList *ls_list = nullptr;   /* LS_Type */
+static lList *ls_list = nullptr;   /* LS */
 
 /* 
  * should we start the qidle command 
@@ -108,7 +108,7 @@ static int has_to_use_gnu_load_sensor = 0;
  * @brief Get pid of a loadsensor
  *
  * Returns the pid which is stored in an CULL element of
- * the type LS_Type. If the corresponding loadsensor was
+ * the type LS. If the corresponding loadsensor was
  * not started until now then -1 will be returned.
  *
  * @param this_ls the load sensor
@@ -130,7 +130,7 @@ static pid_t sge_ls_get_pid(const ocs::tom::ConstElement<ocs::tom::LS> this_ls) 
 /**
  * @brief Set pid in loadsensor element
  *
- * Set the pid entry in a CULL element of the type LS_Type.
+ * Set the pid entry in a CULL element of the type LS.
  *
  * @param this_ls the load sensor
  * @param pid pid of the loadsensor process or -1
@@ -269,7 +269,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, const ocs::tom::Eleme
 /**
  * @brief Creates a new CULL loadsensor element
  *
- * The function creates a new element of type LS_Type and
+ * The function creates a new element of type LS and
  * returns it. The loadsensor will be
  * started immediately.
  * If it cannot be started then, LS_has_to_restart is set to
@@ -381,9 +381,9 @@ static void sge_ls_stop_ls(const ocs::tom::Element<ocs::tom::LS> this_ls, const 
  * @brief Read sensor output and add it to load report
  *
  * This function loops over all loadsensor elements in
- * the ls_list (LS_Type). It tries to read from the
+ * the ls_list (LS). It tries to read from the
  * output stream (LS_out). The output will be parsed
- * and stored in the LS_incomplete entry (LR_Type).
+ * and stored in the LS_incomplete entry (LR).
  * If the protocol part of the loadsensor is correct
  * then the entries of LS_incomplete will be moved
  * LS_complete.
@@ -592,7 +592,7 @@ sge_ls_expand_variables(const char *qualified_hostname, const char *scriptfile,
  *
  * The 'scriptfiles' parameter will be parsed. Each
  * loadsensor not contained in the global list
- * 'ls_list' (LS_Type) will be added and the process
+ * 'ls_list' (LS) will be added and the process
  * will be started.
  * Loadsensors wich are contained in the global list
  * but not in 'scriptfiles' will be stopped and

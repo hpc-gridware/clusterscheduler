@@ -83,6 +83,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CX for the list library: a synonym for ocs::tom::CX::descriptor */
-inline constexpr const lDescr *CX_Type = ocs::tom::CX::descriptor.e;

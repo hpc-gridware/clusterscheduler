@@ -176,6 +176,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of BN for the list library: a synonym for ocs::tom::BN::descriptor */
-inline constexpr const lDescr *BN_Type = ocs::tom::BN::descriptor.e;

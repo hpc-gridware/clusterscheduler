@@ -74,7 +74,7 @@ namespace ocs {
        * missing value.
        *
        * @param os      the stream to write to
-       * @param list    the execution hosts (`EH_Type`, reduced to name, processors and load values), already
+       * @param list    the execution hosts (`EH`, reduced to name, processors and load values), already
        *                sorted by name
        * @param binding true for `-cb`: also show the socket and core columns
        * @return none

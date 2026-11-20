@@ -47,7 +47,7 @@ enum UPU_Field {
    /**
     * @brief Old Usage List
     *
-    * UA_Type still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster.
+    * UA still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster.
     */
    UPU_old_usage_list,
 };
@@ -91,6 +91,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of UPU for the list library: a synonym for ocs::tom::UPU::descriptor */
-inline constexpr const lDescr *UPU_Type = ocs::tom::UPU::descriptor.e;

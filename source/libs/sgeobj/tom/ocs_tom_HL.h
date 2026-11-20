@@ -99,6 +99,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of HL for the list library: a synonym for ocs::tom::HL::descriptor */
-inline constexpr const lDescr *HL_Type = ocs::tom::HL::descriptor.e;

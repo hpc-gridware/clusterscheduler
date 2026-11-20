@@ -791,7 +791,7 @@ sge_timer_main(void *arg) {
       MONITOR_MESSAGES(p_monitor);
 
       MONITOR_TET_COUNT(p_monitor);
-      // Event_Control.list is the process-lifetime TE_Type list created in te_init()
+      // Event_Control.list is the process-lifetime TE list created in te_init()
       const auto event_list = ocs::tom::List<ocs::tom::TE>::from_typed(Event_Control.list);
       MONITOR_TET_EVENT(p_monitor, static_cast<uint32_t>(event_list.size()));
 

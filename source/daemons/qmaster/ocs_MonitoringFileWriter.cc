@@ -37,9 +37,9 @@
 namespace ocs {
    /** @brief Accounting records are not part of the monitoring file: does nothing
     * @param answer_list receives error messages, unused
-    * @param job_report the job report (`JR_Type`), unused
-    * @param job the job (`JB_Type`), unused
-    * @param ja_task the array task (`JAT_Type`), unused
+    * @param job_report the job report (`JR`), unused
+    * @param job the job (`JB`), unused
+    * @param ja_task the array task (`JAT`), unused
     * @param intermediate whether this is an interim record, unused
     * @return true
     */

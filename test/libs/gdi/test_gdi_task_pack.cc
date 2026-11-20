@@ -82,7 +82,7 @@ same_bytes(const sge_pack_buffer *a, const sge_pack_buffer *b) {
 }
 
 /**
- * @brief A list of ST_Type with three names
+ * @brief A list of ST with three names
  * @return the owner of the list
  */
 static ocs::tom::RawListPtr
@@ -104,8 +104,8 @@ make_full_task() {
    answer_list_add(&answers, "first answer", STATUS_OK, ANSWER_QUALITY_INFO);
    return new ocs::gdi::Task(ocs::gdi::Target::US_LIST, ocs::gdi::Command::MOD,
                              ocs::gdi::SubCommand::RETURN_NEW_VERSION, make_data(), std::move(answers),
-                             ocs::tom::RawWherePtr(lWhere("%T(%I==%s)", ST_Type, ST_name, "beta")),
-                             ocs::tom::RawWhatPtr(lWhat("%T(%I)", ST_Type, ST_name)));
+                             ocs::tom::RawWherePtr(lWhere("%T(%I==%s)", ocs::tom::ST::descriptor.e, ST_name, "beta")),
+                             ocs::tom::RawWhatPtr(lWhat("%T(%I)", ocs::tom::ST::descriptor.e, ST_name)));
 }
 
 /**
@@ -164,8 +164,8 @@ test_select_pack_bytes() {
 
    // the list the task borrows, as qmaster lends it the master list
    ocs::tom::RawListPtr source = make_data();
-   ocs::tom::RawWherePtr where(lWhere("%T(%I==%s)", ST_Type, ST_name, "beta"));
-   ocs::tom::RawWhatPtr what(lWhat("%T(%I)", ST_Type, ST_name));
+   ocs::tom::RawWherePtr where(lWhere("%T(%I==%s)", ocs::tom::ST::descriptor.e, ST_name, "beta"));
+   ocs::tom::RawWhatPtr what(lWhat("%T(%I)", ocs::tom::ST::descriptor.e, ST_name));
 
    ocs::gdi::Packet packet;
    auto *task = new ocs::gdi::Task(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE,

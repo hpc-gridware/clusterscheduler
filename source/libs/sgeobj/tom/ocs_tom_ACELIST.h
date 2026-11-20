@@ -47,7 +47,7 @@ enum ACELIST_Field {
    /**
     * @brief Value
     *
-    * The complex entry list (list of CE_Type).
+    * The complex entry list (list of CE).
     */
    ACELIST_value,
 };
@@ -89,6 +89,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ACELIST for the list library: a synonym for ocs::tom::ACELIST::descriptor */
-inline constexpr const lDescr *ACELIST_Type = ocs::tom::ACELIST::descriptor.e;

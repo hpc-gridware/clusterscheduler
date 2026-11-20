@@ -96,7 +96,7 @@ static constexpr int MATCH_CACHE_PRUNE_BOUND = 64;
  *
  * The time of last use is read with the atomic accessor, as concurrent lookups write it without a lock.
  *
- * @param cache the matching cache (HM_Type), already guarded by the caller; not an empty handle
+ * @param cache the matching cache (HM), already guarded by the caller; not an empty handle
  * @param now the current time as a 64 bit timestamp, that is in microseconds
  */
 static void
@@ -267,7 +267,7 @@ ocs::MatchCache::detach(const ocs::tom::Element<ocs::tom::HGRP> hgroup) {
  * a cache temporarily grown large during a roll-out burst cannot hold the lock.
  *
  * @param hgroup the group that receives the cache; with an empty handle the cache is freed
- * @param cache the detached cache (HM_Type); taken over, whatever the outcome
+ * @param cache the detached cache (HM); taken over, whatever the outcome
  *
  * @see #detach
  */

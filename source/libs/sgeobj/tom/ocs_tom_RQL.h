@@ -102,6 +102,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RQL for the list library: a synonym for ocs::tom::RQL::descriptor */
-inline constexpr const lDescr *RQL_Type = ocs::tom::RQL::descriptor.e;

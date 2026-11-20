@@ -130,6 +130,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SGEJ for the list library: a synonym for ocs::tom::SGEJ::descriptor */
-inline constexpr const lDescr *SGEJ_Type = ocs::tom::SGEJ::descriptor.e;

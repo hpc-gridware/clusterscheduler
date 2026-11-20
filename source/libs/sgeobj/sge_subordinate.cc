@@ -90,7 +90,7 @@
  *
  * @param used slots in use in the superordinate queue B
  * @param total slots the superordinate queue B has
- * @param so the subordinate relation (SO_Type) referencing a queue C, holding the threshold
+ * @param so the subordinate relation (SO) referencing a queue C, holding the threshold
  * @return true when the subordinate queue C should be suspended
  */
 bool tst_sos(const int used, const int total, const ocs::tom::ConstElement<ocs::tom::SO> so) {

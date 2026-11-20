@@ -32,8 +32,8 @@
          "summary": "Report List",
          "description": [
             "A list of report items, depending on the report type, e.g.",
-            "a list of load values (HL_Type) objects for load reports or",
-            "a list of job usage values (UA_Type) objects for job reports."
+            "a list of load values (HL) objects for load reports or",
+            "a list of job usage values (UA) objects for job reports."
          ],
          "type": "lListT",
          "subClassName": "ANY",

@@ -33,7 +33,7 @@
  * "qconf -shgrp_resolved" uses.
  *
  * These scenarios need no running cluster - the function is pure over an
- * HGRP_Type list.
+ * HGRP list.
  */
 
 #include <cstdio>

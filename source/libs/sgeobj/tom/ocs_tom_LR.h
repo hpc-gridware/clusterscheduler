@@ -109,6 +109,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of LR for the list library: a synonym for ocs::tom::LR::descriptor */
-inline constexpr const lDescr *LR_Type = ocs::tom::LR::descriptor.e;

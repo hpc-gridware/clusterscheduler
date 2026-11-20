@@ -214,8 +214,8 @@ void unsuspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> queue_list, cons
  * Among the running, not yet suspended tasks that use the queue, the one that
  * has run the shortest time is taken.
  *
- * @param job_list the jobs (JB_Type)
- * @param qep      the queue instance over its thresholds (QU_Type)
+ * @param job_list the jobs (JB)
+ * @param qep      the queue instance over its thresholds (QU)
  *
  * @return the job and the task to suspend, both empty if the queue is suspended already or no task qualifies
  */
@@ -271,8 +271,8 @@ select4suspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom::C
  * Among the tasks suspended on threshold whose master queue is this queue, the
  * one that has run the longest time is taken.
  *
- * @param job_list the jobs (JB_Type)
- * @param qep      the queue instance below its thresholds (QU_Type)
+ * @param job_list the jobs (JB)
+ * @param qep      the queue instance below its thresholds (QU)
  *
  * @return the job and the task to unsuspend, both empty if no task qualifies
  */

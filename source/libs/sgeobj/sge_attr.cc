@@ -79,7 +79,7 @@
  *
  * @tparam A the attribute type
  * @param this_list the attribute list
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param attr the new entry; consumed on every path
  * @param flags see above
  * @return true on success

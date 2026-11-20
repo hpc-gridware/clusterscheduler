@@ -104,8 +104,8 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
  * - Both the submit and the execution host entries may consist
  *   of only a * sign, which matches any host.
  *
- * @param[in,out] path_alias_list PA_Type list, created if the handle is empty and the file holds an entry
- * @param alpp AN_Type list pointer
+ * @param[in,out] path_alias_list PA list, created if the handle is empty and the file holds an entry
+ * @param alpp AN list pointer
  * @param file_name name of an alias file
  *
  * @return error state -1 - Error 0 - OK
@@ -219,9 +219,9 @@ FCLOSE_ERROR:
  *    $SGE_ROOT/$CELL/common/sge_aliases
  *    $HOME/.sge_aliases
  *
- * @param[in,out] path_alias_list PA_Type list the entries are appended to; an empty handle if no entry
+ * @param[in,out] path_alias_list PA list the entries are appended to; an empty handle if no entry
  *                                 is left for the host
- * @param alpp AN_Type list pointer
+ * @param alpp AN list pointer
  * @param cell_root the cell directory the common alias file lives under
  * @param user username
  * @param host hostname
@@ -320,8 +320,8 @@ int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
  * The exec host of an entry is resolved in place, although the list is
  * passed as a constant one: ocs_resolve_host() writes through a writable handle of the entry.
  *
- * @param path_aliases alias table (PA_Type), may be an empty handle
- * @param alpp AN_Type list pointer, unused
+ * @param path_aliases alias table (PA), may be an empty handle
+ * @param alpp AN list pointer, unused
  * @param inpath input path
  * @param myhost hostname
  * @param outpath result path
@@ -456,7 +456,7 @@ bool path_verify(const char *path, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  * Verify a path alias list as it is sent with job or pe task start orders
  * to sge_execd.
  *
- * @param path_aliases path alias list (PA_Type), may be an empty handle
+ * @param path_aliases path alias list (PA), may be an empty handle
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false on error with error message in answer_list
@@ -506,7 +506,7 @@ bool path_alias_verify(const ocs::tom::ConstList<ocs::tom::PA> path_aliases,
  * Verify a path list, e.g. the path specification in JB_stdout_path_list,
  * coming from a qsub -o `path_list`.
  *
- * @param path_list the path list to verify (PN_Type), may be an empty handle
+ * @param path_list the path list to verify (PN), may be an empty handle
  * @param answer_list answer list to pass back error messages
  * @param name name of the checked attribute for error output
  *

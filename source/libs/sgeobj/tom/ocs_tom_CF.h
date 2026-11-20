@@ -53,7 +53,7 @@ enum CF_Field {
    /**
     * @brief Configuration Sublist
     *
-    * Recursive Sublist of CF_Type. @todo is it still required? It is only used in libs/gdi/sge_qtcsh.cc.
+    * Recursive Sublist of CF. @todo is it still required? It is only used in libs/gdi/sge_qtcsh.cc.
     */
    CF_sublist,
    /**
@@ -99,6 +99,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CF for the list library: a synonym for ocs::tom::CF::descriptor */
-inline constexpr const lDescr *CF_Type = ocs::tom::CF::descriptor.e;

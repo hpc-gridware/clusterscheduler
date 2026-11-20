@@ -76,7 +76,7 @@
  * have been done. "attr_name" is used to report errors.
  *
  * @tparam F the string field holding the procedure, of the object type of both elements
- * @param alpp AN_Type, The answer list
+ * @param alpp AN, The answer list
  * @param qep reduced changes source element
  * @param new_ep target element
  * @param attr_name the attribute's name, for the messages
@@ -212,8 +212,8 @@ ocs_sublist_answer(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Sublis
  * @brief Apply a binding change to an advance reservation
  *
  * @param alpp receives messages for the caller
- * @param new_ar the advance reservation as it is to become (AR_Type)
- * @param ar the reduced element the client sent (AR_Type)
+ * @param new_ar the advance reservation as it is to become (AR)
+ * @param ar the reduced element the client sent (AR)
  *
  * @return true on success
  */

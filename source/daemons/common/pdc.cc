@@ -686,9 +686,6 @@ static int psRetrieveOSJobData() {
                job->jd_proccount--;
               
                /* remove process entry from list */
-#ifdef MONITOR_PDC
-               INFO("lost process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n", proc->pd_pid, job->jd_jid, proc->pd_utime, proc->pd_stime);
-#endif
                LNK_DELETE(currp);
                sge_free(&proc_elem);
             }

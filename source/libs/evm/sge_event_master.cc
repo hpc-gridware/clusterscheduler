@@ -466,7 +466,7 @@ static void blockEvents(ocs::tom::Element<ocs::tom::EV> event_client, ev_event e
 static void
 sge_event_master_destroy_transaction_store(void *transaction_store) {
    auto *t_store = static_cast<event_master_transaction_t *>(transaction_store);
-   // the thread local request list (EVR_Type) is freed with the handle
+   // the thread local request list (EVR) is freed with the handle
    static_cast<void>(ocs::tom::ListPtr<ocs::tom::EVR>::from_typed(std::exchange(t_store->transaction_requests,
                                                                                  nullptr)));
    sge_free(&t_store);
@@ -533,7 +533,7 @@ void sge_cleanup_event_master_control(void *arg) {
 /**
  * @brief Apply a registration request (not implemented, registrations do not go through the request queue)
  *
- * @param request the event master request (EVR_Type)
+ * @param request the event master request (EVR)
  * @param monitor the monitoring of the calling thread
  */
 static void
@@ -591,7 +591,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
    }
 
    /* check event client object structure */
-   if (ocs::tom::layout_difference(ocs::tom::ConstRawElement(clio).descr(), EV_Type) != 0) {
+   if (ocs::tom::layout_difference(ocs::tom::ConstRawElement(clio).descr(), ocs::tom::EV::descriptor.e) != 0) {
       ERROR(SFNMAX, MSG_EVE_INCOMPLETEEVENTCLIENT);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_DENIED);
@@ -682,7 +682,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
       }
    }
 
-   // the registration passed the structure check above, so it is of EV_Type; it may come from the network
+   // the registration passed the structure check above, so it is of EV; it may come from the network
    auto new_client = ocs::tom::ConstElement<ocs::tom::EV>::from_typed(clio).clone();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -711,7 +711,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
          *eclpp = ocs::tom::ListPtr<ocs::tom::EV>::create("new event client").release();
       }
       ocs::tom::set<EV_changed>(ret_el, false);
-      // the caller's list holds event clients (EV_Type), either created here or by the caller
+      // the caller's list holds event clients (EV), either created here or by the caller
       ocs::tom::List<ocs::tom::EV>::from_typed(*eclpp).push_back(std::move(ret_el));
    }
 
@@ -764,7 +764,7 @@ int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
    ocs::tom::set<EVR_operation>(evr, EVR_MOD_EVC);
    ocs::tom::set<EVR_timestamp>(evr, sge_get_gmt64());
-   // the event client may come from the network, so it is not checked against EV_Type here
+   // the event client may come from the network, so it is not checked against EV here
    ocs::tom::set<EVR_event_client>(evr, ocs::tom::ConstElement<ocs::tom::EV>::from_typed(clio).clone());
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
@@ -800,7 +800,7 @@ int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
  * The event client of the request is changed on the way: its subscription is
  * built and exchanged into the stored client, so the request is not const.
  *
- * @param request the event master request (EVR_Type) holding the event client to change
+ * @param request the event master request (EVR) holding the event client to change
  * @param monitor the monitoring of the calling thread
  *
  * @note MT-NOTE: sge_mod_event_client() is NOT MT safe.
@@ -887,17 +887,7 @@ sge_event_master_process_mod_event_client(const ocs::tom::Element<ocs::tom::EVR>
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_RQS_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_AR_LIST);
 
-#if 0
-/* JG: TODO: better use lXchgList? */
-      {
-         lList *tmp_list = nullptr;
-         lXchgList(clio, EV_subscribed, &tmp_list);
-         lXchgList(event_client, EV_subscribed, &tmp_list);
-         lXchgList(clio, EV_subscribed, &tmp_list);
-      }
-#else
       ocs::tom::set<EV_subscribed>(event_client, ocs::tom::get<EV_subscribed>(clio).clone(""));
-#endif
       ocs::tom::set<EV_sub_array>(event_client, new_sub);
       ocs::tom::set<EV_sub_array>(clio, nullptr);
       free_subscription_array(old_sub);
@@ -1012,7 +1002,7 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
       Event_Master_Control.max_event_clients = max;
       INFO(MSG_SET_MAXDYNEVENTCLIENT_U, max);
 
-      /* we have to rebuild the event client id range list; the old one (RN_Type) is freed with the handle */
+      /* we have to rebuild the event client id range list; the old one (RN) is freed with the handle */
       static_cast<void>(ocs::tom::ListPtr<ocs::tom::RN>::from_typed(std::exchange(Event_Master_Control.client_ids,
                                                                                    nullptr)));
       // the id range list is a raw member of the event master; it is built in an owning handle while the
@@ -1122,7 +1112,7 @@ sge_has_event_client(uint32_t event_client_id) {
  * @param where where condition
  * @param what what enumeration
  *
- * @return list with elements of type 'EV_Type'.
+ * @return list with elements of type 'EV'.
  *
  * @note MT-NOTE: sge_select_event_clients() is MT safe
  *       MT-NOTE:
@@ -1496,7 +1486,7 @@ template bool sge_add_list_event<ocs::tom::UA>(uint64_t, ev_event, uint32_t, uin
 /**
  * @brief Create an event
  *
- * Create ET_Type element and fill in the specified parameters.
+ * Create ET element and fill in the specified parameters.
  *
  * @param number the event number
  * @param timestamp event creation time, 0 -> use current time
@@ -1543,7 +1533,7 @@ sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type,
  *
  * Hot path: no DENTER.
  *
- * @param evr the event request object (EVR_Type)
+ * @param evr the event request object (EVR)
  * @param unique_id the unique ID to add
  */
 static void
@@ -1557,8 +1547,8 @@ add_unique_id_to_evr(const ocs::tom::Element<ocs::tom::EVR> evr, const uint64_t 
  *
  * Either a single request or a list of requests is passed, not both.
  *
- * @param evr a single event request (EVR_Type), consumed; or an empty handle
- * @param evr_list a list of event requests (EVR_Type), whose elements are moved to the request queue; the
+ * @param evr a single event request (EVR), consumed; or an empty handle
+ * @param evr_list a list of event requests (EVR), whose elements are moved to the request queue; the
  *                 list itself stays with the caller; or an empty handle
  * @param gdi_session the session the change belongs to, for read-after-write
  */
@@ -1683,7 +1673,7 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
  * The events are dechained from the request's event list on the way, so the
  * request is not const.
  *
- * @param request the event master request (EVR_Type) holding the events
+ * @param request the event master request (EVR) holding the events
  * @param monitor the monitoring of the calling thread
  */
 static void
@@ -1794,7 +1784,7 @@ sge_handle_event_ack(const uint32_t event_client_id, const uint32_t event_number
 /**
  * @brief Apply an acknowledgement request: purge the acknowledged events of the client
  *
- * @param request the event master request (EVR_Type) holding client id and event number
+ * @param request the event master request (EVR) holding client id and event number
  * @param monitor the monitoring of the calling thread
  */
 static void
@@ -2047,8 +2037,8 @@ remove_event_client(const ocs::tom::Element<ocs::tom::EV> client, const bool loc
  * Loop over all event clients and send events due. If an event client did
  * time out, it will be removed from the list of registered event clients.
  * Events will be delivered only, if the so called 'busy handling' of a
- * client does allow it. Events will be delivered as a report (REP_Type)
- * with a report list of type ET_Type.
+ * client does allow it. Events will be delivered as a report (REP)
+ * with a report list of type ET.
  *
  * @param report a report, has to be part of the report list. All fields have to be init, except for REP_list element.
  * @param report_list a pre-init report list
@@ -2182,7 +2172,7 @@ void sge_event_master_send_events(const ocs::tom::Element<ocs::tom::REP> report,
       /* do we have to deliver events ? */
       if (now >= ocs::tom::get<EV_next_send_time>(event_client)) {
          if (!ocs::tom::get<EV_busy>(event_client) || do_remove) {
-            // REP_list carries lists of any type, so the events (ET_Type) move through a raw list
+            // REP_list carries lists of any type, so the events (ET) move through a raw list
             lList *lp = nullptr;
 
             /* put only pointer in report - dont copy */
@@ -2250,7 +2240,7 @@ void sge_event_master_send_events(const ocs::tom::Element<ocs::tom::REP> report,
  * The next delivery happens at the latest after @p interval seconds; if it is due now, the
  * event master is woken up.
  *
- * @param event_client the event client (EV_Type), an element of the event client list
+ * @param event_client the event client (EV), an element of the event client list
  * @param interval the longest delay of the next delivery, in seconds
  */
 static void
@@ -2406,7 +2396,7 @@ total_update(const ocs::tom::Element<ocs::tom::EV> event_client, const uint64_t 
    sge_commit(gdi_session);
 
    if (outer_transaction) {
-      // the committed list of the total update (EVR_Type) is freed with the handle
+      // the committed list of the total update (EVR) is freed with the handle
       static_cast<void>(ocs::tom::ListPtr<ocs::tom::EVR>::from_typed(t_store->transaction_requests));
       t_store->transaction_requests = outer_requests;
       t_store->is_transaction = true;
@@ -2428,7 +2418,7 @@ total_update(const ocs::tom::Element<ocs::tom::EV> event_client, const uint64_t 
  * CS-2340) — independent of any caller-side verification. Valid ids are
  * processed unchanged.
  *
- * @param event_el the event-client element (EV_Type) whose subscription is (re)built
+ * @param event_el the event-client element (EV) whose subscription is (re)built
  */
 static void build_subscription(const ocs::tom::Element<ocs::tom::EV> event_el) {
    DENTER(TOP_LAYER);
@@ -2595,7 +2585,7 @@ static int eventclient_subscribed(const ocs::tom::ConstElement<ocs::tom::EV> eve
  * Remove all events from 'event_list' which do have an event id less than or
  * equal to 'event_number'.
  *
- * @param event_list event list (ET_Type) of an event client, may be an empty handle
+ * @param event_list event list (ET) of an event client, may be an empty handle
  * @param event_number event
  *
  * @return number of events purged.
@@ -2639,7 +2629,7 @@ static int purge_event_list(const ocs::tom::List<ocs::tom::ET> event_list, const
  *
  * The typed exchange with the field's position fixed at compile time: no lookup per event. Hot path: no DENTER.
  *
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @return the owner of the payload, empty if the event held none; the event holds none afterwards
  */
 static ocs::tom::RawListPtr take_event_payload(const ocs::tom::Element<ocs::tom::ET> event) {
@@ -2653,7 +2643,7 @@ static ocs::tom::RawListPtr take_event_payload(const ocs::tom::Element<ocs::tom:
  *
  * The counterpart of take_event_payload(). Hot path: no DENTER.
  *
- * @param event the event (ET_Type), holding no payload
+ * @param event the event (ET), holding no payload
  * @param payload the owner of the payload, maybe empty; empty afterwards
  */
 static void put_event_payload(const ocs::tom::Element<ocs::tom::ET> event, ocs::tom::RawListPtr payload) {
@@ -2672,8 +2662,8 @@ static void put_event_payload(const ocs::tom::Element<ocs::tom::ET> event, ocs::
  * client's subscription, which work on a descriptor, so it is handled as a raw list here; list_select() runs
  * typed for the lists with a subscribable sub-list.
  *
- * @param event_client the event client (EV_Type)
- * @param event the event (ET_Type), an element of no list
+ * @param event_client the event client (EV)
+ * @param event the event (ET), an element of no list
  * @param copy_event true to add a copy and leave @p event to the caller; false to take @p event over, it is
  *        empty afterwards
  */
@@ -2725,17 +2715,8 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
       selection = subscription[type].where.get();
       fields = subscription[type].what.get();
 
-#if 0
-      DPRINTF("deliver event: %d with where filter=%s and what filter=%s\n",
-              type, selection?"true":"false", fields?"true":"false");
-#endif
-
       if (fields) {
          descr = getDescriptorL(subscription, lp.get(), type);
-
-#if 0
-         DPRINTF("Reducing event data\n");
-#endif
 
          if (!list_select(subscription, type, &clp, lp.get(), selection, fields,
                           descr, internal_client)) {
@@ -2768,9 +2749,6 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
          }
       } else if (copy_event) {
          /* If there's no what clause, and we want a copy, we copy the list */
-#if 0
-         DPRINTF("Copying event data\n");
-#endif
          try {
             clp = ocs::tom::clone(lp.get(), internal_client ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off);
          } catch (const ocs::tom::ListCoreError &) {
@@ -2791,9 +2769,6 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
     * so the copy holds no list either. */
    ocs::tom::ElementPtr<ocs::tom::ET> ep;
    if (copy_event) {
-#if 0
-      DPRINTF("Copying event\n");
-#endif
       ep = event->clone();
 
       put_event_payload(event.get(), std::move(lp));
@@ -2927,7 +2902,7 @@ static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_clien
 
       if (type == sgeE_SCHED_CONF) {
          /* the only payload not built by the copy below, so a
-          * CULL_NO_TRANSFER field on SC_Type would need handling here */
+          * CULL_NO_TRANSFER field on SC would need handling here */
          payload = ocs::tom::RawListPtr(sconf_get_config_list());
       } else {
          const sge_object_type object_type = ocs_total_update_object_type(type);
@@ -3129,9 +3104,9 @@ ocs_event_select_list(subscription_t *subscription, const ocs::tom::RawList lp, 
  *
  * Only works on the events of lists with a subscribable sub-list (#EVENT_LIST).
  * All others are ignored. These events need some special handling and this is
- * done in this function. The JAT_Type list e.g. can be subscribed by its self
- * and it is also part of the JB_Type. If a JAT_Type filter is set, this function
- * also filters the JAT_Type lists in the JB_Type lists.
+ * done in this function. The JAT list e.g. can be subscribed by its self
+ * and it is also part of the JB. If a JAT filter is set, this function
+ * also filters the JAT lists in the JB lists.
  *
  * The row of #EVENT_LIST gives the object type of the event's objects, so each
  * row runs typed with its sub-list fields.
@@ -3272,7 +3247,7 @@ static const lDescr *getDescriptorL(subscription_t *subscription,
  * @note MT-NOTE: NOT thread safe.  Requires caller to hold Event_Master_Control.mutex.
  */
 static ocs::tom::Element<ocs::tom::EV> get_event_client(const uint32_t id) {
-   // the client list is owned by the event master and holds EV_Type elements
+   // the client list is owned by the event master and holds EV elements
    return ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients).find_first<EV_id>(id);
 }
 
@@ -3322,7 +3297,7 @@ allocate_new_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
  * The id is inserted into the range list of free ids again, unless it lies
  * beyond the current maximum of dynamic event clients.
  *
- * @param answer_list AN_Type list receiving errors
+ * @param answer_list AN list receiving errors
  * @param id the id to give back
  *
  * @note MT-NOTE: free_dynamic_id() is thread safe,
@@ -3384,7 +3359,7 @@ sge_commit(uint64_t gdi_session) {
  *
  * Called per event on the delivery path: no DENTER.
  *
- * @param event_client the event client (EV_Type)
+ * @param event_client the event client (EV)
  * @param ev_type the list event whose events are (un)blocked, or sgeE_ALL_EVENTS for every subscribed list
  * @param isBlock true to block, false to unblock
  *
@@ -3494,7 +3469,7 @@ void sge_event_master_process_requests(monitoring_t *monitor) {
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    if (!ocs::tom::ConstList<ocs::tom::EVR>(Event_Master_Control.requests).empty()) {
-      // the request list is owned by the event master and of EVR_Type; this thread takes it over
+      // the request list is owned by the event master and of EVR; this thread takes it over
       requests = ocs::tom::ListPtr<ocs::tom::EVR>(Event_Master_Control.requests);
       Event_Master_Control.requests =
          ocs::tom::ListPtr<ocs::tom::EVR>::create("Event Master Requests", ocs::tom::Hashing::Off).release();
@@ -3505,9 +3480,6 @@ void sge_event_master_process_requests(monitoring_t *monitor) {
    /* if there have been any requests - process them */
    if (requests) {
       while (const auto request = requests->front()) {
-#if 0
-         DPRINTF("processing event master request: %d\n", lGetUlong(request, EVR_operation));
-#endif
          switch (ocs::tom::get<EVR_operation>(request)) {
             case EVR_ADD_EVC:
                sge_event_master_process_add_event_client(request, monitor);

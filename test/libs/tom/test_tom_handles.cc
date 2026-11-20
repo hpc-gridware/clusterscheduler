@@ -134,7 +134,7 @@ static bool aborts(Call &&call) {
  */
 static void
 test_pointer_like() {
-   lListElem *raw = lCreateElem(JB_Type);
+   lListElem *raw = lCreateElem(ocs::tom::JB::descriptor.e);
    lSetUlong(raw, JB_job_number, 42);
    const Element<JB> h{raw};
    const Element<JB> h1 = h;
@@ -156,8 +156,8 @@ test_pointer_like() {
  */
 static void
 test_accessors() {
-   lList *list = lCreateList("test", TEST_Type);
-   lListElem *raw = lCreateElem(TEST_Type);
+   lList *list = lCreateList("test", ocs::tom::TEST::descriptor.e);
+   lListElem *raw = lCreateElem(ocs::tom::TEST::descriptor.e);
    lAppendElem(list, raw);
    const Element<TEST> t{raw};
 
@@ -195,7 +195,7 @@ test_accessors() {
    CHECK(7, "get(nm) and set(nm, v) agree with the old accessors", runtime_path);
 
    // a reduced element, as a what selects it
-   lEnumeration *what = lWhat("%T(%I %I %I)", TEST_Type, TEST_uint32, TEST_string, TEST_double);
+   lEnumeration *what = lWhat("%T(%I %I %I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string, TEST_double);
    lList *reduced = lSelect("reduced", list, nullptr, what);
    const ConstElement<TEST> r{ConstRawList{reduced}.front().raw()};
    CHECK(8, "the template accessors read a reduced element",
@@ -216,12 +216,12 @@ test_accessors() {
  */
 static void
 test_errors() {
-   lList *list = lCreateList("test", TEST_Type);
-   lAppendElem(list, lCreateElem(TEST_Type));
-   lEnumeration *what = lWhat("%T(%I)", TEST_Type, TEST_uint32);
+   lList *list = lCreateList("test", ocs::tom::TEST::descriptor.e);
+   lAppendElem(list, lCreateElem(ocs::tom::TEST::descriptor.e));
+   lEnumeration *what = lWhat("%T(%I)", ocs::tom::TEST::descriptor.e, TEST_uint32);
    lList *reduced = lSelect("reduced", list, nullptr, what);
    lListElem *r = RawList{reduced}.front();
-   lListElem *queue = lCreateElem(QU_Type);
+   lListElem *queue = lCreateElem(ocs::tom::QU::descriptor.e);
 
    CHECK(10, "reading an absent field throws, naming field and type",
          throws_field_exception([&] { static_cast<void>(ConstElement<TEST>{r}.get<TEST_string>()); },
@@ -265,8 +265,8 @@ test_errors() {
          throws_field_exception([&] { Element<TEST>{r}.set<TEST_int>(1); }, FieldException::Reason::AbsentField, "TEST_int"));
 
    // the object a field holds already is set again without an error since CS-3062 (N-L-4)
-   lListElem *full = lCreateElem(TEST_Type);
-   lListElem *held = lCreateElem(JB_Type);
+   lListElem *full = lCreateElem(ocs::tom::TEST::descriptor.e);
+   lListElem *held = lCreateElem(ocs::tom::JB::descriptor.e);
    const bool same = ocs::tom::set<TEST_obj_jb>(full, held) == 0 && ocs::tom::set<TEST_obj_jb>(full, held) == 0 &&
                      lGetObject(full, TEST_obj_jb) == held;
    lFreeElem(&full);
@@ -309,13 +309,14 @@ test_hash_tables() {
  */
 static void
 test_create_with_descriptor() {
-   const lDescr *reduced = ocs_cull_descr_reduce(JB_Type, {JB_job_number, JB_job_name});
+   const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
 
-   auto full_list = ListPtr<JB>::create("full", JB_Type);
-   auto full_job = ElementPtr<JB>::create(JB_Type);
+   auto full_list = ListPtr<JB>::create("full", ocs::tom::JB::descriptor.e);
+   auto full_job = ElementPtr<JB>::create(ocs::tom::JB::descriptor.e);
    CHECK(25, "with the full descriptor: the list has it and the name, the element has it",
-         lGetListDescr(full_list.get()) == JB_Type && std::strcmp(lGetListName(full_list.get()), "full") == 0 &&
-         lGetElemDescr(full_job.get()) == JB_Type);
+         lGetListDescr(full_list.get()) == ocs::tom::JB::descriptor.e &&
+         std::strcmp(lGetListName(full_list.get()), "full") == 0 &&
+         lGetElemDescr(full_job.get()) == ocs::tom::JB::descriptor.e);
 
    auto reduced_list = ListPtr<JB>::create("reduced", reduced, Hashing::Off);
    auto reduced_job = ElementPtr<JB>::create(reduced);
@@ -327,9 +328,9 @@ test_create_with_descriptor() {
          pushed.get<JB_job_number>() == 7 && !pushed.has<JB_owner>());
 
    CHECK(27, "with the descriptor of another type: list and element throw, naming the type",
-         throws_field_exception([] { static_cast<void>(ListPtr<JB>::create("queue", QU_Type)); },
+         throws_field_exception([] { static_cast<void>(ListPtr<JB>::create("queue", ocs::tom::QU::descriptor.e)); },
                                 FieldException::Reason::WrongType, "QU") &&
-         throws_field_exception([] { static_cast<void>(ElementPtr<JB>::create(QU_Type)); },
+         throws_field_exception([] { static_cast<void>(ElementPtr<JB>::create(ocs::tom::QU::descriptor.e)); },
                                 FieldException::Reason::WrongType, "QU"));
    CHECK(28, "without a descriptor: list and element throw",
          throws_field_exception([] { static_cast<void>(ListPtr<JB>::create("none", nullptr)); },
@@ -352,13 +353,13 @@ test_create_with_descriptor() {
  */
 static void
 test_layout() {
-   const lDescr *reduced = ocs_cull_descr_reduce(JB_Type, {JB_job_number, JB_job_name});
+   const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
 
    // emplace_back and lAddElemUlong on an existing reduced list create the element with the list's descriptor
    auto reduced_list = ListPtr<JB>::create("reduced", reduced);
    const Element<JB> emplaced = reduced_list.get().emplace_back<JB_job_number>(7u);
    lList *old_list = lCreateList("old reduced", reduced);
-   const lListElem *added = lAddElemUlong(&old_list, JB_job_number, 8, JB_Type);
+   const lListElem *added = lAddElemUlong(&old_list, JB_job_number, 8, ocs::tom::JB::descriptor.e);
    CHECK(29, "emplace_back and lAddElemUlong on a reduced list give an element with the list's descriptor",
          lGetElemDescr(emplaced) == lGetListDescr(reduced_list.get()) && emplaced.get<JB_job_number>() == 7 &&
          !emplaced.has<JB_owner>() && reduced_list.get().find_first<JB_job_number>(7u) == emplaced &&
@@ -404,8 +405,8 @@ test_layout() {
    // whole lists: splice and lAppendList compare the layouts as well
    auto more_full = ListPtr<JB>::create("more full");
    more_full.get().emplace_back<JB_job_number>(11u);
-   lList *old_full = lCreateList("old full", JB_Type);
-   lAddElemUlong(&old_full, JB_job_number, 12, JB_Type);
+   lList *old_full = lCreateList("old full", ocs::tom::JB::descriptor.e);
+   lAddElemUlong(&old_full, JB_job_number, 12, ocs::tom::JB::descriptor.e);
    CHECK(33, "splice and lAppendList between a reduced and a full list refuse, moving nothing",
          throws_field_exception([&] { reduced_list.get().splice(more_full.get()); },
                                 FieldException::Reason::WrongLayout, "layout") &&
@@ -415,10 +416,10 @@ test_layout() {
 
    // a list that got a hash table later holds a private copy of the type's descriptor whose flags differ
    // (CULL_HASH); elements of the type itself still have its layout and must be linked in
-   lList *hashed = lCreateListHash("hashed", JB_Type, false);
+   lList *hashed = lCreateListHash("hashed", ocs::tom::JB::descriptor.e, false);
    const bool hash_created = cull_hash_new(hashed, JB_owner, false) == 1;
-   const bool private_copy = lGetListDescr(hashed) != JB_Type;
-   lListElem *plain_job = lCreateElem(JB_Type);
+   const bool private_copy = lGetListDescr(hashed) != ocs::tom::JB::descriptor.e;
+   lListElem *plain_job = lCreateElem(ocs::tom::JB::descriptor.e);
    lSetUlong(plain_job, JB_job_number, 13);
    lSetString(plain_job, JB_owner, "someone");
    lAppendElem(hashed, plain_job);
@@ -440,8 +441,8 @@ test_layout() {
  */
 static void
 test_correct_counterparts() {
-   lListElem *raw = lCreateElem(JB_Type);
-   lListElem *raw_queue = lCreateElem(QU_Type);
+   lListElem *raw = lCreateElem(ocs::tom::JB::descriptor.e);
+   lListElem *raw_queue = lCreateElem(ocs::tom::QU::descriptor.e);
    const Element<JB> job{raw};
    const ConstElement<JB> const_job = job;
    const Element<QU> queue{raw_queue};

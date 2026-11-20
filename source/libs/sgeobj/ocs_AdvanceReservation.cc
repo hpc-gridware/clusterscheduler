@@ -67,7 +67,7 @@ ocs::tom::Element<ocs::tom::BN>
 ocs::AdvanceReservation::binding_get_or_create_elem(const ocs::tom::Element<ocs::tom::AR> ar,
                                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
-   // AR_binding holds a BN_Type object
+   // AR_binding holds a BN object
    DRETURN(Binding::binding_get_or_create_elem<AR_binding>(ar, answer_list));
 }
 

@@ -43,7 +43,7 @@ namespace ocs {
     * the command name, optional sub-command, requested output format, execution
     * context, and the environment variables the procedure depends on.
     *
-    * Parameters are marshaled to a CULL SPP_Type list (`get_bundle()`) for
+    * Parameters are marshaled to a CULL SPP list (`get_bundle()`) for
     * transport in a GDI request, and reconstructed on the server side
     * (`set_bundle()`).
     *

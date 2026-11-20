@@ -93,7 +93,7 @@ enum TEST_Field {
     */
    TEST_ref,
    /**
-    * @brief object type attribute to store JB_Type an object
+    * @brief object type attribute to store JB an object
     *
     * This filed hold a object reference.
     */
@@ -151,6 +151,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of TEST for the list library: a synonym for ocs::tom::TEST::descriptor */
-inline constexpr const lDescr *TEST_Type = ocs::tom::TEST::descriptor.e;

@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ULNG for the list library: a synonym for ocs::tom::ULNG::descriptor */
-inline constexpr const lDescr *ULNG_Type = ocs::tom::ULNG::descriptor.e;

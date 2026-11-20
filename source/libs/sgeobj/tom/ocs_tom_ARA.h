@@ -80,6 +80,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ARA for the list library: a synonym for ocs::tom::ARA::descriptor */
-inline constexpr const lDescr *ARA_Type = ocs::tom::ARA::descriptor.e;

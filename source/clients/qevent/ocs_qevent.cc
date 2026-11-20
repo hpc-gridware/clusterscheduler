@@ -126,7 +126,7 @@ static void qevent_dump_pid_file() {
  * @param evc the event client, unused
  * @param type the object type of the event
  * @param action the action of the event, unused
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @param clientdata the callback's client data, unused
  * @return always SGE_EMA_OK
  */
@@ -161,7 +161,7 @@ static u_long
 get_current_jatask_status(const u_long job_id, const u_long ja_task_id) {
    DENTER(TOP_LAYER);
    uint32_t ret = JIDLE;
-   // the mirror keeps the job master list with JB_Type, so it is wrapped unchecked
+   // the mirror keeps the job master list with JB, so it is wrapped unchecked
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    if (const auto job = master_job_list.find_first<JB_job_number>(job_id)) {
       if (const auto ja_task = ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(job, ja_task_id)) {
@@ -177,7 +177,7 @@ get_current_jatask_status(const u_long job_id, const u_long ja_task_id) {
  * @param evc the event client
  * @param type the object type of the event
  * @param action the mirror action
- * @param et the event (ET_Type)
+ * @param et the event (ET)
  * @param client_data unused
  *
  * @return SGE_EMA_OK
@@ -199,7 +199,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const
       uint64_t timestamp = ocs::tom::get<ET_timestamp>(et);
 
       if (event_type == sgeE_JATASK_MOD) {
-         // ET_new_version carries the objects of the event's type, JAT_Type for a task event
+         // ET_new_version carries the objects of the event's type, JAT for a task event
          const auto jat = ocs::tom::ConstList<ocs::tom::JAT>::from_typed(ocs::tom::get<ET_new_version>(et));
          u_long job_id  = ocs::tom::get<ET_intkey>(et);
          u_long task_id = ocs::tom::get<ET_intkey2>(et);
@@ -226,7 +226,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const
          fflush(stdout);
       }
       if (event_type == sgeE_JOB_ADD) {
-         // ET_new_version carries the objects of the event's type, JB_Type for a job event
+         // ET_new_version carries the objects of the event's type, JB for a job event
          const auto jobs = ocs::tom::ConstList<ocs::tom::JB>::from_typed(ocs::tom::get<ET_new_version>(et));
          u_long job_id  = ocs::tom::get<ET_intkey>(et);
          u_long task_id = ocs::tom::get<ET_intkey2>(et);
@@ -257,7 +257,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const
  * @param evc the event client
  * @param type the object type of the event
  * @param action the mirror action
- * @param et the event (ET_Type)
+ * @param et the event (ET)
  * @param client_data unused
  *
  * @return SGE_EMA_OK
@@ -277,7 +277,7 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] con
       uint32_t event_type = ocs::tom::get<ET_type>(et);
 
       if (event_type == sgeE_JATASK_MOD) {
-         // ET_new_version carries the objects of the event's type, JAT_Type for a task event
+         // ET_new_version carries the objects of the event's type, JAT for a task event
          const auto jat = ocs::tom::ConstList<ocs::tom::JAT>::from_typed(ocs::tom::get<ET_new_version>(et));
          const auto ep = jat.front();
          u_long job_status = ocs::tom::get<JAT_status>(ep);
@@ -313,7 +313,7 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] con
  *
  * @param qevent_event the qevent event (QEVENT_JB_END, QEVENT_JB_TASK_END)
  * @param option_struct the options holding the registered scripts
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  */
 static void qevent_trigger_scripts(const int qevent_event, qevent_options *option_struct,
                                    const ocs::tom::ConstElement<ocs::tom::ET> event) {
@@ -335,7 +335,7 @@ static void qevent_trigger_scripts(const int qevent_event, qevent_options *optio
  *
  * @param qevent_event the qevent event
  * @param script_file the script
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  */
 static void qevent_start_trigger_script(const int qevent_event, const char* script_file,
                                         const ocs::tom::ConstElement<ocs::tom::ET> event) {

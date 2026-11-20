@@ -156,7 +156,7 @@ error_exit:
  *
  * @param argv the arguments, without the program name
  * @param envp the process environment
- * @param cmdline receives the parsed options (`SPA_Type`), created with the first option
+ * @param cmdline receives the parsed options (`SPA`), created with the first option
  * @param alpp receives the parse errors
  * @return true on success, false on a parse error
  */
@@ -212,8 +212,8 @@ static bool sge_parse_cmdline_qrdel(char **argv, [[maybe_unused]] char **envp,
  * Gets the options from @p cmdline and puts the advance reservation ids, with
  * the user list and the force flag, in @p id_list.
  *
- * @param cmdline the parsed options (`SPA_Type`); the options served are removed
- * @param id_list receives the advance reservation references (`ID_Type`), created with the first one; freed on
+ * @param cmdline the parsed options (`SPA`); the options served are removed
+ * @param id_list receives the advance reservation references (`ID`), created with the first one; freed on
  *                an error
  * @param alpp receives the errors
  * @return true on success, false on an error

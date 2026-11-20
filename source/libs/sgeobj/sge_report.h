@@ -61,17 +61,17 @@
  * expect.
  */
 
-#define NUM_REP_REPORT_LOAD    1                                         ///< load values that changed; `REP_list` is `LR_Type`
+#define NUM_REP_REPORT_LOAD    1                                         ///< load values that changed; `REP_list` is `LR`
 
-#define NUM_REP_REPORT_EVENTS  2                                         ///< events an event client acknowledges; `REP_list` is `ET_Type`
+#define NUM_REP_REPORT_EVENTS  2                                         ///< events an event client acknowledges; `REP_list` is `ET`
 
-#define NUM_REP_REPORT_CONF    3                                         ///< the host's configuration; `REP_list` is `CONF_Type`
+#define NUM_REP_REPORT_CONF    3                                         ///< the host's configuration; `REP_list` is `CONF`
 
-#define NUM_REP_REPORT_PROCESSORS 4                                      ///< the host's processor count; `REP_list` is `LIC_Type`
+#define NUM_REP_REPORT_PROCESSORS 4                                      ///< the host's processor count; `REP_list` is `LIC`
 
-#define NUM_REP_REPORT_JOB     5                                         ///< the state of the jobs running here; `REP_list` is `JR_Type`
+#define NUM_REP_REPORT_JOB     5                                         ///< the state of the jobs running here; `REP_list` is `JR`
 
-#define NUM_REP_FULL_REPORT_LOAD  6                                      ///< every load value, not only the changed ones; `REP_list` is `LR_Type`
+#define NUM_REP_FULL_REPORT_LOAD  6                                      ///< every load value, not only the changed ones; `REP_list` is `LR`
 
 /**
  * @brief Layout of JR_wait_status

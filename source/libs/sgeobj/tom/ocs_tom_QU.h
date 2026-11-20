@@ -662,6 +662,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of QU for the list library: a synonym for ocs::tom::QU::descriptor */
-inline constexpr const lDescr *QU_Type = ocs::tom::QU::descriptor.e;

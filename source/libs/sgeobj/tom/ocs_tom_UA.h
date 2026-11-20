@@ -87,6 +87,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of UA for the list library: a synonym for ocs::tom::UA::descriptor */
-inline constexpr const lDescr *UA_Type = ocs::tom::UA::descriptor.e;

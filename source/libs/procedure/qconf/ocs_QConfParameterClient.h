@@ -28,7 +28,7 @@
  *
  * `sge_parse_qconf()` used to be one loop that executed every switch the moment
  * it recognised it. A stored procedure call needs the arguments as **data**, so
- * that `ProcedureParameter::get_bundle()` can marshal them into an `SPP_Type`
+ * that `ProcedureParameter::get_bundle()` can marshal them into an `SPP`
  * list and qmaster can reconstruct them - which is impossible while parsing and
  * executing are the same pass.
  *

@@ -108,7 +108,7 @@ get_slotwise_sos_threshold(const ocs::tom::ConstElement<ocs::tom::QU> qinstance)
  *
  * Executes the (un)suspend of the specified task.
  *
- * @param qinstance_where_task_is_running QU_Type Element of the qinstance in which the task to (un)suspend is running/suspended.
+ * @param qinstance_where_task_is_running QU Element of the qinstance in which the task to (un)suspend is running/suspended.
  * @param job_id Job ID of the task to (un)suspend
  * @param task_id Task ID of the task to (un)suspend
  * @param suspend suspend or unsuspend
@@ -230,7 +230,7 @@ get_slotwise_sos_tree_root(const ocs::tom::Element<ocs::tom::QU> node_queue_inst
  * @param queue_name cluster queue name of the subordinated qeueue instance
  * @param hostname host name of the subordinated queue instance
  *
- * @return The slotwise superordinated queue instance (QU_Type) of the provided queue instance, or nullptr if there is none.
+ * @return The slotwise superordinated queue instance (QU) of the provided queue instance, or nullptr if there is none.
  *
  * @note MT-NOTE: get_slotwise_suspend_superordinate() is not MT safe
  */
@@ -266,9 +266,9 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
  * Returns the slotwise superordinated queue instance of the provided queue
  * instance.
  *
- * @param qinstance The subordinated queue instance (QU_Type)
+ * @param qinstance The subordinated queue instance (QU)
  *
- * @return The slotwise superordinated queue instance (QU_Type) of the provided queue instance, or nullptr if there is none.
+ * @return The slotwise superordinated queue instance (QU) of the provided queue instance, or nullptr if there is none.
  *
  * @note MT-NOTE: get_slotwise_sos_super_qinstance() is not MT safe
  */
@@ -373,7 +373,7 @@ destroy_slotwise_sos_tree_elem(ssos_qinstance_t **ssos_qinstance) {
  * too.
  *
  * @param only_ssos If true, checks if task is only suspended by slotwise suspend on subordinate, if false, checks if task is suspended by slotwise suspend on subordinate, but it might be also suspended by some other suspend method at the same time.
- * @param task The task to check. CULL type "JAT_Type".
+ * @param task The task to check. CULL type "JAT".
  *
  * @return true if the task is (only) suspended by slotwise suspend on subordinate. false else.
  *
@@ -1072,8 +1072,8 @@ do_slotwise_x_on_subordinate_check(const ocs::tom::Element<ocs::tom::QU> qinstan
  * Compares the old and the new subordinate list configured in a queue and
  * returns true if they differ. The order of subordinates doesn't matter.
  *
- * @param old_so_list The old subordinate list. SO_Type list.
- * @param new_so_list The new subordinate list. SO_Type list.
+ * @param old_so_list The old subordinate list. SO list.
+ * @param new_so_list The new subordinate list. SO list.
  *
  * @return true if the lists differ, false if they are identical. If just the order of subordinates is changed, the lists are considered as identical.
  *
@@ -1350,7 +1350,7 @@ cqueue_list_x_on_subordinate_so(const ocs::tom::ConstList<ocs::tom::CQ> master_c
  * @param this_elem the superordinate queue instance
  * @param answer_list receives messages for the caller
  * @param master_cqueue_list the cluster queues
- * @return the suspended subordinates (SO_Type); an empty handle if @p this_elem is empty,
+ * @return the suspended subordinates (SO); an empty handle if @p this_elem is empty,
  *         has slotwise subordinates or nothing was resolved
  */
 ocs::tom::ListPtr<ocs::tom::SO>
@@ -1402,7 +1402,7 @@ qinstance_find_suspended_subordinates(const ocs::tom::ConstElement<ocs::tom::QU>
  * A newly created or reconfigured instance may already be subordinate to a
  * queue that is full, in which case it must not accept jobs.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param monitor for monitoring qmaster threads
  * @param master_cqueue_list the cluster queues
  * @param gdi_session the session the change belongs to

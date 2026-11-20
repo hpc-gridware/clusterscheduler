@@ -99,7 +99,7 @@ properties_equal(const ocs::tom::ConstList<ocs::tom::CE> a, const ocs::tom::Cons
  *
  * @param centry      the complex entry whose CE_resource_map_list is being built
  * @param id          the RSMAP id to add
- * @param properties  the property list (CE_Type) to attach to the RESL; an
+ * @param properties  the property list (CE) to attach to the RESL; an
  *                    empty handle means "no properties"; consumed
  * @param alpp        answer list for conflict messages
  * @param rsmap_name  the enclosing RSMAP complex name, used only for error text
@@ -138,7 +138,7 @@ store_resl(const ocs::tom::Element<ocs::tom::CE> centry, const char *id, ocs::to
 /**
  * Split an RSMAP id token into its id and characteristics list. A token like
  *    gpu0[device=/dev/nvidia0,memory=80G]
- * yields id="gpu0" and a CE_Type list with two elements carrying CE_name and
+ * yields id="gpu0" and a CE list with two elements carrying CE_name and
  * CE_stringval verbatim; typing and centry-list resolution happen later
  * during validation. Tokens without a '[' are stored as-is with an empty
  * property list. Without DENTER, as the other helpers of the field reader.

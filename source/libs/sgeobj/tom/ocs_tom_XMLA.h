@@ -80,6 +80,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of XMLA for the list library: a synonym for ocs::tom::XMLA::descriptor */
-inline constexpr const lDescr *XMLA_Type = ocs::tom::XMLA::descriptor.e;

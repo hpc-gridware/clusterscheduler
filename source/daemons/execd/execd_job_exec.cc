@@ -125,7 +125,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
 
-      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job_raw, JB_Type)) {
+      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job_raw, ocs::tom::JB::descriptor.e)) {
          answer_list_output(&answer_list);
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
@@ -159,7 +159,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
       lListElem *petrep_raw = nullptr;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &petrep_raw, PETR_Type)) {
+      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &petrep_raw, ocs::tom::PETR::descriptor.e)) {
          answer_list_output(&answer_list);
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
@@ -207,7 +207,7 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    */
 
    /* ------- job */
-   if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &jelem_raw, JB_Type)) {
+   if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &jelem_raw, ocs::tom::JB::descriptor.e)) {
       answer_list_output(&answer_list);
       ERROR(SFNMAX, MSG_COM_UNPACKJOB);
       DRETURN(0);

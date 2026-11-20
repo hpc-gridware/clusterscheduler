@@ -47,7 +47,7 @@
 bool ocs::QRStatModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
 
-   // both are built for AR_Type by the base class
+   // both are built for AR by the base class
    const auto what_ar = get_ar_what(parameter);
    const auto where_ar = get_ar_where(parameter);
    ocs::tom::ListPtr<ocs::tom::AR> ar_list;

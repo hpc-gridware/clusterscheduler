@@ -87,7 +87,7 @@
  * anything (see HGRP.json). It only has to be non-zero and never 0, which is
  * why the counter starts at 1 and skips 0 on wrap.
  *
- * @param hgroup the group to refresh (HGRP_Type); an empty handle gives false
+ * @param hgroup the group to refresh (HGRP); an empty handle gives false
  * @param answer_list for returning errors
  * @param master_hgroup_list list the references are resolved against; an empty handle gives false
  *
@@ -136,7 +136,7 @@ bool hgroup_update_cache(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::to
  * spool area. Every group is resolved independently, so the order in the
  * list does not matter.
  *
- * @param master_hgroup_list the HGRP_Type list to refresh in place, may be an empty handle
+ * @param master_hgroup_list the HGRP list to refresh in place, may be an empty handle
  * @param answer_list for returning errors
  *
  * @return true if every group could be resolved
@@ -165,7 +165,7 @@ bool hgroup_list_update_caches(const ocs::tom::List<ocs::tom::HGRP> master_hgrou
  * list as nullptr, so HGRP_cached_hosts alone cannot distinguish a group that
  * resolves to no hosts from one that was never resolved.
  *
- * @param hgroup HGRP_Type object, may be an empty handle
+ * @param hgroup HGRP object, may be an empty handle
  *
  * @return true if hgroup_cache_contains_host() may be used on this element
  *
@@ -197,7 +197,7 @@ bool hgroup_has_host_cache(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) 
  * default_domain rules as sge_hostcmp() (sge_hostname.cc). HR_name carries
  * the HASH flag, so the lookup is O(1).
  *
- * @param hgroup HGRP_Type object with a valid cache; an empty handle gives false
+ * @param hgroup HGRP object with a valid cache; an empty handle gives false
  * @param hostname host to look for; nullptr gives false
  *
  * @return true if the host is in the group, directly or through nesting
@@ -230,9 +230,9 @@ bool hgroup_cache_contains_host(const ocs::tom::ConstElement<ocs::tom::HGRP> hgr
  * (host_is_admin_host()) and the delete-semantics check in the qmaster, where
  * a wrong "no" denies a request or reports a member as absent.
  *
- * @param hgroup HGRP_Type object, may be an empty handle
+ * @param hgroup HGRP object, may be an empty handle
  * @param hostname host to look for
- * @param master_hgroup_list HGRP_Type list the nested references resolve against
+ * @param master_hgroup_list HGRP list the nested references resolve against
  *
  * @return true if the host is in the group, directly or transitively
  *
@@ -278,9 +278,9 @@ static constexpr int HGROUP_WHY_MAX_NESTING = 32;
 /**
  * @brief Find a host named literally in this group or in one it references
  *
- * @param hgroup the group to search (HGRP_Type), may be an empty handle
+ * @param hgroup the group to search (HGRP), may be an empty handle
  * @param hostname the host in question
- * @param master_hgroup_list the groups its references resolve against (HGRP_Type)
+ * @param master_hgroup_list the groups its references resolve against (HGRP)
  * @param depth how deep the recursion already is
  * @param[out] group receives the name of the group the entry was found in
  *
@@ -327,9 +327,9 @@ hgroup_why_named(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char
  *
  * @see sge_hgroup.h for what the routes mean and why the order is what it is.
  *
- * @param hgroup the group to ask (HGRP_Type), may be an empty handle
+ * @param hgroup the group to ask (HGRP), may be an empty handle
  * @param hostname the host in question, already resolved by the caller
- * @param master_hgroup_list the groups its references resolve against (HGRP_Type)
+ * @param master_hgroup_list the groups its references resolve against (HGRP)
  * @param[out] group receives the group the entry was found in, empty when that
  *        is @p hgroup itself
  * @param[out] detail receives the matcher on the matcher route, empty otherwise
@@ -387,7 +387,7 @@ hgroup_why(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *host
  * @param hgroup the group whose member list is split; an empty handle gives false and three empty handles
  *
  * @return a tuple of: true when the group carries at least one matcher; the literal host names; the group
- *         references; the matchers - each list `HR_Type` and nullptr when none
+ *         references; the matchers - each list `HR` and nullptr when none
  */
 std::tuple<bool, ocs::tom::ListPtr<ocs::tom::HR>, ocs::tom::ListPtr<ocs::tom::HR>, ocs::tom::ListPtr<ocs::tom::HR>>
 hgroup_split_members(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
@@ -588,7 +588,7 @@ bool hgroup_check_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char 
  *
  * Find a 'group' in 'this_list'.
  *
- * @param this_list HGRP_Type list, may be an empty handle
+ * @param this_list HGRP list, may be an empty handle
  * @param group group name
  *
  * @return found element or an empty handle
@@ -608,9 +608,9 @@ hgroup_list_locate(const ocs::tom::ConstList<ocs::tom::HGRP> this_list, const ch
  *
  * Create a new hostgroup.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param name name
- * @param href_or_groupref list of hosts for this hgroup (HR_Type), may be empty; taken over only when the group
+ * @param href_or_groupref list of hosts for this hgroup (HR), may be empty; taken over only when the group
  *        is created, otherwise it stays with the caller
  * @param is_name_validate if true, the hgrp name is validated. Should be done all the time, there is only one
  *        case in qconf in that the name has to be ignored.
@@ -648,9 +648,9 @@ hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
  *
  * Add a host or group reference.
  *
- * @param this_elem HGRP_Type elem
- * @param answer_list AN_Type list
- * @param href_or_groupref HR_Type list, may be an empty handle
+ * @param this_elem HGRP elem
+ * @param answer_list AN list
+ * @param href_or_groupref HR list, may be an empty handle
  *
  * @return error state true  - Success false - Error
  */
@@ -690,12 +690,12 @@ bool hgroup_add_references(const ocs::tom::Element<ocs::tom::HGRP> this_elem,
  * 'used_hosts' and 'used_groups' will contain the names of
  * hosts and groups referenced by 'this_elem'.
  *
- * @param this_elem HGRP_Type, may be an empty handle
- * @param answer_list AN_Type list
- * @param master_list HGRP_Type list, may be an empty handle
- * @param used_hosts in-out: HR_Type list, or nullptr
- * @param used_groups in-out: HR_Type list, or nullptr
- * @param used_matchers in-out: HR_Type list receiving the matchers met, or nullptr
+ * @param this_elem HGRP, may be an empty handle
+ * @param answer_list AN list
+ * @param master_list HGRP list, may be an empty handle
+ * @param used_hosts in-out: HR list, or nullptr
+ * @param used_groups in-out: HR list, or nullptr
+ * @param used_matchers in-out: HR list receiving the matchers met, or nullptr
  * @param expand_matchers whether the hosts the matchers capture are added to 'used_hosts'
  *
  * @return error state true  - Success false - Error
@@ -736,10 +736,10 @@ bool hgroup_find_all_references(const ocs::tom::ConstElement<ocs::tom::HGRP> thi
  * 'answer_list' will contain error messages if the function is
  * not successful
  *
- * @param this_elem HGRP_Type element, may be an empty handle
- * @param answer_list AN_Type list
- * @param master_list list of all existing HGRP_Type elements
- * @param occupants_groups in-out: HR_Type list
+ * @param this_elem HGRP element, may be an empty handle
+ * @param answer_list AN list
+ * @param master_list list of all existing HGRP elements
+ * @param occupants_groups in-out: HR list
  *
  * @return exit state true  - Success false - Error
  */
@@ -775,12 +775,12 @@ bool hgroup_find_all_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> th
  * 'answer_list' will contain error messages if the function is
  * not successful
  *
- * @param this_elem HGRP_Type, may be an empty handle
- * @param answer_list AN_Type
- * @param master_hgroup_list HGRP_Type master list
- * @param master_cqueue_list CQ_Type master list
- * @param occupants_groups in-out: HR_Type list, or nullptr
- * @param occupants_queues in-out: ST_Type list the names of the referencing cqueues are appended to, created
+ * @param this_elem HGRP, may be an empty handle
+ * @param answer_list AN
+ * @param master_hgroup_list HGRP master list
+ * @param master_cqueue_list CQ master list
+ * @param occupants_groups in-out: HR list, or nullptr
+ * @param occupants_queues in-out: ST list the names of the referencing cqueues are appended to, created
  *                         with the first one; or nullptr
  *
  * @return Error state true  - Success false - Error
@@ -830,9 +830,9 @@ bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_e
  * "href_list" exist in "this_list". If one or more objects are missing
  * a corresponding error message will be returned via "answer_list".
  *
- * @param this_list HGRP_Type list, may be an empty handle
- * @param answer_list AN_Type
- * @param href_list HR_Type list, may be an empty handle
+ * @param this_list HGRP list, may be an empty handle
+ * @param answer_list AN
+ * @param href_list HR list, may be an empty handle
  *
  * @return true or false; true if one of the lists is an empty handle
  */
@@ -869,10 +869,10 @@ bool hgroup_list_exists(const ocs::tom::ConstList<ocs::tom::HGRP> this_list,
  * referenced will be added to "used_hosts", each host once also when it is
  * a member of several matching groups.
  *
- * @param this_list HGRP_Type list, may be an empty handle
- * @param answer_list AN_Type
+ * @param this_list HGRP list, may be an empty handle
+ * @param answer_list AN
  * @param hgroup_pattern fnmatch pattern
- * @param used_hosts in-out: HR_Type list, or nullptr
+ * @param used_hosts in-out: HR list, or nullptr
  *
  * @return error state true  - Success false - Error
  */
@@ -916,10 +916,10 @@ bool hgroup_list_find_matching_and_resolve(const ocs::tom::ConstList<ocs::tom::H
  * "hgroup_pattern". All matching hostgroup names will be added to
  * "href_list"
  *
- * @param this_list HGRP_Type list, may be an empty handle
- * @param answer_list AN_Type list
+ * @param this_list HGRP list, may be an empty handle
+ * @param answer_list AN list
  * @param hgroup_pattern hostgroup pattern
- * @param[in,out] href_list HR_Type list receiving the matching names, created if needed; or nullptr
+ * @param[in,out] href_list HR list receiving the matching names, created if needed; or nullptr
  *
  * @return error state true  - success false - error
  */

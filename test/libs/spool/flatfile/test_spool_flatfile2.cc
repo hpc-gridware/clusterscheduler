@@ -162,7 +162,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       file1 = spool_flatfile_write_object(&alp, cqueue, false,
                                           CQ_fields, &qconf_sfi,
                                           SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
-      lListElem *reread = spool_flatfile_read_object(&alp, CQ_Type, nullptr,
+      lListElem *reread = spool_flatfile_read_object(&alp, ocs::tom::CQ::descriptor.e, nullptr,
                                                      CQ_fields, nullptr, true, &qconf_sfi,
                                                      SP_FORM_ASCII, nullptr, file1);
       if (reread != nullptr) {
@@ -186,7 +186,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       const char *file2 = nullptr;
       lList *read_list = nullptr;
 
-      lList *ce_list = lCreateList("CE List", CE_Type);
+      lList *ce_list = lCreateList("CE List", ocs::tom::CE::descriptor.e);
       auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
       ocs::tom::set<CE_name>(ce, "test_ce");
       ocs::tom::set<CE_shortcut>(ce, "tc");
@@ -205,7 +205,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(id, "CE list write: spool_flatfile_write_list returns non-null", file1 != nullptr); id++;
 
       if (file1 != nullptr) {
-         read_list = spool_flatfile_read_list(&alp, CE_Type, CE_fields, nullptr, true,
+         read_list = spool_flatfile_read_list(&alp, ocs::tom::CE::descriptor.e, CE_fields, nullptr, true,
                                              &qconf_ce_list_sfi, SP_FORM_ASCII, nullptr, file1);
       }
       CHECK(id, "CE list read: spool_flatfile_read_list returns non-null", read_list != nullptr); id++;

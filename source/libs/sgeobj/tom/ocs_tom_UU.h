@@ -80,7 +80,7 @@ enum UU_Field {
    /**
     * @brief Usage
     *
-    * List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this user.
+    * List of UA objects storing accumulated and decayed usage of jobs belonging to this user.
     */
    UU_usage,
    /**
@@ -98,19 +98,19 @@ enum UU_Field {
    /**
     * @brief Long Term Usage
     *
-    * List of UA_Type objects holding long term accumulated non-decayed usage.
+    * List of UA objects holding long term accumulated non-decayed usage.
     */
    UU_long_term_usage,
    /**
     * @brief Project
     *
-    * UPP_Type list @todo add description.
+    * UPP list @todo add description.
     */
    UU_project,
    /**
     * @brief Debited Job Usage
     *
-    * List of UPU_Type, still debited usage per job.
+    * List of UPU, still debited usage per job.
     */
    UU_debited_job_usage,
    /**
@@ -219,6 +219,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of UU for the list library: a synonym for ocs::tom::UU::descriptor */
-inline constexpr const lDescr *UU_Type = ocs::tom::UU::descriptor.e;

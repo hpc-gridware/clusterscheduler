@@ -107,7 +107,7 @@
  * @brief Reject a job with a global hard queue request and a master or slave hard queue request
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @return true when the job is acceptable
  */
 static bool
@@ -136,7 +136,7 @@ sge_job_verify_global_master_slave_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
  * @brief Reject a job requesting a resource in the global scope and in the master or slave scope
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param soft true to check the global soft requests, false for the global hard requests
  * @return true when the job is acceptable
  */
@@ -174,7 +174,7 @@ sge_job_verify_global_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *alp
 /** @brief Reject a parallel job whose global request conflicts with its master or slave request
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @return true when the job is acceptable
  */
 bool
@@ -218,7 +218,7 @@ sge_job_verify_global_master_slave_allocation_rule(ocs::tom::ListPtr<ocs::tom::A
 /** @brief Verify the per-job requests a slave task may not make
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param centry_list see the brief above
  * @return true when the job is acceptable
  */
@@ -252,7 +252,7 @@ sge_job_verify_slave_per_job_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
 /** @brief Verify the per-host resource requests of a parallel job
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param master_centry_list see the brief above
  * @return true when the job is acceptable
  */
@@ -291,7 +291,7 @@ sge_job_verify_per_host_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const oc
  * @brief Reject soft queue or soft resource requests in the master or slave scope
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @return true when the job is acceptable
  */
 static bool
@@ -331,7 +331,7 @@ job_verify_soft_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
  * @brief Reject master or slave scope requests of a job that is not parallel
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @return true when the job is acceptable
  */
 static bool
@@ -491,7 +491,7 @@ job_verify_adjust_request_set(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::
 
 /** @brief Verify a submitted job and fill in what it left unsaid
  *
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param alpp receives messages for the caller
  * @param lpp the master list
  * @param packet the client request
@@ -564,7 +564,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
     * fill name and shortcut for all requests
     * fill numeric values for all bool, time, memory and int type requests
     * use the master_CEntry_list for all fills
-    * JB_hard/soft_resource_list points to a CE_Type list
+    * JB_hard/soft_resource_list points to a CE list
     */
    for (const auto jrs : ocs::tom::get<JB_request_set_list>(jep)) {
       uint32_t scope = ocs::tom::get<JRS_scope>(jrs);

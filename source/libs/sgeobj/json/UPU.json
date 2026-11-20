@@ -35,7 +35,7 @@
          "name": "old_usage_list",
          "summary": "Old Usage List",
          "description": [
-            "UA_Type still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster."
+            "UA still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster."
          ],
          "type": "lListT",
          "subClassName": "UA",

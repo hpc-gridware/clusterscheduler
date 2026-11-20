@@ -64,10 +64,10 @@
  *
  * A context is built from two kinds of element:
  *
- * - a **rule** (`SPR_Type`) carries one storage backend as a set of callback
+ * - a **rule** (`SPR`) carries one storage backend as a set of callback
  *   function pointers - the `spooling_*_func` types below - plus the URL and
  *   whatever client data that backend needs;
- * - a **type** (`SPT_Type`) stands for one #sge_object_type and lists the
+ * - a **type** (`SPT`) stands for one #sge_object_type and lists the
  *   rules that apply to it, exactly one of them marked as the default.
  *
  * So a write goes: application -> #spool_write_object -> the type for that

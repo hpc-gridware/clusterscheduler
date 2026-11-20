@@ -51,7 +51,7 @@ namespace ocs::spool::classic {
    /**
     * @brief Reads an advance reservation from a spool file
     *
-    * The file holds an advance reservation (AR_Type) as lWriteElemToDisk()
+    * The file holds an advance reservation (AR) as lWriteElemToDisk()
     * wrote it; a file that cannot be read, or holds another type, gives an
     * empty handle.
     *
@@ -92,11 +92,11 @@ namespace ocs::spool::classic {
     * @brief Reads all advance reservations from disk and validates them
     *
     * The list stays untyped: it is created through the pointer if it does not
-    * exist yet. The files hold advance reservations (AR_Type) as
+    * exist yet. The files hold advance reservations (AR) as
     * lWriteElemToDisk() wrote them; a file that cannot be read, or holds
     * another type, counts as a failure.
     *
-    * @param ar_list Pointer to the list pointer where advance reservations will be stored (AR_Type)
+    * @param ar_list Pointer to the list pointer where advance reservations will be stored (AR)
     * @param list_name Name for the created list
     * @return true if all advance reservations were successfully read and validated, false otherwise
     */

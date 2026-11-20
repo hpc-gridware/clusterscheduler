@@ -2,7 +2,7 @@
    "className": "PETask",
    "summary": "PE Task",
    "description": [
-      "A PET_Type object describes one task of a tightly integrated parallel job."
+      "A PET object describes one task of a tightly integrated parallel job."
    ],
    "cullPrefix": "PET",
    "attributes": [

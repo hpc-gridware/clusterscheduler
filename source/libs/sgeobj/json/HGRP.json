@@ -2,7 +2,7 @@
    "className": "HostGroup",
    "summary": "Host Group",
    "description": [
-      "HGRP_Type elements are used to define groups of hosts. Each group",
+      "HGRP elements are used to define groups of hosts. Each group",
       "will be identified by a unique name.",
       "Each hostgroup might refer to none, one or multiple hosts and/or",
       "hostgroups. This object makes it possible to define a network of",
@@ -12,7 +12,7 @@
       "                  |            |",
       "                  V            | 0:x",
       "            ------------- -----|",
-      "            | HGRP_Type |",
+      "            | HGRP |",
       "            ------------- ------------> | hostname |",
       "                               0:x      ------------",
       " ",

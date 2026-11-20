@@ -49,7 +49,7 @@
  *
  * The parameter stays untyped: this overrides the generic show_object(), whose
  * element type is only known at run time; it is taken into a host group handle
- * once. The derived lists are `HR_Type`.
+ * once. The derived lists are `HR`.
  *
  * @param os   the stream to write to
  * @param ep   the host group

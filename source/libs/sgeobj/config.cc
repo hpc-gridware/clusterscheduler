@@ -35,7 +35,7 @@
 /** @file
  * @brief Reading a flat `key value` configuration file into a name/value list
  *
- * The file is parsed into a list of name/value pairs (CF_Type); a caller looks
+ * The file is parsed into a list of name/value pairs (CF); a caller looks
  * up single keys with #get_conf_value and takes the entries it consumed out of
  * the list, so whatever is left over afterwards is exactly the set of keys
  * nobody understood. #add_nm_to_set records which attributes a configuration

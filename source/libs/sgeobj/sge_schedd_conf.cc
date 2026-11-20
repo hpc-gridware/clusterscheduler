@@ -94,7 +94,7 @@
  *
  * All configuration values are stored in one cull
  * master list: Master_Sched_Config_List. This list
- * has only one element: the config element (SC_Type).
+ * has only one element: the config element (SC).
  *
  * The configuratin is stored in a CULL list due to the
  * current configuration handling in the system. There
@@ -382,7 +382,7 @@ static void ocs_sconf_reset_cache() {
 /**
  * @brief The scheduler configuration element
  *
- * The element is always complete: every source yields a full SC_Type object,
+ * The element is always complete: every source yields a full SC object,
  * and the qmaster rejects a reduced one in the modify request.
  *
  * @return the configuration, or nullptr if none is set; the getters return
@@ -391,7 +391,7 @@ static void ocs_sconf_reset_cache() {
  * @note MT-NOTE: is not MT safe, the calling function needs to hold the Sched_Conf_Lock
  */
 static ocs::tom::ConstElement<ocs::tom::SC> ocs_sconf_elem() {
-   // the master list is a process-lifetime global and holds SC_Type elements only;
+   // the master list is a process-lifetime global and holds SC elements only;
    // read on the scheduler hot path, so the handle is made without a check
    return ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>().front();
 }
@@ -404,7 +404,7 @@ static ocs::tom::ConstElement<ocs::tom::SC> ocs_sconf_elem() {
  * @note MT-NOTE: is not MT safe, the calling function needs to hold the Sched_Conf_Lock
  */
 static ocs::tom::Element<ocs::tom::SC> ocs_sconf_elem_rw() {
-   // the master list is a process-lifetime global and holds SC_Type elements only
+   // the master list is a process-lifetime global and holds SC elements only
    return ocs::DataStore::master_list_rw<SGE_TYPE_SCHEDD_CONF>().front();
 }
 
@@ -419,7 +419,7 @@ static ocs::tom::Element<ocs::tom::SC> ocs_sconf_elem_rw() {
  * If the validation fails, the previous configuration stays (or a default
  * one is installed if there was none) and @p config is left with the caller.
  *
- * @param[in,out] config new configuration (SC_Type); taken over, i.e. left empty, on success
+ * @param[in,out] config new configuration (SC); taken over, i.e. left empty, on success
  * @param answer_list error messages
  *
  * @return true, if it worked SG TODO: use a internal eval config function and not the external one.
@@ -469,7 +469,7 @@ bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, ocs::tom::ListPtr
  * @brief Does the configured `load_formula` name only existing complex entries?
  *
  * @param[out] answer_list receives the reason the formula was rejected
- * @param centry_list the complex entries the formula may refer to (CE_Type), may be an empty handle
+ * @param centry_list the complex entries the formula may refer to (CE), may be an empty handle
  *
  * @return true when the formula is usable
  *
@@ -497,7 +497,7 @@ bool sconf_is_valid_load_formula(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  * active configuration. A set config has to be used to make the
  * current configuration the active one.
  *
- * @return default configuration (SC_Type), owned by the caller
+ * @return default configuration (SC), owned by the caller
  *
  * @note MT-NOTE: is MT-safe, does not use global variables
  */
@@ -566,7 +566,7 @@ ocs::tom::ElementPtr<ocs::tom::SC> sconf_create_default() {
  * Checks both `job_load_adjustments` and `load_formula`. Callers use it to
  * refuse deleting a complex entry that the scheduler still needs.
  *
- * @param centry the complex entry to look for (CE_Type)
+ * @param centry the complex entry to look for (CE)
  *
  * @return true when either attribute refers to it
  *
@@ -647,7 +647,7 @@ uint32_t sconf_get_load_adjustment_decay_time() {
  *
  * That is load values a newly dispatched job is assumed to add.
  *
- * @return a copy (CE_Type), owned by the caller; empty if the attribute is not set
+ * @return a copy (CE), owned by the caller; empty if the attribute is not set
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
@@ -667,7 +667,7 @@ ocs::tom::ListPtr<ocs::tom::CE> sconf_get_job_load_adjustments() {
  *
  * That is load values a newly dispatched job is assumed to add.
  *
- * @return the configured value (CE_Type), an empty handle if none is set
+ * @return the configured value (CE), an empty handle if none is set
  *
  * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
@@ -1061,7 +1061,7 @@ bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number) {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   // the cached range is a process-lifetime static of RN_Type elements; read per job, so no check
+   // the cached range is a process-lifetime static of RN elements; read per job, so no check
    is_in_range = range_list_is_id_within(ocs::tom::ConstList<ocs::tom::RN>::from_typed(pos.c_schedd_job_info_range),
                                          job_number);
 
@@ -1091,7 +1091,7 @@ static const char *get_algorithm() {
  *
  * That is the weight of each usage attribute in the share tree policy.
  *
- * @return a copy (UA_Type), owned by the caller; empty if the attribute is not set
+ * @return a copy (UA), owned by the caller; empty if the attribute is not set
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
@@ -1112,7 +1112,7 @@ ocs::tom::ListPtr<ocs::tom::UA> sconf_get_usage_weight_list() {
  *
  * That is the weight of each usage attribute in the share tree policy.
  *
- * @return the configured value (UA_Type), an empty handle if none is set
+ * @return the configured value (UA), an empty handle if none is set
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
@@ -1708,7 +1708,7 @@ static const char *get_halflife_decay_list_str() {
  *
  * That is a per attribute half life overriding `halftime`.
  *
- * @return a copy of the parsed value (UA_Type), owned by the caller; empty if the attribute is "none"
+ * @return a copy of the parsed value (UA), owned by the caller; empty if the attribute is "none"
  *
  * @note MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
  */
@@ -1717,7 +1717,7 @@ ocs::tom::ListPtr<ocs::tom::UA> sconf_get_halflife_decay_list() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   // the cache is a process-lifetime static, filled with UA_Type elements in sconf_validate_config_()
+   // the cache is a process-lifetime static, filled with UA elements in sconf_validate_config_()
    auto decay_list =
       ocs::tom::ConstList<ocs::tom::UA>::from_typed(pos.c_halflife_decay_list).clone("copy_decay_list");
 
@@ -1758,7 +1758,7 @@ bool sconf_is() {
 /**
  * @brief A copy of the scheduler configuration list
  *
- * @return a copy of the config list (SC_Type), owned by the caller
+ * @return a copy of the config list (SC), owned by the caller
  *
  * @note DO NOT USE this method, ONLY when there is NO OTHER way. All config
  *       settings can be accessed via access function. The config can be set
@@ -1773,7 +1773,7 @@ ocs::tom::ListPtr<ocs::tom::SC> sconf_get_config_list() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   // the master list is a process-lifetime global holding SC_Type elements only
+   // the master list is a process-lifetime global holding SC elements only
    const auto master_list = ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>();
    auto copy_list = master_list.clone("sched_conf_copy");
 
@@ -2020,7 +2020,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
             // the cache is a process-lifetime static and stays a raw pointer
             pos.c_params = ocs::tom::ListPtr<ocs::tom::PARA>::create("params").release();
          }
-         // filled with PARA_Type elements only, see above
+         // filled with PARA elements only, see above
          const auto c_params = ocs::tom::List<ocs::tom::PARA>::from_typed(pos.c_params);
          for (s = sge_strtok_r(sparams, PARAMS_DELIMITER, &context); s;
               s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &context)) {
@@ -2260,7 +2260,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
 
    /* --- SC_load_formula */
    {
-      // the master list is a process-lifetime global holding CE_Type elements only
+      // the master list is a process-lifetime global holding CE elements only
       const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
       if (master_centry_list && !sconf_is_valid_load_formula(answer_list, master_centry_list)) {
          ret = false;
@@ -2282,7 +2282,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
  * @brief Validate a given configuration
  *
  * @param answer_list error messages
- * @param config config to validate (SC_Type), may be an empty handle; stays with the caller
+ * @param config config to validate (SC), may be an empty handle; stays with the caller
  *
  * @return true, if the config is valid SG TODO: needs cleanup!!
  *
@@ -2565,7 +2565,7 @@ static bool sconf_eval_set_profiling(const ocs::tom::List<ocs::tom::PARA> param_
  * The MONITOR param allows schedule entry recording facility module
  * be switched on/off.
  *
- * @param param_list the parsed parameters (PARA_Type), extended by one entry
+ * @param param_list the parsed parameters (PARA), extended by one entry
  * @param[out] answer_list receives the message naming the bad setting
  * @param param the raw `MONITOR=...` text
  *
@@ -2615,7 +2615,7 @@ static bool sconf_eval_set_monitoring(const ocs::tom::List<ocs::tom::PARA> param
  *
  * Caches the offset; an unparsable value sets the default.
  *
- * @param param_list the parsed parameters (PARA_Type); not extended by this entry
+ * @param param_list the parsed parameters (PARA); not extended by this entry
  * @param answer_list unused, the caller reports nothing for this entry
  * @param param the raw `DURATION_OFFSET=...` text
  *
@@ -2644,7 +2644,7 @@ static bool sconf_eval_set_duration_offset([[maybe_unused]] const ocs::tom::List
 /**
  * @brief Parses the `PE_RANGE_ALG=...` entry of the scheduler `params`
  *
- * @param param_list the parsed parameters (PARA_Type); not extended by this entry
+ * @param param_list the parsed parameters (PARA); not extended by this entry
  * @param answer_list unused, the caller reports nothing for this entry
  * @param param the raw `PE_RANGE_ALG=...` text
  *
@@ -2880,11 +2880,11 @@ int schedd_mes_get_logging() {
  *
  * The setting is thread local, so each scheduling thread has its own.
  *
- * @return the element (SME_Type), an empty handle when messaging is not initialised
+ * @return the element (SME), an empty handle when messaging is not initialised
  */
 ocs::tom::Element<ocs::tom::SME> sconf_get_sme() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
-   // the thread local store holds SME_Type elements only (sconf_set_sme()); read per job, so no check
+   // the thread local store holds SME elements only (sconf_set_sme()); read per job, so no check
    return ocs::tom::Element<ocs::tom::SME>::from_typed(sc_state->sme);
 }
 
@@ -2896,7 +2896,7 @@ ocs::tom::Element<ocs::tom::SME> sconf_get_sme() {
  * The thread local store takes the element over; an element stored before
  * is not freed, the caller takes it out with sconf_get_sme() first.
  *
- * @param sme the element to use (SME_Type), may be empty
+ * @param sme the element to use (SME), may be empty
  */
 void sconf_set_sme(ocs::tom::ElementPtr<ocs::tom::SME> &&sme) {
    auto taken = std::move(sme);
@@ -2910,11 +2910,11 @@ void sconf_set_sme(ocs::tom::ElementPtr<ocs::tom::SME> &&sme) {
  *
  * The setting is thread local, so each scheduling thread has its own.
  *
- * @return the element (SME_Type), an empty handle when messaging is not initialised
+ * @return the element (SME), an empty handle when messaging is not initialised
  */
 ocs::tom::Element<ocs::tom::SME> sconf_get_tmp_sme() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
-   // the thread local store holds SME_Type elements only (sconf_set_tmp_sme()); read per job, so no check
+   // the thread local store holds SME elements only (sconf_set_tmp_sme()); read per job, so no check
    return ocs::tom::Element<ocs::tom::SME>::from_typed(sc_state->tmp_sme);
 }
 
@@ -2926,7 +2926,7 @@ ocs::tom::Element<ocs::tom::SME> sconf_get_tmp_sme() {
  * The thread local store takes the element over; an element stored before
  * is not freed, the caller takes it out with sconf_get_tmp_sme() first.
  *
- * @param sme the element to use (SME_Type), may be empty
+ * @param sme the element to use (SME), may be empty
  */
 void sconf_set_tmp_sme(ocs::tom::ElementPtr<ocs::tom::SME> &&sme) {
    auto taken = std::move(sme);

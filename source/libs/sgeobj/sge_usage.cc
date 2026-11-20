@@ -70,7 +70,7 @@
  * usage object as int value.
  * If no such element is found, return the given default value.
  *
- * @param usage_list the usage list (UA_Type), may be an empty handle
+ * @param usage_list the usage list (UA), may be an empty handle
  * @param name name of the element to search
  * @param def default value
  *
@@ -95,7 +95,7 @@ usage_list_get_int_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, con
  *
  * Usage is stored as a double throughout; this converts on read.
  *
- * @param usage_list list to search (UA_Type), may be an empty handle
+ * @param usage_list list to search (UA), may be an empty handle
  * @param name name of the element to search
  * @param def default value returned when the list has no such element
  * @return value of found object or default
@@ -118,7 +118,7 @@ usage_list_get_ulong_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, c
 /**
  * @brief Read a usage value as a 64 bit unsigned integer
  *
- * @param usage_list list to search (UA_Type), may be an empty handle
+ * @param usage_list list to search (UA), may be an empty handle
  * @param name name of the element to search
  * @param def default value returned when the list has no such element
  * @return value of found object or default
@@ -146,7 +146,7 @@ usage_list_get_ulong64_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list,
  * usage object as double value.
  * If no such element is found, return the given default value.
  *
- * @param usage_list the usage list (UA_Type), may be an empty handle
+ * @param usage_list the usage list (UA), may be an empty handle
  * @param name name of the element to search
  * @param def default value
  *
@@ -173,7 +173,7 @@ usage_list_get_double_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, 
  * Updates the value of a usage record. If no usage record exists with the
  * given name in usage_list, a new record is created.
  *
- * @param usage_list list containing the usage record to update (UA_Type), may be an empty handle
+ * @param usage_list list containing the usage record to update (UA), may be an empty handle
  * @param name name of the usage record to update
  * @param value the new value
  *
@@ -192,7 +192,7 @@ usage_list_set_ulong_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const 
 /**
  * @brief Create or update a usage record from a 64 bit unsigned integer
  *
- * @param usage_list list containing the usage record to update (UA_Type), may be an empty handle
+ * @param usage_list list containing the usage record to update (UA), may be an empty handle
  * @param name name of the usage record to update
  * @param value the new value
  *
@@ -213,7 +213,7 @@ usage_list_set_ulong64_usage(const ocs::tom::List<ocs::tom::UA> usage_list, cons
  * An empty list handle or a null name gives no record: the list belongs to
  * the caller and cannot be created here.
  *
- * @param usage_list the usage list (UA_Type), may be an empty handle
+ * @param usage_list the usage list (UA), may be an empty handle
  * @param name name of the usage record
  * @param create_usage create the usage record if it does not exist
  * @return the record, or an empty handle
@@ -235,7 +235,7 @@ ocs_usage_list_find_or_add(const ocs::tom::List<ocs::tom::UA> usage_list, const 
  * Updates the value of a usage record. If no usage record exists with the
  * given name in usage_list, a new record is created.
  *
- * @param usage_list list containing the usage record to update (UA_Type), may be an empty handle
+ * @param usage_list list containing the usage record to update (UA), may be an empty handle
  * @param name name of the usage record to update
  * @param value the new value
  * @param create_usage create the usage element if it does not exist? Default: yes.
@@ -263,7 +263,7 @@ usage_list_set_double_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const
  * of the current value and the provided value. If no usage record exists with the
  * given name, a new record is created with the provided value.
  *
- * @param usage_list the usage list to update (UA_Type), may be an empty handle
+ * @param usage_list the usage list to update (UA), may be an empty handle
  * @param name name of the usage record to update
  * @param value the value to compare and set
  * @param create_usage if true, create the usage element if it does not exist; default is true.
@@ -292,9 +292,9 @@ usage_list_max_double_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const
  *    - maxvmem
  *    - all ru_* attributes (see man getrusage.2)
  *
- * @param usage_list the usage list to contain all usage (UA_Type), not empty if @p add_usage_list holds a
+ * @param usage_list the usage list to contain all usage (UA), not empty if @p add_usage_list holds a
  *                   summed attribute
- * @param add_usage_list usage to add to usage_list (UA_Type), may be an empty handle
+ * @param add_usage_list usage to add to usage_list (UA), may be an empty handle
  *
  * @note MT-NOTE: usage_list_sum() is MT safe
  */
@@ -336,9 +336,9 @@ usage_list_sum(const ocs::tom::List<ocs::tom::UA> usage_list, const ocs::tom::Co
  * Without scaling factors nothing is done. An empty @p scaled_usage is left
  * empty: the list belongs to the caller.
  *
- * @param scaling the host's scaling factors, one per usage attribute (HS_Type), may be an empty handle
- * @param prev_usage the usage already accounted for (UA_Type), may be an empty handle
- * @param scaled_usage the usage to scale in place (UA_Type), may be an empty handle
+ * @param scaling the host's scaling factors, one per usage attribute (HS), may be an empty handle
+ * @param prev_usage the usage already accounted for (UA), may be an empty handle
+ * @param scaled_usage the usage to scale in place (UA), may be an empty handle
  */
 void
 scale_usage(const ocs::tom::ConstList<ocs::tom::HS> scaling, const ocs::tom::ConstList<ocs::tom::UA> prev_usage,
@@ -422,7 +422,7 @@ parse_full_double(const char *value, double &out) {
 }
 
 /**
- * @brief Parse a raw `variable=value` pair from the shepherd usage file into a fresh `UA_Type` element
+ * @brief Parse a raw `variable=value` pair from the shepherd usage file into a fresh `UA` element
  *
  * Also used for equivalent sources. See `test/libs/sgeobj/test_sgeobj_usage_parse.cc`
  * for the cases it covers.

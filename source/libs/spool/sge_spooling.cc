@@ -55,7 +55,7 @@
 #include "spool/msg_spoollib.h"
 #include "spool/sge_spooling.h"
 
-// process-lifetime list of the default contexts (SPC_Type); stays untyped, no owning handle for a static
+// process-lifetime list of the default contexts (SPC); stays untyped, no owning handle for a static
 static lList *Default_Spool_Context_List;
 
 #pragma GCC diagnostic push
@@ -519,7 +519,7 @@ bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList
  * The parameter stays untyped: the qmaster, the spooling utilities and the
  * tests pass the context the dynamic loader gave them raw.
  *
- * @param context the context to be the default context (SPC_Type), handed over to the default list;
+ * @param context the context to be the default context (SPC), handed over to the default list;
  *                nullptr is ignored
  *
  * @see #spool_get_default_context
@@ -553,7 +553,7 @@ void spool_set_default_context(lListElem *context) {
  */
 ocs::tom::Element<ocs::tom::SPC>
 spool_get_default_context() {
-   // the list is created in spool_set_default_context() with SPC_Type
+   // the list is created in spool_set_default_context() with SPC
    return ocs::tom::List<ocs::tom::SPC>::from_typed(Default_Spool_Context_List).front();
 }
 
@@ -723,7 +723,7 @@ spool_context_create_type(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
  * Searches and returns the default spooling rule for a certain object type.
  *
  * The rule is referenced through the Ref field SPTR_rule, which only
- * spool_type_add_rule() sets, with a rule (SPR_Type); it is taken without a
+ * spool_type_add_rule() sets, with a rule (SPR); it is taken without a
  * check. Without DENTER: called for every spooling operation of the qmaster.
  *
  * @param spool_type the object type
@@ -830,7 +830,7 @@ bool spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListEl
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
       const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
                                                   object_type);
       if (!type) {
@@ -901,7 +901,7 @@ spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
       const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
                                                   object_type);
       if (!type) {
@@ -947,7 +947,7 @@ spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem 
  *
  * @param answer_list to return error messages
  * @param context     the context to read from
- * @param list        receives the keys (`STU_Type`)
+ * @param list        receives the keys (`STU`)
  * @param key         the key to list below
  *
  * @return true on success, else false
@@ -1027,7 +1027,7 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
       const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
                                                   object_type);
       if (!type) {
@@ -1050,7 +1050,7 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
 
             /* spool using multiple rules */
             for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : type_rules) {
-               // the rule is referenced through a Ref field, set by spool_type_add_rule() with an SPR_Type rule
+               // the rule is referenced through a Ref field, set by spool_type_add_rule() with an SPR rule
                const auto rule = ocs::tom::ConstElement<ocs::tom::SPR>::from_typed(
                   static_cast<const lListElem *>(type_rule.get<SPTR_rule>()));
                auto func = (spooling_write_func)rule.get<SPR_write_func>();
@@ -1109,7 +1109,7 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC_Type); no check on the spooling hot path
+      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
       const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
                                                   object_type);
       if (!type) {
@@ -1132,7 +1132,7 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
 
             /* delete object using all spooling rules */
             for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : type_rules) {
-               // the rule is referenced through a Ref field, set by spool_type_add_rule() with an SPR_Type rule
+               // the rule is referenced through a Ref field, set by spool_type_add_rule() with an SPR rule
                const auto rule = ocs::tom::ConstElement<ocs::tom::SPR>::from_typed(
                   static_cast<const lListElem *>(type_rule.get<SPTR_rule>()));
                auto func = (spooling_delete_func)rule.get<SPR_delete_func>();

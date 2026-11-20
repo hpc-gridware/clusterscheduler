@@ -63,7 +63,7 @@
  *    0 or 1         TAG_KILL_EXECD       EXECD
  *    *              TAG_GET_NEW_CONF     EXECD
  *
- * @param host EH_Type element
+ * @param host EH element
  * @param x data
  * @param tag tag for data
  * @param progname_id programm name id
@@ -115,7 +115,7 @@ host_notify_about_X(const ocs::tom::ConstElement<ocs::tom::EH> host, const uint3
  *
  * Notify execd that there is a new configuration available.
  *
- * @param host EH_Type element
+ * @param host EH element
  *
  * @return see host_notify_about_X()
  *
@@ -133,7 +133,7 @@ int host_notify_about_new_conf(const ocs::tom::ConstElement<ocs::tom::EH> host) 
  *
  * Send the given "kill_command" to the execution "host".
  *
- * @param host EH_Type
+ * @param host EH
  * @param kill_command command
  *
  * @return see host_notify_about_X()
@@ -150,7 +150,7 @@ int host_notify_about_kill(const ocs::tom::ConstElement<ocs::tom::EH> host, cons
 /**
  * @brief Ask an execution host to send its complete load report rather than a delta
  *
- * @param host the execution host (EH_Type)
+ * @param host the execution host (EH)
  *
  * @return see host_notify_about_X()
  */

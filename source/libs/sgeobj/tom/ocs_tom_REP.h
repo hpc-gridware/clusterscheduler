@@ -57,8 +57,8 @@ enum REP_Field {
     * @brief Report List
     *
     * A list of report items, depending on the report type, e.g.
-    * a list of load values (HL_Type) objects for load reports or
-    * a list of job usage values (UA_Type) objects for job reports.
+    * a list of load values (HL) objects for load reports or
+    * a list of job usage values (UA) objects for job reports.
     */
    REP_list,
    /**
@@ -117,6 +117,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of REP for the list library: a synonym for ocs::tom::REP::descriptor */
-inline constexpr const lDescr *REP_Type = ocs::tom::REP::descriptor.e;

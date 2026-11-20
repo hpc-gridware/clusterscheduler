@@ -129,6 +129,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of TM for the list library: a synonym for ocs::tom::TM::descriptor */
-inline constexpr const lDescr *TM_Type = ocs::tom::TM::descriptor.e;

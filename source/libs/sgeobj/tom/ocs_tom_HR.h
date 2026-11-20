@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of HR for the list library: a synonym for ocs::tom::HR::descriptor */
-inline constexpr const lDescr *HR_Type = ocs::tom::HR::descriptor.e;

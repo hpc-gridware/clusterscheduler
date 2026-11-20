@@ -233,6 +233,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of EV for the list library: a synonym for ocs::tom::EV::descriptor */
-inline constexpr const lDescr *EV_Type = ocs::tom::EV::descriptor.e;

@@ -61,13 +61,13 @@ static void
 test_string_key() {
    ocs::spool::clear_duplicate_objects();
    auto usersets = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
-   ocs::spool::DuplicateFilter filter(US_Type, "USERSET");
+   ocs::spool::DuplicateFilter filter(ocs::tom::US::descriptor.e, "USERSET");
 
-   lListElem *a = lCreateElem(US_Type);
+   lListElem *a = lCreateElem(ocs::tom::US::descriptor.e);
    ocs::tom::set<US_name>(a, "arusers");
-   lListElem *b = lCreateElem(US_Type);
+   lListElem *b = lCreateElem(ocs::tom::US::descriptor.e);
    ocs::tom::set<US_name>(b, "deadlineusers");
-   lListElem *copy = lCreateElem(US_Type);
+   lListElem *copy = lCreateElem(ocs::tom::US::descriptor.e);
    ocs::tom::set<US_name>(copy, "arusers");
 
    const bool first = read_into(filter, *usersets, a, "usersets/arusers");
@@ -91,11 +91,11 @@ static void
 test_host_key() {
    ocs::spool::clear_duplicate_objects();
    auto hosts = ocs::tom::ListPtr<ocs::tom::EH>::create("exec hosts");
-   ocs::spool::DuplicateFilter filter(EH_Type, "EXECHOST");
+   ocs::spool::DuplicateFilter filter(ocs::tom::EH::descriptor.e, "EXECHOST");
 
-   lListElem *lower = lCreateElem(EH_Type);
+   lListElem *lower = lCreateElem(ocs::tom::EH::descriptor.e);
    ocs::tom::set<EH_name>(lower, "host-1");
-   lListElem *upper = lCreateElem(EH_Type);
+   lListElem *upper = lCreateElem(ocs::tom::EH::descriptor.e);
    ocs::tom::set<EH_name>(upper, "HOST-1");
 
    const bool first = read_into(filter, *hosts, lower, "EXECHOST:host-1");
@@ -114,24 +114,24 @@ static void
 test_number_key_and_clear() {
    ocs::spool::clear_duplicate_objects();
    auto ars = ocs::tom::ListPtr<ocs::tom::AR>::create("advance reservations");
-   ocs::spool::DuplicateFilter filter(AR_Type, "AR");
+   ocs::spool::DuplicateFilter filter(ocs::tom::AR::descriptor.e, "AR");
 
-   lListElem *ar = lCreateElem(AR_Type);
+   lListElem *ar = lCreateElem(ocs::tom::AR::descriptor.e);
    ocs::tom::set<AR_id>(ar, 17);
-   lListElem *again = lCreateElem(AR_Type);
+   lListElem *again = lCreateElem(ocs::tom::AR::descriptor.e);
    ocs::tom::set<AR_id>(again, 17);
    const bool first = read_into(filter, *ars, ar, "AR:17");
    const bool second = read_into(filter, *ars, again, "AR:17.copy");
    CHECK(5, "an advance reservation id read twice is a duplicate", first && !second && lGetNumberOfElem(*ars) == 1);
 
    auto usersets = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
-   ocs::spool::DuplicateFilter unnamed_filter(US_Type, "USERSET");
-   const bool unnamed_1 = read_into(unnamed_filter, *usersets, lCreateElem(US_Type), "usersets/a");
-   const bool unnamed_2 = read_into(unnamed_filter, *usersets, lCreateElem(US_Type), "usersets/b");
+   ocs::spool::DuplicateFilter unnamed_filter(ocs::tom::US::descriptor.e, "USERSET");
+   const bool unnamed_1 = read_into(unnamed_filter, *usersets, lCreateElem(ocs::tom::US::descriptor.e), "usersets/a");
+   const bool unnamed_2 = read_into(unnamed_filter, *usersets, lCreateElem(ocs::tom::US::descriptor.e), "usersets/b");
    CHECK(6, "objects without a key are admitted", unnamed_1 && unnamed_2 && lGetNumberOfElem(*usersets) == 2);
 
-   ocs::spool::DuplicateFilter other_filter(AR_Type, "AR");
-   lListElem *same_id = lCreateElem(AR_Type);
+   ocs::spool::DuplicateFilter other_filter(ocs::tom::AR::descriptor.e, "AR");
+   lListElem *same_id = lCreateElem(ocs::tom::AR::descriptor.e);
    ocs::tom::set<AR_id>(same_id, 17);
    auto other_ars = ocs::tom::ListPtr<ocs::tom::AR>::create("other advance reservations");
    CHECK(7, "a filter knows only the keys of its own list",

@@ -11,7 +11,7 @@
          "summary": "String Name",
          "description": [
             "This field holds the string contents.",
-            "@todo The primary key property is misleading. The string needn't be unique - we have STU_Type for that."
+            "@todo The primary key property is misleading. The string needn't be unique - we have STU for that."
          ],
          "type": "lStringT",
          "flags": [

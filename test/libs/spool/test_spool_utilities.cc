@@ -93,9 +93,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
    printf("\n--- spool_get_fields_to_spool ---\n");
 
    // T01: valid call returns a non-null field array
-   spooling_field *fields = spool_get_fields_to_spool(&alp, QU_Type, &spool_config_instr);
+   spooling_field *fields = spool_get_fields_to_spool(&alp, ocs::tom::QU::descriptor.e, &spool_config_instr);
    alp.reset();
-   CHECK(id, "spool_get_fields_to_spool(QU_Type) returns non-null", fields != nullptr); id++;
+   CHECK(id, "spool_get_fields_to_spool(QU) returns non-null", fields != nullptr); id++;
 
    // T02: the returned array contains at least one field
    int field_count = 0;
@@ -104,7 +104,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
          field_count++;
       }
    }
-   CHECK(id, "spool_get_fields_to_spool(QU_Type) returns at least one field", field_count > 0); id++;
+   CHECK(id, "spool_get_fields_to_spool(QU) returns at least one field", field_count > 0); id++;
    fields = spool_free_spooling_fields(fields);
 
    // T03: null descriptor is rejected, returns null
@@ -115,9 +115,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // --- field-value round-trip ---
    printf("\n--- field-value round-trip ---\n");
 
-   // T04: for every field in QU_Type, serialize to string and parse back gives identical string
+   // T04: for every field in QU, serialize to string and parse back gives identical string
    {
-      const lDescr *descr = QU_Type;
+      const lDescr *descr = ocs::tom::QU::descriptor.e;
       const auto elem = ocs::tom::create_raw_elem(descr);
       const auto copy = ocs::tom::create_raw_elem(descr);
       dstring elem_str = DSTRING_INIT;
@@ -150,7 +150,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
          }
       }
 
-      CHECK(id, "all QU_Type fields: serialize+parse round-trip is lossless on a default element",
+      CHECK(id, "all QU fields: serialize+parse round-trip is lossless on a default element",
             bad_count == 0); id++;
 
       sge_dstring_free(&elem_str);
@@ -160,7 +160,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // --- the contract of ocs_spool_append_value / ocs_spool_parse_value ---
    printf("\n--- append/parse contract ---\n");
    {
-      const auto qinstance = ocs::tom::create_raw_elem(QU_Type);
+      const auto qinstance = ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e);
       dstring buffer = DSTRING_INIT;
 
       // T05: an empty element is reported, nothing is rendered

@@ -10,7 +10,7 @@
          "name": "queue",
          "summary": "Queue Instance",
          "description": [
-            "Reference to the queue instance (`QU_Type`). Not owned by this element."
+            "Reference to the queue instance (`QU`). Not owned by this element."
          ],
          "type": "lRefT",
          "subClassName": "ANY",

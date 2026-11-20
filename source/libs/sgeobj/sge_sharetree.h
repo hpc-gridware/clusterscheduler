@@ -49,7 +49,7 @@
 #include "sgeobj/sge_answer.h"
 
 /**
- * @brief The position of each share tree node attribute within `STN_Type`
+ * @brief The position of each share tree node attribute within `STN`
  *
  * Reading an attribute by position skips the lookup by name, which matters in
  * the share tree because the scheduler walks every node on every run.

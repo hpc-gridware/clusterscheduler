@@ -37,7 +37,7 @@
 /** @file
  * @brief Complex entries: the definitions of the resources jobs request
  *
- * A complex entry (`CE_Type`) defines one resource - its type, how a request
+ * A complex entry (`CE`) defines one resource - its type, how a request
  * is compared against what is offered, whether a job may request it, and
  * whether it is consumed. The same element is reused for a *request*, where
  * the value is what the job asked for rather than what is defined.
@@ -200,7 +200,7 @@ int get_rsrc(const char *name, bool queue, int *field, int *cqfld, int *valfld, 
  * Parses the value of a request or a complex value according to its type, stores the amount in
  * CE_doubleval and resolves a host name in place.
  *
- * @param this_elem CE_Type element, this object will be checked and filled
+ * @param this_elem CE element, this object will be checked and filled
  * @param answer_list answer list, receives the error message
  * @param allow_empty_boolean true replaces a nullptr value of a boolean
  *                            attribute with "true"; false treats it as an error
@@ -441,10 +441,10 @@ map_type2str(ocs::CEntry::Type type) {
  *
  * Create a preinitialized centry element with the given "name".
  *
- * @param answer_list AN_Type, receives an error when @p name is nullptr
+ * @param answer_list AN, receives an error when @p name is nullptr
  * @param name full name
  *
- * @return the CE_Type element, or an empty handle when @p name is nullptr
+ * @return the CE element, or an empty handle when @p name is nullptr
  */
 ocs::tom::ElementPtr<ocs::tom::CE>
 centry_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
@@ -476,11 +476,11 @@ centry_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
  * "master_queue_list", "master_exechost_list" or
  * "master_sconf_list".
  *
- * @param centry CE_Type element
- * @param answer_list AN_Type list, receives an info message naming the first reference found
- * @param master_cqueue_list CQ_Type list, may be an empty handle
- * @param master_exechost_list EH_Type list, may be an empty handle
- * @param master_rqs_list RQS_Type list, may be an empty handle
+ * @param centry CE element
+ * @param answer_list AN list, receives an info message naming the first reference found
+ * @param master_cqueue_list CQ list, may be an empty handle
+ * @param master_exechost_list EH list, may be an empty handle
+ * @param master_rqs_list RQS list, may be an empty handle
  *
  * @return true if the complex entry is referenced, else false
  */
@@ -557,7 +557,7 @@ bool centry_is_referenced(const ocs::tom::ConstElement<ocs::tom::CE> centry,
  *
  * Print resource string (memory, time) to dstring.
  *
- * @param this_elem CE_Type element, may be an empty handle
+ * @param this_elem CE element, may be an empty handle
  * @param string dynamic string
  *
  * @return always true
@@ -593,10 +593,10 @@ bool centry_print_resource_to_dstring(const ocs::tom::ConstElement<ocs::tom::CE>
  * Find the CEntry element with "name" in "this_list", by its name first and then by its shortcut.
  * The list is only searched; the element is handed out writable, as before.
  *
- * @param this_list CE_Type list, may be an empty handle
- * @param name name or shortcut of a CE_Type entry, may be nullptr
+ * @param this_list CE list, may be an empty handle
+ * @param name name or shortcut of a CE entry, may be nullptr
  *
- * @return CE_Type element, or an empty handle
+ * @return CE element, or an empty handle
  */
 ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstList<ocs::tom::CE> this_list,
                                                    const char *name) {
@@ -615,9 +615,9 @@ ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstList<ocs
 
 
 /**
- * @brief Sort a CE_Type list by CE_name, ascending
+ * @brief Sort a CE list by CE_name, ascending
  *
- * @param this_list CE_Type list, may be an empty handle
+ * @param this_list CE list, may be an empty handle
  *
  * @return always true
  */
@@ -634,7 +634,7 @@ bool centry_list_sort(const ocs::tom::List<ocs::tom::CE> this_list) {
  *
  * Initialize all double values contained in "this_list" from their CE_stringval.
  *
- * @param this_list CE_Type list, may be an empty handle
+ * @param this_list CE list, may be an empty handle
  */
 void centry_list_init_double(const ocs::tom::List<ocs::tom::CE> this_list) {
    DENTER(CENTRY_LAYER);
@@ -657,7 +657,7 @@ void centry_list_init_double(const ocs::tom::List<ocs::tom::CE> this_list) {
  * the shortcut entry is removed instead. A name given twice under the same spelling does not reach this
  * function: the input paths keep it once (CS-3053), so one entry is all there is to remove.
  *
- * @param this_list the request list, CE_Type
+ * @param this_list the request list, CE
  * @param entry the entry carrying the shortcut, an element of @p this_list
  * @param full_name the full name of the attribute
  * @return true if @p entry was removed, false if it stays and gets the full name
@@ -696,11 +696,11 @@ ocs_centry_list_drop_earlier_request(const ocs::tom::List<ocs::tom::CE> this_lis
  * not spooled and is 0 for an entry read back from the spool: without the marker an unfilled
  * entry would look like a request for nothing.
  *
- * @param[in,out] this_list resources as complex list CE_Type, may be an empty handle; the entries are filled in
+ * @param[in,out] this_list resources as complex list CE, may be an empty handle; the entries are filled in
  *        place, a shortcut is replaced by the full name, and of a shortcut and its full name requested together
  *        only the later stays
  * @param answer_list answer list
- * @param master_centry_list the global complex list, CE_Type
+ * @param master_centry_list the global complex list, CE
  * @param allow_non_requestable needed for qstat -l or qmon customize dialog
  * @param allow_empty_boolean true replaces a nullptr value of a boolean
  *                            attribute with "true"; false treats it as an error
@@ -802,13 +802,13 @@ int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, ocs::
 /**
  * @brief fill in configuration attributes into a list of complex attributes
  *
- * The function makes sure that all configuration attributes of objects in a CE_Type list
+ * The function makes sure that all configuration attributes of objects in a CE list
  * are properly filled in.
  * The actual configuration values are taken from the complex definition (the master_centry_list).
  * An entry the complex definition does not know is left as it is.
  *
- * @param centry_list CE_Type list to fill in, may be an empty handle
- * @param master_centry_list the complex definition, CE_Type
+ * @param centry_list CE list to fill in, may be an empty handle
+ * @param master_centry_list the complex definition, CE
  */
 void centry_list_fill_config(const ocs::tom::List<ocs::tom::CE> centry_list,
                              const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
@@ -834,7 +834,7 @@ void centry_list_fill_config(const ocs::tom::List<ocs::tom::CE> centry_list,
  * Decided by whether the `qname` complex entry is requestable, which an
  * administrator can turn off to stop users from bypassing the scheduler.
  *
- * @param this_list the complex entries to look in, CE_Type, may be an empty handle
+ * @param this_list the complex entries to look in, CE, may be an empty handle
  * @return true when `qname` exists and is requestable
  */
 bool centry_list_are_queues_requestable(const ocs::tom::ConstList<ocs::tom::CE> this_list) {
@@ -855,7 +855,7 @@ bool centry_list_are_queues_requestable(const ocs::tom::ConstList<ocs::tom::CE> 
 /**
  * @brief Render a complex entry list into a dstring
  *
- * @param this_list the entries to render, CE_Type, may be an empty handle
+ * @param this_list the entries to render, CE, may be an empty handle
  * @param[out] string receives the text, appended; `NONE` for no entries
  * @return the resulting text, or nullptr when @p string is nullptr
  */
@@ -894,7 +894,7 @@ const char *centry_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::CE
  *
  * @todo CLEANUP: should be replaced by centry_list_append_to_dstring()
  *
- * @param this_list the entries to render, CE_Type, may be an empty handle
+ * @param this_list the entries to render, CE, may be an empty handle
  * @param[out] buff receives the text, may be nullptr
  * @param max_len the size of `buff`
  * @return 0 on success, the non-zero result of uni_print_list() otherwise
@@ -1060,7 +1060,7 @@ centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attribut
  * The last value for a name wins, which is what a user writing the same
  * `-l` option twice expects.
  *
- * @param[in,out] this_list the request list to compress, CE_Type
+ * @param[in,out] this_list the request list to compress, CE
  */
 void centry_list_remove_duplicates(const ocs::tom::List<ocs::tom::CE> this_list) {
    DENTER(TOP_LAYER);
@@ -1092,7 +1092,7 @@ void centry_list_remove_duplicates(const ocs::tom::List<ocs::tom::CE> this_list)
  * When no centy list is passed in, the check for uniqie name and
  * short cuts is skipt.
  *
- * @param centry the CE_Type element, which should be validated
+ * @param centry the CE element, which should be validated
  * @param centry_list if not an empty handle, the function checks, if the centry element is already in the list
  * @param answer_list contains the error messages
  * @param from_spool_read true when the element is read from the spool: a reserved name is then only
@@ -1417,7 +1417,7 @@ bool centry_elem_validate(const ocs::tom::ConstElement<ocs::tom::CE> centry,
  * @param slots The slot amount assumed.
  * @param name The resource name.
  * @param value The per slot request.
- * @param centry The centry element (CE_Type), may be an empty handle
+ * @param centry The centry element (CE), may be an empty handle
  *
  * @return The resulting urgency contribution
  *
@@ -1468,9 +1468,9 @@ double centry_urgency_contribution(const int slots, const char *name, const doub
 /**
  * @brief Is every entry of a list defined in the complex configuration?
  *
- * @param this_list the complex configuration to check against, CE_Type
+ * @param this_list the complex configuration to check against, CE
  * @param[out] answer_list receives the name of the first entry that is missing
- * @param centry_list the entries to look for, CE_Type, may be an empty handle
+ * @param centry_list the entries to look for, CE, may be an empty handle
  * @return true when all of them exist
  */
 bool centry_list_do_all_exists(const ocs::tom::ConstList<ocs::tom::CE> this_list,
@@ -1500,7 +1500,7 @@ bool centry_list_do_all_exists(const ocs::tom::ConstList<ocs::tom::CE> this_list
  *
  * A `qname` request must not name a queue instance, and every value must be a valid expression.
  *
- * @param this_list the request list to check, CE_Type, may be an empty handle
+ * @param this_list the request list to check, CE, may be an empty handle
  * @param[out] answer_list receives the reason it was rejected
  * @return true when the list is usable
  */
@@ -1545,7 +1545,7 @@ bool centry_list_is_correct(const ocs::tom::ConstList<ocs::tom::CE> this_list,
  * @param[out] alpp receives the name of the unknown resource
  * @param resource_list the resource list of the object to check, e.g. its QU_load_thresholds or
  *        EH_consumable_config_list; may be an empty handle
- * @param master_centry_list the defined complex entries, CE_Type
+ * @param master_centry_list the defined complex entries, CE
  * @return 0 when every referenced resource exists, STATUS_EUNKNOWN otherwise
  */
 int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::List<ocs::tom::CE> resource_list,
@@ -1581,7 +1581,7 @@ int ensure_attrib_available(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::to
  * The global and the template host are skipped: neither runs jobs, so neither
  * needs a slot count.
  *
- * @param ehost Host object (EH_Type), may be an empty handle
+ * @param ehost Host object (EH), may be an empty handle
  * @param processors how many processors the host reported, used as the default
  *                   slot count
  * @return an error status, or 0 on success
@@ -1627,7 +1627,7 @@ int host_ensure_slots_are_defined(const ocs::tom::Element<ocs::tom::EH> ehost, u
  *
  * @param load_formula string that should be a valid load formula
  * @param answer_list error messages
- * @param centry_list list of defined complex values (CE_Type); an empty handle skips the check of the
+ * @param centry_list list of defined complex values (CE); an empty handle skips the check of the
  *                    complex names
  * @param name the attribute the formula belongs to, used in error messages
  *
@@ -1725,7 +1725,7 @@ bool validate_load_formula(const char *load_formula, ocs::tom::ListPtr<ocs::tom:
  * expression
  *
  * @param load_formula load formula expression, may be nullptr
- * @param centry centry to search for (CE_Type)
+ * @param centry centry to search for (CE)
  *
  * @return true if referenced false if not referenced
  *
@@ -1775,7 +1775,7 @@ bool load_formula_is_centry_referenced(const char *load_formula, const ocs::tom:
  * actually applies and, through `dominant_p`, which layer and kind it came
  * from - see the `DOMINANT_*` bits.
  *
- * @param rep the resource element to read (CE_Type)
+ * @param rep the resource element to read (CE)
  * @param[out] dominant_p receives the `DOMINANT_*` bits
  * @param[out] resource_string_p receives the value as text
  * @param[out] dbl_value receives the value as a double, may be nullptr

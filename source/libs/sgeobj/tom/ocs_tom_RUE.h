@@ -139,6 +139,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RUE for the list library: a synonym for ocs::tom::RUE::descriptor */
-inline constexpr const lDescr *RUE_Type = ocs::tom::RUE::descriptor.e;

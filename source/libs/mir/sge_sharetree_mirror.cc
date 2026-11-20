@@ -63,7 +63,7 @@
  * @param evc the event client the event arrived on
  * @param type event type; always SGE_TYPE_SHARETREE, the mirror table calls this function for it only
  * @param action action to perform
- * @param event the event (ET_Type); its share tree list is taken over into the master list
+ * @param event the event (ET); its share tree list is taken over into the master list
  * @param clientdata client data
  *
  * @return always SGE_EMA_OK

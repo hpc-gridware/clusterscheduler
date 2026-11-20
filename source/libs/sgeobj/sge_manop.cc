@@ -57,7 +57,7 @@
  * @brief Is a group referenced in a user list?
  *
  * @param group the group name, looked for as `@group`
- * @param usr_grp_sgrp_list user list (UE_Type) with possible group entries (prefixed with @-character)
+ * @param usr_grp_sgrp_list user list (UE) with possible group entries (prefixed with @-character)
  * @return true if the list holds the group
  */
 static bool
@@ -82,7 +82,7 @@ user_list_is_group_in_list(const char *group, const ocs::tom::ConstList<ocs::tom
  * mentioned in usr_grp_sgrp_list (by UE_name, e.g. the entries of an access list).
  *
  * @param packet              GDI packet containing the ownership information of the request creator
- * @param usr_grp_sgrp_list   user list (UE_Type) with possible group entries (prefixed with @-character)
+ * @param usr_grp_sgrp_list   user list (UE) with possible group entries (prefixed with @-character)
  * @return                    false if neither the username nor one of the groups is referenced.
  */
 bool
@@ -193,7 +193,7 @@ bool
 manop_is_manager(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
-   // the master list of the data store holds US_Type elements
+   // the master list of the data store holds US elements
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    DRETURN(user_is_X_user(packet, master_userset_list, MANAGER_USERSET));
 }
@@ -214,7 +214,7 @@ bool
 manop_is_operator(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
-   // the master list of the data store holds US_Type elements
+   // the master list of the data store holds US elements
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    if (user_is_X_user(packet, master_userset_list, OPERATOR_USERSET)) {
       DRETURN(true);

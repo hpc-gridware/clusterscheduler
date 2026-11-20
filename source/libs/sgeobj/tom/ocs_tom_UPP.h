@@ -47,14 +47,14 @@ enum UPP_Field {
    /**
     * @brief Usage
     *
-    * UA_Type; decayed usage.
+    * UA; decayed usage.
     * Set and used by SGEEE scheduler stored to qmaster; spooled.
     */
    UPP_usage,
    /**
     * @brief Long Term Usage
     *
-    * UA_Type; long term accumulated non-decayed usage.
+    * UA; long term accumulated non-decayed usage.
     * Set by SGEEE scheduler stored to qmaster; spooled
     */
    UPP_long_term_usage,
@@ -104,6 +104,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of UPP for the list library: a synonym for ocs::tom::UPP::descriptor */
-inline constexpr const lDescr *UPP_Type = ocs::tom::UPP::descriptor.e;

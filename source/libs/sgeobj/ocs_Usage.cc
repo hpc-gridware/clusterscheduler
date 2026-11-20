@@ -129,7 +129,7 @@ ocs::Usage::calculate_default_decay_constant(const int halftime) {
 
 /**
  * @brief Add one named decay constant to a decay list
- * @param[in,out] decay_list the list to extend (UA_Type); created if it is empty
+ * @param[in,out] decay_list the list to extend (UA); created if it is empty
  * @param value the half life the decay constant is computed from
  * @param name the usage attribute it applies to
  */
@@ -151,7 +151,7 @@ void ocs::Usage::add_decay_element(ocs::tom::ListPtr<ocs::tom::UA> &decay_list, 
  * This function calculates the decay list based on the half-life
  * and decay constants provided in the configuration.
  *
- * @return A list of decay elements with their corresponding decay constants (UA_Type), owned by the caller;
+ * @return A list of decay elements with their corresponding decay constants (UA), owned by the caller;
  *         empty if the configured half life list has no entries
  */
 ocs::tom::ListPtr<ocs::tom::UA>
@@ -188,8 +188,8 @@ ocs::Usage::get_decay_list() {
  * the decay list and the specified interval. If a decay value is not found
  * in the decay list, a default decay constant is used.
  *
- * @param usage_list The list of usage elements to be decayed (UA_Type), may be an empty handle.
- * @param decay_list The list of decay elements to use for decay calculations (UA_Type), may be an empty handle.
+ * @param usage_list The list of usage elements to be decayed (UA), may be an empty handle.
+ * @param decay_list The list of decay elements to use for decay calculations (UA), may be an empty handle.
  * @param interval The time interval over which to apply the decay.
  */
 void
@@ -225,7 +225,7 @@ ocs::Usage::decay_usage(const ocs::tom::List<ocs::tom::UA> usage_list,
  * representation) grow huge over time (see CS-1385).
  *
  * @param name the usage attribute
- * @param usage_weight_list the configured usage weights (UA_Type), may be an empty handle
+ * @param usage_weight_list the configured usage weights (UA), may be an empty handle
  * @return true if the attribute is booked into the user and project usage
  */
 static bool
@@ -269,7 +269,7 @@ ocs_usage_list_get_or_build(const E ep, const char *name) {
 /**
  * @brief The usage element of an attribute in a usage list, appended with value 0 if the list has none
  *
- * @param usage_list the usage list (UA_Type), not empty
+ * @param usage_list the usage list (UA), not empty
  * @param name the usage attribute
  * @return the element
  */
@@ -295,8 +295,8 @@ ocs_usage_find_or_append(const ocs::tom::List<ocs::tom::UA> usage_list, const ch
  * @param ja_task the array task, may be an empty handle
  * @param user the job owner's user object, may be an empty handle
  * @param project the job's project object, may be an empty handle
- * @param decay_list the decay constants (UA_Type), may be an empty handle; only read if @p do_decay
- * @param usage_weight_list the usage weights (UA_Type), may be an empty handle
+ * @param decay_list the decay constants (UA), may be an empty handle; only read if @p do_decay
+ * @param usage_weight_list the usage weights (UA), may be an empty handle
  * @param seqno the current usage sequence number, see ocs::UserProject::decay_userprj_usage()
  * @param curr_time now, the base of the decay
  * @param do_decay whether the user and project usage is decayed first
@@ -562,8 +562,8 @@ ocs::Usage::sum_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * This strips a usage list down to the attributes that actually matter for
  * share tree usage.
  *
- * @param usage_list the list to strip (UA_Type); an empty handle is treated as an empty list
- * @param usage_weight_list the weights (UA_Type); an attribute without a weight is irrelevant
+ * @param usage_list the list to strip (UA); an empty handle is treated as an empty list
+ * @param usage_weight_list the weights (UA); an attribute without a weight is irrelevant
  * @return true when at least one element was removed, so the caller knows the
  *         owning object has to be re-spooled
  */
@@ -591,7 +591,7 @@ ocs::Usage::strip_irrelevant_usage(const ocs::tom::List<ocs::tom::UA> usage_list
  * attributes cpu, mem and io.
  *
  * @param name the name the resulting list is stored under
- * @param old_usage_list the list to take the existing attributes from (UA_Type); may be an empty handle
+ * @param old_usage_list the list to take the existing attributes from (UA); may be an empty handle
  * @return the new list, owned by the caller
  */
 ocs::tom::ListPtr<ocs::tom::UA>
@@ -628,7 +628,7 @@ ocs::Usage::build_usage_list(const char *name, const ocs::tom::ConstList<ocs::to
 }
 
 /** @brief Look up one usage attribute by name
- * @param usage_list the list to search (UA_Type), may be an empty handle
+ * @param usage_list the list to search (UA), may be an empty handle
  * @param name the attribute to find
  * @return the element, or an empty handle when the attribute is not booked
  */

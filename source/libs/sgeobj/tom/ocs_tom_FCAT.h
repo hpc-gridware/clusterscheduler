@@ -130,6 +130,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of FCAT for the list library: a synonym for ocs::tom::FCAT::descriptor */
-inline constexpr const lDescr *FCAT_Type = ocs::tom::FCAT::descriptor.e;

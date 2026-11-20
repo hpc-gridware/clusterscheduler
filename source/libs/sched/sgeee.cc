@@ -463,7 +463,7 @@ task_ref_copy_to_ja_task(sge_task_ref_t *tref, const ocs::tom::Element<ocs::tom:
  * when no array task is enrolled: then the job's task reference exists, and
  * otherwise it may be nullptr, as the macro this replaces relied on.
  *
- * @tparam F the field of the array task (`JAT_Type`)
+ * @tparam F the field of the array task (`JAT`)
  * @tparam T the type of the value in the task reference
  * @param ref the job's entry
  * @param ref_attr the member of the task reference that holds the value when no array task is enrolled
@@ -480,7 +480,7 @@ static inline T ocs_ref_get(const sge_ref_t *ref, T sge_task_ref_t::*ref_attr) {
  * The task reference is touched only when no array task is enrolled, see
  * #ocs_ref_get.
  *
- * @tparam F the field of the array task (`JAT_Type`)
+ * @tparam F the field of the array task (`JAT`)
  * @tparam T the type of the value in the task reference
  * @param ref the job's entry
  * @param ref_attr the member of the task reference that holds the value when no array task is enrolled
@@ -679,12 +679,12 @@ sgeee_resort_pending_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
 /**
  * @brief Recompute JAT prio based on changed ticket amount
  *
- * Each time when the ticket amount for in a JAT_Type element is changed
+ * Each time when the ticket amount for in a JAT element is changed
  * the JAT_prio needs to be updated. The new ticket value is normalized
  * and the priorty value is computed.
  *
  * @param tref The tref element that is related to the ticket change
- * @param task The JAT_Type task element.
+ * @param task The JAT task element.
  * @param nurg The normalized urgency assumed for the job.
  * @param npri The normalized POSIX priority assumed for the job.
  */
@@ -1045,7 +1045,7 @@ update_active_job_ref_count(const ocs::tom::Element<ocs::tom::STN> node) {
  * The signature is the one of the walk's callback, so the node comes untyped
  * and is checked here.
  *
- * @param node_raw the share tree node (`STN_Type`)
+ * @param node_raw the share tree node (`STN`)
  * @param ptr unused
  * @return 0, so the walk continues
  */
@@ -3058,7 +3058,6 @@ sge_calc_node_targets(const ocs::tom::ConstElement<ocs::tom::STN> root,
    DENTER(TOP_LAYER);
 
    double sum_shares, sum, compensation_factor;
-   /* char *node_name = lGetString(node, STN_name); */
 
    /*---------------------------------------------------------------
     * if this is the root node, initialize proportions

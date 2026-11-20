@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of GR for the list library: a synonym for ocs::tom::GR::descriptor */
-inline constexpr const lDescr *GR_Type = ocs::tom::GR::descriptor.e;

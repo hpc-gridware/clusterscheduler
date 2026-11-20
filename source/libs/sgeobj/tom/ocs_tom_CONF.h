@@ -53,7 +53,7 @@ enum CONF_Field {
    /**
     * @brief Configuration Entries
     *
-    * A configuration consists of multiple configuration entries of CF_Type.
+    * A configuration consists of multiple configuration entries of CF.
     */
    CONF_entries,
 };
@@ -67,7 +67,7 @@ namespace ocs::tom {
     *
     * Contains configuration options for hosts (execution hosts but also a global configuration for the sge_qmaster).
     * Host specific configurations inherit values from the global configuration.
-    * @todo there is an overlap with the exec host type (EH_Type), can this be unified?
+    * @todo there is an overlap with the exec host type (EH), can this be unified?
     */
    struct CONF {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -97,6 +97,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CONF for the list library: a synonym for ocs::tom::CONF::descriptor */
-inline constexpr const lDescr *CONF_Type = ocs::tom::CONF::descriptor.e;

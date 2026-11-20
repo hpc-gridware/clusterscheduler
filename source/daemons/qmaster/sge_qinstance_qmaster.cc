@@ -132,9 +132,9 @@ qinstance_change_state_on_calender_(ocs::tom::Element<ocs::tom::QU> qi_elem, uin
  * that do more than copy the value are handled by their own branch, compiled
  * for that entry only.
  *
- * @tparam CqF the cluster queue field the value comes from (CQ_Type)
- * @tparam QuF the queue instance field being set (QU_Type)
- * @param this_elem the queue instance (`QU_Type`)
+ * @tparam CqF the cluster queue field the value comes from (CQ)
+ * @tparam QuF the queue instance field being set (QU)
+ * @param this_elem the queue instance (`QU`)
  * @param answer_list receives messages for the caller
  * @param cqueue the cluster queue the value comes from
  * @param[out] matching_host_or_group receives what the value was matched by
@@ -482,7 +482,7 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
  * one failed. Modifying one stops at the first attribute that failed, and
  * adds a message of type QI_AMBIGUOUS for each attribute that is ambiguous.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param answer_list receives messages for the caller
  * @param cqueue the cluster queue the values come from
  * @param reduced_elem the reduced element the client sent; it may be of another type (a host group from
@@ -550,7 +550,7 @@ qinstance_modify_attributes(const ocs::tom::Element<ocs::tom::QU> this_elem,
  * Walks the #change_state_t table to find the row for this transition, checks
  * that the caller is allowed to make it, and reports what happened.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param answer_list receives messages for the caller
  * @param transition which `qmod` transition was asked for
  * @param force_transition whether to force it through
@@ -847,7 +847,7 @@ static bool qinstance_change_state_on_calender_(const ocs::tom::Element<ocs::tom
  *
  * Announces the change to the event clients when the state actually moved.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gdi_session the session the change belongs to
  * @return true when the state changed
@@ -872,7 +872,7 @@ sge_qmaster_qinstance_state_set_manual_disabled(const ocs::tom::Element<ocs::tom
  *
  * Announces the change to the event clients when the state actually moved.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gdi_session the session the change belongs to
  * @return true when the state changed
@@ -898,7 +898,7 @@ sge_qmaster_qinstance_state_set_manual_suspended(const ocs::tom::Element<ocs::to
  *
  * Announces the change to the event clients when the state actually moved.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gdi_session the session the change belongs to
  * @return true when the state changed
@@ -929,7 +929,7 @@ sge_qmaster_qinstance_state_set_unknown(const ocs::tom::Element<ocs::tom::QU> th
  *
  * Announces the change to the event clients when the state actually moved.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gdi_session the session the change belongs to
  * @return true when the state changed
@@ -955,7 +955,7 @@ sge_qmaster_qinstance_state_set_error(const ocs::tom::Element<ocs::tom::QU> this
  *
  * Announces the change to the event clients when the state actually moved.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gid_session the session the change belongs to
  * @return true when the state changed
@@ -978,7 +978,7 @@ sge_qmaster_qinstance_state_set_susp_on_sub(const ocs::tom::Element<ocs::tom::QU
  *
  * Announces the change to the event clients when the state actually moved.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gid_session the session the change belongs to
  * @return true when the state changed
@@ -999,7 +999,7 @@ sge_qmaster_qinstance_state_set_cal_disabled(const ocs::tom::Element<ocs::tom::Q
 
 /** @brief Mark a queue instance as suspended by its calendar, or no longer so
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gid_session the session the change belongs to
  * @return true when the state changed
@@ -1020,7 +1020,7 @@ sge_qmaster_qinstance_state_set_cal_suspended(const ocs::tom::Element<ocs::tom::
 
 /** @brief Mark a queue instance as orphaned - deleted but still holding jobs
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gid_session the session the change belongs to
  * @return true when the state changed
@@ -1043,7 +1043,7 @@ sge_qmaster_qinstance_state_set_orphaned(const ocs::tom::Element<ocs::tom::QU> t
  *
  * Announces the change to the event clients when the state actually moved.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param set_state true to set the state, false to clear it
  * @param gid_session the session the change belongs to
  * @return true when the state changed
@@ -1071,7 +1071,7 @@ sge_qmaster_qinstance_state_set_ambiguous(const ocs::tom::Element<ocs::tom::QU> 
  * A queue may be configured to start out disabled, and a calendar may already
  * apply to it, so the state is not simply "enabled" at creation.
  *
- * @param this_elem the queue instance (`QU_Type`)
+ * @param this_elem the queue instance (`QU`)
  * @param gdi_session the session the change belongs to
  *
  * @return true if the initial configuration changed the state
@@ -1103,8 +1103,8 @@ sge_qmaster_qinstance_set_initial_state(const ocs::tom::Element<ocs::tom::QU> th
  *
  * Reinitialize the consumable actual values.
  *
- * @param this_elem QU_Type element
- * @param answer_list AN_Type element
+ * @param this_elem QU element
+ * @param answer_list AN element
  *
  * @return error result true  - success false - error
  *

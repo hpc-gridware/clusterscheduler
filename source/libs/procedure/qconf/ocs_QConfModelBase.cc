@@ -695,7 +695,7 @@ ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
 /** @brief Resolve the types of a cluster queue's complex overrides for JSON
  *
  * `complex_values`, `load_thresholds` and `suspend_thresholds` may be overridden
- * per host or host group. Each override's value is a `CE_Type` list, and
+ * per host or host group. Each override's value is a `CE` list, and
  * resolving its types from the complex entries lets the JSON writer emit typed
  * numbers - `np_load_avg` as a double rather than as a string.
  *

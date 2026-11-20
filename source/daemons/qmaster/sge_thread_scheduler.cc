@@ -218,7 +218,7 @@ sge_scheduler_cleanup_where_what(void *where_what) {
 /** @brief Wait until the events for the next scheduling run have arrived
  *
  * @param evc the event client
- * @param event_list receives the events that arrived (`ET_Type`); left as it is when the wait timed out
+ * @param event_list receives the events that arrived (`ET`); left as it is when the wait timed out
  */
 static void
 sge_scheduler_wait_for_event(sge_evc_class_t *evc, ocs::tom::ListPtr<ocs::tom::ET> &event_list) {

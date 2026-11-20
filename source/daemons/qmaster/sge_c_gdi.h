@@ -88,7 +88,7 @@ struct ocs_gdi_post_processing {
 struct _gdi_object_t {
    ocs::gdi::Target target;          ///< Which GDI target this is, e.g. `SGE_QUEUE_LIST`
    int key_nm;          ///< The field that identifies an object, e.g. `QU_qname`
-   const lDescr *type;           ///< The CULL type, e.g. `QU_Type`
+   const lDescr *type;           ///< The CULL type, e.g. `QU`
    const char *object_name;    ///< Its name in messages, e.g. `"queue"`
    sge_object_type list_type;       ///< identifier to retrive the master list via ocs::DataStore::get_master_list
 };

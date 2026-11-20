@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of LIC for the list library: a synonym for ocs::tom::LIC::descriptor */
-inline constexpr const lDescr *LIC_Type = ocs::tom::LIC::descriptor.e;

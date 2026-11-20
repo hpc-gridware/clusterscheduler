@@ -199,14 +199,7 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
    if ((proc = find_pid_in_jobs(pid, job_list))) {
       proc_elem = LNK_DATA(proc, proc_elem_t, link);
       proc_elem->proc.pd_tstamp = time_stamp;
-#ifdef MONITOR_PDC
-      INFO("found job to process %s: set time stamp\n", d_name);
-#endif
    }
-#ifdef MONITOR_PDC
-   else
-      INFO("found no job to process %s\n", d_name);
-#endif
 
    DRETURN_VOID;
 }
@@ -434,7 +427,7 @@ static void pt_close_fd(int &fd) {
  *
  * Each process is identified by its supplementary groups, which carry the job's
  * additional group id. The usage of a process found in a job's group is booked
- * to that job; the process table (PRO_Type) remembers every process between
+ * to that job; the process table (PRO) remembers every process between
  * walks, so the group lookup is repeated only for processes that changed.
  *
  * @param job_list the jobs of this execd, whose process lists are updated
@@ -539,9 +532,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       sprintf(procnam, PROC_DIR "/%s/stat", dent->d_name);
       if (SGE_STAT(procnam, &fst)) {
          if (errno != ENOENT) {
-#ifdef MONITOR_PDC
-            INFO("could not stat %s: %s\n", procnam, strerror(errno));
-#endif
             touch_time_stamp(dent->d_name, time_stamp, job_list);
          }
          continue;
@@ -557,12 +547,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 #endif
          if ((fd = open(procnam, O_RDONLY, 0)) == -1) {
             if (errno != ENOENT) {
-#ifdef MONITOR_PDC
-               if (errno == EACCES)
-                  INFO("(uid:" gid_t_fmt " euid:" gid_t_fmt ") could not open %s: %s\n", getuid(), geteuid(), procnam, strerror(errno));
-               else
-                  INFO("could not open %s: %s\n", procnam, strerror(errno));
-#endif
                   touch_time_stamp(dent->d_name, time_stamp, job_list);
             }
             continue;
@@ -581,9 +565,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
           */
          if ((ret = read(fd, buffer, BIGLINE-1))<=0) {
             if (ret == -1) {
-#ifdef MONITOR_PDC
-               INFO("could not read %s: %s\n", procnam, strerror(errno));
-#endif
                touch_time_stamp(dent->d_name, time_stamp, job_list);
             }
             pt_close_fd(fd);
@@ -643,9 +624,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          sprintf(procnam, PROC_DIR "/%s/status", dent->d_name);
          if (SGE_STAT(procnam, &fst) != 0) {
             if (errno != ENOENT) {
-#ifdef MONITOR_PDC
-               INFO("could not stat %s: %s\n", procnam, strerror(errno));
-#endif
                touch_time_stamp(dent->d_name, time_stamp, job_list);
             }
             continue;
@@ -691,9 +669,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        * get prstatus 
        */
       if (ioctl(fd, PIOCSTATUS, &pr)==-1) {
-#ifdef MONITOR_PDC
-         INFO("could not ioctl(PIOCSTATUS) %s: %s\n", procnam, strerror(errno));
-#endif
          touch_time_stamp(dent->d_name, time_stamp, job_list);
          pt_close_fd(fd);
          continue;
@@ -704,9 +679,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        */
       ret=ioctl(fd, PIOCCRED, &proc_cred);
       if (ret < 0) {
-#ifdef MONITOR_PDC
-         INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
-#endif
          touch_time_stamp(dent->d_name, time_stamp, job_list);
          pt_close_fd(fd);
          continue;
@@ -718,9 +690,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       groups = proc_cred.pr_ngroups;
       ret=ioctl(fd, PIOCGROUPS, list);
       if (ret<0) {
-#ifdef MONITOR_PDC
-         INFO("could not ioctl(PIOCGROUPS) %s: %s\n", procnam, strerror(errno));
-#endif
          touch_time_stamp(dent->d_name, time_stamp, job_list);
          pt_close_fd(fd);
          continue;
@@ -796,23 +765,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       proc_elem->proc.pd_state  = 1; /* active */
       LNK_ADD(job_elem->procs.prev, &proc_elem->link);
       job_elem->job.jd_proccount++;
-
-#ifdef MONITOR_PDC
-      {
-         double utime, stime;
-#if defined(LINUX)
-         utime = ((double)lGetUlong(pr, PRO_utime))/HZ;
-         stime = ((double)lGetUlong(pr, PRO_stime))/HZ;
-
-         INFO("new process " sge_u32" for job " pid_t_fmt " (utime = %f stime = %f)\n", lGetUlong(pr, PRO_pid), job_elem->job.jd_jid, utime, stime);
-#else
-         utime = pr.pr_utime.tv_sec + pr.pr_utime.tv_nsec*1E-9;
-         stime = pr.pr_stime.tv_sec + pr.pr_stime.tv_nsec*1E-9;
-
-         INFO("new process " pid_t_fmt " for job " pid_t_fmt " (utime = %f stime = %f)\n", pr.pr_pid, job_elem->job.jd_jid, utime, stime);
-#endif
-      }
-#endif
 
    } else {
       /* save previous usage data - needed to build delta usage */

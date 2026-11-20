@@ -126,7 +126,7 @@ extern const char *multitypes[];
  * An object type is a static descriptor block: a cull_descr_header followed by the
  * fields and the terminating #lEndT entry. LISTDEF/LISTEND build it at compile
  * time as an inline variable, so every translation unit sees the same block and
- * its contents are constant expressions. X_Type points at the first field.
+ * its contents are constant expressions. The descriptor of a type points at its first field.
  */
 #define LISTDEF(name) inline constexpr auto name##_blk = ocs_cull_descr_make({           ///< opens an object type definition; ends with #LISTEND
 #define LISTEND(name) {NoName, lEndT}}); inline constexpr const lDescr *name = name##_blk.e; ///< closes the object type definition opened with #LISTDEF

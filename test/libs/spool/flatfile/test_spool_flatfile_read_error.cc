@@ -99,7 +99,7 @@ read_hgroup(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char *path, const char *
    ocs::tom::ListPtr<ocs::tom::AN> *use_alp = alp != nullptr ? alp : &own_alp;
    int before = static_cast<int>((*use_alp)->size());
 
-   lListElem *ep = spool_flatfile_read_object(use_alp, HGRP_Type, nullptr, HGRP_fields, nullptr,
+   lListElem *ep = spool_flatfile_read_object(use_alp, ocs::tom::HGRP::descriptor.e, nullptr, HGRP_fields, nullptr,
                                               true, &qconf_sfi, SP_FORM_ASCII, nullptr, path);
    int i = 0;
    for (const ocs::tom::ConstElement<ocs::tom::AN> aep : use_alp->get()) {

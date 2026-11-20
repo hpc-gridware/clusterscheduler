@@ -36,7 +36,7 @@
          "name": "filter_users",
          "summary": "User Filter",
          "description": [
-            "Which submitting users the rule applies to (`RQRF_Type`)."
+            "Which submitting users the rule applies to (`RQRF`)."
          ],
          "type": "lObjectT",
          "subClassName": "RQRF",
@@ -126,7 +126,7 @@
          "name": "limit",
          "summary": "Limits",
          "description": [
-            "What the rule limits and by how much (`RQRL_Type`), one entry per resource."
+            "What the rule limits and by how much (`RQRL`), one entry per resource."
          ],
          "type": "lListT",
          "subClassName": "RQRL",

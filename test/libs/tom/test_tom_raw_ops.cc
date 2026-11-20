@@ -122,9 +122,9 @@ namespace {
     * @return the list; the caller owns it
     */
    lList *make_test_list(const int n, const bool hash) {
-      lList *lp = lCreateListHash("test", TEST_Type, hash);
+      lList *lp = lCreateListHash("test", ocs::tom::TEST::descriptor.e, hash);
       for (int i = 0; i < n; i++) {
-         lListElem *ep = lCreateElem(TEST_Type);
+         lListElem *ep = lCreateElem(ocs::tom::TEST::descriptor.e);
          lSetUlong(ep, TEST_uint32, i);
          lSetUlong64(ep, TEST_uint64, i % 3);
          const std::string s = "s" + std::to_string(i % 4);
@@ -142,7 +142,7 @@ namespace {
     * @return the owner of the element
     */
    ocs::tom::RawElementPtr test_elem(const std::uint32_t number) {
-      auto ep = ocs::tom::create_raw_elem(TEST_Type);
+      auto ep = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
       ep->set(TEST_uint32, number);
       return ep;
    }
@@ -303,8 +303,8 @@ namespace {
  */
 static void
 test_owners() {
-   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
-   const bool created = static_cast<bool>(ep) && ocs::tom::same_type(ep.get().descr(), TEST_Type) &&
+   auto ep = ocs::tom::RawElementPtr::create(ocs::tom::TEST::descriptor.e);
+   const bool created = static_cast<bool>(ep) && ocs::tom::same_type(ep.get().descr(), ocs::tom::TEST::descriptor.e) &&
                         (*ep).raw() == ep.get().raw();
    ep->set(TEST_uint32, std::uint32_t{4});
    ep->set(TEST_string, "copy me");
@@ -323,7 +323,7 @@ test_owners() {
    c = std::move(b);
    const bool moved = !a && !b && c.get().raw() == a_raw;
 
-   auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::Off, "numbers");
+   auto list = ocs::tom::RawListPtr::create(ocs::tom::TEST::descriptor.e, ocs::tom::Hashing::Off, "numbers");
    list->push_back(test_elem(1));
    list->push_back(test_elem(2));
    const bool named = std::strcmp(lGetListName(list.get()), "numbers") == 0 && (*list).size() == 2;
@@ -372,9 +372,9 @@ test_typed_raw() {
    CHECK(3, "a typed owner moves into a raw one and back through adopt<T>(), keeping its content",
          to_raw && to_typed && list_to_raw && list_to_typed);
 
-   auto queue = ocs::tom::create_raw_elem(QU_Type);
+   auto queue = ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e);
    const lListElem *queue_raw = queue.get();
-   auto queues = ocs::tom::create_raw_list(QU_Type);
+   auto queues = ocs::tom::create_raw_list(ocs::tom::QU::descriptor.e);
    const lList *queues_raw = queues.get();
    const bool refused =
       expect_reason("adopt", "element",
@@ -388,9 +388,9 @@ test_typed_raw() {
             "empty typed owner",
          refused && kept && empty);
 
-   ocs::tom::RawWherePtr where(lWhere("%T(%I == %u)", JB_Type, JB_job_number, 7U));
+   ocs::tom::RawWherePtr where(lWhere("%T(%I == %u)", ocs::tom::JB::descriptor.e, JB_job_number, 7U));
    const lCondition *where_raw = where.get();
-   ocs::tom::RawWhatPtr what(lWhat("%T(%I)", JB_Type, JB_job_number));
+   ocs::tom::RawWhatPtr what(lWhat("%T(%I)", ocs::tom::JB::descriptor.e, JB_job_number));
    const lEnumeration *what_raw = what.get();
    const bool selections_refused =
       expect_reason("adopt", "condition",
@@ -414,7 +414,7 @@ test_typed_raw() {
  */
 static void
 test_add() {
-   auto list = ocs::tom::create_raw_list(TEST_Type);
+   auto list = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    lList *lp = list.get();
    ocs::tom::append(lp, test_elem(2));
    lListElem *three = list->push_back(test_elem(3));
@@ -427,10 +427,10 @@ test_add() {
 
    lList *null_list = nullptr;
    auto spare = test_elem(91);
-   auto queue = ocs::tom::create_raw_elem(QU_Type);
+   auto queue = ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e);
    auto reduced = ocs::tom::create_raw_elem(ocs::tom::layout<TEST_uint32>().get());
    ocs::tom::set(reduced.get(), TEST_uint32, std::uint32_t{90});
-   auto other = ocs::tom::create_raw_list(TEST_Type);
+   auto other = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    lListElem *stranger = other->push_back(test_elem(50));
    const bool refused =
       expect_reason("add", "null list", [&] { ocs::tom::append(null_list, std::move(spare)); }, Reason::NullList) &&
@@ -463,7 +463,7 @@ test_add() {
  */
 static void
 test_remove_and_splice() {
-   auto list = ocs::tom::create_raw_list(TEST_Type);
+   auto list = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    lList *lp = list.get();
    for (std::uint32_t i = 0; i < 6; i++) {
       list->push_back(test_elem(i));
@@ -477,7 +477,7 @@ test_remove_and_splice() {
    // a free element goes into another list again
    ocs::tom::append(lp, std::move(two));
    lList *null_list = nullptr;
-   auto other = ocs::tom::create_raw_list(TEST_Type);
+   auto other = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    lListElem *stranger = other->push_back(test_elem(50));
    const bool refused =
       expect_reason("remove", "take a stranger", [&] { static_cast<void>(ocs::tom::take(lp, stranger)); },
@@ -492,24 +492,24 @@ test_remove_and_splice() {
             "a null list NullList",
          removed && refused && (numbers(*list) == Numbers{3, 4, 2}) && other->size() == 1);
 
-   auto dst = ocs::tom::create_raw_list(TEST_Type);
+   auto dst = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    dst->push_back(test_elem(1));
-   auto src = ocs::tom::create_raw_list(TEST_Type);
+   auto src = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    src->push_back(test_elem(2));
    src->push_back(test_elem(3));
    ocs::tom::splice(dst.get(), std::move(src));
-   auto more = ocs::tom::create_raw_list(TEST_Type);
+   auto more = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    more->push_back(test_elem(4));
    dst->splice(std::move(more));
    ocs::tom::splice(dst.get(), ocs::tom::RawListPtr{});
    const bool spliced = !src && !more && (numbers(*dst) == Numbers{1, 2, 3, 4});
-   auto queues = ocs::tom::create_raw_list(QU_Type);
-   queues->push_back(ocs::tom::create_raw_elem(QU_Type));
+   auto queues = ocs::tom::create_raw_list(ocs::tom::QU::descriptor.e);
+   queues->push_back(ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e));
    auto reduced = ocs::tom::create_raw_list(ocs::tom::layout<TEST_uint32>().get());
    auto reduced_elem = ocs::tom::create_raw_elem(ocs::tom::layout<TEST_uint32>().get());
    reduced_elem->set(TEST_uint32, std::uint32_t{9});
    reduced->push_back(std::move(reduced_elem));
-   auto spare = ocs::tom::create_raw_list(TEST_Type);
+   auto spare = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    const bool splice_refused =
       expect_reason("splice", "another type", [&] { ocs::tom::splice(dst.get(), std::move(queues)); },
                     Reason::WrongType) &&
@@ -622,8 +622,8 @@ static void
 test_select() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 4U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
+   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
    const ocs::tom::RawListPtr old(lSelect("selected", lp, where.get(), what.get()));
    const auto selected = ocs::tom::select(lp, where.get(), what.get());
    const auto by_method = ocs::tom::ConstRawList(lp).select(where.get(), what.get());
@@ -718,7 +718,7 @@ typed_job(const std::uint32_t number) {
 static void
 test_typed_owners() {
    // a job into a list of TEST: every op throws WrongType and the typed owner keeps its element
-   auto tests = ocs::tom::create_raw_list(TEST_Type);
+   auto tests = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
    lList *lp = tests.get();
    auto job = typed_job(1);
    const lListElem *job_raw = job.get().raw();
@@ -745,7 +745,7 @@ test_typed_owners() {
          refused && kept);
 
    // a job into a list of jobs: every op succeeds and empties the typed owner
-   auto raw_jobs = ocs::tom::create_raw_list(JB_Type);
+   auto raw_jobs = ocs::tom::create_raw_list(ocs::tom::JB::descriptor.e);
    lList *jlp = raw_jobs.get();
    auto two = typed_job(2);
    ocs::tom::append(jlp, std::move(two));
@@ -790,8 +790,8 @@ test_write_to() {
    lList *lp = owner.get();
    lListElem *first = ocs::tom::RawList{lp}.front();
    const ocs::tom::RawWherePtr where(
-      lWhere("%T(%I > %u && %I == %s)", TEST_Type, TEST_uint32, 0U, TEST_string, "s2"));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
+      lWhere("%T(%I > %u && %I == %s)", ocs::tom::TEST::descriptor.e, TEST_uint32, 0U, TEST_string, "s2"));
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    job->set<JB_job_number>(42);
@@ -919,11 +919,11 @@ static void
 test_select_as() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 4U));
-   const ocs::tom::RawWherePtr none(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 100U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
-   const ocs::tom::RawWhatPtr all(lWhat("%T(ALL)", TEST_Type));
-   const ocs::tom::RawWhatPtr foreign(lWhat("%T(%I)", JB_Type, JB_job_number));
+   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
+   const ocs::tom::RawWherePtr none(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 100U));
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
+   const ocs::tom::RawWhatPtr all(lWhat("%T(ALL)", ocs::tom::TEST::descriptor.e));
+   const ocs::tom::RawWhatPtr foreign(lWhat("%T(%I)", ocs::tom::JB::descriptor.e, JB_job_number));
 
    bool lists = true;
    for (const bool hash : {true, false}) {
@@ -1025,12 +1025,12 @@ static void
 test_select_into_descr() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 4U));
-   const ocs::tom::RawWherePtr none(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 100U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
+   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
+   const ocs::tom::RawWherePtr none(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 100U));
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
    // a selection with a field the reduced descriptor does not hold
-   const ocs::tom::RawWhatPtr wider(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_uint64));
-   const lDescr *reduced = lGetReducedDescr(TEST_Type, what.get());
+   const ocs::tom::RawWhatPtr wider(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_uint64));
+   const lDescr *reduced = lGetReducedDescr(ocs::tom::TEST::descriptor.e, what.get());
 
    bool lists = reduced != nullptr;
    for (const bool hash : {true, false}) {
@@ -1129,10 +1129,10 @@ static void
 test_select_pack() {
    const ocs::tom::RawListPtr owner(make_test_list(10, false));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 4U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
-   const ocs::tom::RawWhatPtr all(lWhat("%T(ALL)", TEST_Type));
-   const ocs::tom::RawWhatPtr nothing(lWhat("%T(NONE)", TEST_Type));
+   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
+   const ocs::tom::RawWhatPtr all(lWhat("%T(ALL)", ocs::tom::TEST::descriptor.e));
+   const ocs::tom::RawWhatPtr nothing(lWhat("%T(NONE)", ocs::tom::TEST::descriptor.e));
 
    // a reduction, every field, no field, no selection (the condition not applied); each also without condition,
    // with no list, and with the name of the list
@@ -1220,8 +1220,8 @@ test_is_free() {
  */
 static void
 test_release_descr() {
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
-   const lDescr *reduced = ocs::tom::reduced_descr(TEST_Type, what.get());
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
+   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, what.get());
    const bool counted = reduced != nullptr && ocs_cull_descr_is_counted(reduced);
    const lDescr *second = ocs_cull_descr_ref(reduced);
    const std::uint32_t refs = ocs_cull_descr_refs(reduced);
@@ -1229,7 +1229,7 @@ test_release_descr() {
    ocs::tom::release_descr(second);
    const bool one_less = second == nullptr && ocs_cull_descr_refs(reduced) == refs - 1;
 
-   const lDescr *static_descr = TEST_Type;
+   const lDescr *static_descr = ocs::tom::TEST::descriptor.e;
    ocs::tom::release_descr(static_descr);
    const lDescr *none = nullptr;
    ocs::tom::release_descr(none);
@@ -2454,7 +2454,7 @@ test_walk() {
 
    // empty handles and an empty list give empty handles
    const ocs::tom::ConstRawList none;
-   const ocs::tom::RawListPtr empty_owner(lCreateList("empty", TEST_Type));
+   const ocs::tom::RawListPtr empty_owner(lCreateList("empty", ocs::tom::TEST::descriptor.e));
    const ocs::tom::RawList empty{empty_owner.get()};
    const bool empty_ok = !none.front() && !none.back() && !empty.front() && !empty.back() &&
                          !ocs::tom::ConstRawElement{}.next() && !ocs::tom::ConstRawElement{}.prev() &&

@@ -110,7 +110,7 @@ namespace {
     * The loop of the old client path, on the copy of the stored tree.
     *
     * @param root the copy of the tree
-    * @param nodes the arguments (`STN_Type`, the text in `STN_name`)
+    * @param nodes the arguments (`STN`, the text in `STN_name`)
     * @param add true for "-astnode": a missing node is added below its parent
     * @param typed the node list as typed, for the "not a valid argument" message
     * @param report receives the lines to print
@@ -197,7 +197,7 @@ namespace {
     * and a node with children are not deleted.
     *
     * @param root the copy of the tree
-    * @param nodes the paths (`STN_Type`, the text in `STN_name`)
+    * @param nodes the paths (`STN`, the text in `STN_name`)
     * @param report receives the lines to print
     * @return how many nodes were deleted
     */
@@ -224,7 +224,7 @@ namespace {
             report.problem(MSG_TREE_CANTDELROOTNODE);
          } else {
             modified++;
-            // the ancestors are nodes of the tree (STN_Type), held untyped by ancestors_t
+            // the ancestors are nodes of the tree (STN), held untyped by ancestors_t
             const auto parent =
                     (ancestors.depth == 1)
                     ? root : ocs::tom::Element<ocs::tom::STN>::from_typed(ancestors.nodes[ancestors.depth - 2]);

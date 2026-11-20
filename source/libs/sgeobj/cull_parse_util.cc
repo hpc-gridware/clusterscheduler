@@ -756,7 +756,7 @@ template void parse_list_hardsoft<JRS_hard_queue_list, NoName>(
  *
  * @param path_str input string
  *
- * @return error code 0 = okay 1 = error, and the parsed list (`PN_Type`), an empty handle on an error
+ * @return error code 0 = okay 1 = error, and the parsed list (`PN`), an empty handle on an error
  *
  * @note MT-NOTE: cull_parse_path_list() is MT safe
  */
@@ -818,7 +818,7 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char 
  * @param str input string to be parsed
  *
  * @return 0 on success, 2 when the string holds no job id, 3 when it could not be parsed; and the
- *         `ST_Type` result list, an empty handle on an error
+ *         `ST` result list, an empty handle on an error
  *
  * @note MT-NOTE: cull_parse_jid_hold_list() is MT safe
  */
@@ -838,8 +838,8 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> cull_parse_jid_hold_list(const c
    }
    // cull_parse_string_list() is generic over the descriptor; it fills the list only on success
    lList *parsed = nullptr;
-   const int i_ret = cull_parse_string_list(str_str, "jid_hold list", ST_Type, rule, &parsed);
-   // the list was created with ST_Type above, so it is taken over unchecked
+   const int i_ret = cull_parse_string_list(str_str, "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
+   // the list was created with ST above, so it is taken over unchecked
    auto list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(parsed);
 
    sge_free(&s);

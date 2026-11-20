@@ -132,6 +132,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of GRU for the list library: a synonym for ocs::tom::GRU::descriptor */
-inline constexpr const lDescr *GRU_Type = ocs::tom::GRU::descriptor.e;

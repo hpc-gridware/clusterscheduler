@@ -68,7 +68,7 @@ namespace ocs {
        * pointer.
        *
        * @param os   the stream to write to
-       * @param list the clients (`EV_Type`, reduced to id, name and host), already sorted by id
+       * @param list the clients (`EV`, reduced to id, name and host), already sorted by id
        * @return none
        */
       void show_clients(std::ostream &os, const ocs::tom::ConstList<ocs::tom::EV> list) {

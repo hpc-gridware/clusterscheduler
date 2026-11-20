@@ -137,7 +137,7 @@ namespace ocs::tom {
    /**
     * @brief Host Group
     *
-    * HGRP_Type elements are used to define groups of hosts. Each group
+    * HGRP elements are used to define groups of hosts. Each group
     * will be identified by a unique name.
     * Each hostgroup might refer to none, one or multiple hosts and/or
     * hostgroups. This object makes it possible to define a network of
@@ -147,7 +147,7 @@ namespace ocs::tom {
     *                   |            |
     *                   V            | 0:x
     *             ------------- -----|
-    *             | HGRP_Type |
+    *             | HGRP |
     *             ------------- ------------> | hostname |
     *                                0:x      ------------
     *  
@@ -248,6 +248,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of HGRP for the list library: a synonym for ocs::tom::HGRP::descriptor */
-inline constexpr const lDescr *HGRP_Type = ocs::tom::HGRP::descriptor.e;

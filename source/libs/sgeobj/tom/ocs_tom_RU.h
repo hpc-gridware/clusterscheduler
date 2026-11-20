@@ -93,6 +93,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RU for the list library: a synonym for ocs::tom::RU::descriptor */
-inline constexpr const lDescr *RU_Type = ocs::tom::RU::descriptor.e;

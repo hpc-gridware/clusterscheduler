@@ -43,7 +43,7 @@
  * @brief Add one entry for a thread pool to the list of active threads
  *
  * @param threads the commlib thread list of the pool, holding at least one thread
- * @param active_thread_list the list to add to (ST_Type); `ST_name` gets the name of the pool's first thread,
+ * @param active_thread_list the list to add to (ST); `ST_name` gets the name of the pool's first thread,
  *                           `ST_id` the number of threads in the pool
  */
 static void
@@ -77,27 +77,13 @@ add_active_threads(cl_raw_list_t *threads, const ocs::tom::List<ocs::tom::ST> ac
  * for them is kept but disabled) because their number is not configurable and
  * listing them would suggest otherwise.
  *
- * @return a newly created `ST_Type` list, one element per pool, `ST_name` the
+ * @return a newly created `ST` list, one element per pool, `ST_name` the
  *         pool name and `ST_id` the number of threads in it, sorted by name.
  */
 ocs::tom::ListPtr<ocs::tom::ST>
 ocs_get_active_thread_list() {
    DENTER(TOP_LAYER);
    auto active_thread_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
-
-   // Internal threads where the user has no influence on, will not be shown
-#if 0
-   // static threads that cannot be disabled
-   lAddElemStr(&active_thread_list, ST_name, to_cstr(SIGNAL_THREAD), ST_Type);
-   lAddElemStr(&active_thread_list, ST_name, to_cstr(TIMER_THREAD), ST_Type);
-   lAddElemStr(&active_thread_list, ST_name, to_cstr(EVENT_MASTER_THREAD), ST_Type);
-
-   // Mirror threads
-   add_active_threads(Main_Control.mirror_thread_pool, active_thread_list);
-
-   // Commlib threads
-   add_active_threads(cl_com_get_thread_list(), active_thread_list);
-#endif
 
    // Scheduler thread if it is running
    if (sge_scheduler_is_running()) {

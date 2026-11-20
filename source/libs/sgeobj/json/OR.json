@@ -87,7 +87,7 @@
             "  - ORT_start_job:              empty",
             "  - ORT_tickets:                reduced job element",
             "  - ORT_remove_immediate_job:   empty",
-            "  - ORT_job_schedd_info:        scheduler messages (SME_Type)",
+            "  - ORT_job_schedd_info:        scheduler messages (SME)",
             "  - ORT_ptickets:               reduced job element"
          ],
          "type": "lListT",

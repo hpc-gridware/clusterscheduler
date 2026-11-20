@@ -63,7 +63,7 @@
  * If "this_list" is nullptr or contains no elements, "NONE" will
  * be added to the dstring.
  *
- * @param this_list ST_Type list, may be empty
+ * @param this_list ST list, may be empty
  * @param string dynamic string
  * @param delimiter delimiter
  *
@@ -100,7 +100,7 @@ str_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::ST> this_list, ds
  *
  * Parse a list of strings from "string". The strings have to be
  * separated by a token contained in "delimitor". For each string
- * an element of type ST_Type is added to the list.
+ * an element of type ST is added to the list.
  *
  * @param string string to be parsed
  * @param delimitor delimitor string
@@ -137,8 +137,8 @@ ocs::tom::ListPtr<ocs::tom::ST> str_list_parse_from_string(const char *string, c
  *
  * Does each element in "this_list" contain a valid string (!= nullptr).
  *
- * @param this_list ST_Type list, may be empty
- * @param answer_list AN_Type list
+ * @param this_list ST list, may be empty
+ * @param answer_list AN list
  *
  * @return always true; an invalid string only adds an error to "answer_list"
  */

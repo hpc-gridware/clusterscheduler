@@ -63,7 +63,7 @@ uint32_t events_size;   ///< how many bytes they took on the wire, to show what 
  * @param evc the event client
  * @param type the object type of the event
  * @param action the action of the event
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @param clientdata unused
  * @return SGE_EMA_OK
  */

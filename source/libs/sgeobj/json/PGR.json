@@ -3,7 +3,7 @@
    "summary": "Priority Group (unused)",
    "description": [
       "A group of jobs at one priority, with the subordination and sort state a scheduler pass would need.",
-      "@warning No attribute of this type is read or written anywhere in either repository, and `PGR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
+      "@warning No attribute of this type is read or written anywhere in either repository, and `PGR` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
    "cullPrefix": "PGR",
    "attributes": [

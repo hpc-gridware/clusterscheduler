@@ -189,7 +189,7 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
  *
  * The signature is the one job_list_read_from_disk() calls through its function pointer.
  *
- * @param job_raw the job (`JB_Type`)
+ * @param job_raw the job (`JB`)
  * @return 0 on success
  */
 int job_initialize_job(lListElem *job_raw) {

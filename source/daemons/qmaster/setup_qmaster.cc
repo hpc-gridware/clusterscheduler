@@ -345,7 +345,7 @@ sge_setup_job_resend() {
             const auto granted_queue = ocs::tom::get<JAT_granted_destin_identifier_list>(task).front();
             const char *qname = ocs::tom::get<JG_qname>(granted_queue);
             const auto qinstance = cqueue_list_locate_qinstance(master_cqueue_list, qname);
-            // host_list_locate() searches the EH_Type master list
+            // host_list_locate() searches the EH master list
             const auto host = ocs::tom::Element<ocs::tom::EH>::from_typed(
                     host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(),
                                      ocs::tom::get<QU_qhostname>(qinstance)));
@@ -437,7 +437,7 @@ process_cmdline(char **anArgv) {
  * Decompose argument vector. Handle options and option arguments.
  *
  * @param argv pointer to argument vector
- * @param ppcmdline the parsed command line arguments (SPA_Type) upon return
+ * @param ppcmdline the parsed command line arguments (SPA) upon return
  *
  * @return pointer to answer list
  *
@@ -471,7 +471,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> parse_cmdline_qmaster(char **argv, ocs::t
 /**
  * @brief Process options
  *
- * @param ppcmdline list of options (SPA_Type), may be an empty handle
+ * @param ppcmdline list of options (SPA), may be an empty handle
  * @param help flag is set upon return if help has been requested
  *
  * @return answer list
@@ -669,7 +669,7 @@ is_qmaster_already_running(const char *qmaster_spool_dir) {
  * A task is suspended on subordinate if one of its granted queue instances is suspended manually, on
  * subordinate or by a calendar.
  *
- * @param jep the job (JB_Type)
+ * @param jep the job (JB)
  * @param cqueue_name buffer for the cluster queue name
  * @param host_domain buffer for the host or host group name
  */
@@ -723,7 +723,7 @@ sge_propagate_queue_suspension(const ocs::tom::Element<ocs::tom::JB> jep, dstrin
  * berkeleydb or postgres spooling the reschedule unknown lists of the hosts are not restored.
  * Nothing would clear the flag any more.
  *
- * @param jep the job (JB_Type)
+ * @param jep the job (JB)
  */
 static void
 clear_deferred_starts(const ocs::tom::Element<ocs::tom::JB> jep) {
@@ -804,7 +804,7 @@ setup_qmaster() {
       DRETURN(-1);
    } else {
       answer_list_output(&answer_list);
-      // the SPC_Type context sge_initialize_persistence() has set as default
+      // the SPC context sge_initialize_persistence() has set as default
       spooling_context = ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(spool_get_default_context());
    }
 
@@ -1192,8 +1192,6 @@ setup_qmaster() {
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), SGE_TYPE_AR);
    answer_list_output(&answer_list);
 
-//   lWriteListTo(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), stderr);
-
    /* initialize cached advance reservations structures */
    {
       for (const auto ar : ocs::DataStore::master_list_rw<SGE_TYPE_AR>()) {
@@ -1550,7 +1548,7 @@ ocs_qmaster_check_unique_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
  *
  * @tparam T the object type, UU or PR
  * @tparam NameF the name field of the type
- * @tparam DebitedF the debited job usage field of the type (UPU_Type list)
+ * @tparam DebitedF the debited job usage field of the type (UPU list)
  * @param object_type the master list to work on, SGE_TYPE_USER or SGE_TYPE_PROJECT
  * @param object_name the type's name for the warning
  *
@@ -1601,7 +1599,7 @@ remove_invalid_job_references(const sge_object_type object_type, const char *obj
  * the master list, so it walks the list for writing.
  *
  * @param user true for the user objects, false for the project objects
- * @param usage_weight_list the usage weights that define the relevant attributes (UA_Type), may be an empty handle
+ * @param usage_weight_list the usage weights that define the relevant attributes (UA), may be an empty handle
  */
 static void
 remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::tom::UA> usage_weight_list) {
@@ -1708,7 +1706,7 @@ debit_all_jobs_from_qs() {
                const char *host_name = ocs::tom::get<JG_qhostname>(gdi);
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
                const auto granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
-               // host_list_locate() searches the EH_Type master list
+               // host_list_locate() searches the EH master list
                const auto global_host = ocs::tom::Element<ocs::tom::EH>::from_typed(
                        host_list_locate(master_exechost_list, SGE_GLOBAL_NAME));
                const auto exec_host = ocs::tom::Element<ocs::tom::EH>::from_typed(

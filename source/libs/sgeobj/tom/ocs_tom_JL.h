@@ -47,7 +47,7 @@ enum JL_Field {
    /**
     * @brief OS Job List
     *
-    * List of OS jobs (JO_Type). There should be one per running Array/PE task having one os job id each.
+    * List of OS jobs (JO). There should be one per running Array/PE task having one os job id each.
     */
    JL_OS_job_list,
    /**
@@ -229,6 +229,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JL for the list library: a synonym for ocs::tom::JL::descriptor */
-inline constexpr const lDescr *JL_Type = ocs::tom::JL::descriptor.e;

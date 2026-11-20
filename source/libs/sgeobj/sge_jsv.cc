@@ -82,7 +82,7 @@ static pthread_mutex_t jsv_mutex = PTHREAD_MUTEX_INITIALIZER;
  * of the corresponding JSV. The order of the elements in the list 
  * is important because the JSV's are executed in that order.
  */
-static lList *jsv_list = nullptr;   /* JSV_Type; process lifetime, read through checked handles */
+static lList *jsv_list = nullptr;   /* JSV; process lifetime, read through checked handles */
 
 /**
  * @brief Creates a new JSV object and initializes its attributes
@@ -91,7 +91,7 @@ static lList *jsv_list = nullptr;   /* JSV_Type; process lifetime, read through 
  *
  * @param name Name od the new JSV element
  * @param context JSV_CONTEXT_CLIENT or thread name
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param jsv_url JSV URL
  * @param type type part of 'jsv_url'
  * @param user user part of 'jsv_url'
@@ -278,8 +278,8 @@ jsv_send_data(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, ocs::tom::ListPtr
  * internally so that it is possible to communicate with the
  * process which was started by this function.
  *
- * @param jsv JSV_Type data structure
- * @param answer_list AN_Type list where error messages are stored.
+ * @param jsv JSV data structure
+ * @param answer_list AN list where error messages are stored.
  *
  * @return error state true  - success false - error
  *
@@ -345,8 +345,8 @@ bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs
  * If the script does then not terminate within JSV_QUIT_TIMEOUT
  * seconds then it will be terminated hard via kill signal.
  *
- * @param jsv JSV_Type element
- * @param answer_list AN_Type element
+ * @param jsv JSV element
+ * @param answer_list AN element
  * @param try_soft_quit "true" if the JSV should terminate itself
  *
  * @return error state true  - success false - error
@@ -554,7 +554,7 @@ bool jsv_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::List
  *
  * @param name JSV name (used for error messages)
  * @param context JSV context name (to identify this JSV)
- * @param answer_list AN_Type answer list
+ * @param answer_list AN answer list
  * @param jsv_url JSV URL
  *
  * @return error state true  - success false - false
@@ -705,7 +705,7 @@ bool jsv_list_remove_all() {
  *
  * @param name name of the JSV element
  * @param context context string which indentifies JSVs
- * @param answer_list AN_Type answer list
+ * @param answer_list AN answer list
  * @param jsv_url JSV URL string
  *
  * @return error state true  - success false - error
@@ -859,7 +859,7 @@ bool jsv_list_update(const char *name, const char *context,
  * or accepted with modifications the returned value will be 'true'.
  *
  * @param context JSV_CONTEXT_CLIENT or thread name
- * @param job the job (JB_Type); replaced by the modified job when a JSV accepts it
+ * @param job the job (JB); replaced by the modified job when a JSV accepts it
  * @param answer_list answer_list for messages
  * @param holding_lock is the calling thread holding the global lock
  *

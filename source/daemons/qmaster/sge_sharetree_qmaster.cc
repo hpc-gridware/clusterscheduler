@@ -401,7 +401,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
 
 /** @brief Find the user or project node with a given name in a share tree
  *
- * @param share_tree the share tree (`STN_Type`) to search
+ * @param share_tree the share tree (`STN`) to search
  * @param name the node name to look for
  * @param node_type `STT_USER` or `STT_PROJECT`; meant to restrict the match, but not evaluated
  * @param recurse meant to restrict the descent, but not evaluated: the search always descends

@@ -59,7 +59,7 @@
  * @brief Find the binding in use (either now, reservation, within AR or for reservation within AR)
  *
  * @param[in]     a           the assignment being built
- * @param[in]     host        the execution host (`EH_Type`)
+ * @param[in]     host        the execution host (`EH`)
  * @param[in,out] host_in_use the reservation binding in use on entry, if any; the binding in use on return
  *
  * @return true if an initial binding in use was found
@@ -230,7 +230,7 @@ ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString&
  *      and configuration allows to schedule binding jobs to such hosts
  *
  * @param a     Assignment data structure
- * @param host  Object where binding should be checked (`EH_Type`)
+ * @param host  Object where binding should be checked (`EH`)
  * @return      true if a binding request can be ignored
  */
 bool
@@ -318,7 +318,7 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
  * counterpart that commits the decision is apply_strategy().
  *
  * @param[in] a               the assignment being built
- * @param[in] host            the execution host (`EH_Type`)
+ * @param[in] host            the execution host (`EH`)
  * @param[in] slots           number of slots offered on this host
  * @param[in] binding_in_use  topology units already taken on this host
  *
@@ -431,7 +431,7 @@ std::string vector_to_string(const std::vector<int>& vec) {
  *
  * @param[in,out] a            the assignment, receives the chosen binding
  * @param[in]     slots        number of slots to bind on this host
- * @param[in]     host         the execution host (`EH_Type`)
+ * @param[in]     host         the execution host (`EH`)
  * @param[in,out] topo_in_use  topology units already taken; the units this
  *                             call books are added
  *
@@ -677,9 +677,5 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
       }
    }
 
-#if 0
-   DPRINTF("binding copy: gdil list after copy/move\n");
-   lWriteListTo(*a->gdil, stderr);
-#endif
    DRETURN(true);
 }

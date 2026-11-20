@@ -139,7 +139,7 @@ static bool print_resource_utilization = getenv("SGE_PRINT_RESOURCE_UTILIZATION"
  *
  * Print resource utlilzation as plain number to dstring.
  *
- * @param this_elem A RUE_Type element
+ * @param this_elem A RUE element
  * @param string The string
  *
  * @return error state true  - success false - error
@@ -246,7 +246,7 @@ static void utilization_print_all(const ocs::tom::ConstList<ocs::tom::PE> pe_lis
 /**
  * @brief Writes one utilization diagram to the debug output
  *
- * @param[in] cr                 the resource utilization entry (`RUE_Type`)
+ * @param[in] cr                 the resource utilization entry (`RUE`)
  * @param[in] object_name        name of the object the entry belongs to, may
  *                               be nullptr
  * @param[in] show_binding_inuse whether to also print the topology units in
@@ -409,7 +409,7 @@ utilization_rsmap_equal(const ocs::tom::ConstList<ocs::tom::RESL> a, const ocs::
  * holds at this moment says nothing about a window starting after that job will have ended, and
  * a window in the future is only ever asked about when the diagram is being maintained.
  *
- * @param cr         the resource utilization of the map (RUE_Type)
+ * @param cr         the resource utilization of the map (RUE)
  * @param now        this moment
  * @param start_time when the window begins, DISPATCH_TIME_NOW for this moment
  * @param duration   how long it lasts
@@ -507,7 +507,7 @@ utilization_rsmap_max(const ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t n
  * returns is one from which the group stays free rather than a gap which closes again.
  *
  * @param definition the resource map on the host, from EH_consumable_config_list, may be an empty handle
- * @param cr         the resource utilization of the map (RUE_Type), may be an empty handle
+ * @param cr         the resource utilization of the map (RUE), may be an empty handle
  * @param key_name   "id" or the name of a characteristic
  * @param amount     how many instances of one group are needed
  * @param id_expr    nullptr when the request carries no id= parameter, otherwise the expression
@@ -600,7 +600,7 @@ utilization_rsmap_below(const ocs::tom::ConstElement<ocs::tom::CE> definition,
  * A jobs resource utilization is debited into the resource
  * utilization diagram at the given time for the given duration.
  *
- * @param cr Resource utilization entry (RUE_Type)
+ * @param cr Resource utilization entry (RUE)
  * @param start_time Start time of utilization
  * @param duration Duration
  * @param utilization Amount
@@ -1615,7 +1615,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
  * @tparam ActualF the field of the object holding its utilization
  * @param[in]     gdil                the granted destination identifier the
  *                                    booking is made for
- * @param[in]     jep                 the job (`JB_Type`)
+ * @param[in]     jep                 the job (`JB`)
  * @param[in]     pe                  the granted parallel environment, or an
  *                                    empty handle
  * @param[in]     task_id             id of the array task
@@ -1636,7 +1636,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
  * @param[in]     do_per_host_booking whether the per host consumables have to
  *                                    be booked in this call
  * @param[in]     granted_resources_list the granted resources of the task
- *                                    (`GRU_Type`), or an empty handle
+ *                                    (`GRU`), or an empty handle
  *
  * @return the number of modifications made, -1 if a configured attribute is
  *         missing in the complexes
@@ -1862,13 +1862,13 @@ rc_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JG> gdil, const oc
 /**
  * @brief Debit assignment's utilization in a limitation
  *
- * @param jep job element (JB_Type), or an empty handle
+ * @param jep job element (JB), or an empty handle
  * @param pe the granted parallel environment, or an empty handle
  * @param task_id task id to debit
  * @param type String denoting type of utilization entry
- * @param rule limitation rule (RQR_Type)
+ * @param rule limitation rule (RQR)
  * @param rue_name rue_name where to debit
- * @param centry_list master centry list (CE_Type)
+ * @param centry_list master centry list (CE)
  * @param slots slots to debit
  * @param obj_name name of the object where to debit
  * @param start_time start time of utilization
@@ -2140,8 +2140,8 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
  * we iterate through all jobs and debit
  * resources requested by those jobs.
  *
- * @param running_jobs The running ones (JB_Type)
- * @param suspended_jobs The susepnded ones (JB_Type)
+ * @param running_jobs The running ones (JB)
+ * @param suspended_jobs The susepnded ones (JB)
  * @param pe_list the parallel environments, whose diagrams are filled
  * @param host_list the execution hosts, whose diagrams are filled
  * @param queue_list the queue instances, whose diagrams are filled
@@ -2348,7 +2348,7 @@ static ocs::tom::ElementPtr<ocs::tom::RDE> newResourceElem(uint64_t time, double
 /**
  * @brief How many slots of a queue instance are reserved at this moment?
  *
- * @param[in] this_elem the queue instance (`QU_Type`)
+ * @param[in] this_elem the queue instance (`QU`)
  *
  * @return the number of slots currently reserved, 0 if the queue instance has
  *         no slot utilization entry

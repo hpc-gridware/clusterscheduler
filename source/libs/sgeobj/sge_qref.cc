@@ -85,11 +85,11 @@
 /**
  * @brief Resolve cluster queue references into cluster queue or queue instance references
  *
- * @param cq_qref_list QR_Type list of cluster queue names, may be an empty handle
- * @param answer_list AN_Type list
- * @param qref_list in-out: QR_Type list receiving the references
+ * @param cq_qref_list QR list of cluster queue names, may be an empty handle
+ * @param answer_list AN list
+ * @param qref_list in-out: QR list receiving the references
  * @param found_something set to true when a queue instance reference was added
- * @param cqueue_list CQ_Type master list
+ * @param cqueue_list CQ master list
  * @param resolve_cqueue true to resolve each cluster queue into its queue instances
  *
  * @return always true
@@ -123,12 +123,12 @@ qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_l
 /**
  * @brief Resolve a host pattern of a queue reference into queue instance references
  *
- * @param cq_qref_list QR_Type list of cluster queue names, may be an empty handle
- * @param answer_list AN_Type list
+ * @param cq_qref_list QR list of cluster queue names, may be an empty handle
+ * @param answer_list AN list
  * @param host_or_hgroup the host pattern
- * @param qref_list in-out: QR_Type list receiving the references
+ * @param qref_list in-out: QR list receiving the references
  * @param found_something set to true when a reference was added
- * @param cqueue_list CQ_Type master list
+ * @param cqueue_list CQ master list
  *
  * @return always true
  */
@@ -166,13 +166,13 @@ qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qre
  * either the queue instance on each host the groups resolve to
  * (@p resolve_qdomain) or one `<cqueue>@<hgroup>` reference per group.
  *
- * @param cq_qref_list QR_Type list of cluster queue names, may be an empty handle
- * @param answer_list AN_Type list
+ * @param cq_qref_list QR list of cluster queue names, may be an empty handle
+ * @param answer_list AN list
  * @param host_or_hgroup the host group pattern
- * @param qref_list in-out: QR_Type list receiving the references
+ * @param qref_list in-out: QR list receiving the references
  * @param found_something set to true when a reference was added
- * @param cqueue_list CQ_Type master list
- * @param hgroup_list HGRP_Type master list
+ * @param cqueue_list CQ master list
+ * @param hgroup_list HGRP master list
  * @param resolve_qdomain true to resolve the groups into queue instances
  *
  * @return always true
@@ -238,8 +238,8 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
  * unless the list already holds it (CS-3053).
  * Errors will be reported via return value and "answer_list".
  *
- * @param this_list in-out: the QR_Type list, created if *this_list is nullptr
- * @param answer_list AN_Type
+ * @param this_list in-out: the QR list, created if *this_list is nullptr
+ * @param answer_list AN
  * @param qref_string queue reference
  *
  * @return error state true  - success false - error
@@ -296,12 +296,12 @@ bool qref_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_li
  *          => `cq1@hostA1` `cq1@hostB1`
  *             `cq2@hostA1` `cq2@hostB1`
  *
- * @param src_qref_list QR_Type list (input: pattern), may be an empty handle
- * @param answer_list AN_Type list
- * @param qref_list in-out: QR_Type list (output: resolved qrefs)
+ * @param src_qref_list QR list (input: pattern), may be an empty handle
+ * @param answer_list AN list
+ * @param qref_list in-out: QR list (output: resolved qrefs)
  * @param found_something a pattern matched? (output; untouched for an empty @p src_qref_list)
- * @param cqueue_list master CQ_Type list
- * @param hgroup_list master HGRP_Type list
+ * @param cqueue_list master CQ list
+ * @param hgroup_list master HGRP list
  * @param resolve_cqueue resolve cqueue pattern?
  * @param resolve_qdomain resolve qdomain pattern?
  *
@@ -383,7 +383,7 @@ bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list,
  * @param qref_pattern a wildcard pattern as defined for -q qref_list
  * @param cqname cluster queue name
  * @param hostname execution hostname (may be nullptr)
- * @param hgroup_list host group list (HGRP_Type), may be an empty handle when hostname is nullptr
+ * @param hgroup_list host group list (HGRP), may be an empty handle when hostname is nullptr
  *
  * @return true if rejected
  *
@@ -427,7 +427,7 @@ bool qref_cq_rejected(const char *qref_pattern, const char *cqname,
  *
  * @param qref_pattern a wildcard pattern as defined for -q qref_list
  * @param hostname exeuction hostname
- * @param hgroup_list host group list (HGRP_Type)
+ * @param hgroup_list host group list (HGRP)
  *
  * @return true if rejected
  *
@@ -457,9 +457,9 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname,
  * Used to skip a host early: when no entry of the list can match any queue on
  * it, the scheduler need not look at its queues at all.
  *
- * @param qref_list the queue references to check (QR_Type), may be an empty handle
+ * @param qref_list the queue references to check (QR), may be an empty handle
  * @param hostname the host in question
- * @param hgroup_list the host groups, needed to resolve a group reference (HGRP_Type)
+ * @param hgroup_list the host groups, needed to resolve a group reference (HGRP)
  * @return true when the host is rejected by all of them
  */
 bool qref_list_eh_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, const char *hostname,
@@ -488,10 +488,10 @@ bool qref_list_eh_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, co
 /**
  * @brief Does a queue reference list exclude one cluster queue on one host?
  *
- * @param qref_list the queue references to check (QR_Type), may be an empty handle
+ * @param qref_list the queue references to check (QR), may be an empty handle
  * @param cqname the cluster queue in question
  * @param hostname the host in question; nullptr checks the cluster queue alone
- * @param hgroup_list the host groups, needed to resolve a group reference (HGRP_Type)
+ * @param hgroup_list the host groups, needed to resolve a group reference (HGRP)
  * @return true when the queue is rejected by all of them
  */
 bool qref_list_cq_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, const char *cqname,
@@ -536,9 +536,9 @@ bool qref_list_cq_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, co
  * Cycles cannot occur: sge_hgroup_qmaster.cc rejects them when a hostgroup
  * is added.
  *
- * @param hgroup hostgroup to search (HGRP_Type)
+ * @param hgroup hostgroup to search (HGRP)
  * @param hostname the host in question
- * @param hgroup_list hostgroup list (HGRP_Type)
+ * @param hgroup_list hostgroup list (HGRP)
  *
  * @return True if the host is not a member.
  *
@@ -607,7 +607,7 @@ qref_hgroup_rejected(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const 
  *
  * @param href Host reference from -q ??`@href`
  * @param hostname the host in question
- * @param hgroup_list hostgroup list (HGRP_Type), may be an empty handle
+ * @param hgroup_list hostgroup list (HGRP), may be an empty handle
  *
  * @return True if rejected.
  *
@@ -668,8 +668,8 @@ bool qref_list_host_rejected(const char *href, const char *hostname,
  * The host names of the references are resolved in place, and a reference
  * that then repeats an earlier one is removed.
  *
- * @param this_list QR_Type list, may be an empty handle; changed in place although it is passed read-only
- * @param answer_list AN_Type
+ * @param this_list QR list, may be an empty handle; changed in place although it is passed read-only
+ * @param answer_list AN
  * @param master_cqueue_list the cluster queues a reference may name
  * @param master_hgroup_list the host groups a reference may name
  * @param master_centry_list the complex entries a reference may name
@@ -740,7 +740,7 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::
  * `q@h.domain`, is removed instead of renamed, so the first one stays and the
  * list never holds a reference twice, not even for a moment (CS-3053, N-H-18).
  *
- * @param[in,out] this_list the references to rewrite (QR_Type), an empty handle is accepted
+ * @param[in,out] this_list the references to rewrite (QR), an empty handle is accepted
  */
 void qref_list_resolve_hostname(const ocs::tom::List<ocs::tom::QR> this_list) {
    DENTER(TOP_LAYER);
@@ -802,7 +802,7 @@ ocs_qref_resolved_name(const char *name) {
  * Parse 'dest_str' and create a QR_type list. A reference given twice is
  * kept once.
  *
- * @param lpp QR_Type list
+ * @param lpp QR list
  * @param dest_str input string
  *
  * @return error state
@@ -847,7 +847,7 @@ int cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
       *kept = nullptr;
    }
 
-   i_ret = cull_parse_string_list(str_str, "destin_ident_list", QR_Type, rule, lpp);
+   i_ret = cull_parse_string_list(str_str, "destin_ident_list", ocs::tom::QR::descriptor.e, rule, lpp);
    if (i_ret) {
       sge_free(&s);
       sge_free(&str_str);

@@ -69,7 +69,6 @@ static_assert(std::is_same_v<ValueOf<FieldTraits<JB_job_name>::type>::type, cons
 static_assert(std::is_same_v<ValueOf<FieldTraits<JB_job_number>::type>::type, std::uint32_t>);
 static_assert(std::is_same_v<ValueOf<FieldTraits<ABOOL_href>::type>::type, Host>);
 static_assert(FieldTraits<JB_submission_time>::type == FieldType::Uint64, "a timestamp is an unsigned 64 bit number");
-static_assert(JB_Type == ocs::tom::JB::descriptor.e, "the old descriptor name is a synonym");
 
 // the field enumeration of a type is named, so a parameter can take the field numbers of one type only
 static_assert(std::is_same_v<decltype(JB_job_number), JB_Field> && std::is_same_v<decltype(JB_ja_tasks), JB_Field>);

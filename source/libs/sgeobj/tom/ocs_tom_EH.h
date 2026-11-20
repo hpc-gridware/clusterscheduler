@@ -383,6 +383,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of EH for the list library: a synonym for ocs::tom::EH::descriptor */
-inline constexpr const lDescr *EH_Type = ocs::tom::EH::descriptor.e;

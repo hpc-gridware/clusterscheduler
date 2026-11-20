@@ -90,7 +90,7 @@ bool pe_name_is_matching(const char *pe_name, const char *wildcard) {
  * The function returns true (1) if the name of the given
  * "pe" matches the "wildcard".
  *
- * @param pe PE_Type element
+ * @param pe PE element
  * @param wildcard wildcard
  *
  * @return true or false
@@ -105,10 +105,10 @@ bool pe_is_matching(const ocs::tom::ConstElement<ocs::tom::PE> pe, const char *w
  *
  * Try to find a PE that matches the given "wildcard" expression.
  *
- * @param pe_list PE_Type list
+ * @param pe_list PE list
  * @param wildcard Wildcard expression
  *
- * @return the first matching PE_Type object or an empty handle
+ * @return the first matching PE object or an empty handle
  */
 ocs::tom::ConstElement<ocs::tom::PE> pe_list_find_matching(const ocs::tom::ConstList<ocs::tom::PE> pe_list,
                                                            const char *wildcard) {
@@ -127,10 +127,10 @@ ocs::tom::ConstElement<ocs::tom::PE> pe_list_find_matching(const ocs::tom::Const
  *
  * Locate the PE with the name "pe_name".
  *
- * @param pe_list PE_Type list
+ * @param pe_list PE list
  * @param pe_name PE name
  *
- * @return PE_Type object or an empty handle
+ * @return PE object or an empty handle
  *
  * @note MT-NOTE: pe_list_locate() is MT safe
  */
@@ -148,10 +148,10 @@ ocs::tom::Element<ocs::tom::PE> pe_list_locate(const ocs::tom::ConstList<ocs::to
  * or "master_cqueue_list". If this is the case than
  * a corresponding message will be added to the "answer_list".
  *
- * @param pe PE_Type object
- * @param answer_list AN_Type list
- * @param master_job_list JB_Type list
- * @param master_cqueue_list CQ_Type list
+ * @param pe PE object
+ * @param answer_list AN list
+ * @param master_job_list JB list
+ * @param master_cqueue_list CQ list
  *
  * @return true or false
  */
@@ -209,7 +209,7 @@ bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::L
  * @param alpp answer list pointer, if an answer shall be created, else errors will in any case be output
  *             using the Cluster Scheduler error logging macros
  * @param startup are we in qmaster startup phase? Only then the user lists are checked.
- * @param master_userset_list the defined usersets the user lists are checked against (US_Type)
+ * @param master_userset_list the defined usersets the user lists are checked against (US)
  *
  * @return STATUS_OK, if everything is ok, else other status values, see libs/gdi/sge_answer.h
  *
@@ -434,9 +434,9 @@ pe_validate_allocation_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
  * If "ignore_make_pe" is 'true' than the test for the PE with the
  * name "make" will not be done.
  *
- * @param pe_list PE_Type list
- * @param answer_list AN_Type list
- * @param pe_ref_list ST_Type list of PE names
+ * @param pe_list PE list
+ * @param answer_list AN list
+ * @param pe_ref_list ST list of PE names
  * @param ignore_make_pe bool
  *
  * @return true if all PE's exist, false if at least one PE does not exist
@@ -473,9 +473,9 @@ bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, ocs::
  * amount is the amount that is assumed for a job with a slot range
  * before an assignment.
  *
- * @param pe PE_Type object.
+ * @param pe PE object.
  * @param urgency_slot_setting Ugency slot setting as in sge_pe(5)
- * @param range_list RN_Type list.
+ * @param range_list RN list.
  *
  * @return The slot amount.
  *
@@ -521,7 +521,7 @@ int pe_urgency_slots(const ocs::tom::ConstElement<ocs::tom::PE> pe, const char *
  * @param pe_name name used for the PE_name attribute of the generic pe object. If nullptr then "template"
  *                is the default name.
  *
- * @return the new PE_Type object
+ * @return the new PE object
  *
  * @note MT-NOTE: pe_create_template() is MT safe
  */
@@ -553,7 +553,7 @@ ocs::tom::ElementPtr<ocs::tom::PE> pe_create_template(const char *pe_name) {
  *
  * Returns the number of currently used PE slots.
  *
- * @param pe The PE object (PE_Type)
+ * @param pe The PE object (PE)
  *
  * @return number of currently used PE slots or -1 on error
  *
@@ -575,7 +575,7 @@ int pe_get_slots_used(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
  *
  * Sets the number of used PE slots.
  *
- * @param pe The pe object (PE_Type)
+ * @param pe The pe object (PE)
  * @param slots Number of slots.
  *
  * @return 0 on success -1 on error
@@ -599,7 +599,7 @@ int pe_set_slots_used(const ocs::tom::Element<ocs::tom::PE> pe, const int slots)
  *
  * Increases or decreses the number of slots used with a PE.
  *
- * @param pep The PE (PE_Type)
+ * @param pep The PE (PE)
  * @param slots Pos/neg number of slots.
  * @param job_id Job id for monitoring purposes.
  *

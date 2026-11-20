@@ -1044,7 +1044,7 @@ int japi_string_vector_get_next(drmaa_attr_values_t *iter, dstring *val) {
          sge_dstring_copy_string(val, ocs::tom::get<ST_name>(iter->it.si.next_pos));
       }
 
-      // the iterator walks a list of ST_Type strings
+      // the iterator walks a list of ST strings
       iter->it.si.next_pos = ocs::tom::Element<ocs::tom::ST>(iter->it.si.next_pos).next();
       DRETURN(DRMAA_ERRNO_SUCCESS);
    default:
@@ -1117,7 +1117,7 @@ void japi_delete_string_vector(drmaa_attr_values_t *iter) {
  *
  * The job passed is sent to qmaster using GDI. The jobid is returned.
  *
- * @param sge_job_template the job (JB_Type); replaced by the new version of the job qmaster returns, an empty
+ * @param sge_job_template the job (JB); replaced by the new version of the job qmaster returns, an empty
  *        handle if there is none
  * @param jobid destination for resulting jobid
  * @param diag diagnosis information
@@ -1147,7 +1147,7 @@ static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, u
                            amount, grp_array);
 
    /* use GDI to submit job for this session; the request list is replaced by the response, which holds the
-      new version of the job (JB_Type) */
+      new version of the job (JB) */
    auto response = std::move(request);
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::ADD,
                                    ocs::gdi::SubCommand::RETURN_NEW_VERSION, response);
@@ -1437,7 +1437,7 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, ocs::tom::ElementPtr<ocs::
  * be hold/released when it is used with ocs::gdi::Client::sge_gdi(SGE_JB_LIST, SGE_GDI_MOD).
  *
  * @param gdi_action the GDI action to be performed
- * @param request_list the request list we operate on (reduced JB_Type), created when it is an empty handle
+ * @param request_list the request list we operate on (reduced JB), created when it is an empty handle
  * @param jobid the jobid
  * @param taskid the taskid
  * @param array true in case of an arry job
@@ -1460,7 +1460,7 @@ static int japi_user_hold_add_jobid(const uint32_t gdi_action, ocs::tom::ListPtr
       taskid = 0;
    }
 
-   /* ensure JB_Type structure exists; the request carries reduced jobs, created as lAddElemUlong() created them */
+   /* ensure JB structure exists; the request carries reduced jobs, created as lAddElemUlong() created them */
    auto jep = request_list->find_first<JB_job_number>(jobid);
 
    if (jep == nullptr) {
@@ -1472,7 +1472,7 @@ static int japi_user_hold_add_jobid(const uint32_t gdi_action, ocs::tom::ListPtr
       jep = request_list->push_back(std::move(new_job));
    }
 
-   /* ensure JAT_Type structure exists */
+   /* ensure JAT structure exists */
    if (ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(jep, taskid)) {
       /* taskid is referenced twice */
       if (diag != nullptr) {
@@ -2440,7 +2440,7 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
  * Search the passed japi_job_list for finished jobs matching the wait4any/
  * jobid/taskid condition.
  *
- * @param japi_job_list The JJ_Type japi joblist that is searched; reaped jobs are removed from it
+ * @param japi_job_list The JJ japi joblist that is searched; reaped jobs are removed from it
  * @param wait4any 0 any finished job/task is fine
  * @param jobid specifies which job is searched
  * @param taskid specifies which task is searched
@@ -2451,7 +2451,7 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
  * @param wis_task_arrayp destination for taskid of waited job
  * @param wait_status destination for status that is finally returned by japi_wait()
  * @param wevent destination for actual event received
- * @param rusagep destination for rusage info of waited job (UA_Type), or nullptr
+ * @param rusagep destination for rusage info of waited job (UA), or nullptr
  *
  * @return JAPI_WAIT_ALLFINISHED = there is nothing more to wait for JAPI_WAIT_UNFINISHED  = no job/task finished, but there are still unfinished tasks JAPI_WAIT_FINISHED    = got a finished task
  *
@@ -2728,7 +2728,7 @@ enum {
  * All Cluster Scheduler state information is used and combined into a DRMAA
  * job state.
  *
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param is_array_task if false jobid is considered the job id of a seq. job, if true jobid and taskid must fit to an existing array task.
  * @param jobid the jobid of a seq. job or an array job
  * @param taskid the array task id in case of array jobs, 1 otherwise
@@ -2984,7 +2984,7 @@ japi_finished_task_state(uint32_t jobid, uint32_t taskid, bool is_array_task, in
  * @param jobid the jobs id
  * @param diag diagnosis info
  *
- * @return the DRMAA error code and the job list qmaster answered with (reduced JB_Type); the list is
+ * @return the DRMAA error code and the job list qmaster answered with (reduced JB); the list is
  *         returned on every path on which qmaster answered, also on an error
  *
  * @note MT-NOTES: japi_get_job() is MT safe
@@ -3015,7 +3015,7 @@ static std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>> japi_get_job(const uint3
                              ocs::gdi::SubCommand::NONE, nullptr, job_selection, job_fields);
    gdi_multi.wait();
 
-   /* the GDI GET answers with a job list (JB_Type, reduced to job_fields) */
+   /* the GDI GET answers with a job list (JB, reduced to job_fields) */
    ocs::tom::ListPtr<ocs::tom::JB> retrieved_job_list;
    gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE,
                           ocs::gdi::Target::JB_LIST, jb_id, retrieved_job_list);
@@ -3198,28 +3198,6 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag) {
    drmaa_errno = japi_sge_state_to_drmaa_state(retrieved_job_list->front(),
                                                is_array_task, jobid, taskid,
                                                remote_ps, diag);
-
-   /* inactive code sample for retrieving master node information of a running job */
-#if 0
-   if (node) {
-      ocs::tom::ConstElement<ocs::tom::JAT> ja_task;
-      ocs::tom::ConstElement<ocs::tom::JG> master_node;
-      switch (*remote_ps) {
-      case DRMAA_PS_RUNNING:
-      case DRMAA_PS_SYSTEM_SUSPENDED:
-      case DRMAA_PS_USER_SUSPENDED:
-      case DRMAA_PS_USER_SYSTEM_SUSPENDED:
-         if ((ja_task = job_search_task(retrieved_job_list->front(), nullptr, taskid)) &&
-            (master_node = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).front()))
-            sge_dstring_copy_string(node, ocs::tom::get<JG_qhostname>(master_node).c_str());
-         else
-            sge_dstring_copy_string(node, "<unknown>");
-         break;
-      default:
-         break;
-      }
-   }
-#endif
 
    japi_dec_threads(__func__);
 
@@ -3760,7 +3738,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                /* - check every session job
                   - no longer existing jobs must be moved to JJ_finished_jobs
                   - TODO: actually we had to return DRMAA_ERRNO_NO_RUSAGE when japi_wait() is
-                          called for such a job. Must enhance JJAT_Type to reflect the case when
+                          called for such a job. Must enhance JJAT to reflect the case when
                           no stat and rusage are known */
                for (const auto japi_job : ocs::tom::List<ocs::tom::JJ>(Master_japi_job_list)) {
                   jobid = ocs::tom::get<JJ_jobid>(japi_job);
@@ -3809,7 +3787,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                ocs::tom::Element<ocs::tom::JJAT> japi_task;
                uint32_t wait_status;
                const char *err_str;
-               // the job finish event carries the job report (JR_Type)
+               // the job finish event carries the job report (JR)
                const auto jr = ocs::tom::ConstList<ocs::tom::JR>(ocs::tom::get<ET_new_version>(event)).front();
 
                DPRINTF (("Handling job finish event\n"));
@@ -3862,7 +3840,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
             else if (type == sgeE_JATASK_MOD) {
                /* - add task to JJ_started_task_ids */
                ocs::tom::Element<ocs::tom::JJ> japi_job;
-               // the task modify event carries the array task (JAT_Type)
+               // the task modify event carries the array task (JAT)
                const auto ep = ocs::tom::ConstList<ocs::tom::JAT>(ocs::tom::get<ET_new_version>(event)).front();
                u_long job_status = ocs::tom::get<JAT_status>(ep);
                bool task_running = (job_status==JRUNNING || job_status==JTRANSFERING);

@@ -787,7 +787,7 @@ const ocs_qconf_object_tuple ocs_qconf_objects{
                SGE_TYPE_CONFIG,
                { .create_template = qconf_template_CONF } },
    /* EV: read only and name-list only (CS-2808). There is no field list because
-    * EV_Type is not a registered object type and no -s<obj>/export path reaches
+    * EV is not a registered object type and no -s<obj>/export path reaches
     * this row - show_name_list() renders the key field and nothing else. Event
     * clients live in the event master, not in a master list. */
    /* EV   */ { { ocs::gdi::Target::EV_LIST,   nullptr,           &qconf_sfi,                nullptr,      ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,
@@ -808,7 +808,7 @@ const ocs_qconf_object_tuple ocs_qconf_objects{
     * and there is no field list because the names are rendered by
     * show_name_list() and nothing else - the same reason the EV row has none.
     *
-    * The entries are HR_Type and UE_Type, neither of them a registered object
+    * The entries are HR and UE, neither of them a registered object
     * type, so the JSON envelope would derive as "unknown" and has to be named.
     * Whether it is also named for an EMPTY list is not a free choice: -sh and -ss
     * produced the generic "names" key there and -sm and -so the full envelope,
@@ -910,16 +910,16 @@ qconf_desc(const QConfObj o) {
  * @brief Render an exec host's load_values typed by their complex definition (CS-2313a).
  *
  * For -fmt json, values such as mem_total are rendered as bytes, num_proc as an
- * integer, np_load_avg as a double, ... instead of as raw strings. HL_Type load values
- * carry no type, so we build a CE_Type list (name + string value), resolve each entry's
+ * integer, np_load_avg as a double, ... instead of as raw strings. HL load values
+ * carry no type, so we build a CE list (name + string value), resolve each entry's
  * type from the master complex list (tolerant of load names that are not defined
  * complexes), parse numeric values into CE_doubleval, and swap the typed CE list into
  * the load-list field. The generic JSON writer then renders it via its typed
  * complex-value path; unmatched or string-typed loads keep their string value. Runs
  * only for -fmt json and mutates only the throwaway object about to be shown.
  *
- * The one untyped step is the swap: the list swapped in is a `CE_Type` list in a
- * field declared to hold `HL_Type`, which neither a typed setter nor the checked
+ * The one untyped step is the swap: the list swapped in is a `CE` list in a
+ * field declared to hold `HL`, which neither a typed setter nor the checked
  * run-time setter accepts; the core stores it.
  *
  * @param host               the (throwaway) exec host element to be shown

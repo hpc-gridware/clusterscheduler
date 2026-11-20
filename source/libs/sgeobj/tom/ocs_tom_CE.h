@@ -206,6 +206,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CE for the list library: a synonym for ocs::tom::CE::descriptor */
-inline constexpr const lDescr *CE_Type = ocs::tom::CE::descriptor.e;

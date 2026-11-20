@@ -47,7 +47,7 @@ enum CCT_Field {
    /**
     * @brief Rejected Queues
     *
-    * Cluster queues already known not to suit this category (`CTI_Type`), so later jobs skip them.
+    * Cluster queues already known not to suit this category (`CTI`), so later jobs skip them.
     */
    CCT_ignore_queues,
    /**
@@ -59,7 +59,7 @@ enum CCT_Field {
    /**
     * @brief Scheduler Messages
     *
-    * The "why not" messages (`MES_Type`) produced for this category, reused rather than regenerated per job.
+    * The "why not" messages (`MES`) produced for this category, reused rather than regenerated per job.
     */
    CCT_job_messages,
    /**
@@ -130,6 +130,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CCT for the list library: a synonym for ocs::tom::CCT::descriptor */
-inline constexpr const lDescr *CCT_Type = ocs::tom::CCT::descriptor.e;

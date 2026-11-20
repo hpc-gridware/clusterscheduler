@@ -108,6 +108,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of HM for the list library: a synonym for ocs::tom::HM::descriptor */
-inline constexpr const lDescr *HM_Type = ocs::tom::HM::descriptor.e;

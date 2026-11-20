@@ -112,7 +112,7 @@ static char old_task_spool_dir[SGE_PATH_MAX] = "";
  * enrolled array tasks are read from the task files and appended to it. A job
  * spooled as one file is read from that file.
  *
- * The files hold jobs (JB_Type) as lWriteElemToDisk() wrote them; a file
+ * The files hold jobs (JB) as lWriteElemToDisk() wrote them; a file
  * that cannot be read, or holds another type, gives an empty handle, as an
  * unreadable file did before.
  *
@@ -169,8 +169,8 @@ job_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, const sge
  * Walks the task directories of the job. An array task with parallel tasks
  * is a directory itself; its parallel tasks are read into its task list.
  *
- * The directory entries are ST_Type lists; the files hold array tasks
- * (JAT_Type) and parallel tasks (PET_Type) as lWriteElemToDisk() wrote them;
+ * The directory entries are ST lists; the files hold array tasks
+ * (JAT) and parallel tasks (PET) as lWriteElemToDisk() wrote them;
  * one that cannot be read, or holds another type, gives an empty handle.
  *
  * @param job_id the job
@@ -261,7 +261,7 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
 /**
  * @brief Read an array task spooled as one file
  *
- * The file holds an array task (JAT_Type) as lWriteElemToDisk() wrote it; a
+ * The file holds an array task (JAT) as lWriteElemToDisk() wrote it; a
  * file that cannot be read, or holds another type, gives an empty handle.
  *
  * @param job_id the job
@@ -284,7 +284,7 @@ ja_task_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, [[may
 /**
  * @brief Read a parallel task from its spool file
  *
- * The file holds a parallel task (PET_Type) as lWriteElemToDisk() wrote it; a
+ * The file holds a parallel task (PET) as lWriteElemToDisk() wrote it; a
  * file that cannot be read, or holds another type, gives an empty handle.
  *
  * @param job_id the job
@@ -315,24 +315,24 @@ pe_task_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, const
  * $SGE_ROOT/default/spool/qmaster/jobs
  * +---00
  *     +---0001
- *     |   +---0001                     (JB_Type file)
+ *     |   +---0001                     (JB file)
  *     |   +---0002
- *     |       +---common               (JB_Type without JB_ja_tasks)
+ *     |       +---common               (JB without JB_ja_tasks)
  *     |       +---1-4096
- *     |           +---1                (JAT_Type file)
- *     |           +---2                (JAT_Type file)
- *     |           +---3                (JAT_Type file)
+ *     |           +---1                (JAT file)
+ *     |           +---2                (JAT file)
+ *     |           +---3                (JAT file)
  *     +---0002
  *         +---0011
- *             +---common               (JB_Type without JB_ja_tasks)
+ *             +---common               (JB without JB_ja_tasks)
  *             +---1-4096
  *                 +---1
- *                     +--- common      (JAT_Type file witout JAT_task_list)
- *                     +--- 1.speedy    (PET_Type file)
- *                     +--- 2.speedy    (PET_Type file)
- *                     +--- past_usage  (PET_Type file)
+ *                     +--- common      (JAT file witout JAT_task_list)
+ *                     +--- 1.speedy    (PET file)
+ *                     +--- 2.speedy    (PET file)
+ *                     +--- past_usage  (PET file)
  *
- * @param job full job (JB_Type)
+ * @param job full job (JB)
  * @param ja_taskid 0 or a allowed array job task id
  * @param pe_task_id pe task id
  * @param flags where/how should we spool the object SPOOL_WITHIN_EXECD       -> has to be used within the execd SPOOL_DEFAULT            -> if no other flags are needed
@@ -384,7 +384,7 @@ int job_write_spool_file(const ocs::tom::Element<ocs::tom::JB> job, const uint32
  * spooled as a directory.
  *
  * @param job the job, may be an empty handle
- * @param pe_list the master parallel environment list (PE_Type)
+ * @param pe_list the master parallel environment list (PE)
  * @param flags spooling flags, see `sge_spool_flags_t`
  *
  * @return 1 if the job is spooled as one file, else 0
@@ -823,7 +823,7 @@ static int job_remove_script_file(uint32_t job_id) {
  * with its array tasks and parallel tasks.
  *
  * The job list and the callback stay untyped: the list is the caller's job
- * list (JB_Type), created through the pointer if it does not exist yet, and
+ * list (JB), created through the pointer if it does not exist yet, and
  * the callback is a function pointer.
  *
  * @param job_list receives the jobs
@@ -842,7 +842,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
    DSTRING_STATIC(dstr_path, SGE_PATH_MAX);
    const char *str_path;
 
-   // the directory entries (ST_Type) of the three directory levels; each list is freed when its level is done
+   // the directory entries (ST) of the three directory levels; each list is freed when its level is done
    sge_get_file_path(first_dir, sizeof(first_dir), JOBS_SPOOL_DIR, FORMAT_FIRST_PART, flags, 0, 0, nullptr);
    const auto first_direnties = ocs_get_dirents(first_dir);
 

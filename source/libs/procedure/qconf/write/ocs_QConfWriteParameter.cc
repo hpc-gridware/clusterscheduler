@@ -53,7 +53,7 @@ ocs::QConfWriteParameter::add_item(const char *label, const std::string &text) {
 
 /** @brief Marshal the items and the batch policy into the request bundle
  *
- * The items go over as a `VA_Type` list, the pair shape ProcedureParameter
+ * The items go over as a `VA` list, the pair shape ProcedureParameter
  * already uses for its own name/value entries - so no new CULL type and no
  * change to the wire format.
  *

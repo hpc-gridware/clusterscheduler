@@ -316,7 +316,7 @@ bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_
     Task *task = tasks[0];
 
     if (task->target == Target::JB_LIST && (task->command == Command::ADD || task->command == Command::COPY)) {
-       // the data of a job submission are the jobs (JB_Type) the client built
+       // the data of a job submission are the jobs (JB) the client built
        const auto jobs = ocs::tom::List<ocs::tom::JB>::from_typed(task->data_list);
        auto next_job = jobs.back();
        while (ret && next_job) {

@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of UE for the list library: a synonym for ocs::tom::UE::descriptor */
-inline constexpr const lDescr *UE_Type = ocs::tom::UE::descriptor.e;

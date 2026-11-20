@@ -194,7 +194,7 @@ void lWriteWhereTo(const lCondition *cp, FILE *fp) {
  * Creates a condition tree. The condition is stated as a format
  * string and an associated list of additional parameters.
  *
- * @param fmt format string %I                         - JB_job_number (!= lList) %T                         - JB_Type (Descriptor) ==, <, >, <=, >=, !=, ==   - comp. operator %s                         - string %d                         - int %u                         - ulong ...             - additional Arguments
+ * @param fmt format string %I                         - JB_job_number (!= lList) %T                         - ocs::tom::JB::descriptor.e (descriptor) ==, <, >, <=, >=, !=, ==   - comp. operator %s                         - string %d                         - int %u                         - ulong ...             - additional Arguments
  *
  * @return new condition
  *

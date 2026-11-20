@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of AINTER for the list library: a synonym for ocs::tom::AINTER::descriptor */
-inline constexpr const lDescr *AINTER_Type = ocs::tom::AINTER::descriptor.e;

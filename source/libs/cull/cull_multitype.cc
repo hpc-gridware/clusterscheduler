@@ -2603,7 +2603,7 @@ const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
  * @param nm field which will get value val
  * @param val initial value for nm
  * @param snm sublist within ep where the element will be added
- * @param dp Type of the new element (e.g. JB_Type)
+ * @param dp Type of the new element (e.g. ocs::tom::JB::descriptor.e)
  *
  * @return nullptr in case of error or the pointer to the new element
  *
@@ -2627,7 +2627,7 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm, const lDescr
  * @param lpp list
  * @param nm field in the new element which will get value val
  * @param val initial value for nm
- * @param dp type of the list (e.g. JB_Type)
+ * @param dp type of the list (e.g. ocs::tom::JB::descriptor.e)
  *
  * @return nullptr on error or pointer to the added element
  *
@@ -2902,7 +2902,7 @@ const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const vo
  * @param nm field which will get value val
  * @param val initial value for nm
  * @param snm sublist within ep where the element will be added
- * @param dp Type of the new element (e.g. JB_Type)
+ * @param dp Type of the new element (e.g. ocs::tom::JB::descriptor.e)
  *
  * @return nullptr in case of error or the pointer to the new element
  *
@@ -2926,7 +2926,7 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm, const lD
  * @param lpp list
  * @param nm field in the new element which will get value val
  * @param val initial value for nm
- * @param dp type of the list (e.g. JB_Type)
+ * @param dp type of the list (e.g. ocs::tom::JB::descriptor.e)
  *
  * @return nullptr on error or pointer to the added element
  *

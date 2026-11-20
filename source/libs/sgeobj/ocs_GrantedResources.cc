@@ -58,7 +58,7 @@
 /**
  * @brief Convert granted resources to a comma-separated string
  *
- * @param granted_resources List of granted resources (GRU_Type), may be an empty handle
+ * @param granted_resources List of granted resources (GRU), may be an empty handle
  *
  * @return String representation of granted resources, NONE for an empty handle
  */
@@ -95,9 +95,9 @@ ocs::GrantedResources::to_string(const ocs::tom::ConstList<ocs::tom::GRU> grante
  *
  * Nothing is added if @p binding_touse_list is an empty handle or @p host_name is nullptr.
  *
- * @param granted_resources_list List of granted resources (GRU_Type) to add to, created if it is empty
+ * @param granted_resources_list List of granted resources (GRU) to add to, created if it is empty
  * @param host_name Hostname to add the binding information for
- * @param binding_touse_list List of binding information to add (ST_Type), copied
+ * @param binding_touse_list List of binding information to add (ST), copied
  */
 void
 ocs::GrantedResources::add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &granted_resources_list,
@@ -128,7 +128,7 @@ ocs::GrantedResources::add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &gran
  * The combined binding_to_use contains all PUs that are reserved for any of the slots (in case there are multiple).
  * If no binding information is found, the returned binding_to_use will be empty.
  *
- * @param gr_list List of granted resources (GRU_Type), may be an empty handle
+ * @param gr_list List of granted resources (GRU), may be an empty handle
  * @param hostname Hostname to search for
  * @param binding_to_use Returned combined binding_to_use (empty if no binding information is found)
  */

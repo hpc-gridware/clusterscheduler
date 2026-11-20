@@ -111,11 +111,11 @@
  * with the name "cqueue_name" and resides on the host with the name
  * "hostname".
  *
- * @param this_list QU_Type list, may be an empty handle
+ * @param this_list QU list, may be an empty handle
  * @param hostname hostname
  * @param cqueue_name cluster queue name; nullptr looks up the host alone
  *
- * @return QU_Type element, or an empty handle
+ * @return QU element, or an empty handle
  *
  * @note MT-NOTE: qinstance_list_locate() is MT safe
  */
@@ -148,7 +148,7 @@ ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::ConstList<
  *
  * find a qinstance using the fullname
  *
- * @param queue_list QU_Type list, may be an empty handle
+ * @param queue_list QU list, may be an empty handle
  * @param full_name fullname of the qinstance (`cqueue@hostname`)
  *
  * @return QU_type element, or an empty handle
@@ -163,7 +163,7 @@ ocs::tom::Element<ocs::tom::QU> qinstance_list_locate2(const ocs::tom::ConstList
 /**
  * @brief Returns the fullname of a qinstance object
  *
- * @param this_elem QU_Type element, may be an empty handle
+ * @param this_elem QU element, may be an empty handle
  * @param string_buffer dynamic string buffer
  *
  * @return pointer to the internal string buffer of "string_buffer", or nullptr if an argument is missing
@@ -187,7 +187,7 @@ const char *qinstance_get_name(const ocs::tom::ConstElement<ocs::tom::QU> this_e
  *
  * Increase the queue version of the given qinstance "this_elem".
  *
- * @param this_elem QU_Type element
+ * @param this_elem QU element
  *
  * @note MT-NOTE: qinstance_increase_qversion() is MT safe
  */
@@ -205,7 +205,7 @@ void qinstance_increase_qversion(const ocs::tom::Element<ocs::tom::QU> this_elem
  * qinstance element "this_elem".
  *
  * @param packet GDI packet containing the ownership information of the request creator
- * @param this_elem qinstance element to check (QU_Type), may be an empty handle
+ * @param this_elem qinstance element to check (QU), may be an empty handle
  * @return true if the user is in the owner list, false otherwise or if an argument is missing
  */
 bool qinstance_is_owner(const ocs::gdi::Packet *packet, const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
@@ -232,8 +232,8 @@ bool qinstance_is_owner(const ocs::gdi::Packet *packet, const ocs::tom::ConstEle
  *
  * Is the given PE ("pe") referenced in the qinstance element "this_elem".
  *
- * @param this_elem QU_Type element
- * @param pe PE_Type element
+ * @param this_elem QU element
+ * @param pe PE element
  *
  * @return test result true  - is referenced false - is not referenced
  *
@@ -255,7 +255,7 @@ bool qinstance_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_
  *
  * Test is at least one PE is referenced by qinstance "this_elem"
  *
- * @param this_elem QU_Type
+ * @param this_elem QU
  *
  * @return test result true  - an PE is referenced false - no PE is referenced ("NONE")
  *
@@ -278,8 +278,8 @@ bool qinstance_is_a_pe_referenced(const ocs::tom::ConstElement<ocs::tom::QU> thi
  * Tests if the given CKPT object ("ckpt") is referenced in
  * the qinstance "this_elem".
  *
- * @param this_elem QU_Type element
- * @param ckpt CK_Type element
+ * @param this_elem QU element
+ * @param ckpt CK element
  *
  * @return test result true  - CKPT is referenced false - CKPT is not referenced
  *
@@ -303,7 +303,7 @@ bool qinstance_is_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::QU> thi
  *
  * Is an CKPT object referenced in "this_elem".
  *
- * @param this_elem QU_Type element
+ * @param this_elem QU element
  *
  * @return test result true  - a CKPT is referenced false - no CKPT is referenced
  *
@@ -325,8 +325,8 @@ bool qinstance_is_a_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::QU> t
  *
  * Is the given "centry" in the list of complex_values of "this_elem".
  *
- * @param this_elem QU_Type element, may be an empty handle
- * @param centry CE_Type element
+ * @param this_elem QU element, may be an empty handle
+ * @param centry CE element
  *
  * @return test result true  - it is a complex value false - no complex value
  *
@@ -358,11 +358,11 @@ bool qinstance_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::
  * qinstance names as queue references. In case of any error "answer_list"
  * will be filled.
  *
- * @param this_list QU_Type list, may be an empty handle
- * @param answer_list AN_Type list
+ * @param this_list QU list, may be an empty handle
+ * @param answer_list AN list
  * @param hostname_pattern fnmatch hostname pattern
  *
- * @return QR_Type list of the matching qinstance names; an empty handle if nothing matched or an argument is missing
+ * @return QR list of the matching qinstance names; an empty handle if nothing matched or an argument is missing
  *
  * @note MT-NOTE: qinstance_list_find_matching() is MT safe
  */
@@ -406,7 +406,7 @@ ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(const ocs::tom::Con
  *
  * Returns the number of currently used slots.
  *
- * @param this_elem QU_Type element
+ * @param this_elem QU element
  *
  * @return number of slots
  *
@@ -434,7 +434,7 @@ int qinstance_slots_used(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
  *
  * Returns the number of maximal reserved slots by all advance reservations
  *
- * @param this_elem QU_Type element
+ * @param this_elem QU element
  *
  * @return number of slots
  *
@@ -457,7 +457,7 @@ uint32_t qinstance_slots_reserved(const ocs::tom::ConstElement<ocs::tom::QU> thi
 /**
  * @brief Modifies the number of used slots
  *
- * @param this_elem QU_Type
+ * @param this_elem QU
  * @param new_slots new slot value
  *
  * @note MT-NOTE: qinstance_set_slots_used() is MT safe
@@ -482,7 +482,7 @@ void qinstance_set_slots_used(const ocs::tom::Element<ocs::tom::QU> this_elem, c
  * of that machine will be released.
  *
  * @param qep Qinstance resource container
- * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited;
+ * @param jep The job (JB) defining which resources and how much of them need to be (un)debited;
  *            an empty handle only initializes the booking
  * @param pe The job's parallel environment, needed to split master and slave requests; may be an empty handle
  * @param centry_list The global complex list that is needed to interpret the jobs' resource requests.
@@ -509,7 +509,7 @@ int qinstance_debit_consumable(const ocs::tom::Element<ocs::tom::QU> qep,
 /**
  * @brief Adds a message to the qinstance structure
  *
- * @param this_elem QU_Type
+ * @param this_elem QU
  * @param type message type
  * @param message message
  *
@@ -533,7 +533,7 @@ bool qinstance_message_add(const ocs::tom::Element<ocs::tom::QU> this_elem, cons
  *
  * Removes all messages with the message "type" id.
  *
- * @param this_elem QU_Type
+ * @param this_elem QU
  * @param type message type
  *
  * @return error state true  - success false - error
@@ -557,7 +557,7 @@ bool qinstance_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::QU>
  * will be used as input for the cqueue part and QU_qhostname
  * as hostname part of the full name.
  *
- * @param this_elem QU_Type
+ * @param this_elem QU
  *
  * @note MT-NOTE: qinstance_set_full_name() is MT safe
  */
@@ -577,8 +577,8 @@ void qinstance_set_full_name(const ocs::tom::Element<ocs::tom::QU> this_elem) {
  *
  * Validates qinstance attributes and initializes them if necessary.
  *
- * @param this_elem QU_Type
- * @param answer_list AN_Type
+ * @param this_elem QU
+ * @param answer_list AN
  * @param master_exechost_list the execution hosts, so the queue's host can be checked
  * @param master_centry_list the complex entries, so the queue's resources can be checked
  *
@@ -650,8 +650,8 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::to
  *
  * Validates qinstances attributes and initializes them if necessary.
  *
- * @param this_list QU_Type list, may be an empty handle
- * @param answer_list AN_Type
+ * @param this_list QU list, may be an empty handle
+ * @param answer_list AN
  * @param master_exechost_list the execution hosts, so each queue's host can be checked
  * @param master_centry_list the complex entries, so each queue's resources can be checked
  *
@@ -692,7 +692,7 @@ bool qinstance_list_validate(const ocs::tom::List<ocs::tom::QU> this_list, ocs::
  * @param obj_type "queue" or "host", for the messages
  * @param obj_name the name of the resource container, for the messages
  * @param slots the number of slots to book
- * @param booking_ep the booking of the consumable (RUE_Type); may be an empty handle when only checking
+ * @param booking_ep the booking of the consumable (RUE); may be an empty handle when only checking
  * @param just_check If != nullptr do not book, only check; set to false when the check fails
  *
  * @return true, false in case of just_check and the check fails
@@ -729,8 +729,8 @@ rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, c
  * @param slots the number of slots to book; ignored for an exclusive consumable when checking
  * @param request the amount requested per slot
  * @param additional_request an amount already booked on this container in the same check (master task)
- * @param capacity_ep the configured capacity (CE_Type)
- * @param booking_ep the booking of the consumable (RUE_Type); may be an empty handle when only checking
+ * @param capacity_ep the configured capacity (CE)
+ * @param booking_ep the booking of the consumable (RUE); may be an empty handle when only checking
  * @param is_exclusive whether the consumable is exclusive
  * @param just_check If != nullptr do not book, only check; set to false when the check fails
  *
@@ -775,12 +775,12 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
  * for 'slots' slots of the given job. Positive slots numbers
  * cause debiting, negative ones cause undebiting.
  *
- * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited;
+ * @param jep The job (JB) defining which resources and how much of them need to be (un)debited;
  *            an empty handle only initializes the booking
  * @param pe The job's parallel environment, needed to split master and slave requests; may be an empty handle
  * @tparam T the type of the resource container: ocs::tom::QU, or ocs::tom::EH for the global and the other hosts
- * @tparam CONFIG_NM the field of T that contains a CE_Type list of configured complex values
- * @tparam ACTUAL_NM the field of T that contains a RUE_Type list of actual complex values
+ * @tparam CONFIG_NM the field of T that contains a CE list of configured complex values
+ * @tparam ACTUAL_NM the field of T that contains a RUE list of actual complex values
  * @param ep The resource container (global/host/queue) that owns the resources, may be an empty handle
  * @param centry_list The global complex list that is needed to interpret the jobs' resource requests.
  * @param slots The number of slots for which we are debiting. Positive slots numbers cause debiting, negative ones cause undebiting.
@@ -814,7 +814,7 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
       ocs::tom::Element<ocs::tom::RUE> cr;
       const char *name = ocs::tom::get<CE_name>(cr_config);
 
-      // search complex definition (with default request); found in a CE_Type list, so no check is needed
+      // search complex definition (with default request); found in a CE list, so no check is needed
       const auto dcep = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
       if (!dcep) {
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
@@ -1091,7 +1091,7 @@ qinstance_verify_full_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const c
  * Sets or Unsets a qinstance into error state and adds or removes the given
  * error message
  *
- * @param qinstance qinstance object (QU_Type)
+ * @param qinstance qinstance object (QU)
  * @param type new state
  * @param message error message to set
  * @param set_error set or unset

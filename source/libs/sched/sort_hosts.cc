@@ -104,9 +104,9 @@ static int get_load_value(double *dvalp, ocs::tom::ConstElement<ocs::tom::EH> gl
  * The formula is taken from the scheduler configuration. The global host is
  * left where it is - it is not a candidate for a job.
  *
- * @param[in,out] hl          the host list to be sorted (`EH_Type`), sorted
+ * @param[in,out] hl          the host list to be sorted (`EH`), sorted
  *                            in place
- * @param[in]     centry_list the complex entry list (`CE_Type`)
+ * @param[in]     centry_list the complex entry list (`CE`)
  *
  * @return 0 on success, -1 otherwise
  */
@@ -146,10 +146,10 @@ int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstL
  *
  * @param[in] load_formula the load evaluation formula, without blanks
  * @param[in] global       the global host, for the globally reported values
- * @param[in] host         the host to compute the load for (`EH_Type`)
- * @param[in] centry_list  the complex entry list (`CE_Type`)
+ * @param[in] host         the host to compute the load for (`EH`)
+ * @param[in] centry_list  the complex entry list (`CE`)
  * @param[in] load_adjustments the job load adjustments of the scheduler
- *                         configuration (`CE_Type`); nullptr fetches them
+ *                         configuration (`CE`); nullptr fetches them
  *                         from the data store of the calling thread
  *
  * @return the load value the host list is sorted by, or #ERROR_LOAD_VAL on
@@ -303,9 +303,9 @@ double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<
  *
  * @param[out] dvalp            receives the value
  * @param[in]  global           the global host
- * @param[in]  host             the host (`EH_Type`)
- * @param[in]  centry_list      the complex entry list (`CE_Type`)
- * @param[in]  load_adjustments the job load adjustments of the scheduler configuration (`CE_Type`); nullptr
+ * @param[in]  host             the host (`EH`)
+ * @param[in]  centry_list      the complex entry list (`CE`)
+ * @param[in]  load_adjustments the job load adjustments of the scheduler configuration (`CE`); nullptr
  *                              fetches them from the data store of the calling thread
  * @param[in]  attrname         the attribute, optionally with a leading `$`
  *

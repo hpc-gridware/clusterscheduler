@@ -94,7 +94,7 @@ static bool rqs_set_dynamical_limit(ocs::tom::Element<ocs::tom::RQRL> limit,
  * and queue instance
  *
  * @param a job info structure
- * @param rule rqsource quota rule (RQR_Type)
+ * @param rule rqsource quota rule (RQR)
  * @param host host name
  * @param queue queue name
  * @param start start time of job
@@ -351,7 +351,7 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const ocs::tom::Const
  *
  * @param a job info structure (in)
  * @param slots out: # free slots
- * @param qep queue instance (`QU_Type`)
+ * @param qep queue instance (`QU`)
  * @param need_master a master task still has to be placed
  * @param is_master_queue this queue instance already carries the master task
  *
@@ -865,7 +865,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
  * The names of all cluster queues that match the rule are added to
  * the skip list without duplicates.
  *
- * @param rule the rule (`RQR_Type`)
+ * @param rule the rule (`RQR`)
  * @param a the assignment whose `skip_cqueue_list` is extended
  *
  * @note MT-NOTE: rqs_expand_cqueues() is not MT safe
@@ -898,7 +898,7 @@ static void rqs_expand_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
  * The names of all hosts that match the rule are added to
  * the skip list without duplicates.
  *
- * @param rule the rule (`RQR_Type`)
+ * @param rule the rule (`RQR`)
  * @param a the assignment whose `skip_host_list` is extended
  *
  * @note MT-NOTE: rqs_expand_hosts() is MT safe
@@ -1164,10 +1164,10 @@ static bool host_shadowed_by(const char *host, const ocs::tom::ConstElement<ocs:
  * A evaluation is neccessary if the limit boolean RQRL_dynamic is true. This
  * field is set by qmaster during the rule set verification
  *
- * @param limit limitation (RQRL_Type)
- * @param global_host global host (EH_Type)
- * @param exec_host exec host (EH_Type)
- * @param centry consumable resource list (CE_Type)
+ * @param limit limitation (RQRL)
+ * @param global_host global host (EH)
+ * @param exec_host exec host (EH)
+ * @param centry consumable resource list (CE)
  *
  * @return always true
  *

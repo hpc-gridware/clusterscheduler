@@ -580,11 +580,6 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
    ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_MAXVMEM);
 #endif
 
-#if 0  
-   /* moved to remove_acked_job_exit() */
-   krb_destroy_forwarded_tgt(job_id);
-#endif
-
    /* set directory for job */
    sge_get_active_job_file_path(&jobdir, job_id, ja_task_id, pe_task_id, nullptr);
 
@@ -2038,19 +2033,6 @@ read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const 
    }
 
 
-#if 0
-   {
-      if (ocs::tom::get<JR_usage>(jr)) {
-         DPRINTF("resulting usage attributes:\n");
-      } else {
-         DPRINTF("empty usage list\n");
-      }   
-
-      for (const auto ep : ocs::tom::get<JR_usage>(jr)) {
-         DPRINTF("    \"%s\" = %f\n", ocs::tom::get<UA_name>(ep), ocs::tom::get<UA_value>(ep));
-      }
-   }
-#endif
    DRETURN(0);
 FCLOSE_ERROR:
    ERROR(MSG_FILE_ERRORCLOSEINGXY_SS, "usage or pid", strerror(errno));

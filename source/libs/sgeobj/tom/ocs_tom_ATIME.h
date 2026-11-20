@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ATIME for the list library: a synonym for ocs::tom::ATIME::descriptor */
-inline constexpr const lDescr *ATIME_Type = ocs::tom::ATIME::descriptor.e;

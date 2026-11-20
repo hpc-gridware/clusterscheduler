@@ -30,7 +30,7 @@
          "name": "OS_job_list",
          "summary": "OS Job List",
          "description": [
-            "List of OS jobs (JO_Type). There should be one per running Array/PE task having one os job id each."
+            "List of OS jobs (JO). There should be one per running Array/PE task having one os job id each."
          ],
          "type": "lListT",
          "subClassName": "JO",

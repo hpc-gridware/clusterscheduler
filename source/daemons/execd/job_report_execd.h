@@ -54,14 +54,6 @@ ocs::tom::Element<ocs::tom::JR> get_job_report(uint32_t jobid, uint32_t jataskid
 
 void del_job_report(ocs::tom::Element<ocs::tom::JR> jr);
 void cleanup_job_report(uint32_t jobid, uint32_t jataskid);
-/** @brief Write the pending job reports to the trace log
- *
- * @note The definition in `job_report_execd.cc` is inside an `#if 0`, so this
- *       is declared but not built. The block sits here because there is no
- *       visible definition to attach it to.
- */
-void trace_jr();
-
 int add_usage(ocs::tom::Element<ocs::tom::JR> jr, const char *name, const char *uval_as_str, double val);
 void job_report_update_from_usage_list(ocs::tom::Element<ocs::tom::JR> jr,
                                        ocs::tom::ConstList<ocs::tom::UA> usage_list);

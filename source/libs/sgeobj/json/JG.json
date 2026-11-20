@@ -3,7 +3,7 @@
    "summary": "Job Granted Destination Identifier",
    "description": [
       "A list of such objects defines to which queue instance(s) a job has been scheduled.",
-      "For sequential jobs / tasks of an array job there is a single object of JG_Type.",
+      "For sequential jobs / tasks of an array job there is a single object of JG.",
       "In case of tightly integrated parallel jobs there is an object per queue instance.",
       "The first object defines where the master task of the job is running."
    ],

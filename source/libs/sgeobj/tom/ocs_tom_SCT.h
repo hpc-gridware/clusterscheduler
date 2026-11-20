@@ -66,7 +66,7 @@ namespace ocs::tom {
     * @brief Scheduler Category Reference (unused)
     *
     * A category string with the pending and running jobs that belong to it.
-    * @warning No attribute of this type is read or written anywhere in either repository, and `SCT_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
+    * @warning No attribute of this type is read or written anywhere in either repository, and `SCT` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
     */
    struct SCT {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -102,6 +102,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SCT for the list library: a synonym for ocs::tom::SCT::descriptor */
-inline constexpr const lDescr *SCT_Type = ocs::tom::SCT::descriptor.e;

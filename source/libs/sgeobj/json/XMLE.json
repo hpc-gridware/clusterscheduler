@@ -10,7 +10,7 @@
          "name": "Attribute",
          "summary": "Attributes",
          "description": [
-            "The element's XML attributes (`XMLA_Type`)."
+            "The element's XML attributes (`XMLA`)."
          ],
          "type": "lListT",
          "subClassName": "XMLA",
@@ -41,7 +41,7 @@
          "name": "List",
          "summary": "Children",
          "description": [
-            "The child elements (`XMLE_Type`), when it is not."
+            "The child elements (`XMLE`), when it is not."
          ],
          "type": "lListT",
          "subClassName": "ANY",

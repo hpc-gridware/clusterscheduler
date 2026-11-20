@@ -33,7 +33,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            "The string list (list of ST_Type objects)"
+            "The string list (list of ST objects)"
          ],
          "type": "lListT",
          "subClassName": "ST",

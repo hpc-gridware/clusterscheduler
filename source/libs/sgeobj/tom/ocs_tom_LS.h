@@ -164,6 +164,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of LS for the list library: a synonym for ocs::tom::LS::descriptor */
-inline constexpr const lDescr *LS_Type = ocs::tom::LS::descriptor.e;

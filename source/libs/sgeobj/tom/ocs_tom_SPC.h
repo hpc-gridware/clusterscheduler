@@ -80,7 +80,7 @@ namespace ocs::tom {
     * Exactly one rule can be defined to be the default rule
     * for reading objects.
     * +----------+       1:n       +----------+
-    * | SPC_Type |----------------<| SPT_Type |
+    * | SPC |----------------<| SPT |
     * +----------+                 +----------+
     *      |                             |
     *      | 1                           |
@@ -89,7 +89,7 @@ namespace ocs::tom {
     *      |                             |
     *      ^                             |
     * +----------+   1:n, one is default |
-    * | SPR_Type |>----------------------+
+    * | SPR |>----------------------+
     * +----------+
     */
    struct SPC {
@@ -126,6 +126,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SPC for the list library: a synonym for ocs::tom::SPC::descriptor */
-inline constexpr const lDescr *SPC_Type = ocs::tom::SPC::descriptor.e;

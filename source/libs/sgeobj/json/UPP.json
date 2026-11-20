@@ -33,7 +33,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            "UA_Type; decayed usage.",
+            "UA; decayed usage.",
             "Set and used by SGEEE scheduler stored to qmaster; spooled."
          ],
          "type": "lListT",
@@ -49,7 +49,7 @@
          "name": "long_term_usage",
          "summary": "Long Term Usage",
          "description": [
-            "UA_Type; long term accumulated non-decayed usage.",
+            "UA; long term accumulated non-decayed usage.",
             "Set by SGEEE scheduler stored to qmaster; spooled"
          ],
          "type": "lListT",

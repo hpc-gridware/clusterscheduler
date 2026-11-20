@@ -78,7 +78,7 @@ namespace ocs::tom {
    /**
     * @brief Job Id for Action
     *
-    * The ID_Type is used to select specific jobs, e.g. by job number or by job name.
+    * The ID is used to select specific jobs, e.g. by job number or by job name.
     * It is used by client commands like qalter, qconf, qdel, qrdel, ...
     * @todo the same goal could be achieved by using a lWhere condition, why do we have this type in the first place?
     */
@@ -118,6 +118,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ID for the list library: a synonym for ocs::tom::ID::descriptor */
-inline constexpr const lDescr *ID_Type = ocs::tom::ID::descriptor.e;

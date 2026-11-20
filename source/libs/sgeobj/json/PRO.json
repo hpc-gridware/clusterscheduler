@@ -65,7 +65,7 @@
          "name": "groups",
          "summary": "Groups",
          "description": [
-            "GR_Type list with all groups associated with this process."
+            "GR list with all groups associated with this process."
          ],
          "type": "lListT",
          "subClassName": "Group",

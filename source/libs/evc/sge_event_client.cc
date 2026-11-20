@@ -201,8 +201,8 @@
  *   be mixed in the same list.
  * - All registered events for the same CULL data structure need the same what
  *   and where filter.
- * - `JAT_Type` is special. It is subscribable as an event and is at the same
- *   time a sub-structure of `JB_Type`, so setting a `JAT_Type` filter also
+ * - `JAT` is special. It is subscribable as an event and is at the same
+ *   time a sub-structure of `JB`, so setting a `JAT` filter also
  *   filters the JAT lists inside the JB list.
  *
  * @section evc_busy_state Busy state
@@ -233,9 +233,9 @@
  *   are total update events; if subscribed, those are always sent and are
  *   filtered more finely afterwards.
  */
-/** @page evc_ev_type The EV_Type event client object
+/** @page evc_ev_type The EV event client object
  *
- * An event client creates and initialises an `EV_Type` CULL object and passes
+ * An event client creates and initialises an `EV` CULL object and passes
  * it to qmaster for registration. Qmaster fills in some of the fields, for
  * example `EV_id`, and sends the object back on successful registration.
  * Whenever the client wants to change a configuration parameter it modifies
@@ -389,7 +389,7 @@ typedef struct {
  */
 typedef struct {
    bool need_register;          ///< true while the client is not registered at the server
-   lListElem *ec;               ///< `EV_Type` object holding the configuration, see @ref evc_ev_type
+   lListElem *ec;               ///< `EV` object holding the configuration, see @ref evc_ev_type
    uint32_t ec_reg_id;          ///< id used to register at qmaster, see @ref evc_ids
    uint32_t next_event;         ///< sequence number of the next event expected
    ec_control_t event_control;  ///< handover point, internal clients only
@@ -406,7 +406,7 @@ static bool sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const ch
  *
  * Broadcasts on the condition variable first, so a thread blocked in
  * `ec2_get_local()` leaves before the condition variable is destroyed, then
- * frees the buffered events and the `EV_Type` object.
+ * frees the buffered events and the `EV` object.
  *
  * @param[in,out] sge_evc address of the state to free; ignored when nullptr or
  *                        already nullptr
@@ -568,7 +568,7 @@ sge_evc_class_create(ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> 
 /** @brief Destroy an event client and release everything it owns
  *
  * Wakes any thread waiting for events, destroys the condition variable and
- * mutex, frees the buffered events and the `EV_Type` object, and finally the
+ * mutex, frees the buffered events and the `EV` object, and finally the
  * handle itself. @p pst is set to nullptr.
  *
  * This does **not** deregister at the event server; call
@@ -624,7 +624,7 @@ static void sge_evc_destroy(sge_evc_t **sge_evc) {
 /**
  * @brief Prepare the client for registration at the event server
  *
- * Initialises the per client state, creates the `EV_Type` object and fills in
+ * Initialises the per client state, creates the `EV` object and fills in
  * the data needed to register. No communication happens here.
  *
  * The three events `sgeE_QMASTER_GOES_DOWN`, `sgeE_SHUTDOWN` and
@@ -639,7 +639,7 @@ static void sge_evc_destroy(sge_evc_t **sge_evc) {
  *                errors, warnings and infos, and is shown by `qconf -sec`.
  *                When nullptr, the component name is used
  * @return true on success. False if @p id is out of range or the name is
- *         empty, and also if the `EV_Type` object could not be created
+ *         empty, and also if the `EV` object could not be created
  *
  * @see @ref evc_ev_type, @ref evc_ids, @ref evc_subscription
  */
@@ -731,7 +731,7 @@ static bool ec2_is_initialized(sge_evc_class_t *thiz) {
 }
 
 /**
- * @brief Return the event client object (EV_Type) holding the configuration
+ * @brief Return the event client object (EV) holding the configuration
  *
  * @param thiz the event client handle
  * @return the event client object owned by @p thiz, or an empty handle when it is not initialized
@@ -742,7 +742,7 @@ static ocs::tom::Element<ocs::tom::EV> ec2_get_event_client(sge_evc_class_t *thi
    DENTER(EVC_LAYER);
    const auto *sge_evc = static_cast<sge_evc_t *>(thiz->sge_evc_handle);
 
-   // created by sge_evc_class_create() as EV_Type and owned by the client
+   // created by sge_evc_class_create() as EV and owned by the client
    DRETURN(ocs::tom::Element<ocs::tom::EV>::from_typed(sge_evc->ec));
 }
 
@@ -1061,7 +1061,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
          thiz->ec_set_busy_handling(thiz, EV_BUSY_UNTIL_RELEASED);
          evc_local->add_func(&pseudo_packet, sge_evc->ec, &alp, &eclp_raw, evc_local->update_func,
                              evc_local->update_func_arg);
-         // the registered client (EV_Type) as the event master returns it
+         // the registered client (EV) as the event master returns it
          if (const auto eclp = ocs::tom::ListPtr<ocs::tom::EV>::from_typed(eclp_raw)) {
             sge_evc->ec_reg_id = ocs::tom::get<EV_id>(eclp->front());
          }
@@ -1143,7 +1143,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr
       ocs::tom::set<EV_next_number>(sge_evc->ec, 0);
 
       auto registration = ocs::tom::ListPtr<ocs::tom::EV>::create("registration");
-      // the configuration object is owned by this client and always of EV_Type
+      // the configuration object is owned by this client and always of EV
       registration->push_back(ocs::tom::ConstElement<ocs::tom::EV>(sge_evc->ec).clone());
 
 
@@ -1180,7 +1180,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      // sge_gdi() replaces the request list with the response, the registered client (EV_Type); freed on every
+      // sge_gdi() replaces the request list with the response, the registered client (EV); freed on every
       // way out of this block
       alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::ADD,
                                       ocs::gdi::SubCommand::RETURN_NEW_VERSION, registration);
@@ -1353,7 +1353,7 @@ ec2_subscribe(sge_evc_class_t *thiz, ev_event event) {
 
 /** @brief Add one event to the subscription list
  *
- * Creates the `EVS_Type` element for @p event if it is not subscribed already,
+ * Creates the `EVS` element for @p event if it is not subscribed already,
  * and marks the client's configuration as changed so the next commit sends it.
  * An event that is already subscribed is left untouched, including its flush
  * settings.
@@ -1456,7 +1456,7 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
  *
  * @return true, if everything went fine
  *
- * @see `ocs_what_to_elem()`, `lWhatFromElem()`, `ocs_where_to_elem()`, `lWhereFromElem()`
+ * @see `ocs_what_to_elem()`, `ocs_what_from_elem()`, `ocs_where_to_elem()`, `ocs_where_from_elem()`
  */
 static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where) {
    DENTER(EVC_LAYER);
@@ -1971,7 +1971,7 @@ ec2_config_changed(sge_evc_class_t *thiz) {
 /** @brief Send configuration changes of an internal client to the event master
  *
  * Counterpart of `ec2_commit()` for qmaster internal clients: passes the
- * `EV_Type` object to #local_t::mod_func directly instead of through the GDI.
+ * `EV` object to #local_t::mod_func directly instead of through the GDI.
  * The update callback and its argument are attached to the object first, so the
  * event master knows where to deliver.
  *
@@ -2084,7 +2084,7 @@ ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
 
       auto request = ocs::tom::ListPtr<ocs::tom::EV>::create("change configuration");
-      // the configuration object is owned by this client and always of EV_Type
+      // the configuration object is owned by this client and always of EV
       const auto ec = request->push_back(ocs::tom::ConstElement<ocs::tom::EV>(sge_evc->ec).clone());
       if (!ocs::tom::get<EV_changed>(sge_evc->ec)) {
          ocs::tom::set<EV_subscribed>(ec, nullptr);
@@ -2161,7 +2161,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
        * gdi multi request
        */
       auto request = ocs::tom::ListPtr<ocs::tom::EV>::create("change configuration");
-      // the configuration object is owned by this client and always of EV_Type
+      // the configuration object is owned by this client and always of EV
       const auto ec = request->push_back(ocs::tom::ConstElement<ocs::tom::EV>(sge_evc->ec).clone());
       if (!ocs::tom::get<EV_changed>(sge_evc->ec)) {
          ocs::tom::set<EV_subscribed>(ec, nullptr);
@@ -2305,11 +2305,11 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
          }
          auto report_list = get_event_list(thiz, sync, &commlib_error);
          if ((fetch_ok = report_list.has_value())) {
-            // REP_list is runtime typed: taken out raw, wrapped as ET_Type below
+            // REP_list is runtime typed: taken out raw, wrapped as ET below
             lList *new_events_raw = nullptr;
             ocs::tom::exchange<REP_list>((*report_list)->front(), &new_events_raw);
             report_list->reset();
-            // the events (ET_Type) out of the report, from the network as well
+            // the events (ET) out of the report, from the network as well
             auto new_events = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(new_events_raw);
             if (!ck_event_number(*new_events, &(sge_evc->next_event), &wrong_number)) {
                /*
@@ -2395,7 +2395,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
       }
    }
 
-   // the events handed to the caller (ET_Type), from the network
+   // the events handed to the caller (ET), from the network
    const auto events = ocs::tom::ConstList<ocs::tom::ET>::from_typed(*event_list);
    if (events) {
       DPRINTF("ec2_get - received %zu events\n", events.size());
@@ -2435,7 +2435,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
  * On failure *waiting_for gets not changed and if wrong_number is not
  * nullptr *wrong_number contains the wrong number we got.
  *
- * @param lp event list to check (ET_Type), may be an empty handle; events skipped
+ * @param lp event list to check (ET), may be an empty handle; events skipped
  *           are removed from it
  * @param waiting_for next number to wait for
  * @param wrong_number event number that causes a failure
@@ -2569,7 +2569,7 @@ get_event_list(sge_evc_class_t *thiz, const int sync, int *commlib_error) {
       }
    } else {
       try {
-         // qmaster always sends REP_Type; a list of another type is refused like a broken buffer
+         // qmaster always sends REP; a list of another type is refused like a broken buffer
          ret = ocs::tom::ListPtr<ocs::tom::REP>::unpack(pb);
       } catch (const ocs::tom::PackException &) {
          // the bytes cut off or no memory, where cull_unpack_list() returned an error and freed what it unpacked
@@ -2691,7 +2691,7 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime6
    }
 
    /* taking out the new events */
-   // the events (ET_Type) the event master queued; taken over from the event control block
+   // the events (ET) the event master queued; taken over from the event control block
    auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(std::exchange(evco->new_events, nullptr));
    evco->triggered = false;
 
@@ -2765,9 +2765,9 @@ ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
       DRETURN(-1);
    }
 
-   // the report (REP_Type) the event master built; its event list is runtime typed
+   // the report (REP) the event master built; its event list is runtime typed
    const auto report = event_list.front();
-   // the event list of an event report holds events (ET_Type)
+   // the event list of an event report holds events (ET)
    const auto report_events = ocs::tom::ConstList<ocs::tom::ET>::from_typed(ocs::tom::get<REP_list>(report));
    int num_events = static_cast<int>(report_events.size());
    if (num_events > 0) {

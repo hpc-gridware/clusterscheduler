@@ -197,7 +197,7 @@ bool qinstance_has_state(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, c
  * If the transition is valid, than true will be returned by this function.
  *
  * @param transition transition id
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  *
  * @return test result true  - transition is valid false - transition is invalid
  *

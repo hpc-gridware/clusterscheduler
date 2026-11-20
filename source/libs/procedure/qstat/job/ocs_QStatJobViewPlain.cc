@@ -117,7 +117,7 @@ void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const ocs::tom:
  *
  * @param os stream to write to
  * @param ilp the scheduler job info list, holding the reasons a job is not running
- * @param job the job (`JB_Type`)
+ * @param job the job (`JB`)
  * @param flags which parts of the listing were requested
  */
 void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
@@ -1760,7 +1760,7 @@ void ocs::QStatJobViewPlain::report_task_error_reason(std::ostream &os, const oc
 /**
  * @brief Report why the job has not been scheduled yet, as plain text
  * @param os stream to write to
- * @param ilp the scheduler job info list (`SME_Type`), holding the reasons a job is not running
+ * @param ilp the scheduler job info list (`SME`), holding the reasons a job is not running
  * @param job the job
  */
 void ocs::QStatJobViewPlain::report_schedd_job_info(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,

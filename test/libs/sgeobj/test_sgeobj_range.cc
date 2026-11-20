@@ -63,7 +63,7 @@ static int s_fail = 0;
 // ---------------------------------------------------------------------------
 // range_get_all_ids  [T01–T03]
 //
-// range_get_all_ids() reads the (min, max, step) triple from an RN_Type
+// range_get_all_ids() reads the (min, max, step) triple from an RN
 // element.  On nullptr input all three output parameters are zeroed.
 // A freshly created (zeroed) element also produces (0, 0, 0).
 // ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ static void test_range_get_all_ids() {
 // ---------------------------------------------------------------------------
 // range_set_all_ids  [T04–T06]
 //
-// range_set_all_ids() stores (min, max, step) into an RN_Type element.
+// range_set_all_ids() stores (min, max, step) into an RN element.
 // When min == max the step is normalised to 1 regardless of what was passed.
 // nullptr input is a documented no-op.
 // ---------------------------------------------------------------------------
@@ -376,7 +376,7 @@ static void test_range_list_number_of_ids() {
 // range_list_parse_from_string  [T30–T33]
 //
 // Parses a human-readable range string (e.g. "1-5:2", "3", "1-3") into an
-// RN_Type list.  Returns true on success, false on error.
+// RN list.  Returns true on success, false on error.
 // ---------------------------------------------------------------------------
 
 /**

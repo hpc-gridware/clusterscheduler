@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of AULNG for the list library: a synonym for ocs::tom::AULNG::descriptor */
-inline constexpr const lDescr *AULNG_Type = ocs::tom::AULNG::descriptor.e;

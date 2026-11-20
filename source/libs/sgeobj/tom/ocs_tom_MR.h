@@ -84,6 +84,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of MR for the list library: a synonym for ocs::tom::MR::descriptor */
-inline constexpr const lDescr *MR_Type = ocs::tom::MR::descriptor.e;

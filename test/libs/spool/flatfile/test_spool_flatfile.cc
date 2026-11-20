@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
 static int PE_test() {
    int ret = 0;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(PE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
@@ -378,7 +378,7 @@ static int PE_test() {
 
    /* Read a PE file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
 
@@ -424,7 +424,7 @@ static int CAL_test() {
    
    /* Read a CAL file using flatfile spooling */
    ep_cal.reset();
-   ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CAL::descriptor.e, nullptr,
                                    CAL_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -479,7 +479,7 @@ static int CK_test() {
    
    /* Read a CK file using flatfile spooling */
    ep_ck.reset();
-   ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CK::descriptor.e, nullptr,
                                    CK_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
       
@@ -582,7 +582,7 @@ static int STN_test() {
 
    /* Read a STN file using flatfile spooling */
    ep_stn.reset();
-   ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::STN::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_name_value_list_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -635,7 +635,7 @@ static int CE_test() {
    
    /* Read a CE file using flatfile spooling */
    ep_ce.reset();
-   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
          
@@ -668,7 +668,7 @@ static int CEL_test() {
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
-   lp = lCreateList("Complex List", CE_Type);
+   lp = lCreateList("Complex List", ocs::tom::CE::descriptor.e);
    
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "Test_Name1");
@@ -704,7 +704,7 @@ static int CEL_test() {
    
    /* Read a CE file using flatfile spooling */
    lFreeList(&lp);
-   lp = spool_flatfile_read_list(&alp, CE_Type,
+   lp = spool_flatfile_read_list(&alp, ocs::tom::CE::descriptor.e,
                                    CE_fields, nullptr, true, &qconf_ce_list_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -1022,7 +1022,7 @@ static int UU_test() {
                                      SP_FORM_ASCII, 
                                      file1, false);
    user_uu.reset();
-   user = spool_flatfile_read_object(&alp, UU_Type, nullptr,
+   user = spool_flatfile_read_object(&alp, ocs::tom::UU::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, user, false,
@@ -1090,7 +1090,7 @@ static int PR_test() {
    
    /* Read a PR file using flatfile spooling */
    prj_pr.reset();
-   prj = spool_flatfile_read_object(&alp, PR_Type, nullptr,
+   prj = spool_flatfile_read_object(&alp, ocs::tom::PR::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
          
@@ -1157,7 +1157,7 @@ static int US_test() {
 
    /* Read a US file using flatfile spooling */
    ep_us.reset();
-   ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::US::descriptor.e, nullptr,
                                    US_fields, nullptr, true, &qconf_param_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
       
@@ -1238,7 +1238,7 @@ static int EH_test() {
    
    ocs::tom::set<EH_consumable_config_list>(ep_eh, std::move(lp_ce));
    
-   lp = lCreateList("Actual Complex Values List", CE_Type);
+   lp = lCreateList("Actual Complex Values List", ocs::tom::CE::descriptor.e);
 
    auto ep2_ce_3 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep2_ce_3, "Test_Name6");
@@ -1395,7 +1395,7 @@ static int EH_test() {
    
    /* Read a EH file using flatfile spooling */
    ep_eh.reset();
-   ep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::EH::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
       
@@ -2203,7 +2203,7 @@ static int CQ_test() {
    
    /* Read a CQ file using flatfile spooling */
    ep_cq.reset();
-   ep = spool_flatfile_read_object(&alp, CQ_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CQ::descriptor.e, nullptr,
                                    CQ_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -2323,7 +2323,7 @@ static int SC_test() {
    
    /* Read a SC file using flatfile spooling */
    ep_sc.reset();
-   ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::SC::descriptor.e, nullptr,
                                    SC_fields, nullptr, true, &qconf_comma_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -2377,7 +2377,7 @@ static int QU_test() {
    
    /* Read a QU file using flatfile spooling */
    ep_qu.reset();
-   ep = spool_flatfile_read_object(&alp, QU_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::QU::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -2428,7 +2428,7 @@ static int HGRP_test() {
    
    /* Read a HGRP file using flatfile spooling */
    ep_hgrp.reset();
-   ep = spool_flatfile_read_object(&alp, HGRP_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::HGRP::descriptor.e, nullptr,
                                    HGRP_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -2518,7 +2518,7 @@ static int CONF_test() {
    
    /* Read a CONF file using flatfile spooling */
    ep_conf.reset();
-   ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CONF::descriptor.e, nullptr,
                                    fields, nullptr, false, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
 
@@ -2550,7 +2550,7 @@ static int RQS_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
-   lList* rqs_list = lCreateList("test", RQS_Type);
+   lList* rqs_list = lCreateList("test", ocs::tom::RQS::descriptor.e);
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
    ocs::tom::set<RQS_name>(ep, "Test_Name1");
@@ -2662,7 +2662,7 @@ static int RQS_test() {
 
    /* Read a RQS file using flatfile spooling */
    lFreeList(&rqs_list);
-   rqs_list = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi,
+   rqs_list = spool_flatfile_read_list(&alp, ocs::tom::RQS::descriptor.e, RQS_fields, nullptr, true, &qconf_rqs_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
 
    /* Write a RQS file using flatfile spooling */
@@ -2753,7 +2753,7 @@ static int AR_test() {
 
    /* Read a AR file using flatfile spooling */
    ep_ar.reset();
-   ep = spool_flatfile_read_object(&alp, AR_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::AR::descriptor.e, nullptr,
                                    AR_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    
@@ -2779,7 +2779,7 @@ static int AR_test() {
 
 static int PE_minimal_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(PE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -2790,7 +2790,7 @@ static int PE_minimal_test() {
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3083,7 +3083,7 @@ static int SPOOL_key_safe_test() {
 
 static int CE_minimal_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(CE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3098,7 +3098,7 @@ static int CE_minimal_test() {
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3116,7 +3116,7 @@ static int CE_minimal_test() {
 
 static int PE_zero_slots_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(PE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3127,7 +3127,7 @@ static int PE_zero_slots_test() {
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3145,7 +3145,7 @@ static int PE_zero_slots_test() {
 
 static int PE_max_slots_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(PE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3156,7 +3156,7 @@ static int PE_max_slots_test() {
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3174,7 +3174,7 @@ static int PE_max_slots_test() {
 
 static int CE_zero_values_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(CE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3193,7 +3193,7 @@ static int CE_zero_values_test() {
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3211,7 +3211,7 @@ static int CE_zero_values_test() {
 
 static int CE_max_values_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(CE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3229,7 +3229,7 @@ static int CE_max_values_test() {
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3247,7 +3247,7 @@ static int CE_max_values_test() {
 
 static int PE_spaces_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(PE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3265,7 +3265,7 @@ static int PE_spaces_test() {
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3283,7 +3283,7 @@ static int PE_spaces_test() {
 
 static int CE_special_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(CE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3301,7 +3301,7 @@ static int CE_special_test() {
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3319,21 +3319,21 @@ static int CE_special_test() {
 
 static int PE_empty_lists_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(PE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // explicitly empty lists (not null) — verify they serialize identically to null lists
    ocs::tom::set<PE_name>(ep, "empty_lists_pe");
    ocs::tom::set<PE_slots>(ep, 1);
-   ocs::tom::set<PE_user_list>(ep,  lCreateList("", US_Type));
-   ocs::tom::set<PE_xuser_list>(ep, lCreateList("", US_Type));
+   ocs::tom::set<PE_user_list>(ep,  lCreateList("", ocs::tom::US::descriptor.e));
+   ocs::tom::set<PE_xuser_list>(ep, lCreateList("", ocs::tom::US::descriptor.e));
 
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -3351,7 +3351,7 @@ static int PE_empty_lists_test() {
 
 static int PE_large_list_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(PE_Type);
+   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
@@ -3374,7 +3374,7 @@ static int PE_large_list_test() {
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
                                    SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, ep, false,

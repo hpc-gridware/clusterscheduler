@@ -87,7 +87,7 @@ enum JAT_Field {
    /**
     * @brief Granted Destination Identifier List
     *
-    * Granted destination identifier list (JG_Type).
+    * Granted destination identifier list (JG).
     * Has one element per queue instance the job is running on.
     */
    JAT_granted_destin_identifier_list,
@@ -261,7 +261,7 @@ enum JAT_Field {
    /**
     * @brief PE Object
     *
-    * PE object granted to this task (PE_Type) when it was scheduled.
+    * PE object granted to this task (PE) when it was scheduled.
     */
    JAT_pe_object,
    /**
@@ -336,27 +336,27 @@ namespace ocs::tom {
    /**
     * @brief Job Array Task
     *
-    * JAT_Type elements are a sub element of JB_Type elements.
+    * JAT elements are a sub element of JB elements.
     * One element of each type is necessary to hold all data for the execution of one job.
-    * One JB_Type element and x JAT_Type elements are needed to execute an array job with x tasks.
+    * One JB element and x JAT elements are needed to execute an array job with x tasks.
     *  
     *          -----------       1:x        ------------
-    *          | JB_Type |<---------------->| JAT_Type |
+    *          | JB |<---------------->| JAT |
     *          -----------                  ------------
     *  
     * The relation between these two elements is defined in the
-    * 'JB_ja_tasks' sublist of a 'JB_Type' element. This list will
-    * contain all belonging JAT_Type elements.
+    * 'JB_ja_tasks' sublist of a 'JB' element. This list will
+    * contain all belonging JAT elements.
     *  
-    * The 'JAT_Type' CULL element containes all attributes in which
+    * The 'JAT' CULL element containes all attributes in which
     * one array task may differ from another array task of the
-    * same array job. The 'JB_Type' element defines all attributes
+    * same array job. The 'JB' element defines all attributes
     * which are equivalent for all tasks of an array job.
     * A job and an array job with one task are equivalent
-    * concerning their data structures. Both consist of one 'JB_Type'
-    * and one 'JAT_Type' element.
+    * concerning their data structures. Both consist of one 'JB'
+    * and one 'JAT' element.
     *  
-    * 'JAT_Type' elements contain dynamic data which accrue during the
+    * 'JAT' elements contain dynamic data which accrue during the
     * execution of a job. Therefore it is not necessary to create
     * these elements during the submition of a (array) job but
     * after the job has been dispatched.
@@ -487,6 +487,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JAT for the list library: a synonym for ocs::tom::JAT::descriptor */
-inline constexpr const lDescr *JAT_Type = ocs::tom::JAT::descriptor.e;

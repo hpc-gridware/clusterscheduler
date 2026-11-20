@@ -33,7 +33,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            "The subordinate list (list of SO_Type)."
+            "The subordinate list (list of SO)."
          ],
          "type": "lListT",
          "subClassName": "SO",

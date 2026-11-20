@@ -326,7 +326,7 @@ job_get_next_task(const ocs::tom::Element<ocs::tom::JB> job) {
  * Initialize "user_list" and JC_jobs attribute for each user according
  * to the list of running jobs.
  *
- * @param[in,out] user_list           the job counters per user (`JC_Type`),
+ * @param[in,out] user_list           the job counters per user (`JC`),
  *                                     created with the first counter
  * @param[in]     splitted_job_lists   the array of job lists, indexed by the
  *                                     SPLIT_* values; the running and the
@@ -359,7 +359,7 @@ void user_list_init_jc(ocs::tom::ListPtr<ocs::tom::JC> &user_list,
  *                                  scheduler run log
  * @param[in,out] job_lists         the array of job lists, indexed by the
  *                                  SPLIT_* values
- * @param[in]     user_list         the job counters per user (`JC_Type`)
+ * @param[in]     user_list         the job counters per user (`JC`)
  * @param[in]     user_name         the user to limit, or nullptr for all users
  * @param[in]     max_jobs_per_user the limit, the `max_u_jobs` of the
  *                                  scheduler configuration
@@ -453,7 +453,7 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
  * In case of any error the 'answer_list' will be used to report
  * errors (It is not used in the moment)
  *
- * @param[in,out] job_list         the input list of jobs (`JB_Type`); the
+ * @param[in,out] job_list         the input list of jobs (`JB`); the
  *                                 jobs are moved out of it unless `do_copy`.
  *                                 The list itself belongs to the caller and
  *                                 is never replaced or freed, also when it is
@@ -461,7 +461,7 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
  *                                 taken apart and put together again
  * @param[in]     max_aj_instances maximum number of tasks of an array job
  *                                 that may be instantiated at the same time
- * @param[out]    result_list      the array of result lists (`JB_Type`),
+ * @param[out]    result_list      the array of result lists (`JB`),
  *                                 indexed by the SPLIT_* values; a nullptr
  *                                 entry is not collected, a result list is
  *                                 created with its first job
@@ -953,7 +953,7 @@ void job_lists_print(ocs::tom::ListPtr<ocs::tom::JB> *job_list[]) {
 /**
  * @brief Raises the job counter of one user, creating the entry if needed
  *
- * @param[in,out] jc_list the job counter list (`JC_Type`), created with its first entry
+ * @param[in,out] jc_list the job counter list (`JC`), created with its first entry
  * @param[in]     name    the user the counter belongs to
  * @param[in]     slots   how much to add
  */
@@ -984,7 +984,7 @@ void sge_inc_jc(ocs::tom::ListPtr<ocs::tom::JC> &jc_list, const char *name, cons
 /**
  * @brief Counts the slots granted to a job, optionally on one host
  *
- * @param[in] granted   the granted destination identifier list (`JG_Type`)
+ * @param[in] granted   the granted destination identifier list (`JG`)
  * @param[in] qhostname the host to count on, or nullptr for all hosts
  *
  * @return the number of granted slots
@@ -1055,7 +1055,7 @@ int active_subtasks(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *
  * a host no longer occupies its slots.
  *
  * @param[in] job       the job to look at
- * @param[in] granted   the granted destination identifier list (`JG_Type`)
+ * @param[in] granted   the granted destination identifier list (`JG`)
  * @param[in] qhostname the host to count on, or nullptr for all hosts
  *
  * @return the number of granted slots that are still in use
@@ -1093,7 +1093,7 @@ active_nslots_granted(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs:
 /**
  * @brief Returns the total number of slots granted to a parallel job
  *
- * @param[in] gdil the granted destination identifier list (`JG_Type`)
+ * @param[in] gdil the granted destination identifier list (`JG`)
  *
  * @return the sum of the slots of all entries
  */

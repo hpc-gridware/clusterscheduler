@@ -82,6 +82,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JC for the list library: a synonym for ocs::tom::JC::descriptor */
-inline constexpr const lDescr *JC_Type = ocs::tom::JC::descriptor.e;

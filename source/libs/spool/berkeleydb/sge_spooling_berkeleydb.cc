@@ -123,7 +123,7 @@ spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList
  * @param answer_list to return error messages
  * @param args arguments to the spooling method, see above.
  *
- * @return on success, the new spooling context (SPC_Type), else nullptr
+ * @return on success, the new spooling context (SPC), else nullptr
  */
 lListElem *
 spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args) {
@@ -433,9 +433,6 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    DENTER(BDB_LAYER);
 
    bool ret = true;
-#if 0
-   bool local_transaction = false; /* did we start a transaction? */
-#endif
 
    const lDescr *descr;
    const char *table_name;
@@ -469,17 +466,6 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
    if (ret) {
       /* if no transaction was opened from outside, open a new one */
-#if 0
-   /* JG: TODO: why does reading within a transaction give me the error:
-    *           Not enough space
-    */
-      if (db->txn == nullptr) {
-         ret = spool_berkeleydb_start_transaction(answer_list, info);
-         if (ret) {
-            local_transaction = true;
-         }
-      }
-#endif
       dstring key_dstring;
       char key_buffer[MAX_STRING_SIZE];
       const char *key;
@@ -506,7 +492,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                   const char *qinstance_table;
                   /* for all cluster queues: read queue instances */
                   qinstance_table = object_type_get_name(SGE_TYPE_QINSTANCE);
-                  // the database holds cluster queues (CQ_Type) under this key, so the list is taken without a check
+                  // the database holds cluster queues (CQ) under this key, so the list is taken without a check
                   for (const ocs::tom::Element<ocs::tom::CQ> queue : ocs::tom::List<ocs::tom::CQ>::from_typed(*list)) {
                      const char *qname = queue.get<CQ_name>();
 
@@ -538,7 +524,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                   const char *ja_task_table;
                   /* for all jobs: read ja_tasks */
                   ja_task_table = object_type_get_name(SGE_TYPE_JATASK);
-                  // the database holds jobs (JB_Type), array tasks (JAT_Type) and parallel tasks (PET_Type) under
+                  // the database holds jobs (JB), array tasks (JAT) and parallel tasks (PET) under
                   // these keys, so the lists are taken without a check
                   for (const ocs::tom::Element<ocs::tom::JB> job : ocs::tom::List<ocs::tom::JB>::from_typed(*list)) {
                      const uint32_t job_id = job.get<JB_job_number>();
@@ -588,12 +574,6 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                ret = read_into_list(BDB_CONFIG_DB);
                break;
          }
-#if 0
-         /* spooling is done, now end the transaction, if we have an own one */
-         if (local_transaction) {
-            ret = spool_berkeleydb_end_transaction(answer_list, info, ret);
-         }
-#endif
       }
    }
 
@@ -700,24 +680,6 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             /* no break, further handling in default branch */
          default:
             ep = spool_berkeleydb_read_object(answer_list, info, database, key).release();
-/* do not do any validation
- * this function is only called from spooledit dump for reading individual objects
- * validation will therefore not work as it needs further objects, e.g.
- * for validating a qinstance the complex list is required
- */
-#if 0
-            if (ep != nullptr) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-               spooling_validate_func validate =
-                  (spooling_validate_func)(void *)lGetRef(rule, SPR_validate_func);
-#pragma GCC diagnostic pop
-               bool local_ret = validate(answer_list, type, rule, ep, object_type);
-               if (!local_ret) {
-                  lFreeElem(&ep);
-               }
-            }
-#endif
             break;
       }
    }
@@ -734,7 +696,7 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  *
  * @param answer_list to return error messages
  * @param rule the spooling rule
- * @param list receives the keys (`STU_Type`)
+ * @param list receives the keys (`STU`)
  * @param key the key prefix to list below
  *
  * @return true on success, else false

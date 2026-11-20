@@ -16,7 +16,7 @@
       "Exactly one rule can be defined to be the default rule",
       "for reading objects.",
       "+----------+       1:n       +----------+",
-      "| SPC_Type |----------------<| SPT_Type |",
+      "| SPC |----------------<| SPT |",
       "+----------+                 +----------+",
       "     |                             |",
       "     | 1                           |",
@@ -25,7 +25,7 @@
       "     |                             |",
       "     ^                             |",
       "+----------+   1:n, one is default |",
-      "| SPR_Type |>----------------------+",
+      "| SPR |>----------------------+",
       "+----------+"
    ],
    "cullPrefix": "SPC",

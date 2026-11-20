@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of AQTLIST for the list library: a synonym for ocs::tom::AQTLIST::descriptor */
-inline constexpr const lDescr *AQTLIST_Type = ocs::tom::AQTLIST::descriptor.e;

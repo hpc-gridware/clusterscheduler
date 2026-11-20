@@ -92,7 +92,7 @@
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_calendar_list the defined calendars (CAL_Type)
+ * @param master_calendar_list the defined calendars (CAL)
  * @return true when the value is acceptable
  */
 bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
@@ -450,7 +450,7 @@ bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_cqueue_list the defined cluster queues (CQ_Type)
+ * @param master_cqueue_list the defined cluster queues (CQ)
  * @return true when the value is acceptable
  */
 bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
@@ -577,7 +577,7 @@ bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  *
  * @param cqueue The queue to verify.
  * @param answer_list answer list to report errors
- * @param attr_elem the attribute to verify (AMEM_Type)
+ * @param attr_elem the attribute to verify (AMEM)
  *
  * @return true on success, false on error
  *

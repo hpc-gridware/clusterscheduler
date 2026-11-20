@@ -142,7 +142,7 @@ static std::map<admail_key_t, admail_sent_t> admail_sent;
  * the administrator reads it the spool directory may already be gone.
  *
  * @param progid which daemon is reporting
- * @param jr the job report carrying the failure (JR_Type)
+ * @param jr the job report carrying the failure (JR)
  * @param is_array whether the job is an array job
  * @param job_owner the submitting user
  * @param qversion the version of the queue instance the job ran in
@@ -245,7 +245,7 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
          err_str = MSG_MAIL_UNKNOWN_REASON;
       }
 
-      // the recipients (MR_Type); freed on every way out of this block, also on a failed parse
+      // the recipients (MR); freed on every way out of this block, also on a failed parse
       auto [parse_ret, lp_mail] = mailrec_parse(administrator_mail);
       ret = parse_ret;
       if (ret) {

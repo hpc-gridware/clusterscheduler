@@ -35,7 +35,7 @@
 /** @file
  * @brief Command line parsing, in two stages
  *
- * The clients first turn `argv` into a list of `SPA_Type` elements - one per
+ * The clients first turn `argv` into a list of `SPA` elements - one per
  * switch, with its argument - and then consume that list option by option.
  * The second stage removes what it consumed, so an option nobody asked for is
  * still in the list at the end and can be reported.
@@ -78,7 +78,7 @@
  * create the list as the old functions did.
  *
  * @tparam Step the step, called with an `ocs::tom::ListPtr<ocs::tom::SPA> &`
- * @param ppcmdline the list reference, not nullptr; the list is checked to be an SPA_Type list
+ * @param ppcmdline the list reference, not nullptr; the list is checked to be an SPA list
  * @param step the step
  * @return what the step returns
  */
@@ -228,7 +228,7 @@ char **parse_noopt(char **sp, const char *shortopt, const char *longopt, ocs::to
  * @param sp the current argument
  * @param shortopt the short form of the switch
  * @param longopt the long form, or nullptr
- * @param[in,out] cmdline receives the parsed option with its arguments as an `ST_Type` list, created when it is empty
+ * @param[in,out] cmdline receives the parsed option with its arguments as an `ST` list, created when it is empty
  * @param[out] alpp receives the error message
  * @return a pointer to the next argument
  */
@@ -268,7 +268,7 @@ char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt
  * @param sp the current argument
  * @param shortopt the short form of the switch
  * @param longopt the long form, or nullptr
- * @param[in,out] cmdline receives the parsed option with its arguments as an `ST_Type` list, created when it is empty
+ * @param[in,out] cmdline receives the parsed option with its arguments as an `ST` list, created when it is empty
  * @param[out] alpp not used
  * @return a pointer to the next argument
  */
@@ -299,7 +299,7 @@ char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longop
  *
  * @param sp the current argument
  * @param opt the name the parameters are recorded under
- * @param[in,out] cmdline receives the parameters as an `ST_Type` list, created when it is empty
+ * @param[in,out] cmdline receives the parameters as an `ST` list, created when it is empty
  * @param[out] alpp not used
  * @return a pointer to the next argument
  */
@@ -359,7 +359,7 @@ bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
  *
  * The switch may occur several times and each argument may itself be a comma
  * separated list; everything is collected into one destination list. The
- * arguments of the switch are an `ST_Type` list, as parse_until_next_opt()
+ * arguments of the switch are an `ST` list, as parse_until_next_opt()
  * records them.
  *
  * @tparam F the string field the collected names go into
@@ -472,7 +472,7 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
 /**
  * @brief Take a switch and its string argument out of the parsed option list
  *
- * The arguments of the switch are an `ST_Type` list. If it holds more than
+ * The arguments of the switch are an `ST` list. If it holds more than
  * one, only the first is taken and the switch stays for the next call.
  *
  * @param cmdline the parsed option list to consume from
@@ -533,7 +533,7 @@ int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *op
 /**
  * @brief Take a switch and its list of numbers out of the parsed option list
  *
- * The arguments of the switch are an `ULNG_Type` list, as the command line
+ * The arguments of the switch are an `ULNG` list, as the command line
  * parser records them for `-ar`.
  *
  * @param cmdline the parsed option list to consume from
@@ -552,7 +552,7 @@ parse_u_longlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
    if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
       lList *value = nullptr;
       ocs::tom::exchange<SPA_argval_lListT>(ep, &value);
-      // the parser records the numbers of the switch as an ULNG_Type list, so it is taken over unchecked
+      // the parser records the numbers of the switch as an ULNG list, so it is taken over unchecked
       ret = ocs::tom::ListPtr<ocs::tom::ULNG>::from_typed(value);
 
       cmdline.erase(ep);

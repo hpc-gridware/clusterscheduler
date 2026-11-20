@@ -47,7 +47,7 @@ enum RQR_Field {
    /**
     * @brief User Filter
     *
-    * Which submitting users the rule applies to (`RQRF_Type`).
+    * Which submitting users the rule applies to (`RQRF`).
     */
    RQR_filter_users,
    /**
@@ -77,7 +77,7 @@ enum RQR_Field {
    /**
     * @brief Limits
     *
-    * What the rule limits and by how much (`RQRL_Type`), one entry per resource.
+    * What the rule limits and by how much (`RQRL`), one entry per resource.
     */
    RQR_limit,
    /**
@@ -162,6 +162,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RQR for the list library: a synonym for ocs::tom::RQR::descriptor */
-inline constexpr const lDescr *RQR_Type = ocs::tom::RQR::descriptor.e;

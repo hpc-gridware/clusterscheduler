@@ -80,6 +80,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JP for the list library: a synonym for ocs::tom::JP::descriptor */
-inline constexpr const lDescr *JP_Type = ocs::tom::JP::descriptor.e;

@@ -3,7 +3,7 @@
    "summary": "Account and Cell (unused)",
    "description": [
       "A pairing of an account string with a cell name.",
-      "@warning No attribute of this type is read or written anywhere in either repository, and `AT_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
+      "@warning No attribute of this type is read or written anywhere in either repository, and `AT` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
    "cullPrefix": "AT",
    "attributes": [

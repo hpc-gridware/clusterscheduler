@@ -257,8 +257,8 @@ calendar_get_current_state_and_end(ocs::tom::ConstElement<ocs::tom::CAL> cep, ti
  * also when this state is valid beyond this day.
  *
  * @param now the time to look at
- * @param ycal the parsed year calendar (CA_Type), may be empty
- * @param wcal the parsed week calendar (CA_Type), may be empty
+ * @param ycal the parsed year calendar (CA), may be empty
+ * @param wcal the parsed week calendar (CA), may be empty
  * @return the state (QI_DO_ENABLE, QI_DO_SUSPEND or QI_DO_DISABLE) and the next time this calendar has to be
  *         checked again, 0 if there is none
  */
@@ -390,8 +390,8 @@ state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const o
  * should not call itself more than 1 time. With the extra call, it should have found a
  * new state change on the next day, or the day, when the next change comes.
  *
- * @param tm TM_Type - represeting now (time)
- * @param week_entry CA_Type - calendar entries for the week setup
+ * @param tm TM - represeting now (time)
+ * @param week_entry CA - calendar entries for the week setup
  * @param rec_count current recoursion level
  *
  * @return the current state, the next state change (0, if there is no further state change) and the
@@ -412,8 +412,6 @@ is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
    /* compute state */
    if ((in_wday_range=in_range_list(tm, ocs::tom::get<CA_wday_range_list>(week_entry), tm_wday_cmp))
      && (in_daytime_range=in_range_list(tm, ocs::tom::get<CA_daytime_range_list>(week_entry), tm_daytime_cmp))) {
-       /* DPRINTF(("in_range_list(wday) = %d in_range_list(daytime) = %d state = %d\n",
-                    in_wday_range, in_daytime_range, lGetUlong(week_entry, CA_state))); */
       state = ocs::tom::get<CA_state>(week_entry);
       next_state = 0;
    } else {
@@ -475,8 +473,8 @@ is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
  * are none. It makse a mistake in figuring out, which calendar setting is the more important
  * one.
  *
- * @param tm TM_Type - represeting now (time)
- * @param year_entry CA_Type - calendar entry of the year setup
+ * @param tm TM - represeting now (time)
+ * @param year_entry CA - calendar entry of the year setup
  *
  * @return the current state and the next state change (0, if there is no further state change)
  *
@@ -550,11 +548,11 @@ is_year_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
  * reported a state change and if not, call the methods again with a new time stamp. It
  * is starting with now and goes into the future, based on the reported state changes.
  *
- * @param cep calendar (CAL_Type); an empty handle gives state 0, no next change and no list
+ * @param cep calendar (CAL); an empty handle gives state 0, no next change and no list
  * @param now64 nullptr for the current time, or the time to start from (only for the test program)
  *
  * @return the new state (QI_DO_NOTHING, QI_DO_CAL_DISABLE, QI_DO_CAL_SUSPEND), when the next change will
- *         be (0 if never) and the state change list (CQU_Type)
+ *         be (0 if never) and the state change list (CQU)
  *
  * @note MT-NOTE: calender_state_changes() is MT safe
  */
@@ -928,7 +926,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
 /**
  * @brief Joins overlapping ranges of a range list
  *
- * @param rl the range list (TMR_Type)
+ * @param rl the range list (TMR)
  * @param cmp_func the order of the range bounds
  * @return 0
  */
@@ -1021,8 +1019,8 @@ static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cm
 /**
  * @brief Is a time in one of the ranges of a range list?
  *
- * @param tm the time (TM_Type)
- * @param rl the range list (TMR_Type); an empty handle contains every time
+ * @param tm the time (TM)
+ * @param rl the range list (TMR); an empty handle contains every time
  * @param cmp_func the order of the times
  * @return true if the time is in a range or the list handle is empty
  */
@@ -1048,8 +1046,8 @@ static bool in_range_list(const ocs::tom::ConstElement<ocs::tom::TM> tm, const o
  *
  * A range without an end holds only its begin.
  *
- * @param tm the time (TM_Type)
- * @param r the range (TMR_Type)
+ * @param tm the time (TM)
+ * @param r the range (TMR)
  * @param cmp_func the order of the times
  * @return 1 if the time is in the range, 0 otherwise
  */
@@ -1082,7 +1080,7 @@ static int in_range(const ocs::tom::ConstElement<ocs::tom::TM> tm, const ocs::to
  * @param alpp receives the syntax error
  * @param s the year calendar specification; nullptr or "none" for no calendar
  * @param cal_name the name of the calendar, for the error message
- * @return the parsed calendar (CA_Type), an empty handle for no calendar, std::nullopt on a syntax error
+ * @return the parsed calendar (CA), an empty handle for no calendar, std::nullopt on a syntax error
  */
 static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
 disabled_year_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *s, const char *cal_name) {
@@ -1151,7 +1149,7 @@ ERROR:
  *
  * disabled_year_entry := year_day_range_list[=daytime_range_list][=state]
  *
- * @return the entry (CA_Type), an empty handle on a syntax error
+ * @return the entry (CA), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::CA> disabled_year_entry() {
    DENTER(TOP_LAYER);
@@ -1208,7 +1206,7 @@ ERROR:
 /**
  * @brief A daytime range list of the whole day, 0-24
  *
- * @return the range list (TMR_Type)
+ * @return the range list (TMR)
  */
 static ocs::tom::ListPtr<ocs::tom::TMR> full_daytime_range() {
    DENTER(TOP_LAYER);
@@ -1229,7 +1227,7 @@ static ocs::tom::ListPtr<ocs::tom::TMR> full_daytime_range() {
 /**
  * @brief A week day range list of the whole week, sunday-saturday
  *
- * @return the range list (TMR_Type)
+ * @return the range list (TMR)
  */
 static ocs::tom::ListPtr<ocs::tom::TMR> full_weekday_range() {
    DENTER(TOP_LAYER);
@@ -1253,7 +1251,7 @@ static ocs::tom::ListPtr<ocs::tom::TMR> full_weekday_range() {
  *
  * year_day_range_list := year_day_range[,year_day_range]
  *
- * @return the range list (TMR_Type), an empty handle on a syntax error
+ * @return the range list (TMR), an empty handle on a syntax error
  */
 static ocs::tom::ListPtr<ocs::tom::TMR> year_day_range_list() {
    DENTER(TOP_LAYER);
@@ -1282,7 +1280,7 @@ static ocs::tom::ListPtr<ocs::tom::TMR> year_day_range_list() {
  *
  * year_day_range := year_day[-year_day]
  *
- * @return the range (TMR_Type), an empty handle on a syntax error
+ * @return the range (TMR), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::TMR> year_day_range() {
    DENTER(TOP_LAYER);
@@ -1328,7 +1326,7 @@ static ocs::tom::ElementPtr<ocs::tom::TMR> year_day_range() {
  *
  * year_day := day.month.year
  *
- * @return the day (TM_Type), an empty handle on a syntax error
+ * @return the day (TM), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::TM> year_day() {
    DENTER(TOP_LAYER);
@@ -1441,7 +1439,7 @@ static int year(int *yp) {
  *
  * A range that wraps around midnight is split into two.
  *
- * @return the range list (TMR_Type), an empty handle on a syntax error
+ * @return the range list (TMR), an empty handle on a syntax error
  */
 static ocs::tom::ListPtr<ocs::tom::TMR> daytime_range_list() {
    DENTER(TOP_LAYER);
@@ -1473,8 +1471,8 @@ static ocs::tom::ListPtr<ocs::tom::TMR> daytime_range_list() {
  * The range keeps its begin and ends at 24:00; a new range from 0:00 to the
  * old end is appended to the list.
  *
- * @param dtrl the range list (TMR_Type) holding the range
- * @param tmr the range (TMR_Type)
+ * @param dtrl the range list (TMR) holding the range
+ * @param tmr the range (TMR)
  */
 static void split_daytime_range(const ocs::tom::List<ocs::tom::TMR> dtrl, const ocs::tom::Element<ocs::tom::TMR> tmr) {
    DENTER(TOP_LAYER);
@@ -1530,7 +1528,7 @@ static void split_daytime_range(const ocs::tom::List<ocs::tom::TMR> dtrl, const 
  *
  * daytime_range := daytime-daytime
  *
- * @return the range (TMR_Type), an empty handle on a syntax error
+ * @return the range (TMR), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::TMR> daytime_range() {
    DENTER(TOP_LAYER);
@@ -1572,7 +1570,7 @@ static ocs::tom::ElementPtr<ocs::tom::TMR> daytime_range() {
  *
  * daytime := hour[:minute][:second]
  *
- * @return the daytime (TM_Type), an empty handle on a syntax error
+ * @return the daytime (TM), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::TM> daytime() {
    DENTER(TOP_LAYER);
@@ -1656,7 +1654,7 @@ static int action(int *sp) {
  * @param alpp receives the syntax error
  * @param s the week calendar specification; nullptr or "none" for no calendar
  * @param cal_name the name of the calendar, for the error message
- * @return the parsed calendar (CA_Type), an empty handle for no calendar, std::nullopt on a syntax error
+ * @return the parsed calendar (CA), an empty handle for no calendar, std::nullopt on a syntax error
  */
 static std::optional<ocs::tom::ListPtr<ocs::tom::CA>>
 disabled_week_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *s, const char *cal_name) {
@@ -1727,7 +1725,7 @@ ERROR:
  *
  * disabled_week_entry := week_day_range_list[=daytime_range_list][=state]
  *
- * @return the entry (CA_Type), an empty handle on a syntax error
+ * @return the entry (CA), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::CA> disabled_week_entry() {
    DENTER(TOP_LAYER);
@@ -1804,7 +1802,7 @@ ERROR:
  * and overlapping ranges are joined, and ranges are extended over the end of
  * the week.
  *
- * @return the range list (TMR_Type), an empty handle on a syntax error
+ * @return the range list (TMR), an empty handle on a syntax error
  */
 static ocs::tom::ListPtr<ocs::tom::TMR> week_day_range_list() {
    DENTER(TOP_LAYER);
@@ -1843,7 +1841,7 @@ static ocs::tom::ListPtr<ocs::tom::TMR> week_day_range_list() {
  * A user can define overlapping ranges in the week calendar. This function
  * will join them into one definition.
  *
- * @param week_day week calendar def. list (TMR_Type)
+ * @param week_day week calendar def. list (TMR)
  *
  * @note MT-NOTE: join_wday_range() is MT safe
  */
@@ -1922,7 +1920,7 @@ static void join_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
  *  range can go till Monday or longer. But the beginning till the end will never
  *  contain more than 7 days (a week).  This is needed!!
  *
- * @param week_day calendar list for a week (TMR_Type)
+ * @param week_day calendar list for a week (TMR)
  *
  * @note MT-NOTE: extend_wday_range() is MT safe
  */
@@ -1993,8 +1991,8 @@ static void extend_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
  * The range keeps its begin and ends on saturday; a new range from sunday to
  * the old end is appended to the list.
  *
- * @param wdrl the range list (TMR_Type) holding the range
- * @param tmr the range (TMR_Type)
+ * @param wdrl the range list (TMR) holding the range
+ * @param tmr the range (TMR)
  */
 static void split_wday_range(const ocs::tom::List<ocs::tom::TMR> wdrl, const ocs::tom::Element<ocs::tom::TMR> tmr) {
    DENTER(TOP_LAYER);
@@ -2020,7 +2018,7 @@ static void split_wday_range(const ocs::tom::List<ocs::tom::TMR> wdrl, const ocs
  *
  * week_day_range := week_day[-week_day]
  *
- * @return the range (TMR_Type), an empty handle on a syntax error
+ * @return the range (TMR), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::TMR> week_day_range() {
    DENTER(TOP_LAYER);
@@ -2065,7 +2063,7 @@ static ocs::tom::ElementPtr<ocs::tom::TMR> week_day_range() {
 /**
  * @brief Parses a week day
  *
- * @return the week day (TM_Type), an empty handle on a syntax error
+ * @return the week day (TM), an empty handle on a syntax error
  */
 static ocs::tom::ElementPtr<ocs::tom::TM> week_day() {
    DENTER(TOP_LAYER);
@@ -2248,22 +2246,14 @@ static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name) {
 /**
  * @brief Orders two times by their year day
  *
- * @param t1 the first time (TM_Type)
- * @param t2 the second time (TM_Type)
+ * @param t1 the first time (TM)
+ * @param t2 the second time (TM)
  * @return negative, zero or positive as `t1` is before, on or after the day of `t2`
  */
 static int tm_yday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs::tom::ConstElement<ocs::tom::TM> t2) {
    DENTER(TOP_LAYER);
 
    int t;
-
-/*   DPRINTF(("tm_yday_cmp(y%d:m%d:d%d, y%d:m%d:d%d)\n",
-      lGetUlong(t1, TM_year),
-      lGetUlong(t1, TM_mon),
-      lGetUlong(t1, TM_mday),
-      lGetUlong(t2, TM_year),
-      lGetUlong(t2, TM_mon),
-      lGetUlong(t2, TM_mday))); */
 
    if ((t=(ocs::tom::get<TM_year>(t1) - ocs::tom::get<TM_year>(t2)))) {
       DRETURN(t);
@@ -2277,8 +2267,8 @@ static int tm_yday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs:
 /**
  * @brief Orders two times by their week day
  *
- * @param t1 the first time (TM_Type)
- * @param t2 the second time (TM_Type)
+ * @param t1 the first time (TM)
+ * @param t2 the second time (TM)
  * @return negative, zero or positive as `t1` is before, on or after the week day of `t2`
  */
 static int tm_wday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs::tom::ConstElement<ocs::tom::TM> t2) {
@@ -2289,8 +2279,8 @@ static int tm_wday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs:
 /**
  * @brief Orders two times by their daytime
  *
- * @param t1 the first time (TM_Type)
- * @param t2 the second time (TM_Type)
+ * @param t1 the first time (TM)
+ * @param t2 the second time (TM)
  * @return negative, zero or positive as `t1` is before, at or after the daytime of `t2`
  */
 static int tm_daytime_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1,
@@ -2314,7 +2304,7 @@ static int tm_daytime_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1,
  * The calendar computation works on CULL elements so intermediate results can
  * be put into a list; this is the conversion in.
  *
- * @param[out] tm_ep the element to fill (TM_Type)
+ * @param[out] tm_ep the element to fill (TM)
  * @param tm_now the time to copy
  */
 void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now) {
@@ -2336,7 +2326,7 @@ void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm
 /**
  * @brief Copy a CULL element back into a `struct tm`
  *
- * @param tm_ep the element to read (TM_Type)
+ * @param tm_ep the element to read (TM)
  * @param[out] tm_now the structure to fill
  */
 void uncullify_tm(const ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now) {
@@ -2406,7 +2396,7 @@ bool calendar_parse_week(const ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::L
  * It calles the routins to compute the current state and next change. The current
  * state is than changed into todo orders.
  *
- * @param cep calendar (CAL_Type)
+ * @param cep calendar (CAL)
  * @param now the time to look at
  *
  * @return what to do (the current state) and the next state change
@@ -2510,7 +2500,7 @@ ocs::tom::ElementPtr<ocs::tom::CAL> sge_generic_cal(const char *cal_name) {
  * Returns the state (only open or closed) of a calendar in a given time
  * frame
  *
- * @param cep calendar object (CAL_Type)
+ * @param cep calendar object (CAL)
  * @param start_time time frame start
  * @param duration time frame duration
  *

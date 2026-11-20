@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of VA for the list library: a synonym for ocs::tom::VA::descriptor */
-inline constexpr const lDescr *VA_Type = ocs::tom::VA::descriptor.e;

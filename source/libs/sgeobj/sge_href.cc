@@ -35,7 +35,7 @@
 /** @file
  * @brief Host reference lists: names that are either a host or a host group
  *
- * Many configuration objects accept both. A host reference (`HR_Type`) stores
+ * Many configuration objects accept both. A host reference (`HR`) stores
  * the name without deciding which it is; resolving a list splits it into the
  * hosts it names directly and the hosts reached through its groups.
  */
@@ -81,8 +81,8 @@
  * and return with 'false'. If 'this_list' does not exist than it
  * will be created.
  *
- * @param this_list in-out: the HR_Type list, created if it is empty
- * @param answer_list AN_Type list
+ * @param this_list in-out: the HR list, created if it is empty
+ * @param answer_list AN list
  * @param host_or_group host or group name
  *
  * @return error state true - Success false - Error
@@ -124,7 +124,7 @@ bool href_list_add(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::tom::ListPtr
  * appended, and a failure for want of memory leaves the list as it was and is
  * not reported. Use href_list_add() where a name may be present already.
  *
- * @param this_list in-out: the HR_Type list, created if it is empty
+ * @param this_list in-out: the HR list, created if it is empty
  * @param name the host, group or matcher name; nullptr appends nothing and creates no list, as the free
  *             emplace_back() took the soft path then
  */
@@ -153,9 +153,9 @@ void ocs_href_list_emplace(ocs::tom::ListPtr<ocs::tom::HR> &this_list, const cha
  * of, because removing either of them drops the key from the hash and leaves the
  * survivor unfindable. Adding entry by entry never creates it.
  *
- * @param this_list in-out: the HR_Type list to append to; nullptr is ignored
- * @param answer_list AN_Type list
- * @param other the entries to append (HR_Type); the caller frees it; an empty handle is ignored
+ * @param this_list in-out: the HR list to append to; nullptr is ignored
+ * @param answer_list AN list
+ * @param other the entries to append (HR); the caller frees it; an empty handle is ignored
  *
  * @return error state true - Success false - Error
  *
@@ -186,7 +186,7 @@ href_list_merge(ocs::tom::ListPtr<ocs::tom::HR> *this_list, ocs::tom::ListPtr<oc
  * Is the given host or hostgroup ('host_or_group') already
  * contained in the reference list?
  *
- * @param this_list HR_Type list, may be an empty handle
+ * @param this_list HR list, may be an empty handle
  * @param host_or_group hostname or hgroup
  *
  * @return true if it is a member; false if not, or if one of the arguments is missing
@@ -224,13 +224,13 @@ bool href_list_has_member(const ocs::tom::ConstList<ocs::tom::HR> this_list, con
  * only part of 'list' than this function can not be used.
  * href_list_find_diff() should be used in this case.
  *
- * @param this_list HR_Type list to compare, may be an empty handle
- * @param answer_list AN_Type list
- * @param list 2nd HR_Type list to be compared, may be an empty handle
- * @param add_hosts in-out: HR_Type list, or nullptr
- * @param add_groups in-out: HR_Type list, or nullptr
- * @param equity_hosts in-out: HR_Type list, or nullptr
- * @param equity_groups in-out: HR_Type list, or nullptr
+ * @param this_list HR list to compare, may be an empty handle
+ * @param answer_list AN list
+ * @param list 2nd HR list to be compared, may be an empty handle
+ * @param add_hosts in-out: HR list, or nullptr
+ * @param add_groups in-out: HR list, or nullptr
+ * @param equity_hosts in-out: HR list, or nullptr
+ * @param equity_groups in-out: HR list, or nullptr
  *
  * @return error state true  - Success false - Error
  *
@@ -298,13 +298,13 @@ bool href_list_compare(const ocs::tom::ConstList<ocs::tom::HR> this_list, ocs::t
  * If the callee is not interested in one or more of the resultlist
  * than nullptr should be used as parameter for this function.
  *
- * @param this_list HR_Type list to be compared, may be an empty handle
- * @param answer_list AN_Type list
- * @param list 2nd HR_Type list to be compared, may be an empty handle
- * @param add_hosts in-out: HR_Type list, or nullptr
- * @param rem_hosts in-out: HR_Type list, or nullptr
- * @param add_groups in-out: HR_Type list, or nullptr
- * @param rem_groups in-out: HR_Type list, or nullptr
+ * @param this_list HR list to be compared, may be an empty handle
+ * @param answer_list AN list
+ * @param list 2nd HR list to be compared, may be an empty handle
+ * @param add_hosts in-out: HR list, or nullptr
+ * @param rem_hosts in-out: HR list, or nullptr
+ * @param add_groups in-out: HR list, or nullptr
+ * @param rem_groups in-out: HR list, or nullptr
  *
  * @return error state true  - Success false - Error
  *
@@ -334,10 +334,10 @@ bool href_list_find_diff(const ocs::tom::ConstList<ocs::tom::HR> this_list,
  * and "rem_groups". Hostnames not part of both resulting hostgroup
  * sets will be stored in "add_hosts" and "rem_hosts".
  *
- * @param answer_list AN_Type list
- * @param add_groups HR_Type list1 (hgroups), may be an empty handle
- * @param rem_groups HR_Type list2 (hgroups), may be an empty handle
- * @param master_list HGRP_Type list of all hgroups
+ * @param answer_list AN list
+ * @param add_groups HR list1 (hgroups), may be an empty handle
+ * @param rem_groups HR list2 (hgroups), may be an empty handle
+ * @param master_list HGRP list of all hgroups
  * @param add_hosts in-out: resolved "add_groups" hosts not part of "rem_groups"
  * @param rem_hosts in-out: resolved "rem_groups" hosts not part of "add_hosts"
  *
@@ -382,7 +382,7 @@ bool href_list_find_effective_diff(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  *
  * Find an entry in the reference list.
  *
- * @param this_list HR_Type list, may be an empty handle
+ * @param this_list HR list, may be an empty handle
  * @param name host or groupname
  *
  * @return the host or hostgroup element, or an empty handle
@@ -408,12 +408,12 @@ ocs::tom::Element<ocs::tom::HR> href_list_locate(const ocs::tom::ConstList<ocs::
  * and hostgroups will be added to 'used_hosts' and 'used_groups'.
  * In case of any errors 'answer_list' will be filled.
  *
- * @param this_list HR_Type list, may be an empty handle
- * @param answer_list AN_Type
- * @param master_list HGRP_Type list, may be an empty handle
- * @param used_hosts in-out: HR_Type list, or nullptr
- * @param used_groups in-out: HR_Type list, or nullptr
- * @param used_matchers in-out: HR_Type list receiving the matchers met, or nullptr
+ * @param this_list HR list, may be an empty handle
+ * @param answer_list AN
+ * @param master_list HGRP list, may be an empty handle
+ * @param used_hosts in-out: HR list, or nullptr
+ * @param used_groups in-out: HR list, or nullptr
+ * @param used_matchers in-out: HR list receiving the matchers met, or nullptr
  * @param expand_matchers whether the hosts the matchers capture are added to 'used_hosts'
  *
  * @return error state true  - Success false - Error
@@ -527,12 +527,12 @@ bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list
  * hosts and hostgroups will be added to 'used_hosts' and 'used_groups'.
  * In case of any errors 'answer_list' will be filled.
  *
- * @param this_list HR_Type list, may be an empty handle
- * @param answer_list AN_Type
- * @param master_list HGRP_Type list, may be an empty handle
- * @param used_hosts in-out: HR_Type list, or nullptr
- * @param used_groups in-out: HR_Type list, or nullptr
- * @param used_matchers in-out: HR_Type list receiving the matchers met, or nullptr
+ * @param this_list HR list, may be an empty handle
+ * @param answer_list AN
+ * @param master_list HGRP list, may be an empty handle
+ * @param used_hosts in-out: HR list, or nullptr
+ * @param used_groups in-out: HR list, or nullptr
+ * @param used_matchers in-out: HR list receiving the matchers met, or nullptr
  * @param expand_matchers whether the hosts the matchers capture are added to 'used_hosts'
  *
  * @return error state true  - Success false - Error
@@ -642,10 +642,10 @@ bool href_list_find_all_references(const ocs::tom::ConstList<ocs::tom::HR> this_
  * added to 'occupant_groups'. In case of any errors 'answer_list'
  * will be filled.
  *
- * @param this_list HR_Type list
- * @param answer_list AN_Type
- * @param master_list HGRP_Type list, may be an empty handle
- * @param occupant_groups in-out: HR_Type list
+ * @param this_list HR list
+ * @param answer_list AN
+ * @param master_list HGRP list, may be an empty handle
+ * @param occupant_groups in-out: HR list
  *
  * @return error state true  - Success false - Error
  */
@@ -690,10 +690,10 @@ bool href_list_find_referencees(const ocs::tom::ConstList<ocs::tom::HR> this_lis
  * added to 'occupant_groups'. In case of any errors 'answer_list'
  * will be filled.
  *
- * @param this_list HR_Type list
- * @param answer_list AN_Type
- * @param master_list HGRP_Type list, may be an empty handle
- * @param occupant_groups in-out: HR_Type list
+ * @param this_list HR list
+ * @param answer_list AN
+ * @param master_list HGRP list, may be an empty handle
+ * @param occupant_groups in-out: HR list
  *
  * @return error state true  - Success false - Error
  */
@@ -770,8 +770,8 @@ bool href_list_find_all_referencees(const ocs::tom::ConstList<ocs::tom::HR> this
  * - but judges only what is going in. There is no default: every caller knows
  * which it is doing, and getting it wrong is not visible in the output.
  *
- * @param this_list HR_Type list, may be an empty handle
- * @param answer_list AN_Type list
+ * @param this_list HR list, may be an empty handle
+ * @param answer_list AN list
  * @param ignore_errors ignore if a host is not resolvable
  * @param introducing true when the members are being put into a list, false when
  *        they are being taken out
@@ -840,7 +840,7 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list,
  *
  * Print href-list to dstring, the names separated by a blank.
  *
- * @param this_list HR_Type list, may be an empty handle
+ * @param this_list HR list, may be an empty handle
  * @param string dynamic string
  *
  * @return Error state true  - Success false - Error (an empty handle or no string)
@@ -876,9 +876,9 @@ bool href_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::HR> this_li
  * Removes all entries contained in "list" will be removed from
  * "this_list" if they exist. A list that becomes empty is freed.
  *
- * @param this_list in-out: HR_Type list; emptied (freed) when it becomes empty
- * @param answer_list AN_Type list
- * @param list HR_Type list, may be an empty handle
+ * @param this_list in-out: HR list; emptied (freed) when it becomes empty
+ * @param answer_list AN list
+ * @param list HR list, may be an empty handle
  *
  * @return Error state true  - Success false - Error
  */
@@ -905,12 +905,12 @@ bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::
 
 
 /**
- * @brief Prints HR_Type list into TOP_LAYER
+ * @brief Prints HR list into TOP_LAYER
  *
- * Prints prefix and HR_Type "this_list" into TOP_LAYER of debug
+ * Prints prefix and HR "this_list" into TOP_LAYER of debug
  * output if this_list exists.
  *
- * @param this_list HR_Type list, may be an empty handle
+ * @param this_list HR list, may be an empty handle
  * @param prefix prefix string
  */
 void href_list_debug_print(const ocs::tom::ConstList<ocs::tom::HR> this_list, const char *prefix) {
@@ -947,8 +947,8 @@ void href_list_debug_print(const ocs::tom::ConstList<ocs::tom::HR> this_list, co
  * which is why it does not look names up: a lookup of a key held twice in the
  * unique field HR_name is a logic error (N-H-18).
  *
- * @param this_list HR_Type list, may be an empty handle
- * @param answer_list AN_Type list, receives one INFO per removed entry
+ * @param this_list HR list, may be an empty handle
+ * @param answer_list AN list, receives one INFO per removed entry
  */
 void href_list_make_uniq(const ocs::tom::List<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);

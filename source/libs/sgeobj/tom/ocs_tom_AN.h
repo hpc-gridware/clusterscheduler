@@ -96,6 +96,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of AN for the list library: a synonym for ocs::tom::AN::descriptor */
-inline constexpr const lDescr *AN_Type = ocs::tom::AN::descriptor.e;

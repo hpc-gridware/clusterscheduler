@@ -82,8 +82,8 @@ struct ocs_cqueue_verify_fn<A, void> {
  * instance. The attribute type of the list, and with it the host reference, the value and - for a list value -
  * its key, come from the list field's sub-type and #ocs_attr_traits.
  *
- * @tparam CqF the attribute in the cluster queue, holding the list of values (CQ_Type)
- * @tparam QuF the attribute in the queue instance, holding the resolved value (QU_Type)
+ * @tparam CqF the attribute in the cluster queue, holding the list of values (CQ)
+ * @tparam QuF the attribute in the queue instance, holding the resolved value (QU)
  * @tparam M the object type of the master list the verify function checks against, void for none
  */
 template <auto CqF, auto QuF, typename M = void>

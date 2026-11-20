@@ -161,7 +161,7 @@ typedef struct {
    uint32_t taskstep;          ///< `-t`: step of that range
    uint64_t begin_time;        ///< `-b`: ignore records that ended before this
    uint64_t end_time;          ///< `-e`: ignore records that ended after this
-   lList *queue_name_list;     ///< `-q`: the queues to report on (`QR_Type`)
+   lList *queue_name_list;     ///< `-q`: the queues to report on (`QR`)
 } sge_qacct_options;
 
 static void qacct_usage(FILE *err_fp);
@@ -1594,10 +1594,10 @@ static void showjob(sge_rusage_type *dusage) {
  * list in a different way. The queue list is always requested.
  *
  * @param alpp the answer list
- * @param ppcentries receives the complex list (CE_Type), or nullptr if it is not needed
- * @param ppqueues receives the cluster queue list (CQ_Type); must not be nullptr
- * @param ppexechosts receives the exec host list (EH_Type), or nullptr if it is not needed
- * @param hgrp_l receives the host group list (HGRP_Type), or nullptr if it is not needed
+ * @param ppcentries receives the complex list (CE), or nullptr if it is not needed
+ * @param ppqueues receives the cluster queue list (CQ); must not be nullptr
+ * @param ppexechosts receives the exec host list (EH), or nullptr if it is not needed
+ * @param hgrp_l receives the host group list (HGRP), or nullptr if it is not needed
  *
  * @return true on success, false with @p alpp filled otherwise
  */
@@ -1652,7 +1652,7 @@ static bool get_qacct_lists(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Lis
    ** GET SGE_QUEUE_LIST
    */
    {
-      // the selection of every field does not depend on the type it is built for (it was built for QU_Type)
+      // the selection of every field does not depend on the type it is built for (it was built for QU)
       const auto what = ocs::tom::what_all<ocs::tom::CQ>();
       q_id = gdi_multi.request(alpp, ocs::gdi::Mode::SEND, ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::GET,
                                ocs::gdi::SubCommand::NONE, nullptr, ocs::tom::Where<ocs::tom::CQ>(), what);
@@ -1791,7 +1791,7 @@ sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_o
  * Called for every record read, so it carries no DENTER.
  *
  * @param d the accounting record
- * @param queue_name_list the queue instance patterns (`QR_Type`)
+ * @param queue_name_list the queue instance patterns (`QR`)
  * @return true if a pattern matches
  */
 static bool matches_queue_name_list(sge_rusage_type *d, const ocs::tom::ConstList<ocs::tom::QR> queue_name_list) {
@@ -1843,7 +1843,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    }
 
    if (options->queue_name_list != nullptr) {
-      // emplace_back<QR_name>() and qref_list_resolve() create the list with QR_Type, so it is wrapped unchecked
+      // emplace_back<QR_name>() and qref_list_resolve() create the list with QR, so it is wrapped unchecked
       if (!matches_queue_name_list(d, ocs::tom::ConstList<ocs::tom::QR>::from_typed(options->queue_name_list))) {
          DRETURN(-2);
       }
@@ -2352,7 +2352,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
          DRETURN(-2);
       }
       if (options->queue_name_list != nullptr) {
-         // emplace_back<QR_name>() and qref_list_resolve() create the list with QR_Type: wrapped unchecked
+         // emplace_back<QR_name>() and qref_list_resolve() create the list with QR: wrapped unchecked
          if (!matches_queue_name_list(d, ocs::tom::ConstList<ocs::tom::QR>::from_typed(options->queue_name_list))) {
             DRETURN(-2);
          }

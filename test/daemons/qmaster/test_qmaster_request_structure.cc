@@ -134,7 +134,8 @@ calendar_request(const ocs::gdi::Command command) {
 static bool
 calendar_readable() {
    ocs::tom::ListPtr<ocs::tom::CAL> lp;
-   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", CAL_Type, CAL_name, CAL_NAME));
+   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", ocs::tom::CAL::descriptor.e,
+                                                                        CAL_name, CAL_NAME));
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
                                         ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::CAL>());
    alp.reset();
@@ -149,9 +150,9 @@ calendar_readable() {
  */
 static lList *
 global_host_with_acl(lList *acl) {
-   lEnumeration *what = lWhat("%T(%I %I)", EH_Type, EH_name, EH_acl);
+   lEnumeration *what = lWhat("%T(%I %I)", ocs::tom::EH::descriptor.e, EH_name, EH_acl);
    const lDescr *descr = nullptr;
-   lReduceDescr(&descr, EH_Type, what);
+   lReduceDescr(&descr, ocs::tom::EH::descriptor.e, what);
    lFreeWhat(&what);
    lList *lp = lCreateList("host", descr);
    lListElem *ep = lCreateElem(descr);
@@ -190,7 +191,7 @@ main(int /*argc*/, char * /*argv*/[]) {
    // refused it too, later, for a missing field - only the syntax status tells the structure check
    {
       lList *lp = nullptr;
-      lAddElemStr(&lp, ST_name, CAL_NAME, ST_Type);
+      lAddElemStr(&lp, ST_name, CAL_NAME, ocs::tom::ST::descriptor.e);
       // sent as calendars on purpose, so the list is taken over unchecked
       CHECK(2, "a calendar modify request with string elements is refused as a syntax error",
             refused(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::MOD,
@@ -199,7 +200,7 @@ main(int /*argc*/, char * /*argv*/[]) {
 
    // T03: an empty access list of the wrong type in the global host - it used to be stored
    {
-      lList *acl = lCreateList("acl", ST_Type);
+      lList *acl = lCreateList("acl", ocs::tom::ST::descriptor.e);
       lList *lp = global_host_with_acl(acl);
       // the sublist is of the wrong type on purpose, so the list is taken over unchecked
       CHECK(3, "an empty sublist of the wrong type is refused",
@@ -210,7 +211,7 @@ main(int /*argc*/, char * /*argv*/[]) {
    // T04: a non-empty access list of the wrong type - it used to abort qmaster
    {
       lList *acl = nullptr;
-      lAddElemStr(&acl, ST_name, "no_such_userset", ST_Type);
+      lAddElemStr(&acl, ST_name, "no_such_userset", ocs::tom::ST::descriptor.e);
       lList *lp = global_host_with_acl(acl);
       // the sublist is of the wrong type on purpose, so the list is taken over unchecked
       CHECK(4, "a non-empty sublist of the wrong type is refused",

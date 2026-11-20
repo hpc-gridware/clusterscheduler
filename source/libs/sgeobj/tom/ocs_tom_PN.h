@@ -98,6 +98,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PN for the list library: a synonym for ocs::tom::PN::descriptor */
-inline constexpr const lDescr *PN_Type = ocs::tom::PN::descriptor.e;

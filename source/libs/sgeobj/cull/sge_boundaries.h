@@ -36,7 +36,7 @@
  *--------------------------------------------------
  */
 
-/* BASIC_UNIT and MAX_DESCR_SIZE is defined in cull/cull_list.h */
+/* BASIC_UNIT and MAX_DESCR_SIZE are defined in tom/cull_types.h */
 
 enum NameSpaceBoundaries {
 

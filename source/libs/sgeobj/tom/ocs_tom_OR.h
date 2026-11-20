@@ -93,7 +93,7 @@ enum OR_Field {
     *   - ORT_start_job:              empty
     *   - ORT_tickets:                reduced job element
     *   - ORT_remove_immediate_job:   empty
-    *   - ORT_job_schedd_info:        scheduler messages (SME_Type)
+    *   - ORT_job_schedd_info:        scheduler messages (SME)
     *   - ORT_ptickets:               reduced job element
     */
    OR_joker,
@@ -169,6 +169,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of OR for the list library: a synonym for ocs::tom::OR::descriptor */
-inline constexpr const lDescr *OR_Type = ocs::tom::OR::descriptor.e;

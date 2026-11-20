@@ -52,7 +52,7 @@ namespace ocs::tom {
     * @brief Generic Reference (unused)
     *
     * A bare pointer to another element, for building temporary reference lists.
-    * @warning No attribute of this type is read or written anywhere in either repository, and `REF_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
+    * @warning No attribute of this type is read or written anywhere in either repository, and `REF` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
     */
    struct REF {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -74,6 +74,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of REF for the list library: a synonym for ocs::tom::REF::descriptor */
-inline constexpr const lDescr *REF_Type = ocs::tom::REF::descriptor.e;

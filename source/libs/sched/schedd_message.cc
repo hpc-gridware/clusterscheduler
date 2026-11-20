@@ -119,12 +119,12 @@ static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sm
  * @brief The category of a job
  * @param job_id the id of the job
  * @param job_list the jobs to look in
- * @return the category (`CT_Type`) of the job, nullptr if the job is not in @p job_list
+ * @return the category (`CT`) of the job, nullptr if the job is not in @p job_list
  */
 static lRef schedd_mes_get_category(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom::JB> job_list) {
    DENTER(TOP_LAYER);
 
-     /* JB_Type */
+     /* JB */
    lRef ret = nullptr;        /* Category pointer (void*) */
 
    auto job = ocs::tom::find_first<JB_job_number>(job_list, job_id);
@@ -136,7 +136,7 @@ static lRef schedd_mes_get_category(const uint32_t job_id, const ocs::tom::Const
 
 /**
  * @brief The ids of all jobs of a category
- * @param category the category (`CT_Type`)
+ * @param category the category (`CT`)
  * @param job_list the jobs
  * @param ignore_category if 1, the ids of all jobs of @p job_list
  * @return the job ids, the caller owns them; empty if there are none or @p category is nullptr

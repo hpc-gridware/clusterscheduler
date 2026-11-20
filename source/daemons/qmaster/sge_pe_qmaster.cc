@@ -294,7 +294,7 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::E
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param pep the parallel environment (`PE_Type`)
+ * @param pep the parallel environment (`PE`)
  * @param alpp receives messages for the caller
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -406,8 +406,8 @@ debit_all_jobs_from_pes(const ocs::tom::List<ocs::tom::PE> pe_list) {
 /**
  * @brief Add the names of the usersets of a PE's user_lists and xuser_lists to a list, each once
  *
- * @param pe the PE (PE_Type)
- * @param acl the list of userset references (US_Type), created when it is empty and a name is added
+ * @param pe the PE (PE)
+ * @param acl the list of userset references (US), created when it is empty and a name is added
  */
 static void
 ocs_pe_collect_usersets(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs::tom::US> &acl) {
@@ -435,10 +435,10 @@ ocs_pe_collect_usersets(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom:
  * Userset references are returned in new_acl/old_acl.
  * Names in both lists are removed from both; a list that becomes empty then is freed, as lDiffListStr() did.
  *
- * @param new_pe New PE (PE_Type), or an empty handle
- * @param old_pe Old PE (PE_Type), or an empty handle
- * @param new_acl New userset references (US_Type), or nullptr
- * @param old_acl Old userset references (US_Type), or nullptr
+ * @param new_pe New PE (PE), or an empty handle
+ * @param old_pe Old PE (PE), or an empty handle
+ * @param new_acl New userset references (US), or nullptr
+ * @param old_acl Old userset references (US), or nullptr
  *
  * @note MT-NOTE: pe_diff_usersets() is not MT safe
  */
@@ -480,8 +480,8 @@ pe_diff_usersets(const ocs::tom::ConstElement<ocs::tom::PE> new_pe, const ocs::t
  * The userset information wrts categories is updated based
  *  on new/old PE configuration and events are sent upon changes.
  *
- * @param new_pe New PE (PE_Type), or an empty handle
- * @param old_pe Old PE (PE_Type), or an empty handle
+ * @param new_pe New PE (PE), or an empty handle
+ * @param old_pe Old PE (PE), or an empty handle
  * @param gdi_session the GDI session of the request, for the events
  *
  * @note MT-NOTE: pe_update_categories() is not MT safe

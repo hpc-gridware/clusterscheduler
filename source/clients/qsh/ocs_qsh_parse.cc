@@ -85,12 +85,12 @@
  * @param cell_root the cell directory, for resolving the default files
  * @param unqualified_hostname the submit host, unqualified
  * @param qualified_hostname the submit host, fully qualified
- * @param cmdline the parsed options (`SPA_Type`), or an empty handle for defaults only; the options used are
+ * @param cmdline the parsed options (`SPA`), or an empty handle for defaults only; the options used are
  *                removed, those left are reported as unknown
- * @param job the job (`JB_Type`) to fill in
+ * @param job the job (`JB`) to fill in
  *
  * @return `nullptr` when everything was fine, otherwise an answer list
- *         (`AN_Type`) carrying one of
+ *         (`AN`) carrying one of
  *         - `STATUS_EUNKNOWN` - an internal error, a null pointer or out of memory
  *         - `STATUS_EDISK` - `getcwd()` failed
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
@@ -378,7 +378,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
    }
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-e"))) {
-      // the parser fills the argument of -e with a PN_Type path list
+      // the parser fills the argument of -e with a PN path list
       ocs::tom::set<JB_stderr_path_list>(job, ocs::tom::ConstList<ocs::tom::PN>::from_typed(
                                                  ocs::tom::get<SPA_argval_lListT>(ep)).clone("stderr_path_list"));
       cmdline.erase(ep);
@@ -397,7 +397,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       // created with the first reference, as the free emplace_back() created it
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
-         // the parser fills the argument with an ST_Type name list
+         // the parser fills the argument with an ST name list
          for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
             const char *name = ocs::tom::get<ST_name>(sep);
             DPRINTF("-hold_jid %s\n", name);
@@ -420,7 +420,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       // created with the first reference, as the free emplace_back() created it
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
-         // the parser fills the argument with an ST_Type name list
+         // the parser fills the argument with an ST name list
          for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
             const char *name = ocs::tom::get<ST_name>(sep);
             DPRINTF("-hold_jid_ad %s\n", name);
@@ -456,7 +456,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
    }
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-jsv"))) {
-      // the parser fills the argument of -jsv with a PN_Type path list
+      // the parser fills the argument of -jsv with a PN path list
       const auto list = ocs::tom::ConstList<ocs::tom::PN>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep));
       const char *file = ocs::tom::get<PN_path>(list.front());
 
@@ -510,7 +510,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
    }
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-o"))) {
-      // the parser fills the argument of -o with a PN_Type path list
+      // the parser fills the argument of -o with a PN path list
       ocs::tom::set<JB_stdout_path_list>(job, ocs::tom::ConstList<ocs::tom::PN>::from_typed(
                                                  ocs::tom::get<SPA_argval_lListT>(ep)).clone("stdout_path_list"));
       cmdline.erase(ep);
@@ -549,7 +549,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
 
       /* put sublist from parsing into job */
       // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
-      // list is taken out raw and adopted as RN_Type here; the range held before is freed by the set
+      // list is taken out raw and adopted as RN here; the range held before is freed by the set
       ocs::tom::set<JB_pe_range>(job, ocs::tom::adopt<ocs::tom::RN>(
          ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
       cmdline.erase(ep);
@@ -577,7 +577,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
          // ocs_context_change_add() has no typed form for the change list yet
          lList *change = nullptr;
          ocs::tom::exchange<JB_context_change>(job, &change);
-         // the parser fills the argument of the context switches with a VA_Type list
+         // the parser fills the argument of the context switches with a VA list
          ocs_context_change_add(&change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(
                                             ocs::tom::get<SPA_argval_lListT>(ep)));
          ocs::tom::exchange<JB_context_change>(job, &change);

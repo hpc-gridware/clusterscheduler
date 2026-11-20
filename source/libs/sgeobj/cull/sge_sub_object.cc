@@ -29,808 +29,808 @@ object_get_subtype(int nm)
    const lDescr *ret = nullptr;
    switch (nm) {
       case JB_jid_request_list:
-         ret = JRE_Type;
+         ret = ocs::tom::JRE::descriptor.e;
          break;
       case JB_jid_predecessor_list:
-         ret = JRE_Type;
+         ret = ocs::tom::JRE::descriptor.e;
          break;
       case JB_jid_successor_list:
-         ret = JRE_Type;
+         ret = ocs::tom::JRE::descriptor.e;
          break;
       case JB_ja_ad_request_list:
-         ret = JRE_Type;
+         ret = ocs::tom::JRE::descriptor.e;
          break;
       case JB_ja_ad_predecessor_list:
-         ret = JRE_Type;
+         ret = ocs::tom::JRE::descriptor.e;
          break;
       case JB_ja_ad_successor_list:
-         ret = JRE_Type;
+         ret = ocs::tom::JRE::descriptor.e;
          break;
       case JB_shell_list:
-         ret = PN_Type;
+         ret = ocs::tom::PN::descriptor.e;
          break;
       case JB_env_list:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case JB_context:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case JB_job_args:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case JB_checkpoint_object:
-         ret = CK_Type;
+         ret = ocs::tom::CK::descriptor.e;
          break;
       case JB_stdout_path_list:
-         ret = PN_Type;
+         ret = ocs::tom::PN::descriptor.e;
          break;
       case JB_stderr_path_list:
-         ret = PN_Type;
+         ret = ocs::tom::PN::descriptor.e;
          break;
       case JB_stdin_path_list:
-         ret = PN_Type;
+         ret = ocs::tom::PN::descriptor.e;
          break;
       case JB_request_set_list:
-         ret = JRS_Type;
+         ret = ocs::tom::JRS::descriptor.e;
          break;
       case JB_mail_list:
-         ret = MR_Type;
+         ret = ocs::tom::MR::descriptor.e;
          break;
       case JB_pe_range:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JB_ja_structure:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JB_ja_n_h_ids:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JB_ja_u_h_ids:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JB_ja_s_h_ids:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JB_ja_o_h_ids:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JB_ja_a_h_ids:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JB_ja_template:
-         ret = JAT_Type;
+         ret = ocs::tom::JAT::descriptor.e;
          break;
       case JB_ja_tasks:
-         ret = JAT_Type;
+         ret = ocs::tom::JAT::descriptor.e;
          break;
       case JB_user_list:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case JB_job_identifier_list:
-         ret = ID_Type;
+         ret = ocs::tom::ID::descriptor.e;
          break;
       case JB_path_aliases:
-         ret = PA_Type;
+         ret = ocs::tom::PA::descriptor.e;
          break;
       case JB_binding:
-         ret = BN_Type;
+         ret = ocs::tom::BN::descriptor.e;
          break;
       case JB_grp_list:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case JB_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case JB_context_change:
-         ret = CX_Type;
+         ret = ocs::tom::CX::descriptor.e;
          break;
       case JRS_hard_resource_list:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case JRS_soft_resource_list:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case JRS_hard_queue_list:
-         ret = QR_Type;
+         ret = ocs::tom::QR::descriptor.e;
          break;
       case JRS_soft_queue_list:
-         ret = QR_Type;
+         ret = ocs::tom::QR::descriptor.e;
          break;
       case QU_ckpt_list:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case QU_pe_list:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case QU_owner_list:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case QU_acl:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case QU_xacl:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case QU_projects:
-         ret = PR_Type;
+         ret = ocs::tom::PR::descriptor.e;
          break;
       case QU_xprojects:
-         ret = PR_Type;
+         ret = ocs::tom::PR::descriptor.e;
          break;
       case QU_consumable_config_list:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case QU_load_thresholds:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case QU_suspend_thresholds:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case QU_subordinate_list:
-         ret = SO_Type;
+         ret = ocs::tom::SO::descriptor.e;
          break;
       case QU_resource_utilization:
-         ret = RUE_Type;
+         ret = ocs::tom::RUE::descriptor.e;
          break;
       case QU_message_list:
-         ret = QIM_Type;
+         ret = ocs::tom::QIM::descriptor.e;
          break;
       case QU_state_changes:
-         ret = CQU_Type;
+         ret = ocs::tom::CQU::descriptor.e;
          break;
       case QU_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case EH_scaling_list:
-         ret = HS_Type;
+         ret = ocs::tom::HS::descriptor.e;
          break;
       case EH_consumable_config_list:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case EH_usage_scaling_list:
-         ret = HS_Type;
+         ret = ocs::tom::HS::descriptor.e;
          break;
       case EH_load_list:
-         ret = HL_Type;
+         ret = ocs::tom::HL::descriptor.e;
          break;
       case EH_acl:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case EH_xacl:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case EH_prj:
-         ret = PR_Type;
+         ret = ocs::tom::PR::descriptor.e;
          break;
       case EH_xprj:
-         ret = PR_Type;
+         ret = ocs::tom::PR::descriptor.e;
          break;
       case EH_resource_utilization:
-         ret = RUE_Type;
+         ret = ocs::tom::RUE::descriptor.e;
          break;
       case EH_cached_complexes:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case EH_reschedule_unknown_list:
-         ret = RU_Type;
+         ret = ocs::tom::RU::descriptor.e;
          break;
       case EH_report_variables:
-         ret = STU_Type;
+         ret = ocs::tom::STU::descriptor.e;
          break;
       case EH_merged_report_variables:
-         ret = STU_Type;
+         ret = ocs::tom::STU::descriptor.e;
          break;
       case EH_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case EV_subscribed:
-         ret = EVS_Type;
+         ret = ocs::tom::EVS::descriptor.e;
          break;
       case EV_events:
-         ret = ET_Type;
+         ret = ocs::tom::ET::descriptor.e;
          break;
       case EVS_what:
-         ret = PACK_Type;
+         ret = ocs::tom::PACK::descriptor.e;
          break;
       case EVS_where:
-         ret = PACK_Type;
+         ret = ocs::tom::PACK::descriptor.e;
          break;
       case CE_resource_map_list:
-         ret = RESL_Type;
+         ret = ocs::tom::RESL::descriptor.e;
          break;
       case OR_queuelist:
-         ret = OQ_Type;
+         ret = ocs::tom::OQ::descriptor.e;
          break;
       case OR_granted_resources_list:
-         ret = GRU_Type;
+         ret = ocs::tom::GRU::descriptor.e;
          break;
       case OQ_binding_to_use:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case OQ_granted_rsmaps:
-         ret = RESL_Type;
+         ret = ocs::tom::RESL::descriptor.e;
          break;
       case US_entries:
-         ret = UE_Type;
+         ret = ocs::tom::UE::descriptor.e;
          break;
       case US_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case PE_user_list:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case PE_xuser_list:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case PE_resource_utilization:
-         ret = RUE_Type;
+         ret = ocs::tom::RUE::descriptor.e;
          break;
       case PE_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case CONF_entries:
-         ret = CF_Type;
+         ret = ocs::tom::CF::descriptor.e;
          break;
       case JG_binding_to_use:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case JG_granted_rsmaps:
-         ret = RESL_Type;
+         ret = ocs::tom::RESL::descriptor.e;
          break;
       case PR_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case PR_long_term_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case PR_project:
-         ret = UPP_Type;
+         ret = ocs::tom::UPP::descriptor.e;
          break;
       case PR_acl:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case PR_xacl:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case PR_debited_job_usage:
-         ret = UPU_Type;
+         ret = ocs::tom::UPU::descriptor.e;
          break;
       case PR_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case UU_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case UU_long_term_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case UU_project:
-         ret = UPP_Type;
+         ret = ocs::tom::UPP::descriptor.e;
          break;
       case UU_debited_job_usage:
-         ret = UPU_Type;
+         ret = ocs::tom::UPU::descriptor.e;
          break;
       case UU_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case GRU_resource_map_list:
-         ret = RESL_Type;
+         ret = ocs::tom::RESL::descriptor.e;
          break;
       case GRU_binding_inuse:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case RESL_properties:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case STN_children:
-         ret = STN_Type;
+         ret = ocs::tom::STN::descriptor.e;
          break;
       case STN_usage_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case STN_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case SC_job_load_adjustments:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case SC_usage_weight_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case PET_granted_destin_identifier_list:
-         ret = JG_Type;
+         ret = ocs::tom::JG::descriptor.e;
          break;
       case PET_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case PET_scaled_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case PET_reported_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case PET_previous_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case PET_path_aliases:
-         ret = PA_Type;
+         ret = ocs::tom::PA::descriptor.e;
          break;
       case PET_environment:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case PET_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case PETR_path_aliases:
-         ret = PA_Type;
+         ret = ocs::tom::PA::descriptor.e;
          break;
       case PETR_environment:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case JR_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case JL_OS_job_list:
-         ret = JO_Type;
+         ret = ocs::tom::JO::descriptor.e;
          break;
       case JO_usage_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case JO_pid_list:
-         ret = JP_Type;
+         ret = ocs::tom::JP::descriptor.e;
          break;
       case UPU_old_usage_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case CK_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case ID_ja_structure:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case ID_user_list:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case MA_answers:
-         ret = AN_Type;
+         ret = ocs::tom::AN::descriptor.e;
          break;
       case CAL_parsed_year_calendar:
-         ret = CA_Type;
+         ret = ocs::tom::CA::descriptor.e;
          break;
       case CAL_parsed_week_calendar:
-         ret = CA_Type;
+         ret = ocs::tom::CA::descriptor.e;
          break;
       case CAL_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case CA_yday_range_list:
-         ret = TMR_Type;
+         ret = ocs::tom::TMR::descriptor.e;
          break;
       case CA_wday_range_list:
-         ret = TMR_Type;
+         ret = ocs::tom::TMR::descriptor.e;
          break;
       case CA_daytime_range_list:
-         ret = TMR_Type;
+         ret = ocs::tom::TMR::descriptor.e;
          break;
       case TMR_begin:
-         ret = TM_Type;
+         ret = ocs::tom::TM::descriptor.e;
          break;
       case TMR_end:
-         ret = TM_Type;
+         ret = ocs::tom::TM::descriptor.e;
          break;
       case UPP_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case UPP_long_term_usage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case SME_message_list:
-         ret = MES_Type;
+         ret = ocs::tom::MES::descriptor.e;
          break;
       case SME_global_message_list:
-         ret = MES_Type;
+         ret = ocs::tom::MES::descriptor.e;
          break;
       case MES_job_number_list:
-         ret = ULNG_Type;
+         ret = ocs::tom::ULNG::descriptor.e;
          break;
       case JAT_granted_destin_identifier_list:
-         ret = JG_Type;
+         ret = ocs::tom::JG::descriptor.e;
          break;
       case JAT_granted_resources_list:
-         ret = GRU_Type;
+         ret = ocs::tom::GRU::descriptor.e;
          break;
       case JAT_usage_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case JAT_scaled_usage_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case JAT_reported_usage_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case JAT_task_list:
-         ret = PET_Type;
+         ret = ocs::tom::PET::descriptor.e;
          break;
       case JAT_finished_task_list:
-         ret = FPET_Type;
+         ret = ocs::tom::FPET::descriptor.e;
          break;
       case JAT_previous_usage_list:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case JAT_pe_object:
-         ret = PE_Type;
+         ret = ocs::tom::PE::descriptor.e;
          break;
       case JAT_message_list:
-         ret = QIM_Type;
+         ret = ocs::tom::QIM::descriptor.e;
          break;
       case JAT_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case CT_cache:
-         ret = CCT_Type;
+         ret = ocs::tom::CCT::descriptor.e;
          break;
       case HGRP_host_list:
-         ret = HR_Type;
+         ret = ocs::tom::HR::descriptor.e;
          break;
       case HGRP_cqueue_list:
-         ret = CQ_Type;
+         ret = ocs::tom::CQ::descriptor.e;
          break;
       case HGRP_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case HGRP_cached_hosts:
-         ret = HR_Type;
+         ret = ocs::tom::HR::descriptor.e;
          break;
       case HGRP_match_cache:
-         ret = HM_Type;
+         ret = ocs::tom::HM::descriptor.e;
          break;
       case LS_incomplete:
-         ret = LR_Type;
+         ret = ocs::tom::LR::descriptor.e;
          break;
       case LS_complete:
-         ret = LR_Type;
+         ret = ocs::tom::LR::descriptor.e;
          break;
       case SPC_rules:
-         ret = SPR_Type;
+         ret = ocs::tom::SPR::descriptor.e;
          break;
       case SPC_types:
-         ret = SPT_Type;
+         ret = ocs::tom::SPT::descriptor.e;
          break;
       case SPT_rules:
-         ret = SPTR_Type;
+         ret = ocs::tom::SPTR::descriptor.e;
          break;
       case JJ_finished_tasks:
-         ret = JJAT_Type;
+         ret = ocs::tom::JJAT::descriptor.e;
          break;
       case JJ_not_yet_finished_ids:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JJ_started_task_ids:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case JJAT_rusage:
-         ret = UA_Type;
+         ret = ocs::tom::UA::descriptor.e;
          break;
       case NSV_strings:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case ASTRLIST_value:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case AUSRLIST_value:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case APRJLIST_value:
-         ret = PR_Type;
+         ret = ocs::tom::PR::descriptor.e;
          break;
       case ACELIST_value:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case ASOLIST_value:
-         ret = SO_Type;
+         ret = ocs::tom::SO::descriptor.e;
          break;
       case CQ_hostlist:
-         ret = HR_Type;
+         ret = ocs::tom::HR::descriptor.e;
          break;
       case CQ_qinstances:
-         ret = QU_Type;
+         ret = ocs::tom::QU::descriptor.e;
          break;
       case CQ_seq_no:
-         ret = AULNG_Type;
+         ret = ocs::tom::AULNG::descriptor.e;
          break;
       case CQ_nsuspend:
-         ret = AULNG_Type;
+         ret = ocs::tom::AULNG::descriptor.e;
          break;
       case CQ_job_slots:
-         ret = AULNG_Type;
+         ret = ocs::tom::AULNG::descriptor.e;
          break;
       case CQ_rerun:
-         ret = ABOOL_Type;
+         ret = ocs::tom::ABOOL::descriptor.e;
          break;
       case CQ_s_fsize:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_h_fsize:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_s_data:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_h_data:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_s_stack:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_h_stack:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_s_core:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_h_core:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_s_rss:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_h_rss:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_s_vmem:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_h_vmem:
-         ret = AMEM_Type;
+         ret = ocs::tom::AMEM::descriptor.e;
          break;
       case CQ_s_rt:
-         ret = ATIME_Type;
+         ret = ocs::tom::ATIME::descriptor.e;
          break;
       case CQ_h_rt:
-         ret = ATIME_Type;
+         ret = ocs::tom::ATIME::descriptor.e;
          break;
       case CQ_s_cpu:
-         ret = ATIME_Type;
+         ret = ocs::tom::ATIME::descriptor.e;
          break;
       case CQ_h_cpu:
-         ret = ATIME_Type;
+         ret = ocs::tom::ATIME::descriptor.e;
          break;
       case CQ_suspend_interval:
-         ret = AINTER_Type;
+         ret = ocs::tom::AINTER::descriptor.e;
          break;
       case CQ_min_cpu_interval:
-         ret = AINTER_Type;
+         ret = ocs::tom::AINTER::descriptor.e;
          break;
       case CQ_notify:
-         ret = AINTER_Type;
+         ret = ocs::tom::AINTER::descriptor.e;
          break;
       case CQ_tmpdir:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_shell:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_calendar:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_priority:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_processors:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_prolog:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_epilog:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_shell_start_mode:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_starter_method:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_suspend_method:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_resume_method:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_terminate_method:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_initial_state:
-         ret = ASTR_Type;
+         ret = ocs::tom::ASTR::descriptor.e;
          break;
       case CQ_pe_list:
-         ret = ASTRLIST_Type;
+         ret = ocs::tom::ASTRLIST::descriptor.e;
          break;
       case CQ_ckpt_list:
-         ret = ASTRLIST_Type;
+         ret = ocs::tom::ASTRLIST::descriptor.e;
          break;
       case CQ_owner_list:
-         ret = AUSRLIST_Type;
+         ret = ocs::tom::AUSRLIST::descriptor.e;
          break;
       case CQ_acl:
-         ret = AUSRLIST_Type;
+         ret = ocs::tom::AUSRLIST::descriptor.e;
          break;
       case CQ_xacl:
-         ret = AUSRLIST_Type;
+         ret = ocs::tom::AUSRLIST::descriptor.e;
          break;
       case CQ_projects:
-         ret = APRJLIST_Type;
+         ret = ocs::tom::APRJLIST::descriptor.e;
          break;
       case CQ_xprojects:
-         ret = APRJLIST_Type;
+         ret = ocs::tom::APRJLIST::descriptor.e;
          break;
       case CQ_load_thresholds:
-         ret = ACELIST_Type;
+         ret = ocs::tom::ACELIST::descriptor.e;
          break;
       case CQ_suspend_thresholds:
-         ret = ACELIST_Type;
+         ret = ocs::tom::ACELIST::descriptor.e;
          break;
       case CQ_consumable_config_list:
-         ret = ACELIST_Type;
+         ret = ocs::tom::ACELIST::descriptor.e;
          break;
       case CQ_subordinate_list:
-         ret = ASOLIST_Type;
+         ret = ocs::tom::ASOLIST::descriptor.e;
          break;
       case CQ_qtype:
-         ret = AQTLIST_Type;
+         ret = ocs::tom::AQTLIST::descriptor.e;
          break;
       case CQ_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case XMLH_Stylesheet:
-         ret = XMLS_Type;
+         ret = ocs::tom::XMLS::descriptor.e;
          break;
       case XMLH_Attribute:
-         ret = XMLA_Type;
+         ret = ocs::tom::XMLA::descriptor.e;
          break;
       case XMLE_Attribute:
-         ret = XMLA_Type;
+         ret = ocs::tom::XMLA::descriptor.e;
          break;
       case RDE_resource_map_list:
-         ret = RESL_Type;
+         ret = ocs::tom::RESL::descriptor.e;
          break;
       case RUE_utilized_now_resource_map_list:
-         ret = RESL_Type;
+         ret = ocs::tom::RESL::descriptor.e;
          break;
       case RUE_utilized:
-         ret = RDE_Type;
+         ret = ocs::tom::RDE::descriptor.e;
          break;
       case RUE_utilized_nonexclusive:
-         ret = RDE_Type;
+         ret = ocs::tom::RDE::descriptor.e;
          break;
       case LDR_queue_ref_list:
-         ret = QRL_Type;
+         ret = ocs::tom::QRL::descriptor.e;
          break;
       case CCT_ignore_queues:
-         ret = CTI_Type;
+         ret = ocs::tom::CTI::descriptor.e;
          break;
       case CCT_ignore_hosts:
-         ret = CTI_Type;
+         ret = ocs::tom::CTI::descriptor.e;
          break;
       case CCT_job_messages:
-         ret = MES_Type;
+         ret = ocs::tom::MES::descriptor.e;
          break;
       case SCT_job_pending_ref:
-         ret = REF_Type;
+         ret = ocs::tom::REF::descriptor.e;
          break;
       case SCT_job_ref:
-         ret = REF_Type;
+         ret = ocs::tom::REF::descriptor.e;
          break;
       case RQS_rule:
-         ret = RQR_Type;
+         ret = ocs::tom::RQR::descriptor.e;
          break;
       case RQS_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case RQR_filter_users:
-         ret = RQRF_Type;
+         ret = ocs::tom::RQRF::descriptor.e;
          break;
       case RQR_filter_projects:
-         ret = RQRF_Type;
+         ret = ocs::tom::RQRF::descriptor.e;
          break;
       case RQR_filter_pes:
-         ret = RQRF_Type;
+         ret = ocs::tom::RQRF::descriptor.e;
          break;
       case RQR_filter_queues:
-         ret = RQRF_Type;
+         ret = ocs::tom::RQRF::descriptor.e;
          break;
       case RQR_filter_hosts:
-         ret = RQRF_Type;
+         ret = ocs::tom::RQRF::descriptor.e;
          break;
       case RQR_limit:
-         ret = RQRL_Type;
+         ret = ocs::tom::RQRL::descriptor.e;
          break;
       case RQRF_scope:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case RQRF_xscope:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case RQRL_usage:
-         ret = RUE_Type;
+         ret = ocs::tom::RUE::descriptor.e;
          break;
       case AR_resource_list:
-         ret = CE_Type;
+         ret = ocs::tom::CE::descriptor.e;
          break;
       case AR_resource_utilization:
-         ret = RUE_Type;
+         ret = ocs::tom::RUE::descriptor.e;
          break;
       case AR_queue_list:
-         ret = QR_Type;
+         ret = ocs::tom::QR::descriptor.e;
          break;
       case AR_granted_slots:
-         ret = JG_Type;
+         ret = ocs::tom::JG::descriptor.e;
          break;
       case AR_reserved_hosts:
-         ret = EH_Type;
+         ret = ocs::tom::EH::descriptor.e;
          break;
       case AR_reserved_queues:
-         ret = QU_Type;
+         ret = ocs::tom::QU::descriptor.e;
          break;
       case AR_mail_list:
-         ret = MR_Type;
+         ret = ocs::tom::MR::descriptor.e;
          break;
       case AR_pe_range:
-         ret = RN_Type;
+         ret = ocs::tom::RN::descriptor.e;
          break;
       case AR_master_queue_list:
-         ret = QR_Type;
+         ret = ocs::tom::QR::descriptor.e;
          break;
       case AR_acl_list:
-         ret = ARA_Type;
+         ret = ocs::tom::ARA::descriptor.e;
          break;
       case AR_xacl_list:
-         ret = ARA_Type;
+         ret = ocs::tom::ARA::descriptor.e;
          break;
       case AR_request_set_list:
-         ret = JRS_Type;
+         ret = ocs::tom::JRS::descriptor.e;
          break;
       case AR_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case AR_granted_resources_list:
-         ret = GRU_Type;
+         ret = ocs::tom::GRU::descriptor.e;
          break;
       case AR_binding:
-         ret = BN_Type;
+         ret = ocs::tom::BN::descriptor.e;
          break;
       case AR_pe_object:
-         ret = PE_Type;
+         ret = ocs::tom::PE::descriptor.e;
          break;
       case EVR_event_client:
-         ret = EV_Type;
+         ret = ocs::tom::EV::descriptor.e;
          break;
       case EVR_event_list:
-         ret = ET_Type;
+         ret = ocs::tom::ET::descriptor.e;
          break;
       case RTIC_tickets:
-         ret = OR_Type;
+         ret = ocs::tom::OR::descriptor.e;
          break;
       case PRO_groups:
-         ret = GR_Type;
+         ret = ocs::tom::GR::descriptor.e;
          break;
       case BN_specific_binding_list:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case BN_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
       case TEST_obj_jb:
-         ret = JB_Type;
+         ret = ocs::tom::JB::descriptor.e;
          break;
       case RL_user_list:
-         ret = US_Type;
+         ret = ocs::tom::US::descriptor.e;
          break;
       case RL_parent_role_list:
-         ret = ST_Type;
+         ret = ocs::tom::ST::descriptor.e;
          break;
       case RL_joker:
-         ret = VA_Type;
+         ret = ocs::tom::VA::descriptor.e;
          break;
    }
    return ret;

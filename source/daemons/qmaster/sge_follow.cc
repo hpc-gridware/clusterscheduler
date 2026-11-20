@@ -683,22 +683,6 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                const auto gdil_ep = next_gdil_ep;
                uint32_t slots = ocs::tom::get<JG_slots>(gdil_ep);
 
-               // check if booking would work on the queue
-               // this should actually not be necessary, as any change on the queue definition (consumables)
-               // would have increased the queue version which we check above
-               // it would reject jobs which got falsely scheduled, though
-#if 0
-               const char *queue_name = lGetString(gdil_ep, JG_qname);
-               lListElem *queue = nullptr;
-               queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
-               if (queue) {
-                  qinstance_debit_consumable(queue, jep, pe, master_centry_list, slots, is_master, false, &consumables_ok);
-                  if (!consumables_ok) {
-                     break;
-                  }
-               }
-#endif
-
                /* sum up slots */
                host_slots += slots;
                total_slots += slots;
@@ -974,17 +958,6 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
             }
             sge_add_event(now, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
 
-#if 0
-            DPRINTF(("PRIORITY: " sge_u32 "." sge_u32" %f/%f tix/ntix %f npri %f/%f urg/nurg %f prio\n",
-               lGetUlong(jep, JB_job_number),
-               lGetUlong(jatp, JAT_task_number),
-               lGetDouble(jatp, JAT_tix),
-               lGetDouble(jatp, JAT_ntix),
-               lGetDouble(jep, JB_urg),
-               lGetDouble(jep, JB_nurg),
-               lGetDouble(jatp, JAT_prio)));
-#endif
-
          }
          break;
 
@@ -1116,7 +1089,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                         }
                      }
 
-                     /* map cached tickets back to RTIC_Type list */
+                     /* map cached tickets back to RTIC list */
                      for (const auto cached : *host_tickets_cache) {
                         const char *hostname = ocs::tom::get<UA_name>(cached);
                         ocs_follow_add_host_ticket_order(*topp, hostname, ep, what, ocs::tom::get<UA_value>(cached));

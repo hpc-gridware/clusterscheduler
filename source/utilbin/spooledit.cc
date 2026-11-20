@@ -99,7 +99,7 @@ init_framework() {
    const char *spooling_lib = ocs::Bootstrap::get_spooling_lib();
    const char *spooling_params = ocs::Bootstrap::get_spooling_params();
 
-   /* create spooling context; the spooling loader creates it as SPC_Type, the default context takes it over */
+   /* create spooling context; the spooling loader creates it as SPC, the default context takes it over */
    const auto spooling_context = ocs::tom::Element<ocs::tom::SPC>::from_typed(
       spool_create_dynamic_context(&answer_list, spooling_method, spooling_lib, spooling_params));
    answer_list_output(&answer_list);
@@ -200,7 +200,7 @@ list_objects(const char *key) {
       ret = EXIT_FAILURE;
    }
 
-   // the keys (STU_Type), freed when leaving the function
+   // the keys (STU), freed when leaving the function
    const auto stu_list = ocs::tom::ListPtr<ocs::tom::STU>::from_typed(stu_list_raw);
 
    if (dbret) {
@@ -254,7 +254,7 @@ dump_object(const char *key) {
    } else {
       /* job script is spooled as string, not as cull object */
       if (strncmp(key, "JOBSCRIPT:", 10) == 0) {
-         // job script is written as a pseudo STU_Type object in field STU_name; the element owns the
+         // job script is written as a pseudo STU object in field STU_name; the element owns the
          // string and is freed with it - the string alone was freed before and the element leaked (CS-3127)
          const auto job_script_ep = ocs::tom::ElementPtr<ocs::tom::STU>::from_typed(
                spool_read_object(&answer_list, spool_get_default_context(), SGE_TYPE_JOBSCRIPT, key));

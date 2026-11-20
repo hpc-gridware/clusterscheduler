@@ -114,7 +114,7 @@ static int ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_
  *                with `FLG_USE_PSEUDOS`), and `-h` is parsed for qalter
  *
  * @return `nullptr` when everything was fine, otherwise an answer list
- *         (`AN_Type`) carrying one of
+ *         (`AN`) carrying one of
  *         - `STATUS_EUNKNOWN` - an internal error, a null pointer or out of memory
  *         - `STATUS_EEXIST` - an option was given more than once; a warning
  *         - `STATUS_ESEMANTIC` - an option that needs an argument had none
@@ -1346,7 +1346,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"-masterq %s\"\n", *sp);
          lList *ids_out = nullptr;
          i_ret = cull_parse_destination_identifier_list(&ids_out, *sp);
-         /* cull_parse_destination_identifier_list() creates the list with QR_Type, so it is taken over unchecked */
+         /* cull_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
          auto id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(ids_out);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1671,7 +1671,7 @@ DTRACE;
          DPRINTF("\"-q %s\"\n", *sp);
          lList *ids_out = nullptr;
          i_ret = cull_parse_destination_identifier_list(&ids_out, *sp);
-         /* cull_parse_destination_identifier_list() creates the list with QR_Type, so it is taken over unchecked */
+         /* cull_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
          auto id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(ids_out);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1995,7 +1995,7 @@ DTRACE;
 
             tmp = sge_strdup(nullptr, *sp);
             dest = string_list(tmp, ",", nullptr);
-            cull_parse_string_list(dest, "user_list", ARA_Type, rule, &user_list);
+            cull_parse_string_list(dest, "user_list", ocs::tom::ARA::descriptor.e, rule, &user_list);
             sge_free(&tmp);
             sge_free(&dest);
             ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
@@ -2411,9 +2411,9 @@ static int sge_parse_checkpoint_interval(
 /***************************************************************************/
 
 /**
- * @brief Create a VA_Type variable list from an environment array.
+ * @brief Create a VA variable list from an environment array.
  *
- * Creates one VA_Type element per "NAME=value" entry of @p envp. A name given
+ * Creates one VA element per "NAME=value" entry of @p envp. A name given
  * twice keeps one element with the last value (CS-3053). A degenerate entry
  * that carries no name (an all-'=' string such as "=") is skipped rather than
  * asserted on, so a crafted ambient environment cannot crash the parse.

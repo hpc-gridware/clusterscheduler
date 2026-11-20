@@ -144,7 +144,7 @@ int lSortCompare(const lListElem *ep0, const lListElem *ep1, const lSortOrder *s
  * descending, with the field name passed as the matching variadic argument:
  *
  * @code
- * lSortOrder *so = lParseSortOrderVarArg(JR_Type, "%I-", JR_pe_task_id_str);
+ * lSortOrder *so = lParseSortOrderVarArg(ocs::tom::JR::descriptor.e, "%I-", JR_pe_task_id_str);
  * @endcode
  *
  * @param dp descriptor of the object type being sorted

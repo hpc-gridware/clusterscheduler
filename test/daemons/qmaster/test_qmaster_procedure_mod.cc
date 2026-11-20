@@ -216,7 +216,8 @@ del_calendar(const char *name) {
 static std::string
 get_week_calendar(const char *name) {
    ocs::tom::ListPtr<ocs::tom::CAL> lp;
-   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", CAL_Type, CAL_name, name));
+   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", ocs::tom::CAL::descriptor.e,
+                                                                        CAL_name, name));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
                                         ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::CAL>());

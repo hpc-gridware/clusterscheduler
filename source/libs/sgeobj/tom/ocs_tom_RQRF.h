@@ -47,7 +47,7 @@ enum RQRF_Field {
    /**
     * @brief Scope
     *
-    * The names the filter matches (`ST_Type`). A single `*` entry means everything.
+    * The names the filter matches (`ST`). A single `*` entry means everything.
     */
    RQRF_scope,
    /**
@@ -101,6 +101,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RQRF for the list library: a synonym for ocs::tom::RQRF::descriptor */
-inline constexpr const lDescr *RQRF_Type = ocs::tom::RQRF::descriptor.e;

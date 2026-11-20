@@ -73,7 +73,7 @@ static const char *g_current = "?";
    }                                                                           \
 } while (0)
 
-/* Build a fresh CE_Type element ready for read_CE_stringval_host to fill in. */
+/* Build a fresh CE element ready for read_CE_stringval_host to fill in. */
 static lListElem *
 make_rsmap_ce(const char *name) {
    auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();

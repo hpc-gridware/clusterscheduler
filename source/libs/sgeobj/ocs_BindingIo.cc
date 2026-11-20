@@ -59,7 +59,7 @@
  * element, either as the value users write in a `-binding` request or as the
  * switch itself.
  *
- * @param binding_elem the binding list element (BN_Type); an empty handle renders as "NONE"
+ * @param binding_elem the binding list element (BN); an empty handle renders as "NONE"
  * @param[out] binding_string receives the rendered text and is overwritten
  * @param as_switches true to render including the `-binding` switch, false for the bare value
  *

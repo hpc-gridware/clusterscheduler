@@ -68,7 +68,7 @@
  * nothing.
  *
  * @tparam F the filter field of the rule (RQR_filter_*)
- * @param rule the rule (RQR_Type)
+ * @param rule the rule (RQR)
  * @return true when the filter puts no restriction on the scope
  */
 template <auto F>
@@ -87,7 +87,7 @@ static bool is_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
 /**
  * @brief Global rule with regards to cluster queues?
  *
- * @param rule RQR_Type
+ * @param rule RQR
  *
  * @return True if cluster queues play no role with the rule
  *
@@ -104,7 +104,7 @@ bool is_cqueue_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  *
  * Return true if hosts play no role with the rule
  *
- * @param rule RQR_Type
+ * @param rule RQR
  *
  * @return True if hosts play no role with the rule
  *
@@ -119,7 +119,7 @@ bool is_host_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  * @brief Does a filter of a rule expand?
  *
  * @tparam F the filter field of the rule (RQR_filter_*)
- * @param rule the rule (RQR_Type)
+ * @param rule the rule (RQR)
  * @return true when the filter exists and is written in braces (`{...}`)
  */
 template <auto F>
@@ -140,7 +140,7 @@ static bool is_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  *  "hosts @allhosts" returns false
  * @endcode
  *
- * @param rule RQR_Type
+ * @param rule RQR
  *
  * @return True if rule expands on hosts
  *
@@ -161,7 +161,7 @@ bool is_host_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  *  "queues Q001,Q002" returns false
  * @endcode
  *
- * @param rule RQR_Type
+ * @param rule RQR
  *
  * @return True if rule expands on hosts
  *
@@ -178,11 +178,11 @@ bool is_cqueue_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
  *
  * Search for a user reference in the resource quota sets
  *
- * @param rqs resource quota set list (RQS_Type)
+ * @param rqs resource quota set list (RQS)
  * @param user user to search
  * @param group user's group
- * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
- * @param acl_list acl list for user resolving (US_Type)
+ * @param grp_list the user's supplementary groups (ST), may be an empty handle
+ * @param acl_list acl list for user resolving (US)
  *
  * @return true if user was found false if user was not found
  *

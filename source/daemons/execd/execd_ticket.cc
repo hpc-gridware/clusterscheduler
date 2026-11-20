@@ -83,7 +83,7 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
       DPRINTF("got %lf new tickets for job " sge_u32 "." sge_u32 "\n", ticket, jobid, jataskid);
 
-      // @todo we use only very few attributes of JB_Type and JAT_type here - use reduced elements
+      // @todo we use only very few attributes of JB and JAT_type here - use reduced elements
       if (!ticket_modifier) {
          // created with the first element, under the name lAddElemUlong() gave it
          ticket_modifier = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist");

@@ -1502,7 +1502,7 @@ bool ijs_was_escape_disconnect() {
  * connection stdin/stdout/stderr and X11 forwarding data are transferred.
  *
  * When @p port_range is nullptr or empty the OS assigns an ephemeral port.
- * Otherwise the function iterates through the RN_Type range list (which may
+ * Otherwise the function iterates through the RN range list (which may
  * contain multiple min-max[:step] sub-ranges from the mconf @c port_range
  * setting) and binds to the first available port, allowing administrators to
  * restrict qrsh to a firewall-friendly port range.
@@ -1513,7 +1513,7 @@ bool ijs_was_escape_disconnect() {
  *                                 will connect back to.
  * @param username                 Owner of the TLS certificates; used only
  *                                 when TLS is active, otherwise ignored.
- * @param port_range               RN_Type CULL range list of ports to try, or
+ * @param port_range               RN CULL range list of ports to try, or
  *                                 an empty handle/empty list for an OS-assigned
  *                                 ephemeral port.  Supports N-M and N-M:S (step) syntax.
  * @param[out] phandle             Receives the initialized COMM server handle.

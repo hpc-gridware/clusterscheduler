@@ -83,7 +83,7 @@
  * The factor is used to sort the hosts by load, to decide about the load
  * thresholds of the queues, and to resort the hosts after each scheduled job.
  *
- * @param[in]     running_jobs     the running jobs (`JB_Type`)
+ * @param[in]     running_jobs     the running jobs (`JB`)
  * @param[in]     queue_list       the queue instances, to resolve the granted
  *                                 queue of a task
  * @param[in,out] host_list        the execution hosts, whose correction
@@ -198,9 +198,9 @@ int correct_load(const ocs::tom::ConstList<ocs::tom::JB> running_jobs,
  * only by the bookings of the scheduler.
  *
  * @param[in,out] host_list        the execution hosts
- * @param[in]     centry_list      the complex entries (`CE_Type`)
+ * @param[in]     centry_list      the complex entries (`CE`)
  * @param[in]     load_adjustments the job load adjustments of the scheduler
- *                                 configuration (`CE_Type`); nullptr fetches
+ *                                 configuration (`CE`); nullptr fetches
  *                                 them from the data store of the calling
  *                                 thread
  *

@@ -47,7 +47,7 @@ enum APRJLIST_Field {
    /**
     * @brief Value
     *
-    * The project list (list of PR_Type)
+    * The project list (list of PR)
     */
    APRJLIST_value,
 };
@@ -89,6 +89,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of APRJLIST for the list library: a synonym for ocs::tom::APRJLIST::descriptor */
-inline constexpr const lDescr *APRJLIST_Type = ocs::tom::APRJLIST::descriptor.e;

@@ -124,6 +124,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of TE for the list library: a synonym for ocs::tom::TE::descriptor */
-inline constexpr const lDescr *TE_Type = ocs::tom::TE::descriptor.e;

@@ -73,7 +73,7 @@ namespace ocs::tom {
     *
     * A resource diagram lists future resource utilization (it starts at the current time).
     * An object of this type is related to the usage of a specific resource,
-    * whose name is defined in the parent object (RUE_Type).
+    * whose name is defined in the parent object (RUE).
     * The list of resource diaram entries represents a diagram showing
     * resource progression over time.
     *  
@@ -128,6 +128,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RDE for the list library: a synonym for ocs::tom::RDE::descriptor */
-inline constexpr const lDescr *RDE_Type = ocs::tom::RDE::descriptor.e;

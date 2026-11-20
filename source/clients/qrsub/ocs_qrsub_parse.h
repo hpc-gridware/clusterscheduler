@@ -46,7 +46,7 @@
 
 /** @brief Build an advance reservation from the parsed `qrsub` command line
  *
- * @param pcmdline the parsed options (`SPA_Type`); the options used are removed
+ * @param pcmdline the parsed options (`SPA`); the options used are removed
  * @param alpp used to return error messages
  * @param ar the advance reservation the options are written into
  * @return true on success; false with `alpp` filled otherwise

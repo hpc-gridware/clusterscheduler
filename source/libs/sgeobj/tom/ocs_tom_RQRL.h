@@ -65,7 +65,7 @@ enum RQRL_Field {
    /**
     * @brief Usage
     *
-    * What is booked against this limit right now (`RUE_Type`), one entry per name when the filter expands.
+    * What is booked against this limit right now (`RUE`), one entry per name when the filter expands.
     */
    RQRL_usage,
    /**
@@ -116,6 +116,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RQRL for the list library: a synonym for ocs::tom::RQRL::descriptor */
-inline constexpr const lDescr *RQRL_Type = ocs::tom::RQRL::descriptor.e;

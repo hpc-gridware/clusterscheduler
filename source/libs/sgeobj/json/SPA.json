@@ -3,7 +3,7 @@
    "summary": "Commandline Argument",
    "description": [
       "Used in clients for parsing the commandline.",
-      "One commandline argument (including data) is one SPA_Type object."
+      "One commandline argument (including data) is one SPA object."
    ],
    "cullPrefix": "SPA",
    "attributes": [

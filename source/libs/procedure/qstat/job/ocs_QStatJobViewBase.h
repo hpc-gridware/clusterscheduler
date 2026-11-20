@@ -137,367 +137,367 @@ namespace ocs {
 
       /** @brief Report the job number
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param flags which parts of the listing were requested
        */
       virtual void report_job_id(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int flags) = 0;
       /** @brief Report the scheduling category the job was sorted into
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_category_id(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the job script as it was spooled
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_exec_file(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report when the job was submitted
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_submission_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the deadline of a deadline job
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_deadline_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the command line the job was submitted with
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_submit_cmd_line(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the command line after defaults and `sge_request` files were applied
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_effective_submit_cmd_line(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the submitting user and group
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ownership(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the parts of the environment the system itself sets
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_env_core(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the earliest time the job may start
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_execution_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the accounting string
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_account(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the checkpointing environment
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_checkpoint(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the working directory
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_cwd(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the path aliases in effect
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_path_aliases(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the prefix that marks directives in the job script
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_directive_prefix(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report where standard input comes from
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_stdin_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report where standard output goes
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_stdout_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report where standard error goes
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_stderr_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report whether the job reserves resources while it waits
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_reserve(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report whether standard error is merged into standard output
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_merge_stderr(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the hard and soft resource requests
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_request_set_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report which job events trigger a mail
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_mail_options(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report who is mailed about the job
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_mail_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report whether the job is warned before it is signalled
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_notify(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the job name
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_name(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the priority the job was submitted with
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_priority(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the share the job was submitted with
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_job_share(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report whether the job may be restarted after a failure
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_restart(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the shell the job runs under, per host
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_shell_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the environment variables passed to the job
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_env_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the verification mode the job was submitted with
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_verify(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the arguments passed to the job script
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_job_args(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the tasks of an array job that were selected
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_job_identifier_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the size of the spooled job script
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_script_size(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the name of the job script
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_script_file(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the job script itself, for a script read from standard input
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_script_ptr(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the parallel environment and the slot range requested
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_pe(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the jobs this one was asked to wait for, as they were named
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_jid_request_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the jobs this one is still waiting for
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_jid_predecessor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the jobs waiting for this one
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_jid_successor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the array dependencies as they were named
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ja_ad_request_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the array jobs whose tasks this one is waiting for
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ja_ad_predecessor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the array jobs whose tasks wait for this one
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ja_ad_successor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report which queues the job could run in
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_verify_suitable_queues(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the soft wallclock limit
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_soft_wallclock_gmt(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the hard wallclock limit
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_hard_wallclock_gmt(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the job version, which counts how often the job was modified
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_version(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the tickets a manager granted the job
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_override_tickets(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the advance reservation the job runs in
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ar(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the project the job is accounted to
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_project(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the department the submitting user belongs to
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_department(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report whether the client waits for the job
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_sync_options(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the task range of an array job
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ja_structure(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report how many tasks of an array job have not started yet
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_pending_tasks(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report how many tasks of an array job may run at once
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ja_task_concurrency(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the job context
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_ctx_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report the requested core binding
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_binding(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Report why the job has not been scheduled yet
        * @param os stream to write to
        * @param ilp the scheduler job info list, holding the reasons a job is not running
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_schedd_job_info(std::ostream &os, ocs::tom::ConstList<ocs::tom::SME> ilp,
                                           ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
 
       /** @brief Begin the tasks of the current job
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_task_list_started(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief End the task list
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        */
       virtual void report_task_list_finished(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) = 0;
       /** @brief Begin one task
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_started(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                        ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief End the current task
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_finished(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                         ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report the task number
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_id(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                   ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report the state of the task
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_state(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                      ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report the resources the task has consumed
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_usage(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                      ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report the cores the task was bound to
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_exec_binding_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                                  ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report the queue instances the task runs in
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_exec_queue_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                                ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report the hosts the task runs on
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_exec_host_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                               ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report when the task started
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_start_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
@@ -505,21 +505,21 @@ namespace ocs {
       /* CS-1908 retention: end_time row for JAT_status == JFINISHED rows. */
       /** @brief Report when the task finished
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_end_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                         ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report the resource map ids the task was granted
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_resource_map(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
                                             ocs::tom::ConstElement<ocs::tom::JAT> task) = 0;
       /** @brief Report why the task failed
        * @param os stream to write to
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param task the task of the job the row is about
        */
       virtual void report_task_error_reason(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,

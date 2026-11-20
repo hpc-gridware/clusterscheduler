@@ -1615,7 +1615,7 @@ bool spool_berkeleydb_check_reopen_database(ocs::tom::ListPtr<ocs::tom::AN> *ans
  * @param answer_list to return error messages
  * @param info the handle
  * @param database which database to look in
- * @param list receives the keys (`STU_Type`)
+ * @param list receives the keys (`STU`)
  * @param key the key prefix
  * @return true on success, else false
  */

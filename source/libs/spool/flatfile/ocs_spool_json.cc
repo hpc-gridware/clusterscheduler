@@ -42,7 +42,7 @@
 
 #include "sgeobj/sge_object.h"           /* object_get_type_name, the symbolic value renderer */
 #include "sgeobj/sge_attr.h"             /* HOSTREF_DEFAULT ("@/") */
-#include "sgeobj/sge_centry.h"           /* CE_Type / CE_* for complex-value typing */
+#include "sgeobj/sge_centry.h"           /* CE / CE_* for complex-value typing */
 #include "sgeobj/sge_ulong.h"            /* double_print_to_dstring (compact time/mem) */
 #include "uti/sge_time.h"                /* sge_ctime64 / sge_gmt32_to_gmt64 (ISO date-time) */
 #include <ctime>                         /* struct tm, mktime (ISO date-time parse) */
@@ -337,7 +337,7 @@ spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
  *
  * Detected by the presence of the CE name/value/type fields rather than by descriptor
  * pointer identity - essential because a GDI-transported list carries a rebuilt
- * descriptor that is not the canonical CE_Type pointer.
+ * descriptor that is not the canonical CE pointer.
  *
  * @param list  the list to inspect, not empty
  * @return true if the list's descriptor carries the CE name/value/type fields
@@ -690,7 +690,7 @@ spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
       writer.StartArray();
       writer.EndArray();
    } else if (spool_json_is_ce_list(sub_list)) {
-      // a list with the complex-entry fields holds complex entries (CE_Type), possibly reduced; checked as the
+      // a list with the complex-entry fields holds complex entries (CE), possibly reduced; checked as the
       // getters checked each element before
       spool_json_write_ce_array(writer, ocs::tom::ConstList<ocs::tom::CE>(sub_list.raw()));
    } else if (sub_fields != nullptr && sub_fields[0].nm != NoName && sub_fields[0].name == nullptr) {

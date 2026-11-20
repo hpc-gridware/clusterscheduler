@@ -42,7 +42,7 @@
  *
  *     variable[=value][,variable[=value],...]
  *
- * The `VA_Type` CULL element holds one such pair; the functions here work on
+ * The `VA` CULL element holds one such pair; the functions here work on
  * lists of them.
  */
 
@@ -102,7 +102,7 @@ const char *var_get_sharedlib_path_name() {
  * it is created and initialized with `value`.
  * Otherwise, its value is overwritten with `value`
  *
- * @param[in,out] varl VA_Type list, created if the handle is empty
+ * @param[in,out] varl VA list, created if the handle is empty
  * @param name the name of the variable
  * @param value the (new) value of the variable
  *
@@ -133,7 +133,7 @@ void var_list_set_string(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name
  * it is created and initialized with `value`.
  * Otherwise, its value is overwritten with `value`
  *
- * @param[in,out] varl VA_Type list, created if the handle is empty
+ * @param[in,out] varl VA list, created if the handle is empty
  * @param name the name of the variable
  * @param value the (new) value of the variable
  *
@@ -157,7 +157,7 @@ void var_list_set_int(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name, c
  * it is created and initialized with `value`.
  * Otherwise, its value is overwritten with `value`
  *
- * @param[in,out] varl VA_Type list, created if the handle is empty
+ * @param[in,out] varl VA list, created if the handle is empty
  * @param name the name of the variable
  * @param value the (new) value of the variable
  *
@@ -180,7 +180,7 @@ void var_list_set_uint32t(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *nam
  * resulting shared lib path
  * (security, see var_get_sharedlib_path_name())
  *
- * @param[in,out] varl list of environment variables (VA_Type), created if the handle is empty
+ * @param[in,out] varl list of environment variables (VA), created if the handle is empty
  *
  * @see #var_get_sharedlib_path_name, #var_list_set_string, #var_list_set_int, #var_list_set_uint32t
  */
@@ -235,13 +235,13 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
 /**
  * @brief Dump variables from list to file
  *
- * Parses the list of type VA_Type `varl` containing the
+ * Parses the list of type VA `varl` containing the
  * description of variables.
  * Dumps all list elements to `file` in the format:
  * `name`=`value`
  * `name` is read from VA_variable, `value` from VA_value.
  *
- * @param varl list of variables (VA_Type), may be an empty handle
+ * @param varl list of variables (VA), may be an empty handle
  * @param file filehandle of a previously opened (for writing) file
  */
 void var_list_dump_to_file(const ocs::tom::ConstList<ocs::tom::VA> varl, FILE *file) {
@@ -277,7 +277,7 @@ void var_list_dump_to_file(const ocs::tom::ConstList<ocs::tom::VA> varl, FILE *f
  * Return the string value of a variable
  * with the name "variable" which is stored in "varl".
  *
- * @param varl VA_Type list, may be an empty handle
+ * @param varl VA list, may be an empty handle
  * @param variable variable name
  *
  * @return value or nullptr
@@ -307,8 +307,8 @@ const char *var_list_get_string(const ocs::tom::ConstList<ocs::tom::VA> varl, co
  * "__SGE_PREFIX__O_HOME" ===> "SGE_O_HOME
  * @endcode
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if the handle is empty
- * @param src_varl the list to copy from (VA_Type), may be an empty handle and may be varl itself
+ * @param[in,out] varl VA list the copies are added to, created if the handle is empty
+ * @param src_varl the list to copy from (VA), may be an empty handle and may be varl itself
  * @param prefix prefix string (e.g. VAR_PREFIX)
  * @param new_prefix new prefix string (e.g. "SGE_")
  *
@@ -353,8 +353,8 @@ void var_list_copy_prefix_vars(ocs::tom::ListPtr<ocs::tom::VA> &varl, const ocs:
  * "__SGE_PREFIX2__TASK_ID" ===> "SGE_TASK_ID
  * @endcode
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if the handle is empty
- * @param src_varl the list to copy from (VA_Type), may be an empty handle and may be varl itself
+ * @param[in,out] varl VA list the copies are added to, created if the handle is empty
+ * @param src_varl the list to copy from (VA), may be an empty handle and may be varl itself
  * @param prefix prefix string (e.g. VAR_PREFIX_NR)
  * @param new_prefix new prefix string (e.g. "SGE_")
  *
@@ -395,8 +395,8 @@ void var_list_copy_prefix_vars_undef(ocs::tom::ListPtr<ocs::tom::VA> &varl,
  * Copies every variable from `src_varl` into `varl`. A variable without a
  * value is copied as the empty string, never as nullptr.
  *
- * @param[in,out] varl VA_Type list the copies are added to, created if the handle is empty
- * @param src_varl source VA_Type list, may be an empty handle
+ * @param[in,out] varl VA list the copies are added to, created if the handle is empty
+ * @param src_varl source VA list, may be an empty handle
  *
  * @note The banner this was converted from also described an `ignore_prefix`
  *       parameter that filtered the copied variables. Neither the parameter
@@ -424,7 +424,7 @@ void var_list_copy_env_vars_and_value(ocs::tom::ListPtr<ocs::tom::VA> &varl,
  *
  * The list itself stays, also when it becomes empty.
  *
- * @param varl VA_Type list, may be an empty handle
+ * @param varl VA list, may be an empty handle
  * @param prefix prefix string (e.g. VAR_PREFIX)
  *
  * @see #var_list_split_prefix_vars
@@ -457,8 +457,8 @@ void var_list_remove_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, const 
  *
  * @p pefix_vars may already hold variables and is appended to.
  *
- * @param list VA_Type list, may be an empty handle
- * @param[in,out] pefix_vars VA_Type list, created if the handle is empty and a variable is moved
+ * @param list VA list, may be an empty handle
+ * @param[in,out] pefix_vars VA list, created if the handle is empty and a variable is moved
  * @param prefix string (e.g. VAR_PREFIX)
  *
  * @see #var_list_remove_prefix_vars
@@ -501,8 +501,8 @@ void var_list_split_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, ocs::to
  * The second list is consumed: it is freed on every return, also on an
  * error.
  *
- * @param lp0 first list (VA_Type), may be an empty handle
- * @param lp1 second list (VA_Type), consumed; may be empty
+ * @param lp0 first list (VA), may be an empty handle
+ * @param lp1 second list (VA), consumed; may be empty
  *
  * @return error state 0 - OK -1 - Error
  */
@@ -554,7 +554,7 @@ int var_list_add_as_set(const ocs::tom::List<ocs::tom::VA> lp0, ocs::tom::ListPt
  * Verifies the contents of a variable list.
  * Variable names may not be nullptr or empty strings.
  *
- * @param lp the list to verify (VA_Type), may be an empty handle
+ * @param lp the list to verify (VA), may be an empty handle
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false in case of errors, error message in answer_list
@@ -579,9 +579,9 @@ bool var_list_verify(const ocs::tom::ConstList<ocs::tom::VA> lp, ocs::tom::ListP
 }
 
 /**
- * @brief Parse a comma-separated variable list into a VA_Type list.
+ * @brief Parse a comma-separated variable list into a VA list.
  *
- * Splits @p variable_str on ',' into "name[=value]" tokens and appends a VA_Type
+ * Splits @p variable_str on ',' into "name[=value]" tokens and appends a VA
  * element per token to @p lpp (creating the list if the handle is empty). A name
  * that is already in the list keeps its element and takes the new value, so a
  * variable given twice holds the last value once (CS-3053). The input
@@ -589,7 +589,7 @@ bool var_list_verify(const ocs::tom::ConstList<ocs::tom::VA> lp, ocs::tom::ListP
  * that carries no name part (e.g. "==") is rejected with an error instead of
  * dereferencing NULL. MT-NOTE: this function is MT safe.
  *
- * @param[in,out] lpp              VA_Type list to append to; created if the
+ * @param[in,out] lpp              VA list to append to; created if the
  *                                 handle is empty, freed on error 2 and 3
  * @param[in]     variable_str     source string ("a=1,b=2,...")
  * @param[in]     check_environment if true, a name without "=value" takes its

@@ -164,7 +164,7 @@ enum class FieldKind {
    CONF,       ///< sge_build_CONF_field_list(a)
    CQ,         ///< sge_build_CQ_field_list(a)
    QU,         ///< sge_build_QU_field_list(a, b)
-   SC_SPOOL    ///< spool_get_fields_to_spool(SC_Type, &spool_config_instr), what the classic backend uses
+   SC_SPOOL    ///< spool_get_fields_to_spool() of SC with spool_config_instr, what the classic backend uses
 };
 
 /** @brief The field list of a layout, as the product obtains it */
@@ -430,8 +430,8 @@ spooling_field *build_fields(const FieldSource &source, bool *owned) {
          return sge_build_QU_field_list(source.a, source.b);
       case FieldKind::SC_SPOOL: {
          tom::ListPtr<tom::AN> alp;
-         spooling_field *fields = spool_get_fields_to_spool(&alp, SC_Type, &spool_config_instr);
-         answers_ok(alp, "spool_get_fields_to_spool(SC_Type)");
+         spooling_field *fields = spool_get_fields_to_spool(&alp, ocs::tom::SC::descriptor.e, &spool_config_instr);
+         answers_ok(alp, "spool_get_fields_to_spool(SC)");
          return fields;
       }
    }
@@ -1658,47 +1658,49 @@ std::vector<Layout> static_layouts(spooling_field *table, const spool_flatfile_i
 std::vector<ObjectCase> object_cases() {
    using K = FieldKind;
    return {
-      {"CAL", CAL_Type, build_CAL, false, nullptr, static_layouts(CAL_fields, &qconf_sfi, true)},
-      {"CK", CK_Type, build_CK, false, nullptr, static_layouts(CK_fields, &qconf_sfi, true)},
-      {"CE", CE_Type, build_CE, false, nullptr, {
+      {"CAL", ocs::tom::CAL::descriptor.e, build_CAL, false, nullptr, static_layouts(CAL_fields, &qconf_sfi, true)},
+      {"CK", ocs::tom::CK::descriptor.e, build_CK, false, nullptr, static_layouts(CK_fields, &qconf_sfi, true)},
+      {"CE", ocs::tom::CE::descriptor.e, build_CE, false, nullptr, {
          {"qconf", {K::STATIC, CE_fields}, &qconf_ce_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
          {"spool", {K::STATIC, CE_fields}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"HGRP", HGRP_Type, build_HGRP, true, nullptr, static_layouts(HGRP_fields, &qconf_sfi, true)},
-      {"HGRP-adminhosts", HGRP_Type, build_HGRP_admin, false, nullptr, static_layouts(HGRP_fields, &qconf_sfi, true)},
-      {"US", US_Type, build_US, true, nullptr, static_layouts(US_fields, &qconf_param_sfi, true)},
-      {"US-manager", US_Type, build_US_manager, false, nullptr, static_layouts(US_fields, &qconf_param_sfi, true)},
-      {"PE", PE_Type, build_PE, true, nullptr, static_layouts(PE_fields, &qconf_sfi, true)},
-      {"RL", RL_Type, build_RL, true, nullptr, static_layouts(RL_fields, &qconf_sfi, true)},
-      {"CAT", CT_Type, build_CAT, false, nullptr, {
+      {"HGRP", ocs::tom::HGRP::descriptor.e, build_HGRP, true, nullptr, static_layouts(HGRP_fields, &qconf_sfi, true)},
+      {"HGRP-adminhosts", ocs::tom::HGRP::descriptor.e, build_HGRP_admin, false, nullptr,
+       static_layouts(HGRP_fields, &qconf_sfi, true)},
+      {"US", ocs::tom::US::descriptor.e, build_US, true, nullptr, static_layouts(US_fields, &qconf_param_sfi, true)},
+      {"US-manager", ocs::tom::US::descriptor.e, build_US_manager, false, nullptr,
+       static_layouts(US_fields, &qconf_param_sfi, true)},
+      {"PE", ocs::tom::PE::descriptor.e, build_PE, true, nullptr, static_layouts(PE_fields, &qconf_sfi, true)},
+      {"RL", ocs::tom::RL::descriptor.e, build_RL, true, nullptr, static_layouts(RL_fields, &qconf_sfi, true)},
+      {"CAT", ocs::tom::CT::descriptor.e, build_CAT, false, nullptr, {
          {"qconf", {K::STATIC, CAT_fields}, &qconf_cat_sfi, F_QCONF | F_JSON, false, false, "category", true},
       }},
       // AR_fields is not used by the product (the classic backend packs the reservation), but it is a table
-      {"AR", AR_Type, build_AR, true, nullptr, {
+      {"AR", ocs::tom::AR::descriptor.e, build_AR, true, nullptr, {
          {"qconf", {K::STATIC, AR_fields}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
       }},
-      {"PR", PR_Type, build_PR, true, nullptr, {
+      {"PR", ocs::tom::PR::descriptor.e, build_PR, true, nullptr, {
          {"qconf", {K::PR, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
          {"spool", {K::PR, nullptr, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"UU", UU_Type, build_UU, true, nullptr, {
+      {"UU", ocs::tom::UU::descriptor.e, build_UU, true, nullptr, {
          {"qconf", {K::UU, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
          {"spool", {K::UU, nullptr, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"STN", STN_Type, build_STN, true, nullptr, {
+      {"STN", ocs::tom::STN::descriptor.e, build_STN, true, nullptr, {
          {"qconf", {K::STN, nullptr, false, true}, &qconf_name_value_list_sfi, F_QCONF, true, true, nullptr, true},
          {"qconf", {K::STN_JSON}, &qconf_name_value_list_sfi, F_JSON, true, true, "sharetree", true},
          {"spool", {K::STN, nullptr, true, true}, &qconf_name_value_list_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"SC", SC_Type, build_SC, true, nullptr, {
+      {"SC", ocs::tom::SC::descriptor.e, build_SC, true, nullptr, {
          {"qconf", {K::STATIC, SC_fields}, &qconf_comma_sfi, F_QCONF | F_JSON, false, true, "sched_conf", true},
          {"spool", {K::SC_SPOOL}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"CONF", CONF_Type, build_CONF, false, nullptr, {
+      {"CONF", ocs::tom::CONF::descriptor.e, build_CONF, false, nullptr, {
          {"qconf", {K::CONF, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, false, nullptr, true},
          {"spool", {K::CONF, nullptr, true}, &qconf_sfi, F_SPOOL, false, false, nullptr, true},
       }},
-      {"EH", EH_Type, build_EH, true, fixup_EH, {
+      {"EH", ocs::tom::EH::descriptor.e, build_EH, true, fixup_EH, {
          // -Ae/-Me and the import: no runtime values
          {"qconf", {K::EH, nullptr, false, false, false, false}, &qconf_sfi, F_QCONF | F_JSON, false, true,
           "exechost", true},
@@ -1711,15 +1713,15 @@ std::vector<ObjectCase> object_cases() {
          {"spool", {K::EH, nullptr, true, false, false, false}, &qconf_sfi, F_SPOOL, false, true, nullptr, true,
           prepare_EH_spool},
       }},
-      {"QU", QU_Type, build_QU, true, nullptr, {
+      {"QU", ocs::tom::QU::descriptor.e, build_QU, true, nullptr, {
          {"show", {K::QU, nullptr, true, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, "qinstance", true},
          {"spool", {K::QU, nullptr, false, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"CQ", CQ_Type, build_CQ, true, nullptr, {
+      {"CQ", ocs::tom::CQ::descriptor.e, build_CQ, true, nullptr, {
          {"qconf", {K::CQ, nullptr, true}, &qconf_sfi, F_QCONF | F_JSON, false, false, nullptr, true},
          {"spool", {K::CQ, nullptr, false}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"RQS", RQS_Type, build_RQS, false, nullptr, {
+      {"RQS", ocs::tom::RQS::descriptor.e, build_RQS, false, nullptr, {
          {"spool", {K::STATIC, RQS_fields}, &qconf_rqs_sfi, F_SPOOL, false, true, nullptr, true},
       }},
    };
@@ -1732,17 +1734,17 @@ std::vector<ObjectCase> object_cases() {
 std::vector<ListCase> list_cases() {
    using K = FieldKind;
    return {
-      {"RQS-list", RQS_Type, build_RQS_list, {K::STATIC, RQS_fields}, &qconf_rqs_sfi, false, true,
+      {"RQS-list", ocs::tom::RQS::descriptor.e, build_RQS_list, {K::STATIC, RQS_fields}, &qconf_rqs_sfi, false, true,
        ListJson::PLAIN, nullptr, nullptr, NoName, true},
-      {"CE-list", CE_Type, build_CE_list, {K::STATIC, CE_fields}, &qconf_ce_list_sfi, true, true,
+      {"CE-list", ocs::tom::CE::descriptor.e, build_CE_list, {K::STATIC, CE_fields}, &qconf_ce_list_sfi, true, true,
        ListJson::PLAIN, nullptr, nullptr, NoName, true},
-      {"CAT-list", CT_Type, build_CAT_list, {K::STATIC, CAT_fields}, &qconf_cat_list_sfi, true, false,
-       ListJson::TYPED_EX, "category-list", "category", NoName, false},
-      {"QU-list", QU_Type, build_QU_list, {K::QU, nullptr, true, false}, nullptr, false, true,
+      {"CAT-list", ocs::tom::CT::descriptor.e, build_CAT_list, {K::STATIC, CAT_fields}, &qconf_cat_list_sfi,
+       true, false, ListJson::TYPED_EX, "category-list", "category", NoName, false},
+      {"QU-list", ocs::tom::QU::descriptor.e, build_QU_list, {K::QU, nullptr, true, false}, nullptr, false, true,
        ListJson::TYPED, "qinstance", nullptr, NoName, false},
-      {"MGR-names", UE_Type, build_manager_list, {K::STATIC, nullptr}, nullptr, false, true,
+      {"MGR-names", ocs::tom::UE::descriptor.e, build_manager_list, {K::STATIC, nullptr}, nullptr, false, true,
        ListJson::NAMES, "manager", nullptr, UE_name, false},
-      {"AH-names", HR_Type, build_adminhost_list, {K::STATIC, nullptr}, nullptr, false, true,
+      {"AH-names", ocs::tom::HR::descriptor.e, build_adminhost_list, {K::STATIC, nullptr}, nullptr, false, true,
        ListJson::NAMES, "adminhost", nullptr, HR_name, false},
    };
 }

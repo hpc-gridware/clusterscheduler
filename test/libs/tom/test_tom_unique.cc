@@ -103,9 +103,9 @@ throws_duplicate(const std::function<void()> &call, const char *field, const cha
  */
 static lList *
 make_tasks(const std::uint32_t n) {
-   lList *tasks = lCreateList("tasks", JAT_Type);
+   lList *tasks = lCreateList("tasks", ocs::tom::JAT::descriptor.e);
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemUlong(&tasks, JAT_task_number, i, JAT_Type);
+      lAddElemUlong(&tasks, JAT_task_number, i, ocs::tom::JAT::descriptor.e);
    }
    return tasks;
 }
@@ -117,9 +117,9 @@ make_tasks(const std::uint32_t n) {
  */
 static lList *
 make_entries(const std::uint32_t n) {
-   lList *entries = lCreateList("entries", UE_Type);
+   lList *entries = lCreateList("entries", ocs::tom::UE::descriptor.e);
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemStr(&entries, UE_name, ("u" + std::to_string(i)).c_str(), UE_Type);
+      lAddElemStr(&entries, UE_name, ("u" + std::to_string(i)).c_str(), ocs::tom::UE::descriptor.e);
    }
    return entries;
 }
@@ -131,9 +131,9 @@ make_entries(const std::uint32_t n) {
  */
 [[maybe_unused]] static lList *
 make_hosts(const std::uint32_t n) {
-   lList *hosts = lCreateList("hosts", EH_Type);
+   lList *hosts = lCreateList("hosts", ocs::tom::EH::descriptor.e);
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemHost(&hosts, EH_name, ("host-" + std::to_string(i)).c_str(), EH_Type);
+      lAddElemHost(&hosts, EH_name, ("host-" + std::to_string(i)).c_str(), ocs::tom::EH::descriptor.e);
    }
    return hosts;
 }
@@ -192,7 +192,7 @@ test_debug_checks() {
             typed_append && typed_set);
 
       const bool old_number = aborts([&] {
-         lListElem *ep = lCreateElem(JAT_Type);
+         lListElem *ep = lCreateElem(ocs::tom::JAT::descriptor.e);
          lSetUlong(ep, JAT_task_number, 3);
          lAppendElem(tasks, ep);
       }) && aborts([&] { lSetUlong(RawList{tasks}.back().raw(), JAT_task_number, 3); }) &&
@@ -203,7 +203,7 @@ test_debug_checks() {
       const bool typed_string =
          throws_duplicate([&] { Element<UE>{RawList{entries}.back().raw()}.set<UE_name>("u2"); }, "UE_name", "u2",
                           "entries");
-      const bool old_string = aborts([&] { lAddElemStr(&entries, UE_name, "u2", UE_Type); }) &&
+      const bool old_string = aborts([&] { lAddElemStr(&entries, UE_name, "u2", ocs::tom::UE::descriptor.e); }) &&
                               aborts([&] { lSetString(RawList{entries}.back().raw(), UE_name, "u2"); });
       lFreeList(&entries);
 
@@ -212,7 +212,7 @@ test_debug_checks() {
       const bool typed_host =
          throws_duplicate([&] { Element<EH>{RawList{hosts}.back().raw()}.set<EH_name>(Host{"HOST-2"}); },
                           "EH_name", "HOST-2", "hosts");
-      const bool old_host = aborts([&] { lAddElemHost(&hosts, EH_name, "HOST-2", EH_Type); }) &&
+      const bool old_host = aborts([&] { lAddElemHost(&hosts, EH_name, "HOST-2", ocs::tom::EH::descriptor.e); }) &&
                             aborts([&] { lSetHost(RawList{hosts}.back().raw(), EH_name, "HOST-2"); });
       lFreeList(&hosts);
 
@@ -243,7 +243,7 @@ test_dropped_table() {
    lList *tasks = make_tasks(LONG_LIST);
    static_cast<void>(lGetElemUlong(tasks, JAT_task_number, 1));
    const bool built = has_table(tasks, JAT_task_number);
-   lListElem *ep = lCreateElem(JAT_Type);
+   lListElem *ep = lCreateElem(ocs::tom::JAT::descriptor.e);
    lSetUlong(ep, JAT_task_number, 3);
    lAppendElem(tasks, ep);
    const bool dropped = !has_table(tasks, JAT_task_number);
@@ -267,7 +267,7 @@ test_dropped_table() {
    static_cast<void>(lGetElemUlong(unique, JAT_task_number, 1));
    lListElem *renamed = RawList{unique}.back().raw();
    lSetUlong(renamed, JAT_task_number, 1000);
-   lListElem *more = lCreateElem(JAT_Type);
+   lListElem *more = lCreateElem(ocs::tom::JAT::descriptor.e);
    lSetUlong(more, JAT_task_number, 1001);
    lAppendElem(unique, more);
    CHECK(9, "a set and an append of new keys keep the table and are found through it",
@@ -357,9 +357,9 @@ test_lookup() {
    }
 
    // a field hashed without CULL_UNIQUE holds a key several times by design: found first, then the next
-   lList *changes = lCreateList("changes", CX_Type);
+   lList *changes = lCreateList("changes", ocs::tom::CX::descriptor.e);
    for (std::uint32_t i = 0; i < LONG_LIST; i++) {
-      lAddElemStr(&changes, CX_variable, i % 2 == 0 ? "a" : "b", CX_Type);
+      lAddElemStr(&changes, CX_variable, i % 2 == 0 ? "a" : "b", ocs::tom::CX::descriptor.e);
    }
    const void *iterator = nullptr;
    const lListElem *first = lGetElemStrFirst(changes, CX_variable, "a", &iterator);
@@ -405,7 +405,7 @@ test_valid_after_throw() {
          thrown && has_table(tasks, JAT_task_number) && tasks_consistent(tasks, LONG_LIST) &&
          lGetUlong(ConstRawList{tasks}.front().raw(), JAT_task_number) == 1);
 
-   lEnumeration *what = lWhat("%T(%I)", JAT_Type, JAT_task_number);
+   lEnumeration *what = lWhat("%T(%I)", ocs::tom::JAT::descriptor.e, JAT_task_number);
    lList *reduced = lSelect("reduced", tasks, nullptr, what);
    lFreeWhat(&what);
    thrown = false;

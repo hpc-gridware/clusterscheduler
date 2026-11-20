@@ -212,7 +212,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
  *
  * Create a new enumeration. fmt describes the format of the enumeration
  *
- * @param fmt format string: element := type "(" attribute_list ")" . type := "%T" . attribute_list := "ALL" | "NONE" | attributes . attributes = { "%I" | "%I" "->" element } . examples: 1) "%T(NONE)" 2) "%T(ALL)" 3) "%T(%I%I)" 4) "%T(%I%I->%T(%I%I))" ...             - varibale list of arguments varargs corresponding to examples above: 1) JB_Type 2) JB_Type 3) JB_Type JB_job_numer JB_ja_tasks 4) JB_Type JB_job_numer JB_ja_tasks JAT_Type JAT_task_number JAT_status
+ * @param fmt format string: element := type "(" attribute_list ")" . type := "%T" . attribute_list := "ALL" | "NONE" | attributes . attributes = { "%I" | "%I" "->" element } . examples: 1) "%T(NONE)" 2) "%T(ALL)" 3) "%T(%I%I)" 4) "%T(%I%I->%T(%I%I))" ...             - varibale list of arguments varargs corresponding to examples above: 1) ocs::tom::JB::descriptor.e 2) ocs::tom::JB::descriptor.e 3) ocs::tom::JB::descriptor.e JB_job_numer JB_ja_tasks 4) ocs::tom::JB::descriptor.e JB_job_numer JB_ja_tasks ocs::tom::JAT::descriptor.e JAT_task_number JAT_status
  *
  * @return new enumeration
  *

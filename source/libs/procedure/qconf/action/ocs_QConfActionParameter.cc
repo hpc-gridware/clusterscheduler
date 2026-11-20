@@ -69,7 +69,7 @@ ocs::QConfActionParameter::get_arg(const char *name) const {
 
 /** @brief Marshal the arguments into the request bundle
  *
- * As a `VA_Type` list, the pair shape the write procedure uses for its items -
+ * As a `VA` list, the pair shape the write procedure uses for its items -
  * no new CULL type and no change to the wire format.
  *
  * @return the bundle, owned by the caller

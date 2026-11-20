@@ -96,7 +96,8 @@ static int s_fail = 0;
 static ocs::tom::ElementPtr<ocs::tom::HGRP>
 fetch_hgroup(const char *name) {
    ocs::tom::ListPtr<ocs::tom::HGRP> lp;
-   const auto where = ocs::tom::Where<ocs::tom::HGRP>::from_typed(lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, name));
+   const auto where = ocs::tom::Where<ocs::tom::HGRP>::from_typed(lWhere("%T(%I==%s)", ocs::tom::HGRP::descriptor.e,
+                                                                         HGRP_name, name));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
                                         ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::HGRP>());

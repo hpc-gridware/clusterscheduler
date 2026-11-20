@@ -234,7 +234,7 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
  * @param task the GDI task being answered
  * @param cqueue the cluster queue
  * @param answer_list receives messages for the caller
- * @param add_hosts the hosts gained (HR_Type)
+ * @param add_hosts the hosts gained (HR)
  * @param monitor for monitoring qmaster threads
  * @param master_hgroup_list the host groups
  * @param master_cqueue_list the cluster queues
@@ -292,7 +292,7 @@ cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
  *
  * @param cqueue the cluster queue
  * @param answer_list receives messages for the caller
- * @param del_hosts the hosts lost (HR_Type)
+ * @param del_hosts the hosts lost (HR)
  * @param gdi_session the session the change belongs to
  * @return true
  */
@@ -337,7 +337,7 @@ cqueue_mark_qinstances(const ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::L
  *
  * @tparam CqF the attribute list field of the cluster queue
  * @param this_elem the cluster queue to modify
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param reduced_elem the reduced request element; does nothing if it lacks the attribute
  * @param sub_cmd the GDI sub-command
  * @param attribute_name_str the attribute's name, for the messages
@@ -600,7 +600,7 @@ cqueue_hgroup_delete(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *
  * instruction names what is being taken away rather than what is being added.
  *
  * @param answer_list receives messages for the caller
- * @param href_list the instruction, an HR_Type list; host names are resolved in place
+ * @param href_list the instruction, an HR list; host names are resolved in place
  * @param sub_command how the instruction is merged with the member list
  * @return true when the input is acceptable
  */
@@ -657,7 +657,7 @@ cqueue_verify_hostlist(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
  * @param packet the client request
  * @param task the GDI task being answered
  * @param cqueue_name the cluster queue whose host list is written
- * @param href_list the instruction, an HR_Type list
+ * @param href_list the instruction, an HR list
  * @param monitor for monitoring qmaster threads
  * @return true on success
  */
@@ -1020,7 +1020,7 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
     *
     * Instances the host list change creates or removes are not handled here
     * any more: they come from the cascade inside the host group write path,
-    * together with the EH_Type elements the new hosts need
+    * together with the EH elements the new hosts need
     * (host_list_add_missing_href() is called there for the same reason it was
     * called here). refresh_all_values stays false for the same reason -- the
     * cascade sets it itself for the queues whose membership moved.
@@ -1599,8 +1599,8 @@ ocs_cqueue_collect_refs(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
  * @tparam Snm2 the second cluster queue attribute list field
  * @tparam SubF the reference list field of an attribute list entry
  * @tparam KeyF the key field of a reference
- * @param new_cqueue New cluster queue (CQ_Type), or an empty handle
- * @param old_cqueue Old cluster queue (CQ_Type), or an empty handle
+ * @param new_cqueue New cluster queue (CQ), or an empty handle
+ * @param old_cqueue Old cluster queue (CQ), or an empty handle
  * @param new_sublist List of new references, extended; nullptr to collect none
  * @param old_sublist List of old references, extended; nullptr to collect none
  *
@@ -1647,10 +1647,10 @@ cqueue_diff_sublist(const ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
  * A diff new/old is made regarding cluster queue projects/xprojects.
  * Project references are returned in new_prj/old_prj.
  *
- * @param new_cqueue New cluster queue (CQ_Type), or an empty handle
- * @param old_cqueue Old cluster queue (CQ_Type), or an empty handle
- * @param new_prj New project references (PR_Type), extended; nullptr to collect none
- * @param old_prj Old project references (PR_Type), extended; nullptr to collect none
+ * @param new_cqueue New cluster queue (CQ), or an empty handle
+ * @param old_cqueue Old cluster queue (CQ), or an empty handle
+ * @param new_prj New project references (PR), extended; nullptr to collect none
+ * @param old_prj Old project references (PR), extended; nullptr to collect none
  *
  * @note MT-NOTE: cqueue_diff_projects() is MT safe
  */
@@ -1669,10 +1669,10 @@ cqueue_diff_projects(const ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
  * A diff new/old is made regarding cluster queue acl/xacl.
  * Userset references are returned in new_acl/old_acl.
  *
- * @param new_cqueue New cluster queue (CQ_Type), or an empty handle
- * @param old_cqueue Old cluster queue (CQ_Type), or an empty handle
- * @param new_acl New userset references (US_Type), extended; nullptr to collect none
- * @param old_acl Old userset references (US_Type), extended; nullptr to collect none
+ * @param new_cqueue New cluster queue (CQ), or an empty handle
+ * @param old_cqueue Old cluster queue (CQ), or an empty handle
+ * @param new_acl New userset references (US), extended; nullptr to collect none
+ * @param old_acl Old userset references (US), extended; nullptr to collect none
  *
  * @note MT-NOTE: cqueue_diff_usersets() is MT safe
  */
@@ -1693,8 +1693,8 @@ cqueue_diff_usersets(const ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
  * on new/old cluster queue configuration and events are sent upon
  * changes.
  *
- * @param new_cq New cluster queue (CQ_Type)
- * @param old_cq Old cluster queue (CQ_Type)
+ * @param new_cq New cluster queue (CQ)
+ * @param old_cq Old cluster queue (CQ)
  * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: cqueue_update_categories() is not MT safe

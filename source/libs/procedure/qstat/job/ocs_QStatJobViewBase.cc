@@ -93,7 +93,7 @@ void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParamet
 /** @brief Report one job, one hook call per row
  * @param os stream to write to
  * @param ilp the scheduler job info list, holding the reasons a job is not running
- * @param job the job (`JB_Type`)
+ * @param job the job (`JB`)
  * @param flags which parts of the listing were requested
  */
 void ocs::QStatJobViewBase::show_job(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
@@ -212,7 +212,7 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const ocs::tom::ConstList
  * that already have the JERROR bit set in JAT_state are excluded. A hold list
  * the (reduced) job does not hold counts nothing.
  *
- * @param job the job (`JB_Type`)
+ * @param job the job (`JB`)
  * @return the number of pending tasks
  */
 uint32_t ocs::QStatJobViewBase::count_pending_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {

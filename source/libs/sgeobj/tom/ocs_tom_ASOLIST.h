@@ -47,7 +47,7 @@ enum ASOLIST_Field {
    /**
     * @brief Value
     *
-    * The subordinate list (list of SO_Type).
+    * The subordinate list (list of SO).
     */
    ASOLIST_value,
 };
@@ -89,6 +89,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ASOLIST for the list library: a synonym for ocs::tom::ASOLIST::descriptor */
-inline constexpr const lDescr *ASOLIST_Type = ocs::tom::ASOLIST::descriptor.e;

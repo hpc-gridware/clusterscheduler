@@ -240,8 +240,8 @@ sge_verify_department_entries(const ocs::tom::ConstList<ocs::tom::US> userset_li
  *
  * Check if the given defaultdepartment "dept" is valid.
  *
- * @param dept US_Type defaultdepartment
- * @param answer_list AN_Type answer list
+ * @param dept US defaultdepartment
+ * @param answer_list AN answer list
  *
  * @return 0 or 1
  */
@@ -273,8 +273,8 @@ dept_is_valid_defaultdepartment(const ocs::tom::ConstElement<ocs::tom::US> dept,
  *
  * Check if the given "acl" is correct
  *
- * @param acl US_Type acl
- * @param answer_list AN_Type list
+ * @param acl US acl
+ * @param answer_list AN list
  *
  * @return 0 or 1
  */
@@ -302,11 +302,11 @@ acl_is_valid_acl(const ocs::tom::ConstElement<ocs::tom::US> acl, ocs::tom::ListP
 
 /** @brief Is the job's owner a member of the given department?
  *
- * @param job the job (`JB_Type`) whose owner and groups are checked
+ * @param job the job (`JB`) whose owner and groups are checked
  * @param alpp used to return error messages; may be `nullptr` when the caller
  *             is probing several departments and a non-match is not an error
  * @param dept_name the department to check against
- * @param userset_list the departments (`US_Type`)
+ * @param userset_list the departments (`US`)
  * @return true if the owner is a member of `dept_name`
  */
 bool
@@ -365,9 +365,9 @@ job_is_valid_department(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom
  * assignment rule. `defaultdepartment` is skipped during the search and used
  * as the fallback when no other department matches.
  *
- * @param job the job (`JB_Type`); `JB_department` is set on success
+ * @param job the job (`JB`); `JB_department` is set on success
  * @param alpp used to return error messages
- * @param userset_list the departments (`US_Type`)
+ * @param userset_list the departments (`US`)
  * @return true if a department could be assigned
  */
 bool
@@ -584,8 +584,8 @@ static bool userset_still_used(const char *u) {
  * time/still as ACL for host_conf(5)/queue_conf(5)/sge_pe(5). If
  * so an event is sent.
  *
- * @param added List of added userset references (US_Type)
- * @param removed List of removed userset references (US_Type)
+ * @param added List of added userset references (US)
+ * @param removed List of removed userset references (US)
  * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: userset_update_categories() is not MT safe

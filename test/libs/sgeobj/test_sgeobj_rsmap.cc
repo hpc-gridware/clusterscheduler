@@ -55,7 +55,7 @@ first_answer_text(const ocs::tom::ConstList<ocs::tom::AN> answer_list) {
  * @brief Build a complex_values entry as it looks after centry_list_fill_request().
  * @param[in] type    the complex type, e.g. TYPE_RSMAP
  * @param[in] amount  the configured amount, i.e. what CE_doubleval holds
- * @return the CE_Type element
+ * @return the CE element
  */
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_centry(uint32_t type, double amount) {
@@ -71,7 +71,7 @@ make_centry(uint32_t type, double amount) {
 
 /**
  * @brief Render the ids of a centry as a blank separated string, in list order.
- * @param[in]  centry the CE_Type element to read
+ * @param[in]  centry the CE element to read
  * @param[out] buffer receives the ids
  * @param[in]  size   size of buffer
  */
@@ -236,7 +236,7 @@ add_master_centry(lList *master, const char *name, ocs::CEntry::Type type, uint3
  * @param[in] names  names of the characteristics
  * @param[in] values their values, one per name
  * @param[in] count  how many characteristics
- * @return the CE_Type element
+ * @return the CE element
  */
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_map_with_characteristics(const char *const names[], const char *const values[], int count) {
@@ -353,7 +353,7 @@ test_check_characteristics() {
  * @brief A resource map instance with its amount
  * @param id the instance id
  * @param amount its amount
- * @return the RESL_Type element
+ * @return the RESL element
  */
 static ocs::tom::ElementPtr<ocs::tom::RESL>
 make_resl(const char *id, const uint32_t amount) {

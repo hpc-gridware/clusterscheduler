@@ -134,15 +134,6 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
 }
 
 /**
- * @brief ocs_where_from_elem() for an untyped caller
- * @param where the element to unpack, of `PACK_Type`, or nullptr
- * @return the condition, to be released with `lFreeWhere()`, or nullptr on error
- */
-lCondition *lWhereFromElem(const lListElem *where) {
-   return ocs_where_from_elem(ocs::tom::ConstElement<ocs::tom::PACK>(where));
-}
-
-/**
  * @brief Pack a field selection into an element, so it can be sent
  *
  * @param what the selection to pack
@@ -203,13 +194,4 @@ lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> wh
       ERROR(MSG_PACK_WRONGPACKTYPE_UI, ocs::tom::get<PACK_id>(what), SGE_WHAT);
    }
    DRETURN(cond);
-}
-
-/**
- * @brief ocs_what_from_elem() for an untyped caller
- * @param what the element to unpack, of `PACK_Type`, or nullptr
- * @return the selection, to be released with `lFreeWhat()`, or nullptr on error
- */
-lEnumeration *lWhatFromElem(const lListElem *what) {
-   return ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK>(what));
 }

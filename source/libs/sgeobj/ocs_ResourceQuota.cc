@@ -38,7 +38,7 @@
 #include "sgeobj/sge_answer.h"
 
 /** @brief Check resource quota limits list for duplicate names
- *  @param centry_list RQRL_Type list to check for duplicates
+ *  @param centry_list RQRL list to check for duplicates
  *  @param answer_list If not nullptr, error messages are added to this list
  *  @param object_name Optional name of the object owning the centry list
  *  @return true if duplicates were found, false otherwise

@@ -60,7 +60,7 @@
  * Parse a list of mail recipients: user[`@host`][,user[`@host`],...].
  * Recipients the list already holds are skipped.
  *
- * @param[in,out] list MR_Type list the recipients are appended to; created if empty, reset on the errors 2 and 3
+ * @param[in,out] list MR list the recipients are appended to; created if empty, reset on the errors 2 and 3
  * @param mail_str stringlist of mail recipients
  *
  * @return error state 0 - success >0 - error
@@ -121,7 +121,7 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
  *
  * @param mail_str stringlist of mail recipients
  *
- * @return error state 0 - success >0 - error, and the MR_Type list (empty handle on an error)
+ * @return error state 0 - success >0 - error, and the MR list (empty handle on an error)
  *
  * @note MT-NOTE: mailrec_parse() is MT safe
  *
@@ -139,7 +139,7 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::MR>> mailrec_parse(const char *mail_s
  *
  * Build a string of mail reipients ("`user@host`,user,...")
  *
- * @param head MR_Type list
+ * @param head MR list
  * @param mail_str buffer to be filled
  * @param mail_str_len size of buffer
  *

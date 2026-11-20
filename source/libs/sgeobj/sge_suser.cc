@@ -62,11 +62,11 @@
  * The list is a master list, a process-lifetime global held as a raw
  * pointer; it is created if it does not exist yet.
  *
- * @param suser_list SU_Type list reference
- * @param answer_list AN_Type list; unused
+ * @param suser_list SU list reference
+ * @param answer_list AN list; unused
  * @param suser_name username
  *
- * @return SU_Type element or an empty handle
+ * @return SU element or an empty handle
  */
 ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list,
                                                [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -90,10 +90,10 @@ ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list,
  * This function tries to find the first entry for user "suser_name"
  * in the list "suser_list".
  *
- * @param suser_list SU_Type list, may be an empty handle
+ * @param suser_list SU list, may be an empty handle
  * @param suser_name username
  *
- * @return SU_Type element or an empty handle
+ * @return SU element or an empty handle
  */
 ocs::tom::Element<ocs::tom::SU> suser_list_find(const ocs::tom::ConstList<ocs::tom::SU> suser_list,
                                                 const char *suser_name) {
@@ -113,7 +113,7 @@ ocs::tom::Element<ocs::tom::SU> suser_list_find(const ocs::tom::ConstList<ocs::t
  *
  * The job counter within "suser" will be increased by one
  *
- * @param suser SU_Type element, may be an empty handle
+ * @param suser SU element, may be an empty handle
  */
 void suser_increase_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
    DENTER(TOP_LAYER);
@@ -129,7 +129,7 @@ void suser_increase_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
  *
  * The job counter within "suser" will be decreased by one
  *
- * @param suser SU_Type element, may be an empty handle
+ * @param suser SU element, may be an empty handle
  */
 void suser_decrease_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
    DENTER(TOP_LAYER);
@@ -151,7 +151,7 @@ void suser_decrease_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
  *
  * Returns the current number of jobs registed for "suser"
  *
- * @param suser SU_Type element, may be an empty handle
+ * @param suser SU element, may be an empty handle
  *
  * @return number of jobs, 0 for an empty handle
  */
@@ -169,7 +169,7 @@ uint32_t suser_get_job_counter(const ocs::tom::ConstElement<ocs::tom::SU> suser)
 /**
  * @brief Find the entry of a user, adding one if the list has none
  *
- * @param master_suser_list the submit users (SU_Type), not empty
+ * @param master_suser_list the submit users (SU), not empty
  * @param submit_user the user, not nullptr
  * @return the entry
  */
@@ -196,9 +196,9 @@ ocs_suser_list_find_or_add(const ocs::tom::List<ocs::tom::SU> master_suser_list,
  * A user without an entry gets one with no jobs. Without a list the user
  * counts as one with no jobs.
  *
- * @param job JB_Type element
+ * @param job JB element
  * @param max_u_jobs maximum number of allowed jobs per user
- * @param master_suser_list the submit users to count in (SU_Type), may be an empty handle
+ * @param master_suser_list the submit users to count in (SU), may be an empty handle
  *
  * @return 1 => limit would be exceeded 0 => otherwise
  */
@@ -237,10 +237,10 @@ int suser_check_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const ui
  * of the jobcounter (reading jobs from spool area). This may be done
  * with "force_registration".
  *
- * @param job JB_Type element
+ * @param job JB element
  * @param max_u_jobs maximum number of allowed jobs per user
  * @param force_registration force job registration
- * @param master_suser_list the submit users to look in (SU_Type), may be an empty handle;
+ * @param master_suser_list the submit users to look in (SU), may be an empty handle;
  *                          then nothing is counted
  *
  * @return 1 => limit would be exceeded 0 => otherwise
@@ -272,8 +272,8 @@ int suser_register_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const
  *
  * number of jobs for a given user
  *
- * @param job JB_Type element
- * @param master_suser_list the submit users to look in (SU_Type), may be an empty handle
+ * @param job JB element
+ * @param master_suser_list the submit users to look in (SU), may be an empty handle
  *
  * @return number of jobs in the system
  */
@@ -293,8 +293,8 @@ uint32_t suser_job_count(const ocs::tom::ConstElement<ocs::tom::JB> job,
  *
  * Decrease the jobcounter for the job owner of "job".
  *
- * @param job JB_Type element
- * @param master_suser_list the submit users to unregister from (SU_Type), may be an empty handle
+ * @param job JB element
+ * @param master_suser_list the submit users to unregister from (SU), may be an empty handle
  */
 void suser_unregister_job(const ocs::tom::ConstElement<ocs::tom::JB> job,
                           const ocs::tom::ConstList<ocs::tom::SU> master_suser_list) {

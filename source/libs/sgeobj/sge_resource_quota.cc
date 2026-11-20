@@ -93,7 +93,7 @@
  * @param buffer string to be converted
  * @param alp answer_list
  *
- * @return the filter (RQRF_Type), an empty handle on error or if @p buffer is nullptr
+ * @return the filter (RQRF), an empty handle on error or if @p buffer is nullptr
  *
  * @note MT-NOTE: rqs_parse_filter_from_string() is MT safe
  */
@@ -167,7 +167,7 @@ ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *bu
  *
  * Converts a RQRF element to string for spooling
  *
- * @param filter Element to be converted (RQRF_Type), may be an empty handle
+ * @param filter Element to be converted (RQRF), may be an empty handle
  * @param buffer buffer for the element string
  * @param alp answer_list
  *
@@ -234,7 +234,7 @@ bool rqs_append_filter_to_dstring(const ocs::tom::ConstElement<ocs::tom::RQRF> f
  *
  * A rule list the set holds already is freed and replaced.
  *
- * @param rqs Already created object to be modified (RQS_Type), may be an empty handle
+ * @param rqs Already created object to be modified (RQS), may be an empty handle
  *
  * @return modified Object
  *
@@ -280,7 +280,7 @@ ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(const ocs::tom::Element<ocs::t
  * limit instead of narrowing it.
  *
  * @tparam F the filter field of the rule to check, e.g. RQR_filter_users
- * @param rule the rule to check (RQR_Type), may be an empty handle
+ * @param rule the rule to check (RQR), may be an empty handle
  * @param answer_list to pass back error messages
  * @param message error message to add to anwer_list in case of error
  *
@@ -346,7 +346,7 @@ static bool rqs_verify_filter(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
  * instead of narrowing it. That is exactly the failure shape a limit must not
  * have, so it is refused where it is written.
  *
- * @param scope the scope or xscope of a host filter (ST_Type), rewritten in place; may be an empty handle
+ * @param scope the scope or xscope of a host filter (ST), rewritten in place; may be an empty handle
  * @param[out] answer_list receives the refusal
  *
  * @return true when every entry is acceptable
@@ -400,10 +400,10 @@ static bool rqs_verify_host_scope(const ocs::tom::List<ocs::tom::ST> scope,
  * double limit value.
  * Addition checks are done if in_master is true.
  *
- * @param rqs Object that should be verified (RQS_Type)
+ * @param rqs Object that should be verified (RQS)
  * @param answer_list answer list in case of errors
  * @param in_master flag if called by qmaster or by qconf
- * @param master_centry_list the complex entries a limit may name (CE_Type), may be an empty handle
+ * @param master_centry_list the complex entries a limit may name (CE), may be an empty handle
  *
  * @return true on success false on error
  *
@@ -552,7 +552,7 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
  * This function searches the rule set list for a specific resource quota
  * set. The search criteria is the name of the resource quota set.
  *
- * @param lp rule set list to be searched in (RQS_Type), may be an empty handle
+ * @param lp rule set list to be searched in (RQS), may be an empty handle
  * @param name rule set name of interest
  *
  * @return if found the reference to the resource quota set, else an empty handle
@@ -577,7 +577,7 @@ ocs::tom::Element<ocs::tom::RQS> rqs_list_locate(const ocs::tom::ConstList<ocs::
  * the atoi() function. If atoi() was not able to convert the name the rule is
  * searched by a sting compare.
  *
- * @param lp list to be searched in (RQR_Type), may be an empty handle
+ * @param lp list to be searched in (RQR), may be an empty handle
  * @param name rule name of interest
  *
  * @return reference to found rule, an empty handle if rule was not found
@@ -619,7 +619,7 @@ ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(const ocs::tom::List<ocs::tom::
  * The signature stays untyped: the function is called through a pointer of
  * the qconf attribute table.
  *
- * @param this_list list to be modified (RQS_Type), checked; may be nullptr
+ * @param this_list list to be modified (RQS), checked; may be nullptr
  * @param answer_list answer list
  *
  * @return true on success false on error
@@ -661,7 +661,7 @@ bool rqs_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer
  *   user1///all.q//
  *
  * @param name out: rue_name
- * @param rule resource quota rule (RQR_Type), may be an empty handle
+ * @param rule resource quota rule (RQR), may be an empty handle
  * @param user user name
  * @param project project name
  * @param host host name
@@ -730,13 +730,13 @@ bool rqs_get_rue_string(dstring *name, const ocs::tom::ConstElement<ocs::tom::RQ
  * iterater over all rules in the given rule set and debit the amount of slots
  * in the relevant rule
  *
- * @param rqs resource quota set (RQS_Type)
- * @param job job request (JB_Type)
- * @param granted granted destination identifier (JG_Type)
- * @param pe granted pe (PE_Type), may be an empty handle
- * @param centry_list consumable resouces list (CE_Type)
- * @param acl_list the usersets a rule's filter may name (US_Type)
- * @param hgrp_list the host groups a rule's filter may name (HGRP_Type)
+ * @param rqs resource quota set (RQS)
+ * @param job job request (JB)
+ * @param granted granted destination identifier (JG)
+ * @param pe granted pe (PE), may be an empty handle
+ * @param centry_list consumable resouces list (CE)
+ * @param acl_list the usersets a rule's filter may name (US)
+ * @param hgrp_list the host groups a rule's filter may name (HGRP)
  * @param slots slot amount
  * @param is_master_task true when this booking includes the job's master task
  * @param do_per_host_booking true when a per host consumable still has to be booked on this host
@@ -803,16 +803,16 @@ int rqs_debit_consumable(const ocs::tom::Element<ocs::tom::RQS> rqs, const ocs::
  * The rule comes back mutable although the set is read only, as the raw code
  * did: the callers debit usage in it or set its dynamical limits.
  *
- * @param rqs rule set (RQS_Type)
+ * @param rqs rule set (RQS)
  * @param user user name
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
+ * @param grp_list the user's supplementary groups (ST), may be an empty handle
  * @param project project name
  * @param pe pe name
  * @param host host name
  * @param queue queue name
- * @param userset_list master user set list (US_Type)
- * @param hgroup_list master host group list (HGRP_Type)
+ * @param userset_list master user set list (US)
+ * @param hgroup_list master host group list (HGRP)
  * @param rule_name out: name or matching rule
  *
  * @return the matching rule, an empty handle if no rule matches
@@ -855,12 +855,12 @@ ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(const ocs::tom::ConstElem
  *
  * Debit an amount of slots in all limits of one resource quota rule
  *
- * @param job job request (JB_Type), may be an empty handle
- * @param pe the job's parallel environment (PE_Type), may be an empty handle
- * @param rule resource quota rule (RQR_Type)
+ * @param job job request (JB), may be an empty handle
+ * @param pe the job's parallel environment (PE), may be an empty handle
+ * @param rule resource quota rule (RQR)
  * @param rue_name rue name that counts
  * @param slots amount of slots to debit
- * @param centry_list consumable resource list (CE_Type)
+ * @param centry_list consumable resource list (CE)
  * @param obj_name name of the limit
  * @param is_master_task true when this booking includes the job's master task
  * @param do_per_host_booking true when a per host consumable still has to be booked on this host
@@ -995,14 +995,14 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
  * scope entry and for the value a wildcard definition. Hostgroups and Usergroups
  * are resolved and matched against the value
  *
- * @param scope Scope to match (ST_Type), may be an empty handle
+ * @param scope Scope to match (ST), may be an empty handle
  * @param filter_type filter type (FILTER_USERS or FILTER_HOSTS)
  * @param value value to match
- * @param master_userset_list master userset list (US_Type)
- * @param master_hgroup_list master hostgroup list (HGRP_Type)
+ * @param master_userset_list master userset list (US)
+ * @param master_hgroup_list master hostgroup list (HGRP)
  * @param group the user's primary group
  * @param is_xscope true when @p scope is the exclusion side of the filter
- * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
+ * @param grp_list the user's supplementary groups (ST), may be an empty handle
  *
  * @return true, if value was found in scope false, if value was not found in scope
  *
@@ -1213,16 +1213,16 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
  * the configured resource quota rule. If only one touple does not match
  * the whole rule will not match
  *
- * @param rule resource quota rule (RQR_Type)
+ * @param rule resource quota rule (RQR)
  * @param user user name
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
+ * @param grp_list the user's supplementary groups (ST), may be an empty handle
  * @param project project name
  * @param pe pe name
  * @param host host name
  * @param queue queue name
- * @param master_userset_list master user set list (US_Type)
- * @param master_hgroup_list master hostgroup list (HGRP_Type)
+ * @param master_userset_list master user set list (US)
+ * @param master_hgroup_list master hostgroup list (HGRP)
  *
  * @return true if the rule does match false if the rule does not match
  *
@@ -1273,11 +1273,11 @@ bool rqs_is_matching_rule(const ocs::tom::ConstElement<ocs::tom::RQR> rule, cons
  * expression. For performance reasons qref_list_host_rejected() is
  * used for matching, if we got no pattern and no hostgroup.
  *
- * @param scope A scope list (ST_Type), may be an empty handle
+ * @param scope A scope list (ST), may be an empty handle
  * @param name hostname/hostgroup name/wildcard expression
- * @param master_hgroup_list the host group list (HGRP_Type)
+ * @param master_hgroup_list the host group list (HGRP)
  * @param is_xscope true when @p scope is the exclusion side of the filter
- * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
+ * @param grp_list the user's supplementary groups (ST), may be an empty handle
  *
  * @return Returns true if 'name' matches
  *
@@ -1323,13 +1323,13 @@ static bool rqs_match_host_scope(const ocs::tom::ConstList<ocs::tom::ST> scope, 
  *
  * The filter type is a run-time value and selects how the value is matched.
  *
- * @param filter filter element (RQRF_Type), may be an empty handle, which matches everything
+ * @param filter filter element (RQRF), may be an empty handle, which matches everything
  * @param filter_type filter type
  * @param value value to match
- * @param master_userset_list master userset list (US_Type)
- * @param master_hgroup_list master hostgroup list (HGRP_Type)
+ * @param master_userset_list master userset list (US)
+ * @param master_hgroup_list master hostgroup list (HGRP)
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), may be an empty handle
+ * @param grp_list the user's supplementary groups (ST), may be an empty handle
  *
  * @return true if the value does match false if the value does not match
  *
@@ -1428,8 +1428,8 @@ bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const
  *
  * This function search a centry reference in a resource quota set
  *
- * @param rqs resource quota set (RQS_Type)
- * @param centry complex entry (CE_Type)
+ * @param rqs resource quota set (RQS)
+ * @param centry complex entry (CE)
  *
  * @return true if found false if not found
  *

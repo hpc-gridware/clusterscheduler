@@ -100,7 +100,7 @@ gru_add_selected_instances(const ocs::tom::Element<ocs::tom::GRU> gru,
 /**
  * @brief choose the resource map ids this assignment is granted, and record the choice
  *
- * The ids are decided here, once, and kept on the assignment in a->granted_rsmaps - a GRU_Type
+ * The ids are decided here, once, and kept on the assignment in a->granted_rsmaps - a GRU
  * list keyed the same way the granted resource list is, by name and host. Booking then copies
  * them (see gru_list_apply_selected_rsmap_ids()) instead of searching the host a second time.
  *
@@ -233,7 +233,7 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
  * @brief book one granted request of a job into the granted resource list
  *
  * @param a                      the assignment
- * @param granted_resources_list the list being built (`GRU_Type`), created with the first entry
+ * @param granted_resources_list the list being built (`GRU`), created with the first entry
  * @param request                the request being booked, from the scope it was written in
  * @param host_name              host it is booked on
  * @param host_list              the host list
@@ -603,7 +603,7 @@ select_granted_rsmap_instances(sge_assignment_t *a, const ocs::tom::ConstElement
  *
  * @param a the scheduling assignment being committed
  * @param ja_task the array task the resources are granted to
- * @param job the job (`JB_Type`)
+ * @param job the job (`JB`)
  * @param host_list the execution hosts, for their complex values
  * @return true in case of success, false in case of errors
  */

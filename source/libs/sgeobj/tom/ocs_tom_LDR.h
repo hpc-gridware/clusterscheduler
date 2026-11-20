@@ -110,6 +110,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of LDR for the list library: a synonym for ocs::tom::LDR::descriptor */
-inline constexpr const lDescr *LDR_Type = ocs::tom::LDR::descriptor.e;

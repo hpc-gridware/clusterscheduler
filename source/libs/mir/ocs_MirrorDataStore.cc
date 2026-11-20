@@ -127,7 +127,7 @@ ocs::MirrorDataStore::thread_cleanup_data_store(void *arg) {
  * Triggers also the wakeup of the mirror thread so that it can process the received events.
  *
  * @param ec_id Event client ID
- * @param answer_list AN_Type list that might be used to report errors to the event mirror.
+ * @param answer_list AN list that might be used to report errors to the event mirror.
  * @param event_list List of new events
  * @param arg Passthrough argument - here it is the instance of a MirrorDataStore subclass
  */
@@ -141,7 +141,7 @@ ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] uint32_t ec_id,
    sge_mutex_lock(mirror_thread->mutex_name.c_str(), __func__, __LINE__, &mirror_thread->mutex);
 
    // move the events from control of event master to the event mirror thread
-   // the event master hands over one report (REP_Type) whose event list holds events (ET_Type); no checked
+   // the event master hands over one report (REP) whose event list holds events (ET); no checked
    // constructor on this path
    const auto new_event_obj = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
    lList *events_raw = nullptr;
@@ -189,7 +189,7 @@ ocs::MirrorDataStore::block_till_initial_events_handled() {
  *
  * MirrorDataStore::wakeup() can be used to wakeup a thread that is blocking in this call.
  *
- * @return the new events (ET_Type); an empty handle if no events arrived
+ * @return the new events (ET); an empty handle if no events arrived
  */
 ocs::tom::ListPtr<ocs::tom::ET>
 ocs::MirrorDataStore::wait_for_event() {
@@ -197,9 +197,6 @@ ocs::MirrorDataStore::wait_for_event() {
 
    ocs::tom::ListPtr<ocs::tom::ET> event_list;
 
-#if 0
-   int pthread_ret = 0;
-#endif
    bool do_ack = false;
 
    // fetch events
@@ -213,18 +210,9 @@ ocs::MirrorDataStore::wait_for_event() {
             // return after a while so that the main loop retries the registration
             ocs::uti::condition_timedwait(&cond_var, &mutex, REGISTRATION_RETRY_S);
          } else {
-#if 0
-            DPRINTF("will wait for events now (without timeout)\n");
-            pthread_ret =
-#endif
-               pthread_cond_wait(&cond_var, &mutex);
+            pthread_cond_wait(&cond_var, &mutex);
          }
       }
-
-#if 0
-      DPRINTF("woke up (pthread_ret=%d, triggered=%s, #events=%d)\n",
-              pthread_ret, triggered ? "true" : "false", lGetNumberOfElem(new_events));
-#endif
 
       // fetch the new events
       if (triggered) {
@@ -502,9 +490,6 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
             sge_usleep(50000);
          }
       } while (do_qmaster_shutdown);
-#if 0
-      DPRINTF("passed cancellation point\n");
-#endif
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with

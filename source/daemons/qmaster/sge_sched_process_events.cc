@@ -84,7 +84,7 @@ void event_update_func(uint32_t ec_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lL
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    
-   // the report list of an event delivery, its first report carries the events (REP_list, ET_Type)
+   // the report list of an event delivery, its first report carries the events (REP_list, ET)
    const auto report = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
    if (Scheduler_Control.new_events != nullptr) {
       // the storage in Scheduler_Control is process-lifetime and stays untyped; the events move in

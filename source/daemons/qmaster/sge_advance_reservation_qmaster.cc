@@ -550,7 +550,7 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Eleme
  * This function removes a advance reservation from the master list and
  * performs the necessary cleanup.
  *
- * @param ep element that should be removed (ID_Type)
+ * @param ep element that should be removed (ID)
  * @param alpp answer list
  * @param master_ar_list list from where the element should be removed (normally the master ar list)
  * @param packet the client request, carrying the user and host that invoked it
@@ -1288,7 +1288,7 @@ ar_reserve_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element
  * This function does the (un)reserveration in the selected parallel environment
  * and the selected queue instances
  *
- * @param ar ar object (AR_Type)
+ * @param ar ar object (AR)
  * @param incslots increase or decrease usage: true to book the slots, false to give them back
  * @param gdi_session the session the change belongs to
  *
@@ -1422,7 +1422,7 @@ ar_do_reservation(const ocs::tom::Element<ocs::tom::AR> ar, const bool incslots,
  * This function tests if a modification of a ckpt list in a qinstance is
  * allowed according to the advance reservations.
  * Input parameters are: the advance reservation master list, the name of the
- * qinstance which sould be modified and the ST_Type string list of ckpt
+ * qinstance which sould be modified and the ST string list of ckpt
  * names which represents the new setting for the qinstance.
  * If there is no reservation for this qinstance-ckpt combination or if
  * the reservation would be still valid after the modification then
@@ -1431,7 +1431,7 @@ ar_do_reservation(const ocs::tom::Element<ocs::tom::AR> ar, const bool incslots,
  * @param ar_master_list advance reservation master list
  * @param answer_list answer list which will contain the reason why a modification is not valid
  * @param qinstance_name name of a qinstance <`cqname@hostname`>
- * @param ckpt_string_list ST_Type list containing ckpt names
+ * @param ckpt_string_list ST list containing ckpt names
  *
  * @return modification would breake at least one ar false - no ar will be broken if the ckpt list is modified
  *
@@ -1464,7 +1464,7 @@ ar_list_has_reservation_due_to_ckpt(const ocs::tom::ConstList<ocs::tom::AR> ar_m
  * This function tests if a modification of a pe list in a qinstance is
  * allowed according to the advance reservations.
  * Input parameters are: the advance reservation master list, the name of the
- * qinstance which should be modified and the ST_Type string list of pe
+ * qinstance which should be modified and the ST string list of pe
  * names which represents the new setting for the qinstance.
  * If there is no reservation for this qinstance-ckpt combination or if
  * the reservation would be still valid after the modification then
@@ -1473,7 +1473,7 @@ ar_list_has_reservation_due_to_ckpt(const ocs::tom::ConstList<ocs::tom::AR> ar_m
  * @param ar_master_list advance reservation master list
  * @param answer_list answer list which will contain the reason why a modification is not valid
  * @param qinstance_name name of a qinstance <`cqname@hostname`>
- * @param pe_string_list ST_Type list containing pe names
+ * @param pe_string_list ST list containing pe names
  *
  * @return modification would breake at least one ar false - no ar will be broken if the ckpt list is modified
  *
@@ -1816,7 +1816,7 @@ ar_get_request_or_default(const ocs::tom::ConstElement<ocs::tom::AR> ar, const o
  * requested resources into those. From here on the AR is accounted against
  * this snapshot, not against the queues themselves.
  *
- * @param ar the advance reservation (`AR_Type`) to initialize
+ * @param ar the advance reservation (`AR`) to initialize
  */
 void
 ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
@@ -2101,7 +2101,7 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
  *
  * @param answer_list answer list
  * @param qinstance_name qinstance name the calendar was configured
- * @param cal_ep the calendar object (CAL_Type)
+ * @param cal_ep the calendar object (CAL)
  * @param master_ar_list master AR list
  *
  * @return true if conflicts false if OK
@@ -2137,7 +2137,7 @@ sge_ar_list_conflicts_with_calendar(ocs::tom::ListPtr<ocs::tom::AN> *answer_list
  * if one of the reserved queues is unable to run a job. This is covered by the
  * function
  *
- * @param ar advance reservation object (AR_Type)
+ * @param ar advance reservation object (AR)
  *
  * @note MT-NOTE: sge_ar_state_set_running() is MT safe
  *
@@ -2182,7 +2182,7 @@ sge_ar_state_set_running(const ocs::tom::Element<ocs::tom::AR> ar) {
  * if one of the reserved queues is unable to run a job. This is covered by the
  * function
  *
- * @param ar advance reservation object (AR_Type)
+ * @param ar advance reservation object (AR)
  *
  * @note MT-NOTE: sge_ar_state_set_waiting() is MT safe
  *
@@ -2218,7 +2218,7 @@ sge_ar_state_set_waiting(const ocs::tom::Element<ocs::tom::AR> ar) {
  *
  * Sets the AR state to deleted
  *
- * @param ar advance reservation object (AR_Type)
+ * @param ar advance reservation object (AR)
  *
  * @note MT-NOTE: sge_ar_state_set_deleted() is MT safe
  *
@@ -2236,7 +2236,7 @@ sge_ar_state_set_deleted(const ocs::tom::Element<ocs::tom::AR> ar) {
  *
  * Sets the AR state to deleted
  *
- * @param ar advance reservation object (AR_Type)
+ * @param ar advance reservation object (AR)
  *
  * @note MT-NOTE: sge_ar_state_set_exited() is MT safe
  *
@@ -2311,7 +2311,7 @@ sge_ar_list_set_error_state(const ocs::tom::List<ocs::tom::AR> ar_list, const ch
  *
  * Create and send mail for a specific event
  *
- * @param ar advance reservation object (AR_Type)
+ * @param ar advance reservation object (AR)
  * @param type event type
  *
  * @note MT-NOTE: sge_ar_send_mail() is MT safe
@@ -2499,7 +2499,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const ocs::tom::ConstList<
  *  whould break existing advance reservations.
  *
  * @param ar_master_list master AR list
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param host host with the new settings
  * @param ce_master_list master centry list
  *

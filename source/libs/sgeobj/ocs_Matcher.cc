@@ -72,8 +72,8 @@ ocs::Matcher::prepare(const char *member, const ocs::tom::ConstElement<ocs::tom:
  * through group references, so an empty contribution leaves the enumeration
  * exactly as it was before the feature existed.
  *
- * @param member_list the members to expand (HR_Type), may be an empty handle
- * @param candidates the hosts a matcher would be resolved against (HR_Type), may be an empty handle
+ * @param member_list the members to expand (HR), may be an empty handle
+ * @param candidates the hosts a matcher would be resolved against (HR), may be an empty handle
  * @param[in,out] hosts receives nothing; left as it is
  * @param[out] answer_list receives nothing
  *

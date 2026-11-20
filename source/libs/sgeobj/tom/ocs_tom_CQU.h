@@ -80,6 +80,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CQU for the list library: a synonym for ocs::tom::CQU::descriptor */
-inline constexpr const lDescr *CQU_Type = ocs::tom::CQU::descriptor.e;

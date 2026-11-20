@@ -41,7 +41,7 @@
  * Every id is appended as often as its amount says, separated by blanks.
  *
  * @param buffer c++ std::string buffer the ids are appended to
- * @param resource_map_list resource map list (RESL_Type), e.g. from CE_Type or GRU_Type; may be an empty handle
+ * @param resource_map_list resource map list (RESL), e.g. from CE or GRU; may be an empty handle
  *
  * @return pointer to the c string of @p buffer
  */
@@ -64,16 +64,16 @@ granted_res_get_id_string(std::string &buffer, const ocs::tom::ConstList<ocs::to
 }
 
 /**
- * @brief search a GRU_Type element in a list
+ * @brief search a GRU element in a list
  *
- * A GRU_Type Object is uniquely defined by resource name and host name.
+ * A GRU Object is uniquely defined by resource name and host name.
  * We search the element with these two keys.
  *
- * @param granted_resources_list the granted resources (GRU_Type), may be an empty handle
+ * @param granted_resources_list the granted resources (GRU), may be an empty handle
  * @param name the resource name
  * @param host_name the host name
  *
- * @return the GRU_Type element if found, else an empty handle
+ * @return the GRU element if found, else an empty handle
  *
  * @todo we have no primary key and no hashes,
  *       but with big PE jobs could have a significant number of elements
@@ -93,13 +93,13 @@ gru_list_search(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
 }
 
 /**
- * @brief search a GRU_Type element in a list, for a caller that changes it
+ * @brief search a GRU element in a list, for a caller that changes it
  *
- * @param granted_resources_list the granted resources (GRU_Type), may be an empty handle
+ * @param granted_resources_list the granted resources (GRU), may be an empty handle
  * @param name the resource name
  * @param host_name the host name
  *
- * @return the GRU_Type element if found, else an empty handle
+ * @return the GRU element if found, else an empty handle
  *
  * @see gru_list_search(ocs::tom::ConstList<ocs::tom::GRU>, const char *, const char *)
  */

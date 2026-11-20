@@ -139,7 +139,7 @@ enum AR_Field {
    /**
     * @brief Granted Slots
     *
-    * The queue instances and slot counts the reservation holds (`JG_Type`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed.
+    * The queue instances and slot counts the reservation holds (`JG`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed.
     */
    AR_granted_slots,
    /**
@@ -256,7 +256,7 @@ enum AR_Field {
    /**
     * @brief PE Object
     *
-    * PE object granted to this AR (PE_Type) when it was scheduled.
+    * PE object granted to this AR (PE) when it was scheduled.
     */
    AR_pe_object,
    /**
@@ -445,6 +445,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of AR for the list library: a synonym for ocs::tom::AR::descriptor */
-inline constexpr const lDescr *AR_Type = ocs::tom::AR::descriptor.e;

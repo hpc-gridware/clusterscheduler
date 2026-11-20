@@ -40,7 +40,7 @@
  * Three things in here are easy to get wrong and worth knowing before editing:
  *
  * - **A pending array task usually has no element.** Tasks are stored as id
- *   ranges and only get a `JAT_Type` element once they are about to run
+ *   ranges and only get a `JAT` element once they are about to run
  *   ("enrolled"). The `job_get_ja_task_template*` functions hand out a
  *   throwaway element describing an unenrolled task.
  * - **Requests are grouped by scope.** A sequential job only has the global
@@ -134,10 +134,10 @@
  * The template element belongs to the job and is reinitialised by every
  * call; it is writable although the job is passed read only, as before.
  *
- * @param job JB_Type
+ * @param job JB
  * @param ja_task_id array task number
  *
- * @return template task (JAT_Type), an empty handle if the job has no template
+ * @return template task (JAT), an empty handle if the job has no template
  *
  * @note MT-NOTE: job_get_ja_task_template_pending() is MT safe
  *
@@ -171,11 +171,11 @@ ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(const ocs::tom
  * The hold state of the task (JAT_hold) will be initialized with
  * the 'hold_state' value.
  *
- * @param job JB_Type
+ * @param job JB
  * @param ja_task_id array task number
  * @param hold_state the hold state the template task is initialized with
  *
- * @return template task (JAT_Type), an empty handle if the job has no template
+ * @return template task (JAT), an empty handle if the job has no template
  *
  * @see #job_get_ja_task_template_pending
  */
@@ -204,7 +204,7 @@ ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_hold(const ocs::tom::C
  * Returns the hold state of a task which is not enrolled in
  * the JB_ja_tasks list of 'job'
  *
- * @param job JB_Type
+ * @param job JB
  * @param ja_task_id valid ja task id
  *
  * @return hold state
@@ -231,8 +231,8 @@ static uint32_t job_accumulate_hold_flags(const ocs::tom::ConstElement<ocs::tom:
 /**
  * @brief Intersection of two id range lists, owned
  *
- * @param list1 the first list (RN_Type), may be an empty handle
- * @param list2 the second list (RN_Type), may be an empty handle
+ * @param list1 the first list (RN), may be an empty handle
+ * @param list2 the second list (RN), may be an empty handle
  * @return the intersection, an empty handle if it is empty
  */
 static ocs::tom::ListPtr<ocs::tom::RN> ocs_range_list_intersection(const ocs::tom::ConstList<ocs::tom::RN> list1,
@@ -246,8 +246,8 @@ static ocs::tom::ListPtr<ocs::tom::RN> ocs_range_list_intersection(const ocs::to
 /**
  * @brief Difference of two id range lists, owned
  *
- * @param list1 the list to subtract from (RN_Type), may be an empty handle
- * @param list2 the ids to subtract (RN_Type), may be an empty handle
+ * @param list1 the list to subtract from (RN), may be an empty handle
+ * @param list2 the ids to subtract (RN), may be an empty handle
  * @return list1 - list2, an empty handle if it is empty
  */
 static ocs::tom::ListPtr<ocs::tom::RN> ocs_range_list_difference(const ocs::tom::ConstList<ocs::tom::RN> list1,
@@ -268,9 +268,9 @@ static ocs::tom::ListPtr<ocs::tom::RN> ocs_range_list_difference(const ocs::tom:
  * The lists used to be out-parameters, to be freed with
  * job_destroy_hold_id_lists(); they are returned now and free themselves.
  *
- * @param job JB_Type
+ * @param job JB
  *
- * @return per hold combination the hold state (see MINUS_H_TGT_*) and the id list (RN_Type, an empty
+ * @return per hold combination the hold state (see MINUS_H_TGT_*) and the id list (RN, an empty
  *         handle if no task has that combination); index 0 is the combination without any hold
  *
  * @see #job_get_ja_task_template_hold
@@ -373,7 +373,7 @@ job_create_hold_id_lists(const ocs::tom::ConstElement<ocs::tom::JB> job) {
  * 'task_number' is not enrolled in the JB_ja_tasks sublist
  * of 'job'.
  *
- * @param job JB_Type
+ * @param job JB
  * @param task_number task_number
  *
  * @return true or false
@@ -402,7 +402,7 @@ bool job_is_enrolled(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint3
  * is defined when 'ja_task_number' is enclosed in the task id
  * range which was specified during submit time (qsub -t).
  *
- * @param job JB_Type
+ * @param job JB
  * @param ja_task_number task number
  *
  * @return true or false
@@ -419,7 +419,7 @@ bool job_is_ja_task_defined(const ocs::tom::ConstElement<ocs::tom::JB> job, cons
  *
  * This function returns the overall amount of tasks in an array job.
  *
- * @param job JB_Type
+ * @param job JB
  *
  * @return number of tasks
  *
@@ -446,7 +446,7 @@ uint32_t job_get_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
  * This function returns the amount of tasks not enrolled in the
  * JB_ja_tasks sublist.
  *
- * @param job JB_Type
+ * @param job JB
  *
  * @return number of tasks
  *
@@ -482,7 +482,7 @@ uint32_t job_get_not_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB
  * This function returns the amount of tasks enrolled in the
  * JB_ja_tasks sublist.
  *
- * @param job JB_Type
+ * @param job JB
  *
  * @return number of tasks
  *
@@ -499,7 +499,7 @@ uint32_t job_get_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> jo
  * The function returns the ammount of tasks the job had during
  * it's submittion
  *
- * @param job JB_Type
+ * @param job JB
  *
  * @return number of tasks
  *
@@ -513,11 +513,11 @@ uint32_t job_get_submit_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job)
 /**
  * @brief Enrolls a task into the JB_ja_tasks list of a job
  *
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param answer_list the answer list
  * @param ja_task_number the task number
  *
- * @return the enrolled task (JAT_Type)
+ * @return the enrolled task (JAT)
  */
 ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB> job,
                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -554,9 +554,9 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB
  * The task stays an untyped in-out pointer: it is freed and set to nullptr,
  * and the caller relies on that.
  *
- * @param job the job (JB_Type), may be an empty handle
+ * @param job the job (JB), may be an empty handle
  * @param answer_list the answer list
- * @param[in,out] ja_task the task to unenroll (JAT_Type); freed and set to nullptr
+ * @param[in,out] ja_task the task to unenroll (JAT); freed and set to nullptr
  */
 void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                   lListElem **ja_task) {
@@ -597,7 +597,7 @@ void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<o
  * 'count_all' flag can be used to cause a quick exit if merely the
  * existence of rescheduled tasks is of interest.
  *
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param count_all quick exit flag
  *
  * @return number of tasks resp. 0/1
@@ -623,7 +623,7 @@ static int job_count_rescheduled_ja_tasks(const ocs::tom::ConstElement<ocs::tom:
  *
  * This function returns the number of pending tasks of a job.
  *
- * @param job JB_Type
+ * @param job JB
  * @param count_all false to stop at the first pending task, so the result is
  *                  only 0 or 1 and the whole range does not have to be walked
  *
@@ -651,8 +651,8 @@ uint32_t job_count_pending_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job,
  *
  * Removes an unenrolled pending task from the id lists.
  *
- * @param job JB_Type
- * @param answer_list AN_Type
+ * @param job JB
+ * @param answer_list AN
  * @param ja_task_number Task to be removed
  */
 void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job,
@@ -673,7 +673,7 @@ void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job,
  *
  * True (1) will be returned if the job has soft requests.
  *
- * @param job JB_Type
+ * @param job JB
  *
  * @return true or false
  *
@@ -697,8 +697,8 @@ bool job_has_soft_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
  * The list is taken out of the job, changed, compressed and put back.
  *
  * @tparam F the hold id list field (JB_ja_n_h_ids, JB_ja_u_h_ids, ...)
- * @param job JB_Type
- * @param answer_list AN_Type
+ * @param job JB
+ * @param answer_list AN
  * @param ja_task_id the array task id
  * @param insert true to insert the id, false to remove it
  */
@@ -727,8 +727,8 @@ static void ocs_job_change_hold_ids(const ocs::tom::Element<ocs::tom::JB> job,
  * inserted into the list of each hold type set in new_hold_state, and the
  * other way round for a cleared state.
  *
- * @param job JB_Type
- * @param answer_list AN_Type
+ * @param job JB
+ * @param answer_list AN
  * @param ja_task_id Array task id
  * @param new_hold_state hold state (see MINUS_H_TGT_*)
  */
@@ -768,7 +768,7 @@ void job_set_hold_state(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
  *
  * Returns the hold state of a job/array-task
  *
- * @param job JB_Type
+ * @param job JB
  * @param ja_task_id array task id
  *
  * @return hold state (see MINUS_H_TGT_*)
@@ -799,11 +799,11 @@ uint32_t job_get_hold_state(const ocs::tom::ConstElement<ocs::tom::JB> job, cons
  * it exists in the JB_ja_tasks-sublist of 'job'. If the task
  * is not found in the sublist, nullptr is returned.
  *
- * @param job JB_Type, may be an empty handle
- * @param answer_list AN_Type
+ * @param job JB, may be an empty handle
+ * @param answer_list AN
  * @param ja_task_id array task id
  *
- * @return JAT_Type element, writable although the job is passed read only, as before; an empty handle if
+ * @return JAT element, writable although the job is passed read only, as before; an empty handle if
  *         there is none
  *
  * @note In case of errors, the function should return a message in a
@@ -833,11 +833,11 @@ ocs::tom::Element<ocs::tom::JAT> job_search_task(const ocs::tom::ConstElement<oc
  * of 'job' and a pointer to the new element will be returned.
  * Errors may be found in the 'answer_list'
  *
- * @param job JB_Type, may be an empty handle
- * @param answer_list AN_Type
+ * @param job JB, may be an empty handle
+ * @param answer_list AN
  * @param ja_task_id array task id
  *
- * @return JAT_Type element, an empty handle if the task is not defined
+ * @return JAT element, an empty handle if the task is not defined
  *
  * @note In case of errors, the function should return a message in a
  *       given answer_list (answer_list != nullptr).
@@ -861,7 +861,7 @@ ocs::tom::Element<ocs::tom::JAT> job_create_task(const ocs::tom::Element<ocs::to
  *
  * Returns a string identifying the shell start mode for 'job'.
  *
- * @param queue QU_Type element
+ * @param queue QU element
  * @param conf_shell_start_mode shell start mode of configuration
  *
  * @return shell start mode
@@ -890,9 +890,9 @@ const char *job_get_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::QU> 
  * The list stays an untyped in-out reference, the callers pass master list
  * slots. The job is taken over by the list unless an error is returned.
  *
- * @param job_list JB_Type, created if *job_list is nullptr
+ * @param job_list JB, created if *job_list is nullptr
  * @param name name of the list
- * @param job JB_Type element, may be an empty handle; on success the list owns it, and it is freed when
+ * @param job JB element, may be an empty handle; on success the list owns it, and it is freed when
  *        adding it throws, so the caller hands it over in every case
  * @param check Does the element already exist?
  *
@@ -939,7 +939,7 @@ int job_list_add_job(lList **job_list, const char *name, const ocs::tom::Element
  * The function returns true (1) if "job" is an array job with more
  * than one task.
  *
- * @param job JB_Type element
+ * @param job JB element
  *
  * @return true or false
  *
@@ -958,8 +958,8 @@ bool job_is_array(const ocs::tom::ConstElement<ocs::tom::JB> job) {
  * This function returns true if "job" is really a tightly
  * integrated parallel job.
  *
- * @param job JB_Type element
- * @param pe_list PE_Type list with all existing PEs
+ * @param job JB element
+ * @param pe_list PE list with all existing PEs
  *
  * @return true or false
  *
@@ -999,8 +999,8 @@ bool job_is_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * matching the requested (wildcard) pe of a job has
  * "contol_slaves=true" in its configuration.
  *
- * @param job JB_Type element
- * @param pe_list PE_Type list with all existing PEs
+ * @param job JB element
+ * @param pe_list PE list with all existing PEs
  *
  * @return true or false
  *
@@ -1033,7 +1033,7 @@ bool job_might_be_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
  *
  * The three numbers used to be out-parameters; they are returned now.
  *
- * @param job JB_Type element
+ * @param job JB element
  *
  * @return first id, last id and step size (>=1); 1, 1, 1 if the job has no task range
  */
@@ -1055,7 +1055,7 @@ std::tuple<uint32_t, uint32_t, uint32_t> job_get_submit_task_ids(const ocs::tom:
  * and "step") in "job". It should only be used in functions
  * initializing new jobs.
  *
- * @param job JB_Type job
+ * @param job JB job
  * @param start first id
  * @param end last id
  * @param step step size
@@ -1077,7 +1077,7 @@ int job_set_submit_task_ids(const ocs::tom::Element<ocs::tom::JB> job, const uin
  * which is not enrolled in the JB_ja_tasks sublist of 'job'.
  * If all tasks are enrolled 0 will be returned.
  *
- * @param job JB_Type element
+ * @param job JB element
  * @param find_min true for the smallest id, false for the biggest
  *
  * @return task id or 0
@@ -1113,7 +1113,7 @@ static uint32_t job_get_extreme_unenrolled_task_id(const ocs::tom::ConstElement<
  * Pending tasks of an array job are stored as ranges rather than as elements;
  * they only get an element when they are about to run.
  *
- * @param job the array job to search (JB_Type)
+ * @param job the array job to search (JB)
  * @return the id, or 0 when every task is enrolled
  */
 uint32_t job_get_smallest_unenrolled_task_id(const ocs::tom::ConstElement<ocs::tom::JB> job) {
@@ -1128,7 +1128,7 @@ uint32_t job_get_smallest_unenrolled_task_id(const ocs::tom::ConstElement<ocs::t
  * which is enrolled in the JB_ja_tasks sublist of 'job'.
  * If no task is enrolled 0 will be returned.
  *
- * @param job JB_Type element
+ * @param job JB element
  *
  * @return task id or 0
  */
@@ -1153,7 +1153,7 @@ uint32_t job_get_smallest_enrolled_task_id(const ocs::tom::ConstElement<ocs::tom
  * which is not enrolled in the JB_ja_tasks sublist of 'job'.
  * If no task is enrolled 0 will be returned.
  *
- * @param job JB_Type element
+ * @param job JB element
  *
  * @return task id or 0
  */
@@ -1169,7 +1169,7 @@ uint32_t job_get_biggest_unenrolled_task_id(const ocs::tom::ConstElement<ocs::to
  * which is enrolled in the JB_ja_tasks sublist of 'job'.
  * If no task is enrolled 0 will be returned.
  *
- * @param job JB_Type element
+ * @param job JB element
  *
  * @return task id or 0
  */
@@ -1194,7 +1194,7 @@ uint32_t job_get_biggest_enrolled_task_id(const ocs::tom::ConstElement<ocs::tom:
  * of a new job (reading jobs from spool area). This may be done
  * with "force_registration".
  *
- * @param job_list the jobs already in the system (JB_Type)
+ * @param job_list the jobs already in the system (JB)
  * @param max_jobs maximum number of allowed jobs per user
  * @param force_registration force job registration
  *
@@ -1225,8 +1225,8 @@ int job_list_register_new_job(const ocs::tom::ConstList<ocs::tom::JB> job_list, 
  * JB_ja_n_h_ids list. All other id lists stored in the "job" will
  * be deleted.
  *
- * @param job JB_Type element
- * @param answer_list AN_Type list pointer
+ * @param job JB element
+ * @param answer_list AN list pointer
  *
  * @return return state -1 - error 0 - OK
  *
@@ -1272,9 +1272,9 @@ int job_initialize_id_lists(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom:
  * we use the define `VAR_PREFIX` which will be replaced shortly
  * before the job is started.
  *
- * @param job JB_Type element
- * @param answer_list AN_Type list pointer
- * @param path_alias_list PA_Type list
+ * @param job JB element
+ * @param answer_list AN list pointer
+ * @param path_alias_list PA list
  * @param unqualified_hostname the submit host without its domain
  * @param qualified_hostname the submit host including its domain
  */
@@ -1344,7 +1344,7 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
  *              information in the comment of
  *              job_initialize_env()
  *
- * @param job JB_Type element
+ * @param job JB element
  * @param variable environment variable name
  *
  * @return value of "variable"
@@ -1367,8 +1367,8 @@ const char *job_get_env_string(const ocs::tom::ConstElement<ocs::tom::JB> job, c
  * The function will try to correct errors within this lists. If
  * this is not possible an error will be returned in "answer_list".
  *
- * @param job JB_Type element
- * @param answer_list AN_Type list
+ * @param job JB element
+ * @param answer_list AN list
  */
 void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job,
                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
@@ -1482,8 +1482,8 @@ const char *job_get_id_string(uint32_t job_id, uint32_t ja_task_id,
  * This is also the case if job requests a wildcard PE and
  * the wildcard name matches the given pe name.
  *
- * @param job JB_Type element
- * @param pe PE_Type object
+ * @param job JB element
+ * @param pe PE object
  *
  * @return true or false
  */
@@ -1506,8 +1506,8 @@ bool job_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * The function returns true if "job" references the
  * checkpointing object "ckpt".
  *
- * @param job JB_Type element
- * @param ckpt CK_Type object
+ * @param job JB element
+ * @param ckpt CK object
  *
  * @return true or false
  */
@@ -1614,7 +1614,7 @@ void job_get_state_string(char *str, uint32_t op) {
  * The variable is added to the context change request JB_context_change as a
  * group of its own, so that a preceding -dc group cannot delete it (CS-3058).
  *
- * @param job JB_Type element
+ * @param job JB element
  */
 void job_add_parent_id_to_context(const ocs::tom::Element<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
@@ -1706,7 +1706,7 @@ int job_check_qsh_display(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::t
  *
  * @param packet the request, which carries the requesting user
  * @param job_id the job number
- * @param master_job_list the master job list (JB_Type)
+ * @param master_job_list the master job list (JB)
  *
  * @return -1, if the job cannot be found 0, if the user is the job owner 1, if the user is not the job owner
  */
@@ -1903,7 +1903,7 @@ char *jobscript_parse_key(char *key, const char **exec_file) {
  *
  * @param path_list a path list of a job (JB_stderr_path_list, JB_stdout_path_list, ...), may be an empty handle;
  *        its host names are rewritten in place
- * @param answer_list AN_Type element
+ * @param answer_list AN element
  *
  * @return error code (STATUS_OK, or ...)
  */
@@ -1970,12 +1970,12 @@ int job_resolve_host_for_path_list(const ocs::tom::List<ocs::tom::PN> path_list,
  * @brief Returns the requested centry name
  *
  * Returns the requested centry name if it is requested by the give
- * job (JB_Type).
+ * job (JB).
  *
- * @param job JB_Type element
+ * @param job JB element
  * @param centry_name name
  *
- * @return CE_Type element, an empty handle if neither list holds it
+ * @return CE element, an empty handle if neither list holds it
  *
  * @note MT-NOTE: job_get_request() is MT safe
  */
@@ -1997,10 +1997,10 @@ ocs::tom::ConstElement<ocs::tom::CE> job_get_request(const ocs::tom::ConstElemen
  * This looks only in the scope named and does not fall back to the global
  * set.
  *
- * @param job the job to search (JB_Type)
+ * @param job the job to search (JB)
  * @param name the resource to look for
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request (CE_Type), an empty handle when that scope does not name the resource
+ * @return the request (CE), an empty handle when that scope does not name the resource
  */
 ocs::tom::ConstElement<ocs::tom::CE>
 job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *name, const uint32_t scope) {
@@ -2024,11 +2024,11 @@ job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char 
  * The amount stays an out-parameter: it is also written when false is
  * returned for a default request of 0.
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param[out] answer_list receives the message when the value cannot be parsed
  * @param name the consumable to ask about
  * @param[out] value receives the amount
- * @param complex_definition the resource's complex entry (CE_Type), for its default
+ * @param complex_definition the resource's complex entry (CE), for its default
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @return true when a value was determined
  *
@@ -2091,7 +2091,7 @@ job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * one lower - unless the parallel environment sets `job_is_first_task = false`,
  * in which case the master task got no slot of its own.
  *
- * @param pe the job's parallel environment (PE_Type); an empty handle is treated as
+ * @param pe the job's parallel environment (PE); an empty handle is treated as
  *           `job_is_first_task = true`
  * @param[in,out] slave_debit_slots the slot count to correct; its sign is kept,
  *                                  so it works for booking and unbooking alike
@@ -2118,8 +2118,8 @@ adjust_slave_task_debit_slots(const ocs::tom::ConstElement<ocs::tom::PE> pe, int
  * @param category_str target string
  * @param owner job owner
  * @param group group owner
- * @param grp_list the owner's supplementary groups (ST_Type)
- * @param acl_list a list of all access lists (US_Type)
+ * @param grp_list the owner's supplementary groups (ST)
+ * @param acl_list a list of all access lists (US)
  * @param option string option to put in infront of the generated string
  *
  * @return true, if everything was fine
@@ -2161,7 +2161,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
  * queues in a different order end up in the same category.
  *
  * @param category_str target string
- * @param queue_list the queue requests to render (QR_Type), sorted in place; an empty handle appends nothing
+ * @param queue_list the queue requests to render (QR), sorted in place; an empty handle appends nothing
  * @param option string option to put in infront of the generated string
  *
  * @return true, if everything was fine
@@ -2196,7 +2196,7 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, const ocs::tom::List<
  * @brief Creates a string from resource requests
  *
  * @param category_str target string
- * @param resource_list the resource requests to render (CE_Type), sorted in place; an empty handle appends nothing
+ * @param resource_list the resource requests to render (CE), sorted in place; an empty handle appends nothing
  * @param option string option to put in infront of the generated string
  *
  * @return true, if everything was fine
@@ -2372,9 +2372,9 @@ job_get_context_change(ocs::tom::ConstElement<ocs::tom::JB> job);
  * additional functions are provided, calling this function doing
  * general tests and doing additional verification themselves.
  *
- * @param job the job object to verify (JB_Type), may be an empty handle
+ * @param job the job object to verify (JB), may be an empty handle
  * @param answer_list answer list to pass back error messages
- * @param do_cull_verify do cull verification against the JB_Type descriptor.
+ * @param do_cull_verify do cull verification against the JB descriptor.
  *
  * @return true on success, false on error with error message in answer_list
  *
@@ -2397,7 +2397,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
       DRETURN(false);
    }
 
-   if (do_cull_verify && !object_verify_cull(job, JB_Type)) {
+   if (do_cull_verify && !object_verify_cull(job, ocs::tom::JB::descriptor.e)) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRUCTURE_ERROR);
       DRETURN(false);
    }
@@ -2479,7 +2479,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
  * structure, and makes sure a number of job attributes are set
  * correctly.
  *
- * @param job the job to verify (JB_Type)
+ * @param job the job to verify (JB)
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false on error with error message in answer_list
@@ -2792,7 +2792,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
  * If no limit was requested the maximal ulong32 value is returned
  *
  * @param limit store for the value
- * @param jep jobs ep (JB_Type)
+ * @param jep jobs ep (JB)
  *
  * @return true on success false if no value was requested
  *
@@ -2852,7 +2852,7 @@ bool job_get_wallclock_limit(uint64_t *limit, const ocs::tom::ConstElement<ocs::
  * This function returns true if "job" is a "binary" job
  * which was e.g. submitted with qsub -b y
  *
- * @param job JB_Type element
+ * @param job JB element
  *
  * @return true or false
  *
@@ -2952,7 +2952,7 @@ job_set_owner_and_group(const ocs::tom::Element<ocs::tom::JB> job, const uint32_
 /**
  * @brief Apply a context change request to a job's context
  *
- * The request is a `CX_Type` list divided into groups. A group starts with a
+ * The request is a `CX` list divided into groups. A group starts with a
  * marker element naming the operation, and any combination of groups may
  * appear in one request:
  *
@@ -2963,11 +2963,11 @@ job_set_owner_and_group(const ocs::tom::Element<ocs::tom::JB> job, const uint32_
  * | `=` | replacing the job's context entirely |
  *
  * `=` is the default when the list starts without a marker. The job's context
- * `JB_context` is a `VA_Type` list with a unique name, so a variable given
+ * `JB_context` is a `VA` list with a unique name, so a variable given
  * again keeps its last value (CS-3058).
  *
- * @param change the request, a `CX_Type` list; an empty request or an empty handle clears the context
- * @param[in,out] job the job whose `JB_context` is changed (JB_Type)
+ * @param change the request, a `CX` list; an empty request or an empty handle clears the context
+ * @param[in,out] job the job whose `JB_context` is changed (JB)
  */
 void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom::Element<ocs::tom::JB> job) {
    // if the incoming list is empty, or it starts without a marker, the context is replaced
@@ -3023,15 +3023,15 @@ void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom:
 /**
  * @brief Append the instructions of one context switch to a context change request
  *
- * The parsers build one `VA_Type` list per `-ac`, `-sc` or `-dc` switch, its
- * marker first. The request concatenates them as `CX_Type` elements in the
+ * The parsers build one `VA` list per `-ac`, `-sc` or `-dc` switch, its
+ * marker first. The request concatenates them as `CX` elements in the
  * order given, where markers and names repeat by design (CS-3058).
  *
  * The request stays an untyped in-out reference: the callers pass the field
  * of a job or a local list that is created here.
  *
- * @param[in,out] change the `CX_Type` request, created if *change is nullptr
- * @param option_list the list of one switch, a `VA_Type` list; an empty handle is accepted
+ * @param[in,out] change the `CX` request, created if *change is nullptr
+ * @param option_list the list of one switch, a `VA` list; an empty handle is accepted
  */
 void ocs_context_change_add(lList **change, const ocs::tom::ConstList<ocs::tom::VA> option_list) {
    for (const auto var : option_list) {
@@ -3047,8 +3047,8 @@ void ocs_context_change_add(lList **change, const ocs::tom::ConstList<ocs::tom::
  * A reduced job, such as the one qstat -j works on, need not contain
  * `JB_context_change`; reading the field from it would abort.
  *
- * @param job the job (JB_Type), full or reduced
- * @return the `CX_Type` request, an empty handle if the job has none or does not contain the field
+ * @param job the job (JB), full or reduced
+ * @return the `CX` request, an empty handle if the job has none or does not contain the field
  */
 static ocs::tom::ConstList<ocs::tom::CX>
 job_get_context_change(const ocs::tom::ConstElement<ocs::tom::JB> job) {
@@ -3066,8 +3066,8 @@ job_get_context_change(const ocs::tom::ConstElement<ocs::tom::JB> job) {
  * still to be applied. Afterwards `JB_context_change` is empty and the result
  * is `JB_context` itself (CS-3058).
  *
- * @param job the job (JB_Type), full or reduced
- * @return a new `VA_Type` list, an empty handle if the context is empty
+ * @param job the job (JB), full or reduced
+ * @return a new `VA` list, an empty handle if the context is empty
  */
 ocs::tom::ListPtr<ocs::tom::VA> ocs_context_get_effective(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    auto tmp_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
@@ -3215,7 +3215,7 @@ job_parse_validation_level(int *level, const char *input, int prog_number,
  * This function returns true if "job" is requesting a resource with type
  * CONSUMABLE_JOB.
  *
- * @param jep JB_Type element
+ * @param jep JB element
  * @param resource_name Name of resource
  *
  * @return true or false
@@ -3265,9 +3265,9 @@ bool job_parse_scope_string(const char *scope, char &scope_id) {
  *
  * A job may state different requests for its global, master and slave part.
  *
- * @param job the job to read (JB_Type); a reduced job without the attribute is handled
+ * @param job the job to read (JB); a reduced job without the attribute is handled
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request set (JRS_Type), an empty handle when the job has none for that scope
+ * @return the request set (JRS), an empty handle when the job has none for that scope
  */
 ocs::tom::ConstElement<ocs::tom::JRS> job_get_request_set(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                           const uint32_t scope) {
@@ -3281,9 +3281,9 @@ ocs::tom::ConstElement<ocs::tom::JRS> job_get_request_set(const ocs::tom::ConstE
 /**
  * @brief The request set of one scope, writable
  *
- * @param job the job to read (JB_Type); a reduced job without the attribute is handled
+ * @param job the job to read (JB); a reduced job without the attribute is handled
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request set (JRS_Type), an empty handle when the job has none for that scope
+ * @return the request set (JRS), an empty handle when the job has none for that scope
  */
 ocs::tom::Element<ocs::tom::JRS> job_get_request_setRW(const ocs::tom::Element<ocs::tom::JB> job,
                                                        const uint32_t scope) {
@@ -3297,9 +3297,9 @@ ocs::tom::Element<ocs::tom::JRS> job_get_request_setRW(const ocs::tom::Element<o
 /**
  * @brief The request set of one scope, created when it does not exist
  *
- * @param[in,out] job the job to read or extend (JB_Type)
+ * @param[in,out] job the job to read or extend (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the request set (JRS_Type), never empty
+ * @return the request set (JRS), never empty
  */
 ocs::tom::Element<ocs::tom::JRS> job_get_or_create_request_setRW(const ocs::tom::Element<ocs::tom::JB> job,
                                                                  const uint32_t scope) {
@@ -3315,7 +3315,7 @@ ocs::tom::Element<ocs::tom::JRS> job_get_or_create_request_setRW(const ocs::tom:
 /**
  * @brief Remove duplicate resource requests from the job request set list.
  *
- * @param job the job to work on (JB_Type)
+ * @param job the job to work on (JB)
  * @return true if the job has any resource requests, else false
  */
 bool job_request_set_remove_duplicates(const ocs::tom::Element<ocs::tom::JB> job) {
@@ -3339,7 +3339,7 @@ bool job_request_set_remove_duplicates(const ocs::tom::Element<ocs::tom::JB> job
 /**
  * @brief Does the job request a queue in any scope?
  *
- * @param job the job to check (JB_Type)
+ * @param job the job to check (JB)
  * @return true when any request set has a hard or soft queue list
  */
 bool job_request_set_has_queue_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
@@ -3357,9 +3357,9 @@ bool job_request_set_has_queue_requests(const ocs::tom::ConstElement<ocs::tom::J
 /**
  * @brief The largest hard request for one resource across all scopes
  *
- * @param job the job to search (JB_Type)
+ * @param job the job to search (JB)
  * @param request_name the resource to look for
- * @return the request with the highest value (CE_Type), an empty handle when none asks for it
+ * @return the request with the highest value (CE), an empty handle when none asks for it
  */
 ocs::tom::ConstElement<ocs::tom::CE> job_get_highest_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                                   const char *request_name) {
@@ -3386,10 +3386,10 @@ ocs::tom::ConstElement<ocs::tom::CE> job_get_highest_hard_request(const ocs::tom
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list (CE_Type), an empty handle when the job has no such request set
+ * @return the list (CE), an empty handle when the job has no such request set
  */
 ocs::tom::ConstList<ocs::tom::CE> job_get_resource_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                         const uint32_t scope, const bool hard) {
@@ -3404,8 +3404,8 @@ ocs::tom::ConstList<ocs::tom::CE> job_get_resource_list(const ocs::tom::ConstEle
 /**
  * @brief The global hard resource requests of a job
  *
- * @param job the job to read (JB_Type)
- * @return the list (CE_Type), an empty handle when the job has no global request set
+ * @param job the job to read (JB)
+ * @return the list (CE), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_list
  */
@@ -3417,9 +3417,9 @@ ocs::tom::ConstList<ocs::tom::CE> job_get_hard_resource_list(const ocs::tom::Con
 /**
  * @brief The hard resource requests of one scope
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list (CE_Type), an empty handle when the job has no such request set
+ * @return the list (CE), an empty handle when the job has no such request set
  *
  * @see #job_get_resource_list
  */
@@ -3432,8 +3432,8 @@ ocs::tom::ConstList<ocs::tom::CE> job_get_hard_resource_list(const ocs::tom::Con
 /**
  * @brief The global soft resource requests of a job
  *
- * @param job the job to read (JB_Type)
- * @return the list (CE_Type), an empty handle when the job has no global request set
+ * @param job the job to read (JB)
+ * @return the list (CE), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_list
  */
@@ -3445,8 +3445,8 @@ ocs::tom::ConstList<ocs::tom::CE> job_get_soft_resource_list(const ocs::tom::Con
 /**
  * @brief The global hard queue requests of a job
  *
- * @param job the job to read (JB_Type)
- * @return the list (QR_Type), an empty handle when the job has no global request set
+ * @param job the job to read (JB)
+ * @return the list (QR), an empty handle when the job has no global request set
  *
  * @see #job_get_queue_list
  */
@@ -3461,10 +3461,10 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_hard_queue_list(const ocs::tom::ConstE
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list (QR_Type), an empty handle when the job has no such request set
+ * @return the list (QR), an empty handle when the job has no such request set
  */
 ocs::tom::ConstList<ocs::tom::QR> job_get_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                      const uint32_t scope, const bool hard) {
@@ -3480,9 +3480,9 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_queue_list(const ocs::tom::ConstElemen
 /**
  * @brief The hard queue requests of one scope
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list (QR_Type), an empty handle when the job has no such request set
+ * @return the list (QR), an empty handle when the job has no such request set
  *
  * @see #job_get_queue_list
  */
@@ -3495,8 +3495,8 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_hard_queue_list(const ocs::tom::ConstE
 /**
  * @brief The global soft queue requests of a job
  *
- * @param job the job to read (JB_Type)
- * @return the list (QR_Type), an empty handle when the job has no global request set
+ * @param job the job to read (JB)
+ * @return the list (QR), an empty handle when the job has no global request set
  *
  * @see #job_get_queue_list
  */
@@ -3507,9 +3507,9 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_soft_queue_list(const ocs::tom::ConstE
 /**
  * @brief The soft queue requests of one scope
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
- * @return the list (QR_Type), an empty handle when the job has no such request set
+ * @return the list (QR), an empty handle when the job has no such request set
  *
  * @see #job_get_queue_list
  */
@@ -3521,8 +3521,8 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_soft_queue_list(const ocs::tom::ConstE
 /**
  * @brief The hard queue requests of a job's master task
  *
- * @param job the job to read (JB_Type)
- * @return the list (QR_Type), an empty handle when the job has no master request set
+ * @param job the job to read (JB)
+ * @return the list (QR), an empty handle when the job has no master request set
  */
 ocs::tom::ConstList<ocs::tom::QR> job_get_master_hard_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return job_get_queue_list(job, JRS_SCOPE_MASTER, true);
@@ -3534,10 +3534,10 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_master_hard_queue_list(const ocs::tom:
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list (CE_Type), an empty handle when the job has no such request set
+ * @return the list (CE), an empty handle when the job has no such request set
  */
 ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t scope,
                                                      const bool hard) {
@@ -3552,8 +3552,8 @@ ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(const ocs::tom::Element<ocs
 /**
  * @brief The global hard resource requests of a job
  *
- * @param job the job to read (JB_Type)
- * @return the list (CE_Type), an empty handle when the job has no global request set
+ * @param job the job to read (JB)
+ * @return the list (CE), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_listRW
  */
@@ -3565,8 +3565,8 @@ ocs::tom::List<ocs::tom::CE> job_get_hard_resource_listRW(const ocs::tom::Elemen
 /**
  * @brief The global soft resource requests of a job
  *
- * @param job the job to read (JB_Type)
- * @return the list (CE_Type), an empty handle when the job has no global request set
+ * @param job the job to read (JB)
+ * @return the list (CE), an empty handle when the job has no global request set
  *
  * @see #job_get_resource_listRW
  */
@@ -3580,10 +3580,10 @@ ocs::tom::List<ocs::tom::CE> job_get_soft_resource_listRW(const ocs::tom::Elemen
  * A job may state different requests for its global, master and slave
  * part; `scope` selects which of the three request sets is meant.
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
- * @return the list (QR_Type), an empty handle when the job has no such request set
+ * @return the list (QR), an empty handle when the job has no such request set
  */
 ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t scope,
                                                   const bool hard) {
@@ -3600,8 +3600,8 @@ ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(const ocs::tom::Element<ocs::t
  *
  * The request set is created when the job does not have it yet.
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param resource_list the new list (CE), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
  */
@@ -3623,8 +3623,8 @@ void job_set_resource_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::
 /**
  * @brief Replace the global hard resource requests of a job
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param resource_list the new list (CE), consumed; ownership passes to the job
  *
  * @see #job_set_resource_list
  */
@@ -3637,8 +3637,8 @@ void job_set_hard_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief Replace the hard resource requests of one scope
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param resource_list the new list (CE), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_resource_list
@@ -3652,8 +3652,8 @@ void job_set_hard_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief Replace the global soft resource requests of a job
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param resource_list the new list (CE), consumed; ownership passes to the job
  *
  * @see #job_set_resource_list
  */
@@ -3666,8 +3666,8 @@ void job_set_soft_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief Replace the soft resource requests of one scope
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param resource_list the new list (CE_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param resource_list the new list (CE), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_resource_list
@@ -3683,8 +3683,8 @@ void job_set_soft_resource_list(const ocs::tom::Element<ocs::tom::JB> job,
  *
  * The request set is created when the job does not have it yet.
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param queue_list the new list (QR), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @param hard true for the hard list, false for the soft one
  */
@@ -3706,8 +3706,8 @@ void job_set_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
 /**
  * @brief Replace the global hard queue requests of a job
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param queue_list the new list (QR), consumed; ownership passes to the job
  *
  * @see #job_set_queue_list
  */
@@ -3719,8 +3719,8 @@ void job_set_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom
 /**
  * @brief Replace the hard queue requests of one scope
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param queue_list the new list (QR), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_queue_list
@@ -3734,8 +3734,8 @@ void job_set_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom
 /**
  * @brief Replace the soft queue requests of one scope
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param queue_list the new list (QR), consumed; ownership passes to the job
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  *
  * @see #job_set_queue_list
@@ -3749,8 +3749,8 @@ void job_set_soft_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom
 /**
  * @brief Replace the hard queue requests of a job's master task
  *
- * @param[in,out] job the job to change (JB_Type)
- * @param queue_list the new list (QR_Type), consumed; ownership passes to the job
+ * @param[in,out] job the job to change (JB)
+ * @param queue_list the new list (QR), consumed; ownership passes to the job
  *
  * @see #job_set_queue_list
  */
@@ -3763,7 +3763,7 @@ void job_set_master_hard_queue_list(const ocs::tom::Element<ocs::tom::JB> job,
 /**
  * @brief Set the allocation rule of one request set
  *
- * @param[in,out] job the job to change (JB_Type)
+ * @param[in,out] job the job to change (JB)
  * @param allocation_rule the rule to store
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  */
@@ -3779,7 +3779,7 @@ void job_set_allocation_rule(const ocs::tom::Element<ocs::tom::JB> job, const ch
 /**
  * @brief The allocation rule of one request set
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @param scope one of `JRS_SCOPE_GLOBAL`, `JRS_SCOPE_MASTER`, `JRS_SCOPE_SLAVE`
  * @return the rule, or nullptr when the scope has none
  */
@@ -3823,7 +3823,7 @@ job_add_opt_to_comand_line(dstring *dstr, const char *opt, const char *value) {
  * @brief Append a boolean option to a command line
  *
  * @tparam F the boolean field of the job
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param[out] dstr the command line to append to
  * @param opt the option, e.g. `-j`
  * @param print_value the field value for which the option is appended
@@ -3851,7 +3851,7 @@ job_add_bool_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * @brief Append a numeric option to a command line
  *
  * @tparam F the ulong field of the job
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param[out] dstr the command line to append to
  * @param opt the option, e.g. `-js`, or nullptr for the value alone
  * @param offset added to the field value before it is printed
@@ -3880,7 +3880,7 @@ job_add_ulong_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job
  * @brief Append a time option to a command line
  *
  * @tparam F the ulong64 time field of the job
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param[out] dstr the command line to append to
  * @param opt the option, e.g. `-a`, or nullptr for the value alone
  * @return always true
@@ -3909,7 +3909,7 @@ job_add_time_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * @brief Append a string option to a command line
  *
  * @tparam F the string field of the job
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param[out] dstr the command line to append to
  * @param opt the option, e.g. `-N`, or nullptr for the value alone
  * @return true if the option was appended, which it is unless the field is nullptr
@@ -3936,8 +3936,8 @@ job_add_str_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, 
 /**
  * @brief Append a resource request option to a command line
  *
- * @tparam F the CE_Type list field of the request set
- * @param scope_ep the request set (JRS_Type)
+ * @tparam F the CE list field of the request set
+ * @param scope_ep the request set (JRS)
  * @param[out] dstr the command line to append to
  * @param opt the option, e.g. `-hard -l`
  * @return true if the option was appended, which it is unless the list is nullptr
@@ -3999,8 +3999,8 @@ job_add_list_opt_to_command_line(const ocs::tom::ConstElement<typename ocs::tom:
 /**
  * @brief Append an option with a comma separated list of `[host:]path` entries to a command line
  *
- * @tparam F the PN_Type list field of the job
- * @param job the job (JB_Type)
+ * @tparam F the PN list field of the job
+ * @param job the job (JB)
  * @param[out] dstr the command line to append to
  * @param opt the option, e.g. `-o`
  * @return true if the option was appended, which it is unless the list is nullptr
@@ -4041,8 +4041,8 @@ job_add_host_str_list_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom:
 /**
  * @brief Append an option with a comma separated list of `name=value` entries to a command line
  *
- * @tparam F the VA_Type list field of the job
- * @param job the job (JB_Type)
+ * @tparam F the VA list field of the job
+ * @param job the job (JB)
  * @param[out] dstr the command line to append to
  * @param opt the option, e.g. `-v`
  * @param filter entries whose name starts with it are skipped, nullptr for none
@@ -4091,7 +4091,7 @@ job_add_name_value_list_opt_to_command_line(const ocs::tom::ConstElement<ocs::to
 /**
  * @brief Append the request lists of one request set to a command line
  *
- * @param scope_ep the request set (JRS_Type)
+ * @param scope_ep the request set (JRS)
  * @param[out] dstr the command line to append to
  */
 static void
@@ -4178,7 +4178,7 @@ std::string get_scope_list_name(const uint32_t scope, const int nm, const bool w
 /**
  * @brief The name of the scope a request set belongs to
  *
- * @param scope_ep the request set element (JRS_Type); an empty handle yields `unknown`
+ * @param scope_ep the request set element (JRS); an empty handle yields `unknown`
  * @return `global`, `master`, `slave`, or `unknown`
  */
 const char *
@@ -4195,7 +4195,7 @@ job_scope_name(const ocs::tom::ConstElement<ocs::tom::JRS> scope_ep) {
 /**
  * @brief Append the request sets of a job to a command line
  *
- * @param job the job (JB_Type)
+ * @param job the job (JB)
  * @param[out] dstr the command line to append to
  */
 static void
@@ -4220,7 +4220,7 @@ job_add_resource_set_list_to_command_line(const ocs::tom::ConstElement<ocs::tom:
  * which can be used to submit an identical job (if no sge_request files and/or JSV are active).
  * The command line is stored in the given dstring.
  *
- * @param[in] job      job used as template for the command line (JB_Type)
+ * @param[in] job      job used as template for the command line (JB)
  * @param[in] dstr     dstring which will contain the command line
  * @param[in] client   client name, this will become the first word in the command line
  * @return the command line as string
@@ -4372,7 +4372,7 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
  * Generates the effective command line from the job attributes
  * and stores it in the job attribute JB_submission_command_line.
  *
- * @param[in] job      job used as template for the command line (JB_Type)
+ * @param[in] job      job used as template for the command line (JB)
  * @param[in] client   client name, this will become the first word in the command line
  */
 void job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const char *client) {
@@ -4388,7 +4388,7 @@ void job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const char 
  * Formats the command line given as argument count and argument vector into one string
  * and stores it in the job attribute JB_submission_command_line.
  *
- * @param[in] job    we store the result here (JB_Type)
+ * @param[in] job    we store the result here (JB)
  * @param[in] argc   the argument count
  * @param[in] argv   the argument vector
  */
@@ -4403,7 +4403,7 @@ job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const int argc, 
 /**
  * @brief Sets the sync options for a job.
  *
- * @param job the job to change (JB_Type)
+ * @param job the job to change (JB)
  * @param sync_options the `SYNC_*` value to store
  */
 void
@@ -4415,7 +4415,7 @@ job_set_sync_options(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t s
 /**
  * @brief get the letter combination that represents the sync options
  *
- * @param job the job to read (JB_Type)
+ * @param job the job to read (JB)
  * @return the letter combination
  */
 std::string
@@ -4479,7 +4479,7 @@ job_is_visible(const ocs::gdi::Packet *packet, const char *owner, const bool is_
  * `JB_nppri` is the priority mapped onto [0,1] over the whole storable range,
  * which is what the priority formula works with.
  *
- * @param[in,out] jep the job to change (JB_Type)
+ * @param[in,out] jep the job to change (JB)
  * @param priority the priority in its stored unsigned form, see #PRI_ITOU
  */
 void job_normalize_priority(const ocs::tom::Element<ocs::tom::JB> jep, const uint32_t priority) {
@@ -4497,7 +4497,7 @@ void job_normalize_priority(const ocs::tom::Element<ocs::tom::JB> jep, const uin
  * The function will return a new list with one entry for each host.
  * The slots of all entries for the same host will be accumulated.
  *
- * @param gdil_list the input list (JG_Type), may be an empty handle
+ * @param gdil_list the input list (JG), may be an empty handle
  * @return a new list with summarized entries, an empty handle for an empty input handle
  */
 ocs::tom::ListPtr<ocs::tom::JG>
@@ -4549,8 +4549,8 @@ gdil_make_host_unique(const ocs::tom::ConstList<ocs::tom::JG> gdil_list) {
  * one loses the running bit, and a finished one is shown as finished rather
  * than exiting.
  *
- * @param job the job the task belongs to (JB_Type)
- * @param jatep the array task (JAT_Type)
+ * @param job the job the task belongs to (JB)
+ * @param jatep the array task (JAT)
  * @return the state bits to render, which are not stored anywhere
  */
 uint32_t
@@ -4638,7 +4638,7 @@ bool job_parse_when_string(const char *input, qalter_when_t &when) {
  * applied immediately.
  * The job can be a reduced element as it is sent by the qalter command.
  *
- * @param job JB_Type element, full or reduced
+ * @param job JB element, full or reduced
  * @return true if JB_when is set to QALTER_WHEN_NOW, false otherwise
  */
 bool

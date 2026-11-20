@@ -91,10 +91,10 @@
  *
  * Find a certain PE Task with "pe_task_id" in "ja_task"
  *
- * @param ja_task JAT_Type element, may be an empty handle
+ * @param ja_task JAT element, may be an empty handle
  * @param pe_task_id PE task id string (e.g. "1.speedy")
  *
- * @return the PET_Type element, an empty handle if there is none
+ * @return the PET element, an empty handle if there is none
  */
 ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                                         const char *pe_task_id) {
@@ -115,7 +115,7 @@ ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstEle
  * The ids of all tasks contained in 'ja_task_list' will be printed
  * into 'range_string'.
  *
- * @param ja_task_list JAT_Type list, may be an empty handle
+ * @param ja_task_list JAT list, may be an empty handle
  * @param range_string dynamic string
  */
 void ja_task_list_print_to_string(const ocs::tom::ConstList<ocs::tom::JAT> ja_task_list, dstring *range_string) {
@@ -143,7 +143,7 @@ void ja_task_list_print_to_string(const ocs::tom::ConstList<ocs::tom::JAT> ja_ta
  * The list is freed and the handle emptied when the last group is split off,
  * as lSplit() did.
  *
- * @param[in,out] ja_task_list the list to split (JAT_Type); the moved tasks are removed
+ * @param[in,out] ja_task_list the list to split (JAT); the moved tasks are removed
  *                             from it, it is empty once the last group was split off
  * @return the tasks that were split off, an empty handle when the list was empty
  */
@@ -180,13 +180,13 @@ ocs::tom::ListPtr<ocs::tom::JAT> ja_task_list_split_group(ocs::tom::ListPtr<ocs:
  * To avoid duplicate handling of finished parallel tasks (which
  * could be triggered by sge_execd sending task end reports multiple
  * times until it receives an ack from qmaster), the ja_task object
- * (JAT_Type) contains a list of finished parallel tasks.
+ * (JAT) contains a list of finished parallel tasks.
  * ja_task_add_finished_pe_task tries to add a new parallel task to
  * this list.
  * If an entry with the given pe_task_id already exists, the function
  * returns false, else true.
  *
- * @param ja_task the ja_task to check/modify (JAT_Type)
+ * @param ja_task the ja_task to check/modify (JAT)
  * @param pe_task_id the pe_task_id to check/insert
  *
  * @return error state true  - if the pe_task_id did not yet exist and could be inserted, false - if the
@@ -218,7 +218,7 @@ bool ja_task_add_finished_pe_task(const ocs::tom::Element<ocs::tom::JAT> ja_task
  * ja_task_clear_finished_pe_tasks removes the complete sublist including
  * the contained task ids.
  *
- * @param ja_task the ja_task to modify (JAT_Type)
+ * @param ja_task the ja_task to modify (JAT)
  *
  * @return true, if the list could be cleared, false, if no list of finished pe_tasks existed.
  *
@@ -261,9 +261,9 @@ bool ja_task_clear_finished_pe_tasks(const ocs::tom::Element<ocs::tom::JAT> ja_t
  * @param str_jobtask job id with task range or job name
  * @param alpp answer list
  * @param include_names true: job names are allowed
- * @param arrayDefList in case of job names, a list of array taskes (RN_Type), may be an empty handle
+ * @param arrayDefList in case of job names, a list of array taskes (RN), may be an empty handle
  *
- * @return the state, -1 no valid JobTask-Identifier, 1 everything went fine, and the new ID_Type element
+ * @return the state, -1 no valid JobTask-Identifier, 1 everything went fine, and the new ID element
  *         parsed from str_jobtask, which is an empty handle for the state -1 or when it could not be created
  *
  * @note MT-NOTE: sge_parse_jobtasks() is MT safe
@@ -356,7 +356,7 @@ sge_parse_jobtasks(ocs::tom::ListPtr<ocs::tom::ID> &id_list, const char *str_job
  * "type" will be the message type. "message" is the text string stored
  * int the new element of the sublist.
  *
- * @param this_elem JAT_Type element
+ * @param this_elem JAT element
  * @param type message type id
  * @param message message
  *
@@ -380,7 +380,7 @@ bool ja_task_message_add(const ocs::tom::Element<ocs::tom::JAT> this_elem, const
  * Trash all messages from the sublist of JAT_message_list which are of
  * the given "type".
  *
- * @param this_elem JAT_Type element
+ * @param this_elem JAT element
  * @param type type id
  *
  * @return error state true  - success false - error
@@ -400,7 +400,7 @@ bool ja_task_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::JAT> 
  *
  * Verify correctness of a ja_task object.
  *
- * @param ja_task the ja_task to verify (JAT_Type)
+ * @param ja_task the ja_task to verify (JAT)
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -463,7 +463,7 @@ bool ja_task_verify(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::to
  *
  * Verify a ja_task object that has been sent to execd.
  *
- * @param ja_task the ja_task object to verify (JAT_Type)
+ * @param ja_task the ja_task object to verify (JAT)
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -492,7 +492,7 @@ bool ja_task_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JAT> ja_tas
  * Verify correctness of a granted destination identifier list being part
  * of a scheduled ja_task.
  *
- * @param gdil the list to verify (JG_Type); an empty handle is an error
+ * @param gdil the list to verify (JG); an empty handle is an error
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -531,7 +531,7 @@ bool ja_task_verify_granted_destin_identifier_list(const ocs::tom::ConstList<ocs
  * Verify a single element of a granted destination identifier list
  * (a granted queue with a certain number of slots).
  *
- * @param ep the element to verify (JG_Type); an empty handle is an error
+ * @param ep the element to verify (JG); an empty handle is an error
  * @param answer_list answer list to pass back error messages
  *
  * @return true: everything ok, else false
@@ -565,7 +565,7 @@ bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::
    }
 
    if (ret) {
-      // JG_queue names no sub-type, it holds a QU_Type object
+      // JG_queue names no sub-type, it holds a QU object
       const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(ep));
 
       if (queue) {
@@ -582,8 +582,8 @@ bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::
  * Figures out, if a running ja task belongs to a tightly integrated
  * parallel job.
  *
- * @param ja_task the ja task to test (JAT_Type), may be an empty handle
- * @param master_pe_list the parallel environments, to look up the task's PE (PE_Type)
+ * @param ja_task the ja task to test (JAT), may be an empty handle
+ * @param master_pe_list the parallel environments, to look up the task's PE (PE)
  *
  * @return true if it is a tightly integrated parallel job, else false
  *
@@ -613,8 +613,8 @@ bool ja_task_is_tightly_integrated(const ocs::tom::ConstElement<ocs::tom::JAT> j
 /**
  * @brief Debit or undebit the RSMAP ids of one granted resource on a host
  *
- * @param granted_resource the granted resource (GRU_Type) whose resource map ids are booked
- * @param host the host to book on (EH_Type)
+ * @param granted_resource the granted resource (GRU) whose resource map ids are booked
+ * @param host the host to book on (EH)
  * @param slots positive to debit, negative to undebit
  * @param[out] just_check if != nullptr do not book, only report whether it would fit
  * @return the number of modifications done
@@ -637,8 +637,8 @@ ja_task_debit_host_rsmap(const ocs::tom::ConstElement<ocs::tom::GRU> granted_res
 /**
  * @brief debit / undebit RSMAP ids of a newly scheduled ja_task
  *
- * @param granted_resources_list the resources granted to the task (GRU_Type), may be an empty handle
- * @param host  from this host (EH_Type)
+ * @param granted_resources_list the resources granted to the task (GRU), may be an empty handle
+ * @param host  from this host (EH)
  * @param slots this is the amount of slots to debit
  * @param just_check if != nullptr then do not do booking but just check if the job would fit on the resources and
  *        return the result here
@@ -672,8 +672,8 @@ int ja_task_debit_host_rsmaps(const ocs::tom::ConstList<ocs::tom::GRU> granted_r
 /**
  * @brief Debit or undebit the core bindings of one granted resource on a host
  *
- * @param granted_resource the granted resource (GRU_Type) whose bindings are booked
- * @param host the host to book on (EH_Type)
+ * @param granted_resource the granted resource (GRU) whose bindings are booked
+ * @param host the host to book on (EH)
  * @param slots positive to debit, negative to undebit
  * @param[out] just_check if != nullptr do not book, only report whether it would fit
  * @return the number of modifications done
@@ -699,8 +699,8 @@ ja_task_debit_host_binding(const ocs::tom::ConstElement<ocs::tom::GRU> granted_r
  * The counterpart of #ja_task_debit_host_rsmaps for core bindings: what is
  * booked is a topology string rather than a count.
  *
- * @param granted_resources_list the resources granted to the task (GRU_Type), may be an empty handle
- * @param host the host to book on (EH_Type)
+ * @param granted_resources_list the resources granted to the task (GRU), may be an empty handle
+ * @param host the host to book on (EH)
  * @param slots positive to debit, negative to undebit
  * @param[out] just_check if != nullptr do not book, only report whether it would fit
  * @return the number of modifications done
@@ -740,7 +740,7 @@ int ja_task_debit_host_bindings(const ocs::tom::ConstList<ocs::tom::GRU> granted
  * JTRANSFERING indicates the task is being transferred to an execution host,
  * while JRUNNING indicates the task is actively executing.
  *
- * @param[in] ja_task The job array task element (JAT_Type) to check
+ * @param[in] ja_task The job array task element (JAT) to check
  *
  * @return true if the task is transferring or running, false otherwise
  *
@@ -762,7 +762,7 @@ bool ja_task_is_running(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
  * Stored in `JAT_deleted_by`, so it survives spooling and is available when the
  * accounting record is written. An already existing value is overwritten.
  *
- * @param[in,out] ja_task the task to mark (JAT_Type)
+ * @param[in,out] ja_task the task to mark (JAT)
  * @param deleted_by the name to record
  */
 void ja_task_set_deleted_by(const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *deleted_by) {
@@ -773,7 +773,7 @@ void ja_task_set_deleted_by(const ocs::tom::Element<ocs::tom::JAT> ja_task, cons
 /**
  * @brief Who deleted this job array task?
  *
- * @param ja_task the task to ask about (JAT_Type)
+ * @param ja_task the task to ask about (JAT)
  * @return the recorded name, or nullptr when the task was not deleted through
  *         this mechanism
  */

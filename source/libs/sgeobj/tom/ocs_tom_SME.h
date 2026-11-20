@@ -94,6 +94,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SME for the list library: a synonym for ocs::tom::SME::descriptor */
-inline constexpr const lDescr *SME_Type = ocs::tom::SME::descriptor.e;

@@ -44,7 +44,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Raw.h"
 
-/// The process table; a process-lifetime list of PRO_Type elements, read through typed handles
+/// The process table; a process-lifetime list of PRO elements, read through typed handles
 static lList *procList;
 
 /**
@@ -55,7 +55,7 @@ static lList *procList;
  *
  * @param pid The process ID of the process we're looking for.
  *
- * @return the PRO_Type element, or an empty handle
+ * @return the PRO element, or an empty handle
  */
 ocs::tom::Element<ocs::tom::PRO> get_pr(const int pid) {
    DENTER(TOP_LAYER);

@@ -47,7 +47,7 @@ enum QETI_Field {
    /**
     * @brief Resource Instance
     *
-    * Reference to the resource being walked (`RUE_Type`), whose utilization diagram holds the bookings.
+    * Reference to the resource being walked (`RUE`), whose utilization diagram holds the bookings.
     */
    QETI_resource_instance,
    /**
@@ -88,6 +88,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of QETI for the list library: a synonym for ocs::tom::QETI::descriptor */
-inline constexpr const lDescr *QETI_Type = ocs::tom::QETI::descriptor.e;

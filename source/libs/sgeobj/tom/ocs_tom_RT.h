@@ -95,6 +95,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RT for the list library: a synonym for ocs::tom::RT::descriptor */
-inline constexpr const lDescr *RT_Type = ocs::tom::RT::descriptor.e;

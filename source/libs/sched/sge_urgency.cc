@@ -206,9 +206,6 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
       ocs::tom::set<JB_wtcontr>(jep, wtc);
       ocs::tom::set<JB_urg>(jep, absolute_urgency);
 
-/*      DPRINTF("--- job " sge_u32 " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
-            lGetUlong(jep, JB_job_number), dtc, wtc, rrc, absolute_urgency);
-*/            
       
       /* track min/max values */
       if (min_urgency) {
@@ -242,7 +239,6 @@ static void sge_normalize_urgency(const ocs::tom::List<ocs::tom::JB> job_list, d
       double asu = ocs::tom::get<JB_urg>(jep);
       double nsu = sge_normalize_value(asu, min_urgency, max_urgency);
       ocs::tom::set<JB_nurg>(jep, nsu);
-/*    DPRINTF("NSU(job " sge_u32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu); */
    }
    DRETURN_VOID;
 }
@@ -255,8 +251,8 @@ static void sge_normalize_urgency(const ocs::tom::List<ocs::tom::JB> job_list, d
  * For parallel jobs the static urgency job slot request depends on
  * static urgency slots as defined with sge_pe(5).
  *
- * @param job the job (JB_Type)
- * @param pe_list the PE list (PE_Type)
+ * @param job the job (JB)
+ * @param pe_list the PE list (PE)
  *
  * @return Number of slots
  *

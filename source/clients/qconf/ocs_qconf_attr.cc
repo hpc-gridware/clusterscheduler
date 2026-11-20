@@ -341,7 +341,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
           * lListT. */
          for (const auto f : ocs_cull_present_fields(first.descr())) {
             const int nm = first.descr()[f.pos].nm;
-            // for CE_Type objects which are no RSMAPs CE_resource_map_list will be nullptr - this is OK
+            // for CE objects which are no RSMAPs CE_resource_map_list will be nullptr - this is OK
             if (ocs::tom::field_type_of(first.descr()[f.pos].mt) == ocs::tom::FieldType::List &&
                 !first.get<ocs::tom::ConstRawList>(nm) && nm != CE_resource_map_list) {
                answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,
@@ -376,18 +376,18 @@ qconf_run_attr(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    /* the field lists are globals, so the table is filled at run time; the exec
     * host's is built and has to be freed */
    qconf_attr_entry info_entry[] = {
-      {ocs::gdi::Target::CQ_LIST,   SGE_OBJ_CQUEUE,   CQ_Type,   SGE_ATTR_QNAME,     CQ_name,   CQ_fields,
-       &qconf_sfi,     cqueue_xattr_pre_gdi},
-      {ocs::gdi::Target::EH_LIST,   SGE_OBJ_EXECHOST, EH_Type,   SGE_ATTR_HOSTNAME,  EH_name,
+      {ocs::gdi::Target::CQ_LIST,   SGE_OBJ_CQUEUE,   ocs::tom::CQ::descriptor.e,   SGE_ATTR_QNAME,     CQ_name,
+       CQ_fields,   &qconf_sfi,     cqueue_xattr_pre_gdi},
+      {ocs::gdi::Target::EH_LIST,   SGE_OBJ_EXECHOST, ocs::tom::EH::descriptor.e,   SGE_ATTR_HOSTNAME,  EH_name,
        sge_build_EH_field_list(false, false, false, false), &qconf_sfi, nullptr},
-      {ocs::gdi::Target::PE_LIST,   SGE_OBJ_PE,       PE_Type,   SGE_ATTR_PE_NAME,   PE_name,   PE_fields,
-       &qconf_sfi,     nullptr},
-      {ocs::gdi::Target::CK_LIST,   SGE_OBJ_CKPT,     CK_Type,   SGE_ATTR_CKPT_NAME, CK_name,   CK_fields,
-       &qconf_sfi,     nullptr},
-      {ocs::gdi::Target::HGRP_LIST, SGE_OBJ_HGROUP,   HGRP_Type, SGE_ATTR_HGRP_NAME, HGRP_name, HGRP_fields,
-       &qconf_sfi,     nullptr},
-      {ocs::gdi::Target::RQS_LIST,  SGE_OBJ_RQS,      RQS_Type,  SGE_ATTR_RQS_NAME,  RQS_name,  RQS_fields,
-       &qconf_rqs_sfi, rqs_xattr_pre_gdi},
+      {ocs::gdi::Target::PE_LIST,   SGE_OBJ_PE,       ocs::tom::PE::descriptor.e,   SGE_ATTR_PE_NAME,   PE_name,
+       PE_fields,   &qconf_sfi,     nullptr},
+      {ocs::gdi::Target::CK_LIST,   SGE_OBJ_CKPT,     ocs::tom::CK::descriptor.e,   SGE_ATTR_CKPT_NAME, CK_name,
+       CK_fields,   &qconf_sfi,     nullptr},
+      {ocs::gdi::Target::HGRP_LIST, SGE_OBJ_HGROUP,   ocs::tom::HGRP::descriptor.e, SGE_ATTR_HGRP_NAME, HGRP_name,
+       HGRP_fields, &qconf_sfi,     nullptr},
+      {ocs::gdi::Target::RQS_LIST,  SGE_OBJ_RQS,      ocs::tom::RQS::descriptor.e,  SGE_ATTR_RQS_NAME,  RQS_name,
+       RQS_fields,  &qconf_rqs_sfi, rqs_xattr_pre_gdi},
    };
    spooling_field *eh_fields = info_entry[1].fields;
 

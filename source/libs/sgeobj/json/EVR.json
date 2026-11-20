@@ -56,7 +56,7 @@
          "name": "event_client",
          "summary": "Event Client",
          "description": [
-            "The event client object (`EV_Type`), for the register and modify operations."
+            "The event client object (`EV`), for the register and modify operations."
          ],
          "type": "lObjectT",
          "subClassName": "EV",
@@ -67,7 +67,7 @@
          "name": "event_list",
          "summary": "Events",
          "description": [
-            "The events to deliver (`ET_Type`), for `EVR_ADD_EVENT`."
+            "The events to deliver (`ET`), for `EVR_ADD_EVENT`."
          ],
          "type": "lListT",
          "subClassName": "ET",

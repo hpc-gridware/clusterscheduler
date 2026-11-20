@@ -181,7 +181,7 @@ static void test_parse_string_list() {
 
    {
       lList *lp = nullptr;
-      const int ret = parse_words({"-x", "7", "1.5", "-3", "-4"}, SPA_Type, spa_rule, &lp);
+      const int ret = parse_words({"-x", "7", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp);
       const auto list = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(lp);
       const auto ep = list ? list->front() : ocs::tom::Element<ocs::tom::SPA>();
       CHECK(1, "one element of five typed words: string, ulong, double, long and int set",
@@ -192,31 +192,36 @@ static void test_parse_string_list() {
    }
    {
       lList *lp = nullptr;
-      const int ret = parse_words({"-x", "7", "1.5", "-3", "-4", "-y", "8", "2", "3", "4"}, SPA_Type, spa_rule, &lp);
+      const int ret = parse_words({"-x", "7", "1.5", "-3", "-4", "-y", "8", "2", "3", "4"}, ocs::tom::SPA::descriptor.e,
+                                  spa_rule, &lp);
       const ocs::tom::RawListPtr list(lp);
       CHECK(2, "a used up rule starts a new element", ret == 0 && list->size() == 2 &&
                                                           join_strings(list.get(), SPA_switch_val) == "-x -y");
    }
    {
       lList *lp = nullptr;
-      const int ret = parse_words({"none", "7", "1.5", "-3", "-4"}, SPA_Type, spa_rule, &lp);
+      const int ret = parse_words({"none", "7", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp);
       const ocs::tom::RawListPtr list(lp);
       CHECK(3, "a string word NONE in any case leaves the field unset",
             ret == 0 && join_strings(list.get(), SPA_switch_val) == "-");
    }
    {
       lList *lp = nullptr;
-      const bool ulong_bad = parse_words({"-x", "x", "1.5", "-3", "-4"}, SPA_Type, spa_rule, &lp) == -8;
-      const bool double_bad = parse_words({"-x", "7", "y", "-3", "-4"}, SPA_Type, spa_rule, &lp) == -7;
-      const bool long_bad = parse_words({"-x", "7", "1.5", "z", "-4"}, SPA_Type, spa_rule, &lp) == -9;
-      const bool int_bad = parse_words({"-x", "7", "1.5", "-3", "w"}, SPA_Type, spa_rule, &lp) == -11;
+      const bool ulong_bad = parse_words({"-x", "x", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule,
+                                         &lp) == -8;
+      const bool double_bad = parse_words({"-x", "7", "y", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule,
+                                          &lp) == -7;
+      const bool long_bad = parse_words({"-x", "7", "1.5", "z", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule,
+                                        &lp) == -9;
+      const bool int_bad = parse_words({"-x", "7", "1.5", "-3", "w"}, ocs::tom::SPA::descriptor.e, spa_rule,
+                                       &lp) == -11;
       CHECK(4, "a word that is no ulong, double, long or int gives -8, -7, -9, -11 and no list",
             ulong_bad && double_bad && long_bad && int_bad && lp == nullptr);
    }
    {
       lList *lp = nullptr;
       CHECK(5, "words that do not fill the last element give -13",
-            parse_words({"-x", "7"}, SPA_Type, spa_rule, &lp) == -13 && lp == nullptr);
+            parse_words({"-x", "7"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp) == -13 && lp == nullptr);
    }
    {
       lList *lp = nullptr;
@@ -224,13 +229,14 @@ static void test_parse_string_list() {
       int bool_rule[] = {SPA_argval_lBoolT, 0};
       int foreign_rule[] = {ST_name, 0};
       CHECK(6, "a 64 bit unsigned, a bool and a foreign field give -12",
-            parse_words({"1"}, SPA_Type, u64_rule, &lp) == -12 && parse_words({"1"}, SPA_Type, bool_rule, &lp) == -12 &&
-               parse_words({"1"}, SPA_Type, foreign_rule, &lp) == -12 && lp == nullptr);
+            parse_words({"1"}, ocs::tom::SPA::descriptor.e, u64_rule, &lp) == -12 &&
+            parse_words({"1"}, ocs::tom::SPA::descriptor.e, bool_rule, &lp) == -12 &&
+               parse_words({"1"}, ocs::tom::SPA::descriptor.e, foreign_rule, &lp) == -12 && lp == nullptr);
    }
    {
       lList *lp = nullptr;
       int list_rule[] = {SPA_switch_val, SPA_argval_lListT, 0};
-      const int ret = parse_words({"-x", "ignored"}, SPA_Type, list_rule, &lp);
+      const int ret = parse_words({"-x", "ignored"}, ocs::tom::SPA::descriptor.e, list_rule, &lp);
       const ocs::tom::RawListPtr list(lp);
       CHECK(7, "a list field of the rule is skipped",
             ret == 0 && list->size() == 1 && !list->front().get<ocs::tom::ConstRawList>(SPA_argval_lListT));
@@ -238,7 +244,7 @@ static void test_parse_string_list() {
    {
       lList *lp = nullptr;
       int pn_rule[] = {PN_path, PN_host, 0};
-      const int ret = parse_words({"/p", "h1", "/q", "NONE"}, PN_Type, pn_rule, &lp);
+      const int ret = parse_words({"/p", "h1", "/q", "NONE"}, ocs::tom::PN::descriptor.e, pn_rule, &lp);
       const ocs::tom::RawListPtr list(lp);
       auto it = list->begin();
       const ocs::tom::RawElement first = it != list->end() ? *it++ : nullptr;
@@ -251,22 +257,23 @@ static void test_parse_string_list() {
       lList *lp = nullptr;
       int empty_rule[] = {0};
       CHECK(9, "a nullptr descriptor gives -1, an empty rule -2",
-            parse_words({"a"}, nullptr, spa_rule, &lp) == -1 && parse_words({"a"}, SPA_Type, empty_rule, &lp) == -2);
+            parse_words({"a"}, nullptr, spa_rule, &lp) == -1 &&
+            parse_words({"a"}, ocs::tom::SPA::descriptor.e, empty_rule, &lp) == -2);
    }
    {
       lList *lp = nullptr;
       CHECK(10, "no words give -13, the first element is never filled",
-            parse_words({}, SPA_Type, spa_rule, &lp) == -13 && lp == nullptr);
+            parse_words({}, ocs::tom::SPA::descriptor.e, spa_rule, &lp) == -13 && lp == nullptr);
    }
    {
       int ce_rule[] = {CE_name, CE_stringval, 0};
       char text[] = "a=1,b=2";
       char none[] = "NONE";
       lList *lp = nullptr;
-      const int ret = cull_parse_definition_list(text, &lp, "defs", CE_Type, ce_rule);
+      const int ret = cull_parse_definition_list(text, &lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
       const ocs::tom::RawListPtr list(lp);
       lList *none_lp = reinterpret_cast<lList *>(1);
-      const int none_ret = cull_parse_definition_list(none, &none_lp, "defs", CE_Type, ce_rule);
+      const int none_ret = cull_parse_definition_list(none, &none_lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
       CHECK(12, "a definition list gives name and value pairs, NONE gives no list",
             ret == 0 && join_strings(list.get(), CE_name) == "a b" &&
                join_strings(list.get(), CE_stringval) == "1 2" && none_ret == 0 && none_lp == nullptr);

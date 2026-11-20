@@ -58,7 +58,7 @@ namespace {
     * @param monitor for monitoring qmaster threads
     * @param object the access list row of the GDI object table
     * @param name the access list
-    * @param entries the new entry list (`UE_Type`), taken over; may be an empty handle
+    * @param entries the new entry list (`UE`), taken over; may be an empty handle
     * @param add true to create the list, false to modify it
     * @param why receives the reason on failure, empty otherwise
     * @return the status of the write

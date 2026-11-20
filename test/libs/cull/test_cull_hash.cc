@@ -81,7 +81,7 @@
 #include "sge_jobL.h"
 int NM_ULONG  = JB_job_number;   ///< the numeric attribute the benchmark hashes on
 int NM_STRING = JB_owner;        ///< the string attribute it hashes on
-const lDescr *DESCR = JB_Type;         ///< the object type the benchmark builds lists of
+const lDescr *DESCR = ocs::tom::JB::descriptor.e;         ///< the object type the benchmark builds lists of
 
 #else
 enum {

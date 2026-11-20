@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
  * Checks the answer list if there was any critical error or in the other
  * cases if there was a status other than ok.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  *
  * @return "true" if an error is found "false" otherwise
  *
@@ -216,7 +216,7 @@ static bool answer_list_has_exit_code_error(ocs::tom::ListPtr<ocs::tom::AN> *ans
  *
  * @param argv the arguments, without the program name
  * @param envp the process environment
- * @param cmdline receives the parsed options (`SPA_Type`), created with the first option
+ * @param cmdline receives the parsed options (`SPA`), created with the first option
  * @return the answer list with the parse errors, nullptr if there were none
  */
 static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_qmod(char **argv, [[maybe_unused]] char **envp,
@@ -363,8 +363,8 @@ error:
  * Gets the options from @p cmdline, sets the force and action flags and puts
  * the queue/job names/numbers in @p reflist.
  *
- * @param cmdline the parsed options (`SPA_Type`); the options served are removed
- * @param reflist receives the queue and job references (`ID_Type`)
+ * @param cmdline the parsed options (`SPA`); the options served are removed
+ * @param reflist receives the queue and job references (`ID`)
  * @param pforce receives the -f flag
  * @return the answer list with the errors, nullptr if there were none
  */

@@ -129,7 +129,7 @@ sge_schedd_add_gdi_order_request(order_t *orders, ocs::tom::ListPtr<ocs::tom::AN
    if (gdi_multi != nullptr) {
       int order_id;
 
-      // the batch is the order list of Master_Request_Queue, OR_Type by construction
+      // the batch is the order list of Master_Request_Queue, OR by construction
       auto batch = ocs::tom::ListPtr<ocs::tom::OR>::from_typed(*order_list);
       *order_list = nullptr;
       orders->numberSendOrders += static_cast<uint32_t>(batch->size());

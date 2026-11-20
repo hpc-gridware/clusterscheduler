@@ -133,7 +133,7 @@ te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2,
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-   // Event_Control.list is a process-lifetime global created as TE_Type in te_init()
+   // Event_Control.list is a process-lifetime global created as TE in te_init()
    const auto event_list = ocs::tom::List<ocs::tom::TE>::from_typed(Event_Control.list);
    if (event_list.empty()) {
       DPRINTF("%s: event list empty!\n", __func__);
@@ -619,7 +619,7 @@ void te_init() {
    Event_Control.list = ocs::tom::ListPtr<ocs::tom::TE>::create("timed event list").release();
    // ascending due time, as the format "%I+" on TE_when gave it
    static constexpr ocs::tom::SortKey by_due_time[] = {{TE_when, true}};
-   Event_Control.sort_order = ocs::tom::make_sort_order(TE_Type, by_due_time);
+   Event_Control.sort_order = ocs::tom::make_sort_order(ocs::tom::TE::descriptor.e, by_due_time);
 
    Handler_Tbl.list = (struct tbl_elem *) sge_malloc(TBL_INIT_SIZE * sizeof(struct tbl_elem));
    Handler_Tbl.max = TBL_INIT_SIZE;
@@ -689,7 +689,7 @@ void te_check_time(uint64_t aTime) {
  * The caller of this function is responsible to free the timed event
  * returned, using 'te_free_event()'.
  *
- * @param aListElem list element (TE_Type)
+ * @param aListElem list element (TE)
  *
  * @return new timed event
  *

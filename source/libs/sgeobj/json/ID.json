@@ -2,7 +2,7 @@
    "className": "JobIdForAction",
    "summary": "Job Id for Action",
    "description": [
-      "The ID_Type is used to select specific jobs, e.g. by job number or by job name.",
+      "The ID is used to select specific jobs, e.g. by job number or by job name.",
       "It is used by client commands like qalter, qconf, qdel, qrdel, ...",
       "@todo the same goal could be achieved by using a lWhere condition, why do we have this type in the first place?"
    ],

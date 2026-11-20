@@ -221,6 +221,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JSV for the list library: a synonym for ocs::tom::JSV::descriptor */
-inline constexpr const lDescr *JSV_Type = ocs::tom::JSV::descriptor.e;

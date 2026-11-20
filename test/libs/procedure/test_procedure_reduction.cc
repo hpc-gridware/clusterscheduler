@@ -30,7 +30,7 @@
  * qmaster looks like - and that the bits combine.
  *
  * The bundle's value sublist is declared CULL_ANY_SUBTYPE, which is why a ULNG
- * entry can sit next to the ST_Type response text at all. If that ever changes,
+ * entry can sit next to the ST response text at all. If that ever changes,
  * this test is what notices.
  */
 
@@ -83,7 +83,7 @@ namespace {
        * @param bundle the bundle; the model takes ownership
        */
       void adopt(lList *bundle) {
-         // the test builds an SPP_Type bundle, see make_response()
+         // the test builds an SPP bundle, see make_response()
          procedure_response = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(bundle);
       }
    };

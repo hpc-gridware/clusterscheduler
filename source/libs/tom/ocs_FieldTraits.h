@@ -26,8 +26,7 @@
  * `ocs::tom::JB` for jobs. It holds the type's field table, the one source of
  * truth about the type, and the descriptor and the field names of the list
  * library, which are derived from that table at compile time by
- * make_descriptor() and field_names(). The old name `JB_Type` is only a
- * synonym for that descriptor. The generator also writes
+ * make_descriptor() and field_names(). The generator also writes
  * which object type a field enumeration belongs to (TypeOf) and the sub-type of
  * every list and object field the model types (SubType).
  *

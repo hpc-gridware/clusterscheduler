@@ -115,7 +115,7 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_tsm() {
  * @param target the event clients or the threads
  * @param own_ids the list gdi_kill() created, an empty handle if it created none; a non-const reference because
  *                sge_gdi() takes the handle so, a trigger returns no data that would replace it
- * @param id_list the caller's list (ID_Type), sent when gdi_kill() created none; nullptr for none
+ * @param id_list the caller's list (ID), sent when gdi_kill() created none; nullptr for none
  * @return the answer list; the caller owns it
  */
 static ocs::tom::ListPtr<ocs::tom::AN>
@@ -139,8 +139,8 @@ ocs_gdi_trigger_ids(const ocs::gdi::Target target, ocs::tom::ListPtr<ocs::tom::I
  *
  * Sends the shutdown/kill requests to scheduler, master and execds.
  *
- * The id list stays untyped: its type depends on the action (EH_Type for
- * #EXECD_KILL and #JOB_KILL, ID_Type for the event clients and the thread start).
+ * The id list stays untyped: its type depends on the action (EH for
+ * #EXECD_KILL and #JOB_KILL, ID for the event clients and the thread start).
  * A list created here for the scheduler or for all event clients replaces the
  * caller's for the actions that follow, as it always did.
  *
@@ -194,9 +194,9 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, const
       ocs::tom::ListPtr<ocs::tom::ID> hosts;
       if (id_list != nullptr) {
          /*
-         ** we have to convert the EH_Type to ID_Type
-         ** It would be better to change the call to use ID_Type!
-         ** For these actions the caller hands in host names (EH_Type); the checked handle refuses another
+         ** we have to convert the EH to ID
+         ** It would be better to change the call to use ID!
+         ** For these actions the caller hands in host names (EH); the checked handle refuses another
          ** type, as reading EH_name from its elements did
          */
          for (const auto hep : ocs::tom::ConstList<ocs::tom::EH>(id_list)) {
@@ -237,7 +237,7 @@ ocs::gdi::Client::sge_gdi_get_permission(ocs::tom::ListPtr<ocs::tom::AN> *alpp, 
    DENTER(TOP_LAYER);
 
    // fetch permissions for current user and host from qmaster
-   // the response holds the permissions (PERM_Type)
+   // the response holds the permissions (PERM)
    ocs::tom::ListPtr<ocs::tom::PERM> permission_list;
    auto alp = sge_gdi(Target::DUMMY_LIST, Command::PERMCHECK, SubCommand::NONE, permission_list);
    if (!permission_list || permission_list->size() != 1) {
@@ -345,7 +345,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
       DPRINTF("requesting global and %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
    }
    const auto what = ocs::tom::what_all<ocs::tom::CONF>();
-   // the response holds the configurations (CONF_Type)
+   // the response holds the configurations (CONF)
    ocs::tom::ListPtr<ocs::tom::CONF> lp;
    auto alp = sge_gdi(Target::CONF_LIST, Command::GET, SubCommand::NONE, lp, where, what);
 

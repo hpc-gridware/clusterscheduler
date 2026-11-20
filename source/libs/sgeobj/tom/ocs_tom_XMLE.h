@@ -41,7 +41,7 @@ enum XMLE_Field {
    /**
     * @brief Attributes
     *
-    * The element's XML attributes (`XMLA_Type`).
+    * The element's XML attributes (`XMLA`).
     */
    XMLE_Attribute = XMLE_LOWERBOUND,
    /**
@@ -59,7 +59,7 @@ enum XMLE_Field {
    /**
     * @brief Children
     *
-    * The child elements (`XMLE_Type`), when it is not.
+    * The child elements (`XMLE`), when it is not.
     */
    XMLE_List,
 };
@@ -102,6 +102,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of XMLE for the list library: a synonym for ocs::tom::XMLE::descriptor */
-inline constexpr const lDescr *XMLE_Type = ocs::tom::XMLE::descriptor.e;

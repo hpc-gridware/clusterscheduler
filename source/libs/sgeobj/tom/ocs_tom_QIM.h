@@ -82,6 +82,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of QIM for the list library: a synonym for ocs::tom::QIM::descriptor */
-inline constexpr const lDescr *QIM_Type = ocs::tom::QIM::descriptor.e;

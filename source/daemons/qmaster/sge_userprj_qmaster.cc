@@ -92,7 +92,7 @@
 
 
 namespace {
-   /** @brief The fields and events a user object (UU_Type) shares with a project object */
+   /** @brief The fields and events a user object (UU) shares with a project object */
    struct UserFields {
       using Type = ocs::tom::UU;                                         ///< the object type
       static constexpr auto name = UU_name;                              ///< the key field
@@ -109,7 +109,7 @@ namespace {
       static constexpr int node_type = STT_USER;                         ///< the share tree node type
    };
 
-   /** @brief The fields and events a project object (PR_Type) shares with a user object */
+   /** @brief The fields and events a project object (PR) shares with a user object */
    struct ProjectFields {
       using Type = ocs::tom::PR;                                         ///< the object type
       static constexpr auto name = PR_name;                              ///< the key field
@@ -916,8 +916,8 @@ static bool project_still_used(const char *p) {
  * time/still as ACL for host_conf(5)/queue_conf(5). If so an event
  * is sent.
  *
- * @param added List of added project references (PR_Type)
- * @param removed List of removed project references (PR_Type)
+ * @param added List of added project references (PR)
+ * @param removed List of removed project references (PR)
  * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: project_update_categories() is not MT safe

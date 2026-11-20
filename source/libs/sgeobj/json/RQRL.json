@@ -83,7 +83,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            "What is booked against this limit right now (`RUE_Type`), one entry per name when the filter expands."
+            "What is booked against this limit right now (`RUE`), one entry per name when the filter expands."
          ],
          "type": "lListT",
          "subClassName": "RUE",

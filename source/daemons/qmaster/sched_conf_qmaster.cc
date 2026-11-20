@@ -68,7 +68,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<o
                              const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   // the spooling layer has no typed form yet; it reads SC_Type elements for SGE_TYPE_SCHEDD_CONF
+   // the spooling layer has no typed form yet; it reads SC elements for SGE_TYPE_SCHEDD_CONF
    lList *spooled_conf = nullptr;
    spool_read_list(anAnswer, aSpoolContext, &spooled_conf, SGE_TYPE_SCHEDD_CONF);
    auto sched_conf = ocs::tom::ListPtr<ocs::tom::SC>::from_typed(spooled_conf);
@@ -97,7 +97,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<o
  * Modify scheduler configuration. We have only one entry in
  * Master_Sched_Config_List. So we replace it with the new one.
  *
- * The element comes from a client and is checked to be a complete SC_Type
+ * The element comes from a client and is checked to be a complete SC
  * object, sub-lists included, before anything reads it. Every other source of
  * the configuration (spool, default, event mirror, full GDI get) yields a
  * complete element, so this is the only check the configuration module needs.
@@ -109,7 +109,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<o
  * @param ruser the requesting user
  * @param rhost the requesting host
  * @return STATUS_OK on success, STATUS_ESYNTAX if the element is reduced or not of
- *         SC_Type or a unique attribute holds a key twice, STATUS_EUNKNOWN or -1
+ *         SC or a unique attribute holds a key twice, STATUS_EUNKNOWN or -1
  *         on other errors
  */
 int
@@ -122,7 +122,7 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, cons
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-   if (!object_verify_cull(confp, SC_Type)) {
+   if (!object_verify_cull(confp, ocs::tom::SC::descriptor.e)) {
       answer_list_add(alpp, MSG_INCOMPLETE_SCHEDD_CONFIG, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESYNTAX);
    }

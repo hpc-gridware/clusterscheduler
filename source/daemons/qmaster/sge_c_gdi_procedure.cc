@@ -649,7 +649,7 @@ namespace {
     * Named and hashed as the free emplace_back() named and hashed the list it created here before.
     *
     * @param value the number
-    * @return the ULNG_Type list
+    * @return the ULNG list
     */
    ocs::tom::ListPtr<ocs::tom::ULNG> ocs_ulong_parameter(const uint32_t value) {
       DENTER(TOP_LAYER);
@@ -747,7 +747,7 @@ namespace {
     *
     * @tparam Traits the procedure's parameter, model, view and controller types
     * @param packet the client request
-    * @param task the GDI task being answered; its data list holds the SPP_Type parameter bundle
+    * @param task the GDI task being answered; its data list holds the SPP parameter bundle
     * @param monitor for monitoring qmaster threads
     * @param os receives the rendered output
     * @param outcome receives what the caller has to act on besides the output
@@ -763,7 +763,7 @@ namespace {
       using Controller = typename Traits::Controller;
 
       // Create parameter object containing the parsed switch information from the client
-      // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP_Type
+      // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP
       Parameter parameter(ocs::tom::ConstList<ocs::tom::SPP>(task->data_list), packet);
       task->reset_data_list();
 
@@ -872,7 +872,7 @@ namespace {
     *
     * @tparam Traits the procedure's types; its program number names the response
     * @param packet the client request
-    * @param task the GDI task being answered; its data list receives the SPP_Type bundle
+    * @param task the GDI task being answered; its data list receives the SPP bundle
     * @param os the rendered output
     * @param outcome what the procedure did besides rendering; its export list moves into the bundle
     */
@@ -883,9 +883,6 @@ namespace {
 
       // if exec_procedure failed then the answer_list contains already an error
       // that is transferred via GDI. No need to send this separately
-#if 0
-      lWriteListTo(task->answer_list, stderr);
-#endif
 
       // Prepare a response
       ocs::ProcedureParameter response(to_string(Traits::prog_number), packet);
@@ -926,9 +923,6 @@ namespace {
          ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::EXPORT_OBJECTS,
                                                        std::move(outcome.export_objects));
       }
-#if 0
-      DPRINTF("response:\n %s", os.str().c_str());
-#endif
 
       // Pass responsibility for the bundle to gdi
       task->reset_data_list(ocs::tom::RawListPtr(std::move(bundle)));
@@ -1213,7 +1207,7 @@ void sge_c_gdi_procedure(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::T
    DENTER(TOP_LAYER);
 
    // get the name of the procedure that should be called
-   // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP_Type
+   // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP
    const auto bundle = ocs::tom::ConstList<ocs::tom::SPP>(task->data_list);
    const std::string name = ocs::ProcedureParameter::get_procedure_from_bundle(bundle);
    const std::string sub_name = ocs::ProcedureParameter::get_sub_procedure_from_bundle(bundle);

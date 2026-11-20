@@ -195,6 +195,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JR for the list library: a synonym for ocs::tom::JR::descriptor */
-inline constexpr const lDescr *JR_Type = ocs::tom::JR::descriptor.e;

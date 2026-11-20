@@ -67,7 +67,7 @@ namespace ocs::tom {
     *
     * Multiple requests can be sent by a client to sge_qmaster in a single message.
     * Every such request gets a unique number.
-    * A list of MA_Type is used to return the answers to a multi GDI request.
+    * A list of MA is used to return the answers to a multi GDI request.
     */
    struct MA {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -97,6 +97,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of MA for the list library: a synonym for ocs::tom::MA::descriptor */
-inline constexpr const lDescr *MA_Type = ocs::tom::MA::descriptor.e;

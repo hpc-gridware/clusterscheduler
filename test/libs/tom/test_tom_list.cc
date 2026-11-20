@@ -54,9 +54,9 @@ using namespace ocs::tom;
  */
 static lList *
 make_tasks(const std::uint32_t n) {
-   lList *tasks = lCreateList("tasks", JAT_Type);
+   lList *tasks = lCreateList("tasks", ocs::tom::JAT::descriptor.e);
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemUlong(&tasks, JAT_task_number, i, JAT_Type);
+      lAddElemUlong(&tasks, JAT_task_number, i, ocs::tom::JAT::descriptor.e);
    }
    return tasks;
 }
@@ -81,7 +81,7 @@ static int count(const Range &range) {
  */
 static void
 test_ranges_and_lookups() {
-   lListElem *job = lCreateElem(JB_Type);
+   lListElem *job = lCreateElem(ocs::tom::JB::descriptor.e);
    lSetList(job, JB_ja_tasks, make_tasks(5));
 
    std::vector<const lListElem *> old_order;
@@ -114,8 +114,8 @@ test_ranges_and_lookups() {
 
 #ifdef ENABLE_DEBUG_CHECKS
    // a list of queues in the task list of a job is a wrong declaration, found when the handle is handed out
-   lList *queues = lCreateList("queues", QU_Type);
-   lAppendElem(queues, lCreateElem(QU_Type));
+   lList *queues = lCreateList("queues", ocs::tom::QU::descriptor.e);
+   lAppendElem(queues, lCreateElem(ocs::tom::QU::descriptor.e));
    lSetList(job, JB_ja_tasks, queues);
    bool thrown = false;
    try {
@@ -171,7 +171,7 @@ test_owning_handles() {
    second = std::move(first);
    CHECK(10, "move assignment frees the list held before and takes the other", !first && second.get().size() == 1);
 
-   lListElem *job = lCreateElem(JB_Type);
+   lListElem *job = lCreateElem(ocs::tom::JB::descriptor.e);
    ListPtr<JAT> tasks = ListPtr<JAT>::create("tasks");
    tasks.get().push_back(ElementPtr<JAT>::create());
    Element<JB>{job}.set<JB_ja_tasks>(std::move(tasks));

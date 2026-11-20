@@ -51,7 +51,7 @@ extern char **environ;
  * A file that does not exist adds nothing and is no error.
  *
  * @param file the defaults file
- * @param cmdline in-out: the switch list (SPA_Type), created when it is an empty handle and switches are found
+ * @param cmdline in-out: the switch list (SPA), created when it is an empty handle and switches are found
  * @param alpp receives the answer of the parser, or an error when the file cannot be read
  * @return false when the file exists but cannot be read
  */

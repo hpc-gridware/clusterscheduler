@@ -86,8 +86,8 @@ ocs_ja_task_exchange_kept_list(const ocs::tom::Element<ocs::tom::JAT> ja_task,
  * Updates the scaled usage of an array task (also task data structure
  * of a non array job).
  *
- * @param job_list master job list (JB_Type)
- * @param event the event (ET_Type) containing the new usage list; the list is exchanged with the task's
+ * @param job_list master job list (JB)
+ * @param event the event (ET) containing the new usage list; the list is exchanged with the task's
  *
  * @return SGE_EMA_OK, if the operation succeeds, else SGE_EMA_FAILURE
  *
@@ -110,7 +110,7 @@ ja_task_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list,
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   // an array task of the job (JAT_Type), fetched with its fixed type
+   // an array task of the job (JAT), fetched with its fixed type
    const auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(job, nullptr, ja_task_id));
    if (!ja_task) {
       dstring id_dstring = DSTRING_INIT;
@@ -120,7 +120,7 @@ ja_task_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list,
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   // a usage event carries the usage list (UA_Type); the old usage goes back into the event and is freed with it
+   // a usage event carries the usage list (UA); the old usage goes back into the event and is freed with it
    auto usage = ocs_mirror_exchange_event_objects(event, ocs::tom::ListPtr<ocs::tom::UA>());
    usage = ja_task.exchange<JAT_scaled_usage_list>(std::move(usage));
    static_cast<void>(ocs_mirror_exchange_event_objects(event, std::move(usage)));
@@ -141,7 +141,7 @@ ja_task_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_list,
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the event (ET_Type); its array task is taken over into the job
+ * @param event the event (ET); its array task is taken over into the job
  * @param clientdata client data
  *
  * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
@@ -174,7 +174,7 @@ ja_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   // an array task of the job (JAT_Type), fetched with its fixed type
+   // an array task of the job (JAT), fetched with its fixed type
    auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(job, nullptr, ja_task_id));
    // stays untyped: the generic merge below may create the list through the pointer
    lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);

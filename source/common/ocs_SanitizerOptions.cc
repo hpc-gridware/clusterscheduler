@@ -35,7 +35,7 @@
  * plugin opened with RTLD_LOCAL is never seen.
  *
  * We turn off detect_odr_violation because libsgeobj is a static library
- * and its runtime data (CULL type descriptors: JB_Type[] and
+ * and its runtime data (CULL type descriptors: JB[] and
  * every other lDescr[] instantiated via LISTDEF in sge_all_listsL.h) is
  * duplicated into every output that links sgeobj — the main binary AND
  * every dlopen'd spool plugin (libspoolc.so, libspoolb.so, ...). Each

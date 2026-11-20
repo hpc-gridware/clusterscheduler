@@ -100,7 +100,7 @@ ocs::QHostModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    // Queues
    int q_id = 0;
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      // the selection of all fields, built for QU_Type, takes all of a cluster queue
+      // the selection of all fields, built for QU, takes all of a cluster queue
       const auto what = get_queue_what();
 
       q_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CQ_LIST,

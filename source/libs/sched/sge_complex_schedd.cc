@@ -206,8 +206,8 @@ void monitor_dominance(char *str, uint32_t mask) {
  * This will get the caller the min amount of that resource during the time frame.
  *
  * @param attrname attribute name one is looking for
- * @param config_attr user defined attributes (CE_Type), this is a host's / queue's complex_values list: EH_consumable_config_list, QU_consumable_config_list
- * @param actual_attr current usage of consumables (RUE_Type)
+ * @param config_attr user defined attributes (CE), this is a host's / queue's complex_values list: EH_consumable_config_list, QU_consumable_config_list
+ * @param actual_attr current usage of consumables (RUE)
  * @param load_attr load attributes
  * @param centry_list the system wide attribute configuration
  * @param queue the current queue, or nullptr, if one works on hosts
@@ -233,7 +233,7 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
 
    ocs::tom::ElementPtr<ocs::tom::CE> cplx_el; // this is what we return
 
-   /* resource_attr is a complex_entry (CE_Type) */
+   /* resource_attr is a complex_entry (CE) */
    if (config_attr != nullptr) {
       const auto temp = ocs::tom::find_first<CE_name>(config_attr, attrname);
       if (temp != nullptr) {
@@ -723,8 +723,8 @@ queue_complexes2scheduler(const ocs::tom::ConstElement<ocs::tom::QU> queue,
  * @param host host (or nullptr, if only global resources are asked for )
  * @param queue queue (or nullptr, if only global / host resources are asked for)
  * @param centry_list the system wide attribut config list
- * @param load_adjustments the job load adjustments (`CE_Type`); nullptr fetches them from the data store
- * @param attrnames ST_Type list of attribute names
+ * @param load_adjustments the job load adjustments (`CE`); nullptr fetches them from the data store
+ * @param attrnames ST list of attribute names
  *
  * @return the list of attributes, owned by the caller, or an empty handle
  */
@@ -760,7 +760,7 @@ get_attribute_list_by_names(const ocs::tom::ConstElement<ocs::tom::EH> global, c
  * @param host host (or nullptr, if only global attributes are important)
  * @param queue queue (or nullptr if only host/global attributes are important)
  * @param centry_list system wide attribute config list
- * @param load_adjustments the job load adjustments (`CE_Type`); nullptr fetches them from the data store
+ * @param load_adjustments the job load adjustments (`CE`); nullptr fetches them from the data store
  *
  * @return the list of attributes, owned by the caller, or an empty handle if no attributes exist
  */
@@ -946,8 +946,8 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
  * relational operator of the attribute decides what "matches" means.
  *
  * @param[in]  slots             number of slots the request is made for
- * @param[in]  req_cplx          the requested attribute (`CE_Type`)
- * @param[in]  src_cplx          what the object offers (`CE_Type`)
+ * @param[in]  req_cplx          the requested attribute (`CE`)
+ * @param[in]  src_cplx          what the object offers (`CE`)
  * @param[out] availability_text receives the diagnosis when the match fails,
  *                               at least #STR_LEN_AVAIL_TEXT bytes
  * @param[in]  is_threshold      true when matching a threshold, where either
@@ -1321,9 +1321,9 @@ int main(int argc, char *argv[], char *envp[]) {
  * otherwise we can't rule out a cluster queue. Both complex_values and
  * queue resource limits are checked.
  *
- * @param hard_resource_list resource list -l (CE_Type)
- * @param cq cluster queue (CQ_Type)
- * @param centry_list complex entry list (CE_Type)
+ * @param hard_resource_list resource list -l (CE)
+ * @param cq cluster queue (CQ)
+ * @param centry_list complex entry list (CE)
  * @param single_slot true to match for a single slot only, false to take the
  *                    whole slot range of the job into account
  * @param unsatisfied diagnosis information, if rejected

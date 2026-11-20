@@ -195,7 +195,7 @@ host_initalitze_timer() {
  *
  * Trash old load values in "host" element
  *
- * @param host EH_Type element
+ * @param host EH element
  */
 static void
 host_trash_nonstatic_load_values(const ocs::tom::Element<ocs::tom::EH> host) {
@@ -1357,7 +1357,7 @@ load_report_interval(const ocs::tom::Element<ocs::tom::EH> hep) {
  * unheard when sge_qmaster has not heard from it for 3 load report intervals, but not before
  * max_unheard has passed.
  *
- * @param hep the execution host (EH_Type), its load report interval is cached in it
+ * @param hep the execution host (EH), its load report interval is cached in it
  * @return the timeout in microseconds
  */
 uint64_t
@@ -1444,7 +1444,7 @@ sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
 /** @brief Tell execution daemons to terminate
  *
- * The request data is an ID_Type list. If the first ID_str is nullptr, every
+ * The request data is an ID list. If the first ID_str is nullptr, every
  * execd is killed; otherwise every ID_str names an execd to kill. If ID_force
  * is 1, the jobs are killed too, if it is 0 they are not.
  *
@@ -2078,8 +2078,8 @@ ocs_host_collect_refs(const ocs::tom::ConstElement<ocs::tom::EH> host,
  * @tparam Snm1 the first exec host reference list field
  * @tparam Snm2 the second exec host reference list field
  * @tparam KeyF the key field of a reference
- * @param new_host New exec host (EH_Type), or an empty handle
- * @param old_host Old exec host (EH_Type), or an empty handle
+ * @param new_host New exec host (EH), or an empty handle
+ * @param old_host Old exec host (EH), or an empty handle
  * @param new_sublist List of new references, extended; nullptr to collect none
  * @param old_sublist List of old references, extended; nullptr to collect none
  *
@@ -2126,10 +2126,10 @@ host_diff_sublist(const ocs::tom::ConstElement<ocs::tom::EH> new_host,
  * A diff new/old is made regarding exec host projects/xprojects.
  * Project references are returned in new_prj/old_prj.
  *
- * @param new_host New exec host (EH_Type), or an empty handle
- * @param old_host Old exec host (EH_Type), or an empty handle
- * @param new_prj New project references (PR_Type), extended; nullptr to collect none
- * @param old_prj Old project references (PR_Type), extended; nullptr to collect none
+ * @param new_host New exec host (EH), or an empty handle
+ * @param old_host Old exec host (EH), or an empty handle
+ * @param new_prj New project references (PR), extended; nullptr to collect none
+ * @param old_prj Old project references (PR), extended; nullptr to collect none
  *
  * @note MT-NOTE: host_diff_projects() is not MT safe
  */
@@ -2148,10 +2148,10 @@ host_diff_projects(const ocs::tom::ConstElement<ocs::tom::EH> new_host,
  * A diff new/old is made regarding exec host acl/xacl.
  * Userset references are returned in new_acl/old_acl.
  *
- * @param new_host New exec host (EH_Type), or an empty handle
- * @param old_host Old exec host (EH_Type), or an empty handle
- * @param new_acl New userset references (US_Type), extended; nullptr to collect none
- * @param old_acl Old userset references (US_Type), extended; nullptr to collect none
+ * @param new_host New exec host (EH), or an empty handle
+ * @param old_host Old exec host (EH), or an empty handle
+ * @param new_acl New userset references (US), extended; nullptr to collect none
+ * @param old_acl Old userset references (US), extended; nullptr to collect none
  *
  * @note MT-NOTE: host_diff_usersets() is not MT safe
  */
@@ -2172,8 +2172,8 @@ host_diff_usersets(const ocs::tom::ConstElement<ocs::tom::EH> new_host,
  * on new/old exec host configuration and events are sent upon
  * changes.
  *
- * @param new_hep New exec host (EH_Type)
- * @param old_hep Old exec host (EH_Type)
+ * @param new_hep New exec host (EH)
+ * @param old_hep Old exec host (EH)
  * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: host_update_categories() is not MT safe

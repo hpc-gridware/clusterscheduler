@@ -43,9 +43,9 @@ namespace ocs {
     * record at job end.
     *
     * @param answer_list receives error messages
-    * @param job_report the job report the execution host sent (`JR_Type`)
-    * @param job the job (`JB_Type`)
-    * @param ja_task the array task that finished (`JAT_Type`)
+    * @param job_report the job report the execution host sent (`JR`)
+    * @param job the job (`JB`)
+    * @param ja_task the array task that finished (`JAT`)
     * @param intermediate whether this is an interim record for a job that is still running
     * @return true on success
     */

@@ -82,6 +82,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ASTRING for the list library: a synonym for ocs::tom::ASTRING::descriptor */
-inline constexpr const lDescr *ASTRING_Type = ocs::tom::ASTRING::descriptor.e;

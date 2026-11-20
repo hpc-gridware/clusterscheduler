@@ -124,7 +124,7 @@ const char *get_classic_spooling_method()
  * @param[out] answer_list  to return error messages
  * @param[in]  args         absolute spool directory path (the legacy
  *                          "<common_dir>;<spool_dir>" form is rejected)
- * @return on success the new spooling context (SPC_Type), else nullptr
+ * @return on success the new spooling context (SPC), else nullptr
  */
 lListElem *
 spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args) {
@@ -708,11 +708,12 @@ bool spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
                dstring dir = DSTRING_INIT;
 
                dstring spool_key = DSTRING_INIT;
-               // the list just read holds cluster queues (CQ_Type), so it is taken without a check
+               // the list just read holds cluster queues (CQ), so it is taken without a check
                for (const ocs::tom::Element<ocs::tom::CQ> queue : ocs::tom::List<ocs::tom::CQ>::from_typed(*list)) {
                   // read_validate_object() appends through a raw list pointer; the list goes to the queue below
                   lList *qinstance_list = ocs::tom::ListPtr<ocs::tom::QU>::create("").release();
-                  ocs::spool::DuplicateFilter qinstance_filter(QU_Type, object_type_get_name(SGE_TYPE_QINSTANCE));
+                  ocs::spool::DuplicateFilter qinstance_filter(ocs::tom::QU::descriptor.e,
+                                                               object_type_get_name(SGE_TYPE_QINSTANCE));
 
                   sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, queue.get<CQ_name>());
                   const auto direntries = ocs_get_dirents(sge_dstring_get_string(&dir));

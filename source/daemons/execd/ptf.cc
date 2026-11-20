@@ -215,7 +215,7 @@ static void ptf_setpriority_addgrpid(ocs::tom::ConstElement<ocs::tom::JL> job,
 #endif
 
 /**
- * @brief Every job the PTF is currently adjusting (`JL_Type`)
+ * @brief Every job the PTF is currently adjusting (`JL`)
  *
  * Stays a raw list: ocs_execd_systemd.cc declares it `extern lList *` and walks it. ptf.cc creates and frees it
  * and reads it through checked non-owning handles.
@@ -461,7 +461,7 @@ ptf_get_job(const u_long job_id) {
 /**
  * @brief Look up the job for the supplied OS job_id
  *
- * This functions tries to find a os job element (JO_Type) with
+ * This functions tries to find a os job element (JO) with
  * "os_job_id" within the list of os jobs of "job_elem". If "job_elem"
  * is not provided the function will look up the whole "job_list".
  *

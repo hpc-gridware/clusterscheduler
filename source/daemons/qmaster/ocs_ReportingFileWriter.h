@@ -204,7 +204,7 @@ namespace ocs {
 
       /** @brief Record a job that has just been submitted
        * @param answer_list receives error messages
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @return true on success
        */
       virtual bool
@@ -217,7 +217,7 @@ namespace ocs {
        * @param user who caused it
        * @param host the host it happened on
        * @param job_report the job report the execution host sent
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param ja_task the array task
        * @param pe_task the PE task
        * @param message a description of what happened
@@ -233,7 +233,7 @@ namespace ocs {
       /** @brief Record a finished job, or an intermediate record for one still running
        * @param answer_list receives error messages
        * @param job_report the job report the execution host sent
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param ja_task the array task
        * @param intermediate whether this is an interim record for a job that is still running
        * @return true on success
@@ -246,7 +246,7 @@ namespace ocs {
       /** @brief Record the usage of a job that is still running
        * @param answer_list receives error messages
        * @param job_report the job report the execution host sent
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param ja_task the array task
        * @param pe_task the PE task
        * @param aggregate_pe_tasks whether the PE tasks are summed rather than reported individually
@@ -276,7 +276,7 @@ namespace ocs {
       /** @brief Record the consumables a job took from a host
        * @param answer_list receives error messages
        * @param host the host it happened on
-       * @param job the job (`JB_Type`)
+       * @param job the job (`JB`)
        * @param report_time the time to stamp the record with
        * @return true on success
        */
@@ -287,7 +287,7 @@ namespace ocs {
 
       /** @brief Record a queue instance and its state
        * @param answer_list receives error messages
-       * @param queue the queue instance (`QU_Type`)
+       * @param queue the queue instance (`QU`)
        * @param report_time the time to stamp the record with
        * @return true on success
        */
@@ -300,8 +300,8 @@ namespace ocs {
       /** @brief Record the consumables a job took from a queue instance
        * @param answer_list receives error messages
        * @param host the host it happened on
-       * @param queue the queue instance (`QU_Type`)
-       * @param job the job (`JB_Type`)
+       * @param queue the queue instance (`QU`)
+       * @param job the job (`JB`)
        * @param report_time the time to stamp the record with
        * @return true on success
        */
@@ -313,7 +313,7 @@ namespace ocs {
 
       /** @brief Record an advance reservation that has just been created
        * @param answer_list receives error messages
-       * @param ar the advance reservation (`AR_Type`)
+       * @param ar the advance reservation (`AR`)
        * @param report_time the time to stamp the record with
        * @return true on success
        */
@@ -325,7 +325,7 @@ namespace ocs {
 
       /** @brief Record the attributes of an advance reservation
        * @param answer_list receives error messages
-       * @param ar the advance reservation (`AR_Type`)
+       * @param ar the advance reservation (`AR`)
        * @param report_time the time to stamp the record with
        * @return true on success
        */
@@ -337,7 +337,7 @@ namespace ocs {
 
       /** @brief Record a change in an advance reservation's state
        * @param answer_list receives error messages
-       * @param ar the advance reservation (`AR_Type`)
+       * @param ar the advance reservation (`AR`)
        * @param state the state it moved to
        * @param ar_description a description of the change
        * @param report_time the time to stamp the record with
@@ -349,7 +349,7 @@ namespace ocs {
 
       /** @brief Record the accounting record of an advance reservation
        * @param answer_list receives error messages
-       * @param ar the advance reservation (`AR_Type`)
+       * @param ar the advance reservation (`AR`)
        * @param report_time the time to stamp the record with
        * @return true on success
        */

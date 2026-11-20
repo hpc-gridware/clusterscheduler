@@ -88,6 +88,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of NSV for the list library: a synonym for ocs::tom::NSV::descriptor */
-inline constexpr const lDescr *NSV_Type = ocs::tom::NSV::descriptor.e;

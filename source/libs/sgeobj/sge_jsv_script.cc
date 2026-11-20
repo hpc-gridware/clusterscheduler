@@ -199,7 +199,7 @@ jsv_split_token(const dstring *input, dstring *token, dstring *args) {
  * @brief The job a JSV works on, from a reference field of the JSV
  *
  * The JSV holds the jobs as references (JSV_old_job, JSV_new_job), which
- * jsv_do_verify() sets to jobs (JB_Type) only, so the handle is taken over unchecked.
+ * jsv_do_verify() sets to jobs (JB) only, so the handle is taken over unchecked.
  *
  * @tparam F the reference field, JSV_old_job or JSV_new_job
  * @param jsv the JSV
@@ -251,7 +251,7 @@ ocs_jsv_set_path_list_param(const ocs::tom::Element<ocs::tom::JB> new_job, ocs::
  * @param answer_list receives an error message
  * @param param the parameter name, for the error message
  * @param value the job id list, or nullptr
- * @return whether 'value' could be parsed, and the job references (JRE_Type), nullptr if there are none;
+ * @return whether 'value' could be parsed, and the job references (JRE), nullptr if there are none;
  *         as before, the references of what was parsed are returned also on a parse error
  */
 static std::pair<bool, ocs::tom::ListPtr<ocs::tom::JRE>>
@@ -285,7 +285,7 @@ ocs_jsv_parse_jid_request_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
  * Each parameter maps to a job attribute; the context parameter ac replaces the
  * job's context and drops its context change request (CS-3058).
  *
- * @param jsv the JSV (JSV_Type), holding the new job
+ * @param jsv the JSV (JSV), holding the new job
  * @param answer_list receives errors
  * @param c the command, PARAM
  * @param s the parameter name
@@ -1170,7 +1170,7 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
  * @param answer_list receives an error message
  * @param prefix the command, PARAM
  * @param name the parameter name
- * @param queue_list the queue list (QR_Type); nothing is sent for nullptr
+ * @param queue_list the queue list (QR); nothing is sent for nullptr
  * @return true
  */
 static bool
@@ -1203,7 +1203,7 @@ jsv_send_queue_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPt
  * @param answer_list receives an error message
  * @param prefix the command, PARAM
  * @param name the parameter name
- * @param resource_list the resource list (CE_Type); nothing is sent for nullptr
+ * @param resource_list the resource list (CE); nothing is sent for nullptr
  * @return true
  */
 static bool
@@ -1227,7 +1227,7 @@ jsv_send_resource_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
  * @param answer_list receives an error message
  * @param prefix the command, PARAM
  * @param name the parameter name
- * @param path_list the path list (PN_Type); nothing is sent for nullptr
+ * @param path_list the path list (PN); nothing is sent for nullptr
  * @return true
  */
 static bool
@@ -1263,7 +1263,7 @@ jsv_send_path_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr
  * Sends one PARAM line per attribute of the old job. The context is sent as the
  * job will have it, with its context change request applied (CS-3058).
  *
- * @param jsv the JSV (JSV_Type), holding the old job
+ * @param jsv the JSV (JSV), holding the old job
  * @param answer_list receives errors
  * @param c the command, STARTED
  * @param s not used
@@ -2082,8 +2082,8 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
  * in the 'jsv' will be changes (JSV_restart, JSV_soft_shutdown,
  * JSV_done, JSV_new_job)
  *
- * @param jsv JSV_Type instance
- * @param answer_list AN_Type list
+ * @param jsv JSV instance
+ * @param answer_list AN list
  *
  * @return error state true  - success false - error
  *
@@ -2251,7 +2251,7 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
  * The attribute comes from the descriptor of the job at run time, so it stays a field number.
  *
  * @param cull_attr CULL attribute
- * @param job A JB_Type object
+ * @param job A JB object
  * @return Pointer to a static string with the switch name or nullptr if the attribute is not supported.
  */
 static const char *

@@ -59,7 +59,7 @@ enum PE_Field {
    /**
     * @brief XUser List
     *
-    * US_Type; list of not allowed users.
+    * US; list of not allowed users.
     */
    PE_xuser_list,
    /**
@@ -111,7 +111,7 @@ enum PE_Field {
    /**
     * @brief Resource Utilization
     *
-    * Sub list of RUE_Type used to store resources (slots) currently in use by running parallel jobs.
+    * Sub list of RUE used to store resources (slots) currently in use by running parallel jobs.
     */
    PE_resource_utilization,
    /**
@@ -236,6 +236,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PE for the list library: a synonym for ocs::tom::PE::descriptor */
-inline constexpr const lDescr *PE_Type = ocs::tom::PE::descriptor.e;

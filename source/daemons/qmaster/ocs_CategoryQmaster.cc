@@ -92,12 +92,12 @@
  * the cluster queues and hosts; only the set of flagged objects matters, not
  * the order of the collected references.
  *
- * @param master_project_list the projects (`PR_Type`)
- * @param master_userset_list the user sets (`US_Type`)
- * @param master_rqs_list the resource quota sets (`RQS_Type`)
- * @param master_cqueue_list the cluster queues (`CQ_Type`)
- * @param master_pe_list the parallel environments (`PE_Type`)
- * @param master_host_list the execution hosts (`EH_Type`)
+ * @param master_project_list the projects (`PR`)
+ * @param master_userset_list the user sets (`US`)
+ * @param master_rqs_list the resource quota sets (`RQS`)
+ * @param master_cqueue_list the cluster queues (`CQ`)
+ * @param master_pe_list the parallel environments (`PE`)
+ * @param master_host_list the execution hosts (`EH`)
  */
 void
 ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(const ocs::tom::List<ocs::tom::PR> master_project_list,
@@ -172,14 +172,14 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(const ocs::tom::Lis
  * Projects and user sets have to be prepared first, because a category is
  * partly defined by the access rights a job has.
  *
- * @param master_category_list location of the categories (`CT_Type`), created if it is still nullptr
- * @param master_job_list the jobs (`JB_Type`)
- * @param master_project_list the projects (`PR_Type`)
- * @param master_userset_list the user sets (`US_Type`)
- * @param master_rqs_list the resource quota sets (`RQS_Type`)
- * @param master_cqueue_list the cluster queues (`CQ_Type`)
- * @param master_pe_list the parallel environments (`PE_Type`)
- * @param master_host_list the execution hosts (`EH_Type`)
+ * @param master_category_list location of the categories (`CT`), created if it is still nullptr
+ * @param master_job_list the jobs (`JB`)
+ * @param master_project_list the projects (`PR`)
+ * @param master_userset_list the user sets (`US`)
+ * @param master_rqs_list the resource quota sets (`RQS`)
+ * @param master_cqueue_list the cluster queues (`CQ`)
+ * @param master_pe_list the parallel environments (`PE`)
+ * @param master_host_list the execution hosts (`EH`)
  */
 void
 ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(
@@ -206,11 +206,11 @@ ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(
 
 /** @brief Work out a job's category and attach it
  *
- * @param master_category_list location of the categories (`CT_Type`), created if it is still nullptr
- * @param job the job (`JB_Type`)
- * @param master_userset_list the user sets (`US_Type`)
- * @param master_project_list the projects (`PR_Type`)
- * @param master_rqs_list the resource quota sets (`RQS_Type`)
+ * @param master_category_list location of the categories (`CT`), created if it is still nullptr
+ * @param job the job (`JB`)
+ * @param master_userset_list the user sets (`US`)
+ * @param master_project_list the projects (`PR`)
+ * @param master_rqs_list the resource quota sets (`RQS`)
  * @param send_events whether to announce the category change to the event clients
  * @param gdi_session the session the change belongs to
  * @return true when the job was attached
@@ -270,8 +270,8 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, const ocs::tom::E
 
 /** @brief Detach a job from its category, dropping the category when it empties
  *
- * @param master_category_list location of the categories (`CT_Type`)
- * @param job the job (`JB_Type`)
+ * @param master_category_list location of the categories (`CT`)
+ * @param job the job (`JB`)
  * @param send_events whether to announce the category change to the event clients
  * @param gdi_session the session the change belongs to
  * @return true when the job was detached
@@ -318,11 +318,11 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, const ocs::tom::E
 
 /** @brief Recompute a job's category and move it if it changed
  *
- * @param master_category_list location of the categories (`CT_Type`)
- * @param job the job (`JB_Type`)
- * @param master_userset_list the user sets (`US_Type`)
- * @param master_project_list the projects (`PR_Type`)
- * @param master_rqs_list the resource quota sets (`RQS_Type`)
+ * @param master_category_list location of the categories (`CT`)
+ * @param job the job (`JB`)
+ * @param master_userset_list the user sets (`US`)
+ * @param master_project_list the projects (`PR`)
+ * @param master_rqs_list the resource quota sets (`RQS`)
  * @param send_events whether to announce the category change to the event clients
  * @param now the current time
  * @param gdi_session the session the change belongs to
@@ -349,11 +349,11 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, const ocs::tom:
 
 /** @brief Attach every job to a category
  *
- * @param master_job_list the jobs (`JB_Type`)
- * @param master_category_list location of the categories (`CT_Type`), created if it is still nullptr
- * @param master_userset_list the user sets (`US_Type`)
- * @param master_project_list the projects (`PR_Type`)
- * @param master_rqs_list the resource quota sets (`RQS_Type`)
+ * @param master_job_list the jobs (`JB`)
+ * @param master_category_list location of the categories (`CT`), created if it is still nullptr
+ * @param master_userset_list the user sets (`US`)
+ * @param master_project_list the projects (`PR`)
+ * @param master_rqs_list the resource quota sets (`RQS`)
  * @param send_events whether to announce the category change to the event clients
  * @param gdi_session the session the change belongs to
  */
@@ -378,10 +378,10 @@ ocs::CategoryQmaster::attach_all_jobs(const ocs::tom::List<ocs::tom::JB> master_
  * Needed after a change to anything a category depends on - a project, a
  * user set, a resource quota or a queue.
  *
- * @param master_job_list the jobs (`JB_Type`)
- * @param master_userset_list the user sets (`US_Type`)
- * @param master_project_list the projects (`PR_Type`)
- * @param master_rqs_list the resource quota sets (`RQS_Type`)
+ * @param master_job_list the jobs (`JB`)
+ * @param master_userset_list the user sets (`US`)
+ * @param master_project_list the projects (`PR`)
+ * @param master_rqs_list the resource quota sets (`RQS`)
  * @param send_events whether to announce the category change to the event clients
  * @param gdi_session the session the change belongs to
  */
@@ -414,7 +414,7 @@ ocs::CategoryQmaster::reattach_all_jobs(const ocs::tom::List<ocs::tom::JB> maste
  * - the flag that identifies, if the messages are already added to the schedd infos
  * - something with the resource reservation
  *
- * @param master_category_list the categories to reset (`CT_Type`)
+ * @param master_category_list the categories to reset (`CT`)
  *
  * @note MT-NOTE: sge_reset_job_category() is not MT safe
  */
@@ -449,8 +449,8 @@ ocs::CategoryQmaster::reset_tmp_data(const ocs::tom::List<ocs::tom::CT> master_c
 
 /** @brief Copy the category's cached decisions back into the job
  *
- * @param master_category_list the categories (`CT_Type`)
- * @param job the job (`JB_Type`)
+ * @param master_category_list the categories (`CT`)
+ * @param job the job (`JB`)
  */
 void
 ocs::CategoryQmaster::refresh_cat_data_in_job(const ocs::tom::List<ocs::tom::CT> master_category_list,
@@ -467,8 +467,8 @@ ocs::CategoryQmaster::refresh_cat_data_in_job(const ocs::tom::List<ocs::tom::CT>
 
 /** @brief Refresh the cached category data in every job
  *
- * @param master_category_list the categories (`CT_Type`)
- * @param master_job_list the jobs (`JB_Type`)
+ * @param master_category_list the categories (`CT`)
+ * @param master_job_list the jobs (`JB`)
  */
 void
 ocs::CategoryQmaster::refresh_cat_data_all_jobs(const ocs::tom::List<ocs::tom::CT> master_category_list,

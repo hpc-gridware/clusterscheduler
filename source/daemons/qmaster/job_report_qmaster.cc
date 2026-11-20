@@ -143,7 +143,7 @@ status2str(uint32_t status) {
  * A report from the master host of the current run cannot be told apart from a report of an
  * earlier run on the same host.
  *
- * @param jatep the array task (JAT_Type)
+ * @param jatep the array task (JAT)
  * @param rhost the host which sent the report
  * @param current_host returns the master host of the current run, or MSG_OBJ_NOTRUNNING
  * @return true if the task is pending, or runs with its master task on another host
@@ -752,7 +752,6 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                         }
 
                         /* store unscaled usage directly in sub-task */
-                        /* lXchgList(jr, JR_usage, lGetListRef(task, JB_usage_list)); */
                         /* copy list because we need to keep usage in jr for sge_log_dusage() */
                         ocs::tom::set<PET_usage>(petask, ocs::tom::get<JR_usage>(jr).clone());
 

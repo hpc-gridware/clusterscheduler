@@ -20,7 +20,7 @@
          "name": "resource_instance",
          "summary": "Resource Instance",
          "description": [
-            "Reference to the resource being walked (`RUE_Type`), whose utilization diagram holds the bookings."
+            "Reference to the resource being walked (`RUE`), whose utilization diagram holds the bookings."
          ],
          "type": "lRefT",
          "subClassName": "ResourceUtilization",

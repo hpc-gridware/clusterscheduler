@@ -68,7 +68,7 @@
          "name": "rule",
          "summary": "Rules",
          "description": [
-            "The rules (`RQR_Type`), in the order they are tried."
+            "The rules (`RQR`), in the order they are tried."
          ],
          "type": "lListT",
          "subClassName": "RQR",

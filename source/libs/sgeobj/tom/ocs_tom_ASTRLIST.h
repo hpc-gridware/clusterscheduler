@@ -47,7 +47,7 @@ enum ASTRLIST_Field {
    /**
     * @brief Value
     *
-    * The string list (list of ST_Type objects)
+    * The string list (list of ST objects)
     */
    ASTRLIST_value,
 };
@@ -89,6 +89,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ASTRLIST for the list library: a synonym for ocs::tom::ASTRLIST::descriptor */
-inline constexpr const lDescr *ASTRLIST_Type = ocs::tom::ASTRLIST::descriptor.e;

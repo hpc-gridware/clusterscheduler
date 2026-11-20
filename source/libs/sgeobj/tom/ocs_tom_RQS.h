@@ -59,7 +59,7 @@ enum RQS_Field {
    /**
     * @brief Rules
     *
-    * The rules (`RQR_Type`), in the order they are tried.
+    * The rules (`RQR`), in the order they are tried.
     */
    RQS_rule,
    /**
@@ -119,6 +119,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RQS for the list library: a synonym for ocs::tom::RQS::descriptor */
-inline constexpr const lDescr *RQS_Type = ocs::tom::RQS::descriptor.e;

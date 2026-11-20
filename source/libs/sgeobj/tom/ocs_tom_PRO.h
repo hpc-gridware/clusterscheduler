@@ -71,7 +71,7 @@ enum PRO_Field {
    /**
     * @brief Groups
     *
-    * GR_Type list with all groups associated with this process.
+    * GR list with all groups associated with this process.
     */
    PRO_groups,
    /**
@@ -151,6 +151,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PRO for the list library: a synonym for ocs::tom::PRO::descriptor */
-inline constexpr const lDescr *PRO_Type = ocs::tom::PRO::descriptor.e;

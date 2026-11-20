@@ -3,7 +3,7 @@
    "summary": "User Run State (unused)",
    "description": [
       "Per-user counts of running jobs, split by deadline and non-deadline, with scheduler sort state.",
-      "@warning No attribute of this type is read or written anywhere in either repository, and `USR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
+      "@warning No attribute of this type is read or written anywhere in either repository, and `USR` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
    "cullPrefix": "USR",
    "attributes": [

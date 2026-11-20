@@ -67,9 +67,9 @@ static int s_fail = 0;
  */
 static lList *
 reduced_host_list(lList *acl) {
-   lEnumeration *what = lWhat("%T(%I %I)", EH_Type, EH_name, EH_acl);
+   lEnumeration *what = lWhat("%T(%I %I)", ocs::tom::EH::descriptor.e, EH_name, EH_acl);
    const lDescr *descr = nullptr;
-   lReduceDescr(&descr, EH_Type, what);
+   lReduceDescr(&descr, ocs::tom::EH::descriptor.e, what);
    lFreeWhat(&what);
    lList *lp = lCreateList("host", descr);
    lListElem *ep = lCreateElem(descr);
@@ -93,53 +93,58 @@ test_verify_type() {
 
    // T01-T03: same_type itself
    {
-      lEnumeration *what = lWhat("%T(%I)", EH_Type, EH_name);
+      lEnumeration *what = lWhat("%T(%I)", ocs::tom::EH::descriptor.e, EH_name);
       const lDescr *reduced = nullptr;
-      lReduceDescr(&reduced, EH_Type, what);
+      lReduceDescr(&reduced, ocs::tom::EH::descriptor.e, what);
       lFreeWhat(&what);
-      CHECK(1, "a reduced descriptor is of the type of the full one", ocs::tom::same_type(reduced, EH_Type));
-      CHECK(2, "two different types differ", !ocs::tom::same_type(ST_Type, US_Type));
-      CHECK(3, "nullptr is no type", !ocs::tom::same_type(nullptr, EH_Type));
+      CHECK(1, "a reduced descriptor is of the type of the full one",
+            ocs::tom::same_type(reduced, ocs::tom::EH::descriptor.e));
+      CHECK(2, "two different types differ",
+            !ocs::tom::same_type(ocs::tom::ST::descriptor.e, ocs::tom::US::descriptor.e));
+      CHECK(3, "nullptr is no type", !ocs::tom::same_type(nullptr, ocs::tom::EH::descriptor.e));
       ocs_cull_descr_release(&reduced);
    }
 
    // T04: a reduced host with an access list of usersets passes
    {
       lList *acl = nullptr;
-      lAddElemStr(&acl, US_name, "arusers", US_Type);
+      lAddElemStr(&acl, US_name, "arusers", ocs::tom::US::descriptor.e);
       lList *lp = reduced_host_list(acl);
-      CHECK(4, "a reduced host with a userset access list passes", ocs_object_list_verify_type(lp, EH_Type));
+      CHECK(4, "a reduced host with a userset access list passes",
+            ocs_object_list_verify_type(lp, ocs::tom::EH::descriptor.e));
       lFreeList(&lp);
    }
 
    // T05: the list itself is of the wrong type
    {
       lList *lp = nullptr;
-      lAddElemStr(&lp, ST_name, "global", ST_Type);
-      CHECK(5, "strings sent as hosts are refused", !ocs_object_list_verify_type(lp, EH_Type));
+      lAddElemStr(&lp, ST_name, "global", ocs::tom::ST::descriptor.e);
+      CHECK(5, "strings sent as hosts are refused", !ocs_object_list_verify_type(lp, ocs::tom::EH::descriptor.e));
       lFreeList(&lp);
    }
 
    // T06: an empty access list of the wrong type - the case the old code stored
    {
-      lList *lp = reduced_host_list(lCreateList("acl", ST_Type));
-      CHECK(6, "an empty sublist of the wrong type is refused", !ocs_object_list_verify_type(lp, EH_Type));
+      lList *lp = reduced_host_list(lCreateList("acl", ocs::tom::ST::descriptor.e));
+      CHECK(6, "an empty sublist of the wrong type is refused",
+            !ocs_object_list_verify_type(lp, ocs::tom::EH::descriptor.e));
       lFreeList(&lp);
    }
 
    // T07: a non-empty access list of the wrong type - the case the old code aborted on
    {
       lList *acl = nullptr;
-      lAddElemStr(&acl, ST_name, "arusers", ST_Type);
+      lAddElemStr(&acl, ST_name, "arusers", ocs::tom::ST::descriptor.e);
       lList *lp = reduced_host_list(acl);
-      CHECK(7, "a non-empty sublist of the wrong type is refused", !ocs_object_list_verify_type(lp, EH_Type));
+      CHECK(7, "a non-empty sublist of the wrong type is refused",
+            !ocs_object_list_verify_type(lp, ocs::tom::EH::descriptor.e));
       lFreeList(&lp);
    }
 
    // T08: no data and no expected type
-   CHECK(8, "no data passes", ocs_object_list_verify_type(nullptr, EH_Type));
+   CHECK(8, "no data passes", ocs_object_list_verify_type(nullptr, ocs::tom::EH::descriptor.e));
    {
-      lList *acl = lCreateList("acl", ST_Type);
+      lList *acl = lCreateList("acl", ocs::tom::ST::descriptor.e);
       lList *lp = reduced_host_list(acl);
       CHECK(9, "without an expected top-level type the sublists are still checked",
             !ocs_object_list_verify_type(lp, nullptr));
@@ -156,12 +161,12 @@ test_client_shapes() {
 
    // T10: qalter - a reduced job with a reduced task list
    {
-      lEnumeration *job_what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks);
-      lEnumeration *task_what = lWhat("%T(%I %I)", JAT_Type, JAT_task_number, JAT_hold);
+      lEnumeration *job_what = lWhat("%T(%I %I)", ocs::tom::JB::descriptor.e, JB_job_number, JB_ja_tasks);
+      lEnumeration *task_what = lWhat("%T(%I %I)", ocs::tom::JAT::descriptor.e, JAT_task_number, JAT_hold);
       const lDescr *job_descr = nullptr;
       const lDescr *task_descr = nullptr;
-      lReduceDescr(&job_descr, JB_Type, job_what);
-      lReduceDescr(&task_descr, JAT_Type, task_what);
+      lReduceDescr(&job_descr, ocs::tom::JB::descriptor.e, job_what);
+      lReduceDescr(&task_descr, ocs::tom::JAT::descriptor.e, task_what);
       lFreeWhat(&job_what);
       lFreeWhat(&task_what);
       lList *tasks = lCreateList("tasks", task_descr);
@@ -173,7 +178,8 @@ test_client_shapes() {
       lSetUlong(job, JB_job_number, 4711);
       lSetList(job, JB_ja_tasks, tasks);
       lAppendElem(lp, job);
-      CHECK(10, "a reduced job with a reduced task list passes", ocs_object_list_verify_type(lp, JB_Type));
+      CHECK(10, "a reduced job with a reduced task list passes",
+            ocs_object_list_verify_type(lp, ocs::tom::JB::descriptor.e));
       lFreeList(&lp);
       ocs_cull_descr_release(&job_descr);
       ocs_cull_descr_release(&task_descr);
@@ -182,58 +188,63 @@ test_client_shapes() {
    // T11: qdel - ID elements with a user list
    {
       lList *lp = nullptr;
-      lListElem *id = lAddElemStr(&lp, ID_str, "4711", ID_Type);
+      lListElem *id = lAddElemStr(&lp, ID_str, "4711", ocs::tom::ID::descriptor.e);
       lList *users = nullptr;
-      lAddElemStr(&users, ST_name, "*", ST_Type);
+      lAddElemStr(&users, ST_name, "*", ocs::tom::ST::descriptor.e);
       lSetList(id, ID_user_list, users);
-      CHECK(11, "ID elements with a string user list pass", ocs_object_list_verify_type(lp, ID_Type));
+      CHECK(11, "ID elements with a string user list pass",
+            ocs_object_list_verify_type(lp, ocs::tom::ID::descriptor.e));
       lFreeList(&lp);
    }
 
    // T12: procedures - an untyped value list is not compared
    {
       lList *lp = nullptr;
-      lListElem *spp = lAddElemStr(&lp, SPP_name, "parameter", SPP_Type);
+      lListElem *spp = lAddElemStr(&lp, SPP_name, "parameter", ocs::tom::SPP::descriptor.e);
       lList *values = nullptr;
-      lAddElemStr(&values, ST_name, "value", ST_Type);
+      lAddElemStr(&values, ST_name, "value", ocs::tom::ST::descriptor.e);
       lSetList(spp, SPP_value_list, values);
-      CHECK(12, "a parameter bundle with an untyped value list passes", ocs_object_list_verify_type(lp, SPP_Type));
+      CHECK(12, "a parameter bundle with an untyped value list passes",
+            ocs_object_list_verify_type(lp, ocs::tom::SPP::descriptor.e));
       lFreeList(&lp);
    }
 
    // T13/T14: an object field, of its type and of another
    {
       lList *lp = nullptr;
-      lListElem *job = lAddElemUlong(&lp, JB_job_number, 4711, JB_Type);
-      lSetObject(job, JB_binding, lCreateElem(BN_Type));
-      CHECK(13, "an object field of its type passes", ocs_object_list_verify_type(lp, JB_Type));
-      lSetObject(job, JB_binding, lCreateElem(ST_Type));
-      CHECK(14, "an object field of another type is refused", !ocs_object_list_verify_type(lp, JB_Type));
+      lListElem *job = lAddElemUlong(&lp, JB_job_number, 4711, ocs::tom::JB::descriptor.e);
+      lSetObject(job, JB_binding, lCreateElem(ocs::tom::BN::descriptor.e));
+      CHECK(13, "an object field of its type passes", ocs_object_list_verify_type(lp, ocs::tom::JB::descriptor.e));
+      lSetObject(job, JB_binding, lCreateElem(ocs::tom::ST::descriptor.e));
+      CHECK(14, "an object field of another type is refused",
+            !ocs_object_list_verify_type(lp, ocs::tom::JB::descriptor.e));
       lFreeList(&lp);
    }
 
    // T16/T17: the where/what filters of an event client subscription are packed into PACK elements
    {
       lList *lp = nullptr;
-      lListElem *ev = lAddElemUlong(&lp, EV_id, 0, EV_Type);
+      lListElem *ev = lAddElemUlong(&lp, EV_id, 0, ocs::tom::EV::descriptor.e);
       lList *subscriptions = nullptr;
-      lListElem *evs = lAddElemUlong(&subscriptions, EVS_id, 1, EVS_Type);
+      lListElem *evs = lAddElemUlong(&subscriptions, EVS_id, 1, ocs::tom::EVS::descriptor.e);
       lSetList(ev, EV_subscribed, subscriptions);
-      lSetObject(evs, EVS_where, lCreateElem(PACK_Type));
-      CHECK(16, "a subscription filter packed as PACK passes", ocs_object_list_verify_type(lp, EV_Type));
-      lSetObject(evs, EVS_where, lCreateElem(ST_Type));
-      CHECK(17, "a subscription filter of another type is refused", !ocs_object_list_verify_type(lp, EV_Type));
+      lSetObject(evs, EVS_where, lCreateElem(ocs::tom::PACK::descriptor.e));
+      CHECK(16, "a subscription filter packed as PACK passes",
+            ocs_object_list_verify_type(lp, ocs::tom::EV::descriptor.e));
+      lSetObject(evs, EVS_where, lCreateElem(ocs::tom::ST::descriptor.e));
+      CHECK(17, "a subscription filter of another type is refused",
+            !ocs_object_list_verify_type(lp, ocs::tom::EV::descriptor.e));
       lFreeList(&lp);
    }
 
    // T15: two different reductions of one type are of the same type
    {
-      lEnumeration *what_a = lWhat("%T(%I)", EH_Type, EH_name);
-      lEnumeration *what_b = lWhat("%T(%I %I)", EH_Type, EH_name, EH_acl);
+      lEnumeration *what_a = lWhat("%T(%I)", ocs::tom::EH::descriptor.e, EH_name);
+      lEnumeration *what_b = lWhat("%T(%I %I)", ocs::tom::EH::descriptor.e, EH_name, EH_acl);
       const lDescr *a = nullptr;
       const lDescr *b = nullptr;
-      lReduceDescr(&a, EH_Type, what_a);
-      lReduceDescr(&b, EH_Type, what_b);
+      lReduceDescr(&a, ocs::tom::EH::descriptor.e, what_a);
+      lReduceDescr(&b, ocs::tom::EH::descriptor.e, what_b);
       lFreeWhat(&what_a);
       lFreeWhat(&what_b);
       CHECK(15, "two reductions of one type are of the same type", ocs::tom::same_type(a, b));

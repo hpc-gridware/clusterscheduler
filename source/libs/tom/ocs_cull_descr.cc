@@ -540,7 +540,8 @@ const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &k
  * order and more than once; the result is that of ocs_cull_descr_build().
  *
  * @code
- * static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
+ * static const lDescr *const task_descr =
+ *    ocs_cull_descr_reduce(ocs::tom::JAT::descriptor.e, {JAT_task_number, JAT_hold});
  * @endcode
  *
  * @param type the static block of the object type

@@ -118,7 +118,7 @@
 template <ocs::tom::ObjectType A>
 struct ocs_attr_traits;
 
-/** @brief String values (ASTR_Type), e.g. `tmpdir` */
+/** @brief String values (ASTR), e.g. `tmpdir` */
 template <>
 struct ocs_attr_traits<ocs::tom::ASTR> {
    static constexpr auto href = ASTR_href;    ///< the host reference
@@ -126,7 +126,7 @@ struct ocs_attr_traits<ocs::tom::ASTR> {
    using value_type = const char *;           ///< the value as read
 };
 
-/** @brief Unsigned values (AULNG_Type), e.g. `slots` */
+/** @brief Unsigned values (AULNG), e.g. `slots` */
 template <>
 struct ocs_attr_traits<ocs::tom::AULNG> {
    static constexpr auto href = AULNG_href;    ///< the host reference
@@ -134,7 +134,7 @@ struct ocs_attr_traits<ocs::tom::AULNG> {
    using value_type = uint32_t;                ///< the value as read
 };
 
-/** @brief Boolean values (ABOOL_Type), e.g. `rerun` */
+/** @brief Boolean values (ABOOL), e.g. `rerun` */
 template <>
 struct ocs_attr_traits<ocs::tom::ABOOL> {
    static constexpr auto href = ABOOL_href;    ///< the host reference
@@ -142,7 +142,7 @@ struct ocs_attr_traits<ocs::tom::ABOOL> {
    using value_type = bool;                    ///< the value as read
 };
 
-/** @brief Time values (ATIME_Type), e.g. `h_rt` */
+/** @brief Time values (ATIME), e.g. `h_rt` */
 template <>
 struct ocs_attr_traits<ocs::tom::ATIME> {
    static constexpr auto href = ATIME_href;    ///< the host reference
@@ -150,7 +150,7 @@ struct ocs_attr_traits<ocs::tom::ATIME> {
    using value_type = const char *;            ///< the value as read
 };
 
-/** @brief Memory values (AMEM_Type), e.g. `h_vmem` */
+/** @brief Memory values (AMEM), e.g. `h_vmem` */
 template <>
 struct ocs_attr_traits<ocs::tom::AMEM> {
    static constexpr auto href = AMEM_href;     ///< the host reference
@@ -158,7 +158,7 @@ struct ocs_attr_traits<ocs::tom::AMEM> {
    using value_type = const char *;            ///< the value as read
 };
 
-/** @brief Interval values (AINTER_Type), e.g. `notify` */
+/** @brief Interval values (AINTER), e.g. `notify` */
 template <>
 struct ocs_attr_traits<ocs::tom::AINTER> {
    static constexpr auto href = AINTER_href;   ///< the host reference
@@ -166,7 +166,7 @@ struct ocs_attr_traits<ocs::tom::AINTER> {
    using value_type = const char *;            ///< the value as read
 };
 
-/** @brief Queue type bit masks (AQTLIST_Type), `qtype` */
+/** @brief Queue type bit masks (AQTLIST), `qtype` */
 template <>
 struct ocs_attr_traits<ocs::tom::AQTLIST> {
    static constexpr auto href = AQTLIST_href;    ///< the host reference
@@ -174,7 +174,7 @@ struct ocs_attr_traits<ocs::tom::AQTLIST> {
    using value_type = uint32_t;                  ///< the value as read
 };
 
-/** @brief String lists (ASTRLIST_Type), e.g. `pe_list` */
+/** @brief String lists (ASTRLIST), e.g. `pe_list` */
 template <>
 struct ocs_attr_traits<ocs::tom::ASTRLIST> {
    static constexpr auto href = ASTRLIST_href;               ///< the host reference
@@ -183,7 +183,7 @@ struct ocs_attr_traits<ocs::tom::ASTRLIST> {
    using value_type = ocs::tom::ConstList<ocs::tom::ST>;     ///< the value as read
 };
 
-/** @brief User set lists (AUSRLIST_Type), e.g. `user_lists` */
+/** @brief User set lists (AUSRLIST), e.g. `user_lists` */
 template <>
 struct ocs_attr_traits<ocs::tom::AUSRLIST> {
    static constexpr auto href = AUSRLIST_href;               ///< the host reference
@@ -192,7 +192,7 @@ struct ocs_attr_traits<ocs::tom::AUSRLIST> {
    using value_type = ocs::tom::ConstList<ocs::tom::US>;     ///< the value as read
 };
 
-/** @brief Project lists (APRJLIST_Type), e.g. `projects` */
+/** @brief Project lists (APRJLIST), e.g. `projects` */
 template <>
 struct ocs_attr_traits<ocs::tom::APRJLIST> {
    static constexpr auto href = APRJLIST_href;               ///< the host reference
@@ -201,7 +201,7 @@ struct ocs_attr_traits<ocs::tom::APRJLIST> {
    using value_type = ocs::tom::ConstList<ocs::tom::PR>;     ///< the value as read
 };
 
-/** @brief Complex value lists (ACELIST_Type), e.g. `complex_values` */
+/** @brief Complex value lists (ACELIST), e.g. `complex_values` */
 template <>
 struct ocs_attr_traits<ocs::tom::ACELIST> {
    static constexpr auto href = ACELIST_href;                ///< the host reference
@@ -210,7 +210,7 @@ struct ocs_attr_traits<ocs::tom::ACELIST> {
    using value_type = ocs::tom::ConstList<ocs::tom::CE>;     ///< the value as read
 };
 
-/** @brief Subordinate lists (ASOLIST_Type), `subordinate_list` */
+/** @brief Subordinate lists (ASOLIST), `subordinate_list` */
 template <>
 struct ocs_attr_traits<ocs::tom::ASOLIST> {
    static constexpr auto href = ASOLIST_href;                ///< the host reference

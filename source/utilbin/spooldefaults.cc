@@ -118,7 +118,7 @@ static int init_framework() {
    const char *spooling_params = ocs::Bootstrap::get_spooling_params();
 
 
-   /* create spooling context; the spooling loader creates it as SPC_Type, the default context takes it over */
+   /* create spooling context; the spooling loader creates it as SPC, the default context takes it over */
    const auto spooling_context = ocs::tom::Element<ocs::tom::SPC>::from_typed(
       spool_create_dynamic_context(&answer_list, spooling_method, spooling_lib, spooling_params));
    answer_list_output(&answer_list);
@@ -153,10 +153,10 @@ static int spool_configuration(int argc, char *argv[]) {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    spooling_field *fields = sge_build_CONF_field_list(true);
 
-   // read with the CONF_Type descriptor, so the element is of that type; freed when leaving the function
+   // read with the CONF descriptor, so the element is of that type; freed when leaving the function
    const auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(
-      spool_flatfile_read_object(&answer_list, CONF_Type, nullptr, fields, nullptr, false, &qconf_sfi,
-                                 SP_FORM_ASCII, nullptr, argv[2]));
+      spool_flatfile_read_object(&answer_list, ocs::tom::CONF::descriptor.e, nullptr, fields, nullptr, false,
+                                 &qconf_sfi, SP_FORM_ASCII, nullptr, argv[2]));
    sge_free(&fields);
    if (!conf) {
       ERROR(MSG_SPOOLDEFAULTS_CANTREADGLOBALCONF_S, argv[2]);
@@ -195,10 +195,10 @@ static int spool_local_conf(int argc, char *argv[]) {
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       spooling_field *fields = sge_build_CONF_field_list(true);
 
-      // read with the CONF_Type descriptor, so the element is of that type; freed when leaving the block
+      // read with the CONF descriptor, so the element is of that type; freed when leaving the block
       const auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(
-         spool_flatfile_read_object(&answer_list, CONF_Type, nullptr, fields, nullptr, false, &qconf_sfi,
-                                    SP_FORM_ASCII, nullptr, argv[2]));
+         spool_flatfile_read_object(&answer_list, ocs::tom::CONF::descriptor.e, nullptr, fields, nullptr, false,
+                                    &qconf_sfi, SP_FORM_ASCII, nullptr, argv[2]));
       sge_free(&fields);
 
       if (!conf) {
@@ -206,7 +206,7 @@ static int spool_local_conf(int argc, char *argv[]) {
          ret = EXIT_FAILURE;
       } else {
          /* check if a config is already there */
-         // a configuration object (CONF_Type) as the spooling stores it; it used to be leaked
+         // a configuration object (CONF) as the spooling stores it; it used to be leaked
          const auto le = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(
             spool_read_object(nullptr, spool_get_default_context(), SGE_TYPE_CONFIG, argv[3]));
          if (!le) {
@@ -232,22 +232,22 @@ static int spool_sharetree(int argc, char *argv[]) {
    const spooling_field *fields = sge_build_STN_field_list(true, false);
    int ret; 
 
-   ret = spool_object_list(argv[2], fields, &qconf_sfi, STN_Type, SGE_TYPE_SHARETREE);
+   ret = spool_object_list(argv[2], fields, &qconf_sfi, ocs::tom::STN::descriptor.e, SGE_TYPE_SHARETREE);
    sge_free(&fields);
    return ret;
 }
 
 static int spool_complexes(int argc, char *argv[]) {
-   return spool_object_list(argv[2], CE_fields, &qconf_sfi, CE_Type, SGE_TYPE_CENTRY);
+   return spool_object_list(argv[2], CE_fields, &qconf_sfi, ocs::tom::CE::descriptor.e, SGE_TYPE_CENTRY);
 }
 
 
 static int spool_calendars(int argc, char *argv[]) {
-   return spool_object_list(argv[2], CAL_fields, &qconf_sfi, CAL_Type, SGE_TYPE_CALENDAR);
+   return spool_object_list(argv[2], CAL_fields, &qconf_sfi, ocs::tom::CAL::descriptor.e, SGE_TYPE_CALENDAR);
 }
 
 static int spool_ckpts(int argc, char *argv[]) {
-   return spool_object_list(argv[2], CK_fields, &qconf_sfi, CK_Type, SGE_TYPE_CKPT);
+   return spool_object_list(argv[2], CK_fields, &qconf_sfi, ocs::tom::CK::descriptor.e, SGE_TYPE_CKPT);
 }
 
 static int spool_cqueues(int argc, char *argv[]) {
@@ -258,7 +258,7 @@ static int spool_cqueues(int argc, char *argv[]) {
                    ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST), SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
 
-   return spool_object_list(argv[2], CQ_fields, &qconf_sfi, CQ_Type, SGE_TYPE_CQUEUE);
+   return spool_object_list(argv[2], CQ_fields, &qconf_sfi, ocs::tom::CQ::descriptor.e, SGE_TYPE_CQUEUE);
 }
 
 static int spool_exechosts(int argc, char *argv[]) {
@@ -271,7 +271,7 @@ static int spool_exechosts(int argc, char *argv[]) {
                    SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 
-   ret = spool_object_list(argv[2], fields, &qconf_sfi, EH_Type, SGE_TYPE_EXECHOST);
+   ret = spool_object_list(argv[2], fields, &qconf_sfi, ocs::tom::EH::descriptor.e, SGE_TYPE_EXECHOST);
    sge_free(&fields);
    return ret;
 }
@@ -280,7 +280,7 @@ static int spool_projects(int argc, char *argv[]) {
    const spooling_field *fields = sge_build_PR_field_list(true);
    int ret; 
 
-   ret = spool_object_list(argv[2], fields, &qconf_sfi, PR_Type, SGE_TYPE_PROJECT);
+   ret = spool_object_list(argv[2], fields, &qconf_sfi, ocs::tom::PR::descriptor.e, SGE_TYPE_PROJECT);
    sge_free(&fields);
    return ret;
 }
@@ -290,17 +290,18 @@ static int spool_users(int argc, char *argv[]) {
    const spooling_field *fields = sge_build_UU_field_list(true);
    int ret; 
 
-   ret = spool_object_list(argv[2], fields, &qconf_sfi, UU_Type, SGE_TYPE_USER);   // not PROJECT (CS-3126)
+   ret = spool_object_list(argv[2], fields, &qconf_sfi, ocs::tom::UU::descriptor.e,
+                           SGE_TYPE_USER);   // not PROJECT (CS-3126)
    sge_free(&fields);
    return ret;
 }
 
 static int spool_pes(int argc, char *argv[]) {
-   return spool_object_list(argv[2], PE_fields, &qconf_sfi, PE_Type, SGE_TYPE_PE);
+   return spool_object_list(argv[2], PE_fields, &qconf_sfi, ocs::tom::PE::descriptor.e, SGE_TYPE_PE);
 }
 
 static int spool_usersets(int argc, char *argv[]) {
-   return spool_object_list(argv[2], US_fields, &qconf_sfi, US_Type, SGE_TYPE_USERSET);
+   return spool_object_list(argv[2], US_fields, &qconf_sfi, ocs::tom::US::descriptor.e, SGE_TYPE_USERSET);
 }
 
 /**
@@ -327,7 +328,7 @@ static int spool_object_list(const char *directory,
    const char *name;
    dstring file = DSTRING_INIT;
 
-   // the directory entries (ST_Type), freed when leaving the function
+   // the directory entries (ST), freed when leaving the function
    const auto direntries = ocs_get_dirents(directory);
    for (const auto direntry : *direntries) {
       name = ocs::tom::get<ST_name>(direntry);

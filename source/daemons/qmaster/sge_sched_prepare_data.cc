@@ -398,7 +398,7 @@ free_what_and_where(sge_where_what_t *where_what) {
  * @param evc the event client
  * @param type the object type the event is about
  * @param action what happened to it
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @param clientdata the scheduler's snapshot
  * @return whether the mirror should go on to apply the event
  */
@@ -418,7 +418,7 @@ sge_process_schedd_monitor_event(sge_evc_class_t *evc, [[maybe_unused]] const sg
  * @param evc the event client
  * @param type the object type the event is about
  * @param action what happened to it
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @param clientdata the scheduler's snapshot
  * @return whether the mirror should go on to apply the event
  */
@@ -438,7 +438,7 @@ sge_process_global_config_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_u
  * @param evc the event client
  * @param type the object type the event is about
  * @param action what happened to it
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @param clientdata the scheduler's snapshot
  * @return whether the event was handled
  */

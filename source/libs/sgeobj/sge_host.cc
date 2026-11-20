@@ -95,7 +95,7 @@
  * host lists alike; a list whose elements are no execution hosts finds nothing
  * and writes the run-time type error the old lookup wrote.
  *
- * @param host_list the hosts to search (EH_Type), maybe empty (then nothing is found)
+ * @param host_list the hosts to search (EH), maybe empty (then nothing is found)
  * @param hostname the host to look for, nullptr is reported as CRITICAL and finds nothing
  * @return the host, or nullptr when it is not defined; mutable although the list is read only, as before
  */
@@ -110,7 +110,7 @@ host_list_locate(const ocs::tom::ConstRawList host_list, const char *hostname) {
          const ocs::tom::ConstRawElement element = host_list.front();
 
          if (element) {
-            if (object_has_type(element, EH_Type)) {
+            if (object_has_type(element, ocs::tom::EH::descriptor.e)) {
                // the lookup hands out the element for writing, as lGetElemHostRW() did on the read-only list
                ret = const_cast<lListElem *>(ocs::tom::find_first(host_list, EH_name, ocs::tom::Host(hostname)));
             } else {
@@ -297,9 +297,9 @@ bool host_is_configured_submit_host(const char *hostname) {
  * is filtered, because a user group naming it really is configuration the
  * administrator wrote and can edit.
  *
- * @param cqueue CQ_Type object
+ * @param cqueue CQ object
  * @param hostname host being deleted
- * @param hgrp_list HGRP_Type master list
+ * @param hgrp_list HGRP master list
  *
  * @return true if the queue reaches the host by some route other than the reserved group, i.e. the reference is
  *         real and must block deletion
@@ -343,10 +343,10 @@ cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ
  * If this is the case than a corresponding message will be added
  * to the "answer_list".
  *
- * @param host EH_Type object, may be an empty handle
- * @param answer_list AN_Type list
- * @param queue_list CQ_Type list, may be an empty handle
- * @param hgrp_list HGRP_Type list (Master list), may be an empty handle
+ * @param host EH object, may be an empty handle
+ * @param answer_list AN list
+ * @param queue_list CQ list, may be an empty handle
+ * @param hgrp_list HGRP list (Master list), may be an empty handle
  *
  * @return true if the host is referenced, else false
  */
@@ -561,8 +561,8 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
  * Checks the complex values, the load values and the report variables, so a
  * complex entry that any of the three names cannot be deleted.
  *
- * @param this_elem the host to check (EH_Type); an empty handle yields false
- * @param centry the complex entry to look for (CE_Type)
+ * @param this_elem the host to check (EH); an empty handle yields false
+ * @param centry the complex entry to look for (CE)
  * @return true when the host refers to it
  */
 bool host_is_centry_referenced(const ocs::tom::ConstElement<ocs::tom::EH> this_elem,
@@ -598,8 +598,8 @@ bool host_is_centry_referenced(const ocs::tom::ConstElement<ocs::tom::EH> this_e
  * Narrower than #host_is_centry_referenced: only the complex values and the
  * load values count, not the report variables.
  *
- * @param this_elem the host to check (EH_Type); an empty handle yields false
- * @param centry the complex entry to look for (CE_Type)
+ * @param this_elem the host to check (EH); an empty handle yields false
+ * @param centry the complex entry to look for (CE)
  * @return true when the host has a value for it
  */
 bool host_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::EH> this_elem,
@@ -631,7 +631,7 @@ bool host_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::EH> t
  * Merges settings from the global host to the exec hosts objects.
  * Currently this applies only to the report_variables attribute.
  *
- * @param this_list the exec host list to work on (EH_Type), may be an empty handle
+ * @param this_list the exec host list to work on (EH), may be an empty handle
  *
  * @return true on success, else false
  *
@@ -676,8 +676,8 @@ bool host_list_merge(const ocs::tom::List<ocs::tom::EH> this_list) {
  * Use the global settings, if no host specific settings are done.
  * Currently this applies only to the report_variables attribute.
  *
- * @param host the host object to hold the merged config (EH_Type), may be an empty handle
- * @param global_host the global host object (EH_Type), may be an empty handle
+ * @param host the host object to hold the merged config (EH), may be an empty handle
+ * @param global_host the global host object (EH), may be an empty handle
  *
  * @return true on success, else false
  *
@@ -718,9 +718,9 @@ bool host_merge(const ocs::tom::Element<ocs::tom::EH> host, const ocs::tom::Cons
 /**
  * @brief debit a certain RSMAP id from a host
  *
- * @param host          the host to do debiting on (EH_Type)
+ * @param host          the host to do debiting on (EH)
  * @param ce_name       name of the RSMAP complex variable
- * @param resl          the resource map object to be debited (RESL_Type)
+ * @param resl          the resource map object to be debited (RESL)
  * @param slots         the number of slots for which we do debiting (can be negativ in undebiting)
  * @param just_check    when != nullptr we just check if debiting would be successful and return the result here;
  *                      the host is not modified then, and an id the host configures is reported as not fitting
@@ -784,9 +784,9 @@ int host_debit_rsmap(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_
  * which cores are in use matters, not how many. The booking is kept in the
  * slots resource utilization entry.
  *
- * @param[in,out] host the execution host to book on (EH_Type)
+ * @param[in,out] host the execution host to book on (EH)
  * @param ce_name the resource the binding belongs to
- * @param resl the topology to book, as a string list element (ST_Type)
+ * @param resl the topology to book, as a string list element (ST)
  * @param slots positive to book, negative to release
  * @param[out] just_check if != nullptr do not book, only report whether it would fit
  * @return the number of bookings that took place, or a negative value on error
@@ -886,7 +886,7 @@ bool host_do_per_host_booking(const char **last_hostname, const char *hostname) 
  * This is used to get the topology string that is currently in use on a host. It is used for example
 to check if a certain binding can be used on a host or if it would exceed the available resources.
  *
- * @param host the host to check (EH_Type), may be an empty handle
+ * @param host the host to check (EH), may be an empty handle
  * @return the topology string that is currently in use on the host, empty string if no topology is in use
  */
 std::string host_get_topology_in_use(const ocs::tom::ConstElement<ocs::tom::EH> host) {

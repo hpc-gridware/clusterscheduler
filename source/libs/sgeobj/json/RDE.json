@@ -4,7 +4,7 @@
    "description": [
       "A resource diagram lists future resource utilization (it starts at the current time).",
       "An object of this type is related to the usage of a specific resource,",
-      "whose name is defined in the parent object (RUE_Type).",
+      "whose name is defined in the parent object (RUE).",
       "The list of resource diaram entries represents a diagram showing",
       "resource progression over time.",
       " ",

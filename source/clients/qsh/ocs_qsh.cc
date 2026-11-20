@@ -313,7 +313,7 @@ static void forward_signal(int sig) {
  * If no port can be bound the program exits.
  *
  * @param port reference to port number; set to the bound port on success
- * @param port_ranges RN_Type list of port ranges, or an empty handle for OS-assigned port
+ * @param port_ranges RN list of port ranges, or an empty handle for OS-assigned port
  *
  * @return socket file descriptor, or 0 if listen() failed
  */
@@ -1032,8 +1032,8 @@ static void set_job_info(const ocs::tom::Element<ocs::tom::JB> job, const char *
  * `opts_qrsh`.
  * Arguments are separated by the character code 0xff.
  *
- * @param envlp environment list (`VA_Type`); created if it is an empty handle
- * @param opts_qrsh list of commandline arguments (`SPA_Type`)
+ * @param envlp environment list (`VA`); created if it is an empty handle
+ * @param opts_qrsh list of commandline arguments (`SPA`)
  *
  * @bug In general, passing the commandline via environment variable is only
  *      a workaround for the problems occuring when passing the commandline
@@ -1586,7 +1586,7 @@ int main(int argc, const char **argv) {
       strcpy(name, "QRSH");
       host = nullptr;
 
-      /* the command line options are full SPA_Type elements, as sge_add_arg() creates them; the list is created
+      /* the command line options are full SPA elements, as sge_add_arg() creates them; the list is created
        * even without a command line, where lCreateList() with the missing descriptor had left it nullptr, which
        * reads as the empty list everywhere below */
       opts_qrsh = ocs::tom::ListPtr<ocs::tom::SPA>::create("opts_qrsh");
@@ -1995,7 +1995,7 @@ int main(int argc, const char **argv) {
       DPRINTF("B E F O R E     S E N D I N G! ! ! ! ! ! ! ! ! ! ! ! ! !\n");
       DPRINTF("=====================================================\n");
 
-      /* submit the job to the QMaster; the request list is replaced by the response, a JB_Type list */
+      /* submit the job to the QMaster; the request list is replaced by the response, a JB list */
       alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::ADD,
                                       ocs::gdi::SubCommand::RETURN_NEW_VERSION, lp_jobs);
 
@@ -2232,7 +2232,7 @@ int main(int argc, const char **argv) {
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
          const auto what = ocs::tom::what<JB_ja_tasks>();
          const auto where = ocs::tom::field<JB_job_number>() == job_id;
-         /* the GDI GET answers with a job list (JB_Type, reduced to JB_ja_tasks) */
+         /* the GDI GET answers with a job list (JB, reduced to JB_ja_tasks) */
          ocs::tom::ListPtr<ocs::tom::JB> lp_poll;
          alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                          ocs::gdi::SubCommand::NONE, lp_poll, where, what);
@@ -2352,7 +2352,7 @@ int main(int argc, const char **argv) {
  * No error handling, the job is deleted if it can be.
  *
  * @param job_id the id of the job
- * @param jlp the submitted jobs (`JB_Type`); nothing is done when it is empty
+ * @param jlp the submitted jobs (`JB`); nothing is done when it is empty
  */
 static void delete_job(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom::JB> jlp) {
    DENTER(TOP_LAYER);
@@ -2379,7 +2379,7 @@ static void delete_job(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom
 /**
  * @brief Remove the options an interactive job does not know, or reject them
  *
- * @param lp the options (`SPA_Type`); an empty handle has nothing to remove
+ * @param lp the options (`SPA`); an empty handle has nothing to remove
  * @param jb_now the job type of the interactive job
  * @param tightly_integrated true for `qrsh -inherit`, which only allows a few options
  * @param error true to reject an unknown option and exit, false to remove it

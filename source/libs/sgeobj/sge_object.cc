@@ -310,9 +310,10 @@ namespace {
          DRETURN(false);
       }
 
-      // raw out-parameter of cull_parse_definition_list(), which creates the list with CE_Type
+      // raw out-parameter of cull_parse_definition_list(), which creates the list with CE
       lList *tmp_list = nullptr;
-      const int parse_ret = cull_parse_definition_list(const_cast<char *>(string), &tmp_list, "", CE_Type, rule);
+      const int parse_ret = cull_parse_definition_list(const_cast<char *>(string), &tmp_list, "",
+                                                       ocs::tom::CE::descriptor.e, rule);
       auto list = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(tmp_list);
       if (parse_ret != 0) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S,
@@ -1095,28 +1096,28 @@ const lDescr *
 object_get_type(const lListElem *object) {
    const lDescr *ret = nullptr;
 
-   if (object_has_type(object, CAL_Type)) {
-      ret = CAL_Type;
-   } else if (object_has_type(object, CK_Type)) {
-      ret = CK_Type;
-   } else if (object_has_type(object, EH_Type)) {
-      ret = EH_Type;
-   } else if (object_has_type(object, JAT_Type)) {
-      ret = JAT_Type;
-   } else if (object_has_type(object, JB_Type)) {
-      ret = JB_Type;
-   } else if (object_has_type(object, PE_Type)) {
-      ret = PE_Type;
-   } else if (object_has_type(object, PET_Type)) {
-      ret = PET_Type;
-   } else if (object_has_type(object, QU_Type)) {
-      ret = QU_Type;
-   } else if (object_has_type(object, QR_Type)) {
-      ret = QR_Type;
-   } else if (object_has_type(object, RN_Type)) {
-      ret = RN_Type;
-   } else if (object_has_type(object, VA_Type)) {
-      ret = VA_Type;
+   if (object_has_type(object, ocs::tom::CAL::descriptor.e)) {
+      ret = ocs::tom::CAL::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::CK::descriptor.e)) {
+      ret = ocs::tom::CK::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::EH::descriptor.e)) {
+      ret = ocs::tom::EH::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::JAT::descriptor.e)) {
+      ret = ocs::tom::JAT::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::JB::descriptor.e)) {
+      ret = ocs::tom::JB::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::PE::descriptor.e)) {
+      ret = ocs::tom::PE::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::PET::descriptor.e)) {
+      ret = ocs::tom::PET::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::QU::descriptor.e)) {
+      ret = ocs::tom::QU::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::QR::descriptor.e)) {
+      ret = ocs::tom::QR::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::RN::descriptor.e)) {
+      ret = ocs::tom::RN::descriptor.e;
+   } else if (object_has_type(object, ocs::tom::VA::descriptor.e)) {
+      ret = ocs::tom::VA::descriptor.e;
    }
 
    return ret;
@@ -1163,11 +1164,11 @@ object_get_primary_key(const lDescr *descr) {
  * @brief Get prefix of cull attribute name
  *
  * Returns the prefix that is used in attribute names characterizing
- * the object type (e.g. "QU_" for the QU_Type).
+ * the object type (e.g. "QU_" for the QU).
  *
  * @code
- * object_get_name_prefix(QU_Type, buffer) = "QU_"
- * object_get_name_prefix(JB_Type, buffer) = "JB_"
+ * object_get_name_prefix(ocs::tom::QU::descriptor.e, buffer) = "QU_"
+ * object_get_name_prefix(ocs::tom::JB::descriptor.e, buffer) = "JB_"
  * @endcode
  *
  * @param descr object type to use
@@ -1217,7 +1218,7 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer) {
  * return "unknown".
  *
  * @code
- * object_get_name(JOB_Type) returns "JOB"
+ * object_get_name(ocs::tom::JB::descriptor.e) returns "JOB"
  * @endcode
  *
  * @param descr descriptor.
@@ -1282,7 +1283,7 @@ object_get_type_name(const ocs::tom::ConstRawElement object) {
  * Deletes a certain id from an objects sublist that is a range list. The list
  * is taken out of the field, changed and put back.
  *
- * @tparam F the range list field (RN_Type) of the object's type
+ * @tparam F the range list field (RN) of the object's type
  * @param object the object to handle
  * @param answer_list error messages will be put here
  * @param id id to delete
@@ -1324,7 +1325,7 @@ template void object_delete_range_id<JJ_not_yet_finished_ids>(ocs::tom::Element<
  * list is overwritten; an object without a range list gets a new list
  * holding one range.
  *
- * @tparam F the range list field (RN_Type) of the object's type
+ * @tparam F the range list field (RN) of the object's type
  * @param object object to handle
  * @param start first id
  * @param end last id
@@ -1439,7 +1440,7 @@ sge_object_type object_name_get_type(const char *name) {
  *
  * @code
  * object_type_get_descr(SGE_TYPE_JOB) will return the descriptor
- *    JB_Type,
+ *    JB,
  * object_type_get_descr(SGE_TYPE_SHUTDOWN) will return nullptr
  * @endcode
  *
@@ -2172,8 +2173,8 @@ namespace {
  * @brief Repair the repeated keys of an object as the input paths do, and report those that cannot be
  *
  * For spooled objects written by an earlier version (N-H-18). A repeated key is repaired as the input paths of
- * CS-3053 repair it: a variable (`VA_Type`) and a complex value (`CE_Type`) keep their last value, a repeated
- * queue reference (`QR_Type`) or user set entry (`UE_Type`) is dropped and the first one stays. A repeated key
+ * CS-3053 repair it: a variable (`VA`) and a complex value (`CE`) keep their last value, a repeated
+ * queue reference (`QR`) or user set entry (`UE`) is dropped and the first one stays. A repeated key
  * in any other list, or in another attribute of these types, is not repaired.
  *
  * @param ep the object, maybe empty
@@ -2235,7 +2236,7 @@ ocs_object_repair_repeated_keys(const ocs::tom::RawElement ep, std::string &repa
  * @brief Move the elements of one list into another, without ever holding a key twice
  *
  * For the input paths that collect the entries of several switches into one list (CS-3053). The rule of the
- * list's type decides about a repeated key: a variable (`VA_Type`) or a resource request (`CE_Type`) keeps its
+ * list's type decides about a repeated key: a variable (`VA`) or a resource request (`CE`) keeps its
  * last value, so the earlier element is removed and the new one appended; in any other list with a unique string
  * attribute the first element stays and the repeating one is dropped. A list without a unique string attribute
  * is appended as it is. The decision is taken before an element is added, so the target never holds a key twice,
@@ -2654,7 +2655,7 @@ object_verify_pe_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *pe_nam
  * last one stays. A request for `slots` is rejected.
  *
  * @param alpp Returns answer list with error context.
- * @param rl the resource requests, `CE_Type`; may be an empty handle
+ * @param rl the resource requests, `CE`; may be an empty handle
  * @param object_descr object description for user messages
  *
  * @return 0 on success, -1 for an explicit `slots` request

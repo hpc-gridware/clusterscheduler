@@ -75,7 +75,7 @@
 
 /** @brief Build an advance reservation from the parsed `qrsub` command line
  *
- * @param pcmdline the parsed options (`SPA_Type`); the options used are removed
+ * @param pcmdline the parsed options (`SPA`); the options used are removed
  * @param alpp used to return error messages
  * @param ar the advance reservation the options are written into
  * @return true on success; false with `alpp` filled otherwise
@@ -294,7 +294,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
    while ((ep = pcmdline.find_first<SPA_switch_val>("-pe"))) {
       ocs::tom::set<AR_pe>(ar, ocs::tom::get<SPA_argval_lStringT>(ep)); /* SGE_STRING, */
       // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
-      // list is taken out raw and adopted as RN_Type here; the range held before is freed by the set
+      // list is taken out raw and adopted as RN here; the range held before is freed by the set
       ocs::tom::set<AR_pe_range>(ar, ocs::tom::adopt<ocs::tom::RN>(
          ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
       pcmdline.erase(ep);

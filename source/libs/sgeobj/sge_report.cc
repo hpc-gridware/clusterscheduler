@@ -62,10 +62,10 @@
  * Initialize "job_report" from the attributes obtained from
  * "job", "ja_task" and "pe_task".
  *
- * @param job_report JR_Type object
- * @param job JB_Type object
- * @param ja_task JAT_Type object
- * @param pe_task PET_Type object, or an empty handle
+ * @param job_report JR object
+ * @param job JB object
+ * @param ja_task JAT object
+ * @param pe_task PET object, or an empty handle
  */
 void job_report_init_from_job(const ocs::tom::Element<ocs::tom::JR> job_report,
                               const ocs::tom::ConstElement<ocs::tom::JB> job,

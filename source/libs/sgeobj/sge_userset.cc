@@ -79,10 +79,10 @@
  * The two usersets qmaster creates for itself - the manager and the operator
  * list - are access lists only and are built where they are needed.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param name the name the userset carries
  *
- * @return US_Type object, or an empty handle with the reason in the answer list
+ * @return US object, or an empty handle with the reason in the answer list
  */
 ocs::tom::ElementPtr<ocs::tom::US>
 userset_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
@@ -108,9 +108,9 @@ userset_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
  * Checks if all entries of an acl list (e.g. user list of a pe)
  * are contained in the master userset list.
  *
- * @param acl_list the acl list to check (US_Type), may be an empty handle
+ * @param acl_list the acl list to check (US), may be an empty handle
  * @param alpp answer list pointer
- * @param master_userset_list the defined usersets to check against (US_Type)
+ * @param master_userset_list the defined usersets to check against (US)
  *
  * @return STATUS_OK, if everything is OK
  */
@@ -141,7 +141,7 @@ int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_l
  *
  * @param acl_list the acl list to check, e.g. AR_acl_list or AR_xacl_list; may be an empty handle
  * @param alpp answer list pointer
- * @param master_userset_list the defined usersets to check against (US_Type)
+ * @param master_userset_list the defined usersets to check against (US)
  *
  * @return STATUS_OK if no error,  STATUS_EUNKNOWN otherwise
  *
@@ -173,7 +173,7 @@ int userset_list_validate_access(const ocs::tom::ConstList<ocs::tom::ARA> acl_li
  *
  * Validates all entries of a userset.
  *
- * @param userset the userset to check (US_Type)
+ * @param userset the userset to check (US)
  * @param alpp answer list pointer, if answer is expected. In any case, errors are output using the ERROR macro.
  *
  * @return STATUS_OK, if everything is OK
@@ -263,7 +263,7 @@ std::pair<bool, uint32_t> ocs_userset_type_parse(ocs::tom::ListPtr<ocs::tom::AN>
 /**
  * @brief Render a userset list as a blank separated list of names
  *
- * @param this_list the usersets to render (US_Type), may be an empty handle
+ * @param this_list the usersets to render (US), may be an empty handle
  * @param[out] string receives the text, appended
  * @return the resulting text, nullptr if @p string is nullptr
  */
@@ -298,7 +298,7 @@ const char *userset_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::U
  * caller strips it before calling this.
  *
  * @param group_name_without_prefix the group name, without the `@`
- * @param user_group_list the userset's entries (UE_Type), may be an empty handle
+ * @param user_group_list the userset's entries (UE), may be an empty handle
  * @return true if an entry names the group or a pattern of an entry matches it
  */
 static bool find_name_as_group(const char *group_name_without_prefix,
@@ -327,7 +327,7 @@ static bool find_name_as_group(const char *group_name_without_prefix,
  * @brief Find a user name in a userset's entry list
  *
  * @param user_name the user to look for
- * @param user_group_list the userset's entries (UE_Type), may be an empty handle
+ * @param user_group_list the userset's entries (UE), may be an empty handle
  * @return true if an entry names the user or a pattern of an entry matches it
  */
 static bool find_name_as_user(const char *user_name, const ocs::tom::ConstList<ocs::tom::UE> user_group_list) {
@@ -358,8 +358,8 @@ static bool find_name_as_user(const char *user_name, const ocs::tom::ConstList<o
  *
  * @param user the user name
  * @param group the user's primary group
- * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
- * @param acl the access list to check (US_Type)
+ * @param grp_list the user's supplementary groups (ST), checked; may be nullptr
+ * @param acl the access list to check (US)
  * @return 1 when the user is contained, 0 when not
  */
 int sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list,
@@ -397,9 +397,9 @@ int sge_contained_in_access_list(const char *user, const char *group, const lLis
  *
  * @param user the user name; may be nullptr
  * @param group the user's primary group; may be nullptr
- * @param grp_list the user's supplementary groups (ST_Type), checked; may be nullptr
- * @param acl the access lists to check, by name (US_Type), may be an empty handle
- * @param acl_list the defined usersets the names resolve against (US_Type)
+ * @param grp_list the user's supplementary groups (ST), checked; may be nullptr
+ * @param acl the access lists to check, by name (US), may be an empty handle
+ * @param acl_list the defined usersets the names resolve against (US)
  * @return 1 when the user is contained in at least one, 0 when not, -1 when
  *         both `user` and `group` were nullptr
  */
@@ -428,9 +428,9 @@ int sge_contained_in_access_list_(const char *user, const char *group, const lLi
  *
  * @param user The user name
  * @param group The primary group name
- * @param grp_list The supplementary group list (ST_Type), checked; may be nullptr
- * @param q The queue instance (QU_Type)
- * @param acl_list The list of ACLs (US_Type)
+ * @param grp_list The supplementary group list (ST), checked; may be nullptr
+ * @param q The queue instance (QU)
+ * @param acl_list The list of ACLs (US)
  * @return 1 if the user has access, 0 otherwise
  */
 int sge_has_access(const char *user, const char *group, const lList *grp_list,
@@ -447,10 +447,10 @@ int sge_has_access(const char *user, const char *group, const lList *grp_list,
  *
  * @param user The user name
  * @param group The primary group name
- * @param grp_list The supplementary group list (ST_Type), checked; may be nullptr
- * @param q_acl The ACL (US_Type), may be an empty handle
- * @param q_xacl The XACL (US_Type), may be an empty handle
- * @param acl_list The list of ACLs (US_Type)
+ * @param grp_list The supplementary group list (ST), checked; may be nullptr
+ * @param q_acl The ACL (US), may be an empty handle
+ * @param q_xacl The XACL (US), may be an empty handle
+ * @param acl_list The list of ACLs (US)
  * @return 1 if the user has access, 0 otherwise
  */
 int sge_has_access_(const char *user, const char *group, const lList *grp_list,

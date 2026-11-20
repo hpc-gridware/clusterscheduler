@@ -149,6 +149,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ET for the list library: a synonym for ocs::tom::ET::descriptor */
-inline constexpr const lDescr *ET_Type = ocs::tom::ET::descriptor.e;

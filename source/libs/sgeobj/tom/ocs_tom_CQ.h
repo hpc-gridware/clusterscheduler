@@ -387,7 +387,7 @@ namespace ocs::tom {
     * It contains attribute lists per attribute, which are used to define the value of an attribute
     * per host and/or per host group
     * @see man page sge_queue_conf.5
-    * @todo the attribute lists (starting below with seq_no) have a certain type, e.g. AULNG_Type, but
+    * @todo the attribute lists (starting below with seq_no) have a certain type, e.g. AULNG, but
     *       but their SubClassName and SubCullPrefix are all ANY.
     */
    struct CQ {
@@ -768,6 +768,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CQ for the list library: a synonym for ocs::tom::CQ::descriptor */
-inline constexpr const lDescr *CQ_Type = ocs::tom::CQ::descriptor.e;

@@ -295,7 +295,7 @@ namespace ocs {
    // the following static methods are wrappers calling the object methods for every writer
    /** @brief Offer a job that has just been submitted to every writer
     * @param answer_list receives error messages
-    * @param job the job (`JB_Type`)
+    * @param job the job (`JB`)
     * @return true on success
     */
    bool
@@ -322,7 +322,7 @@ namespace ocs {
     * @param user who caused it
     * @param host the host it happened on
     * @param job_report the job report the execution host sent
-    * @param job the job (`JB_Type`)
+    * @param job the job (`JB`)
     * @param ja_task the array task
     * @param pe_task the PE task
     * @param message a description of what happened
@@ -354,7 +354,7 @@ namespace ocs {
    /** @brief Offer a finished job, or an intermediate record for one still running to every writer
     * @param answer_list receives error messages
     * @param job_report the job report the execution host sent
-    * @param job the job (`JB_Type`)
+    * @param job the job (`JB`)
     * @param ja_task the array task
     * @param intermediate whether this is an interim record for a job that is still running
     * @return true on success
@@ -389,10 +389,10 @@ namespace ocs {
     * (the same convention `sge_write_rusage` follows for `accounting_summary`).
     *
     * @param answer_list receives error messages
-    * @param job_report the job report the execution host sent (`JR_Type`)
-    * @param job the job (`JB_Type`)
-    * @param ja_task the array task (`JAT_Type`)
-    * @param pe_task the PE task (`PET_Type`), or an empty handle
+    * @param job_report the job report the execution host sent (`JR`)
+    * @param job the job (`JB`)
+    * @param ja_task the array task (`JAT`)
+    * @param pe_task the PE task (`PET`), or an empty handle
     * @param aggregate_pe_tasks whether the PE tasks are summed rather than reported individually
     * @return true on success
     *
@@ -468,7 +468,7 @@ namespace ocs {
    /** @brief Offer the consumables a job took from a host to every writer
     * @param answer_list receives error messages
     * @param host the host it happened on
-    * @param job the job (`JB_Type`)
+    * @param job the job (`JB`)
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -493,7 +493,7 @@ namespace ocs {
 
    /** @brief Offer a queue instance and its state to every writer
     * @param answer_list receives error messages
-    * @param queue the queue instance (`QU_Type`)
+    * @param queue the queue instance (`QU`)
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -517,8 +517,8 @@ namespace ocs {
    /** @brief Offer the consumables a job took from a queue instance to every writer
     * @param answer_list receives error messages
     * @param host the host it happened on
-    * @param queue the queue instance (`QU_Type`)
-    * @param job the job (`JB_Type`)
+    * @param queue the queue instance (`QU`)
+    * @param job the job (`JB`)
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -543,7 +543,7 @@ namespace ocs {
 
    /** @brief Offer an advance reservation that has just been created to every writer
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`)
+    * @param ar the advance reservation (`AR`)
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -566,7 +566,7 @@ namespace ocs {
 
    /** @brief Offer the attributes of an advance reservation to every writer
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`)
+    * @param ar the advance reservation (`AR`)
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -590,7 +590,7 @@ namespace ocs {
 
    /** @brief Offer a change in an advance reservation's state to every writer
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`)
+    * @param ar the advance reservation (`AR`)
     * @param state the state it moved to
     * @param ar_description a description of the change
     * @param report_time the time to stamp the record with
@@ -616,7 +616,7 @@ namespace ocs {
 
    /** @brief Offer the accounting record of an advance reservation to every writer
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`)
+    * @param ar the advance reservation (`AR`)
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -678,9 +678,9 @@ namespace ocs {
     *       This will write intermediate accounting records not only daily,
     *       but every hour.
     *
-    * @param job the job (`JB_Type`)
-    * @param ja_task the array task (`JAT_Type`)
-    * @param pe_task the PE task (`PET_Type`), or an empty handle for the array task itself
+    * @param job the job (`JB`)
+    * @param ja_task the array task (`JAT`)
+    * @param pe_task the PE task (`PET`), or an empty handle for the array task itself
     * @return true, if writing of an intermediate accounting record is required, else false
     */
 #if 0

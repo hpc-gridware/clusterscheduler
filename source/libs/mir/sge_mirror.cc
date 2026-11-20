@@ -1099,7 +1099,7 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc) {
 
    /// ec2_get()
    if (evc && evc->ec_get(evc, &event_list_raw, false)) {
-      // the event client delivers ET_Type events
+      // the event client delivers ET events
       const auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(event_list_raw);
       if (event_list) {
          ret = sge_mirror_process_event_list(evc, *event_list);
@@ -1169,7 +1169,7 @@ static void sge_mirror_free_list(sge_object_type type) {
  * following ones.
  *
  * @param evc the event client the events arrived on
- * @param event_list the events to apply (ET_Type), may be an empty handle
+ * @param event_list the events to apply (ET), may be an empty handle
  *
  * @return SGE_EM_OK, or SGE_EM_PROCESS_ERRORS if at least one event failed
  */
@@ -1193,11 +1193,6 @@ sge_mirror_process_event_list(sge_evc_class_t *evc, const ocs::tom::List<ocs::to
          break;
       }
       num_events++;
-
-#if 0
-      DSTRING_STATIC(dstr, MAX_STRING_SIZE);
-      INFO("<-- %s", event_text(event, &dstr));
-#endif
 
       switch (ocs::tom::get<ET_type>(event)) {
 
@@ -1511,7 +1506,7 @@ sge_mirror_process_event_list(sge_evc_class_t *evc, const ocs::tom::List<ocs::to
  * A number key travels in `ET_intkey`, a string or a host name in `ET_strkey`.
  *
  * @tparam K the key field of the object type
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @return the key
  */
 template <auto K>
@@ -1529,7 +1524,7 @@ ocs_mirror_event_key(const ocs::tom::ConstElement<ocs::tom::ET> event) {
  * @brief Whether the object an event's root type is keyed by is missing from a partial mirror of that root
  *
  * @tparam R the root type, an object type with a key
- * @param event the event (ET_Type), naming the root object by its key
+ * @param event the event (ET), naming the root object by its key
  * @return true if the root list is filtered and does not hold the root object; false otherwise
  */
 template <sge_object_type R>
@@ -1571,7 +1566,7 @@ mir_event_root_missing(const ocs::tom::ConstElement<ocs::tom::ET> event) {
  *
  * @param type the object type of the event
  * @param action the action of the event
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @return true if the event is to be skipped
  */
 static bool
@@ -1607,7 +1602,7 @@ mir_event_root_unmirrored(const sge_object_type type, const sge_event_action act
  * @param mirror_base the callback table of the mirror
  * @param type the object type the event concerns
  * @param action the action of the event
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @return SGE_EM_OK, or SGE_EM_CALLBACK_FAILED when a callback failed
  */
 static sge_mirror_error
@@ -1631,21 +1626,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
    }
 
 /* DEBUG */
-#if 1
    DPRINTF("%s\n", event_text(event, &buffer_wrapper));
-#else
-   {
-      uint32_t number, type, intkey, intkey2;
-      const char *strkey, *strkey2;
-      number = lGetUlong(event, ET_number);
-      type = lGetUlong(event, ET_type);
-      intkey = lGetUlong(event, ET_intkey);
-      intkey2 = lGetUlong(event, ET_intkey2);
-      strkey = lGetString(event, ET_strkey);
-      strkey2 = lGetString(event, ET_strkey2);
-      DPRINTF("\tEvent: %s intkey %d intkey2 %d strkey \"%s\" strkey2 \"%s\"\n", event_text(event, &buffer_wrapper), intkey, intkey2, strkey?strkey:"nullptr", strkey2?strkey2:"nullptr");
-   }
-#endif
 
    /* Skip events whose filtered-out hierarchy root we never mirrored, before any
     * callback runs - keeps a partial mirror silent and symmetric (no before/
@@ -1744,7 +1725,7 @@ sge_mirror_process_mark4registration(sge_evc_class_t *evc, [[maybe_unused]] cons
  * @tparam K the key field of the object type
  * @param list the master list to update, nullptr if the mirror holds none
  * @param action action to perform on list
- * @param event the event (ET_Type); its object list is taken over into the master list
+ * @param event the event (ET); its object list is taken over into the master list
  * @return SGE_EM_OK or an error code; SGE_EM_NOT_INITIALIZED without a master list
  *
  * @see #sge_mirror_update_master_list
@@ -1785,7 +1766,7 @@ ocs_mirror_update_master_list_by_key(lList **list, const sge_event_action action
  *
  * @param type the object type of the event
  * @param action action to perform on the list
- * @param event the event (ET_Type); its object list is taken over into the master list
+ * @param event the event (ET); its object list is taken over into the master list
  * @return SGE_EM_OK or an error code; SGE_EM_BAD_ARG for a type without an object or without a key
  */
 sge_mirror_error
@@ -1812,7 +1793,7 @@ ocs_mirror_update_master_list_by_type(const sge_object_type type, const sge_even
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the event (ET_Type); its object list is taken over into the master list
+ * @param event the event (ET); its object list is taken over into the master list
  * @param client_data client data
  * @return SGE_EMA_OK, or SGE_EMA_FAILURE if the update or the validation of the scheduler configuration failed
  *
@@ -1854,7 +1835,7 @@ generic_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_obje
  * @param ep element to manipulate or an empty handle
  * @param key key of an element to manipulate
  * @param action action to perform
- * @param event the event (ET_Type); on LIST its list is exchanged with the master list, on ADD and MOD its
+ * @param event the event (ET); on LIST its list is exchanged with the master list, on ADD and MOD its
  *        first object is moved into the master list
  *
  * @return SGE_EM_OK, or an error code

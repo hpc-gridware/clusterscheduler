@@ -80,12 +80,12 @@ static void task_depend(uint32_t *lb, uint32_t *ub, uint32_t t0, uint32_t sa, ui
  * suc_jep.task_id will be dependent on when suc_jep has an explicit
  * array dependency hold on pre_jep (with -hold_jid_ad option).
  *
- * @param alpp AN_Type list pointer, not used
- * @param pre_jep the predecessor job, JB_Type
- * @param suc_jep the successor job, JB_Type
+ * @param alpp AN list pointer, not used
+ * @param pre_jep the predecessor job, JB
+ * @param suc_jep the successor job, JB
  * @param task_id a valid suc_jep task id
  *
- * @return the range of predecessor task ids (RN_Type), empty if it cannot be determined
+ * @return the range of predecessor task ids (RN), empty if it cannot be determined
  *
  * @note Let div(a, b) = floor(a / b)
  *       Let nearest_index_in_A(i) = t0 + div(i - t0, sa) * sa
@@ -147,7 +147,7 @@ sge_task_depend_get_range([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alpp
  * it, and JAT_task_list may still hold them, or the container of their past usage, after the
  * task finished.
  *
- * @param job the job, JB_Type
+ * @param job the job, JB
  * @param task_id the id of the array task
  * @return true if the task counts as finished
  */
@@ -175,8 +175,8 @@ task_depend_is_finished(const ocs::tom::ConstElement<ocs::tom::JB> job, const ui
  * Enrolled tasks may be held or unheld if they are not finished,
  * causing task mod events to be generated if the task was updated.
  *
- * @param jep JB_Type element
- * @param alpp AN_Type list pointer
+ * @param jep JB element
+ * @param alpp AN list pointer
  * @param task_id a task id in job jep
  * @param gdi_request see the brief above
  *
@@ -285,8 +285,8 @@ sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::List
  * tasks, placing or clearing the MINUS_H_TGT_JA_AD bits of the JAT_hold
  * field. Task mod events are generated for the modified enrolled tasks.
  *
- * @param jep JB_Type element
- * @param alpp AN_Type list pointer
+ * @param jep JB element
+ * @param alpp AN list pointer
  * @param gdi_session the session the change belongs to
  *
  * @return true if the job was modified, otherwise false
@@ -340,8 +340,8 @@ sge_task_depend_init(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
  * with MINUS_H_TGT_JA_AD in the JAT_hold field. Task mod events will
  * be generated if the enrolled task was updated.
  *
- * @param jep JB_Type element
- * @param alpp AN_Type list pointer
+ * @param jep JB element
+ * @param alpp AN list pointer
  * @param gdi_session the session the change belongs to
  *
  * @return true if the job was modified, otherwise false
@@ -413,8 +413,8 @@ sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
  * This function determines if the job arguments are suitable predecessor
  * and successor jobs for an array dependency pair (-hold_jid_ad option).
  *
- * @param pre_jep the predecessor job, JB_Type
- * @param suc_jep the successor job, JB_Type
+ * @param pre_jep the predecessor job, JB
+ * @param suc_jep the successor job, JB
  *
  * @return true if jobs are compatible array jobs, otherwise false
  *

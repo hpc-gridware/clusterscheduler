@@ -165,6 +165,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CK for the list library: a synonym for ocs::tom::CK::descriptor */
-inline constexpr const lDescr *CK_Type = ocs::tom::CK::descriptor.e;

@@ -91,10 +91,10 @@ namespace ocs::tom {
     *
     * Consumable Resource Map Resource List.
     * Holds all consumable resource map identifiers which are
-    * available on a host (Referenced in CE_Type / the complex_list of a host).
+    * available on a host (Referenced in CE / the complex_list of a host).
     * It is also used to store the RSMAP IDs of resources which are
-    * granted to a job / array task / pe task; referenced in GRU_Type, which in turn
-    * is referenced in gdil (JG_Type) and in ja_tasks' granted_resources list (JAT_Type).
+    * granted to a job / array task / pe task; referenced in GRU, which in turn
+    * is referenced in gdil (JG) and in ja_tasks' granted_resources list (JAT).
     */
    struct RESL {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -126,6 +126,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RESL for the list library: a synonym for ocs::tom::RESL::descriptor */
-inline constexpr const lDescr *RESL_Type = ocs::tom::RESL::descriptor.e;

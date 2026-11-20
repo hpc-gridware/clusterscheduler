@@ -446,7 +446,7 @@ void ar_state2dstring(ar_state_t state, dstring *state_as_string) {
  * Check if one of the reserved queues is in state where jobs can not be
  * running
  *
- * @param ar advance reservation object (AR_Type)
+ * @param ar advance reservation object (AR)
  *
  * @return true if has errors false if has no errors
  *

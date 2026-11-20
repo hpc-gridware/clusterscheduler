@@ -140,7 +140,7 @@ clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t
 void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ListPtr<ocs::tom::AN> answer_list; /* AN_Type */
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list; /* AN */
    ocs::tom::Element<ocs::tom::EH> hep;
    uint64_t timeout = sge_gmt32_to_gmt64(te_get_first_numeric_key(anEvent));
    uint64_t new_timeout;
@@ -226,9 +226,9 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
  * The signature stays raw: @p ep is of one of two types, and the caller outside this module passes raw
  * elements.
  *
- * @param ep host or queue (EH_Type or QU_Type)
+ * @param ep host or queue (EH or QU)
  * @param force force the rescheduling of certain jobs (boolean)
- * @param answer answer list (AN_Type)
+ * @param answer answer list (AN)
  * @param is_manual indicator for manual (e.g. 'qmod -rj') or automatic (e.g. execd goes down) rescheduling.
  * @param monitor for monitoring qmaster threads
  * @param caller_user the requesting user
@@ -244,11 +244,11 @@ reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *
    int ret = 1;
 
    /*
-    * if ep is of type EH_Type than we will reschedule all jobs
-    * running on that host. if it is of type QU_Type than we will
+    * if ep is of type EH than we will reschedule all jobs
+    * running on that host. if it is of type QU than we will
     * only reschedule the jobs for that queue
     */
-   if (object_has_type(ep, EH_Type) || object_has_type(ep, QU_Type)) {
+   if (object_has_type(ep, ocs::tom::EH::descriptor.e) || object_has_type(ep, ocs::tom::QU::descriptor.e)) {
       /*
        * Find all jobs currently running on the host/queue
        * append the jobids/taskids into a sublist of the exechost object
@@ -296,11 +296,11 @@ reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *
  * The signature stays raw: @p ep is of one of two types, and the caller outside this module passes raw
  * elements.
  *
- * @param raw_jep job (JB_Type)
- * @param raw_jatep array task (JAT_Type or nullptr)
- * @param ep host or queue (EH_Type or QU_Type or nullptr)
+ * @param raw_jep job (JB)
+ * @param raw_jatep array task (JAT or nullptr)
+ * @param ep host or queue (EH or QU or nullptr)
  * @param force force rescheduling (boolean)
- * @param answer answer list (AN_Type)
+ * @param answer answer list (AN)
  * @param is_manual indicator for manual (e.g. 'qmod -rj') or automatic (e.g. execd goes down) rescheduling
  * @param monitor for monitoring qmaster threads
  * @param caller_user the requesting user
@@ -371,16 +371,16 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
       }
 
       /*
-       * if ep is of type EH_Type than we will reschedule all tasks
-       * running on that host. if it is of type QU_Type than we will
+       * if ep is of type EH than we will reschedule all tasks
+       * running on that host. if it is of type QU than we will
        * only reschedule the tasks for that queue. if it is nullptr than we will
        * reschedule all tasks of that job
        */
-      if (ep && object_has_type(ep, EH_Type)) {
+      if (ep && object_has_type(ep, ocs::tom::EH::descriptor.e)) {
          hep = ocs::tom::Element<ocs::tom::EH>::from_typed(ep);   // object_has_type() checked it
          qep = nullptr;
          hostname = ocs::tom::get<EH_name>(hep);
-      } else if (ep && object_has_type(ep, QU_Type)) {
+      } else if (ep && object_has_type(ep, ocs::tom::QU::descriptor.e)) {
          qep = ocs::tom::Element<ocs::tom::QU>::from_typed(ep);   // object_has_type() checked it
          hostname = ocs::tom::get<QU_qhostname>(qep);
          hep = ocs::tom::Element<ocs::tom::EH>(
@@ -577,7 +577,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * Trigger the rescheduling of this task
        */
       if (!found) {
-          /* JR_Type */
+          /* JR */
          uint32_t state = ocs::tom::get<JAT_state>(this_jatep);
 
          ocs::tom::set<JAT_job_restarted>(this_jatep, 1);
@@ -638,7 +638,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
  * This mechanism makes it possible to reschedule jobs running on hosts
  * which are in an undefined state (no reports arrive the master).
  *
- * @param host host (EH_Type) where the jok/task was running
+ * @param host host (EH) where the jok/task was running
  * @param job_number job id
  * @param task_number task id
  * @param state state
@@ -677,7 +677,7 @@ add_to_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, const
  * This function tries to find an entry in the reschedule_unknown_list
  * of a host.
  *
- * @param host host (EH_Type)
+ * @param host host (EH)
  * @param job_number job id
  * @param task_number task id
  *
@@ -706,7 +706,7 @@ get_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, con
  *   A message with only the reports which the execd flushed after job events does not, removing
  *   the entry then would lose the kill of the old run of a rescheduled job (CS-3076).
  *
- * @param host host (EH_Type)
+ * @param host host (EH)
  * @param all_jobs_reported true if the message contained a complete job report
  * @param gdi_session the session the change belongs to
  */
@@ -758,8 +758,8 @@ delete_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, 
  * qmod -r sets JDEFERRED_REQ in JAT_state of the task: the scheduler does not dispatch the new run
  * before the old run is gone. The function clears the flag, spools the task and sends an event.
  *
- * @param jep the job (JB_Type)
- * @param jatep the array task (JAT_Type)
+ * @param jep the job (JB)
+ * @param jatep the array task (JAT)
  * @param gdi_session the GDI session
  */
 void
@@ -793,7 +793,7 @@ reschedule_clear_deferred_start(const ocs::tom::Element<ocs::tom::JB> jep, const
  *
  * The signature stays raw while the caller outside this module passes a raw element.
  *
- * @param raw_host the host (EH_Type)
+ * @param raw_host the host (EH)
  * @param gdi_session the GDI session
  */
 void
@@ -819,7 +819,7 @@ reschedule_clear_deferred_starts_of_host(const lListElem *raw_host, const uint64
  * RESCHEDULE_SKIP_JR* states, the entries for the slave hosts of a parallel job in one of the
  * RESCHEDULE_HANDLE_JR* states.
  *
- * @param ruep the entry (RU_Type)
+ * @param ruep the entry (RU)
  * @return true if the entry is one for the host of the master task
  */
 static bool
@@ -836,7 +836,7 @@ is_master_host_entry(const ocs::tom::ConstElement<ocs::tom::RU> ruep) {
  * A sequential job gets two entries on its host, one from the reschedule and one from the commit of
  * the rescheduled task.
  *
- * @param rulp the reschedule unknown list of a host (RU_Type)
+ * @param rulp the reschedule unknown list of a host (RU)
  * @param job_number the job id
  * @param task_number the array task id
  * @return true if the list has such an entry
@@ -884,7 +884,7 @@ clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t
  * containes information about the current protocol state between the
  * master and a execution daemon for a job/task.
  *
- * @param host host (EH_Type)
+ * @param host host (EH)
  * @param gdi_session the session the change belongs to
  */
 void
@@ -933,8 +933,8 @@ update_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, const
  * => kill the old instance of job A
  * => make sure that no old stuff remains
  *
- * @param host host (EH_Type)
- * @param job_report job report (JR_Type)
+ * @param host host (EH)
+ * @param job_report job report (JR)
  * @param job_number job id
  * @param task_number array task id
  *
@@ -977,7 +977,7 @@ skip_restarted_job(const ocs::tom::Element<ocs::tom::EH> host, const ocs::tom::C
  * contained in the reschedule_unknown_list entries. Only entries added for
  * parallel jobs will be changed.
  *
- * @param host host (EH_Type)
+ * @param host host (EH)
  * @param job_number job id
  * @param task_number task id
  */
@@ -1042,7 +1042,7 @@ update_reschedule_unknown_timout_values(const char *config_name) {
  * The Function copies the timout value of the global/local configuration
  * for a certain host within the exec host object.
  *
- * @param host exec host (EH_Type)
+ * @param host exec host (EH)
  */
 static void
 update_reschedule_unknown_timeout(const ocs::tom::Element<ocs::tom::EH> host) {
@@ -1082,7 +1082,7 @@ update_reschedule_unknown_timeout(const ocs::tom::Element<ocs::tom::EH> host) {
  * This function returns the time to wait before rescheduling of
  * jobs running in hep will be initiated.
  *
- * @param hep host (EH_Type)
+ * @param hep host (EH)
  *
  * @return time in seconds
  */
@@ -1127,7 +1127,7 @@ reschedule_unknown_timeout(const ocs::tom::Element<ocs::tom::EH> hep) {
  *
  * The signature stays raw while the caller outside this module passes a raw element.
  *
- * @param raw_hep host EH_Type
+ * @param raw_hep host EH
  */
 void
 reschedule_unknown_trigger(lListElem *raw_hep) {

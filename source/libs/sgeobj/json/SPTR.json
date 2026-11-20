@@ -2,8 +2,8 @@
    "className": "SpoolingTypeRule",
    "summary": "Spooling Type Rule Mapping",
    "description": [
-      "Elements of SPTR_Type define a mapping between object type (SPT_Type)",
-      "and spooling rules (SPR_Type).",
+      "Elements of SPTR define a mapping between object type (SPT)",
+      "and spooling rules (SPR).",
       "One object type can be spooled (written) using multiple spooling rules.",
       "One object type will be read using one (the default) spooling rule.",
       "One spooling rule can be referenced by multiple object types."

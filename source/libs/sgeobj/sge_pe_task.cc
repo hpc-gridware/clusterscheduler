@@ -72,8 +72,8 @@
  * stored in the task list.
  * This function adds the usage of pe_task to the usage of container.
  *
- * @param container container object to hold past usage (PET_Type), may be an empty handle
- * @param pe_task the pe task from which to copy usage (PET_Type), may be an empty handle
+ * @param container container object to hold past usage (PET), may be an empty handle
+ * @param pe_task the pe task from which to copy usage (PET), may be an empty handle
  *
  * @return the container object, an empty handle if one of the arguments is empty
  *
@@ -119,7 +119,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(const ocs::tom::Element<
  * all pe tasks in a task list to the container object in this list.
  * If the container object does not yet exist, it will be created.
  *
- * @param pe_task_list the pe task list to process (PET_Type), may be an empty handle
+ * @param pe_task_list the pe task list to process (PET), may be an empty handle
  *
  * @return the container object, an empty handle if the list is empty
  *
@@ -154,8 +154,8 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_all(const ocs::tom::List
  * yet exist it is created and inserted into pe_task_list as
  * first element.
  *
- * @param pe_task_list list containing the container object (PET_Type), may be an empty handle
- * @param pe_task the pe task from which to copy usage (PET_Type)
+ * @param pe_task_list list containing the container object (PET), may be an empty handle
+ * @param pe_task the pe task from which to copy usage (PET)
  *
  * @return the container object, an empty handle if the list is empty
  *
@@ -192,7 +192,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(const ocs::tom::Lis
  * Verifies structure and contents of a pe task request.
  * A pe task request is sent to sge_execd by qrsh -inherit.
  *
- * @param petr the object to verify (PETR_Type), may be an empty handle
+ * @param petr the object to verify (PETR), may be an empty handle
  * @param answer_list answer list to pass back error messages
  *
  * @return true on success, false on error with error message in answer_list

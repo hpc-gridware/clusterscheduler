@@ -60,19 +60,19 @@ enum JB_Field {
     * @brief Job Requested Dependencies
     *
     * Dependencies as requested via qsub -hold_jid.
-    * Can be job ids or job names, including the use of wildcards. (JRE_Type only JRE_job_name)
+    * Can be job ids or job names, including the use of wildcards. (JRE only JRE_job_name)
     */
    JB_jid_request_list,
    /**
     * @brief Predecessor Jobs
     *
-    * list of job numbers of predecessor jobs (JRE_Type only JRE_job_name)
+    * list of job numbers of predecessor jobs (JRE only JRE_job_name)
     */
    JB_jid_predecessor_list,
    /**
     * @brief Successor Jobs
     *
-    * list of job numbers of successor jobs (JRE_Type only JRE_job_name)
+    * list of job numbers of successor jobs (JRE only JRE_job_name)
     */
    JB_jid_successor_list,
    /**
@@ -81,19 +81,19 @@ enum JB_Field {
     * Job dependencies between jobs and their array tasks
     * requested via qsub -hold_jid_ad
     * e.g. when task 1 of job a has finished then task 1 of job b can start
-    * Can be job ids or job names, including the use of wildcards. (JRE_Type only JRE_job_name)
+    * Can be job ids or job names, including the use of wildcards. (JRE only JRE_job_name)
     */
    JB_ja_ad_request_list,
    /**
     * @brief Job Array Predecessor Jobs
     *
-    * List of job numbers of predecessor jobs for array job dependencies (JRE_Type only JRE_job_name)
+    * List of job numbers of predecessor jobs for array job dependencies (JRE only JRE_job_name)
     */
    JB_ja_ad_predecessor_list,
    /**
     * @brief Job Array Successor Jobs
     *
-    * List of job numbers of successor jobs for array job dependencies (JRE_Type only JRE_job_name)
+    * List of job numbers of successor jobs for array job dependencies (JRE only JRE_job_name)
     */
    JB_ja_ad_successor_list,
    /**
@@ -248,7 +248,7 @@ enum JB_Field {
    /**
     * @brief Shell List
     *
-    * Command interpreter to be used (PN_Type).
+    * Command interpreter to be used (PN).
     * ("qsub/qalter -S shell")
     */
    JB_shell_list,
@@ -261,20 +261,20 @@ enum JB_Field {
    /**
     * @brief Environment List
     *
-    * Export these env variables (VA_Type). ("qsub -V").
+    * Export these env variables (VA). ("qsub -V").
     */
    JB_env_list,
    /**
     * @brief Job Context
     *
-    * Custom attributes (name,val) pairs (VA_Type).
+    * Custom attributes (name,val) pairs (VA).
     * The result of the -ac, -sc and -dc switches, see JB_context_change.
     */
    JB_context,
    /**
     * @brief Job Arguments
     *
-    * Job arguments (ST_Type).
+    * Job arguments (ST).
     */
    JB_job_args,
    /**
@@ -313,19 +313,19 @@ enum JB_Field {
    /**
     * @brief stdout Path List
     *
-    * Pathname for stdout (PN_Type). ("qsub/qalter -o path_name")
+    * Pathname for stdout (PN). ("qsub/qalter -o path_name")
     */
    JB_stdout_path_list,
    /**
     * @brief stderr Path List
     *
-    * Std error path streams (PN_Type). ("qsub/qalter -e path_name")
+    * Std error path streams (PN). ("qsub/qalter -e path_name")
     */
    JB_stderr_path_list,
    /**
     * @brief stdin Path List
     *
-    * Std input path streams (PN_Type). ("qsub/qalter -i path_name")
+    * Std input path streams (PN). ("qsub/qalter -i path_name")
     */
    JB_stdin_path_list,
    /**
@@ -352,7 +352,7 @@ enum JB_Field {
    /**
     * @brief Mail list
     *
-    * Mail recipiants (MR_Type).
+    * Mail recipiants (MR).
     * (qsub/qalter -M mail_list)
     */
    JB_mail_list,
@@ -366,7 +366,7 @@ enum JB_Field {
    /**
     * @brief Requested Slot Range for Parallel Environment
     *
-    * PE slot range (RN_Type). Qmaster will ensure that it is ascending and normalized
+    * PE slot range (RN). Qmaster will ensure that it is ascending and normalized
     * (qsub/qalter -pe pe-name slot_range)
     */
    JB_pe_range,
@@ -387,20 +387,20 @@ enum JB_Field {
     * @brief Array Job Structure
     *
     * Elements describe task id range structure during the
-    * submission time of a (array) job (RN_Type).
+    * submission time of a (array) job (RN).
     * qsub -t tid_range
     */
    JB_ja_structure,
    /**
     * @brief Array Task IDs without Hold
     *
-    * Just submitted array task without hold state (RN_Type).
+    * Just submitted array task without hold state (RN).
     */
    JB_ja_n_h_ids,
    /**
     * @brief Array Task IDs with User Hold
     *
-    * Just submitted and user hold applied (RN_Type).
+    * Just submitted and user hold applied (RN).
     * qsub -h -t tid_range
     * qalter -h u/U jid.tid1-tid2:step
     */
@@ -408,21 +408,21 @@ enum JB_Field {
    /**
     * @brief Array Task IDs with System Hold
     *
-    * Just submitted and system hold applied (RN_Type).
+    * Just submitted and system hold applied (RN).
     * qalter -h s/S jid.tid1-tid2:step
     */
    JB_ja_s_h_ids,
    /**
     * @brief Array Task IDs with Operator Hold
     *
-    * Just submitted and operator hold applied (RN_Type).
+    * Just submitted and operator hold applied (RN).
     * qalter -h o/O jid.tid1-tid2:step
     */
    JB_ja_o_h_ids,
    /**
     * @brief Array Task IDs with Array Hold
     *
-    * Just submitted and array hold applied (RN_Type).
+    * Just submitted and array hold applied (RN).
     * qalter -hold_jid_ad wc_job_list
     */
    JB_ja_a_h_ids,
@@ -430,14 +430,14 @@ enum JB_Field {
     * @brief Template for new Tasks
     *
     * Template for new tasks. In SGEEE systems the schedd will
-    * store initial tickets in this element. (JAT_Type)
+    * store initial tickets in this element. (JAT)
     */
    JB_ja_template,
    /**
     * @brief List of Array Tasks
     *
     * List of array tasks (in case of array jobs) or one task
-    * (in case of a job) (JAT_Type).
+    * (in case of a job) (JAT).
     */
    JB_ja_tasks,
    /**
@@ -468,7 +468,7 @@ enum JB_Field {
     * @brief Job Identifier List for qalter
     *
     * condition for qalter? @todo Then it should better be passed
-    * via condition. (ID_Type)
+    * via condition. (ID)
     */
    JB_job_identifier_list,
    /**
@@ -499,7 +499,7 @@ enum JB_Field {
    /**
     * @brief Path Aliases List
     *
-    * Path aliases list (PA_Type).
+    * Path aliases list (PA).
     */
    JB_path_aliases,
    /**
@@ -624,7 +624,7 @@ enum JB_Field {
    /**
     * @brief Job Context Change
     *
-    * Instructions of the -ac, -sc and -dc switches (CX_Type), in the order given.
+    * Instructions of the -ac, -sc and -dc switches (CX), in the order given.
     * Sent by submit and qalter, applied to JB_context by the qmaster and not spooled.
     */
    JB_context_change,
@@ -649,27 +649,27 @@ namespace ocs::tom {
    /**
     * @brief job type
     *
-    * JB_Type elements make only sense in conjunction with JAT_Type
+    * JB elements make only sense in conjunction with JAT
     * elements.  One element of each type is necessary to hold all
-    * data for the execution of one job. One JB_Type element an
-    * x JAT_Type elements are needed to execute an array job with
+    * data for the execution of one job. One JB element an
+    * x JAT elements are needed to execute an array job with
     * x tasks.
     *  
     *          -----------       1:x        ------------
-    *          | JB_Type |<---------------->| JAT_Type |
+    *          | JB |<---------------->| JAT |
     *          -----------                  ------------
     *  
     * The relation between these two elements is defined in the
-    * 'JB_ja_tasks' sublist of a 'JB_Type' element. This list will
-    * contain all belonging JAT_Type elements.
+    * 'JB_ja_tasks' sublist of a 'JB' element. This list will
+    * contain all belonging JAT elements.
     *  
-    * The 'JAT_Type' CULL element containes all attributes in which
+    * The 'JAT' CULL element containes all attributes in which
     * one array task may differ from another array task of the
-    * same array job. The 'JB_Type' element defines all attributes
+    * same array job. The 'JB' element defines all attributes
     * wich are equivalent for all tasks of an array job.
     * A job and an array job with one task are equivalent
-    * concerning their data structures. Both consist of one 'JB_Type'
-    * and one 'JAT_Type' element
+    * concerning their data structures. Both consist of one 'JB'
+    * and one 'JAT' element
     */
    struct JB {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -968,6 +968,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JB for the list library: a synonym for ocs::tom::JB::descriptor */
-inline constexpr const lDescr *JB_Type = ocs::tom::JB::descriptor.e;

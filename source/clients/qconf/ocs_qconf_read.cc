@@ -121,7 +121,7 @@
  * @param label   what the refusal calls the target - the name or the directory
  * @param model   the caller's model; it owns the response the pairs live in
  * @param alpp    the answer list of the operation
- * @return the name/text pairs (`VA_Type`, an empty handle for an export that matched
+ * @return the name/text pairs (`VA`, an empty handle for an export that matched
  *         nothing), or no value when the export must not go ahead
  */
 static std::optional<ocs::tom::ConstList<ocs::tom::VA>>

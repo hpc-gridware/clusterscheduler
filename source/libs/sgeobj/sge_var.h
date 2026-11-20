@@ -36,7 +36,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Declarations for variable lists (`VA_Type`)
+ * @brief Declarations for variable lists (`VA`)
  *
  * @see sge_var.cc
  */

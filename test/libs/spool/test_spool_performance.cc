@@ -91,7 +91,7 @@ static bool generate_jobs(int num) {
    for (i = 0; i < num; i++) {
       lListElem *job;
 
-      job = lCreateElem(JB_Type); num_total++;
+      job = lCreateElem(ocs::tom::JB::descriptor.e); num_total++;
       ocs::tom::set<JB_job_number>(job, i + 1);
       ocs::tom::set<JB_job_name>(job, random_string(15));
       ocs::tom::set<JB_project>(job, random_string(20));
@@ -319,23 +319,6 @@ int main(int argc, char *argv[]) {
    write_csv("generating jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "generating jobs:\n");
    prof_reset(SGE_PROF_CUSTOM1, nullptr);
-/*
-   PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
-   copy = copy_jobs();
-   PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
-   lFreeList(&copy);
-   write_csv("copy jobs", SGE_PROF_CUSTOM1);
-   prof_output_info(SGE_PROF_CUSTOM1, true, "copy jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, nullptr);
-
-   PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
-   copy = select_jobs(what_job);
-   PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
-   lFreeList(&copy);
-   write_csv("select jobs", SGE_PROF_CUSTOM1);
-   prof_output_info(SGE_PROF_CUSTOM1, true, "select jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, SGE_PROF_CUSTOM1, nullptr);
-*/
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    spool_data();
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);

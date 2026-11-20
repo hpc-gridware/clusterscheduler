@@ -103,7 +103,7 @@ namespace ocs::tom {
    /**
     * @brief PE Task Request
     *
-    * Objects of PETR_Type are used to request the start of a task in a
+    * Objects of PETR are used to request the start of a task in a
     * tightly integrated parallel job.
     */
    struct PETR {
@@ -146,6 +146,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PETR for the list library: a synonym for ocs::tom::PETR::descriptor */
-inline constexpr const lDescr *PETR_Type = ocs::tom::PETR::descriptor.e;

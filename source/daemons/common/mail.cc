@@ -78,7 +78,7 @@ static void sge_send_mail(uint32_t progid,
 /** @brief Send one message to every recipient in a list
  *
  * @param progid which daemon is sending
- * @param user_list mail recipients list (MR_Type), may be an empty handle
+ * @param user_list mail recipients list (MR), may be an empty handle
  * @param subj subject line
  * @param buf message contents
  * @param mail_type what the mail is about, used in the log

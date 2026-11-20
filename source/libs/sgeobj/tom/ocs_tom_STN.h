@@ -318,6 +318,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of STN for the list library: a synonym for ocs::tom::STN::descriptor */
-inline constexpr const lDescr *STN_Type = ocs::tom::STN::descriptor.e;

@@ -85,7 +85,7 @@ typedef enum {
  * @param evc the event client the event arrived on
  * @param type the object type the event is about
  * @param action what the event asks for
- * @param event the event element (ET_Type), read-only: the mirror still takes its objects over afterwards
+ * @param event the event element (ET), read-only: the mirror still takes its objects over afterwards
  * @param clientdata whatever was passed when the callback was installed
  * @return whether the mirror should apply the event
  */
@@ -162,7 +162,7 @@ ocs_mirror_update_master_list_by_type(sge_object_type type, sge_event_action act
  * objects, so a list of another type is a programming error and throws.
  *
  * @tparam T the object type of the event
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @return the objects, an empty handle if the event carries none; the event still owns them
  * @throw ocs::tom::FieldException with reason WrongType if the event carries objects of another type
  */
@@ -179,7 +179,7 @@ ocs_mirror_event_objects(const ocs::tom::Element<ocs::tom::ET> event) {
  * the list taken out is checked like there.
  *
  * @tparam T the object type of the event
- * @param event the event (ET_Type)
+ * @param event the event (ET)
  * @param objects the list to put in, taken over; may be empty
  * @return the list the event held, owned by the caller; empty if it held none
  * @throw ocs::tom::FieldException with reason WrongType if the event held objects of another type

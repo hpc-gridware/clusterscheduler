@@ -88,6 +88,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RTIC for the list library: a synonym for ocs::tom::RTIC::descriptor */
-inline constexpr const lDescr *RTIC_Type = ocs::tom::RTIC::descriptor.e;

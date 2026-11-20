@@ -67,7 +67,7 @@
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the event (ET_Type); its object is taken over into the master list
+ * @param event the event (ET); its object is taken over into the master list
  * @param clientdata client data
  *
  * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
@@ -86,12 +86,12 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
    const char *name = ocs::tom::get<ET_strkey>(event);
    // the master list slot stays untyped: the generic merge below may create the list through it
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   // a cluster queue of the master list (CQ_Type)
+   // a cluster queue of the master list (CQ)
    const auto cqueue = cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(*list), name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && cqueue) {
       /*
-       * modify events for CQ_Type objects; we may not update
+       * modify events for CQ objects; we may not update
        * - CQ_qinstances - it is maintained by QINSTANCE events
        */
       qinstance_list = cqueue.exchange<CQ_qinstances>(std::move(qinstance_list));
@@ -126,7 +126,7 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the event (ET_Type); its object is taken over into the master list
+ * @param event the event (ET); its object is taken over into the master list
  * @param clientdata client data
  *
  * @return SGE_EMA_OK if the update is successful, else SGE_EMA_FAILURE
@@ -144,7 +144,7 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
    const char *name = ocs::tom::get<ET_strkey>(event);
    const char *hostname = ocs::tom::get<ET_strkey2>(event);
 
-   // a cluster queue of the master list (CQ_Type)
+   // a cluster queue of the master list (CQ)
    const auto cqueue = cqueue_list_locate(
            ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), name);
 

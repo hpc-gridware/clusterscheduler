@@ -723,7 +723,7 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[]) {
       }
    }
 
-   /* initialize iterator; the strings were added as ST_Type elements above */
+   /* initialize iterator; the strings were added as ST elements above */
    vector->it.si.next_pos = ocs::tom::List<ocs::tom::ST>::from_typed(vector->it.si.strings).front();
 
    DRETURN(vector);
@@ -1043,7 +1043,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
 
-   /* initialize iterator; the copy holds the ST_Type strings of NSV_strings */
+   /* initialize iterator; the copy holds the ST strings of NSV_strings */
    iter->it.si.next_pos = ocs::tom::List<ocs::tom::ST>::from_typed(iter->it.si.strings).front();
 
    *values = iter;
@@ -2244,7 +2244,7 @@ static int drmaa_path2sge_path(const ocs::tom::ConstList<ocs::tom::VA> attrs, co
  * @param step increment for bulk jobs
  * @param diag diagnosis information
  *
- * @return the DRMAA error code and, on success, the Cluster Scheduler job (JB_Type); the job is an empty
+ * @return the DRMAA error code and, on success, the Cluster Scheduler job (JB); the job is an empty
  *         handle on an error
  *
  * @note MT-NOTE: drmaa_job2sge_job() is MT safe except on FreeBSD, with
@@ -2276,7 +2276,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
    const char *unqualified_hostname = component_get_unqualified_hostname();
    const char *qualified_hostname = component_get_qualified_hostname();
 
-   /* make JB_Type job description out of DRMAA job template */
+   /* make JB job description out of DRMAA job template */
    auto jt = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    /* init range of jobids and put all tasks in 'active' state */

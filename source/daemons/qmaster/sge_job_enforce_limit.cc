@@ -477,8 +477,8 @@ sge_host_remove_enforce_limit_trigger(const char *hostname) {
  * Counterpart for this function is
  * sge_job_remove_enforce_limit_trigger()
  *
- * @param job job structure (JB_Type), may be an empty handle
- * @param ja_task job array task structure (JAT_Type), may be an empty handle; the job MUST be running!
+ * @param job job structure (JB), may be an empty handle
+ * @param ja_task job array task structure (JAT), may be an empty handle; the job MUST be running!
  *
  * @note MT-NOTE: sge_job_add_enforce_limit_trigger() is MT safe
  *

@@ -337,7 +337,7 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstEle
  * Newly added resource quota sets need to be debited for all running jos
  * This is done by this function
  *
- * @param rqs resource quota set (RQS_Type)
+ * @param rqs resource quota set (RQS)
  * @param answer_list answer list
  *
  * @return always true
@@ -396,7 +396,7 @@ rqs_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::RQS> rqs,
 
 /**
  * @brief The filter of a rule for a filter field known at run time
- * @param rule the rule (RQR_Type)
+ * @param rule the rule (RQR)
  * @param filter_nm the filter field, one of RQR_filter_users, _projects, _pes, _queues and _hosts
  * @return the filter, or an empty handle if the rule has none or the field is no filter field
  */
@@ -467,7 +467,7 @@ ocs_diff_list_str(ocs::tom::ListPtr<T> &lp1, ocs::tom::ListPtr<T> &lp2) {
  * @tparam T the object type of the generated list, US or PR
  * @tparam F the name field of @p T
  * @tparam FILTER the filter field, RQR_filter_users or RQR_filter_projects
- * @param filter_scope filter scope (ST_Type)
+ * @param filter_scope filter scope (ST)
  * @param scope_ref generated resolved list
  * @param master_list master list, needed for resolving
  *
@@ -542,7 +542,7 @@ filter_diff_usersets_or_projects_scope(const ocs::tom::ConstList<ocs::tom::ST> f
  * @tparam T the object type of the generated list, US or PR
  * @tparam F the name field of @p T
  * @tparam FILTER the filter field, RQR_filter_users or RQR_filter_projects
- * @param rule resource quota rule (RQR_Type)
+ * @param rule resource quota rule (RQR)
  * @param scope_l generated resolved list
  * @param master_list master list, needed for resolving
  *
@@ -582,8 +582,8 @@ filter_diff_usersets_or_projects(const ocs::tom::ConstElement<ocs::tom::RQR> rul
  * @tparam T the object type of the generated lists, US or PR
  * @tparam F the name field of @p T
  * @tparam FILTER the filter field, RQR_filter_users or RQR_filter_projects
- * @param new_rqs new resource quota set (RQS_Type), or an empty handle
- * @param old_rqs old resource quota set (RQS_Type), or an empty handle
+ * @param new_rqs new resource quota set (RQS), or an empty handle
+ * @param old_rqs old resource quota set (RQS), or an empty handle
  * @param new_list list of referenced objects in new_rqs, or nullptr
  * @param old_list list of referenced objects in old_rqs, or nullptr
  * @param master_list the master list of @p T
@@ -630,10 +630,10 @@ ocs_rqs_diff(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, const ocs::tom
  * After locating the usersets a diff beween the usersets found in old_list and new_list
  * is done and the usersets referenced in both are removed.
  *
- * @param new_rqs new resource quota set (RQS_Type)
- * @param old_rqs old resource quota set (RQS_Type)
- * @param new_list list of referenced usersets in new_rqs (US_Type), or nullptr
- * @param old_list list of referenced usersets in old_rqs (US_Type), or nullptr
+ * @param new_rqs new resource quota set (RQS)
+ * @param old_rqs old resource quota set (RQS)
+ * @param new_list list of referenced usersets in new_rqs (US), or nullptr
+ * @param old_list list of referenced usersets in old_rqs (US), or nullptr
  * @param master_userset_list the master userset list, for resolving patterns
  *
  * @return true if some or none userset is referenced false if all userset are referenced in new_list
@@ -661,10 +661,10 @@ rqs_diff_usersets(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
  * After locating the projects a diff beween the projects found in old_list and new_list
  * is done and the projects referenced in both are removed.
  *
- * @param new_rqs new resource quota set (RQS_Type)
- * @param old_rqs old resource quota set (RQS_Type)
- * @param new_list list of referenced projects in new_rqs (PR_Type), or nullptr
- * @param old_list list of referenced projects in old_rqs (PR_Type), or nullptr
+ * @param new_rqs new resource quota set (RQS)
+ * @param old_rqs old resource quota set (RQS)
+ * @param new_list list of referenced projects in new_rqs (PR), or nullptr
+ * @param old_list list of referenced projects in old_rqs (PR), or nullptr
  * @param master_project_list the master project list, for resolving patterns
  *
  * @return true if some or none project is referenced false if all projects are referenced in new_list
@@ -692,8 +692,8 @@ rqs_diff_projects(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
  * new and the old resource quota set and updates the "consider_with_categories"
  * flag for the relevant objects.
  *
- * @param new_rqs new resource quota set (RQS_Type)
- * @param old_rqs old resource quota set (RQS_Type)
+ * @param new_rqs new resource quota set (RQS)
+ * @param old_rqs old resource quota set (RQS)
  * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: rqs_update_categories() is not MT safe
@@ -734,7 +734,7 @@ rqs_update_categories(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
  * consideres if usersets are searched with this function. If the name has no preleading @
  * this function searches for users instead of usersets.
  *
- * @param rqs resource quota set to search (RQS_Type)
+ * @param rqs resource quota set to search (RQS)
  * @param nm the filter field of the rules to search, e.g. RQR_filter_users
  * @param name name so search
  *

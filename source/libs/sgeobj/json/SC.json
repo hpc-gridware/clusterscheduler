@@ -453,7 +453,7 @@
          "name": "halflife_decay_list",
          "summary": "Halflife Decay List",
          "description": [
-            "A list of halflife decay values (UA_Type)."
+            "A list of halflife decay values (UA)."
          ],
          "type": "lStringT",
          "flags": [

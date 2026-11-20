@@ -29,7 +29,7 @@
          "name": "Stylesheet",
          "summary": "Stylesheets",
          "description": [
-            "Stylesheet processing instructions (`XMLS_Type`) emitted before the root element."
+            "Stylesheet processing instructions (`XMLS`) emitted before the root element."
          ],
          "type": "lListT",
          "subClassName": "XMLS",
@@ -40,7 +40,7 @@
          "name": "Attribute",
          "summary": "Root Attributes",
          "description": [
-            "Attributes (`XMLA_Type`) placed on the root element, such as the schema location."
+            "Attributes (`XMLA`) placed on the root element, such as the schema location."
          ],
          "type": "lListT",
          "subClassName": "XMLA",
@@ -51,7 +51,7 @@
          "name": "Element",
          "summary": "Content",
          "description": [
-            "The document body (`XMLE_Type`)."
+            "The document body (`XMLE`)."
          ],
          "type": "lListT",
          "subClassName": "ANY",

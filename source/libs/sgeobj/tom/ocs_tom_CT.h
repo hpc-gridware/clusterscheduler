@@ -138,6 +138,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CT for the list library: a synonym for ocs::tom::CT::descriptor */
-inline constexpr const lDescr *CT_Type = ocs::tom::CT::descriptor.e;

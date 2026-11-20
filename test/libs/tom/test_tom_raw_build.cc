@@ -61,9 +61,9 @@ namespace {
     * @return the owner of the list, hashed
     */
    ocs::tom::RawListPtr make_test_list(const int n) {
-      auto list = ocs::tom::create_raw_list(TEST_Type, ocs::tom::Hashing::On, "test");
+      auto list = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e, ocs::tom::Hashing::On, "test");
       for (int i = 0; i < n; i++) {
-         auto ep = ocs::tom::create_raw_elem(TEST_Type);
+         auto ep = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
          ocs::tom::set(ep.get().raw(), TEST_uint32, static_cast<std::uint32_t>(i));
          ocs::tom::set(ep.get().raw(), TEST_uint64, static_cast<std::uint64_t>(i % 3));
          ocs::tom::set(ep.get().raw(), TEST_int, static_cast<std::int32_t>(i - 5));
@@ -205,12 +205,12 @@ test_where_compare() {
                                               {"<=", Op::LowerEqual}, {">", Op::Greater}, {">=", Op::GreaterEqual}};
    for (const auto &[text, op] : ops) {
       const std::string fmt = std::string("%T(%I ") + text + " %s)";
-      const ocs::tom::RawWherePtr old_string(lWhere(fmt.c_str(), TEST_Type, TEST_string, "s2"));
+      const ocs::tom::RawWherePtr old_string(lWhere(fmt.c_str(), ocs::tom::TEST::descriptor.e, TEST_string, "s2"));
       same = same_where(fmt.c_str(), lp, old_string.get(),
-                        ocs::tom::where_compare(TEST_Type, TEST_string, op, "s2").get()) && same;
-      const ocs::tom::RawWherePtr old_host(lWhere(fmt.c_str(), TEST_Type, TEST_host, "h1"));
+                        ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_string, op, "s2").get()) && same;
+      const ocs::tom::RawWherePtr old_host(lWhere(fmt.c_str(), ocs::tom::TEST::descriptor.e, TEST_host, "h1"));
       same = same_where(fmt.c_str(), lp, old_host.get(),
-                        ocs::tom::where_compare(TEST_Type, TEST_host, op, "h1").get()) && same;
+                        ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_host, op, "h1").get()) && same;
    }
    CHECK(1, "where_compare() with a string on a string and a host field builds, for ==, !=, <, <=, >, >=, the "
             "condition lWhere(\"%T(%I <op> %s)\") builds",
@@ -218,52 +218,61 @@ test_where_compare() {
 
    bool numbers = true;
    {
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %u)", TEST_Type, TEST_uint32, 7U));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 7U));
       numbers = same_where("uint32 ==", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_uint32, Op::Equal, std::uint32_t{7}).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, Op::Equal,
+                                                   std::uint32_t{7}).get()) &&
                 numbers;
    }
    {
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 4U));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
       numbers = same_where("uint32 >", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_uint32, Op::Greater, std::uint32_t{4}).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, Op::Greater,
+                                                   std::uint32_t{4}).get()) &&
                 numbers;
    }
    {
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %lu)", TEST_Type, TEST_uint64, static_cast<lUlong64>(2)));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %lu)", ocs::tom::TEST::descriptor.e, TEST_uint64,
+                                             static_cast<lUlong64>(2)));
       numbers = same_where("uint64 ==", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_uint64, Op::Equal, std::uint64_t{2}).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint64, Op::Equal,
+                                                   std::uint64_t{2}).get()) &&
                 numbers;
    }
    {
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I < %d)", TEST_Type, TEST_int, -2));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I < %d)", ocs::tom::TEST::descriptor.e, TEST_int, -2));
       numbers = same_where("int32 <", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_int, Op::Lower, std::int32_t{-2}).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_int, Op::Lower,
+                                                   std::int32_t{-2}).get()) &&
                 numbers;
    }
    {
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I >= %o)", TEST_Type, TEST_long, static_cast<lLong>(3997)));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I >= %o)", ocs::tom::TEST::descriptor.e, TEST_long,
+                                             static_cast<lLong>(3997)));
       numbers = same_where("int64 >=", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_long, Op::GreaterEqual, std::int64_t{3997}).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_long, Op::GreaterEqual,
+                                                   std::int64_t{3997}).get()) &&
                 numbers;
    }
    {
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I <= %g)", TEST_Type, TEST_double, 2.0));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I <= %g)", ocs::tom::TEST::descriptor.e, TEST_double, 2.0));
       numbers = same_where("double <=", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_double, Op::LowerEqual, 2.0).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_double, Op::LowerEqual,
+                                                   2.0).get()) &&
                 numbers;
    }
    {
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %b)", TEST_Type, TEST_bool, true));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %b)", ocs::tom::TEST::descriptor.e, TEST_bool, true));
       numbers = same_where("bool ==", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_bool, Op::Equal, true).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_bool, Op::Equal, true).get()) &&
                 numbers;
    }
    {
       // no element matches: both give no list
-      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %u)", TEST_Type, TEST_uint32, 100U));
+      const ocs::tom::RawWherePtr old(lWhere("%T(%I == %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 100U));
       numbers = same_where("no match", lp, old.get(),
-                           ocs::tom::where_compare(TEST_Type, TEST_uint32, Op::Equal, std::uint32_t{100}).get()) &&
+                           ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, Op::Equal,
+                                                   std::uint32_t{100}).get()) &&
                 numbers;
    }
    CHECK(2, "where_compare() with a 32 and 64 bit unsigned, a 32 and 64 bit signed number, a double and a bool "
@@ -279,8 +288,8 @@ test_where_compare() {
 static void
 test_where_compare_errors() {
    using Op = ocs::tom::CompareOp;
-   const auto reduced_what = ocs::tom::what_of(TEST_Type, std::vector<int>{TEST_uint32});
-   const lDescr *reduced = ocs::tom::reduced_descr(TEST_Type, reduced_what.get());
+   const auto reduced_what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32});
+   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, reduced_what.get());
 
    struct Case {
       const char *label;
@@ -288,7 +297,7 @@ test_where_compare_errors() {
       int nm;
    };
    const Case cases[] = {{"null descriptor", nullptr, TEST_string},
-                         {"foreign field", TEST_Type, JB_owner},
+                         {"foreign field", ocs::tom::TEST::descriptor.e, JB_owner},
                          {"absent field", reduced, TEST_string}};
    bool refused = reduced != nullptr;
    for (const Case &c : cases) {
@@ -311,13 +320,14 @@ test_where_compare_errors() {
 
    bool wrong_type = false;
    try {
-      static_cast<void>(ocs::tom::where_compare(TEST_Type, TEST_string, Op::Equal, std::uint32_t{1}));
+      static_cast<void>(ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_string, Op::Equal,
+                                                std::uint32_t{1}));
    } catch (const ocs::tom::FieldException &e) {
       wrong_type = e.reason() == ocs::tom::FieldException::Reason::WrongType;
    }
    bool host_string = true;
    try {
-      host_string = ocs::tom::where_compare(TEST_Type, TEST_host, Op::Equal, "h0") != nullptr;
+      host_string = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_host, Op::Equal, "h0") != nullptr;
    } catch (const ocs::tom::FieldException &) {
       host_string = false;
    }
@@ -346,14 +356,14 @@ test_what() {
    for (const auto &fields : field_sets) {
       std::vector<int> intv = fields;
       intv.push_back(NoName);
-      const ocs::tom::RawWhatPtr old(lIntVector2What(TEST_Type, intv.data()));
-      const auto built = ocs::tom::what_of(TEST_Type, fields);
+      const ocs::tom::RawWhatPtr old(lIntVector2What(ocs::tom::TEST::descriptor.e, intv.data()));
+      const auto built = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, fields);
       const std::string label = "what_of with " + std::to_string(fields.size()) + " fields";
       same = same_what(label.c_str(), lp, old.get(), built.get()) && same;
 
       const lDescr *old_reduced = nullptr;
-      lReduceDescr(&old_reduced, TEST_Type, old.get());
-      const lDescr *new_reduced = ocs::tom::reduced_descr(TEST_Type, built.get());
+      lReduceDescr(&old_reduced, ocs::tom::TEST::descriptor.e, old.get());
+      const lDescr *new_reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, built.get());
       if (old_reduced == nullptr || new_reduced == nullptr || !ocs::tom::same_layout(old_reduced, new_reduced)) {
          std::printf("%s: the reduced descriptors differ\n", label.c_str());
          reduced_same = false;
@@ -368,7 +378,7 @@ test_what() {
          reduced_same);
 
    const ocs::tom::RawWhatPtr old_all(lWhatAll());
-   const ocs::tom::RawWhatPtr old_format(lWhat("%T(ALL)", TEST_Type));
+   const ocs::tom::RawWhatPtr old_format(lWhat("%T(ALL)", ocs::tom::TEST::descriptor.e));
    const auto all = ocs::tom::what_all();
    CHECK(7, "what_all() selects every field, as lWhatAll() and lWhat(\"%T(ALL)\") do",
          same_what("lWhatAll", lp, old_all.get(), all.get()) &&
@@ -381,16 +391,16 @@ test_what() {
  */
 static void
 test_what_errors() {
-   const auto reduced_what = ocs::tom::what_of(TEST_Type, std::vector<int>{TEST_uint32});
-   const lDescr *reduced = ocs::tom::reduced_descr(TEST_Type, reduced_what.get());
+   const auto reduced_what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32});
+   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, reduced_what.get());
 
    struct Case {
       const char *label;
       const lDescr *descr;
       std::vector<int> fields;
    };
-   const Case cases[] = {{"no field", TEST_Type, {}},
-                         {"foreign field", TEST_Type, {TEST_uint32, JB_job_number}},
+   const Case cases[] = {{"no field", ocs::tom::TEST::descriptor.e, {}},
+                         {"foreign field", ocs::tom::TEST::descriptor.e, {TEST_uint32, JB_job_number}},
                          {"null descriptor", nullptr, {TEST_uint32}},
                          {"absent field", reduced, {TEST_string}}};
    bool refused = reduced != nullptr;

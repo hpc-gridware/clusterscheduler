@@ -39,7 +39,7 @@
 #include "basis_types.h"
 
 /**
- * Builds a CONF_Type element holding the given entry names in the given order.
+ * Builds a CONF element holding the given entry names in the given order.
  */
 static lListElem *
 make_conf(const char *names[]) {

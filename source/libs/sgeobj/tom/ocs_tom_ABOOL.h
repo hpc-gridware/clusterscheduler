@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ABOOL for the list library: a synonym for ocs::tom::ABOOL::descriptor */
-inline constexpr const lDescr *ABOOL_Type = ocs::tom::ABOOL::descriptor.e;

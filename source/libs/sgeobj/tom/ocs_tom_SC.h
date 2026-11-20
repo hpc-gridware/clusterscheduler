@@ -209,7 +209,7 @@ enum SC_Field {
    /**
     * @brief Halflife Decay List
     *
-    * A list of halflife decay values (UA_Type).
+    * A list of halflife decay values (UA).
     */
    SC_halflife_decay_list,
    /**
@@ -340,6 +340,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SC for the list library: a synonym for ocs::tom::SC::descriptor */
-inline constexpr const lDescr *SC_Type = ocs::tom::SC::descriptor.e;

@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PACK for the list library: a synonym for ocs::tom::PACK::descriptor */
-inline constexpr const lDescr *PACK_Type = ocs::tom::PACK::descriptor.e;

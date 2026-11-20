@@ -41,7 +41,7 @@ enum QRL_Field {
    /**
     * @brief Queue Instance
     *
-    * Reference to the queue instance (`QU_Type`). Not owned by this element.
+    * Reference to the queue instance (`QU`). Not owned by this element.
     */
    QRL_queue = QRL_LOWERBOUND,
 };
@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of QRL for the list library: a synonym for ocs::tom::QRL::descriptor */
-inline constexpr const lDescr *QRL_Type = ocs::tom::QRL::descriptor.e;

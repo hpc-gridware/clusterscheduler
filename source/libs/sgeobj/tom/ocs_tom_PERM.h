@@ -108,6 +108,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PERM for the list library: a synonym for ocs::tom::PERM::descriptor */
-inline constexpr const lDescr *PERM_Type = ocs::tom::PERM::descriptor.e;

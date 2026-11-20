@@ -33,7 +33,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            "The project list (list of PR_Type)"
+            "The project list (list of PR)"
          ],
          "type": "lListT",
          "subClassName": "PR",

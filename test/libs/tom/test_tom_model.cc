@@ -172,7 +172,7 @@ test_type_names() {
    CHECK(8, "type_name() of the full descriptor of every type is the type's name", mismatches == 0);
 
    // a reduced descriptor without the first field of the type: the first entry is kept, marked absent
-   const lDescr *reduced = ocs_cull_descr_reduce(JB_Type, {JB_job_name, JB_owner});
+   const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_name, JB_owner});
    const char *reduced_name = ocs::tom::type_name(reduced);
    CHECK(9, "type_name() of a reduced descriptor without the type's first field is the type's name",
          reduced != nullptr && reduced_name != nullptr && std::strcmp(reduced_name, "JB") == 0);
@@ -181,7 +181,7 @@ test_type_names() {
    const lDescr empty[] = {{NoName, lEndT, 0}};
    CHECK(10, "type_name() of nullptr, of an empty descriptor and of the tail of a descriptor is nullptr",
          ocs::tom::type_name(nullptr) == nullptr && ocs::tom::type_name(empty) == nullptr &&
-         ocs::tom::type_name(JB_Type + 1) == nullptr);
+         ocs::tom::type_name(ocs::tom::JB::descriptor.e + 1) == nullptr);
 }
 
 /**
@@ -245,14 +245,14 @@ test_without_model() {
    const bool name = fallback_name(JB_job_number) == ocs::tom::field_name(JB_job_number);
    const bool rest = ocs::tom::find_field("JB_job_number") == NoName &&
                      ocs::tom::field_info(JB_job_number) == nullptr && ocs::tom::sub_type(JB_ja_tasks) == nullptr &&
-                     ocs::tom::type_name(JB_Type) == nullptr;
+                     ocs::tom::type_name(ocs::tom::JB::descriptor.e) == nullptr;
    const bool again = ocs::tom::install_model(ocs::tom::gcs_model());
    CHECK(18, "without a model: no model is reported and the name of a field is the fallback text", none && name);
    CHECK(19, "without a model: no field is found by name, no entry, no sub-type, no type name", rest);
    CHECK(20, "installed again: the lookups answer as before",
          again && ocs::tom::find_field("JB_job_number") == JB_job_number &&
          ocs::tom::sub_type(JB_ja_tasks) == ocs::tom::JAT::descriptor.e &&
-         std::strcmp(ocs::tom::type_name(JB_Type), "JB") == 0);
+         std::strcmp(ocs::tom::type_name(ocs::tom::JB::descriptor.e), "JB") == 0);
 }
 
 /**
@@ -264,7 +264,7 @@ test_inconsistent() {
    const ocs::tom::Model empty{};
    const ocs::tom::TypeTable twice[] = {ocs::tom::all_type_tables[0], ocs::tom::all_type_tables[0]};
    const ocs::tom::Model overlapping{twice, {}};
-   const ocs::tom::SubTypeEntry stray[] = {{beyond_all_fields(), JB_Type}};
+   const ocs::tom::SubTypeEntry stray[] = {{beyond_all_fields(), ocs::tom::JB::descriptor.e}};
    const ocs::tom::Model stray_sub{ocs::tom::gcs_model().types, stray};
    CHECK(21, "a model without types, with a type twice or with a sub-type of no field is rejected",
          !ocs::tom::install_model(empty) && !ocs::tom::install_model(overlapping) &&
@@ -286,8 +286,9 @@ test_other_thread() {
    bool static_found = false;
    bool answers = false;
    std::thread other([&static_found, &answers] {
-      static_found = ocs_cull_descr_static_for(JB_job_number) == JB_Type && ocs_cull_descr_is_static(JB_Type);
-      const char *type = ocs::tom::type_name(JB_Type);
+      static_found = ocs_cull_descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
+                     ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e);
+      const char *type = ocs::tom::type_name(ocs::tom::JB::descriptor.e);
       answers = ocs::tom::has_model() && std::strcmp(ocs::tom::field_name(JB_job_number), "JB_job_number") == 0 &&
                 ocs::tom::find_field("JB_job_number") == JB_job_number &&
                 ocs::tom::sub_type(JB_ja_tasks) == ocs::tom::JAT::descriptor.e && type != nullptr &&
@@ -468,28 +469,31 @@ test_static_descriptors() {
    const ocs::tom::TypeTable *first = ocs::tom::type_table(JB_job_number);
    const ocs::tom::TypeTable *later = ocs::tom::type_table(JB_owner);
    CHECK(39, "type_table() of a first and a later field is the type's table, of an unknown field nullptr",
-         first != nullptr && first == later && first->descr == JB_Type && std::strcmp(first->name, "JB") == 0 &&
+         first != nullptr && first == later && first->descr == ocs::tom::JB::descriptor.e &&
+         std::strcmp(first->name, "JB") == 0 &&
          ocs::tom::type_table(beyond) == nullptr && ocs::tom::type_table(NoName) == nullptr);
 
    int pos = -1;
    const lDescr *containing = ocs_cull_descr_static_containing(JB_owner, &pos);
    int unknown_pos = -1;
-   CHECK(40, "the static block lookups give JB_Type and the field's position, nothing for a later or unknown field",
-         ocs_cull_descr_static_for(JB_job_number) == JB_Type && ocs_cull_descr_static_for(JB_owner) == nullptr &&
-         ocs_cull_descr_static_for(beyond) == nullptr && containing == JB_Type &&
+   CHECK(40, "the static block lookups give JB and the field's position, nothing for a later or unknown field",
+         ocs_cull_descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
+         ocs_cull_descr_static_for(JB_owner) == nullptr &&
+         ocs_cull_descr_static_for(beyond) == nullptr && containing == ocs::tom::JB::descriptor.e &&
          pos == JB_owner - JB_job_number && ocs_cull_descr_static_containing(beyond, &unknown_pos) == nullptr &&
-         unknown_pos == -1 && ocs_cull_descr_is_static(JB_Type));
+         unknown_pos == -1 && ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e));
 
    ocs::tom::uninstall_model();
    int none_pos = -1;
    const bool none = ocs::tom::type_table(JB_job_number) == nullptr &&
                      ocs_cull_descr_static_for(JB_job_number) == nullptr &&
                      ocs_cull_descr_static_containing(JB_owner, &none_pos) == nullptr && none_pos == -1 &&
-                     !ocs_cull_descr_is_static(JB_Type);
+                     !ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e);
    const bool again = ocs::tom::install_model(ocs::tom::gcs_model());
    CHECK(41, "without a model no type and no static block is found", none);
-   CHECK(42, "installed again: JB_Type is the static block of the job type again",
-         again && ocs_cull_descr_static_for(JB_job_number) == JB_Type && ocs_cull_descr_is_static(JB_Type));
+   CHECK(42, "installed again: JB is the static block of the job type again",
+         again && ocs_cull_descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
+         ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e));
 }
 
 /**
@@ -562,7 +566,7 @@ int main(int argc, char *argv[]) {
        "the list library finds the type of a field and the static descriptor of a type through the model",
        {"ask type_table() for a first, a later and an unknown field", "ask the static block lookups of the list "
         "library for the same fields", "uninstall the model and ask again", "install the model again"},
-       "the job type's table and JB_Type with the field's position; nothing for an unknown field or without "
+       "the job type's table and JB with the field's position; nothing for an unknown field or without "
        "the model; the old answers after installing it again",
        {}, {39, 40, 41, 42}, test_static_descriptors},
    });

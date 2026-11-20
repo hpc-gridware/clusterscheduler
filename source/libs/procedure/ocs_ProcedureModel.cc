@@ -58,7 +58,7 @@ bool
 ocs::ProcedureModel::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ProcedureParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   // Fetch the SPP_Type list and pass it to qmaster; the bundle is replaced by the response, which is SPP_Type too
+   // Fetch the SPP list and pass it to qmaster; the bundle is replaced by the response, which is SPP too
    auto request_and_response = parameter.get_bundle();
 
    *answer_list = gdi::Client::sge_gdi(get_target(), get_command(), gdi::SubCommand::NONE, request_and_response);

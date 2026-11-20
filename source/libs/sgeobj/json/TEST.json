@@ -132,7 +132,7 @@
       },
       {
          "name": "obj_jb",
-         "summary": "object type attribute to store JB_Type an object",
+         "summary": "object type attribute to store JB an object",
          "description": [
             "This filed hold a object reference."
          ],

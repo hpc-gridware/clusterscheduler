@@ -87,6 +87,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of XMLS for the list library: a synonym for ocs::tom::XMLS::descriptor */
-inline constexpr const lDescr *XMLS_Type = ocs::tom::XMLS::descriptor.e;

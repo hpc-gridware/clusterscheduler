@@ -94,6 +94,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of ACK for the list library: a synonym for ocs::tom::ACK::descriptor */
-inline constexpr const lDescr *ACK_Type = ocs::tom::ACK::descriptor.e;

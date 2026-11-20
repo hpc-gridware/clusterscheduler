@@ -35,7 +35,7 @@
 /** @file
  * @brief The answer list: how errors, warnings and infos travel back to the caller
  *
- * An answer element (`AN_Type`) pairs a message with a status and a quality.
+ * An answer element (`AN`) pairs a message with a status and a quality.
  * Callees append to an answer list instead of returning an error code, so a
  * single call can report several problems and GDI can carry them from the
  * server to the client unchanged.
@@ -90,7 +90,7 @@ static bool answer_log(ocs::tom::ConstElement<ocs::tom::AN> answer, bool show_in
  *
  * Return true (1) if "answer" has the given "quality"
  *
- * @param answer AN_Type element
+ * @param answer AN element
  * @param quality Quality id
  *
  * @return true or false
@@ -118,7 +118,7 @@ bool answer_has_quality(const ocs::tom::ConstElement<ocs::tom::AN> answer, answe
  *    STATUS_ENOKEY
  *    STATUS_NOCONFIG
  *
- * @param answer AN_Type element
+ * @param answer AN element
  *
  * @return true or false
  *
@@ -158,7 +158,7 @@ bool answer_is_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
  * text will then be printed to stderr and the calling
  * process will be terminated with exit code 1.
  *
- * @param answer AN_Type element
+ * @param answer AN element
  *
  * @note This function may never return.
  *
@@ -179,7 +179,7 @@ void answer_exit_if_not_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> a
  *
  * Returns a string representation for the quality of the "answer"
  *
- * @param answer AN_Type list
+ * @param answer AN list
  *
  * @return String
  *
@@ -208,7 +208,7 @@ const char *answer_get_quality_text(const ocs::tom::ConstElement<ocs::tom::AN> a
  *
  * Return the error status of "answer".
  *
- * @param answer AN_Type element
+ * @param answer AN element
  *
  * @return error status
  *
@@ -229,7 +229,7 @@ uint32_t answer_get_status(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
  * Prints "prefix", the error text of "answer" and "suffix"
  * to "stream".
  *
- * @param answer AN_Type element
+ * @param answer AN element
  * @param stream Output stream
  * @param prefix text printed before the message
  * @param suffix text printed after the message
@@ -264,7 +264,7 @@ void answer_print_text(const ocs::tom::ConstElement<ocs::tom::AN> answer,
  *
  * Copy answer text into dstring without newline character.
  *
- * @param answer AN_Type element
+ * @param answer AN element
  * @param diag destination dstring
  *
  * @note MT-NOTE: answer_to_dstring() is MT safe
@@ -292,7 +292,7 @@ void answer_to_dstring(const ocs::tom::ConstElement<ocs::tom::AN> answer, dstrin
  * Copy answer list text into dstring with each element separated by a
  * newline character.
  *
- * @param alp AN_Type list
+ * @param alp AN list
  * @param diag destination dstring
  *
  * @note MT-NOTE: answer_list_to_dstring() is MT safe
@@ -333,7 +333,7 @@ void answer_list_to_dstring(const ocs::tom::ConstList<ocs::tom::AN> alp, dstring
  * If the list pointed to by "answer_list" is nullptr, a new list will be
  * created.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param status answer status
  * @param quality answer quality
  * @param fmt format string to create message (printf) ...                      - arguments used for formatting message
@@ -375,7 +375,7 @@ bool answer_list_add_sprintf(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint3
  * The function returns true (1) if the "answer_list" contains
  * at least one answer element with the given "quality".
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param quality quality value
  *
  * @return true or false
@@ -404,7 +404,7 @@ bool answer_list_has_quality(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  * The function removes all answer list elements with the given quality from
  * the list.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param quality quality value
  *
  * @note MT-NOTE: answer_list_remove_quality() is MT safe
@@ -433,7 +433,7 @@ void answer_list_remove_quality(const ocs::tom::List<ocs::tom::AN> answer_list, 
  * The function returns true if the "answer_list" contains at least
  * one answer element with the given status
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param status expected status
  *
  * @return true or false
@@ -462,7 +462,7 @@ bool answer_list_has_status(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
  * The function returns true (1) if the "answer_list" containes
  * at least one error answer element
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  *
  * @return true or false
  *
@@ -487,7 +487,7 @@ bool answer_list_has_error(const ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
  * printed to "stream". If an unrecoverable error is detected
  * the calling process will be terminated.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param stream output stream
  *
  * @note MT-NOTE: answer_list_on_error_print_or_exit() is MT safe
@@ -518,7 +518,7 @@ void answer_list_on_error_print_or_exit(const ocs::tom::ListPtr<ocs::tom::AN> *a
  *
  * "*answer_list" will be freed.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param critical_prefix prefix for critical messages, e.g. "qsub: "
  * @param err_prefix e.g. "qsub: "
  * @param warn_prefix e.g. MSG_WARNING
@@ -611,7 +611,7 @@ int answer_list_handle_request_answer_list(ocs::tom::ListPtr<ocs::tom::AN> *answ
  * If the list pointed to by "answer_list" is nullptr, a new list will be
  * created.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param text answer text
  * @param status answer status
  * @param quality answer quality
@@ -683,8 +683,8 @@ bool answer_list_add_elem(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom
  *
  * free *answer_list and replace it by *new_list.
  *
- * @param answer_list AN_Type
- * @param new_list AN_Type
+ * @param answer_list AN
+ * @param new_list AN
  *
  * @note MT-NOTE: answer_list_replace() is MT safe
  */
@@ -705,8 +705,8 @@ void answer_list_replace(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom:
  *
  * Append "new_list" after "answer_list". *new_list will be nullptr afterwards
  *
- * @param answer_list AN_Type list
- * @param new_list AN_Type list
+ * @param answer_list AN list
+ * @param new_list AN list
  */
 void answer_list_append_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::AN> *new_list) {
    DENTER(ANSWER_LAYER);
@@ -738,7 +738,7 @@ void answer_list_append_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::
  * "*answer_list" will only be freed and set to nullptr, if is_free_list is
  * true.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param is_free_list if true, frees the answer list
  * @param show_info log also info messages
  * @return true when the list contained at least one error
@@ -768,7 +768,7 @@ bool answer_list_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool is_free_
  * Prints the message contained in "answer".
  * The CRITICAL, ERROR, WARNING and INFO macros will be used for output.
  *
- * @param answer AN_Type element
+ * @param answer AN element
  * @param show_info log also info messages
  *
  * @return true if answer is an error, false otherwise and if answer is an empty handle
@@ -822,7 +822,7 @@ static bool answer_log(const ocs::tom::ConstElement<ocs::tom::AN> answer, const 
  *
  * "*answer_list" will be freed and set to nullptr.
  *
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @return true when the list contained at least one error
  *
  * @note MT-NOTE: answer_list_output() is MT safe
@@ -837,7 +837,7 @@ bool answer_list_output(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
  *
  * Exits first if any element reports an unrecoverable condition.
  *
- * @param alp AN_Type list
+ * @param alp AN list
  * @return 1 when any element carried a status other than `STATUS_OK`, else 0
  */
 int show_answer(const ocs::tom::ConstList<ocs::tom::AN> alp) {
@@ -868,7 +868,7 @@ int show_answer(const ocs::tom::ConstList<ocs::tom::AN> alp) {
  *
  * Exits first if any element reports an unrecoverable condition.
  *
- * @param alp AN_Type list
+ * @param alp AN list
  * @return 1 when any element carried a status other than `STATUS_OK`, else 0
  */
 int show_answer_list(const ocs::tom::ConstList<ocs::tom::AN> alp) {

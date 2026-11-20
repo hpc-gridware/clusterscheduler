@@ -108,7 +108,7 @@ ocs::ShareTree::foreach_call_func(const ocs::tom::Element<ocs::tom::STN> node, c
  * The signature is the one of #sge_node_func_t, so the node stays a raw
  * pointer.
  *
- * @param node_raw The node to be zeroed out (STN_Type).
+ * @param node_raw The node to be zeroed out (STN).
  * @param ptr Unused pointer argument.
  * @return Always returns 0.
  */
@@ -130,7 +130,7 @@ ocs::ShareTree::zero_node_fields(lListElem *node_raw, [[maybe_unused]] void *ptr
  * The attributes the node does not have yet are added.
  *
  * @param node the node, not empty
- * @param usage_list the usage to add (UA_Type), may be an empty handle
+ * @param usage_list the usage to add (UA), may be an empty handle
  * @param skip_default_attrs whether cpu, mem and io are left out
  */
 static void
@@ -164,9 +164,9 @@ ocs_sharetree_node_add_usage(const ocs::tom::Element<ocs::tom::STN> node,
  * usage values.
  *
  * @param node The node to calculate usage for, not empty.
- * @param user_list The list of users (UU_Type), may be an empty handle.
- * @param project_list The list of projects (PR_Type), may be an empty handle.
- * @param decay_list The list of decay factors (UA_Type), may be an empty handle.
+ * @param user_list The list of users (UU), may be an empty handle.
+ * @param project_list The list of projects (PR), may be an empty handle.
+ * @param decay_list The list of decay factors (UA), may be an empty handle.
  * @param now The current time.
  * @param project_name The name of the project to filter by (optional).
  * @param seqno The sequence number for usage updates.
@@ -325,10 +325,10 @@ ocs::ShareTree::calc_node_proportion(const ocs::tom::Element<ocs::tom::STN> node
  * calculates the total usage (STN_combined_usage) and then sets the
  * proportions (STN_actual_proportion) for each node in the share tree.
  *
- * @param share_tree The share tree to calculate proportions for (STN_Type), may be an empty handle.
- * @param user_list The list of users to consider (UU_Type).
- * @param project_list The list of projects to consider (PR_Type).
- * @param decay_list The list of decay values to apply (UA_Type), may be an empty handle.
+ * @param share_tree The share tree to calculate proportions for (STN), may be an empty handle.
+ * @param user_list The list of users to consider (UU).
+ * @param project_list The list of projects to consider (PR).
+ * @param decay_list The list of decay values to apply (UA), may be an empty handle.
  * @param curr_time The current time for decay calculations.
  */
 void
@@ -359,7 +359,7 @@ ocs::ShareTree::calc_proportions(const ocs::tom::List<ocs::tom::STN> share_tree,
  * list.
  *
  * @param node The node to set the project flag for, may be an empty handle.
- * @param project_list The list of projects to check against (PR_Type), may be an empty handle.
+ * @param project_list The list of projects to check against (PR), may be an empty handle.
  */
 void
 ocs::ShareTree::set_node_project_flag(const ocs::tom::Element<ocs::tom::STN> node,
@@ -415,9 +415,9 @@ ocs::ShareTree::add_auto_user(const ocs::tom::Element<ocs::tom::STN> node, const
  * for each user if a default node exists in the share tree.
  *
  * @param node The root of the share tree to search.
- * @param user_list The list of users to add (UU_Type).
- * @param project_list The list of projects to check against (PR_Type).
- * @param acl_list The list of user sets to check against (US_Type).
+ * @param user_list The list of users to add (UU).
+ * @param project_list The list of projects to check against (PR).
+ * @param acl_list The list of user sets to check against (US).
  */
 void
 ocs::ShareTree::add_all_auto_users(const ocs::tom::Element<ocs::tom::STN> node,

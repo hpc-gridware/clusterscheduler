@@ -399,7 +399,7 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
-   // the rule (SPR_Type) of the context the framework passes in; no check, the signature is the table's
+   // the rule (SPR) of the context the framework passes in; no check, the signature is the table's
    const auto spool_rule = ocs::tom::ConstElement<ocs::tom::SPR>::from_typed(rule);
 
 #pragma GCC diagnostic push

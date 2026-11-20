@@ -96,12 +96,6 @@ ensure_valid_what_and_where(sge_where_what_t *where_what);
 void
 free_what_and_where(sge_where_what_t *where_what);
 
-#if 0
-sge_callback_result
-sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
-                                 sge_event_action action, lListElem *event, void *clientdata);
-#endif
-
 /** @brief React to a scheduler configuration change, before the mirror applies it
  *
  * @param evc the event client
@@ -200,10 +194,3 @@ sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
  */
 sge_callback_result
 sge_process_category_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata);
-
-#if 0
-sge_callback_result
-sge_process_userset_event_before(sge_evc_class_t *evc, 
-                                 sge_object_type type, sge_event_action action, 
-                                 lListElem *event, void *clientdata);
-#endif

@@ -70,7 +70,7 @@ static int s_fail = 0;
 // Builder helpers
 // ---------------------------------------------------------------------------
 
-// Create a standalone ASTR_Type element mapping a hostname or hostgroup ref
+// Create a standalone ASTR element mapping a hostname or hostgroup ref
 // to a string value. Use lAppendElem() to add it to an attr list.
 static lListElem *make_astr(const char *href, const char *value) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
@@ -80,7 +80,7 @@ static lListElem *make_astr(const char *href, const char *value) {
 }
 
 /**
- * @brief Create an HGRP_Type element whose host_list contains the given names
+ * @brief Create an HGRP element whose host_list contains the given names
  *
  * Names beginning with '@' are treated as nested hostgroup references;
  * plain names are leaf hostnames.

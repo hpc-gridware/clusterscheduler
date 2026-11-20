@@ -661,35 +661,6 @@ is_not_better(sge_assignment_t *a, uint32_t viola_best, uint64_t tt_best, uint32
    return false;
 }
 
-#if 0
-static bool
-is_acceptable_result(sge_assignment_t *a) {
-   bool ret = false;
-
-   const lList *pe_range = lGetList(a->job, JB_pe_range);
-   int last = range_list_get_last_id(pe_range, nullptr);
-   if (a->slots == last) {
-      // we have the maximum number of slots we requested
-
-      if (!a->is_soft || a->soft_violations == 0) {
-         // we either have no soft request or all of them could be matched
-
-         // we have a perfectly matching pe
-         ret = true;
-      }
-   }
-
-   /* @todo (CS-452) need a way to break out of the loop, e.g. if
-    * + there are no soft requests
-    * + we have 0 soft violations (or reached a configurable acceptable number)
-    * + we request a fixed number of PE slots and we got an assignment
-    * + we request a range of PE slots and already got the maximum
-    */
-
-   return ret;
-}
-#endif
-
 /**
  * @brief Decide about a PE assignment
  *
@@ -1337,16 +1308,16 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
  * host or queue. One and only one should be specified. If both, the function
  * assumes, that the queue belongs to the given host.
  *
- * @param requested_attr list of requested attributes (`CE_Type`), their tags are updated
- * @param queue current queue (`QU_Type`) or an empty handle if host is set
- * @param host current host (`EH_Type`) or an empty handle if queue is set
- * @param exechost_list list of all hosts in the system (`EH_Type`)
- * @param centry_list system wide attribute config list (`CE_Type`)
+ * @param requested_attr list of requested attributes (`CE`), their tags are updated
+ * @param queue current queue (`QU`) or an empty handle if host is set
+ * @param host current host (`EH`) or an empty handle if queue is set
+ * @param exechost_list list of all hosts in the system (`EH`)
+ * @param centry_list system wide attribute config list (`CE`)
  * @param allow_non_requestable allow non requestable?
  * @param slots number of requested slots
- * @param queue_user_list list of users (`ST_Type`) or an empty handle
- * @param acl_list the user sets (`US_Type`) or an empty handle
- * @param job job (`JB_Type`) or an empty handle
+ * @param queue_user_list list of users (`ST`) or an empty handle
+ * @param acl_list the user sets (`US`) or an empty handle
+ * @param job job (`JB`) or an empty handle
  *
  * @return 1, if okay, QU_tag will be set if a queue is selected 0, if not okay
  *
@@ -1527,10 +1498,10 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
  * handle would free it in the static destruction at exit.
  *
  * @param a the assignment
- * @param requested list of attribute requests (`CE_Type`), their tags are updated
- * @param load_attr list of load attributes (`HL_Type`) or an empty handle on queue level
- * @param config_attr list of user defined attributes (`CE_Type`)
- * @param actual_attr usage of all consumables (`RUE_Type`)
+ * @param requested list of attribute requests (`CE`), their tags are updated
+ * @param load_attr list of load attributes (`HL`) or an empty handle on queue level
+ * @param config_attr list of user defined attributes (`CE`)
+ * @param actual_attr usage of all consumables (`RUE`)
  * @param host current host or an empty handle on global and queue level
  * @param queue current queue or an empty handle on global/host level
  * @param allow_non_requestable allow none requestable?
@@ -2836,7 +2807,7 @@ char *sge_load_alarm_reason(const ocs::tom::Element<ocs::tom::QU> qep,
  * @param[in]     monitor_next_run       whether the messages also go into the
  *                                       scheduler run log
  * @param[in,out] unloaded               the queue list; the overloaded queues
- *                                       are removed from it (`QU_Type`)
+ *                                       are removed from it (`QU`)
  * @param[out]    overloaded             receives the overloaded queues, created
  *                                       when the first one is moved; may be
  *                                       nullptr to drop them
@@ -2936,7 +2907,7 @@ int sge_split_queue_load(const bool monitor_next_run, const ocs::tom::List<ocs::
  * when it is left empty.
  *
  * @param monitor_next_run whether the messages also go into the scheduler run log
- * @param free the queue instances (`QU_Type`); the full ones are removed, the free ones stay
+ * @param free the queue instances (`QU`); the full ones are removed, the free ones stay
  * @param full receives the full queue instances, created when the first one is moved
  *
  * @return 0 success
@@ -2997,7 +2968,7 @@ int sge_split_queue_slots_free(const bool monitor_next_run, const ocs::tom::List
  * descriptor of the queue list. A queue list that is left empty is freed, as
  * lSplit() frees it.
  *
- * @param queue_list the queue list (`QU_Type`), may be empty
+ * @param queue_list the queue list (`QU`), may be empty
  * @param where the condition the queues that stay fulfil
  * @return the queues taken out, empty if there are none
  */
@@ -3016,7 +2987,7 @@ split_queues(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, const ocs::tom::Where<
 /**
  * @brief Moves split off queues to the end of a target list, creating it when there is none yet
  *
- * @param target the target list (`QU_Type`)
+ * @param target the target list (`QU`)
  * @param queues the queues, empty afterwards
  */
 static void
@@ -3038,7 +3009,7 @@ add_split_queues(ocs::tom::ListPtr<ocs::tom::QU> &target, ocs::tom::ListPtr<ocs:
  * @param[in]     monitor_next_run whether the messages also go into the
  *                                 scheduler run log
  * @param[in,out] queue_list       the queue list; the suspended queues are
- *                                 removed from it (`QU_Type`), a list left
+ *                                 removed from it (`QU`), a list left
  *                                 empty is freed
  * @param[out]    suspended        receives the suspended queues, created when
  *                                 there is none yet
@@ -3084,7 +3055,7 @@ int sge_split_suspended(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom:
  * @param[in]     monitor_next_run whether the messages also go into the
  *                                 scheduler run log
  * @param[in,out] queue_list       the queue list; the disabled queues are
- *                                 removed from it (`QU_Type`), a list left
+ *                                 removed from it (`QU`), a list left
  *                                 empty is freed
  * @param[out]    disabled         receives the disabled queues, created when
  *                                 there is none yet
@@ -3121,7 +3092,7 @@ int sge_split_cal_disabled(const bool monitor_next_run, ocs::tom::ListPtr<ocs::t
  * @param[in]     monitor_next_run whether the messages also go into the
  *                                 scheduler run log
  * @param[in,out] queue_list       the queue list; the disabled queues are
- *                                 removed from it (`QU_Type`), a list left
+ *                                 removed from it (`QU`), a list left
  *                                 empty is freed
  * @param[out]    disabled         receives the disabled queues, created when
  *                                 there is none yet
@@ -4235,29 +4206,15 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, const bo
                // in this queue instance.
                // Or they might be disjoint; this is the case if this qinstance is not suited as a slave
                // queue. Only allocate a single slot for the master task.
-#if 1
                if (qref_list_cq_rejected(slave_hard_queue_list,
                    ocs::tom::get<QU_qname>(qep), eh_name, a->hgrp_list)) {
                   slots = MIN(slots, 1);
                }
-#else
-               // This code would be faster, but slave queue (un)tagging is not yet fully implemented (?)
-               if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_SLAVE)) {
-                  slots = MIN(slots, 1);
-               }
-#endif
             }
             // @todo also resource requests might have disjoint master/slave requests
             //       shouldn't we see this from queue tagging?
             //          -> QU_tagged4schedule not containing *SLAVE*
             //          -> QU_tag being 0 or 1?
-#if 0
-            if (have_master_requests && have_slave_requests) {
-               if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_SLAVE)) {
-                  slots = MIN(slots, 1);
-               }
-            }
-#endif
          }
       }
 
@@ -4359,10 +4316,6 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
    auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] = get_hard_queue_lists(a->job);
    bool have_master_and_slave_queue_request = master_hard_queue_list != nullptr && slave_hard_queue_list != nullptr;
-#if 0
-   bool have_master_requests = job_get_hard_resource_list(a->job, JRS_SCOPE_MASTER) != nullptr;
-   bool have_slave_requests = job_get_hard_resource_list(a->job, JRS_SCOPE_SLAVE) != nullptr;
-#endif
 
    dispatch_t best_result = DISPATCH_NEVER_CAT;
    int gslots = a->slots;
@@ -4715,18 +4668,6 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       /* could be interesting for future diagnosis that unveils what resources the job could get
        * as of now we got only negative diagnosis information i.e. reasons why/where no resources are/available
        */
-#if 0
-      if (best_result != DISPATCH_OK) {
-         dstring sched_info = DSTRING_INIT;
-         for (const auto gdil_ep : *a->gdil) {
-            sge_dstring_sprintf(&sched_info, "   HOST: %s QUEUE: %s SLOTS %d",
-               ocs::tom::get<JG_qhostname>(gdil_ep).c_str(), ocs::tom::get<JG_qname>(gdil_ep),
-               static_cast<int>(ocs::tom::get<JG_slots>(gdil_ep)));
-            schedd_log(sge_dstring_get_string(&sched_info));
-         }
-         sge_dstring_free(&sched_info);
-      }
-#endif
 
       *available_slots = accu_host_slots;
 
@@ -5959,12 +5900,12 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
  *
  * @param[out] dvalp                 receives the value
  * @param[in]  attrname              name of the attribute
- * @param[in]  q                     the queue instance (`QU_Type`)
- * @param[in]  exechost_list         the execution hosts (`EH_Type`), for the host and
+ * @param[in]  q                     the queue instance (`QU`)
+ * @param[in]  exechost_list         the execution hosts (`EH`), for the host and
  *                                   global values
- * @param[in]  centry_list           the system wide attribute configuration (`CE_Type`)
+ * @param[in]  centry_list           the system wide attribute configuration (`CE`)
  * @param[in]  load_adjustments      the job load adjustments of the scheduler
- *                                   configuration (`CE_Type`); an empty handle
+ *                                   configuration (`CE`); an empty handle
  *                                   fetches them from the data store of the
  *                                   calling thread
  * @param[out] has_value_from_object true if the value came from the object
@@ -6020,12 +5961,12 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const ocs::tom::Co
  * @param[out] dst           buffer receiving the value
  * @param[in]  dst_len       size of the `dst` buffer
  * @param[in]  attrname      name of the attribute
- * @param[in]  q             the queue instance (`QU_Type`)
- * @param[in]  exechost_list the execution hosts (`EH_Type`), for the host and
+ * @param[in]  q             the queue instance (`QU`)
+ * @param[in]  exechost_list the execution hosts (`EH`), for the host and
  *                           global values
- * @param[in]  centry_list   the system wide attribute configuration (`CE_Type`)
+ * @param[in]  centry_list   the system wide attribute configuration (`CE`)
  * @param[in]  load_adjustments the job load adjustments of the scheduler
- *                           configuration (`CE_Type`); an empty handle fetches
+ *                           configuration (`CE`); an empty handle fetches
  *                           them from the data store of the calling thread
  *
  * @return 0 on success, -1 if the queue has no such attribute
@@ -6068,10 +6009,10 @@ int sge_get_string_qattr(char *dst, const int dst_len, const char *attrname,
  * threshold required for the request.
  *
  * @param a assignment object that holds job specific scheduling relevant data
- * @param rep requested attribute (`CE_Type`)
- * @param load_attr list of load attributes (`HL_Type`), or an empty handle on queue level
- * @param config_attr list of user defined attributes (`CE_Type`)
- * @param actual_attr usage of user consumables (`RUE_Type`)
+ * @param rep requested attribute (`CE`)
+ * @param load_attr list of load attributes (`HL`), or an empty handle on queue level
+ * @param config_attr list of user defined attributes (`CE`)
+ * @param actual_attr usage of user consumables (`RUE`)
  * @param host the current host, or an empty handle on global level
  * @param queue the current queue, or an empty handle on host level
  * @param reason target for error message
@@ -6340,14 +6281,14 @@ ri_time_by_slots(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::to
  *
  * @param a the assignment being built
  * @param slots Returns maximum slots that can be served within the specified time frame.
- * @param rue_list Resource utilization (`RUE_Type`)
- * @param request Job request (`CE_Type`)
- * @param load_attr Load information for the resource (`HL_Type`), an empty handle on queue level
- * @param total_list Total resource amount (`CE_Type`)
- * @param additional_usage usage to add to the utilization (`CE_Type`), e.g. of a master task matched
+ * @param rue_list Resource utilization (`RUE`)
+ * @param request Job request (`CE`)
+ * @param load_attr Load information for the resource (`HL`), an empty handle on queue level
+ * @param total_list Total resource amount (`CE`)
+ * @param additional_usage usage to add to the utilization (`CE`), e.g. of a master task matched
  *                         before, or an empty handle
- * @param host Execution host (`EH_Type`), or an empty handle above the host level
- * @param queue Queue instance (`QU_Type`) for queue-based resources, or an empty handle
+ * @param host Execution host (`EH`), or an empty handle above the host level
+ * @param queue Queue instance (`QU`) for queue-based resources, or an empty handle
  * @param layer DOMINANT_LAYER_{GLOBAL|HOST|QUEUE}
  * @param lc_factor load correction factor
  * @param reason diagnosis information if no resource is available
@@ -6589,7 +6530,7 @@ rsmap_request_has_job_scope(const sge_assignment_t *a, const ocs::tom::ConstElem
  * @param id_expr         nullptr when the request carries no id= parameter, otherwise the
  *                        expression an instance's identifier has to satisfy
  * @param required_props  an empty handle when the request names no characteristic, otherwise the
- *                        resolved requirements an instance has to carry (`CE_Type`)
+ *                        resolved requirements an instance has to carry (`CE`)
  * @return                the key of the group, or nullptr when no group can serve the request
  *                        on any host the job could use
  */
@@ -6721,8 +6662,8 @@ rsmap_job_scope_key(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::
  * records the choice, which the booking applies.
  *
  * @param a          the assignment
- * @param total_list the host's consumable configuration (`CE_Type`)
- * @param rue_list   the host's resource utilization (`RUE_Type`)
+ * @param total_list the host's consumable configuration (`CE`)
+ * @param rue_list   the host's resource utilization (`RUE`)
  * @param reason     filled in when the constraint cannot be met at all
  * @return           the number of slots the constraint permits, INT_MAX when no request carries
  *                   one, 0 when it cannot be met
@@ -6858,9 +6799,9 @@ rsmap_same_slots(sge_assignment_t *a, const ocs::tom::ConstList<ocs::tom::CE> to
  * @param[in,out] a                 the assignment
  * @param[in,out] slots             in: the slots wanted, out: the slots
  *                                  actually available
- * @param[in]     total_list        the configured capacities (`CE_Type`)
- * @param[in]     rue_list          the current utilization (`RUE_Type`)
- * @param[in]     load_attr         the load values (`HL_Type`), an empty handle at queue level
+ * @param[in]     total_list        the configured capacities (`CE`)
+ * @param[in]     rue_list          the current utilization (`RUE`)
+ * @param[in]     load_attr         the load values (`HL`), an empty handle at queue level
  * @param[in]     force_slots       evaluate the slots attribute even when the
  *                                  job did not request it
  * @param[in]     host              the execution host, an empty handle at global level
@@ -7264,12 +7205,12 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
  * threshold.
  * If no consumables are used, an empty handle is returned.
  *
- * @param queue_list a list of queue instances (`QU_Type`); the load list
+ * @param queue_list a list of queue instances (`QU`); the load list
  *                   references them, sge_load_list_alarm() tags them
- * @param host_list a list of hosts (`EH_Type`)
- * @param centry_list a list of complex entries (`CE_Type`)
+ * @param host_list a list of hosts (`EH`)
+ * @param centry_list a list of complex entries (`CE`)
  *
- * @return the load list (`LDR_Type`), or an empty handle if no consumable is
+ * @return the load list (`LDR`), or an empty handle if no consumable is
  *         used as a load threshold or on an error
  *
  * @note MT-NOTE: sge_create_load_list() is MT safe
@@ -7358,10 +7299,10 @@ error:
 /**
  * @brief Locates a consumable category in the given load list
  *
- * @param load_list the load list to work on (`LDR_Type`)
- * @param global_consumable the global consumable (`RUE_Type`), or an empty handle
- * @param host_consumable the host consumable (`RUE_Type`), or an empty handle
- * @param queue_consumable the queue consumable (`RUE_Type`), or an empty handle
+ * @param load_list the load list to work on (`LDR`)
+ * @param global_consumable the global consumable (`RUE`), or an empty handle
+ * @param host_consumable the host consumable (`RUE`), or an empty handle
+ * @param queue_consumable the queue consumable (`RUE`), or an empty handle
  * @param limit the configured load threshold
  *
  * @return an empty handle, or the category element from the load list
@@ -7398,9 +7339,9 @@ load_locate_elem(const ocs::tom::List<ocs::tom::LDR> load_list,
  * load threshold, QU_tagged4schedule is set to 1.
  *
  * @param monitor_next_run whether the messages also go into the scheduler run log
- * @param load_list the cached load values per consumable (`LDR_Type`), or an empty handle
- * @param host_list the execution hosts (`EH_Type`)
- * @param centry_list the system wide attribute configuration (`CE_Type`)
+ * @param load_list the cached load values per consumable (`LDR`), or an empty handle
+ * @param host_list the execution hosts (`EH`)
+ * @param centry_list the system wide attribute configuration (`CE`)
  *
  * @return true, if at least one queue was set into alarm state
  *
@@ -7453,8 +7394,8 @@ bool sge_load_list_alarm(const bool monitor_next_run, const ocs::tom::ConstList<
  *
  * The load list is freed when its last element is gone.
  *
- * @param load_list load list structure (`LDR_Type`); freed when it becomes empty
- * @param queue_list queues to be removed from it (`QU_Type`)
+ * @param load_list load list structure (`LDR`); freed when it becomes empty
+ * @param queue_list queues to be removed from it (`QU`)
  *
  * @note MT-NOTE: sge_remove_queue_from_load_list() is MT safe
  */
@@ -7659,10 +7600,10 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
  *
  * @param a job info structure (in)
  * @param slots out: free slots
- * @param centry the complex definition of the limited resource (`CE_Type`)
- * @param limit limitation (`RQRL_Type`)
+ * @param centry the complex definition of the limited resource (`CE`)
+ * @param limit limitation (`RQRL`)
  * @param rue_name rue_name saved in the limit sublist `RQRL_usage`
- * @param qep queue instance (`QU_Type`)
+ * @param qep queue instance (`QU`)
  * @param need_master a master task still has to be placed
  * @param is_master_queue this queue instance already carries the master task
  *
@@ -7692,23 +7633,6 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Co
       DPRINTF("RD: 1\n");
       tmp_rue_elem = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    }
-#if 0
-{
-   const char *object_name = "bla";
-   DPRINTF("resource utilization: %s \"%s\" %f utilized now\n",
-           object_name?object_name:"<unknown_object>", ocs::tom::get<RUE_name>(tmp_rue_elem),
-           ocs::tom::get<RUE_utilized_now>(tmp_rue_elem));
-   for (const auto rde : ocs::tom::get<RUE_utilized>(tmp_rue_elem)) {
-      DPRINTF("\t" sge_u64 "  %f\n", ocs::tom::get<RDE_time>(rde), ocs::tom::get<RDE_amount>(rde));
-   }
-   DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
-           object_name?object_name:"<unknown_object>", ocs::tom::get<RUE_name>(tmp_rue_elem),
-           ocs::tom::get<RUE_utilized_now_nonexclusive>(tmp_rue_elem));
-   for (const auto rde : ocs::tom::get<RUE_utilized_nonexclusive>(tmp_rue_elem)) {
-      DPRINTF("\t" sge_u64 "  %f\n", ocs::tom::get<RDE_time>(rde), ocs::tom::get<RDE_amount>(rde));
-   }
-}
-#endif
 
    ocs::tom::set<RUE_name>(tmp_rue_elem, ocs::tom::get<RQRL_name>(limit));
    tmp_rue_list->push_back(std::move(tmp_rue_elem));

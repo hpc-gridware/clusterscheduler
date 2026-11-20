@@ -47,7 +47,7 @@ enum AUSRLIST_Field {
    /**
     * @brief Value
     *
-    * The user set list (list of US_Type).
+    * The user set list (list of US).
     */
    AUSRLIST_value,
 };
@@ -89,6 +89,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of AUSRLIST for the list library: a synonym for ocs::tom::AUSRLIST::descriptor */
-inline constexpr const lDescr *AUSRLIST_Type = ocs::tom::AUSRLIST::descriptor.e;

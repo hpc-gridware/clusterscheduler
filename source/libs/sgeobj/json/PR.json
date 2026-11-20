@@ -96,7 +96,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            "List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this project."
+            "List of UA objects storing accumulated and decayed usage of jobs belonging to this project."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -143,7 +143,7 @@
          "name": "long_term_usage",
          "summary": "Long Term Usage",
          "description": [
-            "List of UA_Type objects holding long term accumulated non-decayed usage."
+            "List of UA objects holding long term accumulated non-decayed usage."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -179,7 +179,7 @@
          "name": "acl",
          "summary": "Access List",
          "description": [
-            "US_Type but only names are filled configured excluded user access list used."
+            "US but only names are filled configured excluded user access list used."
          ],
          "type": "lListT",
          "subClassName": "US",
@@ -197,7 +197,7 @@
          "name": "xacl",
          "summary": "No Access List",
          "description": [
-            "US_Type but only names are filled configured excluded user access list used."
+            "US but only names are filled configured excluded user access list used."
          ],
          "type": "lListT",
          "subClassName": "US",
@@ -215,7 +215,7 @@
          "name": "debited_job_usage",
          "summary": "Debited Job Usage",
          "description": [
-            "List of UPU_Type, still debited usage per job."
+            "List of UPU, still debited usage per job."
          ],
          "type": "lListT",
          "subClassName": "UPU",

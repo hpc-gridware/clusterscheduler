@@ -51,8 +51,8 @@
 
 /** @brief The attributes of a job template, both scalar and vector ones */
 struct drmaa_job_template_s {
-   lList *strings;        ///< The scalar attributes as `VA_Type`, name and value
-   lList *string_vectors; ///< The vector attributes as `NSV_Type`, name and list of values
+   lList *strings;        ///< The scalar attributes as `VA`, name and value
+   lList *string_vectors; ///< The vector attributes as `NSV`, name and list of values
 };
 
 /**
@@ -78,7 +78,7 @@ struct drmaa_bulk_jobid_iterator_s {
  * rusage strings of a finished job.
  */
 struct drmaa_string_array_iterator_s {
-   lList *strings;  ///< The strings as `STR_Type`, owned by the iterator
+   lList *strings;  ///< The strings as `ST` elements, owned by the iterator
    /** Element the next call returns, `nullptr` once the iterator is exhausted */
    lListElem *next_pos;
 };

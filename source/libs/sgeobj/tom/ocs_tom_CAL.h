@@ -132,6 +132,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of CAL for the list library: a synonym for ocs::tom::CAL::descriptor */
-inline constexpr const lDescr *CAL_Type = ocs::tom::CAL::descriptor.e;

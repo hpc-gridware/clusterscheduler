@@ -100,8 +100,8 @@ const char *qinstance_get_name(ocs::tom::ConstElement<ocs::tom::QU> this_elem, d
  * Tag a list of qinstances ("this_list") with "tag_value".
  * Examples for tags are QU_tag (default) and QU_tagged4schedule.
  *
- * @tparam F which tag attribute to use, a 32 bit field of QU_Type
- * @param this_list QU_Type list, may be an empty handle
+ * @tparam F which tag attribute to use, a 32 bit field of QU
+ * @param this_list QU list, may be an empty handle
  * @param tag_value unsigned long value (not a bitmask)
  *
  * @note MT-NOTE: qinstance_list_set_tag() is MT safe
@@ -146,8 +146,8 @@ bool qinstance_message_add(ocs::tom::Element<ocs::tom::QU> this_elem, uint32_t t
 
 bool qinstance_message_trash_all_of_type_X(ocs::tom::Element<ocs::tom::QU> this_elem, uint32_t type);
 
-/// Instantiated for queue instances (QU_Type with QU_consumable_config_list, QU_resource_utilization) and
-/// execution hosts (EH_Type with EH_consumable_config_list, EH_resource_utilization); see sge_qinstance.cc
+/// Instantiated for queue instances (QU with QU_consumable_config_list, QU_resource_utilization) and
+/// execution hosts (EH with EH_consumable_config_list, EH_resource_utilization); see sge_qinstance.cc
 template <typename T, auto CONFIG_NM, auto ACTUAL_NM>
 int rc_debit_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::PE> pe,
                         ocs::tom::Element<T> ep, ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots,

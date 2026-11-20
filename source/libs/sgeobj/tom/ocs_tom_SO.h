@@ -111,6 +111,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SO for the list library: a synonym for ocs::tom::SO::descriptor */
-inline constexpr const lDescr *SO_Type = ocs::tom::SO::descriptor.e;

@@ -105,6 +105,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SPT for the list library: a synonym for ocs::tom::SPT::descriptor */
-inline constexpr const lDescr *SPT_Type = ocs::tom::SPT::descriptor.e;

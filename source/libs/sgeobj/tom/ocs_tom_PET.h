@@ -188,7 +188,7 @@ namespace ocs::tom {
    /**
     * @brief PE Task
     *
-    * A PET_Type object describes one task of a tightly integrated parallel job.
+    * A PET object describes one task of a tightly integrated parallel job.
     */
    struct PET {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -278,6 +278,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PET for the list library: a synonym for ocs::tom::PET::descriptor */
-inline constexpr const lDescr *PET_Type = ocs::tom::PET::descriptor.e;

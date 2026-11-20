@@ -345,9 +345,9 @@ none_string(const char *str) {
  * @param writer receives the record as JSON, or nullptr
  * The signature stays raw while the callers outside this module pass raw elements.
  *
- * @param raw_jr the job report the execution host sent (`JR_Type`)
- * @param raw_job the job (`JB_Type`)
- * @param raw_ja_task the array task (`JAT_Type`)
+ * @param raw_jr the job report the execution host sent (`JR`)
+ * @param raw_job the job (`JB`)
+ * @param raw_ja_task the array task (`JAT`)
  * @param category_str the job's scheduling category
  * @param usage_patterns which of the reported usage values to include
  * @param delimiter what separates the fields of the accounting format

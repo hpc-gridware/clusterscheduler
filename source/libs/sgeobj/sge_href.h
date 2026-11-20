@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Declarations for host reference lists (`HR_Type`)
+ * @brief Declarations for host reference lists (`HR`)
  *
  * @see sge_href.cc
  */

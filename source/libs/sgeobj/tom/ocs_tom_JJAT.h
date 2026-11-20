@@ -102,6 +102,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JJAT for the list library: a synonym for ocs::tom::JJAT::descriptor */
-inline constexpr const lDescr *JJAT_Type = ocs::tom::JJAT::descriptor.e;

@@ -97,6 +97,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of MES for the list library: a synonym for ocs::tom::MES::descriptor */
-inline constexpr const lDescr *MES_Type = ocs::tom::MES::descriptor.e;

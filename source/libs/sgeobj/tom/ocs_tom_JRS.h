@@ -147,6 +147,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JRS for the list library: a synonym for ocs::tom::JRS::descriptor */
-inline constexpr const lDescr *JRS_Type = ocs::tom::JRS::descriptor.e;

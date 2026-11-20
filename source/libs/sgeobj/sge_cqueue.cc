@@ -222,10 +222,10 @@ char *cqueue_get_name_from_qinstance(const char *queue_instance) {
  *
  * Returns a new cluster queue object with the name "name".
  *
- * @param answer_list AN_Type list; no longer written: running out of memory throws, as every create() does
+ * @param answer_list AN list; no longer written: running out of memory throws, as every create() does
  * @param name cluster queue name
  *
- * @return the CQ_Type object, or an empty handle if "name" is nullptr
+ * @return the CQ object, or an empty handle if "name" is nullptr
  */
 ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                  const char *name) {
@@ -254,10 +254,10 @@ ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create([[maybe_unused]] ocs::tom::List
  * references, and whatever else a host group may contain. Callers wanting the
  * hosts it reaches resolve it with href_list_find_all_references().
  *
- * @param cqueue CQ_Type object, may be an empty handle
- * @param master_hgroup_list HGRP_Type master list, may be an empty handle
+ * @param cqueue CQ object, may be an empty handle
+ * @param master_hgroup_list HGRP master list, may be an empty handle
  *
- * @return the member list (HR_Type), or an empty handle when the queue has no group yet
+ * @return the member list (HR), or an empty handle when the queue has no group yet
  *
  * @note MT-NOTE: cqueue_get_hostlist() is MT safe
  */
@@ -293,8 +293,8 @@ ocs::tom::ConstList<ocs::tom::HR> cqueue_get_hostlist(const ocs::tom::ConstEleme
  * here and sent back unchanged reproduces the same member list -- which is
  * what makes the round trip idempotent (N-X-3).
  *
- * @param cqueue CQ_Type object, modified in place; may be an empty handle
- * @param master_hgroup_list HGRP_Type list, as fetched from the qmaster
+ * @param cqueue CQ object, modified in place; may be an empty handle
+ * @param master_hgroup_list HGRP list, as fetched from the qmaster
  *
  * @note MT-NOTE: cqueue_fill_hostlist() is MT safe
  */
@@ -311,8 +311,8 @@ void cqueue_fill_hostlist(const ocs::tom::Element<ocs::tom::CQ> cqueue,
 /**
  * @brief Put the host list onto every cluster queue of a list
  *
- * @param cqueue_list CQ_Type list, modified in place; may be an empty handle
- * @param master_hgroup_list HGRP_Type list, as fetched from the qmaster
+ * @param cqueue_list CQ list, modified in place; may be an empty handle
+ * @param master_hgroup_list HGRP list, as fetched from the qmaster
  *
  * @note MT-NOTE: cqueue_list_fill_hostlist() is MT safe
  */
@@ -332,8 +332,8 @@ void cqueue_list_fill_hostlist(const ocs::tom::List<ocs::tom::CQ> cqueue_list,
  * is true then only the hostlist will be tested and all
  * parameter lists will be ignored.
  *
- * @param this_elem CQ_Type, may be an empty handle
- * @param href HR_Type, may be an empty handle
+ * @param this_elem CQ, may be an empty handle
+ * @param href HR, may be an empty handle
  * @param only_hostlist check only hostlist and ignore all parameter lists
  *
  * @return true if it is referenced
@@ -386,8 +386,8 @@ bool cqueue_is_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_e
  * Is the given "hgroup" object referenced in the cluster queue
  * "this_elem".
  *
- * @param this_elem CQ_Type, may be an empty handle
- * @param hgroup HGRP_Type, may be an empty handle
+ * @param this_elem CQ, may be an empty handle
+ * @param hgroup HGRP, may be an empty handle
  *
  * @return true if "hgroup" is referenced
  */
@@ -437,8 +437,8 @@ static bool cqueue_is_hgroup_referenced(const ocs::tom::ConstElement<ocs::tom::C
  * is true then only the hostlist will be tested and all
  * parameter lists will be ignored.
  *
- * @param this_elem CQ_Type object, may be an empty handle
- * @param href_list HR_Type list, may be an empty handle
+ * @param this_elem CQ object, may be an empty handle
+ * @param href_list HR list, may be an empty handle
  * @param only_hostlist check only hostlist and ignore all parameter lists
  *
  * @return at least one object is referenced
@@ -468,7 +468,7 @@ bool cqueue_is_a_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this
  * the given value, as the template of a new cluster queue wants it; a list
  * held before is freed.
  *
- * @tparam LF the attribute list field of the cluster queue (CQ_Type)
+ * @tparam LF the attribute list field of the cluster queue (CQ)
  * @tparam HREF the host reference field of the list's entry type
  * @tparam VALUE the value field of the list's entry type
  * @tparam V the value's type: a number, a string, or an owning list handle
@@ -495,8 +495,8 @@ static void ocs_cqueue_set_default_attr(const ocs::tom::Element<ocs::tom::CQ> cq
  * queue with default values. Please note that "this_elem" has to
  * be "empty" before this function is called.
  *
- * @param this_elem CQ_Type, may be an empty handle
- * @param answer_list AN_Type, receives a message should the default queue type not parse
+ * @param this_elem CQ, may be an empty handle
+ * @param answer_list AN, receives a message should the default queue type not parse
  *
  * @return error state true  - success false - error
  */
@@ -586,7 +586,7 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
          this_elem, ocs::tom::ListPtr<ocs::tom::ST>());
 
       /*
-       * initialize AUSRLIST_Type-list values
+       * initialize AUSRLIST-list values
        */
       ocs_cqueue_set_default_attr<CQ_owner_list, AUSRLIST_href, AUSRLIST_value>(
          this_elem, ocs::tom::ListPtr<ocs::tom::US>());
@@ -594,7 +594,7 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
       ocs_cqueue_set_default_attr<CQ_xacl, AUSRLIST_href, AUSRLIST_value>(this_elem, ocs::tom::ListPtr<ocs::tom::US>());
 
       /*
-       * initialize APRJLIST_Type-list values (only sgeee mode)
+       * initialize APRJLIST-list values (only sgeee mode)
        */
       ocs_cqueue_set_default_attr<CQ_projects, APRJLIST_href, APRJLIST_value>(
          this_elem, ocs::tom::ListPtr<ocs::tom::PR>());
@@ -602,7 +602,7 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
          this_elem, ocs::tom::ListPtr<ocs::tom::PR>());
 
       /*
-       * initialize ACELIST_Type-list values
+       * initialize ACELIST-list values
        */
       auto load_thresholds = ocs::tom::ListPtr<ocs::tom::CE>::create("");
       const auto np_load_avg = load_thresholds->emplace_back<CE_name>("np_load_avg");
@@ -616,7 +616,7 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
          this_elem, ocs::tom::ListPtr<ocs::tom::CE>());
 
       /*
-       * initialize ASOLIST_Type-list values
+       * initialize ASOLIST-list values
        */
       ocs_cqueue_set_default_attr<CQ_subordinate_list, ASOLIST_href, ASOLIST_value>(
          this_elem, ocs::tom::ListPtr<ocs::tom::SO>());
@@ -630,7 +630,7 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
  *
  * Find the cluster queue with name "name" in the list "this_list".
  *
- * @param this_list CQ_Type list, may be an empty handle
+ * @param this_list CQ list, may be an empty handle
  * @param name cluster queue name
  *
  * @return cluster queue object, or an empty handle
@@ -647,7 +647,7 @@ ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(const ocs::tom::ConstList<ocs
  * Finds the queue instance locateted on the host "hostname" of a
  * given cluster queue "this_elem".
  *
- * @param this_elem CQ_Type object
+ * @param this_elem CQ object
  * @param hostname resolved hostname
  *
  * @return qinstance object, or an empty handle
@@ -669,7 +669,7 @@ ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstEle
  *
  * @tparam A the attribute type of the list
  * @param list the attribute list, may be an empty handle
- * @param answer_list AN_Type list, receives the reason of a rejection
+ * @param answer_list AN list, receives the reason of a rejection
  * @param attr_name the attribute's name, for the messages
  * @param in_master true if this function is called in the master code
  * @param master_hgroup_list the host groups
@@ -763,9 +763,9 @@ ocs_cqueue_verify_hrefs(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::tom
  * The attributes are walked through #ocs_cqueue_attributes; the verify function of an entry gets the entries of
  * the attribute list typed and the master list the entry names.
  *
- * @param cqueue CQ_Type object to be verified, may be an empty handle
- * @param answer_list AN_Type list
- * @param reduced_elem reduced CQ_Type. Contains only those attributes to be checked; may be an empty handle
+ * @param cqueue CQ object to be verified, may be an empty handle
+ * @param answer_list AN list
+ * @param reduced_elem reduced CQ. Contains only those attributes to be checked; may be an empty handle
  * @param in_master true if this function is called in the master code
  * @param master_calendar_list the calendars an attribute may refer to
  * @param master_ckpt_list the checkpointing environments an attribute may refer to
@@ -834,11 +834,11 @@ bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue,
  * the pattern "cqueue_pattern" and return their names as queue
  * references.
  *
- * @param this_list CQ_Type, may be an empty handle
- * @param answer_list AN_Type; not written, the pattern is evaluated without an answer list
+ * @param this_list CQ, may be an empty handle
+ * @param answer_list AN; not written, the pattern is evaluated without an answer list
  * @param cqueue_pattern fnmatch pattern
  *
- * @return QR_Type list of the matching names; an empty handle if nothing matched or an argument is missing
+ * @return QR list of the matching names; an empty handle if nothing matched or an argument is missing
  *
  * @note MT-NOTE: cqueue_list_find_all_matching_references() is MT safe
  */
@@ -933,7 +933,7 @@ ocs_cqueue_xattr_merge(const ocs::tom::Element<ocs::tom::CQ> target, const ocs::
  *
  * @tparam A the attribute type of the list
  * @param list the attribute list of the request, may be an empty handle
- * @param answer_list AN_Type, receives an error for every value that is not a default entry
+ * @param answer_list AN, receives an error for every value that is not a default entry
  * @param host_domain the host or host group the request names
  * @return true if every value was a default entry
  */
@@ -975,8 +975,8 @@ ocs_cqueue_xattr_set_href(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::t
  * The signature is the one of the `pre_gdi_function` of qconf's attribute table, so the list arrives untyped.
  * The attribute lists are walked through #ocs_cqueue_attributes.
  *
- * @param this_list the requests, CQ_Type; checked, may be nullptr
- * @param answer_list AN_Type
+ * @param this_list the requests, CQ; checked, may be nullptr
+ * @param answer_list AN
  *
  * @return true on success, false on an error, described in @p answer_list
  *
@@ -1053,7 +1053,7 @@ bool cqueue_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *ans
  * true.
  *
  * @param cqueue_name cq name to look for
- * @param cqueue cq to look in (CQ_Type), may be an empty handle
+ * @param cqueue cq to look in (CQ), may be an empty handle
  *
  * @return true - a reference was found
  *
@@ -1085,11 +1085,11 @@ bool cqueue_is_used_in_subordinate(const char *cqueue_name, const ocs::tom::Cons
  * Collects the name of each cqueue contained in "this_list"
  * where "hgroup" is referenced.
  *
- * @param this_list CQ_Type, may be an empty handle
- * @param answer_list AN_Type; not written
- * @param hgroup HGRP_Type, may be an empty handle
+ * @param this_list CQ, may be an empty handle
+ * @param answer_list AN; not written
+ * @param hgroup HGRP, may be an empty handle
  *
- * @return ST_Type list of the names, created by the first one; an empty handle if none references the group
+ * @return ST list of the names, created by the first one; an empty handle if none references the group
  *
  * @note MT-NOTE: cqueue_list_find_hgroup_references() is MT safe
  */
@@ -1124,7 +1124,7 @@ cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_
  * CQ_qinstances-sublist will be tagged too if "tag_qinstances"
  * is true.
  *
- * @param this_list CQ_Type, may be an empty handle
+ * @param this_list CQ, may be an empty handle
  * @param tag_value value
  * @param tag_qinstances true if instances should be tagged
  *
@@ -1150,10 +1150,10 @@ void cqueue_list_set_tag(const ocs::tom::List<ocs::tom::CQ> this_list, const uin
  * Returns a certain qinstance with the name "full_name" from
  * the master cqueue list given by "cqueue_list".
  *
- * @param cqueue_list CQ_Type, may be an empty handle
+ * @param cqueue_list CQ, may be an empty handle
  * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
  *
- * @return QU_Type element, or an empty handle
+ * @return QU element, or an empty handle
  *
  * @note MT-NOTE: cqueue_list_locate_qinstance() is MT safe
  */
@@ -1169,11 +1169,11 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(const ocs::tom::Con
  * Returns a certain qinstance with the name "full_name" from
  * the master cqueue list given by "cqueue_list".
  *
- * @param cqueue_list CQ_Type, may be an empty handle
+ * @param cqueue_list CQ, may be an empty handle
  * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
  * @param raise_error true - show error messages - false - suppress error messages
  *
- * @return QU_Type element, or an empty handle
+ * @return QU element, or an empty handle
  *
  * @note MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe
  */
@@ -1220,9 +1220,9 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
  * The attribute lists other than the host list are walked through
  * #ocs_cqueue_attributes.
  *
- * @param this_elem cqueue list element (CQ_Type), may be an empty handle
+ * @param this_elem cqueue list element (CQ), may be an empty handle
  * @param answer_list answer list
- * @param attr_list US_Type list with attributes to search for hgroup_or_hostname wildcards allowed
+ * @param attr_list US list with attributes to search for hgroup_or_hostname wildcards allowed
  * @param hgroup_or_hostname host group or hostname which should be purged
  *
  * @return true when hgroup_or_hostname was found and purged, false when no matching attribute
@@ -1370,7 +1370,7 @@ ocs_cqueue_sick_attr(const ocs::tom::ConstList<A> attr_list, const char *attr_na
  *
  * The attribute lists are walked through #ocs_cqueue_attributes.
  *
- * @param cqueue the cluster queue to inspect (CQ_Type)
+ * @param cqueue the cluster queue to inspect (CQ)
  * @param[out] answer_list receives error messages
  * @param master_hgroup_list the host groups, needed to resolve the host list
  * @param[out] ds receives the human readable report

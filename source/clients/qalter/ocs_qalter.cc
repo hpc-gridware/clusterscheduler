@@ -313,13 +313,13 @@ ocs_qalter_copy_present(const ocs::tom::ConstElement<ocs::tom::JB> job, const oc
  * to the request list.
  *
  * @param me_who the program, QALTER, QHOLD, QRLS or QRESUB
- * @param cmdline the parsed command line (SPA_Type), or an empty handle for the defaults; the options used
+ * @param cmdline the parsed command line (SPA), or an empty handle for the defaults; the options used
  *                are removed
- * @param requestlist receives the job modify requests for ocs::gdi::Client::sge_gdi (reduced JB_Type),
+ * @param requestlist receives the job modify requests for ocs::gdi::Client::sge_gdi (reduced JB),
  *                    created with the first request
  * @param all_jobs set to 1 if the requests address all jobs, 0 if they name jobs
  * @param all_users not used
- * @return nullptr on success, else an answer list (AN_Type) with STATUS_EUNKNOWN for
+ * @return nullptr on success, else an answer list (AN) with STATUS_EUNKNOWN for
  *         an internal error, STATUS_EDISK if getcwd() failed or STATUS_ENOIMP for an
  *         unknown switch or -help
  */
@@ -640,7 +640,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          ocs::tom::set<JB_job_identifier_list>(job, std::move(jid_list));
 
          // SPA_argval_lListT carries lists of several types and has no typed exchange; the parser fills the
-         // argument of -u with an ST_Type user list
+         // argument of -u with an ST user list
          lList *lp = nullptr;
          ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
          ocs::tom::set<JB_user_list>(job, ocs::tom::ListPtr<ocs::tom::ST>::from_typed(lp));
@@ -668,7 +668,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          // created with the first reference, as the free emplace_back() created it
          ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
          while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
-            // the parser fills the argument with an ST_Type name list
+            // the parser fills the argument with an ST name list
             for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
                const char *name = ocs::tom::get<ST_name>(sep);
                DPRINTF("-hold_jid %s\n", name);
@@ -693,7 +693,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          // created with the first reference, as the free emplace_back() created it
          ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
          while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
-            // the parser fills the argument with an ST_Type name list
+            // the parser fills the argument with an ST name list
             for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
                const char *name = ocs::tom::get<ST_name>(sep);
                DPRINTF("-hold_jid_ad %s\n", name);
@@ -803,7 +803,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          ocs::tom::set<JB_pe>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
          /* put sublist from parsing into job */
          // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
-         // list is taken out raw and adopted as RN_Type here; the range held before is freed by the set
+         // list is taken out raw and adopted as RN here; the range held before is freed by the set
          ocs::tom::set<JB_pe_range>(job, ocs::tom::adopt<ocs::tom::RN>(
             ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
          cmdline.erase(ep);
@@ -919,7 +919,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
             // ocs_context_change_add() has no typed form for the change list yet
             lList *change = nullptr;
             ocs::tom::exchange<JB_context_change>(job, &change);
-            // the parser fills the argument of the context switches with a VA_Type list
+            // the parser fills the argument of the context switches with a VA list
             ocs_context_change_add(&change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(
                                                ocs::tom::get<SPA_argval_lListT>(ep)));
             ocs::tom::exchange<JB_context_change>(job, &change);
@@ -962,12 +962,6 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       DRETURN(answer);
    }
 
-#if 0
-   printf("=============== lWriteElemTo(job, stdout); ==================\n");
-   lWriteElemTo(job, stdout);
-#endif
-
-
    /* 
       STEP 2:
          make an gdi request for each jobid in the command line 
@@ -1007,12 +1001,6 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       const auto task_layout = ocs::tom::layout<JAT_task_number, JAT_hold>();
 
       jobid = atol(ocs::tom::get<ID_str>(jid));
-/*
-      if ((all_or_jidlist == NOTINIT) && !strcmp(lGetString(ep, ID_str), "all")) {
-         all_or_jidlist = ALL;
-         (*all_jobs) = 1;
-         DPRINTF("got \'all\' from parsing\n", jobid);
-      } else */
       if (((all_or_jidlist == NOTINIT) || (all_or_jidlist == JOB)) /* && 
                   jobid != 0*/) { 
          all_or_jidlist = JOB;
@@ -1073,7 +1061,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          DRETURN(answer);
       }
 
-      /* build task list from ID_Type from JB_job_identifier */
+      /* build task list from ID from JB_job_identifier */
       
       if (is_hold_option && !ocs::tom::get<ID_ja_structure>(jid)) {
          task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_layout);

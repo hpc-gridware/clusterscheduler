@@ -10,7 +10,7 @@
          "name": "yday_range_list",
          "summary": "YearDay Range List",
          "description": [
-            "TMR_Type with begin/end using TM_mday/TM_mon/TM_year."
+            "TMR with begin/end using TM_mday/TM_mon/TM_year."
          ],
          "type": "lListT",
          "subClassName": "TMR",
@@ -21,7 +21,7 @@
          "name": "wday_range_list",
          "summary": "WeekDay Range List",
          "description": [
-            "TMR_Type with begin/end using TM_wday."
+            "TMR with begin/end using TM_wday."
          ],
          "type": "lListT",
          "subClassName": "TMR",
@@ -32,7 +32,7 @@
          "name": "daytime_range_list",
          "summary": "DayTime Range List",
          "description": [
-            "TMR_Type with begin/end using TM_sec/TM_min/TM_hour."
+            "TMR with begin/end using TM_sec/TM_min/TM_hour."
          ],
          "type": "lListT",
          "subClassName": "TMR",

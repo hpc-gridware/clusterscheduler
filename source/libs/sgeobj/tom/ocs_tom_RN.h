@@ -67,7 +67,7 @@ namespace ocs::tom {
     * Object holding values which define an id range
     * (e.g. 1-9:2 => 1, 3, 5, 7, 9).
     * Lists of such objects are held within job objects
-    * (JB_Type) to hold job array task ids.
+    * (JB) to hold job array task ids.
     * Several functions may be used to access/modify/delete range
     * elements and range lists. You may find them in the 'SEE ALSO'
     * section below. It is highly advised to use these access functions
@@ -130,6 +130,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RN for the list library: a synonym for ocs::tom::RN::descriptor */
-inline constexpr const lDescr *RN_Type = ocs::tom::RN::descriptor.e;

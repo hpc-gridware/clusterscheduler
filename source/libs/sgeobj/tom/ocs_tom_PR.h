@@ -71,7 +71,7 @@ enum PR_Field {
    /**
     * @brief Usage
     *
-    * List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this project.
+    * List of UA objects storing accumulated and decayed usage of jobs belonging to this project.
     */
    PR_usage,
    /**
@@ -89,7 +89,7 @@ enum PR_Field {
    /**
     * @brief Long Term Usage
     *
-    * List of UA_Type objects holding long term accumulated non-decayed usage.
+    * List of UA objects holding long term accumulated non-decayed usage.
     */
    PR_long_term_usage,
    /**
@@ -101,19 +101,19 @@ enum PR_Field {
    /**
     * @brief Access List
     *
-    * US_Type but only names are filled configured excluded user access list used.
+    * US but only names are filled configured excluded user access list used.
     */
    PR_acl,
    /**
     * @brief No Access List
     *
-    * US_Type but only names are filled configured excluded user access list used.
+    * US but only names are filled configured excluded user access list used.
     */
    PR_xacl,
    /**
     * @brief Debited Job Usage
     *
-    * List of UPU_Type, still debited usage per job.
+    * List of UPU, still debited usage per job.
     */
    PR_debited_job_usage,
    /**
@@ -228,6 +228,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PR for the list library: a synonym for ocs::tom::PR::descriptor */
-inline constexpr const lDescr *PR_Type = ocs::tom::PR::descriptor.e;

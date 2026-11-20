@@ -81,6 +81,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of AMEM for the list library: a synonym for ocs::tom::AMEM::descriptor */
-inline constexpr const lDescr *AMEM_Type = ocs::tom::AMEM::descriptor.e;

@@ -4,7 +4,7 @@
    "description": [
       "Contains configuration options for hosts (execution hosts but also a global configuration for the sge_qmaster).",
       "Host specific configurations inherit values from the global configuration.",
-      "@todo there is an overlap with the exec host type (EH_Type), can this be unified?"
+      "@todo there is an overlap with the exec host type (EH), can this be unified?"
    ],
    "cullPrefix": "CONF",
    "attributes": [
@@ -53,7 +53,7 @@
          "name": "entries",
          "summary": "Configuration Entries",
          "description": [
-            "A configuration consists of multiple configuration entries of CF_Type."
+            "A configuration consists of multiple configuration entries of CF."
          ],
          "type": "lListT",
          "subClassName": "CF",

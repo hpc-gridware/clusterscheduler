@@ -113,7 +113,7 @@
          "name": "entries",
          "summary": "Members",
          "description": [
-            "The users and UNIX groups in the set (`UE_Type`). A name starting with `@` is a group."
+            "The users and UNIX groups in the set (`UE`). A name starting with `@` is a group."
          ],
          "type": "lListT",
          "subClassName": "UE",

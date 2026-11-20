@@ -59,7 +59,7 @@ namespace ocs::tom {
    /**
     * @brief Time Range
     *
-    * Used for time ranges represented by two (begin and end) timestamps (TM_Type).
+    * Used for time ranges represented by two (begin and end) timestamps (TM).
     */
    struct TMR {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -94,6 +94,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of TMR for the list library: a synonym for ocs::tom::TMR::descriptor */
-inline constexpr const lDescr *TMR_Type = ocs::tom::TMR::descriptor.e;

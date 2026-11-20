@@ -73,7 +73,7 @@ static void append_opts_from_default_files(uint32_t prog_number, ocs::tom::ListP
  * @param prog_number the client reading the defaults, which decides which files are read
  * @param cell_root the cell directory, where the cluster-wide file lives
  * @param user the user whose home directory holds the second file
- * @param cmdline the option list (`SPA_Type`) to append to; created if it is
+ * @param cmdline the option list (`SPA`) to append to; created if it is
  *                an empty handle and the files hold any options
  * @param answer_list receives warnings; none of these stops the parse:
  *                    `STATUS_ENOSUCHUSER` (no passwd entry for the user),
@@ -205,7 +205,7 @@ static char *get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_
  * @param prog_number the client reading the defaults, which decides which files are read
  * @param cell_root the cell directory, where the cluster-wide file lives
  * @param user the user whose home directory holds the second file
- * @param cmdline the option list (`SPA_Type`) to append to; created if it is
+ * @param cmdline the option list (`SPA`) to append to; created if it is
  *                an empty handle and the files hold any options
  * @param answer_list receives warnings; none of these stops the parse:
  *                    `STATUS_ENOSUCHUSER` (no passwd entry for the user),
@@ -292,8 +292,8 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
  * "envp" is a pointer to the process environment.
  *
  * @param prog_number the client being parsed for, which decides the option set
- * @param opts_cmdline command line options (`SPA_Type`); created if it is an empty handle
- * @param answer_list AN_Type list
+ * @param opts_cmdline command line options (`SPA`); created if it is an empty handle
+ * @param answer_list AN list
  * @param argv Argumente
  * @param envp Environment
  */
@@ -318,8 +318,8 @@ void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, ocs::tom
  * "envp" is a pointer to the process environment.
  *
  * @param prog_number the client being parsed for, which decides the option set
- * @param opts_cmdline command line options (`SPA_Type`); created if it is an empty handle
- * @param answer_list AN_Type list
+ * @param opts_cmdline command line options (`SPA`); created if it is an empty handle
+ * @param answer_list AN list
  * @param argv Argumente
  * @param envp Environment
  */
@@ -347,8 +347,8 @@ void opt_list_append_opts_from_qalter_cmdline(const uint32_t prog_number,
  * "envp" is a pointer to the process environment.
  *
  * @param prog_number the client being parsed for, which decides the option set
- * @param opts_scriptfile embedded command line options (`SPA_Type`); created if it is an empty handle
- * @param answer_list AN_Type list
+ * @param opts_scriptfile embedded command line options (`SPA`); created if it is an empty handle
+ * @param answer_list AN list
  * @param opts_cmdline Argumente
  * @param envp Environment
  */
@@ -387,9 +387,9 @@ void opt_list_append_opts_from_script(const uint32_t prog_number, ocs::tom::List
  * "envp" is a pointer to the process environment.
  *
  * @param prog_number the client being parsed for, which decides the option set
- * @param opts_scriptfile embedded command line options (`SPA_Type`); created if it is an empty handle
+ * @param opts_scriptfile embedded command line options (`SPA`); created if it is an empty handle
  * @param path the root path for the script file
- * @param answer_list AN_Type list
+ * @param answer_list AN list
  * @param opts_cmdline Argumente
  * @param envp Environment
  */
@@ -536,7 +536,7 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
  * This function returns true (1) if the given 'option'
  * (e.g. "-help") is contained in the list 'opts'.
  *
- * @param opts SPA_Type list
+ * @param opts SPA list
  * @param option switch name
  *
  * @return found switch? true - yes false - no
@@ -557,7 +557,7 @@ bool opt_list_has_X(const ocs::tom::ConstList<ocs::tom::SPA> opts, const char *o
  * it was set to 'true'. If the value of the boolean switch
  * is false than the function will also return false (0).
  *
- * @param opts SPA_Type list
+ * @param opts SPA list
  * @param option switch name
  *
  * @return found switch with value 'true' true - yes false - no
@@ -579,7 +579,7 @@ bool opt_list_is_X_true(const ocs::tom::ConstList<ocs::tom::SPA> opts, const cha
  * `-scope master` is the newer spelling of what `-masterq` used to say, so
  * accepting both would leave two sources for the same setting.
  *
- * @param opts the parsed options (`SPA_Type`)
+ * @param opts the parsed options (`SPA`)
  * @param alpp receives `STATUS_ESEMANTIC` when both were given
  */
 void opt_list_verify_scope(const ocs::tom::ConstList<ocs::tom::SPA> opts, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {

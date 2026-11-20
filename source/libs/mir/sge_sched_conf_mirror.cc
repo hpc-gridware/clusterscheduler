@@ -62,7 +62,7 @@
  * @param evc the event client the event arrived on
  * @param type event type
  * @param action action to perform
- * @param event the event (ET_Type); its scheduler configuration is taken over
+ * @param event the event (ET); its scheduler configuration is taken over
  * @param clientdata client data
  *
  * @return always SGE_EMA_OK
@@ -79,7 +79,7 @@ schedd_conf_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_un
    ocs::tom::ListPtr<ocs::tom::SC> list;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-   // the event carries the scheduler configuration (SC_Type)
+   // the event carries the scheduler configuration (SC)
    const auto data_list = ocs_mirror_event_objects<ocs::tom::SC>(event);
 
    /* if neccessary, create list and copy schedd info */

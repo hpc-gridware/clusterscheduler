@@ -266,7 +266,7 @@ static const char JOB_NAME_DEL = ':';
  * Verifies the job (also through JSV if enabled), spools it and its script, attaches it to a category,
  * adds a copy of it to the master job list and sends the events and job log records.
  *
- * @param jep the submitted job (JB_Type); JSV may replace it, the caller keeps it in every case
+ * @param jep the submitted job (JB); JSV may replace it, the caller keeps it in every case
  * @param alpp receives messages for the caller
  * @param lpp if not nullptr, receives a copy of the added job; a list is created if it holds none
  * @param packet the client request
@@ -453,7 +453,7 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
  *
  * ocs::gdi::Client::sge_gdi_delete_job
  *    - called in sge_c_gdi_del (possibly multiple times, e.g. qdel 1,2 will trigger 2 calls)
- * @param[in] idep ID_Type element, can contain job ids, job names (with patterns), a user list (with patterns)
+ * @param[in] idep ID element, can contain job ids, job names (with patterns), a user list (with patterns)
  * @param[out] alpp to return messages (INFO, WARNING, ERROR) to the caller
  * @param[in] packet the client request, carrying the user and host that executed qdel
  * @param[in] task the GDI task being answered
@@ -784,7 +784,7 @@ ack_all_slaves(const uint32_t job_id, const uint32_t ja_task_id, const ocs::tom:
  * @param alpp receives the error message
  * @param was_modify whether the request was a modification, else a deletion
  * @param user_list_flag whether the request named users
- * @param user_list the users the request named (ST_Type), may be an empty handle
+ * @param user_list the users the request named (ST), may be an empty handle
  * @param jid_flag whether the request named a job id or job name
  * @param jobid the job id or name of the request
  * @param all_users_flag whether the request was for all users
@@ -871,7 +871,7 @@ empty_job_list_filter(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom
  *
  * Builds the condition the jobs of a request have to fulfil: one of the users and the job id or name.
  *
- * @param user_list user list (ST_Type), an empty handle if no user is given
+ * @param user_list user list (ST), an empty handle if no user is given
  * @param jobid a job id or a job name or a pattern, or nullptr
  *
  * @return the condition, an empty one if neither users nor a job are given
@@ -1008,7 +1008,7 @@ get_rid_of_schedd_job_messages(const uint32_t job_number) {
 }
 
 /** @brief Mail the job owner that their task was aborted
- * @param job the job (`JB_Type`)
+ * @param job the job (`JB`)
  * @param ja_task the array task
  * @param ruser who caused the abort
  * @param rhost where they did it
@@ -1066,7 +1066,7 @@ void job_ja_task_send_abort_mail(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * @p force, which drops it from qmaster without waiting for the host to
  * confirm - so the job may still be running out there.
  *
- * @param j the job (`JB_Type`)
+ * @param j the job (`JB`)
  * @param t the array task
  * @param answer_list receives messages for the caller
  * @param ruser who deleted it
@@ -1162,7 +1162,7 @@ void get_rid_of_job_due_to_qdel(ocs::tom::Element<ocs::tom::JB> j,
  * told and has to answer - and until it is done the job must not be scheduled,
  * modified or deleted again.
  *
- * @param j the job (`JB_Type`)
+ * @param j the job (`JB`)
  * @param t the array task
  */
 void job_mark_job_as_deleted(const ocs::tom::Element<ocs::tom::JB> j, const ocs::tom::Element<ocs::tom::JAT> t) {
@@ -1192,7 +1192,7 @@ void job_mark_job_as_deleted(const ocs::tom::Element<ocs::tom::JB> j, const ocs:
  * Called when a job is deleted by qdel or by qmaster master-limit enforcement
  * so that the originator can later be added to the accounting record.
  *
- * @param ja_task the array task being deleted (`JAT_Type`)
+ * @param ja_task the array task being deleted (`JAT`)
  * @param user the user who triggered the deletion
  * @param host the host the deletion was requested from
  */
@@ -1589,7 +1589,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
 /** @brief Announce a change to a whole job to the event clients
  * @param type which event
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param jatask the array task, or an empty handle
  * @param gdi_request the request the change belongs to
  */
@@ -1608,7 +1608,7 @@ void sge_add_job_event(const ev_event type, const ocs::tom::Element<ocs::tom::JB
  * Keeps a call with a job handle and nullptr unambiguous next to the untyped overload.
  *
  * @param type which event
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param gdi_request the request the change belongs to
  */
 void sge_add_job_event(const ev_event type, const ocs::tom::Element<ocs::tom::JB> jep, std::nullptr_t,
@@ -1621,7 +1621,7 @@ void sge_add_job_event(const ev_event type, const ocs::tom::Element<ocs::tom::JB
 
 /** @brief Announce a change to one array task to the event clients
  * @param type which event
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param jatask the array task
  * @param gdi_request the request the change belongs to
  */
@@ -1903,8 +1903,8 @@ mod_task_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs:
  * - Without -when now (default: -when on_reschedule), consumable amounts must remain unchanged
  *
  * @param[out] alpp Pointer to answer list for error messages
- * @param[in] new_lp New hard resource list (CE_Type) with requested changes
- * @param[in] old_lp Old hard resource list (CE_Type) from the existing job
+ * @param[in] new_lp New hard resource list (CE) with requested changes
+ * @param[in] old_lp Old hard resource list (CE) from the existing job
  * @param[in] when_now True if -when now was specified, false for -when on_reschedule
  * @param[out] resources_decreased Set to true if any consumable resource amounts are decreased
  *
@@ -3135,7 +3135,7 @@ static bool contains_dependency_cycles(const ocs::tom::ConstElement<ocs::tom::JB
  *   #2 resolve job names and regulare expressions. The
  *      job ids will be stored in JB_jid_predecessor_list
  *
- * @param job JB_Type element (JB_job_number may be 0 if not yet know (at submit time)
+ * @param job JB element (JB_job_number may be 0 if not yet know (at submit time)
  * @param alpp the answer list
  *
  * @return returns != 0 if there is a problem with predecessors
@@ -3209,7 +3209,7 @@ int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom:
  *   #4 Update JB_ja_a_h_ids and JB_ja_a_n_ids according to the
  *       predecessors list
  *
- * @param job JB_Type element (JB_job_number may be 0 if not yet know (at submit time)
+ * @param job JB element (JB_job_number may be 0 if not yet know (at submit time)
  * @param alpp the answer list
  * @param gdi_session the session the change belongs to
  *
@@ -3468,7 +3468,7 @@ static uint32_t guess_highest_job_number() {
  * scheduled anywhere rather than leaving it pending forever.
  *
  * @param alpp receives messages for the caller
- * @param jep the job (`JB_Type`)
+ * @param jep the job (`JB`)
  * @param[out] trigger receives what has to happen next
  * @param is_modify whether this is a modification rather than a submit
  * @return 0 when a suitable queue exists
@@ -3915,7 +3915,7 @@ bool spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uin
  * @param r_start receives the first task id of the range last handled
  * @param r_end receives the last task id of the range last handled
  * @param step receives the step of the range last handled
- * @param ja_structure the task id ranges to delete (RN_Type), an empty list or handle for all tasks
+ * @param ja_structure the task id ranges to delete (RN), an empty list or handle for all tasks
  * @param alltasks receives whether all tasks were requested
  * @param deleted_tasks receives the number of deleted unenrolled tasks
  * @param start_time when the deletion request started, for the deletion time limit
@@ -4474,8 +4474,8 @@ get_job_log_name(const job_log_t type) {
  * job array task and debits/undebits the allocated slots from each resource container.
  * Events are generated for modified objects to notify event clients.
  *
- * @param[in] job The job object (JB_Type) containing the job array task
- * @param[in] ja_task The job array task (JAT_Type) for which to debit/credit resources
+ * @param[in] job The job object (JB) containing the job array task
+ * @param[in] ja_task The job array task (JAT) for which to debit/credit resources
  * @param[out] answer_list Pointer to answer list for error messages and reporting records
  * @param gdi_session the session the change belongs to
  * @param[in] factor Multiplication factor: 1 for debiting (default), -1 for undebiting
@@ -4626,8 +4626,8 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
  * - A job's resource requests are reduced with qalter -when now
  * - Resources need to be freed before re-debiting with new amounts
  *
- * @param[in] job The job object (JB_Type) containing the job array task
- * @param[in] ja_task The job array task (JAT_Type) for which to credit resources
+ * @param[in] job The job object (JB) containing the job array task
+ * @param[in] ja_task The job array task (JAT) for which to credit resources
  * @param[out] answer_list Pointer to answer list for error messages and reporting records
  * @param[in] gdi_session the session the change belongs to
  *
@@ -4656,8 +4656,8 @@ job_ja_task_undebit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::t
  * This ensures that the resource accounting remains consistent when resource requests
  * are decreased (e.g., reducing the number of licenses or memory requested).
  *
- * @param[in] old_job The job object (JB_Type) with original resource requests
- * @param[in] new_job The job object (JB_Type) with modified resource requests
+ * @param[in] old_job The job object (JB) with original resource requests
+ * @param[in] new_job The job object (JB) with modified resource requests
  * @param[out] answer_list Pointer to answer list for error messages and reporting records
  * @param gdi_session the session the change belongs to
  *

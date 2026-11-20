@@ -64,8 +64,8 @@ namespace ocs::tom {
    /**
     * @brief Spooling Type Rule Mapping
     *
-    * Elements of SPTR_Type define a mapping between object type (SPT_Type)
-    * and spooling rules (SPR_Type).
+    * Elements of SPTR define a mapping between object type (SPT)
+    * and spooling rules (SPR).
     * One object type can be spooled (written) using multiple spooling rules.
     * One object type will be read using one (the default) spooling rule.
     * One spooling rule can be referenced by multiple object types.
@@ -92,6 +92,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SPTR for the list library: a synonym for ocs::tom::SPTR::descriptor */
-inline constexpr const lDescr *SPTR_Type = ocs::tom::SPTR::descriptor.e;

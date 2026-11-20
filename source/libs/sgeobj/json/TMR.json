@@ -2,7 +2,7 @@
    "className": "TimeRange",
    "summary": "Time Range",
    "description": [
-      "Used for time ranges represented by two (begin and end) timestamps (TM_Type)."
+      "Used for time ranges represented by two (begin and end) timestamps (TM)."
    ],
    "cullPrefix": "TMR",
    "attributes": [

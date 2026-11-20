@@ -164,13 +164,13 @@ namespace {
 
       /** @brief Build the elements */
       Fixture() {
-         list = lCreateList("full", TEST_Type);
-         full = lCreateElem(TEST_Type);
+         list = lCreateList("full", ocs::tom::TEST::descriptor.e);
+         full = lCreateElem(ocs::tom::TEST::descriptor.e);
          lAppendElem(list, full);
-         what = lWhat("%T(%I)", TEST_Type, TEST_obj_any);
+         what = lWhat("%T(%I)", ocs::tom::TEST::descriptor.e, TEST_obj_any);
          reduced_list = lSelect("reduced", list, nullptr, what);
          reduced = ocs::tom::RawList{reduced_list}.front();
-         job = lCreateElem(JB_Type);
+         job = lCreateElem(ocs::tom::JB::descriptor.e);
       }
 
       /** @brief Free the elements */
@@ -375,10 +375,10 @@ namespace legacy_cores {
     * @return nothing; CHECK records the results
     */
    void test_list_structure() {
-      RawListPtr source = ocs::tom::create_raw_list(TEST_Type, Hashing::On, "source");
-      ocs::tom::append(source.get().raw(), ocs::tom::create_raw_elem(TEST_Type));
+      RawListPtr source = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e, Hashing::On, "source");
+      ocs::tom::append(source.get().raw(), ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e));
       lList *src = source.get().raw();
-      RawElementPtr ep = ocs::tom::create_raw_elem(TEST_Type);
+      RawElementPtr ep = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
       lListElem *free_ep = ep.get().raw();
       // the old wrappers gave -1 with LELISTNULL and LEELEMNULL, and aborted on a bound element
       const bool append_errors =
@@ -393,8 +393,8 @@ namespace legacy_cores {
             append_errors && ocs::tom::size(src) == 1);
 
       // the old wrappers gave nullptr with LELISTNULL and LEELEMNULL, and aborted on an element of another list
-      RawListPtr other = ocs::tom::create_raw_list(TEST_Type, Hashing::On, "other");
-      ocs::tom::append(other.get().raw(), ocs::tom::create_raw_elem(TEST_Type));
+      RawListPtr other = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e, Hashing::On, "other");
+      ocs::tom::append(other.get().raw(), ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e));
       lListElem *foreign = other.get().raw()->first;
       const bool dechain_errors =
          throws_reason([&] { ocs::tom::dechain_elem(nullptr, src->first); }, FieldException::Reason::NullList) &&
@@ -405,7 +405,7 @@ namespace legacy_cores {
             dechain_errors && ocs::tom::size(src) == 1 && ocs::tom::size(other.get().raw()) == 1);
 
       // the old wrapper gave -1 with LELISTNULL and LEDIFFDESCR
-      RawListPtr jobs = ocs::tom::create_raw_list(JB_Type, Hashing::On, "jobs");
+      RawListPtr jobs = ocs::tom::create_raw_list(ocs::tom::JB::descriptor.e, Hashing::On, "jobs");
       const bool list_errors =
          throws_reason([&] { ocs::tom::append_list(nullptr, src); }, FieldException::Reason::NullList) &&
          throws_reason([&] { ocs::tom::append_list(src, nullptr); }, FieldException::Reason::NullList) &&
@@ -420,14 +420,14 @@ namespace legacy_cores {
     * @return nothing; CHECK records the results
     */
    void test_string_lookups() {
-      RawListPtr list = ocs::tom::create_raw_list(TEST_Type, Hashing::On, "full");
-      RawElementPtr element = ocs::tom::create_raw_elem(TEST_Type);
+      RawListPtr list = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e, Hashing::On, "full");
+      RawElementPtr element = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
       ocs::tom::set(element.get().raw(), TEST_string, "Name");
       lListElem *full = element.get().raw();
       ocs::tom::append(list.get().raw(), std::move(element));
       lList *lp = list.get().raw();
       const int any_field[] = {TEST_obj_any};
-      const ocs::tom::RawWhatPtr reduce = ocs::tom::what_of(TEST_Type, any_field);
+      const ocs::tom::RawWhatPtr reduce = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, any_field);
       const RawListPtr reduced = ocs::tom::select(lp, nullptr, reduce.get());
       // a null value and a null list find nothing; a foreign field, a field of another type and a field the
       // reduced list does not hold throw, where the old wrappers gave nullptr
@@ -458,30 +458,30 @@ namespace legacy_cores {
     */
    void test_add_and_remove_by_key() {
       lList *lp = nullptr;
-      lListElem *added = ocs::tom::add_elem_str(lp, TEST_string, "a", TEST_Type);
+      lListElem *added = ocs::tom::add_elem_str(lp, TEST_string, "a", ocs::tom::TEST::descriptor.e);
       // the string variants name a list they create "", the 32 bit variant "ulong_sublist"
       const bool add_str =
          added != nullptr && lp != nullptr && std::string(ocs::tom::list_name(lp)).empty() &&
          ocs::tom::size(lp) == 1 && std::string(ocs::tom::get<const char *>(added, TEST_string)) == "a" &&
-         throws_reason([&] { ocs::tom::add_elem_str(lp, TEST_string, nullptr, TEST_Type); },
+         throws_reason([&] { ocs::tom::add_elem_str(lp, TEST_string, nullptr, ocs::tom::TEST::descriptor.e); },
                        FieldException::Reason::NullKey) &&
          throws_reason([&] { ocs::tom::add_elem_str(lp, TEST_string, "a", nullptr); },
                        FieldException::Reason::NullDescriptor) &&
-         throws_reason([&] { ocs::tom::add_elem_str(lp, QU_qname, "a", TEST_Type); },
+         throws_reason([&] { ocs::tom::add_elem_str(lp, QU_qname, "a", ocs::tom::TEST::descriptor.e); },
                        FieldException::Reason::AbsentField) &&
-         throws_reason([&] { ocs::tom::add_elem_str(lp, TEST_uint32, "a", TEST_Type); },
+         throws_reason([&] { ocs::tom::add_elem_str(lp, TEST_uint32, "a", ocs::tom::TEST::descriptor.e); },
                        FieldException::Reason::WrongType) &&
-         throws_reason([&] { ocs::tom::add_elem_host(lp, TEST_string, "h", TEST_Type); },
+         throws_reason([&] { ocs::tom::add_elem_host(lp, TEST_string, "h", ocs::tom::TEST::descriptor.e); },
                        FieldException::Reason::WrongType) &&
          ocs::tom::size(lp) == 1;
       ocs::tom::free_raw_list(lp);
       lList *numbers = nullptr;
       const bool add_ulong =
-         ocs::tom::add_elem_ulong(numbers, TEST_uint32, 7, TEST_Type) != nullptr &&
+         ocs::tom::add_elem_ulong(numbers, TEST_uint32, 7, ocs::tom::TEST::descriptor.e) != nullptr &&
          std::string(ocs::tom::list_name(numbers)) == "ulong_sublist" &&
-         throws_reason([&] { ocs::tom::add_elem_ulong(numbers, QU_qname, 7, TEST_Type); },
+         throws_reason([&] { ocs::tom::add_elem_ulong(numbers, QU_qname, 7, ocs::tom::TEST::descriptor.e); },
                        FieldException::Reason::AbsentField) &&
-         throws_reason([&] { ocs::tom::add_elem_ulong(numbers, TEST_string, 7, TEST_Type); },
+         throws_reason([&] { ocs::tom::add_elem_ulong(numbers, TEST_string, 7, ocs::tom::TEST::descriptor.e); },
                        FieldException::Reason::WrongType) &&
          ocs::tom::size(numbers) == 1;
       ocs::tom::free_raw_list(numbers);
@@ -490,8 +490,8 @@ namespace legacy_cores {
             add_str && add_ulong);
 
       lList *strings = nullptr;
-      ocs::tom::add_elem_str(strings, TEST_string, "a", TEST_Type);
-      ocs::tom::add_elem_str(strings, TEST_string, "b", TEST_Type);
+      ocs::tom::add_elem_str(strings, TEST_string, "a", ocs::tom::TEST::descriptor.e);
+      ocs::tom::add_elem_str(strings, TEST_string, "b", ocs::tom::TEST::descriptor.e);
       const bool del_str = !ocs::tom::remove_elem_str(strings, TEST_string, "x") &&
                            ocs::tom::remove_elem_str(strings, TEST_string, "a") && ocs::tom::size(strings) == 1 &&
                            !ocs::tom::remove_elem_str(nullptr, TEST_string, "a") &&
@@ -499,7 +499,7 @@ namespace legacy_cores {
                                          FieldException::Reason::NullKey);
       ocs::tom::free_raw_list(strings);
       lList *ulongs = nullptr;
-      ocs::tom::add_elem_ulong(ulongs, TEST_uint32, 1, TEST_Type);
+      ocs::tom::add_elem_ulong(ulongs, TEST_uint32, 1, ocs::tom::TEST::descriptor.e);
       const bool del_ulong = !ocs::tom::remove_elem_ulong(ulongs, TEST_uint32, 9) &&
                              ocs::tom::remove_elem_ulong(ulongs, TEST_uint32, 1) && ocs::tom::size(ulongs) == 0 &&
                              !ocs::tom::remove_elem_ulong(nullptr, TEST_uint32, 1);
@@ -561,7 +561,8 @@ namespace legacy_cores {
       // m= takes a 32 bit field only: on a 64 bit field the comparison reports an unknown type and is false, so
       // nothing is selected, and the old contract gives no list then
       const ocs::tom::RawWherePtr bits64 =
-         ocs::tom::where_compare(TEST_Type, TEST_uint64, ocs::tom::CompareOp::Bitmask, std::uint64_t{8});
+         ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint64, ocs::tom::CompareOp::Bitmask,
+                                 std::uint64_t{8});
       const RawListPtr none = ocs::tom::select_as("selected", lp, bits64.get(), all.get(), Hashing::On);
       const bool bitmask = bits64 != nullptr && !none;
 
@@ -772,7 +773,7 @@ namespace legacy_cores {
     * @return a TEST element
     */
    RawElementPtr dump_fixture(lList *&list) {
-      RawElementPtr ep = ocs::tom::create_raw_elem(TEST_Type);
+      RawElementPtr ep = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
       lListElem *e = ep.get().raw();
       ocs::tom::set(e, TEST_bool, true);
       ocs::tom::set(e, TEST_uint32, std::uint32_t{42});
@@ -782,11 +783,11 @@ namespace legacy_cores {
       ocs::tom::set(e, TEST_double, 2.5);
       ocs::tom::set(e, TEST_host, Host{"host1"});
       ocs::tom::set(e, TEST_string, "say \"hi\" now");
-      RawElementPtr job = ocs::tom::create_raw_elem(JB_Type);
+      RawElementPtr job = ocs::tom::create_raw_elem(ocs::tom::JB::descriptor.e);
       ocs::tom::set(job.get().raw(), JB_job_number, std::uint32_t{7});
       ocs::tom::set(job.get().raw(), JB_owner, "alice");
       ocs::tom::set(e, TEST_obj_jb, std::move(job));
-      list = ocs::tom::create_raw_list(US_Type, Hashing::On, "sets").release();
+      list = ocs::tom::create_raw_list(ocs::tom::US::descriptor.e, Hashing::On, "sets").release();
       for (const char *name : {"one", "two"}) {
          lListElem *set = ocs::tom::emplace_back<US_name>(&list, name);
          ocs::tom::emplace_back_in<US_entries, UE_name>(set, "bob");
@@ -807,7 +808,8 @@ namespace legacy_cores {
       const std::string elem_text = text_of([&](FILE *fp) { ocs::tom::dump_elem(fp, ep, 1); });
       const std::string list_text = text_of([&](FILE *fp) { ocs::tom::dump_list(fp, sets, 0); });
       const std::string object_text = text_of([&](FILE *fp) { ocs::tom::dump_object(fp, job, 0); });
-      const std::string descr_text = text_of([&](FILE *fp) { ocs::tom::dump_descr(fp, US_Type, 2); });
+      const std::string descr_text =
+         text_of([&](FILE *fp) { ocs::tom::dump_descr(fp, ocs::tom::US::descriptor.e, 2); });
       std::uint64_t hash = fnv1a(elem_text.data(), elem_text.size());
       hash = fnv1a(list_text.data(), list_text.size(), hash);
       hash = fnv1a(object_text.data(), object_text.size(), hash);
@@ -817,7 +819,7 @@ namespace legacy_cores {
       std::string list_again;
       std::string object_again;
       read_text(elem_text, [&](FILE *fp) {
-         lListElem *back = ocs::tom::undump_elem(fp, TEST_Type);
+         lListElem *back = ocs::tom::undump_elem(fp, ocs::tom::TEST::descriptor.e);
          elem_again = text_of([&](FILE *out) { ocs::tom::dump_elem(out, back, 1); });
          ocs::tom::free_raw_elem(back);
       });
@@ -849,7 +851,7 @@ namespace legacy_cores {
             read_text(cut.empty() ? std::string(" ") : cut, [&](FILE *fp) {
                cull_state_set_lerrno(0);
                if (text == &elem_text) {
-                  nothing = reads_nothing([fp] { return ocs::tom::undump_elem(fp, TEST_Type); });
+                  nothing = reads_nothing([fp] { return ocs::tom::undump_elem(fp, ocs::tom::TEST::descriptor.e); });
                } else if (text == &list_text) {
                   nothing = reads_nothing([fp] { return ocs::tom::undump_list(fp, nullptr, nullptr); });
                } else {
@@ -862,10 +864,12 @@ namespace legacy_cores {
          }
       }
       const bool null_file = throws_lerrno([&] { ocs::tom::dump_elem(nullptr, ep, 0); }, LEFILENULL) &&
-                             reads_nothing([] { return ocs::tom::undump_elem(nullptr, TEST_Type); }) &&
+                             reads_nothing([] {
+                                return ocs::tom::undump_elem(nullptr, ocs::tom::TEST::descriptor.e);
+                             }) &&
                              reads_nothing([] { return ocs::tom::undump_list(nullptr, nullptr, nullptr); });
       const bool no_file = throws_lerrno([] {
-         lListElem *read = ocs::tom::undump_elem_from("/nonexistent/test_tom_soft_path", TEST_Type);
+         lListElem *read = ocs::tom::undump_elem_from("/nonexistent/test_tom_soft_path", ocs::tom::TEST::descriptor.e);
          ocs::tom::free_raw_elem(read);
       }, LEOPEN);
       CHECK(23, "reading a cut text reads nothing and leaves the error numbers of before; a null stream and a "
@@ -877,7 +881,7 @@ namespace legacy_cores {
       bool files = mkdtemp(dir) != nullptr;
       if (files) {
          ocs::tom::write_elem_to_disk(job, dir, "elem", "test");
-         lListElem *read = ocs::tom::read_elem_from_disk(dir, "elem", JB_Type, "test");
+         lListElem *read = ocs::tom::read_elem_from_disk(dir, "elem", ocs::tom::JB::descriptor.e, "test");
          files = read != nullptr && ocs::tom::get<std::uint32_t>(read, JB_job_number) == 7 &&
                  std::strcmp(ocs::tom::get<const char *>(read, JB_owner), "alice") == 0;
          ocs::tom::free_raw_elem(read);
@@ -885,13 +889,13 @@ namespace legacy_cores {
       const bool not_packed = throws_runtime([&] { ocs::tom::write_elem_to_disk(ep, dir, "test", "test"); });
       const bool no_name = throws_runtime([&] { ocs::tom::write_elem_to_disk(job, nullptr, nullptr, "test"); });
       const bool missing = throws_runtime([&] {
-         lListElem *read = ocs::tom::read_elem_from_disk(dir, "missing", JB_Type, "test");
+         lListElem *read = ocs::tom::read_elem_from_disk(dir, "missing", ocs::tom::JB::descriptor.e, "test");
          ocs::tom::free_raw_elem(read);
       });
       const std::string path = std::string(dir) + "/elem";
       bool cut_file = truncate(path.c_str(), 20) == 0;
       cut_file = cut_file && throws_runtime([&] {
-         lListElem *read = ocs::tom::read_elem_from_disk(dir, "elem", JB_Type, "test");
+         lListElem *read = ocs::tom::read_elem_from_disk(dir, "elem", ocs::tom::JB::descriptor.e, "test");
          ocs::tom::free_raw_elem(read);
       });
       unlink(path.c_str());
@@ -946,13 +950,13 @@ namespace legacy_cores {
 
       // a reduced descriptor, and none for the selection of no field
       const What<US> name_only = what<US_name>();
-      const lDescr *reduced = ocs::tom::reduced_descr(US_Type, name_only.get());
+      const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::US::descriptor.e, name_only.get());
       // a reduced descriptor keeps the full length and marks the fields it leaves out as absent
       const bool reduction = reduced != nullptr && ocs::tom::present_pos(reduced, US_name) >= 0 &&
                              ocs::tom::present_pos(reduced, US_type) < 0;
       ocs::tom::release_descr(reduced);
       lEnumeration *none = ocs::tom::make_what_special(WHAT_NONE);
-      const bool no_reduction = ocs::tom::reduced_descr(US_Type, none) == nullptr;
+      const bool no_reduction = ocs::tom::reduced_descr(ocs::tom::US::descriptor.e, none) == nullptr;
       ocs::tom::free_what(none);
       CHECK(25, "type_name names an unknown type, remove_common_str takes the shared names out and leaves a missing "
                 "list alone, reduced_descr reduces and gives nothing for the selection of no field",
@@ -986,7 +990,7 @@ namespace legacy_cores {
                        FieldException::Reason::ForeignField);
 
       // the text of the print core on a list, an element, a selection and a condition
-      lList *sets = ocs::tom::create_raw_list(US_Type, Hashing::On, "sets").release();
+      lList *sets = ocs::tom::create_raw_list(ocs::tom::US::descriptor.e, Hashing::On, "sets").release();
       for (const char *name : {"one", "two", "three"}) {
          ocs::tom::emplace_back<US_name>(&sets, name);
       }

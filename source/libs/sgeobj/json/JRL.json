@@ -3,7 +3,7 @@
    "summary": "Job Reference with Category (unused)",
    "description": [
       "A reference to a job together with its submission time and category.",
-      "@warning No attribute of this type is read or written anywhere in either repository, and `JRL_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
+      "@warning No attribute of this type is read or written anywhere in either repository, and `JRL` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
    "cullPrefix": "JRL",
    "attributes": [

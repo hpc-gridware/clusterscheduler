@@ -75,7 +75,7 @@ cqueue_commit(ocs::tom::Element<ocs::tom::CQ> cqueue, uint64_t gdi_session);
  *       and nothing calls it. The rollback of a failed queue modification is
  *       done by discarding the working copy of the queue instead.
  *
- * @param cqueue the cluster queue (`CQ_Type`) whose changes are discarded
+ * @param cqueue the cluster queue (`CQ`) whose changes are discarded
  */
 void
 cqueue_rollback(lListElem *cqueue);

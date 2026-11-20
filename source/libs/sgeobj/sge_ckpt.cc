@@ -71,10 +71,10 @@
  * "master_cqueue_list". If this is the case than
  * a corresponding message will be added to the "answer_list".
  *
- * @param ckpt CK_Type object
- * @param answer_list AN_Type list
- * @param master_job_list JB_Type list
- * @param master_cqueue_list CQ_Type list
+ * @param ckpt CK object
+ * @param answer_list AN list
+ * @param master_job_list JB list
+ * @param master_cqueue_list CQ list
  *
  * @return true or false
  */
@@ -124,10 +124,10 @@ bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::to
  *
  * This function will return a ckpt object by name if it exists.
  *
- * @param ckpt_list CK_Type list
+ * @param ckpt_list CK list
  * @param ckpt_name name of the ckpt object.
  *
- * @return the ckpt object (CK_Type) named "ckpt_name", or an empty handle if it does not exist
+ * @return the ckpt object (CK) named "ckpt_name", or an empty handle if it does not exist
  */
 ocs::tom::Element<ocs::tom::CK> ckpt_list_locate(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
                                                  const char *ckpt_name) {
@@ -285,9 +285,9 @@ int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom
  * Test if the checkpointing objects whose name is contained in
  * "ckpt_ref_list" is contained in "ckpt_list".
  *
- * @param ckpt_list CK_Type list
- * @param answer_list AN_Type list
- * @param ckpt_ref_list ST_Type list containing ckpt names
+ * @param ckpt_list CK list
+ * @param answer_list AN list
+ * @param ckpt_ref_list ST list containing ckpt names
  *
  * @return true if all ckpt objects exist
  */
@@ -318,7 +318,7 @@ bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
  * @param ckpt_name name used for the CK_name attribute of the generic ckpt object. If nullptr then "template"
  *                  is the default name.
  *
- * @return the new CK_Type object
+ * @return the new CK object
  */
 ocs::tom::ElementPtr<ocs::tom::CK> sge_generic_ckpt(const char *ckpt_name) {
    DENTER(TOP_LAYER);

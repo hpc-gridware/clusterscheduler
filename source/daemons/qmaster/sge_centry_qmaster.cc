@@ -367,7 +367,7 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::E
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param centry the complex entry (`CE_Type`), only its name is used
+ * @param centry the complex entry (`CE`), only its name is used
  * @param answer_list receives messages for the caller
  * @param remote_user the requesting user
  * @param remote_host the requesting host
@@ -487,7 +487,7 @@ sge_change_queue_version_centry(const uint64_t gdi_version) {
  * Recomputes the complete consumable debitation for all queues, hosts and
  * jobs.
  *
- * @param centries the names (`STU_Type`) of the complex entries that actually require recomputation;
+ * @param centries the names (`STU`) of the complex entries that actually require recomputation;
  *                 not evaluated yet, every consumable is recomputed
  * @param gdi_version the GDI session the change belongs to
  *

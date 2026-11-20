@@ -224,7 +224,7 @@ const char *event_text(const ocs::tom::ConstElement<ocs::tom::ET> event, dstring
    /* -------------------- */
    case sgeE_NEW_SHARETREE:
       {
-         // a sharetree event carries the tree, STN_Type
+         // a sharetree event carries the tree, STN
          const ocs::tom::ConstList<ocs::tom::STN> tree(lp);
          sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, number,
             tree.count_nodes<STN_children>(),
@@ -528,7 +528,7 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
 
 #if 1
    if (ret) {
-      if (!object_verify_cull(event_client, EV_Type)) {
+      if (!object_verify_cull(event_client, ocs::tom::EV::descriptor.e)) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_OBJECT_STRUCTURE_ERROR);
          DTRACE;

@@ -80,6 +80,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of SPP for the list library: a synonym for ocs::tom::SPP::descriptor */
-inline constexpr const lDescr *SPP_Type = ocs::tom::SPP::descriptor.e;

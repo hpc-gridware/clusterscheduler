@@ -57,9 +57,9 @@ static int s_fail = 0;
    } while (0)
 
 /**
- * @brief Build a UA_Type element via the R8a helper and inspect it
+ * @brief Build a UA element via the R8a helper and inspect it
  *
- * The R8a helper (usage_parse_value) produces a fresh UA_Type element with
+ * The R8a helper (usage_parse_value) produces a fresh UA element with
  * UA_name set and either UA_value or UA_svalue populated according to the
  * discrimination rule described in CS-849 / origin AE3.
  *

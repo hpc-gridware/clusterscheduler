@@ -77,7 +77,7 @@
 #include "msg_execd.h"
 #include "sge_conf.h"
 
-/** @brief The job reports waiting to be sent to qmaster (`JR_Type`)
+/** @brief The job reports waiting to be sent to qmaster (`JR`)
  *
  * A report stays in this list until qmaster acknowledges it, so that a report
  * lost to a restart or a network failure is sent again rather than dropped -
@@ -120,29 +120,6 @@ void flush_job_report(const ocs::tom::Element<ocs::tom::JR> jr) {
 
    DRETURN_VOID;
 }
-
-#if 0
-/**
- * @brief Trace every job report of #jr_list
- * @return nothing
- */
-void trace_jr()
-{
-   DENTER(TOP_LAYER);
-
-   DPRINTF("--- JOB REPORT LIST ----------------\n");
-   for (const auto jr : ocs::tom::ConstList<ocs::tom::JR>(jr_list)) {
-      const uint32_t job_number = ocs::tom::get<JR_job_number>(jr);
-      const uint32_t ja_task_number = ocs::tom::get<JR_ja_task_number>(jr);
-      if (const char *s = ocs::tom::get<JR_pe_task_id_str>(jr); s != nullptr) {
-         DPRINTF("Jobtask " sge_u32"." sge_u32" task %s\n", job_number, ja_task_number, s);
-      } else {
-         DPRINTF("Jobtask " sge_u32"." sge_u32"\n", job_number, ja_task_number);
-      }
-   }
-   DRETURN_VOID;
-}
-#endif
 
 /**
  * @brief Start a job report for a job, task or PE task

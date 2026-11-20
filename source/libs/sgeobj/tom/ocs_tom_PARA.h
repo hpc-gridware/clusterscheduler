@@ -80,6 +80,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of PARA for the list library: a synonym for ocs::tom::PARA::descriptor */
-inline constexpr const lDescr *PARA_Type = ocs::tom::PARA::descriptor.e;

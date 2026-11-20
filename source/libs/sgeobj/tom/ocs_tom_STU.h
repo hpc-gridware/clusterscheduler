@@ -51,7 +51,7 @@ namespace ocs::tom {
    /**
     * @brief Unique String
     *
-    * An object of this type holds a string which is unique in a List of STU_Type.
+    * An object of this type holds a string which is unique in a List of STU.
     */
    struct STU {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -73,6 +73,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of STU for the list library: a synonym for ocs::tom::STU::descriptor */
-inline constexpr const lDescr *STU_Type = ocs::tom::STU::descriptor.e;

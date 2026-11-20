@@ -72,9 +72,9 @@ namespace ocs {
     * the usage since the previous one.
     *
     * @param answer_list receives error messages
-    * @param job_report the job report the execution host sent (`JR_Type`)
-    * @param job the job (`JB_Type`)
-    * @param ja_task the array task (`JAT_Type`)
+    * @param job_report the job report the execution host sent (`JR`)
+    * @param job the job (`JB`)
+    * @param ja_task the array task (`JAT`)
     * @param intermediate whether this is an interim record for a job that is still running
     * @return true on success
     */
@@ -138,7 +138,7 @@ namespace ocs {
     *
     * @param answer_list receives error messages
     * @param job_report the job report the execution host sent
-    * @param job the job (`JB_Type`)
+    * @param job the job (`JB`)
     * @param ja_task the array task
     * @param pe_task the PE task, or nullptr for the ja_task's own usage
     * @param aggregate_pe_tasks whether the PE tasks are summed into the ja_task value
@@ -263,7 +263,7 @@ namespace ocs {
 
    /** @brief Write a new_job record for a job that has just been submitted
     * @param answer_list receives error messages
-    * @param job the job (`JB_Type`), may be an empty handle
+    * @param job the job (`JB`), may be an empty handle
     * @return true on success
     */
    bool
@@ -315,10 +315,10 @@ namespace ocs {
     * @param type which change it was
     * @param user who caused it
     * @param host the host it happened on
-    * @param job_report the job report the execution host sent (`JR_Type`), not used here
-    * @param job the job (`JB_Type`), may be an empty handle
-    * @param ja_task the array task (`JAT_Type`), may be an empty handle
-    * @param pe_task the PE task (`PET_Type`), may be an empty handle
+    * @param job_report the job report the execution host sent (`JR`), not used here
+    * @param job the job (`JB`), may be an empty handle
+    * @param ja_task the array task (`JAT`), may be an empty handle
+    * @param pe_task the PE task (`PET`), may be an empty handle
     * @param message a description of what happened, may be nullptr
     * @return true on success
     */
@@ -411,7 +411,7 @@ namespace ocs {
     * The record is written only when there are load values to report.
     *
     * @param answer_list receives error messages
-    * @param host the execution host (`EH_Type`), may be an empty handle
+    * @param host the execution host (`EH`), may be an empty handle
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -451,8 +451,8 @@ namespace ocs {
     * The record is written only when at least one consumable is logged.
     *
     * @param answer_list receives error messages
-    * @param host the execution host (`EH_Type`), may be an empty handle
-    * @param job the job that changed the consumables (`JB_Type`), may be an empty handle
+    * @param host the execution host (`EH`), may be an empty handle
+    * @param job the job that changed the consumables (`JB`), may be an empty handle
     * @param report_time the time to stamp the record with
     * @return true on success
     */
@@ -492,7 +492,7 @@ namespace ocs {
 
    /** @brief Write a queue record with the state of a queue instance
     * @param answer_list receives error messages
-    * @param queue the queue instance (`QU_Type`), may be an empty handle
+    * @param queue the queue instance (`QU`), may be an empty handle
     * @param report_time the time to stamp the record with
     * @return true on success, false for an empty handle
     */
@@ -536,9 +536,9 @@ namespace ocs {
     * The record is written only when at least one consumable is logged.
     *
     * @param answer_list receives error messages
-    * @param host the host of the queue instance (`EH_Type`), may be an empty handle
-    * @param queue the queue instance (`QU_Type`), may be an empty handle
-    * @param job the job that changed the consumables (`JB_Type`), may be an empty handle
+    * @param host the host of the queue instance (`EH`), may be an empty handle
+    * @param queue the queue instance (`QU`), may be an empty handle
+    * @param job the job that changed the consumables (`JB`), may be an empty handle
     * @param report_time the time to stamp the record with
     * @return true on success, false for an empty host or queue handle
     */
@@ -586,7 +586,7 @@ namespace ocs {
 
    /** @brief Write a new_ar record for an advance reservation that has just been created
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param ar the advance reservation (`AR`), may be an empty handle
     * @param report_time the time to stamp the record with
     * @return true on success, false for an empty handle
     */
@@ -620,7 +620,7 @@ namespace ocs {
 
    /** @brief Write an ar_attribute record with the attributes of an advance reservation
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param ar the advance reservation (`AR`), may be an empty handle
     * @param report_time the time to stamp the record with
     * @return true on success, false for an empty handle
     */
@@ -670,7 +670,7 @@ namespace ocs {
 
    /** @brief Write an ar_log record for a state change of an advance reservation
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param ar the advance reservation (`AR`), may be an empty handle
     * @param event the event that caused the state change
     * @param ar_description a description of the change
     * @param report_time the time of the state change
@@ -715,7 +715,7 @@ namespace ocs {
 
    /** @brief Write one ar_acct record per queue instance of a terminated advance reservation
     * @param answer_list receives error messages
-    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param ar the advance reservation (`AR`), may be an empty handle
     * @param report_time the termination time
     * @return true on success, false for an empty handle or an unparsable queue instance name
     */
@@ -752,7 +752,7 @@ namespace ocs {
     * A reservation spans queue instances, and the accounting is per
     * instance, so create_ar_acct_record() calls this once for each.
     *
-    * @param ar the advance reservation (`AR_Type`)
+    * @param ar the advance reservation (`AR`)
     * @param cqueue_name the cluster queue
     * @param hostname the host
     * @param slots the slots reserved there

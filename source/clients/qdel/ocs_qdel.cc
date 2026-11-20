@@ -305,7 +305,7 @@ error_exit:
  *
  * @param argv the arguments, without the program name
  * @param envp the process environment
- * @param cmdline receives the parsed options (`SPA_Type`), created with the first option
+ * @param cmdline receives the parsed options (`SPA`), created with the first option
  * @param alpp receives the parse errors
  * @return true on success, false on a parse error
  */
@@ -419,10 +419,10 @@ error:
  * Gets the options from @p cmdline, sets the force flag and puts the
  * job numbers (strings) in @p reflist.
  *
- * @param cmdline the parsed options (`SPA_Type`); the options used are removed
- * @param reflist receives the job references (`ID_Type`)
+ * @param cmdline the parsed options (`SPA`); the options used are removed
+ * @param reflist receives the job references (`ID`)
  * @param pforce receives the -f flag
- * @param userlist receives the users of -u (`ST_Type`)
+ * @param userlist receives the users of -u (`ST`)
  * @param alpp receives the parse errors
  * @return true on success, false on a parse error
  */
@@ -451,7 +451,7 @@ static bool sge_parse_qdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom
 
       while ((ep = cmdline.find_first<SPA_switch_val>("-u"))) {
          // SPA_argval_lListT carries lists of several types and has no typed exchange; the parser fills the
-         // argument of -u with an ST_Type user list
+         // argument of -u with an ST user list
          lList *users = userlist.release();
          ocs::tom::exchange<SPA_argval_lListT>(ep, &users);
          userlist = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);

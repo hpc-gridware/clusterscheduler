@@ -538,7 +538,7 @@ job_parse_validation_level(int *level, const char *input, int prog_number,
 
 bool job_is_requesting_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, const char *resource_name);
 
-// Defines and Functions for Job Resource Sets (JRS_Type)
+// Defines and Functions for Job Resource Sets (JRS)
 
 /**
  * @name Job resource set scopes

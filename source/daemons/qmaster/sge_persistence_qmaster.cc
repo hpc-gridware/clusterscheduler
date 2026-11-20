@@ -81,7 +81,7 @@ sge_initialize_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       spooling_wait_time = atoi(getenv("SGE_TEST_SPOOLING_WAIT_TIME"));
    }
 
-   /* create spooling context; the spooling loader creates it as SPC_Type */
+   /* create spooling context; the spooling loader creates it as SPC */
    const auto spooling_context = ocs::tom::Element<ocs::tom::SPC>::from_typed(
            spool_create_dynamic_context(answer_list, spooling_method, spooling_lib, spooling_params));
    if (!spooling_context) {
@@ -139,7 +139,7 @@ sge_shutdown_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       answer_list_output(&alp);
    }
 
-   /* shutdown spooling; the default context is the SPC_Type element set in sge_initialize_persistence() */
+   /* shutdown spooling; the default context is the SPC element set in sge_initialize_persistence() */
    auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::from_typed(spool_get_default_context());
    if (context) {
       if (answer_list != nullptr) {

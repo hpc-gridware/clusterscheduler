@@ -562,7 +562,7 @@ static void collect_recursive(const char *role_name, const ocs::tom::ConstList<o
  *
  * Used by qconf -arole when opening an editor for a new role.
  *
- * @return a new RL_Type element with default values
+ * @return a new RL element with default values
  */
 ocs::tom::ElementPtr<ocs::tom::RL>
 ocs::Role::create_template() {

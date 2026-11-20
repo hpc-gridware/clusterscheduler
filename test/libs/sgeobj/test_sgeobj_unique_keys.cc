@@ -94,8 +94,8 @@ test_flat_lists() {
    lFreeList(&vars);
 
    auto no_keys = ocs::tom::ListPtr<ocs::tom::VA>::create("no keys");
-   lAppendElem(*no_keys, lCreateElem(VA_Type));
-   lAppendElem(*no_keys, lCreateElem(VA_Type));
+   lAppendElem(*no_keys, lCreateElem(ocs::tom::VA::descriptor.e));
+   lAppendElem(*no_keys, lCreateElem(ocs::tom::VA::descriptor.e));
    CHECK(3, "elements without a key are skipped", ocs_object_list_verify_unique_keys(*no_keys, &answer_list, "test"));
    no_keys.reset();
 
@@ -314,12 +314,12 @@ test_context_change() {
    child.reset();
 
    // qstat -j works on a reduced job that does not contain JB_context_change
-   lList *jobs = lCreateList("jobs", JB_Type);
+   lList *jobs = lCreateList("jobs", ocs::tom::JB::descriptor.e);
    ocs::tom::Element<ocs::tom::JB> full = ocs::tom::emplace_back<JB_job_number>(&jobs, 1);
    lList *context = nullptr;
    ocs::tom::emplace_back<VA_variable>(&context, "f");
    ocs::tom::set<JB_context>(full, context);
-   lEnumeration *what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_context);
+   lEnumeration *what = lWhat("%T(%I %I)", ocs::tom::JB::descriptor.e, JB_job_number, JB_context);
    lList *reduced = lSelect("reduced", jobs, nullptr, what);
    auto reduced_effective = ocs_context_get_effective(ocs::tom::ConstElement<ocs::tom::JB>(lFirst(reduced)));
    CHECK(22, "the effective context of a reduced job without the change request is its context",
@@ -442,9 +442,9 @@ test_merge() {
    const char *const first_queues[] = {"a.q", "b.q", nullptr};
    const char *const more_queues[] = {"c.q", "a.q", nullptr};
    const char *const last_queues[] = {"c.q", nullptr};
-   lList *queues = names_list(first_queues, QR_name, QR_Type);
-   lList *more = names_list(more_queues, QR_name, QR_Type);
-   lList *last = names_list(last_queues, QR_name, QR_Type);
+   lList *queues = names_list(first_queues, QR_name, ocs::tom::QR::descriptor.e);
+   lList *more = names_list(more_queues, QR_name, ocs::tom::QR::descriptor.e);
+   lList *last = names_list(last_queues, QR_name, ocs::tom::QR::descriptor.e);
    ocs_object_list_add_unique(&queues, &more);
    ocs_object_list_add_unique(&queues, &last);
    CHECK(28, "-q a.q,b.q -q c.q,a.q -q c.q holds a.q, b.q and c.q once, in their first positions",
@@ -478,8 +478,8 @@ test_merge() {
 
    const char *const acl_names[] = {"u1", "u2", nullptr};
    const char *const more_names[] = {"u1", nullptr};
-   lList *acl = names_list(acl_names, ARA_name, ARA_Type);
-   lList *more_acl = names_list(more_names, ARA_name, ARA_Type);
+   lList *acl = names_list(acl_names, ARA_name, ocs::tom::ARA::descriptor.e);
+   lList *more_acl = names_list(more_names, ARA_name, ocs::tom::ARA::descriptor.e);
    ocs_object_list_add_unique(&acl, &more_acl);
    CHECK(31, "an access list merged with a name it holds keeps it once", lGetNumberOfElem(acl) == 2);
    lFreeList(&acl);
@@ -563,7 +563,7 @@ test_inventory() {
    lList *targets = nullptr;
    for (const char *target : {"all.q@h1", "all.q@h2", "all.q"}) {
       lListElem *cqueue = ocs::tom::emplace_back<CQ_name>(&targets, target);
-      lListElem *slots = lAddSubHost(cqueue, AULNG_href, HOSTREF_DEFAULT, CQ_job_slots, AULNG_Type);
+      lListElem *slots = lAddSubHost(cqueue, AULNG_href, HOSTREF_DEFAULT, CQ_job_slots, ocs::tom::AULNG::descriptor.e);
       ocs::tom::set<AULNG_value>(slots, 4);
    }
    bool ok = cqueue_xattr_pre_gdi(targets, &answers);

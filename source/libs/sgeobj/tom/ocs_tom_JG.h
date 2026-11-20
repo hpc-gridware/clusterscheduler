@@ -146,7 +146,7 @@ namespace ocs::tom {
     * @brief Job Granted Destination Identifier
     *
     * A list of such objects defines to which queue instance(s) a job has been scheduled.
-    * For sequential jobs / tasks of an array job there is a single object of JG_Type.
+    * For sequential jobs / tasks of an array job there is a single object of JG.
     * In case of tightly integrated parallel jobs there is an object per queue instance.
     * The first object defines where the master task of the job is running.
     */
@@ -196,6 +196,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of JG for the list library: a synonym for ocs::tom::JG::descriptor */
-inline constexpr const lDescr *JG_Type = ocs::tom::JG::descriptor.e;

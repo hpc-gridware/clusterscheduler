@@ -61,7 +61,7 @@ enum RL_Field {
    /**
     * @brief User List
     *
-    * List of GCS user access list names (US_Type) whose members are authorized to use
+    * List of GCS user access list names (US) whose members are authorized to use
     * this Role to submit requests, provided the Role is enabled.
     * A user must be a member of at least one of the referenced access lists to assume the Role.
     * If set to NONE (the default), no user is authorized to use the Role.
@@ -72,7 +72,7 @@ enum RL_Field {
    /**
     * @brief Parent Role List
     *
-    * List of Role names (ST_Type) from which this Role inherits all Permissions transitively.
+    * List of Role names (ST) from which this Role inherits all Permissions transitively.
     * Inheritance is transitive: a Role acquires the Permissions of all ancestor Roles in the
     * hierarchy. The Role Hierarchy must form a directed acyclic graph (DAG); cyclic references
     * are not permitted and are rejected during validation.
@@ -165,6 +165,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of RL for the list library: a synonym for ocs::tom::RL::descriptor */
-inline constexpr const lDescr *RL_Type = ocs::tom::RL::descriptor.e;

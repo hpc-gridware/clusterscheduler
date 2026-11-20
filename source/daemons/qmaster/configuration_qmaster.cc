@@ -167,7 +167,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
 
    // read the spooled list
    spool_read_list(answer_list, aSpoolContext, config_list, SGE_TYPE_CONFIG);
-   // the spooling layer reads CONF_Type elements for SGE_TYPE_CONFIG
+   // the spooling layer reads CONF elements for SGE_TYPE_CONFIG
    const auto configs = ocs::tom::List<ocs::tom::CONF>::from_typed(*config_list);
 
    // add potentially missing attributes, in this order
@@ -418,11 +418,11 @@ notify_execds_about_conf_change(const char *conf_name) {
 /**
  * @brief Modify cluster configuration
  *
- * Modify cluster configuration. 'confp' is a pointer to a 'CONF_Type' list
+ * Modify cluster configuration. 'confp' is a pointer to a 'CONF' list
  * element and does contain the modified configuration entry. Adding a new
  * configuration entry is also viewed as a modification.
  *
- * @param aConf CONF_Type element containing the modified conf
+ * @param aConf CONF element containing the modified conf
  * @param anAnswer answer list
  * @param aUser target user
  * @param aHost target host
@@ -639,7 +639,7 @@ check_config_script_path(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name
  * @brief Validate a configuration sent by a client before it is stored
  *
  * @param alpp receives the reason a configuration is rejected
- * @param conf the configuration (CONF_Type)
+ * @param conf the configuration (CONF)
  *
  * @return STATUS_OK if the configuration is valid, an error status otherwise;
  *         STATUS_ESYNTAX when an attribute is given twice

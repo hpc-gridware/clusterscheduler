@@ -2,7 +2,7 @@
    "className": "PETaskRequest",
    "summary": "PE Task Request",
    "description": [
-      "Objects of PETR_Type are used to request the start of a task in a",
+      "Objects of PETR are used to request the start of a task in a",
       "tightly integrated parallel job."
    ],
    "cullPrefix": "PETR",

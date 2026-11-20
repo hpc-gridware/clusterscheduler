@@ -69,7 +69,7 @@
          "name": "xuser_list",
          "summary": "XUser List",
          "description": [
-            "US_Type; list of not allowed users."
+            "US; list of not allowed users."
          ],
          "type": "lListT",
          "subClassName": "US",
@@ -183,7 +183,7 @@
          "name": "resource_utilization",
          "summary": "Resource Utilization",
          "description": [
-            "Sub list of RUE_Type used to store resources (slots) currently in use by running parallel jobs."
+            "Sub list of RUE used to store resources (slots) currently in use by running parallel jobs."
          ],
          "type": "lListT",
          "subClassName": "RUE",

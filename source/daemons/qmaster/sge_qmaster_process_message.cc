@@ -292,12 +292,12 @@ ocs_request_data_type(const ocs::gdi::Task *task, const lDescr *data_descr) {
    if (object_type == nullptr) {
       // targets without generic handling, whose request data still has one type
       switch (task->target) {
-         case ocs::gdi::Target::JB_LIST:    object_type = JB_Type;   break;
-         case ocs::gdi::Target::EV_LIST:    object_type = EV_Type;   break;
-         case ocs::gdi::Target::CONF_LIST:  object_type = CONF_Type; break;
-         case ocs::gdi::Target::SC_LIST:    object_type = SC_Type;   break;
-         case ocs::gdi::Target::STN_LIST:   object_type = STN_Type;  break;
-         case ocs::gdi::Target::ORDER_LIST: object_type = OR_Type;   break;
+         case ocs::gdi::Target::JB_LIST:    object_type = ocs::tom::JB::descriptor.e;   break;
+         case ocs::gdi::Target::EV_LIST:    object_type = ocs::tom::EV::descriptor.e;   break;
+         case ocs::gdi::Target::CONF_LIST:  object_type = ocs::tom::CONF::descriptor.e; break;
+         case ocs::gdi::Target::SC_LIST:    object_type = ocs::tom::SC::descriptor.e;   break;
+         case ocs::gdi::Target::STN_LIST:   object_type = ocs::tom::STN::descriptor.e;  break;
+         case ocs::gdi::Target::ORDER_LIST: object_type = ocs::tom::OR::descriptor.e;   break;
          default:                           break;
       }
    }
@@ -311,18 +311,18 @@ ocs_request_data_type(const ocs::gdi::Task *task, const lDescr *data_descr) {
          // jobs and advance reservations are deleted by ID elements, every other object by an element of
          // its own type; the worker builds checked handles of exactly these types
          return task->target == ocs::gdi::Target::JB_LIST || task->target == ocs::gdi::Target::AR_LIST
-                   ? ID_Type
+                   ? ocs::tom::ID::descriptor.e
                    : object_type;
       case ocs::gdi::Command::TRIGGER:
          // the worker triggers (execd shutdown, queue and job state changes) read ID elements only
          if (task->target == ocs::gdi::Target::EH_LIST || task->target == ocs::gdi::Target::CQ_LIST ||
              task->target == ocs::gdi::Target::JB_LIST) {
-            return ID_Type;
+            return ocs::tom::ID::descriptor.e;
          }
-         return ocs::tom::same_type(data_descr, ID_Type) ? ID_Type : object_type;
+         return ocs::tom::same_type(data_descr, ocs::tom::ID::descriptor.e) ? ocs::tom::ID::descriptor.e : object_type;
       case ocs::gdi::Command::GET_PROCEDURE:
       case ocs::gdi::Command::MOD_PROCEDURE:
-         return SPP_Type;
+         return ocs::tom::SPP::descriptor.e;
       default:
          return nullptr;
    }
@@ -799,7 +799,7 @@ void
 sge_c_ack(const ocs::gdi::Packet *packet, const ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // extract information from the task about the ACK; the listener built the list of ACK_Type itself
+   // extract information from the task about the ACK; the listener built the list of ACK itself
    const auto ack = ocs::tom::ConstList<ocs::tom::ACK>::from_typed(task->data_list).front();
    const uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);
    uint32_t ack_ulong = ocs::tom::get<ACK_id>(ack);

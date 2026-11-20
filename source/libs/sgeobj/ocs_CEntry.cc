@@ -34,9 +34,9 @@
 #include "ocs_ObjectContainer.h"
 #include "sgeobj/sge_answer.h"
 
-/** @brief Check a CE_Type list for duplicate names
+/** @brief Check a CE list for duplicate names
 
- *  @param centry_list CE_Type list to check for duplicates
+ *  @param centry_list CE list to check for duplicates
  *  @param answer_list If not nullptr, error messages are added to this list
  *  @param object_name Optional name of the object owning the centry list
  *  @return true if duplicates were found, false otherwise

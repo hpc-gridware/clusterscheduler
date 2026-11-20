@@ -95,7 +95,7 @@ hgroup_rollback(ocs::tom::Element<ocs::tom::HGRP> this_elem);
  * host. Appends the names of those that do, comma-separated.
  * Only used to build an error message, so it is allowed to be the slow path.
  *
- * @param current direct HR_Type entries of the reserved group
+ * @param current direct HR entries of the reserved group
  * @param hostname host that could not be removed directly
  * @param master_hgroup_list list the references resolve against
  * @param groups receives the comma-separated names
@@ -155,7 +155,7 @@ hgroup_nesting_that_contains(const ocs::tom::ConstList<ocs::tom::HR> current, co
  *
  * @param hgroup the group as it is BEFORE the merge
  * @param answer_list for returning the errors
- * @param delta_list HR_Type entries the request carries
+ * @param delta_list HR entries the request carries
  * @param sub_command APPEND, REMOVE or neither
  * @param master_hgroup_list to resolve nested references (chunk 4)
  *
@@ -775,12 +775,12 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
          }
 
          /*
-          * Client and scheduler code expects existing EH_Type elements
+          * Client and scheduler code expects existing EH elements
           * for all hosts used in CQ_hostlist. Therefore it is neccessary
-          * to create all not existing EH_Type elements.
+          * to create all not existing EH elements.
           *
           * CS-2438: only when a cluster queue actually references this group.
-          * The EH_Type elements exist to back the queue instances created in the
+          * The EH elements exist to back the queue instances created in the
           * loop above; a group that no queue references produces no instances
           * and needs none. Creating them unconditionally turned every member of
           * the reserved "@admin_hosts"/"@submit_hosts" groups into an execution
@@ -1058,7 +1058,7 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
  *
  * @param hgroup the group whose membership changed
  * @param master_hgroup_list the (already updated) master list
- * @param[in,out] referencees HR_Type names of the refreshed referencees; the CALLER keeps it, because it still
+ * @param[in,out] referencees HR names of the refreshed referencees; the CALLER keeps it, because it still
  *        needs them to send one event each
  *
  * @note MT-NOTE: call under the write lock, like every other writer of the list
@@ -1111,7 +1111,7 @@ void hgroup_refresh_caches(const ocs::tom::Element<ocs::tom::HGRP> hgroup,
  * would be redundant state that can drift from the member list.
  *
  * @param master_hgroup_list the (already updated) master list
- * @param[in,out] refreshed HR_Type names of every group refreshed here and of its
+ * @param[in,out] refreshed HR names of every group refreshed here and of its
  *        referencees, appended to what the caller already collected; the CALLER
  *        keeps it and sends one event per name
  *
@@ -1164,7 +1164,7 @@ void hgroup_refresh_matcher_caches(const ocs::tom::List<ocs::tom::HGRP> master_h
  * rewriting their spool files would be pure I/O.
  * Send these AFTER the event for the group that actually changed.
  *
- * @param referencees the host groups whose cache was refreshed (`HR_Type`)
+ * @param referencees the host groups whose cache was refreshed (`HR`)
  * @param master_hgroup_list the master host group list
  * @param gdi_session the session the change belongs to
  */

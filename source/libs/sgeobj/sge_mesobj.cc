@@ -53,7 +53,7 @@
  * Queue instances and jobs carry a list of messages explaining their state;
  * this appends one. The list is created if the object holds none yet.
  *
- * @tparam F the list field holding the messages (QIM_Type), e.g. QU_message_list
+ * @tparam F the list field holding the messages (QIM), e.g. QU_message_list
  * @param this_elem the object to add to; an empty handle changes nothing
  * @param type the message type, so it can be trashed selectively
  * @param message the text; nullptr adds nothing
@@ -85,7 +85,7 @@ template bool object_message_add<JAT_message_list>(ocs::tom::Element<ocs::tom::J
  *
  * A message list emptied this way is freed and the field set to nullptr.
  *
- * @tparam F the list field holding the messages (QIM_Type), e.g. QU_message_list
+ * @tparam F the list field holding the messages (QIM), e.g. QU_message_list
  * @param this_elem the object to clean up; an empty handle changes nothing
  * @param type a mask of the message types to remove
  * @return true

@@ -201,6 +201,3 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
-
-/** @brief The descriptor of QAJ for the list library: a synonym for ocs::tom::QAJ::descriptor */
-inline constexpr const lDescr *QAJ_Type = ocs::tom::QAJ::descriptor.e;

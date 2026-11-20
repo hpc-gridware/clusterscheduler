@@ -158,9 +158,9 @@ ocs::Matcher::Route hgroup_why(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, co
  * @return a tuple of
  *         - true when the group carries at least one matcher - the case in which
  *           the split says something the leading '@' does not;
- *         - the literal host names (`HR_Type`), nullptr when none;
- *         - the group references (`HR_Type`), nullptr when none;
- *         - the matchers (`HR_Type`), nullptr when none
+ *         - the literal host names (`HR`), nullptr when none;
+ *         - the group references (`HR`), nullptr when none;
+ *         - the matchers (`HR`), nullptr when none
  */
 [[nodiscard]] std::tuple<bool, ocs::tom::ListPtr<ocs::tom::HR>, ocs::tom::ListPtr<ocs::tom::HR>,
                          ocs::tom::ListPtr<ocs::tom::HR>>

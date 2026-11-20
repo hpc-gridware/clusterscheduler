@@ -277,7 +277,7 @@
          "name": "granted_slots",
          "summary": "Granted Slots",
          "description": [
-            "The queue instances and slot counts the reservation holds (`JG_Type`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed."
+            "The queue instances and slot counts the reservation holds (`JG`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed."
          ],
          "type": "lListT",
          "subClassName": "JG",
@@ -577,7 +577,7 @@
          "name": "pe_object",
          "summary": "PE Object",
          "description": [
-            "PE object granted to this AR (PE_Type) when it was scheduled."
+            "PE object granted to this AR (PE) when it was scheduled."
          ],
          "type": "lObjectT",
          "subClassName": "ParallelEnvironment",

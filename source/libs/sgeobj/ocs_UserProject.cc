@@ -70,7 +70,7 @@
  * @tparam PROJECT the per-project usage list field
  * @tparam T the object type
  * @param userprj the user or project element, may be an empty handle
- * @param decay_list the decay constants (UA_Type), may be an empty handle
+ * @param decay_list the decay constants (UA), may be an empty handle
  * @param seqno the sequence number indicating new scheduling cycles; (u_long)-1 leaves the stored one
  * @param curr_time the current time
  */
@@ -110,7 +110,7 @@ ocs_decay_userprj_usage(const ocs::tom::Element<T> userprj, const ocs::tom::Cons
  * even though the decay interval is different from the scheduling interval.
  *
  * @param user The user element to decay, may be an empty handle.
- * @param decay_list The list of decay elements to use for decay calculations (UA_Type).
+ * @param decay_list The list of decay elements to use for decay calculations (UA).
  * @param seqno The sequence number indicating new scheduling cycles.
  * @param curr_time The current time.
  */
@@ -129,7 +129,7 @@ ocs::UserProject::decay_userprj_usage(const ocs::tom::Element<ocs::tom::UU> user
  * See the overload for a user object.
  *
  * @param project The project element to decay, may be an empty handle.
- * @param decay_list The list of decay elements to use for decay calculations (UA_Type).
+ * @param decay_list The list of decay elements to use for decay calculations (UA).
  * @param seqno The sequence number indicating new scheduling cycles.
  * @param curr_time The current time.
  */

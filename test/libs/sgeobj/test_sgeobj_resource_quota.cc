@@ -96,7 +96,7 @@ static int s_fail = 0;
    } while (0)
 
 /**
- * @brief Build an RQR_Type rule element from the users/projects/pes/hosts/queues fields
+ * @brief Build an RQR rule element from the users/projects/pes/hosts/queues fields
  * @param f the filter strings of the rule
  * @return the rule
  */
