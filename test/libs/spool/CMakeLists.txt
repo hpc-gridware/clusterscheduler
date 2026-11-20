@@ -64,6 +64,19 @@ target_include_directories(test_spool_golden PRIVATE "./")
 target_link_libraries(test_spool_golden PRIVATE spoolc_static spool gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_golden COMMAND test_spool_golden)
 
+# Round trip of objects through the Berkeley DB spooling backend in a temporary directory: written bytes,
+# record keys, read-back content and ownership of the objects written. Built only where the backend is.
+if (${WITH_SPOOL_BERKELEYDB})
+   add_executable(test_spool_bdb_roundtrip test_spool_bdb_roundtrip.cc)
+   target_include_directories(test_spool_bdb_roundtrip PRIVATE "./")
+   target_link_libraries(test_spool_bdb_roundtrip PRIVATE spoolb_static spool gdi sched sgeobj cull comm commlists
+         uti berkeleydb ${SGE_LIBS})
+   add_test(NAME test_spool_bdb_roundtrip COMMAND test_spool_bdb_roundtrip)
+   if (INSTALL_SGE_TEST)
+      install(TARGETS test_spool_bdb_roundtrip DESTINATION testbin/${SGE_ARCH})
+   endif ()
+endif ()
+
 add_executable(test_spool test_spool.cc ../../../source/common/sig_handlers.cc)
 target_include_directories(test_spool PRIVATE "./")
 target_link_libraries(test_spool PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
