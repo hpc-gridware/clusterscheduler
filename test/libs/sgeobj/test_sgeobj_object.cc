@@ -57,9 +57,11 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_PRO.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_ElementCore.h"
 #include "tom/ocs_Raw.h"
 
 // ---------------------------------------------------------------------------
@@ -931,6 +933,146 @@ static void test_attr_value_round_trip() {
 }
 
 // ---------------------------------------------------------------------------
+// object_get_type_name, object_unpack_elem_verify, ocs_object_find_repeated_keys, ocs_object_list_add_unique
+// on raw handles  [T107–T118]
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief object_get_type_name() names an object by the primary key its descriptor holds [T107–T109]
+ * @param queue a queue instance
+ */
+static void test_object_get_type_name(const ocs::tom::ConstElement<ocs::tom::QU> queue) {
+   printf("\n--- object_get_type_name ---\n");
+
+   CHECK(107, "queue instance → \"QINSTANCE\"", strcmp(object_get_type_name(queue), "QINSTANCE") == 0);
+   CHECK(108, "nullptr → \"unknown\"", strcmp(object_get_type_name(nullptr), "unknown") == 0);
+
+   auto st = ocs::tom::ElementPtr<ocs::tom::ST>::create();
+   CHECK(109, "an element of no registered object type → \"unknown\"",
+         strcmp(object_get_type_name(*st), "unknown") == 0);
+}
+
+/**
+ * @brief Pack an element and read it back through object_unpack_elem_verify()
+ *
+ * @param ep the element to pack
+ * @param descr the type the unpacked element is checked against
+ * @param answer_list receives the errors of object_unpack_elem_verify()
+ * @param back receives the unpacked element, nullptr if it was rejected
+ * @return the result of object_unpack_elem_verify(), false if packing failed
+ */
+static bool unpack_verify_roundtrip(const lListElem *ep, const lDescr *descr,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **back) {
+   bool ret = false;
+   *back = nullptr;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+      if (cull_pack_elem(&pb, ep) == PACK_SUCCESS) {
+         char *buf = sge_malloc(pb.bytes_used);
+         memcpy(buf, pb.head_ptr, pb.bytes_used);
+         sge_pack_buffer in;
+         // the buffer takes buf over on every path, also when the header is refused
+         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            ret = object_unpack_elem_verify(answer_list, &in, back, descr);
+         }
+         clear_packbuffer(&in);
+      }
+      clear_packbuffer(&pb);
+   }
+   return ret;
+}
+
+/**
+ * @brief object_unpack_elem_verify() hands out a verified element and frees a rejected one [T110–T112]
+ * @param queue a queue instance whose sub-lists are of their model types
+ */
+static void test_object_unpack_elem_verify(const ocs::tom::ConstElement<ocs::tom::QU> queue) {
+   printf("\n--- object_unpack_elem_verify ---\n");
+
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   lListElem *back = nullptr;
+   const bool accepted = unpack_verify_roundtrip(queue.raw(), QU_Type, &alp, &back);
+   CHECK(110, "queue checked as QU_Type → true, the element is handed out",
+         accepted && back != nullptr && lGetElemDescr(back) == QU_Type && !alp);
+   lFreeElem(&back);
+
+   const bool rejected = !unpack_verify_roundtrip(queue.raw(), JB_Type, &alp, &back);
+   CHECK(111, "queue checked as JB_Type → false, the element is freed, one error",
+         rejected && back == nullptr && alp && alp->size() == 1);
+   alp.reset();
+
+   lListElem *none = nullptr;
+   CHECK(112, "no pack buffer → false, one error",
+         !object_unpack_elem_verify(&alp, nullptr, &none, QU_Type) && none == nullptr && alp && alp->size() == 1);
+}
+
+/**
+ * @brief ocs_object_find_repeated_keys() reports each repetition with its list, attribute, key and path
+ *        [T113–T115]
+ */
+static void test_object_find_repeated_keys() {
+   printf("\n--- ocs_object_find_repeated_keys ---\n");
+
+   // a list with a repeated key on purpose; a debug build refuses it already at the append (N-H-18)
+   const ocs::tom::UniqueCheckSuspension suspension;
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   lList *env = nullptr;
+   ocs::tom::emplace_back<VA_variable>(&env, "A");
+   ocs::tom::emplace_back<VA_variable>(&env, "B");
+   ocs::tom::set<JB_env_list>(job, env);
+
+   std::vector<ocs::RepeatedKey> found;
+   ocs_object_find_repeated_keys(*job, found);
+   CHECK(113, "distinct variables → nothing found", found.empty());
+
+   lList *job_env = ocs::tom::get<JB_env_list>(job);
+   ocs::tom::emplace_back<VA_variable>(&job_env, "A");
+   ocs::tom::emplace_back<VA_variable>(&job_env, "A");
+   ocs_object_find_repeated_keys(*job, found);
+   CHECK(114, "\"A\" three times → two entries naming the list, VA_variable and the path JB_env_list",
+         found.size() == 2 && found[0].list.raw() == job_env && found[0].nm == VA_variable && found[0].key == "A" &&
+         found[0].path == "JB_env_list" && found[1].key == "A");
+
+   found.clear();
+   ocs_object_find_repeated_keys(nullptr, found);
+   CHECK(115, "nullptr → nothing found", found.empty());
+}
+
+/**
+ * @brief ocs_object_list_add_unique() on lists without a key: appended, or dropped for another layout, as
+ *        lAddList() did [T116–T118]
+ */
+static void test_object_list_add_unique_layouts() {
+   printf("\n--- ocs_object_list_add_unique, lists without a key ---\n");
+
+   // ST has no unique string attribute, so its lists are appended as they are
+   lList *target = nullptr;
+   ocs::tom::emplace_back<ST_name>(&target, "a");
+   lList *more = nullptr;
+   ocs::tom::emplace_back<ST_name>(&more, "a");
+   ocs_object_list_add_unique(&target, &more);
+   CHECK(116, "same layout → appended, the source is consumed",
+         more == nullptr && ocs::tom::size(target) == 2);
+
+   lList *created = nullptr;
+   lList *source = nullptr;
+   ocs::tom::emplace_back<ST_name>(&source, "b");
+   ocs_object_list_add_unique(&created, &source);
+   CHECK(117, "no target → created with the source's elements", source == nullptr && ocs::tom::size(created) == 1);
+   lFreeList(&created);
+
+   // a reduced list of the same type has another layout: as lAddList() it is not joined, but freed
+   lEnumeration *what = lWhat("%T(%I)", ST_Type, ST_name);
+   ocs::tom::RawListPtr reduced = ocs::tom::select(target, nullptr, what);
+   lList *reduced_raw = reduced.release();
+   ocs_object_list_add_unique(&target, &reduced_raw);
+   CHECK(118, "another layout → nothing appended, the source is consumed",
+         reduced_raw == nullptr && ocs::tom::size(target) == 2);
+   lFreeWhat(&what);
+   lFreeList(&target);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_object");
@@ -966,6 +1108,12 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_pack_type_roundtrip();
    test_object_parse_centry_relop();
    test_attr_value_round_trip();
+   test_object_get_type_name(*queue);
+   // a fresh queue: the fixture above holds a deliberately wrong sub-list since T37
+   const auto fresh_queue = ocs::tom::ElementPtr<ocs::tom::QU>::create();
+   test_object_unpack_elem_verify(*fresh_queue);
+   test_object_find_repeated_keys();
+   test_object_list_add_unique_layouts();
 
    queue.reset();
    lFreeList(&st_list);

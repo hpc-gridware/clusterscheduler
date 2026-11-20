@@ -72,10 +72,10 @@
 namespace ocs {
    /** @brief A key that a unique attribute of a list holds a second time */
    struct RepeatedKey {
-      const lList *list;  ///< the list holding the key twice
-      int nm;             ///< the unique attribute
-      std::string key;    ///< the key as the repeating element holds it
-      std::string path;   ///< the attribute names from the object to the list, separated by '/'
+      ocs::tom::ConstRawList list;  ///< the list holding the key twice
+      int nm;                       ///< the unique attribute
+      std::string key;              ///< the key as the repeating element holds it
+      std::string path;             ///< the attribute names from the object to the list, separated by '/'
    };
 } // namespace ocs
 
@@ -182,7 +182,7 @@ object_type_get_key_nm(sge_object_type type);
 /* JG: TODO: rename to object_has_descr, make function object_has_type 
              and call this function where possible */
 bool 
-object_has_type(const lListElem *object, const lDescr *descr);
+object_has_type(ocs::tom::ConstRawElement object, const lDescr *descr);
 
 /* JG: TODO: rename to object_get_type_descr, check all calls, if possible pass sge_object_type */
 const lDescr *
@@ -209,7 +209,7 @@ object_get_name(const lDescr *descr);
 /* CS-2313a: type name of an object identified by content (covers all registered
  * types and GDI-transported elements; see sge_object.cc). */
 const char *
-object_get_type_name(const lListElem *object);
+object_get_type_name(ocs::tom::ConstRawElement object);
 
 const char *
 object_get_name_prefix(const lDescr *descr, dstring *buffer);
@@ -353,37 +353,37 @@ object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack
                           const lDescr *descr);
 
 bool
-object_list_verify_cull(const lList *lp, const lDescr *descr);
+object_list_verify_cull(ocs::tom::ConstRawList lp, const lDescr *descr);
 
 bool
-object_verify_cull(const lListElem *ep, const lDescr *descr);
+object_verify_cull(ocs::tom::ConstRawElement ep, const lDescr *descr);
 
 bool
-ocs_object_list_verify_type(const lList *lp, const lDescr *descr);
+ocs_object_list_verify_type(ocs::tom::ConstRawList lp, const lDescr *descr);
 
 bool
-ocs_object_verify_type(const lListElem *ep, const lDescr *descr);
+ocs_object_verify_type(ocs::tom::ConstRawElement ep, const lDescr *descr);
 
 bool
-ocs_object_verify_unique_keys(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+ocs_object_verify_unique_keys(ocs::tom::ConstRawElement ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               const char *object_name);
 
 bool
-ocs_object_list_verify_unique_keys(const lList *lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+ocs_object_list_verify_unique_keys(ocs::tom::ConstRawList lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const char *object_name);
 
 void
-ocs_object_list_remove_repeated_keys(lList *lp, int nm);
+ocs_object_list_remove_repeated_keys(ocs::tom::RawList lp, int nm);
 
 void
 ocs_object_list_add_unique(lList **lpp, lList **src);
 
 void
-ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey> &found);
+ocs_object_find_repeated_keys(ocs::tom::ConstRawElement ep, std::vector<ocs::RepeatedKey> &found);
 
 bool
-ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                const char *object_name);
+ocs_object_repair_repeated_keys(ocs::tom::RawElement ep, std::string &repairs,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *object_name);
 
 // The object_verify_*() templates are defined in sge_object.cc and instantiated there for the fields in use,
 // because their messages come from the module's message catalogue.

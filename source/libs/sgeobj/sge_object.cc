@@ -48,6 +48,7 @@
 #include <optional>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "uti/sge_hostname.h"
@@ -1050,7 +1051,7 @@ template bool ocs_object_parse_field<ASOLIST_value>(ocs::tom::Element<ocs::tom::
  * The check is done by looking up the primary key field in descr and
  * checking, if this key field is contained in the given object.
  *
- * @param object object to check
+ * @param object object to check, maybe empty
  * @param descr type to check against
  *
  * @return true, if the object has the given type, else false
@@ -1062,17 +1063,16 @@ template bool ocs_object_parse_field<ASOLIST_value>(ocs::tom::Element<ocs::tom::
  * @see #object_get_primary_key
  */
 bool
-object_has_type(const lListElem *object, const lDescr *descr) {
+object_has_type(const ocs::tom::ConstRawElement object, const lDescr *descr) {
    bool ret = false;
 
    /*
-    * we assume that "object" is of the given type when the 
+    * we assume that "object" is of the given type when the
     * primary key is contained in the element
     *
-    * --> make sure that your object is handled in object_get_primary_key() 
+    * --> make sure that your object is handled in object_get_primary_key()
     */
-   if (object != nullptr && descr != nullptr &&
-       _lGetPosInDescr(object->descr, object_get_primary_key(descr)) != -1) {
+   if (object && descr != nullptr && ocs::tom::present_pos(object.descr(), object_get_primary_key(descr)) >= 0) {
       ret = true;
    }
 
@@ -1193,13 +1193,14 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer) {
    nm = descr[0].nm;
 
    if (nm != NoName) {
-      const char *name = lNm2Str(nm);
+      // an unknown field gives a text without an underscore ("nm <number>"), so no prefix, as with lNm2Str()
+      const char *name = ocs::tom::field_name(nm);
 
       if (name != nullptr) {
-         char *underscore = strchr((char *) name, '_');
+         const char *underscore = strchr(name, '_');
 
          if (underscore != nullptr) {
-            sge_dstring_sprintf(buffer, "%.*s", underscore - name + 1, name);
+            sge_dstring_sprintf(buffer, "%.*s", static_cast<int>(underscore - name + 1), name);
             return sge_dstring_get_string(buffer);
          }
       }
@@ -1253,19 +1254,19 @@ object_get_name(const lDescr *descr) {
  * copy, so a pointer compare would fail). Types without a primary key (e.g. the
  * scheduler configuration) cannot be identified this way and yield "unknown".
  *
- * @param object  the object to identify
+ * @param object the object to identify, maybe empty
  * @return the registered type name, or "unknown"
  */
 const char *
-object_get_type_name(const lListElem *object) {
+object_get_type_name(const ocs::tom::ConstRawElement object) {
    const char *name = "unknown";
 
-   if (object != nullptr) {
-      const lDescr *descr = lGetElemDescr(object);
+   if (object) {
+      const lDescr *descr = object.descr();
 
       for (int i = SGE_TYPE_FIRST; i < SGE_TYPE_ALL; i++) {
          if (object_base[i].descr != nullptr && object_base[i].key_nm != NoName &&
-             lGetPosInDescr(descr, object_base[i].key_nm) >= 0) {
+             ocs::tom::present_pos(descr, object_base[i].key_nm) >= 0) {
             name = object_base[i].type_name;
             break;
          }
@@ -1660,31 +1661,31 @@ object_list_has_differences(const ocs::tom::ConstRawList this_list, ocs::tom::Li
  * In this case, the list descriptor is not checked, but still all list
  * objects and there sublists are verified.
  *
- * @param lp list to verify
+ * @param lp list to verify, maybe empty (then the list is not OK)
  * @param descr expected descriptor (or nullptr, see above)
  *
  * @return true, if the object is OK, else false
  *
  * @note MT-NOTE: object_list_verify_cull() is MT safe
  *
- * @see #object_verify_cull, `lCompListDescr()`
+ * @see #object_verify_cull, `ocs::tom::layout_difference()`
  */
 bool
-object_list_verify_cull(const lList *lp, const lDescr *descr) {
+object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
    bool ret = true;
 
-   /* 
+   /*
     * valid input parameters?
     * descr may be nullptr, if sublist is defined as CULL_ANY_SUBTYPE
     */
-   if (lp == nullptr) {
+   if (!lp) {
       ret = false;
    }
 
    /* does list descriptor match expected descriptor? */
    if (ret) {
       if (descr != nullptr) {
-         if (lCompListDescr(lp->descr, descr) != 0) {
+         if (ocs::tom::layout_difference(lp.descr(), descr) != 0) {
             ret = false;
          }
       }
@@ -1692,8 +1693,7 @@ object_list_verify_cull(const lList *lp, const lDescr *descr) {
 
    /* recursively check sublists and subobjects */
    if (ret) {
-      const lListElem *ep;
-      for_each_ep(ep, lp) {
+      for (const auto ep : lp) {
          if (!object_verify_cull(ep, nullptr)) {
             ret = false;
             break;
@@ -1716,54 +1716,55 @@ object_list_verify_cull(const lList *lp, const lDescr *descr) {
  *    - we don't know the type of a subobject (if it is defined as
  *      CULL_ANY_SUBTYPE in the cull object definition
  *
- * @param ep the object to verify
+ * @param ep the object to verify, maybe empty (then the object is not OK)
  * @param descr expected object type, or nullptr (see above)
  *
  * @return true on success, else false
  *
  * @note MT-NOTE: object_verify_cull() is MT safe
  *
- * @see #object_verify_cull, `lCompListDescr()`
+ * @see #object_list_verify_cull, `ocs::tom::layout_difference()`
  */
 bool
-object_verify_cull(const lListElem *ep, const lDescr *descr) {
+object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
    bool ret = true;
 
-   /* 
+   /*
     * valid input parameters?
     * descr may be nullptr, if subobject is defined as CULL_ANY_SUBTYPE
     */
-   if (ep == nullptr) {
+   if (!ep) {
       ret = false;
    }
 
    /* does object descriptor match expected descriptor? */
    if (ret) {
       if (descr != nullptr) {
-         if (lCompListDescr(ep->descr, descr) != 0) {
+         if (ocs::tom::layout_difference(ep.descr(), descr) != 0) {
             ret = false;
          }
       }
    }
 
-   /* check contents of subobject */
+   /* check contents of subobject; the walk visits held fields only, of the type read, so no read throws */
    if (ret) {
-      for (const auto f : ocs_cull_present_fields(ep->descr)) {
-         const int i = f.pos;
-         int type = mt_get_type(ep->descr[i].mt);
-         if (type == lListT) {
-            const lList *lp = lGetList(ep, ep->descr[i].nm);
-            if (lp != nullptr) {
-               const lDescr *subdescr = object_get_subtype(ep->descr[i].nm);
+      const lDescr *elem_descr = ep.descr();
+      for (const auto f : ocs_cull_present_fields(elem_descr)) {
+         const int nm = elem_descr[f.pos].nm;
+         const ocs::tom::FieldType type = ocs::tom::field_type_of(elem_descr[f.pos].mt);
+         if (type == ocs::tom::FieldType::List) {
+            const auto lp = ep.get<ocs::tom::ConstRawList>(nm);
+            if (lp) {
+               const lDescr *subdescr = object_get_subtype(nm);
                if (!object_list_verify_cull(lp, subdescr)) {
                   ret = false;
                   break;
                }
             }
-         } else if (type == lObjectT) {
-            lListElem *sub_ep = lGetObject(ep, ep->descr[i].nm);
-            if (sub_ep != nullptr) {
-               const lDescr *subdescr = object_get_subtype(ep->descr[i].nm);
+         } else if (type == ocs::tom::FieldType::Object) {
+            const auto sub_ep = ep.get<ocs::tom::ConstRawElement>(nm);
+            if (sub_ep) {
+               const lDescr *subdescr = object_get_subtype(nm);
                if (!object_verify_cull(sub_ep, subdescr)) {
                   ret = false;
                   break;
@@ -1788,21 +1789,21 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
  * The check reads static information only (descriptors and the subtypes of
  * the fields), so it needs no lock.
  *
- * @param lp the list, or nullptr (nothing to verify)
+ * @param lp the list, maybe empty (nothing to verify)
  * @param descr the descriptor of the expected type, or nullptr when the type of the list is not fixed
  * @return true if the list and everything below it are of their expected types
  */
 bool
-ocs_object_list_verify_type(const lList *lp, const lDescr *descr) {
-   if (lp == nullptr) {
+ocs_object_list_verify_type(const ocs::tom::ConstRawList lp, const lDescr *descr) {
+   if (!lp) {
       return true;
    }
-   const lDescr *list_descr = lGetListDescr(lp);
+   const lDescr *list_descr = lp.descr();
    if (descr != nullptr && !ocs::tom::same_type(list_descr, descr)) {
       return false;
    }
-   for (const lListElem *ep = lFirst(lp); ep != nullptr; ep = lNext(ep)) {
-      if (!ocs::tom::same_layout(lGetElemDescr(ep), list_descr) || !ocs_object_verify_type(ep, nullptr)) {
+   for (const auto ep : lp) {
+      if (!ocs::tom::same_layout(ep.descr(), list_descr) || !ocs_object_verify_type(ep, nullptr)) {
          return false;
       }
    }
@@ -1817,28 +1818,29 @@ ocs_object_list_verify_type(const lList *lp, const lDescr *descr) {
  * field declares (a field without a declared subtype is checked below its
  * own level only).
  *
- * @param ep the element, or nullptr (nothing to verify)
+ * @param ep the element, maybe empty (nothing to verify)
  * @param descr the descriptor of the expected type, or nullptr when the type is not fixed
  * @return true if the element and everything below it are of their expected types
  */
 bool
-ocs_object_verify_type(const lListElem *ep, const lDescr *descr) {
-   if (ep == nullptr) {
+ocs_object_verify_type(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
+   if (!ep) {
       return true;
    }
-   const lDescr *elem_descr = lGetElemDescr(ep);
+   const lDescr *elem_descr = ep.descr();
    if (descr != nullptr && !ocs::tom::same_type(elem_descr, descr)) {
       return false;
    }
+   // held fields only, read with their own type: no read throws, and the sub-type is not checked by a read
    for (const auto f : ocs_cull_present_fields(elem_descr)) {
       const int nm = elem_descr[f.pos].nm;
-      const int type = mt_get_type(elem_descr[f.pos].mt);
-      if (type == lListT) {
-         if (!ocs_object_list_verify_type(lGetPosList(ep, f.pos), object_get_subtype(nm))) {
+      const ocs::tom::FieldType type = ocs::tom::field_type_of(elem_descr[f.pos].mt);
+      if (type == ocs::tom::FieldType::List) {
+         if (!ocs_object_list_verify_type(ep.get<ocs::tom::ConstRawList>(nm), object_get_subtype(nm))) {
             return false;
          }
-      } else if (type == lObjectT) {
-         if (!ocs_object_verify_type(lGetPosObject(ep, f.pos), object_get_subtype(nm))) {
+      } else if (type == ocs::tom::FieldType::Object) {
+         if (!ocs_object_verify_type(ep.get<ocs::tom::ConstRawElement>(nm), object_get_subtype(nm))) {
             return false;
          }
       }
@@ -1876,80 +1878,112 @@ namespace {
     */
    std::string
    sub_path(const std::string &path, const int nm) {
-      const char *name = lNm2Str(nm);
+      const char *name = ocs::tom::field_name(nm);
       return path.empty() ? std::string(name) : path + "/" + name;
    }
 
-   void find_in_list(const lList *lp, const std::string &path, std::vector<ocs::RepeatedKey> &found);
+   void find_in_list(ocs::tom::ConstRawList lp, const std::string &path, std::vector<ocs::RepeatedKey> &found);
 
    /**
     * @brief Collect the repeated keys in the sub-lists and sub-objects of an object
-    * @param ep the object, nullptr is accepted
+    * @param ep the object, maybe empty
     * @param path the path of the list holding the object, empty for the object itself
     * @param found receives every repeated key
     */
    void
-   find_in_object(const lListElem *ep, const std::string &path, std::vector<ocs::RepeatedKey> &found) {
-      if (ep == nullptr) {
+   find_in_object(const ocs::tom::ConstRawElement ep, const std::string &path,
+                  std::vector<ocs::RepeatedKey> &found) {
+      if (!ep) {
          return;
       }
-      for (const auto f : ocs_cull_present_fields(ep->descr)) {
-         const int nm = ep->descr[f.pos].nm;
-         const int type = mt_get_type(ep->descr[f.pos].mt);
-         if (type == lListT) {
-            find_in_list(lGetList(ep, nm), sub_path(path, nm), found);
-         } else if (type == lObjectT) {
-            find_in_object(lGetObject(ep, nm), sub_path(path, nm), found);
+      // held fields only, read with their own type: no read throws
+      const lDescr *descr = ep.descr();
+      for (const auto f : ocs_cull_present_fields(descr)) {
+         const int nm = descr[f.pos].nm;
+         const ocs::tom::FieldType type = ocs::tom::field_type_of(descr[f.pos].mt);
+         if (type == ocs::tom::FieldType::List) {
+            find_in_list(ep.get<ocs::tom::ConstRawList>(nm), sub_path(path, nm), found);
+         } else if (type == ocs::tom::FieldType::Object) {
+            find_in_object(ep.get<ocs::tom::ConstRawElement>(nm), sub_path(path, nm), found);
+         }
+      }
+   }
+
+   /**
+    * @brief Collect the repeated keys of one unique attribute of a list
+    * @tparam V the value type of the attribute, which names its type
+    * @param lp the list, not empty
+    * @param nm the unique attribute, held by the list's elements with the type of @p V
+    * @param path the path of the list
+    * @param found receives every repeated key; each repetition of a key is one entry
+    */
+   template <typename V>
+   void
+   find_repeated_values(const ocs::tom::ConstRawList lp, const int nm, const std::string &path,
+                        std::vector<ocs::RepeatedKey> &found) {
+      if constexpr (std::is_same_v<V, const char *> || std::is_same_v<V, ocs::tom::Host>) {
+         constexpr bool is_host = std::is_same_v<V, ocs::tom::Host>;
+         std::unordered_set<std::string> seen;
+         for (const auto ep : lp) {
+            const char *key;
+            if constexpr (is_host) {
+               key = ep.get<ocs::tom::Host>(nm).c_str();
+            } else {
+               key = ep.get<const char *>(nm);
+            }
+            if (key != nullptr && !seen.insert(comparable_key(key, is_host)).second) {
+               found.push_back({lp, nm, key, path});
+            }
+         }
+      } else {
+         std::unordered_set<V> seen;
+         for (const auto ep : lp) {
+            if (const V key = ep.get<V>(nm); !seen.insert(key).second) {
+               found.push_back({lp, nm, std::to_string(key), path});
+            }
          }
       }
    }
 
    /**
     * @brief Collect the repeated keys of a list's unique attributes, then those of its elements
-    * @param lp the list, nullptr is accepted
+    * @param lp the list, maybe empty
     * @param path the path of the list
     * @param found receives every repeated key; each repetition of a key is one entry
     */
    void
-   find_in_list(const lList *lp, const std::string &path, std::vector<ocs::RepeatedKey> &found) {
-      if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+   find_in_list(const ocs::tom::ConstRawList lp, const std::string &path, std::vector<ocs::RepeatedKey> &found) {
+      if (lp.empty()) {
          return;
       }
 
-      const lDescr *dp = lGetListDescr(lp);
+      // the elements have the layout of the list, so each holds every field the list's descriptor holds
+      const lDescr *dp = lp.descr();
       for (const auto f : ocs_cull_present_fields(dp)) {
          if (!mt_is_unique(dp[f.pos].mt)) {
             continue;
          }
          const int nm = dp[f.pos].nm;
-         const int type = mt_get_type(dp[f.pos].mt);
-
-         if (type == lStringT || type == lHostT) {
-            std::unordered_set<std::string> seen;
-            for_each_ep_lv(ep, lp) {
-               const char *key = type == lStringT ? lGetString(ep, nm) : lGetHost(ep, nm);
-               if (key != nullptr && !seen.insert(comparable_key(key, type == lHostT)).second) {
-                  found.push_back({lp, nm, key, path});
-               }
-            }
-         } else if (type == lUlongT) {
-            std::unordered_set<uint32_t> seen;
-            for_each_ep_lv(ep, lp) {
-               if (const uint32_t key = lGetUlong(ep, nm); !seen.insert(key).second) {
-                  found.push_back({lp, nm, std::to_string(key), path});
-               }
-            }
-         } else if (type == lUlong64T) {
-            std::unordered_set<uint64_t> seen;
-            for_each_ep_lv(ep, lp) {
-               if (const uint64_t key = lGetUlong64(ep, nm); !seen.insert(key).second) {
-                  found.push_back({lp, nm, std::to_string(key), path});
-               }
-            }
+         switch (ocs::tom::field_type_of(dp[f.pos].mt)) {
+            case ocs::tom::FieldType::String:
+               find_repeated_values<const char *>(lp, nm, path, found);
+               break;
+            case ocs::tom::FieldType::Host:
+               find_repeated_values<ocs::tom::Host>(lp, nm, path, found);
+               break;
+            case ocs::tom::FieldType::Uint32:
+               find_repeated_values<std::uint32_t>(lp, nm, path, found);
+               break;
+            case ocs::tom::FieldType::Uint64:
+               find_repeated_values<std::uint64_t>(lp, nm, path, found);
+               break;
+            default:
+               // no other type is a key
+               break;
          }
       }
 
-      for_each_ep_lv(ep, lp) {
+      for (const auto ep : lp) {
          find_in_object(ep, path, found);
       }
    }
@@ -1964,7 +1998,8 @@ namespace {
    add_repeated_key_error(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::RepeatedKey &repeated,
                           const char *object_name) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJ_DUPLICATEKEY_SSS,
-                              repeated.key.c_str(), lNm2Str(repeated.nm), object_name != nullptr ? object_name : "");
+                              repeated.key.c_str(), ocs::tom::field_name(repeated.nm),
+                              object_name != nullptr ? object_name : "");
    }
 } // namespace
 
@@ -1976,7 +2011,7 @@ namespace {
  * compares them, normalised as `sge_hostcmp()` does, and ulong keys by value. Elements without a key are
  * skipped. The lists of a list are checked before the sub-lists of its elements.
  *
- * @param ep the object to check, nullptr is accepted
+ * @param ep the object to check, maybe empty
  * @param found receives one entry for each repetition of a key, with the list, the attribute, the key as the
  *        repeating element holds it and the path of attribute names from the object to the list
  *
@@ -1985,7 +2020,7 @@ namespace {
  * @see #ocs_object_verify_unique_keys, #ocs_object_repair_repeated_keys
  */
 void
-ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey> &found) {
+ocs_object_find_repeated_keys(const ocs::tom::ConstRawElement ep, std::vector<ocs::RepeatedKey> &found) {
    find_in_object(ep, "", found);
 }
 
@@ -1999,7 +2034,7 @@ ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey>
  * last value of a repeated variable or request, so it rejects only what has no
  * defined meaning (CS-3053).
  *
- * @param ep the object to check, nullptr is accepted
+ * @param ep the object to check, maybe empty
  * @param answer_list receives an error naming the key, the attribute and the
  *        object on the first duplicate found
  * @param object_name the object named in the error, e.g. its type and name
@@ -2011,7 +2046,7 @@ ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey>
  * @see #ocs_object_list_verify_unique_keys
  */
 bool
-ocs_object_verify_unique_keys(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+ocs_object_verify_unique_keys(const ocs::tom::ConstRawElement ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               const char *object_name) {
    std::vector<ocs::RepeatedKey> found;
    find_in_object(ep, "", found);
@@ -2028,7 +2063,7 @@ ocs_object_verify_unique_keys(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::A
  * Checks the unique attributes of the list itself, then every element as
  * #ocs_object_verify_unique_keys does.
  *
- * @param lp the list to check, nullptr is accepted
+ * @param lp the list to check, maybe empty
  * @param answer_list receives an error naming the key, the attribute and the
  *        object on the first duplicate found
  * @param object_name the object named in the error
@@ -2038,7 +2073,7 @@ ocs_object_verify_unique_keys(const lListElem *ep, ocs::tom::ListPtr<ocs::tom::A
  * @note MT-NOTE: ocs_object_list_verify_unique_keys() is MT safe
  */
 bool
-ocs_object_list_verify_unique_keys(const lList *lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+ocs_object_list_verify_unique_keys(const ocs::tom::ConstRawList lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const char *object_name) {
    std::vector<ocs::RepeatedKey> found;
    find_in_list(lp, "", found);
@@ -2056,25 +2091,29 @@ ocs_object_list_verify_unique_keys(const lList *lp, ocs::tom::ListPtr<ocs::tom::
  * name given twice adds nothing. The first element of each key stays, later
  * ones are removed (CS-3053).
  *
- * @param lp the list, nullptr is accepted
+ * @param lp the list, maybe empty
  * @param nm the string attribute holding the key
+ *
+ * @throw ocs::tom::FieldException if the list's elements do not hold @p nm as a string attribute (where the old
+ *        read aborted)
  *
  * @note MT-NOTE: ocs_object_list_remove_repeated_keys() is MT safe
  */
 void
-ocs_object_list_remove_repeated_keys(lList *lp, const int nm) {
-   if (lp == nullptr) {
+ocs_object_list_remove_repeated_keys(const ocs::tom::RawList lp, const int nm) {
+   if (!lp) {
       return;
    }
 
    std::unordered_set<std::string> seen;
-   lListElem *next = lFirstRW(lp);
-   while (lListElem *ep = next) {
-      next = lNextRW(ep);
-      const char *key = lGetString(ep, nm);
+   // the successor is fetched before the element may be erased
+   for (ocs::tom::RawElement ep = lp.front(); ep;) {
+      const ocs::tom::RawElement next(ep.raw()->next);
+      const char *key = ep.get<const char *>(nm);
       if (key != nullptr && !seen.insert(key).second) {
-         lRemoveElem(lp, &ep);
+         lp.erase(ep);
       }
+      ep = next;
    }
 }
 
@@ -2087,30 +2126,41 @@ namespace {
    };
 
    /**
+    * @brief Whether a descriptor holds a field: of its type, and not left out by a reduction
+    * @param descr the descriptor, or nullptr
+    * @param nm the field
+    * @return true if the descriptor holds the field
+    */
+   bool
+   holds_field(const lDescr *descr, const int nm) {
+      return ocs::tom::present_pos(descr, nm) >= 0;
+   }
+
+   /**
     * @brief How the input paths of CS-3053 repair a repeated key in a list of this type
-    * @param lp the list
+    * @param lp the list, not empty
     * @param[out] nm the key attribute the repair works on
     * @param[out] value_nm the value attribute of a definition list, unchanged for a set
     * @return the repair, Repair::None for a type that the input paths reject instead
     */
    Repair
-   repair_of(const lList *lp, int &nm, int &value_nm) {
-      const lDescr *dp = lGetListDescr(lp);
-      if (lGetPosInDescr(dp, VA_variable) >= 0) {
+   repair_of(const ocs::tom::ConstRawList lp, int &nm, int &value_nm) {
+      const lDescr *dp = lp.descr();
+      if (holds_field(dp, VA_variable)) {
          nm = VA_variable;
          value_nm = VA_value;
          return Repair::KeepLast;
       }
-      if (lGetPosInDescr(dp, CE_name) >= 0) {
+      if (holds_field(dp, CE_name)) {
          nm = CE_name;
          value_nm = CE_stringval;
          return Repair::KeepLast;
       }
-      if (lGetPosInDescr(dp, QR_name) >= 0) {
+      if (holds_field(dp, QR_name)) {
          nm = QR_name;
          return Repair::KeepFirst;
       }
-      if (lGetPosInDescr(dp, UE_name) >= 0) {
+      if (holds_field(dp, UE_name)) {
          nm = UE_name;
          return Repair::KeepFirst;
       }
@@ -2126,7 +2176,7 @@ namespace {
  * queue reference (`QR_Type`) or user set entry (`UE_Type`) is dropped and the first one stays. A repeated key
  * in any other list, or in another attribute of these types, is not repaired.
  *
- * @param ep the object, nullptr is accepted
+ * @param ep the object, maybe empty
  * @param[out] repairs receives one line per repaired repetition, `<path> "<key>"`, separated by ", "
  * @param[out] answer_list receives one error per repetition that is not repaired, naming the key, the
  *             attribute and the object with the path of the list
@@ -2139,8 +2189,8 @@ namespace {
  * @see #ocs_object_find_repeated_keys
  */
 bool
-ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                const char *object_name) {
+ocs_object_repair_repeated_keys(const ocs::tom::RawElement ep, std::string &repairs,
+                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *object_name) {
    std::vector<ocs::RepeatedKey> found;
    find_in_object(ep, "", found);
 
@@ -2160,11 +2210,11 @@ ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, ocs::tom::L
       int nm;
       int value_nm = NoName;
       const Repair repair = repair_of(it->list, nm, value_nm);
-      if (repair == Repair::None || it->nm != nm || !repaired.insert(it->list).second) {
+      if (repair == Repair::None || it->nm != nm || !repaired.insert(it->list.raw()).second) {
          continue;
       }
       // the list belongs to ep, which the caller holds for writing
-      lList *lp = const_cast<lList *>(it->list);
+      const ocs::tom::RawList lp(const_cast<lList *>(it->list.raw()));
       if (repair == Repair::KeepLast) {
          cull_compress_definition_list(lp, nm, value_nm, 0);
       } else {
@@ -2191,8 +2241,16 @@ ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, ocs::tom::L
  * is appended as it is. The decision is taken before an element is added, so the target never holds a key twice,
  * not even for a moment, as the debug check of N-H-18 demands.
  *
+ * A unique attribute of another type, a host name for instance, is not a key here: such a list is appended as
+ * it is (none of the input paths merges such a list today).
+ *
+ * The pointers stay raw: the callers in cull_parse_util hand the lists over raw.
+ *
  * @param[in,out] lpp the target list, created if nullptr
  * @param[in,out] src the elements to move; the list is freed and set to nullptr
+ *
+ * @throw ocs::tom::FieldException if the target list has another layout than the elements to move and they are
+ *        merged by key (where the old append aborted)
  *
  * @note MT-NOTE: ocs_object_list_add_unique() is MT safe
  *
@@ -2204,18 +2262,20 @@ ocs_object_list_add_unique(lList **lpp, lList **src) {
       return;
    }
 
-   const lDescr *dp = lGetListDescr(*src);
+   // freed on every path
+   ocs::tom::RawListPtr source(std::exchange(*src, nullptr));
+   const lDescr *dp = source.get().descr();
    int nm = NoName;
    bool keep_last = false;
-   if (lGetPosInDescr(dp, VA_variable) >= 0) {
+   if (holds_field(dp, VA_variable)) {
       nm = VA_variable;
       keep_last = true;
-   } else if (lGetPosInDescr(dp, CE_name) >= 0) {
+   } else if (holds_field(dp, CE_name)) {
       nm = CE_name;
       keep_last = true;
    } else {
       for (const auto f : ocs_cull_present_fields(dp)) {
-         if (mt_is_unique(dp[f.pos].mt) && mt_get_type(dp[f.pos].mt) == lStringT) {
+         if (mt_is_unique(dp[f.pos].mt) && ocs::tom::field_type_of(dp[f.pos].mt) == ocs::tom::FieldType::String) {
             nm = dp[f.pos].nm;
             break;
          }
@@ -2223,27 +2283,30 @@ ocs_object_list_add_unique(lList **lpp, lList **src) {
    }
 
    if (*lpp == nullptr) {
-      *lpp = lCreateList(lGetListName(*src), dp);
+      *lpp = ocs::tom::create_raw_list(dp, ocs::tom::Hashing::On, ocs::tom::list_name(source.get().raw())).release();
    }
+   const ocs::tom::RawList target(*lpp);
    if (nm == NoName) {
-      lAddList(*lpp, src);
+      // as lAddList(): lists of different layouts are not joined, the elements are freed with the source
+      if (ocs::tom::same_layout(source.get().descr(), target.descr())) {
+         target.splice(std::move(source));
+      }
       return;
    }
 
-   while (lListElem *ep = lFirstRW(*src)) {
-      ep = lDechainElem(*src, ep);
-      const char *key = lGetString(ep, nm);
-      lListElem *held = key != nullptr ? lGetElemStrRW(*lpp, nm, key) : nullptr;
-      if (held == nullptr) {
-         lAppendElem(*lpp, ep);
+   while (const ocs::tom::RawElement first = source.get().front()) {
+      ocs::tom::RawElementPtr ep = source.get().take(first);
+      const char *key = ep.get().get<const char *>(nm);
+      const ocs::tom::RawElement held =
+         key != nullptr ? target.find_first<const char *>(nm, key) : ocs::tom::RawElement();
+      if (!held) {
+         target.push_back(std::move(ep));
       } else if (keep_last) {
-         lRemoveElem(*lpp, &held);
-         lAppendElem(*lpp, ep);
-      } else {
-         lFreeElem(&ep);
+         target.erase(held);
+         target.push_back(std::move(ep));
       }
+      // otherwise the repeating element is freed with its owner
    }
-   lFreeList(src);
 }
 
 /**
@@ -2632,9 +2695,11 @@ int compress_ressources(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::L
  * If unpacking was successful, verifies the object
  * against the given descriptor.
  *
+ * The out parameter stays raw: the callers in execd take the element over raw.
+ *
  * @param answer_list answer list to report errors
  * @param pb the packbuffer containing the object
- * @param epp element pointer to pass back the unpacked object
+ * @param epp element pointer to pass back the unpacked object; nullptr if the object fails the check
  * @param descr the expected object type
  *
  * @return true on success, else false
@@ -2664,7 +2729,8 @@ bool object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge
 
    if (ret) {
       if (!object_verify_cull(*epp, descr)) {
-         lFreeElem(epp);
+         // the element that failed the check is freed, the caller gets nullptr
+         ocs::tom::RawElementPtr rejected(std::exchange(*epp, nullptr));
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRUCTURE_ERROR);
          ret = false;
       }
