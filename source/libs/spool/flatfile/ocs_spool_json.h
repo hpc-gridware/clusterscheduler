@@ -24,6 +24,7 @@
  */
 
 #include "cull/cull.h"
+#include "tom/ocs_Raw.h"
 #include "uti/sge_dstring.h"
 #include "spool/sge_spooling_utilities.h"
 #include "sgeobj/sge_answer.h"
@@ -73,48 +74,49 @@ struct ocs_json_derived_list {
 };
 
 bool
-spool_json_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_json_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawElement object,
                         const spooling_field *fields, dstring *out);
 
 bool
-spool_json_write_object_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_json_write_object_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawElement object,
                            const spooling_field *fields,
                            const ocs_json_derived_list *derived, dstring *out);
 
 bool
-spool_json_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_json_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list,
                       const spooling_field *fields, dstring *out);
 
 /* Write a bare name list (e.g. managers, admin hosts) as a JSON array of the @p keynm
  * field of each element, wrapped in the same $schema/$id envelope as the object lists. */
 bool
-spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list, int keynm, dstring *out);
+spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list, int keynm,
+                           dstring *out);
 
 /* Like spool_json_write_name_list but with an explicit @p type_name for the envelope, for
  * lists whose element type is not a registered object and would otherwise be reported as
  * "unknown" (CS-2431: -sm/-so now read UE_Type entries of the reserved access lists). */
 bool
-spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list, int keynm,
+spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list, int keynm,
                               const char *type_name, dstring *out);
 
 /* Like spool_json_write_list but with an explicit @p type_name for the envelope $id and
  * the array key (for lists whose element type is not a registered object, e.g. -stl). */
 bool
-spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list,
                             const spooling_field *fields, const char *type_name, dstring *out);
 
 /* Like spool_json_write_typed_list but with separate @p id_name (for the schema $id) and
  * @p envelope_name (the array key), for an object queried both as a list and individually
  * (e.g. the categories: array key "category" but "category-list" schema id). */
 bool
-spool_json_write_typed_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_json_write_typed_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list,
                                const spooling_field *fields, const char *id_name,
                                const char *envelope_name, dstring *out);
 
 /* Like spool_json_write_object but with an explicit @p type_name for the envelope $id
  * (for objects whose type cannot be resolved by content, e.g. a sharetree STN node). */
 bool
-spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawElement object,
                               const spooling_field *fields, const char *type_name, dstring *out);
 
 /*

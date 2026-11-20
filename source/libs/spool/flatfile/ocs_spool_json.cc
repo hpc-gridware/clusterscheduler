@@ -53,6 +53,7 @@
 #include "sgeobj/sge_utility.h"          /* SGE_CHECK_POINTER_FALSE */
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "spool/sge_spooling_utilities.h"
@@ -76,23 +77,23 @@ ocs_json_value_format ocs_json_value_format_opt = OCS_JSON_VALUES_COMPACT;
 
 /* forward declarations (mutually recursive sublist handling) */
 static bool
-spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawElement object,
                                 rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                 const spooling_field *fields);
 static bool
-spool_json_write_list_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_json_write_list_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                             const spooling_field *fields);
 static bool
-spool_json_write_object_braced(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_json_write_object_braced(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawElement object,
                                rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                const spooling_field *fields);
 static bool
-spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list,
                                   const spooling_field *fields,
                                   rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer);
 static bool
-spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *sub_list,
+spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList sub_list,
                             const spooling_field *sub_fields,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer);
 static lUlong
@@ -111,8 +112,8 @@ static const char *const SPOOL_JSON_DEFAULT_HREF = "default";
  * @return the lowercased type name (pointer into @p out)
  */
 static const char *
-spool_json_typename(const lListElem *object, dstring *out) {
-   const char *type_name = object_get_type_name(object);
+spool_json_typename(const ocs::tom::ConstRawElement object, dstring *out) {
+   const char *type_name = object_get_type_name(object.raw());
    sge_dstring_clear(out);
    for (const char *c = type_name; c != nullptr && *c != '\0'; c++) {
       sge_dstring_append_char(out, (char)tolower((unsigned char)*c));
@@ -152,37 +153,76 @@ spool_json_write_envelope_name(rapidjson::PrettyWriter<rapidjson::StringBuffer> 
  */
 static void
 spool_json_write_envelope(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                          const lListElem *object) {
+                          const ocs::tom::ConstRawElement object) {
    dstring name = DSTRING_INIT;
    spool_json_write_envelope_name(writer, spool_json_typename(object, &name));
    sge_dstring_free(&name);
 }
 
 /**
+ * @brief Read a string or a host name field as a C string, for an element that holds the field.
+ *
+ * @param ep    the element; it holds the field
+ * @param nm    the field number
+ * @param type  the field's type, FieldType::String or FieldType::Host
+ * @return the value, nullptr if unset
+ * @throw ocs::tom::FieldException if the element does not hold the field or @p type is not its type
+ */
+static const char *
+spool_json_get_text(const ocs::tom::ConstRawElement ep, const int nm, const ocs::tom::FieldType type) {
+   if (type == ocs::tom::FieldType::Host) {
+      return ep.get<ocs::tom::Host>(nm).c_str();
+   }
+   return ep.get<const char *>(nm);
+}
+
+/**
+ * @brief Read a string or a host name field as a C string, nullptr if the element does not hold it.
+ *
+ * The soft read: a null element, a field of another type or a field a reduced element
+ * leaves out all give nullptr, as an unset value does.
+ *
+ * @param ep    the element, maybe empty
+ * @param nm    the field number
+ * @param type  the field's type, FieldType::String or FieldType::Host
+ * @return the value, nullptr if unset or not held
+ * @throw ocs::tom::FieldException with reason WrongType if the element holds the field with another type than
+ *        @p type names (a string type for any @p type other than FieldType::Host)
+ */
+static const char *
+spool_json_get_text_or_null(const ocs::tom::ConstRawElement ep, const int nm, const ocs::tom::FieldType type) {
+   if (type == ocs::tom::FieldType::Host) {
+      return ep.get_or<ocs::tom::Host>(nm, ocs::tom::Host{}).c_str();
+   }
+   return ep.get_or<const char *>(nm, nullptr);
+}
+
+/**
  * @brief Write one scalar field value (no key) typed from the field's type.
  *
- * The value is read through the row's typed code; a list, an object or a reference
- * field has no scalar value and is written as null.
+ * The value is read with the checked accessor of the field's type; a list, an object or
+ * a reference field has no scalar value and is written as null. Both callers write the
+ * value only after testing that the element holds the field.
  *
  * @param writer  pretty-printer to emit into
- * @param object  element holding the field
+ * @param object  element holding the field; it holds the field
  * @param field   the row of the field
  */
 static void
 spool_json_write_scalar_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *object, const spooling_field &field) {
+                              const ocs::tom::ConstRawElement object, const spooling_field &field) {
    if (!field.ops->has_value()) {
       writer.Null();
       return;
    }
-   const ocs_spool_value value = field.ops->get(object);
+   const int nm = field.nm;
    switch (field.ops->type) {
-      case ocs::tom::FieldType::Double: writer.Double(value.dbl); break;
-      case ocs::tom::FieldType::Uint32: writer.Uint64(value.u32); break;
-      case ocs::tom::FieldType::Uint64: writer.Uint64(value.u64); break;
-      case ocs::tom::FieldType::Int64:  writer.Int64(value.i64); break;
-      case ocs::tom::FieldType::Int32:  writer.Int(value.i32); break;
-      case ocs::tom::FieldType::Bool:   writer.Bool(value.b); break;
+      case ocs::tom::FieldType::Double: writer.Double(object.get<double>(nm)); break;
+      case ocs::tom::FieldType::Uint32: writer.Uint64(object.get<std::uint32_t>(nm)); break;
+      case ocs::tom::FieldType::Uint64: writer.Uint64(object.get<std::uint64_t>(nm)); break;
+      case ocs::tom::FieldType::Int64:  writer.Int64(object.get<std::int64_t>(nm)); break;
+      case ocs::tom::FieldType::Int32:  writer.Int(object.get<std::int32_t>(nm)); break;
+      case ocs::tom::FieldType::Bool:   writer.Bool(object.get<bool>(nm)); break;
       default: {
          /* a string or a host name, the only other fields with a get operation.
             unset string -> empty string. null, "" and the "NONE" sentinel all mean
@@ -190,7 +230,7 @@ spool_json_write_scalar_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
             token into JSON. The reader maps "" back to the "NONE" sentinel string (not
             C-null), mirroring the flatfile reader, so a required field whose unset value
             is "NONE" (e.g. a ckpt interface's command fields) round-trips correctly. */
-         const char *s = value.str;
+         const char *s = spool_json_get_text(object, nm, field.ops->type);
          writer.String((s == nullptr || sge_strnullcasecmp(s, NONE_STR) == 0) ? "" : s);
          break;
       }
@@ -298,16 +338,17 @@ spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
  * pointer identity - essential because a GDI-transported list carries a rebuilt
  * descriptor that is not the canonical CE_Type pointer.
  *
- * @param list  the list to inspect
+ * @param list  the list to inspect, not empty
  * @return true if the list's descriptor carries the CE name/value/type fields
  */
 static bool
-spool_json_is_ce_list(const lList *list) {
-   const lDescr *d = lGetListDescr(list);
+spool_json_is_ce_list(const ocs::tom::ConstRawList list) {
+   // present_pos() is the lookup lGetPosInDescr() wraps: a field the (reduced) descriptor leaves out is a miss
+   const lDescr *d = list.descr();
    return d != nullptr &&
-          lGetPosInDescr(d, CE_name) >= 0 &&
-          lGetPosInDescr(d, CE_stringval) >= 0 &&
-          lGetPosInDescr(d, CE_valtype) >= 0;
+          ocs::tom::present_pos(d, CE_name) >= 0 &&
+          ocs::tom::present_pos(d, CE_stringval) >= 0 &&
+          ocs::tom::present_pos(d, CE_valtype) >= 0;
 }
 
 /**
@@ -317,15 +358,18 @@ spool_json_is_ce_list(const lList *list) {
  * enumerations of the complex entry; the word is the one of the field's symbolic kind
  * (#ocs_spool_field_ops::symbolic), as the flatfile writer writes it.
  *
+ * A field of a symbolic kind is a Uint32 (asserted where the record is made). Both
+ * callers write the value only after testing that the element holds the field.
+ *
  * @param writer  pretty-printer to emit into
- * @param object  element holding the field
+ * @param object  element holding the field; it holds the field
  * @param ops     the record of the field
  */
 static void
 spool_json_write_symbolic_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                const lListElem *object, const ocs_spool_field_ops &ops) {
+                                const ocs::tom::ConstRawElement object, const ocs_spool_field_ops &ops) {
    dstring buf = DSTRING_INIT;
-   const char *s = ocs_object_append_symbolic(&buf, ops.symbolic, ops.get(object).u32);
+   const char *s = ocs_object_append_symbolic(&buf, ops.symbolic, object.get<std::uint32_t>(ops.nm));
    s != nullptr ? writer.String(s) : writer.Null();
    sge_dstring_free(&buf);
 }
@@ -503,41 +547,42 @@ spool_json_datetime_from_string(const char *s) {
  * Routes on the JSON rendering kind of the field (#ocs_spool_field_ops::json) to the
  * date-time, bitfield, enum, symbolic, complex-typed, numeric, or plain scalar branch
  * (a permission list takes the plain branch, as it always did here);
- * a field absent from the descriptor -> null. The value is read through the row's
- * typed code; the kinds are bound to the field types at compile time (date-time,
- * bitfield, enum are numbers, complex-typed and numeric are strings), so the member of
- * the value a branch reads is the one the field's type names.
+ * a field the element does not hold -> null. The value is read with the checked
+ * accessor of the field's type; the kinds are bound to the field types at compile time
+ * (date-time is a Uint64, bitfield and enum are Uint32, complex-typed and numeric are
+ * strings), so the value type a branch reads is the one the field's type names.
  *
  * @param writer  pretty-printer to emit into
- * @param ep      element holding the field
+ * @param ep      element holding the field, maybe empty (written as null)
  * @param field   the row of the field to write
  */
 static void
 spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *ep, const spooling_field &field) {
-   if (lGetPosInDescr(lGetElemDescr(ep), field.nm) < 0) {
+                              const ocs::tom::ConstRawElement ep, const spooling_field &field) {
+   const int nm = field.nm;
+   if (!ep.has(nm)) {
       writer.Null();
       return;
    }
    const ocs_spool_field_ops &ops = *field.ops;
    switch (ops.json) {
       case ocs_spool_render::datetime:
-         spool_json_write_datetime(writer, ops.get(ep).u64);
+         spool_json_write_datetime(writer, ep.get<std::uint64_t>(nm));
          break;
       case ocs_spool_render::bitfield:
-         spool_json_write_bitfield_array(writer, ops.get(ep).u32, ops.names);
+         spool_json_write_bitfield_array(writer, ep.get<std::uint32_t>(nm), ops.names);
          break;
       case ocs_spool_render::enumeration:
-         spool_json_write_enum_value(writer, ops.get(ep).u32, ops.names);
+         spool_json_write_enum_value(writer, ep.get<std::uint32_t>(nm), ops.names);
          break;
       case ocs_spool_render::by_name:
          spool_json_write_symbolic_value(writer, ep, ops);
          break;
       case ocs_spool_render::avalue:
-         spool_json_write_avalue(writer, ops.get(ep).str, ocs_spool_avalue_type_of(ops));
+         spool_json_write_avalue(writer, ep.get<const char *>(nm), ocs_spool_avalue_type_of(ops));
          break;
       case ocs_spool_render::number:
-         spool_json_write_number_value(writer, ops.get(ep).str);
+         spool_json_write_number_value(writer, ep.get<const char *>(nm));
          break;
       case ocs_spool_render::perm_list:   // a permission list is not a positional value: written as before
       case ocs_spool_render::plain:
@@ -558,9 +603,9 @@ spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  */
 static void
 spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                 const lListElem *ep, const spooling_field &field) {
-   if (field.ops->type == ocs::tom::FieldType::Host && lGetPosInDescr(lGetElemDescr(ep), field.nm) >= 0) {
-      const char *h = field.ops->get(ep).str;
+                                 const ocs::tom::ConstRawElement ep, const spooling_field &field) {
+   if (field.ops->type == ocs::tom::FieldType::Host && ep.has(field.nm)) {
+      const char *h = ep.get<ocs::tom::Host>(field.nm).c_str();
       if (h != nullptr && strcmp(h, HOSTREF_DEFAULT) == 0) {
          writer.String(SPOOL_JSON_DEFAULT_HREF);
       } else {
@@ -591,7 +636,7 @@ spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
                                   const spooling_field *fields,
                                   rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer) {
    int nfields = 0;
@@ -600,8 +645,7 @@ spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
    }
 
    writer.StartArray();
-   const lListElem *ep;
-   for_each_ep(ep, list) {
+   for (const ocs::tom::ConstRawElement ep : list) {
       if (nfields <= 1) {
          spool_json_write_positional_name(writer, ep, fields[0]);
       } else {
@@ -609,10 +653,9 @@ spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
          writer.Key("name");
          spool_json_write_positional_name(writer, ep, fields[0]);
          writer.Key("value");
-         if (fields[1].ops->type == ocs::tom::FieldType::List &&
-             lGetPosInDescr(lGetElemDescr(ep), fields[1].nm) >= 0) {
-            if (!spool_json_write_list_value(answer_list, fields[1].ops->get_list(ep), fields[1].sub_fields,
-                                             writer)) {
+         if (fields[1].ops->type == ocs::tom::FieldType::List && ep.has(fields[1].nm)) {
+            if (!spool_json_write_list_value(answer_list, ep.get<ocs::tom::ConstRawList>(fields[1].nm),
+                                             fields[1].sub_fields, writer)) {
                return false;
             }
          } else {
@@ -633,22 +676,22 @@ spool_json_write_positional_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
  * list -> [].
  *
  * @param answer_list  for returning errors
- * @param sub_list     the list field value
+ * @param sub_list     the list field value, maybe empty (written as [])
  * @param sub_fields   spooling fields describing the sublist elements
  * @param writer       pretty-printer to emit into
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *sub_list,
+spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList sub_list,
                             const spooling_field *sub_fields,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer) {
-   if (sub_list == nullptr || lGetNumberOfElem(sub_list) == 0) {
+   if (sub_list.empty()) {   // an empty handle as well
       writer.StartArray();
       writer.EndArray();
    } else if (spool_json_is_ce_list(sub_list)) {
       // a list with the complex-entry fields holds complex entries (CE_Type), possibly reduced; checked as the
       // getters checked each element before
-      spool_json_write_ce_array(writer, ocs::tom::ConstList<ocs::tom::CE>(sub_list));
+      spool_json_write_ce_array(writer, ocs::tom::ConstList<ocs::tom::CE>(sub_list.raw()));
    } else if (sub_fields != nullptr && sub_fields[0].nm != NoName && sub_fields[0].name == nullptr) {
       if (!spool_json_write_positional_array(answer_list, sub_list, sub_fields, writer)) {
          return false;
@@ -875,21 +918,19 @@ spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, ocs::to
  * flattened into "<param>": <value> members.
  *
  * @param answer_list  for returning errors
- * @param object       the object to serialize
+ * @param object       the object to serialize, maybe empty (an error)
  * @param writer       pretty-printer to emit into
  * @param fields       spooling fields describing the object
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawElement object,
                                 rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                 const spooling_field *fields) {
    DENTER(JSON_LAYER);
 
-   SGE_CHECK_POINTER_FALSE(object, answer_list);
+   SGE_CHECK_POINTER_FALSE(object.raw(), answer_list);
    SGE_CHECK_POINTER_FALSE(fields, answer_list);
-
-   const lDescr *descr = lGetElemDescr(object);
 
    for (int i = 0; fields[i].nm != NoName; i++) {
       const spooling_field &field = fields[i];
@@ -902,17 +943,17 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
          (structural) fields are skipped. */
       if (name == nullptr) {
          const spooling_field *sf = field.sub_fields;
-         if (lGetPosInDescr(descr, nm) >= 0 && field.ops->type == ocs::tom::FieldType::List && sf != nullptr &&
+         if (object.has(nm) && field.ops->type == ocs::tom::FieldType::List && sf != nullptr &&
              sf[0].nm != NoName && sf[0].name == nullptr && sf[1].nm != NoName) {
-            const lList *sub = field.ops->get_list(object);
-            const lListElem *e;
-            for_each_ep(e, sub) {
-               const char *key = sf[0].ops->get(e).str;
+            const auto sub = object.get<ocs::tom::ConstRawList>(nm);
+            for (const ocs::tom::ConstRawElement e : sub) {
+               // the entries are not tested for their fields: one that does not hold one reads as unset
+               const char *key = spool_json_get_text_or_null(e, sf[0].nm, sf[0].ops->type);
                if (key == nullptr) {
                   continue;
                }
                writer.Key(key);
-               const char *value = sf[1].ops->get(e).str;
+               const char *value = spool_json_get_text_or_null(e, sf[1].nm, sf[1].ops->type);
                /* config list params render as arrays (grounded in the config loader's
                 * parsing); everything else is a scalar string */
                switch (config_param_list_type(key)) {
@@ -932,14 +973,15 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
          }
          continue;
       }
-      if (lGetPosInDescr(descr, nm) < 0) {
+      if (!object.has(nm)) {
          continue;
       }
 
       const ocs::tom::FieldType type = field.ops->type;
       if (type == ocs::tom::FieldType::List) {
          writer.Key(name);
-         if (!spool_json_write_list_value(answer_list, field.ops->get_list(object), field.sub_fields, writer)) {
+         if (!spool_json_write_list_value(answer_list, object.get<ocs::tom::ConstRawList>(nm), field.sub_fields,
+                                          writer)) {
             DRETURN(false);
          }
       } else if (type == ocs::tom::FieldType::Object && field.sub_fields != nullptr) {
@@ -952,44 +994,38 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
             is known here only as the row's descriptor, so the transient element is
             created from it. */
          writer.Key(name);
-         const lListElem *real = field.ops->get_object(object);
+         auto sub_obj = object.get<ocs::tom::ConstRawElement>(nm);
          const lDescr *sub_descr = field.ops->sub_descr;
-         lListElem *tmp = nullptr;
-         const lListElem *sub_obj = real;
-         if (sub_obj == nullptr && sub_descr != nullptr) {
-            tmp = lCreateElem(sub_descr);
-            sub_obj = tmp;
+         ocs::tom::RawElementPtr empty;   // the transient element, freed on every path
+         if (!sub_obj && sub_descr != nullptr) {
+            empty = ocs::tom::create_raw_elem(sub_descr);
+            sub_obj = empty.get();
          }
-         bool ok = true;
-         if (sub_obj != nullptr) {
-            ok = spool_json_write_object_braced(answer_list, sub_obj, writer, field.sub_fields);
-         } else {
+         if (!sub_obj) {
             writer.Null();
-         }
-         lFreeElem(&tmp);
-         if (!ok) {
+         } else if (!spool_json_write_object_braced(answer_list, sub_obj, writer, field.sub_fields)) {
             DRETURN(false);
          }
       } else {
-         /* the JSON kinds of the field are bound to its type at compile time (date-time,
-            bitfield, enum are numbers, numeric and the permission list are strings), so
-            the member of the value a branch reads is the one the field's type names; a
+         /* the JSON kinds of the field are bound to its type at compile time (date-time is
+            a Uint64, bitfield and enum are Uint32, numeric and the permission list are
+            strings), so the value type a branch reads is the one the field's type names; a
             complex-typed value (ocs_spool_render::avalue) is written as a plain scalar
             here, as it always was */
          writer.Key(name);
          const ocs_spool_field_ops &ops = *field.ops;
          if (ops.json == ocs_spool_render::datetime) {
-            spool_json_write_datetime(writer, ops.get(object).u64);
+            spool_json_write_datetime(writer, object.get<std::uint64_t>(nm));
          } else if (ops.json == ocs_spool_render::bitfield) {
-            spool_json_write_bitfield_array(writer, ops.get(object).u32, ops.names);
+            spool_json_write_bitfield_array(writer, object.get<std::uint32_t>(nm), ops.names);
          } else if (ops.json == ocs_spool_render::enumeration) {
-            spool_json_write_enum_value(writer, ops.get(object).u32, ops.names);
+            spool_json_write_enum_value(writer, object.get<std::uint32_t>(nm), ops.names);
          } else if (ops.json == ocs_spool_render::perm_list) {
-            spool_json_write_perm_list(writer, ops.get(object).str);
+            spool_json_write_perm_list(writer, object.get<const char *>(nm));
          } else if (ops.json == ocs_spool_render::by_name) {
             spool_json_write_symbolic_value(writer, object, ops);
          } else if (ops.json == ocs_spool_render::number) {
-            spool_json_write_number_value(writer, ops.get(object).str);
+            spool_json_write_number_value(writer, object.get<const char *>(nm));
          } else {
             spool_json_write_scalar_value(writer, object, field);
          }
@@ -1005,13 +1041,13 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
  * Used for list/sublist elements.
  *
  * @param answer_list  for returning errors
- * @param object       the object to serialize
+ * @param object       the object to serialize, maybe empty (an error)
  * @param writer       pretty-printer to emit into
  * @param fields       spooling fields describing the object
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_object_braced(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_json_write_object_braced(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawElement object,
                                rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                                const spooling_field *fields) {
    writer.StartObject();
@@ -1024,20 +1060,19 @@ spool_json_write_object_braced(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
  * @brief Write a list of objects as a JSON array of braced objects.
  *
  * @param answer_list  for returning errors
- * @param list         the list to serialize
+ * @param list         the list to serialize, maybe empty
  * @param writer       pretty-printer to emit into
  * @param fields       spooling fields describing the elements
  * @return true on success, false on error (answer_list set)
  */
 static bool
-spool_json_write_list_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_json_write_list_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                             const spooling_field *fields) {
    DENTER(JSON_LAYER);
 
    writer.StartArray();
-   const lListElem *ep;
-   for_each_ep(ep, list) {
+   for (const ocs::tom::ConstRawElement ep : list) {
       if (!spool_json_write_object_braced(answer_list, ep, writer, fields)) {
          DRETURN(false);
       }
@@ -1051,12 +1086,12 @@ spool_json_write_list_array(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
  * @brief Serialize a single object to a pretty-printed JSON document with envelope.
  *
  * @param answer_list  for returning errors
- * @param object       the object to serialize
+ * @param object       the object to serialize, maybe empty (an error)
  * @param fields       spooling fields describing the object
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+bool spool_json_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawElement object,
                              const spooling_field *fields, dstring *out) {
    return spool_json_write_object_ex(answer_list, object, fields, nullptr, out);
 }
@@ -1071,14 +1106,14 @@ bool spool_json_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
  * and leave every other configuration untouched.
  *
  * @param answer_list  for returning errors
- * @param object       the object to serialize
+ * @param object       the object to serialize, maybe empty (an error)
  * @param fields       spooling fields describing the object
  * @param derived      derived keys, terminated by an entry whose key is nullptr;
  *                     may be nullptr
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_object_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+bool spool_json_write_object_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawElement object,
                                 const spooling_field *fields,
                                 const ocs_json_derived_list *derived, dstring *out) {
    DENTER(JSON_LAYER);
@@ -1095,9 +1130,9 @@ bool spool_json_write_object_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
       writer.Key(d->key);
       writer.StartArray();
 
-      const lListElem *ep;
-      for_each_ep(ep, d->names) {
-         const char *name = lGetHost(ep, d->keynm);
+      for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList(d->names)) {
+         // a hard read, as lGetHost() was: every name element holds the host name field
+         const char *name = ep.get<ocs::tom::Host>(d->keynm).c_str();
 
          writer.String(name != nullptr ? name : "");
       }
@@ -1119,12 +1154,12 @@ bool spool_json_write_object_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
  * The array is keyed by the element type name (or "objects" for an empty list).
  *
  * @param answer_list  for returning errors
- * @param list         the list to serialize
+ * @param list         the list to serialize, maybe empty
  * @param fields       spooling fields describing the elements
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+bool spool_json_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
                            const spooling_field *fields, dstring *out) {
    DENTER(JSON_LAYER);
 
@@ -1132,11 +1167,11 @@ bool spool_json_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
    writer.SetIndent(' ', 3);
 
-   const lListElem *first = lFirst(list);
+   const ocs::tom::ConstRawElement first = list.front();   // empty for an empty list or an empty handle
    dstring key = DSTRING_INIT;
 
    writer.StartObject();
-   if (first != nullptr) {
+   if (first) {
       spool_json_write_envelope(writer, first);
       writer.Key(spool_json_typename(first, &key));
    } else {
@@ -1162,13 +1197,13 @@ bool spool_json_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * $id instead of object_get_type_name().
  *
  * @param answer_list  for returning errors
- * @param object       the object to serialize
+ * @param object       the object to serialize, maybe empty (an error)
  * @param fields       spooling fields describing the object
  * @param type_name    explicit type name for the $id
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+bool spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawElement object,
                                    const spooling_field *fields, const char *type_name, dstring *out) {
    DENTER(JSON_LAYER);
 
@@ -1199,14 +1234,14 @@ bool spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  * single-record "category" schema of "qconf -scat <id>".
  *
  * @param answer_list    for returning errors
- * @param list           the list to serialize (a null list yields an empty array)
+ * @param list           the list to serialize (an empty handle yields an empty array)
  * @param fields         spooling fields describing the elements
  * @param id_name        type name for the $id (`ocs-qconf-<id_name>.schema.json`)
  * @param envelope_name  the array key wrapping the records
  * @param out            dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_typed_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+bool spool_json_write_typed_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
                                     const spooling_field *fields, const char *id_name,
                                     const char *envelope_name, dstring *out) {
    DENTER(JSON_LAYER);
@@ -1235,13 +1270,13 @@ bool spool_json_write_typed_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list
  * For lists whose element type is not a registered object (e.g. -stl thread pools).
  *
  * @param answer_list  for returning errors
- * @param list         the list to serialize
+ * @param list         the list to serialize, maybe empty
  * @param fields       spooling fields describing the elements
  * @param type_name    explicit type name for the $id and the array key
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+bool spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
                                  const spooling_field *fields, const char *type_name, dstring *out) {
    return spool_json_write_typed_list_ex(answer_list, list, fields, type_name, type_name, out);
 }
@@ -1254,13 +1289,13 @@ bool spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
  * shower does.
  *
  * @param answer_list  for returning errors
- * @param list         the list of name-bearing elements
+ * @param list         the list of name-bearing elements, maybe empty
  * @param keynm        CULL field id of the name attribute
  * @param out          dstring the JSON document is appended to
  * @return true on success
  */
-bool spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list, int keynm,
-                                dstring *out) {
+bool spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
+                                int keynm, dstring *out) {
    return spool_json_write_name_list_ex(answer_list, list, keynm, nullptr, out);
 }
 
@@ -1274,26 +1309,26 @@ bool spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
  * ocs-qconf-unknown-list.schema.json) and makes two different lists indistinguishable.
  *
  * @param answer_list  for returning errors
- * @param list         the list of name-bearing elements
+ * @param list         the list of name-bearing elements, maybe empty
  * @param keynm        CULL field id of the name attribute
  * @param type_name    envelope/$id name, or nullptr to derive it from the first element
  * @param out          dstring the JSON document is appended to
  * @return true on success
  */
-bool spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list, int keynm,
-                                   const char *type_name, dstring *out) {
+bool spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
+                                   int keynm, const char *type_name, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
    writer.SetIndent(' ', 3);
 
-   const lListElem *first = lFirst(list);
+   const ocs::tom::ConstRawElement first = list.front();   // empty for an empty list or an empty handle
    dstring key = DSTRING_INIT;
 
    /* same $schema/$id envelope as the object lists, but the array holds bare names */
    writer.StartObject();
-   if (type_name != nullptr || first != nullptr) {
+   if (type_name != nullptr || first) {
       /* CS-2320: a name list carries its own "<type>-list" schema id so it is
        * distinguishable from the object schema and from a record list that shares
        * the same envelope key (e.g. -sc vs -scel, both "complex_entry"); the array
@@ -1314,12 +1349,11 @@ bool spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    const ocs_spool_field_ops *ops = ocs_spool_field_ops_of(keynm);
    const bool named = ops != nullptr &&
                       (ops->type == ocs::tom::FieldType::String || ops->type == ocs::tom::FieldType::Host);
-   const lListElem *ep;
-   for_each_ep(ep, list) {
-      if (!named || lGetPosInDescr(lGetElemDescr(ep), keynm) < 0) {
+   for (const ocs::tom::ConstRawElement ep : list) {
+      if (!named || !ep.has(keynm)) {
          continue;
       }
-      const char *s = ops->get(ep).str;
+      const char *s = spool_json_get_text(ep, keynm, ops->type);
       if (s != nullptr && s[0] != '#') {   /* skip comment lines, as the ASCII shower does */
          writer.String(s);
       }
