@@ -163,6 +163,7 @@ set(PROJECT_3RDPARTY_HOME
         CACHE STRING "installation directory for 3rdparty tools")
 include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
+include(cmake/OcsRegistryProbe.cmake)
 include(CTest)
 
 # Catch2 is a header-only test framework, so we can use CPM to install it

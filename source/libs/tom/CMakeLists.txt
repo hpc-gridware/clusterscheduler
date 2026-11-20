@@ -30,6 +30,7 @@ target_sources(cull PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/cull_lerrno.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/cull_state.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_cull_descr.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_DescrRegistryProbe.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_DumpCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_ElementCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_FieldException.cc

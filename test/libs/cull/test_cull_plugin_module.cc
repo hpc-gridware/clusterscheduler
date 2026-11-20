@@ -47,9 +47,13 @@ extern "C" void test_cull_plugin_release(const lDescr **dpp) {
 }
 
 /**
- * @brief The registry this module uses, which also links the probe of the loader check into it
+ * @brief The registry this module uses
+ *
+ * The probe of the loader check itself is linked by ocs_link_registry_probe(), as in a spooling plugin; this
+ * function only asks the registry identity for the test.
+ *
  * @return the identity of the registry
  */
 extern "C" const void *test_cull_plugin_probe() {
-   return ocs_cull_descr_registry_seen();
+   return ocs::tom::descr_registry_id();
 }

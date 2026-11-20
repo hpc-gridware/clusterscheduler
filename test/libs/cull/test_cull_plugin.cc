@@ -24,7 +24,7 @@
  * The spooling plugins link CULL statically and are loaded with dlopen(RTLD_LOCAL).
  * Their code must use the registry of the loading process, else descriptors are
  * built twice and released into the wrong registry (N-A-22). The loader of the
- * spooling methods checks that with ocs_cull_descr_registry_shared() and refuses
+ * spooling methods checks that with ocs::tom::descr_registry_shared() and refuses
  * a plugin that fails. This test loads two modules built like a plugin, one bound
  * to the CULL of this executable and one bound to its own copy, and runs the same
  * check on both.
@@ -36,6 +36,7 @@
 
 #include "cull/cull_test_api.h"
 #include "cull/ocs_cull_descr.h"
+#include "tom/ocs_Raw.h"
 
 #include "ocs_module_test.h"
 
@@ -60,7 +61,7 @@ static std::string module_path(const char *name) {
 /** @brief What one test module showed */
 struct module_result {
    bool loaded{false};       ///< dlopen() succeeded
-   bool shared{false};       ///< ocs_cull_descr_registry_shared() returned true
+   bool shared{false};       ///< ocs::tom::descr_registry_shared() returned true
    std::string own;          ///< the object holding the registry of this executable
    std::string seen;         ///< the object holding the registry the module uses
    bool same_descr{false};   ///< the module interned the same descriptor as this executable
@@ -81,7 +82,7 @@ static module_result probe_module(const char *name) {
       return r;
    }
    r.loaded = true;
-   r.shared = ocs_cull_descr_registry_shared(handle, &r.own, &r.seen);
+   r.shared = ocs::tom::descr_registry_shared(handle, r.own, r.seen);
    printf("%s: own registry in %s, module uses the one in %s\n", name, r.own.c_str(), r.seen.c_str());
 
    using intern_func = const lDescr *(*)(const lDescr *);

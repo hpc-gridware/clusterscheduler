@@ -611,8 +611,5 @@ namespace ocs::tom {
       ocs_cull_descr_release(&descr);
    }
 
-   bool descr_registry_shared(void *handle, std::string &own, std::string &seen) {
-      return ocs_cull_descr_registry_shared(handle, &own, &seen);
-   }
 
 } // namespace ocs::tom

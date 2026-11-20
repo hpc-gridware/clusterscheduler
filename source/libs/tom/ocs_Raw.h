@@ -1844,12 +1844,16 @@ namespace ocs::tom {
 
    /**
     * @brief Whether a loaded shared object uses the descriptor registry of this process (N-A-22)
+    *
+    * The loaded object answers through its probe ocs_tom_descr_registry_seen(), which every loadable object
+    * links with ocs_link_registry_probe() (cmake/OcsRegistryProbe.cmake); an object without the probe is
+    * refused ("none").
+    *
     * @param handle the handle dlopen() returned for the object
     * @param[out] own the file name of the object holding the registry of the caller
     * @param[out] seen the file name of the object holding the registry the loaded object uses, or "none" if it
-    *             has no CULL
+    *             has no probe
     * @return true if the loaded object uses the registry of the caller
-    * @see Old form: ocs_cull_descr_registry_shared(handle, &own, &seen)
     */
    [[nodiscard]] bool descr_registry_shared(void *handle, std::string &own, std::string &seen);
 

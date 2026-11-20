@@ -698,7 +698,7 @@ size_t ocs_cull_descr_registry_peak() {
  *
  * @return the identity
  */
-const void *ocs_cull_descr_registry_id() {
+const void *ocs::tom::descr_registry_id() {
    return &registry_slot();
 }
 
@@ -708,9 +708,11 @@ const void *ocs_cull_descr_registry_id() {
  * An object that links CULL statically carries its own copy of the registry.
  * Its code must still be bound to the copy of the process, which it is when
  * CULL exports its symbols and the loading executable is linked `-rdynamic`.
- * The check calls ocs_cull_descr_registry_seen() of the loaded object, whose
- * call to ocs_cull_descr_registry_id() resolves the way all of its calls into
- * CULL do, and compares the result with the registry of the caller.
+ * The check calls ocs_tom_descr_registry_seen() of the loaded object, whose
+ * call to ocs::tom::descr_registry_id() resolves the way all of its calls into
+ * the list core do, and compares the result with the registry of the caller.
+ * Every loadable object links the probe with ocs_link_registry_probe() (cmake/OcsRegistryProbe.cmake),
+ * since nothing else of it may pull the probe's translation unit out of the static library.
  *
  * @param handle the handle dlopen() returned for the object
  * @param[out] own receives the file name of the object holding the registry of the caller
@@ -718,20 +720,20 @@ const void *ocs_cull_descr_registry_id() {
  *             it has no CULL
  * @return true if the loaded object uses the registry of the caller
  */
-bool ocs_cull_descr_registry_shared(void *handle, std::string *own, std::string *seen) {
+bool ocs::tom::descr_registry_shared(void *handle, std::string &own, std::string &seen) {
    using seen_func = const void *(*)();
-   const void *mine = ocs_cull_descr_registry_id();
-   *own = object_of(mine);
+   const void *mine = ocs::tom::descr_registry_id();
+   own = object_of(mine);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-   const auto func = reinterpret_cast<seen_func>(dlsym(handle, "ocs_cull_descr_registry_seen"));
+   const auto func = reinterpret_cast<seen_func>(dlsym(handle, "ocs_tom_descr_registry_seen"));
 #pragma GCC diagnostic pop
    if (func == nullptr) {
-      *seen = "none";
+      seen = "none";
       return false;
    }
    const void *theirs = func();
-   *seen = object_of(theirs);
+   seen = object_of(theirs);
    return theirs == mine;
 }
 

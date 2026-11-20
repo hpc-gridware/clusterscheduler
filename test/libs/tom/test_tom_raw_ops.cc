@@ -1290,20 +1290,25 @@ test_free_raw() {
 }
 
 /**
- * @brief descr_registry_shared() gives what ocs_cull_descr_registry_shared() gives
+ * @brief descr_registry_shared() refuses an object without the registry probe
+ *
+ * The positive case, a loaded module that links the probe and shares the registry, is test_cull_plugin.
+ *
  * @return nothing; CHECK records the results
  */
 static void
 test_descr_registry_shared() {
    std::string own;
    std::string seen;
-   const bool shared = ocs::tom::descr_registry_shared(RTLD_DEFAULT, own, seen);
-   std::string old_own;
-   std::string old_seen;
-   const bool old_shared = ocs_cull_descr_registry_shared(RTLD_DEFAULT, &old_own, &old_seen);
-   CHECK(31, "descr_registry_shared() gives the result and the object names of ocs_cull_descr_registry_shared() "
-             "for the objects of this process",
-         shared == old_shared && own == old_own && seen == old_seen && !own.empty() && !seen.empty());
+   // the C library carries no probe: refused, "none", the registry of this process named
+   void *const libc = dlopen("libc.so.6", RTLD_LAZY | RTLD_NOLOAD);
+   void *const handle = libc != nullptr ? libc : RTLD_DEFAULT;
+   const bool shared = handle == libc && ocs::tom::descr_registry_shared(handle, own, seen);
+   CHECK(31, "descr_registry_shared() refuses an object without the probe and names the registry of this process",
+         (libc == nullptr || (!shared && seen == "none" && !own.empty())));
+   if (libc != nullptr) {
+      dlclose(libc);
+   }
 }
 
 /**
@@ -2567,8 +2572,8 @@ int main(int argc, char *argv[]) {
        {"free a list and an element through their holders, and holders of nullptr"},
        "every holder cleared; no leak", {}, {30}, test_free_raw},
       {"RAW-OPS-20", "descr_registry_shared",
-       "descr_registry_shared() gives what ocs_cull_descr_registry_shared() gives",
-       {"ask for the objects of this process through both"}, "the same result and object names", {}, {31},
+       "descr_registry_shared() refuses an object without the registry probe",
+       {"ask for the C library, which carries no probe"}, "refused, \"none\", the own registry named", {}, {31},
        test_descr_registry_shared},
       {"RAW-OPS-21", "dump list", "dump() and undump() of a list write a framed text and read the list back",
        {"dump 100 jobs, read them back, dump what was read"}, "the frame of write_list(), the same jobs, the same text",

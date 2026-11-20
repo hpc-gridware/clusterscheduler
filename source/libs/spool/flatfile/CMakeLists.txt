@@ -42,6 +42,8 @@ add_library(${LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${LIBRARY_NAME}_objli
 target_include_directories(${LIBRARY_NAME}_static PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
 
 add_library(${LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${LIBRARY_NAME}_objlib>)
+# the probe of the descriptor registry check of the loading process (N-A-22)
+ocs_link_registry_probe(${LIBRARY_NAME})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
 target_link_libraries(
       ${LIBRARY_NAME}

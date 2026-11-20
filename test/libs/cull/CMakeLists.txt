@@ -96,6 +96,7 @@ foreach (variant shared split)
    target_include_directories(test_cull_plugin_${variant} PRIVATE "./")
    target_link_libraries(test_cull_plugin_${variant} PRIVATE cull uti commlists ${SGE_LIBS_SHARED})
    set_target_properties(test_cull_plugin_${variant} PROPERTIES PREFIX "")
+   ocs_link_registry_probe(test_cull_plugin_${variant})
 endforeach ()
 target_link_options(test_cull_plugin_split PRIVATE -Wl,-Bsymbolic)
 

@@ -94,10 +94,11 @@ size_t ocs_cull_descr_registry_size();
 size_t ocs_cull_descr_registry_peak();
 #endif
 
-const void *ocs_cull_descr_registry_id();
+namespace ocs::tom {
+   const void *descr_registry_id();
+   bool descr_registry_shared(void *handle, std::string &own, std::string &seen);
+} // namespace ocs::tom
 
-extern "C" const void *ocs_cull_descr_registry_seen();
-
-bool ocs_cull_descr_registry_shared(void *handle, std::string *own, std::string *seen);
+extern "C" const void *ocs_tom_descr_registry_seen();
 
 size_t ocs_cull_descr_set_soft_cap(size_t cap);
