@@ -52,12 +52,15 @@
 #include "sgeobj/tom/ocs_tom_ASTRLIST.h"
 #include "sgeobj/tom/ocs_tom_AUSRLIST.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_PRO.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -467,7 +470,7 @@ static void test_object_name_get_type_extended() {
 }
 
 // ---------------------------------------------------------------------------
-// object_has_differences — field-by-field element comparison  [T44–T47, T100–T101]
+// object_has_differences — field-by-field element comparison  [T44–T47, T100–T105]
 //
 // Returns true when any attribute value differs between the two elements.
 // If one element is nullptr and the other is not, the result is true.
@@ -504,13 +507,42 @@ static void test_object_has_differences() {
    ocs::tom::set<PRO_vsize>(q, 4294967297ULL);
    CHECK(101, "differing Uint64 field → true",         object_has_differences(*p, &alp, *q) == true);
 
+   // T102: host names compare as sge_hostcmp() does, so a host in another case is the same host
+   auto h1 = ocs::tom::ElementPtr<ocs::tom::EH>::create();
+   auto h2 = ocs::tom::ElementPtr<ocs::tom::EH>::create();
+   ocs::tom::set<EH_name>(h1, ocs::tom::Host{"HostA"});
+   ocs::tom::set<EH_name>(h2, ocs::tom::Host{"hosta"});
+   CHECK(102, "host field in another case → false",   object_has_differences(*h1, &alp, *h2) == false);
+
+   // T103/T104: a reduced element differs from the full one in both directions, two equal reductions do not
+   lEnumeration *what = lWhat("%T(%I)", PRO_Type, PRO_vsize);
+   auto reduced = ocs::tom::select(p.get().raw(), what);
+   auto reduced_too = ocs::tom::select(p.get().raw(), what);
+   lFreeWhat(&what);
+   CHECK(103, "reduced vs full and full vs reduced → true",
+         object_has_differences(reduced.get().raw(), &alp, *p) &&
+            object_has_differences(*p, &alp, reduced.get().raw()));
+   CHECK(104, "two equal reductions → false",
+         object_has_differences(reduced.get().raw(), &alp, reduced_too.get().raw()) == false);
+
+   // T105: a list field compares element by element
+   auto j1 = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   auto j2 = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j1, "PATH");
+   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j2, "PATH");
+   const bool same_lists = !object_has_differences(*j1, &alp, *j2);
+   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j1, "HOME");
+   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j2, "LANG");
+   CHECK(105, "equal list field → false, a differing sub-element → true",
+         same_lists && object_has_differences(*j1, &alp, *j2));
+
    a.reset();
    b.reset();
    alp.reset();
 }
 
 // ---------------------------------------------------------------------------
-// object_list_has_differences — list-level difference detection  [T48–T50]
+// object_list_has_differences — list-level difference detection  [T48–T50, T106]
 //
 // Compares elements in order.  Lists of different lengths differ immediately
 // without element comparison.  Both nullptr is treated as no difference.
@@ -534,6 +566,12 @@ static void test_object_list_has_differences() {
 
    // T50: both nullptr → false
    CHECK(50, "both nullptr → false",                  object_list_has_differences(nullptr, &alp, nullptr) == false);
+
+   // T106: an empty list and nullptr hold the same elements, none
+   auto empty = ocs::tom::ListPtr<ocs::tom::UE>::create("empty");
+   CHECK(106, "empty list vs nullptr → false",
+         object_list_has_differences(empty.get().raw(), &alp, nullptr) == false &&
+            object_list_has_differences(nullptr, &alp, empty.get().raw()) == false);
 
    lFreeList(&l1);
    lFreeList(&l2);

@@ -64,6 +64,7 @@
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/sge_answer.h"
@@ -339,13 +340,13 @@ int
 object_set_range_id(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> object, uint32_t start, uint32_t end,
                     uint32_t step);
 
-bool  
-object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                       const lListElem *old_elem);
+bool
+object_has_differences(ocs::tom::ConstRawElement this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       ocs::tom::ConstRawElement old_elem);
 
 bool
-object_list_has_differences(const lList *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            const lList *old_elem);
+object_list_has_differences(ocs::tom::ConstRawList this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            ocs::tom::ConstRawList old_list);
 
 bool
 object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb, lListElem **epp,

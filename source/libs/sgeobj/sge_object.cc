@@ -104,6 +104,8 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Model.h"
+#include "tom/ocs_Raw.h"
 
 #include "msg_common.h"
 
@@ -1493,148 +1495,124 @@ int object_type_get_key_nm(sge_object_type type) {
 }
 
 /**
- * @brief Do two elements differ in any attribute?
+ * @brief Do two strings differ, with nullptr as a value of its own?
+ * @param a the first string, or nullptr
+ * @param b the second string, or nullptr
+ * @return true if exactly one is nullptr, or both are set and strcmp() finds them different
+ */
+static bool
+object_strings_differ(const char *a, const char *b) {
+   if (a == nullptr || b == nullptr) {
+      return a != b;
+   }
+   return a != b && strcmp(a, b) != 0;
+}
+
+/**
+ * @brief Do two elements differ in a field both hold with the same type?
  *
- * Walks both descriptors in parallel and compares attribute by attribute. Two
- * elements whose descriptors disagree on a name or a type at the same position
- * count as different rather than as an error.
+ * Reads both values through the checked run-time accessors. The caller has
+ * checked that both elements hold the field with this type, so no read throws.
  *
  * @param this_elem the element to compare
- * @param[out] answer_list receives error messages
+ * @param[out] answer_list receives error messages of nested comparisons
  * @param old_elem the element to compare against
- * @return true when the elements differ, or when only one of them is nullptr
+ * @param nm the field number
+ * @param type the field type both elements hold the field with
+ * @return true if the values differ; strings compare with strcmp(), host names as sge_hostcmp() does,
+ *         objects and lists element by element
+ */
+static bool
+object_field_differs(const ocs::tom::ConstRawElement this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                     const ocs::tom::ConstRawElement old_elem, const int nm, const ocs::tom::FieldType type) {
+   switch (type) {
+      case ocs::tom::FieldType::Uint32:
+         return this_elem.get<std::uint32_t>(nm) != old_elem.get<std::uint32_t>(nm);
+      case ocs::tom::FieldType::Uint64:
+         return this_elem.get<std::uint64_t>(nm) != old_elem.get<std::uint64_t>(nm);
+      case ocs::tom::FieldType::Int32:
+         return this_elem.get<std::int32_t>(nm) != old_elem.get<std::int32_t>(nm);
+      case ocs::tom::FieldType::Int64:
+         return this_elem.get<std::int64_t>(nm) != old_elem.get<std::int64_t>(nm);
+      case ocs::tom::FieldType::Double:
+         return this_elem.get<double>(nm) != old_elem.get<double>(nm);
+      case ocs::tom::FieldType::Bool:
+         return this_elem.get<bool>(nm) != old_elem.get<bool>(nm);
+      case ocs::tom::FieldType::String:
+         return object_strings_differ(this_elem.get<const char *>(nm), old_elem.get<const char *>(nm));
+      case ocs::tom::FieldType::Host:
+         return this_elem.get<ocs::tom::Host>(nm) != old_elem.get<ocs::tom::Host>(nm);
+      case ocs::tom::FieldType::Ref:
+         return this_elem.get<void *>(nm) != old_elem.get<void *>(nm);
+      case ocs::tom::FieldType::Object:
+         return object_has_differences(this_elem.get<ocs::tom::ConstRawElement>(nm), answer_list,
+                                       old_elem.get<ocs::tom::ConstRawElement>(nm));
+      case ocs::tom::FieldType::List:
+         return object_list_has_differences(this_elem.get<ocs::tom::ConstRawList>(nm), answer_list,
+                                            old_elem.get<ocs::tom::ConstRawList>(nm));
+   }
+   return true;
+}
+
+/**
+ * @brief Do two elements differ in any attribute?
+ *
+ * Walks the fields @p this_elem holds and compares each with the same field of
+ * @p old_elem. Two elements count as different rather than as an error when one
+ * holds a field the other does not hold, or holds it with another type, as two
+ * differently reduced elements do. Every field type is compared, the 64 bit
+ * numbers included.
+ *
+ * @param this_elem the element to compare, maybe empty
+ * @param[out] answer_list receives error messages
+ * @param old_elem the element to compare against, maybe empty
+ * @return true when the elements differ, or when only one of them is empty
  */
 bool
-object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                       const lListElem *old_elem) {
+object_has_differences(const ocs::tom::ConstRawElement this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                       const ocs::tom::ConstRawElement old_elem) {
    DENTER(TOP_LAYER);
+
+   if (!this_elem || !old_elem) {
+      // one of both elements is not nullptr
+      DRETURN(static_cast<bool>(this_elem) != static_cast<bool>(old_elem));
+   }
+
+   const lDescr *const this_descr = this_elem.descr();
+   const lDescr *const old_descr = old_elem.descr();
    bool ret = false;
+   int this_count = 0;
 
-   if (this_elem != nullptr && old_elem != nullptr) {
-      const lDescr *this_elem_descr = this_elem->descr;
-      const lDescr *old_elem_descr = old_elem->descr;
-      const ocs_cull_present_fields this_fields(this_elem_descr);
-      const ocs_cull_present_fields old_fields(old_elem_descr);
-      auto this_it = this_fields.begin();
-      auto old_it = old_fields.begin();
+   for (const auto f : ocs_cull_present_fields(this_descr)) {
+      const int nm = this_descr[f.pos].nm;
+      const ocs::tom::FieldType type = ocs::tom::field_type_of(this_descr[f.pos].mt);
+      const int old_pos = ocs::tom::field_pos(old_descr, nm);
+      this_count++;
 
-      /*
-       * Compare each attribute of the given elements, the fields that have a value pairwise
-       */
-      for (; this_it != this_fields.end() && old_it != old_fields.end(); ++this_it, ++old_it) {
-         const int pos = (*this_it).pos;
-         const int old_pos = (*old_it).pos;
-         const lDescr *tmp_decr1 = &this_elem_descr[pos];
-         const lDescr *tmp_decr2 = &old_elem_descr[old_pos];
-         int type1 = tmp_decr1->mt;
-         int type2 = tmp_decr2->mt;
-         bool equiv;
-
-         /* 
-          * Compare name and type
-          */
-         if (tmp_decr1->nm != tmp_decr2->nm ||
-             mt_get_type(type1) != mt_get_type(type2)) {
-            DPRINTF("Attribute " SFQ " of type " SFQ " cannot be compared with attribute " SFQ " of type " SFQ ".\n",
-                    lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)],
-                    lNm2Str(tmp_decr2->nm), multitypes[mt_get_type(type2)]);
-            ret = true;
-            break;
-         }
-
-         /*
-          * Compare value of attributes
-          */
-         switch (mt_get_type(type1)) {
-            case lDoubleT:
-               equiv = (lGetPosDouble(this_elem, pos) == lGetPosDouble(old_elem, old_pos)) ? true : false;
-               break;
-            case lUlongT:
-               equiv = (lGetPosUlong(this_elem, pos) == lGetPosUlong(old_elem, old_pos)) ? true : false;
-               break;
-            case lUlong64T:
-               equiv = lGetPosUlong64(this_elem, pos) == lGetPosUlong64(old_elem, old_pos);
-               break;
-            case lLongT:
-               equiv = (lGetPosLong(this_elem, pos) == lGetPosLong(old_elem, old_pos)) ? true : false;
-               break;
-            case lBoolT:
-               equiv = (lGetPosBool(this_elem, pos) == lGetPosBool(old_elem, old_pos)) ? true : false;
-               break;
-            case lIntT:
-               equiv = (lGetPosInt(this_elem, pos) == lGetPosInt(old_elem, old_pos)) ? true : false;
-               break;
-            case lStringT: {
-               const char *new_str = lGetPosString(this_elem, pos);
-               const char *old_str = lGetPosString(old_elem, old_pos);
-
-               if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
-                  equiv = false;
-               } else if (new_str == old_str) {
-                  equiv = true;
-               } else {
-                  equiv = (strcmp(new_str, old_str) == 0) ? true : false;
-               }
-            }
-               break;
-            case lHostT: {
-               const char *new_str = lGetPosHost(this_elem, pos);
-               const char *old_str = lGetPosHost(old_elem, old_pos);
-
-               if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
-                  equiv = false;
-               } else if (new_str == old_str) {
-                  equiv = true;
-               } else {
-                  equiv = (sge_hostcmp(new_str, old_str) == 0) ? true : false;
-               }
-            }
-               break;
-            case lRefT:
-               equiv = (lGetPosRef(this_elem, pos) == lGetPosRef(old_elem, old_pos)) ? true : false;
-               break;
-            case lObjectT: {
-               lListElem *new_obj = lGetPosObject(this_elem, pos);
-               lListElem *old_obj = lGetPosObject(old_elem, old_pos);
-
-               equiv = object_has_differences(new_obj, answer_list, old_obj) ? false : true;
-            }
-               break;
-            case lListT: {
-               lList *new_list = lGetPosList(this_elem, pos);
-               lList *old_list = lGetPosList(old_elem, old_pos);
-
-               if (object_list_has_differences(new_list, answer_list, old_list)) {
-                  equiv = false;
-               } else {
-                  equiv = true;
-               }
-            }
-               break;
-            default:
-            DTRACE;
-               equiv = false;
-               break;
-         }
-
-         if (!equiv) {
-            DPRINTF("Attributes " SFQ " of type " SFQ " are not equivalent.\n",
-                    lNm2Str(tmp_decr1->nm), multitypes[mt_get_type(type1)]);
-            DTRACE;
-            ret = true;
-         }
+      // the same field with the same type, or the elements differ in their layout
+      if (!old_elem.has(nm) || ocs::tom::field_type_of(old_descr[old_pos].mt) != type) {
+         DPRINTF("Attribute " SFQ " cannot be compared, the other element does not hold it with the same type\n",
+                 ocs::tom::field_name(nm));
+         ret = true;
+         break;
       }
 
-      /*
-       * Compare number of attributes within each element
-       */
-      if ((this_it != this_fields.end()) != (old_it != old_fields.end())) {
+      if (object_field_differs(this_elem, answer_list, old_elem, nm, type)) {
+         DPRINTF("Attributes " SFQ " are not equivalent\n", ocs::tom::field_name(nm));
+         ret = true;
+      }
+   }
+
+   // every field of this_elem is held by old_elem: they differ if old_elem holds more
+   if (!ret) {
+      int old_count = 0;
+      for ([[maybe_unused]] const auto f : ocs_cull_present_fields(old_descr)) {
+         old_count++;
+      }
+      if (old_count != this_count) {
          DPRINTF("Descriptor size is not equivalent\n");
          ret = true;
       }
-   } else if (this_elem != nullptr || old_elem != nullptr) {
-      /* One of both elems is not nullptr */
-      ret = true;
    }
 
    DRETURN(ret);
@@ -1643,39 +1621,32 @@ object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::A
 /**
  * @brief Do two lists differ in any element?
  *
- * @param this_list the list to compare
+ * @param this_list the list to compare, maybe empty (nullptr)
  * @param[out] answer_list receives error messages
- * @param old_list the list to compare against
- * @return true when the lists differ in length or in any element
+ * @param old_list the list to compare against, maybe empty (nullptr)
+ * @return true when the lists differ in length or in any element; a nullptr list and an empty list do not differ
  *
  * @see #object_has_differences
  */
 bool
-object_list_has_differences(const lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            const lList *old_list) {
+object_list_has_differences(const ocs::tom::ConstRawList this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                            const ocs::tom::ConstRawList old_list) {
    DENTER(BASIS_LAYER);
-   bool ret = false;
 
-   if (this_list == nullptr && old_list == nullptr) {
-      ret = false;
-   } else if (lGetNumberOfElem(this_list) == lGetNumberOfElem(old_list)) {
-      const lListElem *new_elem;
-      const lListElem *old_elem;
-
-      for (new_elem = lFirst(this_list), old_elem = lFirst(old_list);
-           new_elem != nullptr && old_elem != nullptr;
-           new_elem = lNext(new_elem), old_elem = lNext(old_elem)) {
-
-         ret = object_has_differences(new_elem, answer_list, old_elem);
-         if (ret) {
-            break;
-         }
-      }
-   } else {
-      ret = true;
+   if (this_list.size() != old_list.size()) {
+      DRETURN(true);
    }
 
-   DRETURN(ret);
+   // equal length; an empty handle iterates nothing
+   auto old_it = old_list.begin();
+   for (const auto this_elem : this_list) {
+      if (object_has_differences(this_elem, answer_list, *old_it)) {
+         DRETURN(true);
+      }
+      ++old_it;
+   }
+
+   DRETURN(false);
 }
 
 /**

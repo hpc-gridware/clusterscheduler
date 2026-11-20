@@ -788,9 +788,11 @@ namespace ocs::tom {
    /**
     * @brief A read-only, non-owning handle on an element of any type
     *
-    * The size of a pointer; converts implicitly to `const lListElem *`, made
-    * from one only explicitly. The type is the element's descriptor. Every
-    * method forwards to the free function of the same name.
+    * The size of a pointer; converts implicitly to `const lListElem *` and is
+    * made implicitly from one or from a typed read-only handle: it owns nothing
+    * and checks nothing, so the conversion cannot fail or lose an element. The
+    * type is the element's descriptor. Every method forwards to the free
+    * function of the same name.
     */
    class ConstRawElement {
    public:
@@ -804,7 +806,15 @@ namespace ocs::tom {
        * @brief A handle on an element
        * @param ep the element, or nullptr for an empty handle
        */
-      explicit ConstRawElement(const lListElem *ep) noexcept : ep_(const_cast<lListElem *>(ep)) {}
+      ConstRawElement(const lListElem *ep) noexcept : ep_(const_cast<lListElem *>(ep)) {}
+
+      /**
+       * @brief A handle on the element of a typed handle, also of a mutable one
+       * @tparam T the object type
+       * @param element the typed handle, maybe empty
+       */
+      template <ObjectType T>
+      ConstRawElement(const ConstElement<T> element) noexcept : ConstRawElement(element.raw()) {}
 
       /**
        * @brief The element, for every function that takes the raw pointer
@@ -908,7 +918,9 @@ namespace ocs::tom {
    /**
     * @brief A mutable, non-owning handle on an element of any type; adds the setters
     *
-    * Converts implicitly to `lListElem *` and to the read-only handle.
+    * Converts implicitly to `lListElem *` and to the read-only handle; made
+    * implicitly from `lListElem *` or a mutable typed handle, never from a
+    * read-only one.
     */
    class RawElement : public ConstRawElement {
    public:
@@ -922,7 +934,15 @@ namespace ocs::tom {
        * @brief A handle on an element
        * @param ep the element, or nullptr for an empty handle
        */
-      explicit RawElement(lListElem *ep) noexcept : ConstRawElement(ep) {}
+      RawElement(lListElem *ep) noexcept : ConstRawElement(ep) {}
+
+      /**
+       * @brief A handle on the element of a mutable typed handle
+       * @tparam T the object type
+       * @param element the typed handle, maybe empty
+       */
+      template <ObjectType T>
+      RawElement(const Element<T> element) noexcept : ConstRawElement(element.raw()) {}
 
       /**
        * @brief The element, for every function that takes the raw pointer
@@ -1005,7 +1025,8 @@ namespace ocs::tom {
     * @brief A read-only, non-owning handle on a list of any type
     *
     * Walked as a range of ConstRawElement. Converts implicitly to
-    * `const lList *`, made from one only explicitly.
+    * `const lList *` and is made implicitly from one or from a typed read-only
+    * handle, as ConstRawElement is.
     */
    class ConstRawList {
    public:
@@ -1021,7 +1042,15 @@ namespace ocs::tom {
        * @brief A handle on a list
        * @param lp the list, or nullptr for an empty handle
        */
-      explicit ConstRawList(const lList *lp) noexcept : lp_(const_cast<lList *>(lp)) {}
+      ConstRawList(const lList *lp) noexcept : lp_(const_cast<lList *>(lp)) {}
+
+      /**
+       * @brief A handle on the list of a typed handle, also of a mutable one
+       * @tparam T the object type
+       * @param list the typed handle, maybe empty
+       */
+      template <ObjectType T>
+      ConstRawList(const ConstList<T> list) noexcept : ConstRawList(list.raw()) {}
 
       /**
        * @brief The list, for every function that takes the raw pointer
@@ -1136,7 +1165,8 @@ namespace ocs::tom {
    /**
     * @brief A mutable, non-owning handle on a list of any type; adds the operations that change the list
     *
-    * Walked as a range of RawElement.
+    * Walked as a range of RawElement. Made implicitly from `lList *` or a
+    * mutable typed handle, never from a read-only one.
     */
    class RawList : public ConstRawList {
    public:
@@ -1152,7 +1182,15 @@ namespace ocs::tom {
        * @brief A handle on a list
        * @param lp the list, or nullptr for an empty handle
        */
-      explicit RawList(lList *lp) noexcept : ConstRawList(lp) {}
+      RawList(lList *lp) noexcept : ConstRawList(lp) {}
+
+      /**
+       * @brief A handle on the list of a mutable typed handle
+       * @tparam T the object type
+       * @param list the typed handle, maybe empty
+       */
+      template <ObjectType T>
+      RawList(const List<T> list) noexcept : ConstRawList(list.raw()) {}
 
       /**
        * @brief The list, for every function that takes the raw pointer

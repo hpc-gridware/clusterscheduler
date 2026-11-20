@@ -56,6 +56,27 @@
 
 #include "ocs_module_test.h"
 
+// the non-owning raw handles are made implicitly from the matching pointer and typed handle, never with a loss
+// of const; the owners stay explicit (RAW-ACC-07)
+static_assert(std::is_convertible_v<const lListElem *, ocs::tom::ConstRawElement>);
+static_assert(std::is_convertible_v<lListElem *, ocs::tom::RawElement>);
+static_assert(!std::is_convertible_v<const lListElem *, ocs::tom::RawElement>);
+static_assert(!std::is_convertible_v<ocs::tom::ConstRawElement, ocs::tom::RawElement>);
+static_assert(std::is_convertible_v<ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstRawElement>);
+static_assert(std::is_convertible_v<ocs::tom::Element<ocs::tom::JB>, ocs::tom::ConstRawElement>);
+static_assert(std::is_convertible_v<ocs::tom::Element<ocs::tom::JB>, ocs::tom::RawElement>);
+static_assert(!std::is_convertible_v<ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::RawElement>);
+static_assert(std::is_convertible_v<const lList *, ocs::tom::ConstRawList>);
+static_assert(std::is_convertible_v<lList *, ocs::tom::RawList>);
+static_assert(!std::is_convertible_v<const lList *, ocs::tom::RawList>);
+static_assert(!std::is_convertible_v<ocs::tom::ConstRawList, ocs::tom::RawList>);
+static_assert(std::is_convertible_v<ocs::tom::ConstList<ocs::tom::JB>, ocs::tom::ConstRawList>);
+static_assert(std::is_convertible_v<ocs::tom::List<ocs::tom::JB>, ocs::tom::RawList>);
+static_assert(!std::is_convertible_v<ocs::tom::ConstList<ocs::tom::JB>, ocs::tom::RawList>);
+static_assert(!std::is_convertible_v<lListElem *, ocs::tom::RawElementPtr>);
+static_assert(!std::is_convertible_v<ocs::tom::ElementPtr<ocs::tom::JB>, ocs::tom::RawElementPtr>);
+static_assert(!std::is_convertible_v<lList *, ocs::tom::RawListPtr>);
+
 namespace {
 
    using Reason = ocs::tom::FieldException::Reason;
