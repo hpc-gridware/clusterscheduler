@@ -208,8 +208,9 @@ namespace {
    /**
     * @brief Whether a list made by an old select function equals one made by a select op with the old contract
     *
-    * Both no list, or both a list with the same name, size and layout and the same TEST_uint32 in each
-    * element where the layout holds it.
+    * Both no list, or both a list with the same name, size and layout, both hashable or both not (the same
+    * number of hash slots; the tables themselves are built by the first lookup), and the same TEST_uint32 in
+    * each element where the layout holds it.
     *
     * @param label the case, for the message
     * @param old the result of the old function, or nullptr
@@ -228,6 +229,10 @@ namespace {
           lGetNumberOfElem(old) != lGetNumberOfElem(selected) ||
           !ocs::tom::same_layout(lGetListDescr(old), selected->descr)) {
          std::printf("%s: the lists differ in name, size or layout\n", label);
+         return false;
+      }
+      if (old->nslots != selected->nslots) {
+         std::printf("%s: the lists differ in their hash slots (%u, %u)\n", label, old->nslots, selected->nslots);
          return false;
       }
       const lListElem *other = lFirst(selected);
@@ -912,22 +917,28 @@ test_select_as() {
    bool lists = true;
    for (const bool hash : {true, false}) {
       const auto hashing = hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off;
-      // a given name, the default name, no match, every field, no selection (the condition not applied)
-      const lCondition *conditions[] = {where.get(), where.get(), none.get(), where.get(), where.get()};
-      const lEnumeration *selections[] = {what.get(), what.get(), what.get(), all.get(), nullptr};
-      const char *names[] = {"selected", nullptr, "nothing", "all", "ignored"};
+      // a given name, the default name, no match, every field, no selection (the condition not applied), a
+      // foreign selection, a null list
+      const lList *sources[] = {lp, lp, lp, lp, lp, lp, nullptr};
+      const lCondition *conditions[] = {where.get(), where.get(), none.get(), where.get(), where.get(), nullptr,
+                                        where.get()};
+      const lEnumeration *selections[] = {what.get(), what.get(), what.get(), all.get(), nullptr, foreign.get(),
+                                          what.get()};
+      const char *names[] = {"selected", nullptr, "nothing", "all", "ignored", "foreign", "null list"};
+      const char *labels[] = {"selected", "default name", "nothing", "all", "ignored", "foreign", "null list"};
       for (std::size_t i = 0; i < std::size(names); i++) {
-         int old_errno = 0;
-         int new_errno = 0;
          ocs::tom::RawListPtr old;
          ocs::tom::RawListPtr selected;
-         old_errno = lerrno_after([&] {
-            old = ocs::tom::RawListPtr(lSelectHashPack(names[i], lp, conditions[i], selections[i], hash, nullptr));
+         const int old_errno = lerrno_after([&] {
+            old = ocs::tom::RawListPtr(
+               lSelectHashPack(names[i], sources[i], conditions[i], selections[i], hash, nullptr));
          });
-         new_errno = lerrno_after(
-            [&] { selected = ocs::tom::select_as(names[i], lp, conditions[i], selections[i], hashing); });
-         lists = same_list(names[i] != nullptr ? names[i] : "default name", old.get(), selected.get()) &&
-                 old_errno == new_errno && lists;
+         const int new_errno = lerrno_after(
+            [&] { selected = ocs::tom::select_as(names[i], sources[i], conditions[i], selections[i], hashing); });
+         if (old_errno != new_errno) {
+            std::printf("%s: the error numbers differ (%d, %d)\n", labels[i], old_errno, new_errno);
+         }
+         lists = same_list(labels[i], old.get(), selected.get()) && old_errno == new_errno && lists;
       }
    }
    const ocs::tom::RawListPtr old_select(lSelect("selected", lp, where.get(), what.get()));
@@ -936,30 +947,52 @@ test_select_as() {
    const auto nothing = ocs::tom::select_as("nothing", lp, none.get(), what.get(), ocs::tom::Hashing::On);
    const auto empty = ocs::tom::select_as("nothing", lp, none.get(), what.get(), ocs::tom::Hashing::Off);
    const auto whole = ocs::tom::select_as("ignored", lp, where.get(), nullptr, ocs::tom::Hashing::Off);
-   ocs::tom::RawListPtr old_foreign;
-   ocs::tom::RawListPtr new_foreign;
-   const int old_foreign_errno = lerrno_after([&] {
-      old_foreign = ocs::tom::RawListPtr(lSelectHashPack("", lp, nullptr, foreign.get(), false, nullptr));
-   });
-   const int new_foreign_errno = lerrno_after(
-      [&] { new_foreign = ocs::tom::select_as("", lp, nullptr, foreign.get(), ocs::tom::Hashing::Off); });
+   int foreign_errno[2] = {0, 0};
+   bool foreign_refused = true;
+   for (const bool hash : {true, false}) {
+      const int errno_now = lerrno_after([&] {
+         foreign_refused = !ocs::tom::select_as("", lp, nullptr, foreign.get(),
+                                                hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off) &&
+                           foreign_refused;
+      });
+      foreign_errno[hash ? 0 : 1] = errno_now;
+   }
+   // the hash slots are compared with the old result by same_list()
    lists = lists && same_list("lSelect", old_select.get(), hashed.get()) && !old_nothing && !nothing && empty &&
            empty->size() == 0 && std::strcmp(ocs::tom::list_name(hashed.get()), "selected") == 0 && whole &&
-           whole->size() == 10 && std::strcmp(ocs::tom::list_name(whole.get()), "test") == 0 && !old_foreign &&
-           !new_foreign && old_foreign_errno == new_foreign_errno && new_foreign_errno != 0 &&
-           !ocs::tom::select_as("", nullptr, where.get(), what.get(), ocs::tom::Hashing::On);
-   CHECK(21, "select_as() gives what lSelect() and lSelectHashPack() give: the given name, no list for no match "
-             "when hashed, every field without a selection, no list and the same error number for a foreign "
-             "selection",
+           whole->size() == 10 && std::strcmp(ocs::tom::list_name(whole.get()), "test") == 0 && foreign_refused &&
+           foreign_errno[0] != 0 && foreign_errno[1] != 0 &&
+           !ocs::tom::select_as("", nullptr, where.get(), what.get(), ocs::tom::Hashing::On) &&
+           !ocs::tom::select_as("", nullptr, where.get(), what.get(), ocs::tom::Hashing::Off);
+   CHECK(21, "select_as() gives what lSelect() and lSelectHashPack() give, hashed and not: the given name, the "
+             "same hash slots, no list for no match when hashed, every field without a selection, no list and the same "
+             "error number for a foreign selection and a null list",
          lists);
 
    bool elements = true;
-   const std::initializer_list<const lEnumeration *> element_selections{what.get(), all.get(), nullptr};
+   const std::initializer_list<const lEnumeration *> element_selections{what.get(), all.get(), nullptr,
+                                                                        foreign.get()};
+   std::vector<const lListElem *> sources{nullptr};
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
-      for (const lEnumeration *selection : element_selections) {
-         const ocs::tom::RawElementPtr old(lSelectElemPack(ep, where.get(), selection, false, nullptr));
-         const auto selected = ocs::tom::select_elem_as(ep, where.get(), selection, ocs::tom::Hashing::Off);
-         elements = same_elem("lSelectElemPack", old.get(), selected.get()) && elements;
+      sources.push_back(ep.raw());
+   }
+   for (const bool hash : {true, false}) {
+      const auto hashing = hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off;
+      for (const lListElem *ep : sources) {
+         for (const lEnumeration *selection : element_selections) {
+            ocs::tom::RawElementPtr old;
+            ocs::tom::RawElementPtr selected;
+            const int old_errno = lerrno_after([&] {
+               old = ocs::tom::RawElementPtr(lSelectElemPack(ep, where.get(), selection, hash, nullptr));
+            });
+            const int new_errno =
+               lerrno_after([&] { selected = ocs::tom::select_elem_as(ep, where.get(), selection, hashing); });
+            if (old_errno != new_errno) {
+               std::printf("lSelectElemPack: the error numbers differ (%d, %d)\n", old_errno, new_errno);
+            }
+            elements = same_elem("lSelectElemPack", old.get(), selected.get()) && old_errno == new_errno &&
+                       elements;
+         }
       }
    }
    const ocs::tom::ConstRawElement first = ocs::tom::ConstRawList(lp).front();
@@ -967,8 +1000,9 @@ test_select_as() {
               ocs::tom::select_elem_as(first.raw(), where.get(), nullptr, ocs::tom::Hashing::Off) &&
               !ocs::tom::select_elem_as(nullptr, where.get(), what.get(), ocs::tom::Hashing::Off) &&
               !ocs::tom::select_elem_as(first.raw(), nullptr, foreign.get(), ocs::tom::Hashing::Off);
-   CHECK(22, "select_elem_as() gives what lSelectElemPack() gives: no copy for no match, a whole copy without a "
-             "selection, no copy for a foreign selection",
+   CHECK(22, "select_elem_as() gives what lSelectElemPack() gives, hashed and not, with the same error numbers: no "
+             "copy for no match, a whole copy without a selection, no copy for a foreign selection or a null "
+             "element",
          elements);
 }
 
@@ -983,53 +1017,81 @@ test_select_into_descr() {
    const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 4U));
    const ocs::tom::RawWherePtr none(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 100U));
    const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
+   // a selection with a field the reduced descriptor does not hold
+   const ocs::tom::RawWhatPtr wider(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_uint64));
    const lDescr *reduced = lGetReducedDescr(TEST_Type, what.get());
 
    bool lists = reduced != nullptr;
    for (const bool hash : {true, false}) {
       const auto hashing = hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off;
-      // a match, no match, no selection, no descriptor
-      const lCondition *conditions[] = {where.get(), none.get(), where.get(), where.get()};
-      const lEnumeration *selections[] = {what.get(), what.get(), nullptr, what.get()};
-      const lDescr *descriptors[] = {reduced, reduced, reduced, nullptr};
-      const char *names[] = {"updating list", "nothing", "no selection", "no descriptor"};
+      // a match, no match, no selection, no descriptor, a field the descriptor lacks, the default name, a null
+      // list
+      const lList *sources[] = {lp, lp, lp, lp, lp, lp, nullptr};
+      const lCondition *conditions[] = {where.get(), none.get(), where.get(), where.get(), where.get(),
+                                        where.get(), where.get()};
+      const lEnumeration *selections[] = {what.get(), what.get(), nullptr, what.get(), wider.get(), what.get(),
+                                          what.get()};
+      const lDescr *descriptors[] = {reduced, reduced, reduced, nullptr, reduced, reduced, reduced};
+      const char *names[] = {"updating list", "nothing", "no selection", "no descriptor", "lacking field", nullptr,
+                             "null list"};
+      const char *labels[] = {"updating list", "nothing", "no selection", "no descriptor", "lacking field",
+                              "default name", "null list"};
       for (std::size_t i = 0; i < std::size(names); i++) {
          ocs::tom::RawListPtr old;
          ocs::tom::RawListPtr selected;
          const int old_errno = lerrno_after([&] {
             old = ocs::tom::RawListPtr(
-               lSelectDPack(names[i], lp, conditions[i], descriptors[i], selections[i], hash, nullptr));
+               lSelectDPack(names[i], sources[i], conditions[i], descriptors[i], selections[i], hash, nullptr));
          });
          const int new_errno = lerrno_after([&] {
-            selected = ocs::tom::select_into_descr(names[i], lp, conditions[i], descriptors[i], selections[i],
-                                                   hashing);
+            selected = ocs::tom::select_into_descr(names[i], sources[i], conditions[i], descriptors[i],
+                                                   selections[i], hashing);
          });
-         lists = same_list(names[i], old.get(), selected.get()) && old_errno == new_errno && lists;
+         if (old_errno != new_errno) {
+            std::printf("%s: the error numbers differ (%d, %d)\n", labels[i], old_errno, new_errno);
+         }
+         lists = same_list(labels[i], old.get(), selected.get()) && old_errno == new_errno && lists;
       }
    }
    const auto updating = ocs::tom::select_into_descr("updating list", lp, where.get(), reduced, what.get(),
                                                      ocs::tom::Hashing::Off);
+   const auto lacking = ocs::tom::select_into_descr("lacking field", lp, where.get(), reduced, wider.get(),
+                                                    ocs::tom::Hashing::Off);
    lists = lists && updating && updating->size() == 5 &&
            std::strcmp(ocs::tom::list_name(updating.get()), "updating list") == 0 &&
            !ocs::tom::has(updating->front(), TEST_uint64) &&
            !ocs::tom::select_into_descr("", lp, none.get(), reduced, what.get(), ocs::tom::Hashing::On) &&
-           !ocs::tom::select_into_descr("", nullptr, where.get(), reduced, what.get(), ocs::tom::Hashing::Off);
-   CHECK(23, "select_into_descr() gives what lSelectDPack() gives: the given name and descriptor, no list for no "
-             "match when hashed, no element without a selection, the same error numbers",
+           !ocs::tom::select_into_descr("", nullptr, where.get(), reduced, what.get(), ocs::tom::Hashing::Off) &&
+           lacking && lacking->size() == 0;
+   CHECK(23, "select_into_descr() gives what lSelectDPack() gives, hashed and not: the given or default name and "
+             "descriptor, no list for no match when hashed, no element without a selection or for a field the "
+             "descriptor lacks, no list for a null list or descriptor, the same error numbers",
          lists);
 
    bool elements = reduced != nullptr;
+   std::vector<const lListElem *> sources{nullptr};
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
-      for (const lEnumeration *selection : std::initializer_list<const lEnumeration *>{what.get(), nullptr}) {
-         ocs::tom::RawElementPtr old;
-         ocs::tom::RawElementPtr selected;
-         const int old_errno = lerrno_after([&] {
-            old = ocs::tom::RawElementPtr(lSelectElemDPack(ep, where.get(), reduced, selection, false, nullptr));
-         });
-         const int new_errno = lerrno_after([&] {
-            selected = ocs::tom::select_elem_into_descr(ep, where.get(), reduced, selection, ocs::tom::Hashing::Off);
-         });
-         elements = same_elem("lSelectElemDPack", old.get(), selected.get()) && old_errno == new_errno && elements;
+      sources.push_back(ep.raw());
+   }
+   const std::initializer_list<const lEnumeration *> element_selections{what.get(), nullptr, wider.get()};
+   for (const lListElem *ep : sources) {
+      for (const lEnumeration *selection : element_selections) {
+         for (const lDescr *descr : std::initializer_list<const lDescr *>{reduced, nullptr}) {
+            ocs::tom::RawElementPtr old;
+            ocs::tom::RawElementPtr selected;
+            const int old_errno = lerrno_after([&] {
+               old = ocs::tom::RawElementPtr(lSelectElemDPack(ep, where.get(), descr, selection, false, nullptr));
+            });
+            const int new_errno = lerrno_after([&] {
+               selected =
+                  ocs::tom::select_elem_into_descr(ep, where.get(), descr, selection, ocs::tom::Hashing::Off);
+            });
+            if (old_errno != new_errno) {
+               std::printf("lSelectElemDPack: the error numbers differ (%d, %d)\n", old_errno, new_errno);
+            }
+            elements =
+               same_elem("lSelectElemDPack", old.get(), selected.get()) && old_errno == new_errno && elements;
+         }
       }
    }
    const lListElem *last = nullptr;
@@ -1039,9 +1101,11 @@ test_select_into_descr() {
    const auto copy = ocs::tom::select_elem_into_descr(last, where.get(), reduced, what.get(), ocs::tom::Hashing::Off);
    elements = elements && copy && copy->get<std::uint32_t>(TEST_uint32) == 9 &&
               !ocs::tom::has(copy.get(), TEST_uint64) &&
-              !ocs::tom::select_elem_into_descr(last, where.get(), nullptr, what.get(), ocs::tom::Hashing::Off);
+              !ocs::tom::select_elem_into_descr(last, where.get(), nullptr, what.get(), ocs::tom::Hashing::Off) &&
+              !ocs::tom::select_elem_into_descr(last, where.get(), reduced, wider.get(), ocs::tom::Hashing::Off);
    CHECK(24, "select_elem_into_descr() gives what lSelectElemDPack() gives: the copy in the given descriptor, none "
-             "for no match, no selection or no descriptor, the same error numbers",
+             "for a null element, no match, no selection, no descriptor or a field the descriptor lacks, the same "
+             "error numbers",
          elements);
    ocs_cull_descr_release(&reduced);
 }
