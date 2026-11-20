@@ -74,6 +74,8 @@
 
 static void cl_thread_read_write_thread_cleanup_function(cl_thread_settings_t *thread_config);
 
+static int cl_commlib_delete_handle_threads(cl_com_handle_t *handle);
+
 static void cl_com_default_application_debug_client_callback(int dc_connected, int debug_level);
 
 static int cl_commlib_check_callback_functions();
@@ -1922,9 +1924,70 @@ int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
 }
 #endif
 
+/**
+ * @brief Delete the write, read and service thread of a commlib handle
+ *
+ * The handle threads trigger each other with cl_thread_trigger_event(). A thread must not be
+ * cleaned up and freed while another handle thread can still trigger it, therefore all threads
+ * are first removed from the thread list, cancelled and joined, and only then their settings are
+ * cleaned up and freed.
+ *
+ * @param handle the commlib handle whose threads are deleted
+ * @return CL_RETVAL_OK or the error of the first thread that could not be joined or cleaned up
+ */
+static int cl_commlib_delete_handle_threads(cl_com_handle_t *handle) {
+   cl_thread_settings_t *threads[] = {handle->write_thread, handle->read_thread, handle->service_thread};
+   int ret_val = CL_RETVAL_OK;
+
+   // other threads use these pointers, reset them before the threads are shut down
+   handle->write_thread = nullptr;
+   handle->read_thread = nullptr;
+   handle->service_thread = nullptr;
+
+   cl_raw_list_lock(cl_com_thread_list);
+   for (cl_thread_settings_t *thread : threads) {
+      if (thread != nullptr) {
+         cl_thread_list_delete_thread_from_list(cl_com_thread_list, thread);
+      }
+   }
+   cl_raw_list_unlock(cl_com_thread_list);
+
+   for (cl_thread_settings_t *thread : threads) {
+      if (thread != nullptr) {
+         cl_thread_shutdown(thread);
+      }
+   }
+   for (cl_thread_settings_t *thread : threads) {
+      if (thread != nullptr) {
+         int ret = cl_thread_join(thread);
+         if (ret != CL_RETVAL_OK) {
+            CL_LOG_STR(CL_LOG_ERROR, "error joining handle thread", cl_get_error_text(ret));
+            if (ret_val == CL_RETVAL_OK) {
+               ret_val = ret;
+            }
+         }
+      }
+   }
+
+   // all handle threads have terminated, none of them can trigger another one any more
+   for (cl_thread_settings_t *thread : threads) {
+      if (thread != nullptr) {
+         int ret = cl_thread_cleanup(thread);
+         if (ret != CL_RETVAL_OK) {
+            CL_LOG_STR(CL_LOG_ERROR, "error cleaning up handle thread", cl_get_error_text(ret));
+            if (ret_val == CL_RETVAL_OK) {
+               ret_val = ret;
+            }
+         }
+         free(thread);
+      }
+   }
+
+   return ret_val;
+}
+
 static bool debug_commlib_shutdown = getenv("SGE_DEBUG_COMMLIB_SHUTDOWN") != nullptr;
 int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages) {
-   cl_thread_settings_t *thread_settings = nullptr;
    struct timeval now;
    bool connection_list_empty = false;
    bool trigger_write = false;
@@ -2168,34 +2231,12 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
             break;
          }
          case CL_RW_THREAD: {
-            CL_LOG(CL_LOG_INFO, "shutdown handle write thread ...");
-            thread_settings = handle->write_thread;
-            handle->write_thread = nullptr; /* set thread pointer to nullptr because other threads use this pointer */
-            ret_val = cl_thread_list_delete_thread(cl_com_thread_list, thread_settings);
+            CL_LOG(CL_LOG_INFO, "shutdown handle threads ...");
+            ret_val = cl_commlib_delete_handle_threads(handle);
             if (ret_val != CL_RETVAL_OK) {
-               CL_LOG_STR(CL_LOG_ERROR, "error shutting down handle write thread", cl_get_error_text(ret_val));
+               CL_LOG_STR(CL_LOG_ERROR, "error shutting down handle threads", cl_get_error_text(ret_val));
             } else {
-               CL_LOG(CL_LOG_INFO, "shutdown handle write thread OK");
-            }
-
-            CL_LOG(CL_LOG_INFO, "shutdown handle read thread ...");
-            thread_settings = handle->read_thread;
-            handle->read_thread = nullptr; /* set thread pointer to nullptr because other threads use this pointer */
-            ret_val = cl_thread_list_delete_thread(cl_com_thread_list, thread_settings);
-            if (ret_val != CL_RETVAL_OK) {
-               CL_LOG_STR(CL_LOG_ERROR, "error shutting down handle read thread", cl_get_error_text(ret_val));
-            } else {
-               CL_LOG(CL_LOG_INFO, "shutdown handle read thread OK");
-            }
-
-            CL_LOG(CL_LOG_INFO, "shutdown handle service thread ...");
-            thread_settings = handle->service_thread;
-            handle->service_thread = nullptr; /* set thread pointer to nullptr because other threads use this pointer */
-            ret_val = cl_thread_list_delete_thread(cl_com_thread_list, thread_settings);
-            if (ret_val != CL_RETVAL_OK) {
-               CL_LOG_STR(CL_LOG_ERROR, "error shutting down handle service thread", cl_get_error_text(ret_val));
-            } else {
-               CL_LOG(CL_LOG_INFO, "shutdown handle service thread OK");
+               CL_LOG(CL_LOG_INFO, "shutdown handle threads OK");
             }
 
             /* all threads are down, deleteing condition variables */
