@@ -57,12 +57,12 @@
  * @return none
  */
 void
-ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
+ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const ocs::tom::ConstRawElement ep,
                                           const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
    // the view of -shgrp renders host groups only, see QConfHGroupShowController
-   const auto hgroup = ocs::tom::ConstElement<ocs::tom::HGRP>(ep);
+   const auto hgroup = ocs::tom::ConstElement<ocs::tom::HGRP>(ep.raw());
    const auto [has_matcher, derived_hosts, derived_groups, derived_matchers] = hgroup_split_members(hgroup);
 
    if (!has_matcher) {

@@ -219,16 +219,6 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
 static constexpr size_t qconf_read_table_size =
    sizeof(qconf_read_table) / sizeof(qconf_read_table[0]);
 
-/** @brief Free the fetched objects
- *
- * Only the object list is freed by hand: its type is the read's and known at
- * run time only, so it stays a raw list. Every list of a fixed type is an
- * owning handle and frees itself.
- */
-ocs::QConfModelBase::~QConfModelBase() {
-   lFreeList(&object_list_);
-}
-
 /**
  * @brief Find what a read switch reports on
  *
@@ -398,7 +388,7 @@ ocs_qconf_names_where([[maybe_unused]] const qconf_op &op) {
  * @return none
  */
 static void
-drop_from_export(lList *list, const QConfObj object) {
+drop_from_export(const ocs::tom::RawList list, const QConfObj object) {
    DENTER(TOP_LAYER);
    ocs_with_qconf_object(object, [list](const auto &entry) {
       using E = ocs_qconf_object_entry_t<decltype(entry)>;
@@ -407,7 +397,7 @@ drop_from_export(lList *list, const QConfObj object) {
             return;
          }
          // the list was fetched with the descriptor of the read's object type
-         const auto objects = ocs::tom::List<typename E::type>::from_typed(list);
+         const auto objects = ocs::tom::List<typename E::type>::from_typed(list.raw());
          auto ep = objects.front();
          while (ep != nullptr) {
             const auto next = ep.next();
@@ -459,12 +449,12 @@ ocs::QConfModelBase::append_template(ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
       if (tmpl == nullptr) {
          return false;
       }
-      if (object_list_ == nullptr) {
+      if (!object_list_) {
          // the model holds the objects untyped, because their type is the read's
-         object_list_ = ocs::tom::ListPtr<T>::create("").release();
+         object_list_ = ocs::tom::RawListPtr(ocs::tom::ListPtr<T>::create(""));
       }
       // object_list_ was fetched or created with the descriptor of the read's object type
-      ocs::tom::List<T>::from_typed(object_list_).push_back(std::move(tmpl));
+      ocs::tom::List<T>::from_typed(object_list_.get().raw()).push_back(std::move(tmpl));
       return true;
    });
    DRETURN(appended);
@@ -500,7 +490,7 @@ ocs::QConfModelBase::show_prepare() {
       using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
       if (entry.hooks.show_prepare != nullptr) {
          // object_list_ was fetched with the descriptor of the read's object type
-         entry.hooks.show_prepare(ocs::tom::List<T>::from_typed(object_list_).front(), *centry_list_);
+         entry.hooks.show_prepare(ocs::tom::List<T>::from_typed(object_list_.get().raw()).front(), *centry_list_);
       }
    });
    DRETURN_VOID;
@@ -522,11 +512,11 @@ ocs::QConfModelBase::object_count() const {
       if constexpr (ocs_qconf_member_of<T>::has_member) {
          if (kind_ == QConfReadKind::MEMBER_LIST) {
             using M = typename ocs_qconf_member_of<T>::type;
-            return ocs::tom::ConstList<M>::from_typed(object_list_).size();
+            return ocs::tom::ConstList<M>::from_typed(object_list_.get().raw()).size();
          }
       }
       // the list was fetched or created with the descriptor of the read's object type
-      return ocs::tom::ConstList<T>::from_typed(object_list_).size();
+      return ocs::tom::ConstList<T>::from_typed(object_list_.get().raw()).size();
    });
    DRETURN(count);
 }
@@ -546,13 +536,14 @@ ocs::QConfModelBase::sort_names() {
       if constexpr (ocs_qconf_member_of<T>::has_member) {
          if (kind_ == QConfReadKind::MEMBER_LIST) {
             using Member = ocs_qconf_member_of<T>;
-            ocs::tom::List<typename Member::type>::from_typed(object_list_).template sort<ocs::tom::asc<Member::key>>();
+            const auto members = ocs::tom::List<typename Member::type>::from_typed(object_list_.get().raw());
+            members.template sort<ocs::tom::asc<Member::key>>();
             return;
          }
       }
       if constexpr (E::has_key) {
          // the list was fetched with the descriptor of the read's object type
-         ocs::tom::List<T>::from_typed(object_list_).template sort<ocs::tom::asc<E::key>>();
+         ocs::tom::List<T>::from_typed(object_list_.get().raw()).template sort<ocs::tom::asc<E::key>>();
       }
    });
    DRETURN_VOID;
@@ -561,14 +552,14 @@ ocs::QConfModelBase::sort_names() {
 /**
  * @brief Give the read an empty list of its object type, where it holds none
  *
- * object_list_ stays untyped, its type is the read's: the list is handed over raw.
+ * object_list_ stays untyped, its type is the read's: the typed list is handed to the raw owner.
  */
 void
 ocs::QConfModelBase::create_empty_object_list() {
    DENTER(TOP_LAYER);
-   object_list_ = ocs_with_qconf_object(object_, [](const auto &entry) -> lList * {
+   object_list_ = ocs_with_qconf_object(object_, [](const auto &entry) {
       using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
-      return ocs::tom::ListPtr<T>::create("").release();
+      return ocs::tom::RawListPtr(ocs::tom::ListPtr<T>::create(""));
    });
    DRETURN_VOID;
 }
@@ -609,7 +600,7 @@ ocs::QConfModelBase::make_list_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_
     * header for an empty list and nothing at all for nullptr. `qconf -scatl` on a
     * cluster without categories printed that header before the read moved, so the
     * two execution contexts disagreed until this line (CS-2819). */
-   if (ok && object_list_ == nullptr) {
+   if (ok && !object_list_) {
       create_empty_object_list();
    }
 
@@ -646,7 +637,7 @@ ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
    /* The controller is handed no answer list, so a missing group is reported
     * here - the same place the table-driven read reports read.not_found_msg. */
    const auto hgroup = (requested_name_ != nullptr)
-                       ? ocs::tom::find_first<HGRP_name>(ocs::tom::ConstList<ocs::tom::HGRP>(object_list_),
+                       ? ocs::tom::find_first<HGRP_name>(ocs::tom::ConstList<ocs::tom::HGRP>(object_list_.get().raw()),
                                                          requested_name_)
                        : ocs::tom::ConstElement<ocs::tom::HGRP>();
    if (requested_name_ != nullptr && hgroup == nullptr) {
@@ -672,7 +663,8 @@ ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
       dstring found_in = DSTRING_INIT;
       dstring matcher = DSTRING_INIT;
       hgroup_why_.route = hgroup_why(hgroup, ocs::tom::get<HR_name>(probe),
-                                     ocs::tom::ConstList<ocs::tom::HGRP>(object_list_), &found_in, &matcher);
+                                     ocs::tom::ConstList<ocs::tom::HGRP>(object_list_.get().raw()), &found_in,
+                                     &matcher);
       hgroup_why_.host = static_cast<const char *>(ocs::tom::get<HR_name>(probe));
 
       /* a cleared dstring hands back an empty string rather than nothing once it
@@ -791,7 +783,7 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
       DRETURN(false);
    }
 
-   for (const auto elem : ocs::tom::ConstList<ocs::tom::EH>(object_list_)) {
+   for (const auto elem : ocs::tom::ConstList<ocs::tom::EH>(object_list_.get().raw())) {
       const char *hostname = ocs::tom::get<EH_name>(elem);
       bool already_handled = false;
 
@@ -987,9 +979,9 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
    /* CS-2677: the host list lives in the queue's own "@@<queue>" group since then,
     * so it has to be joined back on before "hostlist" can be matched against what
     * qconf -sq would print */
-   cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(object_list_), *hgroup_list_);
+   cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(object_list_.get().raw()), *hgroup_list_);
 
-   for (const auto cqueue : ocs::tom::ConstList<ocs::tom::CQ>(object_list_)) {
+   for (const auto cqueue : ocs::tom::ConstList<ocs::tom::CQ>(object_list_.get().raw())) {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
       bool already_handled = false;
 
@@ -1106,8 +1098,8 @@ ocs::QConfModelBase::make_threadpool_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *a
    if (!fetch_thread_pools(answer_list)) {
       DRETURN(false);
    }
-   if (object_list_ == nullptr) {
-      object_list_ = ocs::tom::ListPtr<ocs::tom::ST>::create("").release();
+   if (!object_list_) {
+      object_list_ = ocs::tom::RawListPtr(ocs::tom::ListPtr<ocs::tom::ST>::create(""));
    }
 
    DRETURN(true);
@@ -1150,7 +1142,7 @@ ocs::QConfModelBase::make_sharetree_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *an
    }
 
    // the read fetched the share tree, so the list is of nodes; the checked handle says so
-   const auto root = ocs::tom::List<ocs::tom::STN>(object_list_).front();
+   const auto root = ocs::tom::List<ocs::tom::STN>(object_list_.get().raw()).front();
    if (root == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               "%s", MSG_TREE_NOSHARETREE);
@@ -1225,7 +1217,7 @@ ocs::QConfModelBase::make_processor_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *an
       DRETURN(false);
    }
 
-   const ocs::tom::List<ocs::tom::EH> hosts(object_list_);
+   const ocs::tom::List<ocs::tom::EH> hosts(object_list_.get().raw());
    if (hosts.empty()) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               "%s", MSG_QCONF_NOEXECUTIONHOSTSDEFINED);
@@ -1278,10 +1270,10 @@ ocs::QConfModelBase::make_eventclient_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *
 
    /* an empty result has to be an empty list, not no list at all - see the note
     * in make_list_snapshot() */
-   if (object_list_ == nullptr) {
-      object_list_ = ocs::tom::ListPtr<ocs::tom::EV>::create("").release();
+   if (!object_list_) {
+      object_list_ = ocs::tom::RawListPtr(ocs::tom::ListPtr<ocs::tom::EV>::create(""));
    }
-   const ocs::tom::List<ocs::tom::EV> clients(object_list_);
+   const ocs::tom::List<ocs::tom::EV> clients(object_list_.get().raw());
    clients.sort<ocs::tom::asc<EV_id>>();
 
    /* reported, not failed - see the note on the same rule in make_snapshot() */
@@ -1335,7 +1327,7 @@ ocs::QConfModelBase::make_sick_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_
     * it every queue's host list is empty - since CS-2677 it lives in the queue's
     * own "@@<queue>" host group - and cqueue_sick() then reports every attribute
     * overridden for a host as unused, which is the whole of its output. */
-   const auto cqueues = ocs::tom::List<ocs::tom::CQ>(object_list_);
+   const auto cqueues = ocs::tom::List<ocs::tom::CQ>(object_list_.get().raw());
    cqueue_list_fill_hostlist(cqueues, *hgroup_list_);
 
    dstring ds = DSTRING_INIT;
@@ -1415,7 +1407,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
       }
       auto cqueue_list = ocs::tom::ListPtr<ocs::tom::CQ>::create("cqueue_list");
       const auto tmpl = cqueue_list->push_back(std::move(created));
-      object_list_ = cqueue_list.release();
+      object_list_ = ocs::tom::RawListPtr(std::move(cqueue_list));
       cqueue_json_type_complex_overrides(tmpl, *centry_list_);
 
       CQueueOutput group;
@@ -1472,7 +1464,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
    }
 
    // the read fetched cluster queues, so the list is of them; the checked handle says so
-   const auto cqueues = ocs::tom::List<ocs::tom::CQ>(object_list_);
+   const auto cqueues = ocs::tom::List<ocs::tom::CQ>(object_list_.get().raw());
 
    /* CS-2677: join the host lists back on, from the groups fetched above */
    cqueue_list_fill_hostlist(cqueues, *hgroup_list_);
@@ -1822,14 +1814,14 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    }
 
    if (bulk_export) {
-      drop_from_export(object_list_, object_);
+      drop_from_export(object_list_.get(), object_);
    }
 
    if (cqueue_in_full) {
       /* the join itself, see above. A name that matched nothing leaves an empty
        * list here and the template path below builds the object - which owns no
        * group yet, so there is nothing to join on either way. */
-      cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(object_list_), *hgroup_list_);
+      cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(object_list_.get().raw()), *hgroup_list_);
    }
 
    if (kind_ == QConfReadKind::MEMBER_LIST) {
@@ -1848,7 +1840,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             using Member = ocs_qconf_member_of<T>;
             using M = typename Member::type;
             // the owner was fetched with the descriptor of the read's object type
-            auto fetched = ocs::tom::ListPtr<T>::from_typed(std::exchange(object_list_, nullptr));
+            auto fetched = ocs::tom::ListPtr<T>::from_typed(object_list_.release());
             const auto owner = fetched->front();
             auto members = owner ? ocs::tom::get<Member::list>(owner).clone("") : ocs::tom::ListPtr<M>();
             fetched.reset();
@@ -1856,7 +1848,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                members = ocs::tom::ListPtr<M>::create("");
             }
             // object_list_ stays untyped, its type is the read's: from here on the member type
-            object_list_ = members.release();
+            object_list_ = ocs::tom::RawListPtr(std::move(members));
             key_nm_ = static_cast<int>(Member::key);
          }
       });
@@ -1905,8 +1897,8 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             const bool found = ocs_with_qconf_object(object_, [this, name](const auto &entry) {
                using E = ocs_qconf_object_entry_t<decltype(entry)>;
                // object_list_ was fetched with the descriptor of the read's object type
-               return ocs_qconf_name_in_list<E>(ocs::tom::ConstList<typename E::type>::from_typed(object_list_),
-                                                name);
+               const auto objects = ocs::tom::ConstList<typename E::type>::from_typed(object_list_.get().raw());
+               return ocs_qconf_name_in_list<E>(objects, name);
             });
             if (found) {
                continue;
@@ -1941,7 +1933,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
           * was refused, fails as a whole: there is nothing to render then, and
           * the empty-list message below would report the same names twice. */
          if (!all_found &&
-             (template_refused || object_list_ == nullptr || object_count() == 0)) {
+             (template_refused || !object_list_ || object_count() == 0)) {
             DRETURN(false);
          }
       }
@@ -1971,7 +1963,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
        * without one is broken rather than new. */
       if ((kind_ == QConfReadKind::SINGLE_OBJECT || kind_ == QConfReadKind::SINGLETON) &&
           parameter.get_for_edit() && has_template() &&
-          (object_list_ == nullptr || object_count() == 0)) {
+          (!object_list_ || object_count() == 0)) {
          if (!append_template(answer_list, (kind_ == QConfReadKind::SINGLETON)
                                            ? nullptr
                                            : parameter.get_operation().arg(0))) {
@@ -1985,7 +1977,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       /* lGetNumberOfElem() flagged a null list as a CULL error, so the list
        * itself is checked first - as the hand written engine did. The wording of
        * the "not found" message is per object type, its shape is not. */
-      if (object_list_ == nullptr || object_count() == 0) {
+      if (!object_list_ || object_count() == 0) {
          /* CS-2823: an edit read of a whole list finds nothing on a cluster that
           * has none, and that is not a failure - the editor opens on an empty
           * text, which is how "qconf -mrqs" let an administrator write the first
@@ -1993,7 +1985,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
           * through the template above or the message below. */
          if (kind_ == QConfReadKind::OBJECT_LIST && parameter.get_for_edit() &&
              parameter.get_operation().arg_count() == 0) {
-            if (object_list_ == nullptr) {
+            if (!object_list_) {
                create_empty_object_list();
             }
             DRETURN(true);
@@ -2010,7 +2002,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
           * the client decides, rather than this read reporting first and the
           * client reporting again. */
          if (parameter.get_for_export()) {
-            if (object_list_ == nullptr) {
+            if (!object_list_) {
                create_empty_object_list();
             }
             DRETURN(true);

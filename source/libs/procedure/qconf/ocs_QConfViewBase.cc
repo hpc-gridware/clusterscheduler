@@ -66,9 +66,10 @@ qconf_view_fields(const qconf_object_desc &desc, const bool round_trip) {
  * @param os   the stream to write to
  * @param list the objects, in the order they are to appear
  * @param desc the descriptor of their type
+ * @return none
  */
 void
-ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
+ocs::QConfViewBase::show_object_list(std::ostream &os, const ocs::tom::ConstRawList list,
                                      const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
@@ -87,7 +88,7 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
       sge_free(&filename);
    } else {
       bool is_first = true;
-      for_each_ep_lv(ep, list) {
+      for (const auto ep : list) {
          if (!is_first) {
             os << "\n";
          }
@@ -121,9 +122,10 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
  * @param os   the stream to write to
  * @param ep   the object
  * @param desc the row of its type
+ * @return none
  */
 void
-ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
+ocs::QConfViewBase::show_object(std::ostream &os, const ocs::tom::ConstRawElement ep,
                                 const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
@@ -142,7 +144,8 @@ ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
     * client's own export never produced it and a migration of the fetch must not
     * change what the files hold. */
    if (desc.read.name_header && format != SP_FORM_JSON && !for_export_) {
-      const char *name = (desc.name_nm != NoName) ? lGetHost(ep, desc.name_nm) : nullptr;
+      // only the configuration asks for the header, and its name field is a host field
+      const char *name = (desc.name_nm != NoName) ? ep.get<ocs::tom::Host>(desc.name_nm).c_str() : nullptr;
       os << "#" << ((name != nullptr) ? name : "") << ":\n";
    }
 

@@ -35,6 +35,7 @@
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
@@ -95,7 +96,7 @@ namespace ocs {
 #pragma region Data
 
    protected:
-      lList *object_list_ = nullptr;             ///< what the operation asked for; its type is the read's
+      ocs::tom::RawListPtr object_list_;         ///< what the operation asked for; its type is the read's
       ocs::tom::ListPtr<ocs::tom::CE> centry_list_;         ///< the complex entries, fetched for JSON only
       ocs::tom::ListPtr<ocs::tom::HGRP> hgroup_list_;       ///< the host groups, for the cluster queue read (CS-2818)
       ocs::tom::ListPtr<ocs::tom::QR> qref_pattern_list_;   ///< the queue references asked for (CS-2818)
@@ -109,9 +110,9 @@ namespace ocs {
 
    public:
       /** @brief The objects that were fetched
-       * @return them, sorted by name
+       * @return a read-only handle on them, sorted by name; empty if nothing was fetched
        */
-      [[nodiscard]] const lList *get_object_list() const { return object_list_; }
+      [[nodiscard]] ocs::tom::ConstRawList get_object_list() const { return object_list_.get(); }
 
       /** @brief The field holding the name
        * @return its CULL id
@@ -198,7 +199,7 @@ namespace ocs {
        * @return the root node, or an empty handle when no tree was fetched
        */
       [[nodiscard]] ocs::tom::Element<ocs::tom::STN> get_sharetree_root() const {
-         return ocs::tom::List<ocs::tom::STN>(object_list_).front();
+         return ocs::tom::List<ocs::tom::STN>(object_list_.get().raw()).front();
       }
 
       /** @brief The descriptor of the object type
@@ -282,18 +283,19 @@ namespace ocs {
        * @brief Read the objects of the target into object_list_
        *
        * Takes over @p where and @p what: the model builds them for an object type
-       * chosen at run time, the client side wraps them at once into owning typed
-       * handles of that type, the server side frees them after lSelect(). Nothing
-       * is borrowed, so an exception in between cannot free them twice.
+       * chosen at run time, the client side hands them at once to owning typed
+       * handles of that type, the server side does so too or frees them after
+       * reading the event clients. Nothing is borrowed, so an exception in between
+       * cannot free them twice.
        *
        * @param answer_list for error reporting
        * @param target the master list to read
-       * @param where which elements, nullptr for all; owned by fetch() from the call on
-       * @param what which fields; owned by fetch() from the call on
+       * @param where which elements, an empty owner for all; taken over
+       * @param what which fields; taken over
        * @return true on success
        */
       virtual bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
-                         lCondition *where, lEnumeration *what) = 0;
+                         ocs::tom::RawWherePtr where, ocs::tom::RawWhatPtr what) = 0;
 
       /**
        * @brief Read the objects of the target into object_list_, for a read whose object type is known at compile
@@ -313,7 +315,8 @@ namespace ocs {
       template <ocs::tom::ObjectType T>
       bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const gdi::Target target, ocs::tom::Where<T> &&where,
                  ocs::tom::What<T> &&what) {
-         return fetch(answer_list, target, where.release(), what.release());
+         return fetch(answer_list, target, ocs::tom::RawWherePtr(where.release()),
+                      ocs::tom::RawWhatPtr(what.release()));
       }
 
    protected:
@@ -345,7 +348,7 @@ namespace ocs {
 
    public:
       QConfModelBase() = default;
-      virtual ~QConfModelBase();
+      virtual ~QConfModelBase() = default;
 #pragma endregion
    };
 }

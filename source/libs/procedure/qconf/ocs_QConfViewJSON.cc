@@ -48,14 +48,15 @@
  * @param list   the objects, already sorted
  * @param key_nm the field holding the name
  * @param desc   the descriptor of the type the names belong to
+ * @return none
  */
 void
-ocs::QConfViewJSON::show_name_list(std::ostream &os, const lList *list, int key_nm,
+ocs::QConfViewJSON::show_name_list(std::ostream &os, const ocs::tom::ConstRawList list, const int key_nm,
                                    const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
    const char *type_name = desc.read.json_name_id;
-   if (type_name != nullptr && lFirst(list) == nullptr && !desc.read.json_name_id_when_empty) {
+   if (type_name != nullptr && list.empty() && !desc.read.json_name_id_when_empty) {
       type_name = nullptr;
    }
 

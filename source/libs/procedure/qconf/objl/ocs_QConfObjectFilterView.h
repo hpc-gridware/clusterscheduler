@@ -49,7 +49,7 @@ namespace ocs {
       ~QConfObjectFilterView() override = default;
 
       /** @brief Not reached: the names are written by show_names() */
-      void show_name_list([[maybe_unused]] std::ostream &os, [[maybe_unused]] const lList *list,
+      void show_name_list([[maybe_unused]] std::ostream &os, [[maybe_unused]] ocs::tom::ConstRawList list,
                           [[maybe_unused]] int key_nm,
                           [[maybe_unused]] const qconf_object_desc &desc) override {
       }

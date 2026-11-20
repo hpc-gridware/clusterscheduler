@@ -34,29 +34,35 @@
 /**
  * @brief Read the name of one list element
  *
- * The field is read as a string or as a host name depending on how the object
- * type declares it, which is what the hand written engine did.
+ * The field is read as a string or as a host name depending on how the
+ * element's descriptor declares it, which is what the hand written engine did.
+ * The field is the one the read names (#qconf_object_desc::name_nm, or the
+ * member's name field), not the primary key of the descriptor: the event
+ * clients are listed by EV_host, whose primary key is EV_id.
  *
- * @param ep     the element
+ * @param ep     the element, of an object type known only at run time
  * @param key_nm the field holding the name
- * @return the name, or nullptr when the field is unset or of an unexpected type
+ * @return the name, or nullptr when the field is unset, not held by the element
+ *         or of an unexpected type
  */
 static const char *
-qconf_name_of(const lListElem *ep, int key_nm) {
+qconf_name_of(const ocs::tom::ConstRawElement ep, const int key_nm) {
    DENTER(TOP_LAYER);
 
-   const lDescr *descr = lGetElemDescr(ep);
-   const int pos = lGetPosInDescr(descr, key_nm);
-
-   switch (lGetPosType(descr, pos)) {
-      case lStringT:
-         DRETURN(lGetString(ep, key_nm));
-      case lHostT:
-         DRETURN(lGetHost(ep, key_nm));
-      default:
-         DPRINTF("show_name_list: unexpected data type\n");
-         DRETURN(nullptr);
+   // a field the element does not hold had no type in the old lookup: the same message as for an unexpected one
+   if (ep.has(key_nm)) {
+      const lDescr *descr = ep.descr();
+      switch (ocs::tom::field_type_of(descr[ocs::tom::field_pos(descr, key_nm)].mt)) {
+         case ocs::tom::FieldType::String:
+            DRETURN(ep.get<const char *>(key_nm));
+         case ocs::tom::FieldType::Host:
+            DRETURN(ep.get<ocs::tom::Host>(key_nm).c_str());
+         default:
+            break;
+      }
    }
+   DPRINTF("show_name_list: unexpected data type\n");
+   DRETURN(nullptr);
 }
 
 /**
@@ -76,18 +82,17 @@ qconf_name_of(const lListElem *ep, int key_nm) {
  * @param list   the objects, already sorted
  * @param key_nm the field holding the name
  * @param desc   the descriptor of the type the names belong to
+ * @return none
  */
 void
-ocs::QConfViewPlain::show_name_list(std::ostream &os, const lList *list, int key_nm,
+ocs::QConfViewPlain::show_name_list(std::ostream &os, const ocs::tom::ConstRawList list, const int key_nm,
                                     const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
    const int passes = desc.read.member.split_matchers ? 2 : 1;
    for (int pass = 0; pass < passes; pass++) {
       const bool matchers = (pass == 1);
-      const lListElem *ep;
-
-      for_each_ep(ep, list) {
+      for (const auto ep : list) {
          const char *line = qconf_name_of(ep, key_nm);
 
          if (line == nullptr || line[0] == COMMENT_CHAR) {

@@ -34,7 +34,7 @@ namespace ocs {
       explicit QConfViewPlain(const QConfParameter &parameter) : QConfViewBase(parameter) {}
       ~QConfViewPlain() override = default;
 
-      void show_name_list(std::ostream &os, const lList *list, int key_nm,
+      void show_name_list(std::ostream &os, ocs::tom::ConstRawList list, int key_nm,
                           const qconf_object_desc &desc) override;
    };
 }

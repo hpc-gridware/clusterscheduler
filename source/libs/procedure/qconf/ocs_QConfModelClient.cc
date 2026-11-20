@@ -42,41 +42,40 @@
  * caller decides, which is the rule for everything that can also run in the
  * daemon.
  *
- * The condition and the selection are taken over and wrapped at once into owning
- * handles of the read's type, which free them on every path.
+ * The condition and the selection are taken over and handed at once to owning
+ * handles of the read's type; their owners free them on every path.
  *
  * @param answer_list for error reporting
  * @param target      the master list to read
- * @param where       which elements, or nullptr for all; taken over
+ * @param where       which elements, an empty owner for all; taken over
  * @param what        which fields; taken over
  * @return true on success
  */
 bool
-ocs::QConfModelClient::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
-                             lCondition *where, lEnumeration *what) {
+ocs::QConfModelClient::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const gdi::Target target,
+                             ocs::tom::RawWherePtr where, ocs::tom::RawWhatPtr what) {
    DENTER(TOP_LAYER);
 
    // dispatched once on the read's object type: every caller builds the condition and the selection for it and
    // reads the target of its row; object_list_ stays untyped, its type is the read's
    auto alp = ocs_with_qconf_object(get_object(), [this, target, &where, &what](const auto &entry) {
       using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
-      // fetch() owns the condition and the selection, built by the model for this type: the handles free them
-      const auto typed_where = ocs::tom::Where<T>::from_typed(std::exchange(where, nullptr));
-      const auto typed_what = ocs::tom::What<T>::from_typed(std::exchange(what, nullptr));
+      // fetch() owns the condition and the selection, built by the model for this type: the typed handles take
+      // them over unchecked, as before
+      const auto typed_where = ocs::tom::Where<T>::from_typed(where.release());
+      const auto typed_what = ocs::tom::What<T>::from_typed(what.release());
       // a list held before goes out as the request data, as before, and is freed when the answer replaces it
-      auto data = ocs::tom::ListPtr<T>::from_typed(std::exchange(object_list_, nullptr));
+      auto data = ocs::tom::ListPtr<T>::from_typed(object_list_.release());
       auto answers = gdi::Client::sge_gdi(target, gdi::Command::GET, gdi::SubCommand::NONE, data, typed_where,
                                           typed_what);
-      object_list_ = data.release();
+      object_list_ = ocs::tom::RawListPtr(std::move(data));
       return answers;
    });
-   // only for an object outside the dispatch table, which never reaches the lambda: nothing else frees them
-   lFreeWhere(&where);
-   lFreeWhat(&what);
+   // an object outside the dispatch table never reaches the lambda: the owners free the condition and the selection
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);
-      lFreeList(&object_list_);
+      object_list_.reset();
    }
    alp.reset();
 
@@ -124,13 +123,13 @@ ocs::QConfModelClient::fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answe
    DENTER(TOP_LAYER);
 
    // qmaster answers with the names of its threads; object_list_ stays untyped, its type is the read's
-   auto data = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(std::exchange(object_list_, nullptr));
+   auto data = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(object_list_.release());
    auto alp = gdi::Client::sge_gdi(gdi::Target::DUMMY_LIST, gdi::Command::GET, gdi::SubCommand::NONE, data);
-   object_list_ = data.release();
+   object_list_ = ocs::tom::RawListPtr(std::move(data));
    const bool failed = answer_list_has_error(&alp);
    if (failed) {
       answer_list_append_list(answer_list, &alp);
-      lFreeList(&object_list_);
+      object_list_.reset();
    }
    alp.reset();
 

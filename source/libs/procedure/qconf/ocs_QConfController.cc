@@ -49,7 +49,7 @@ ocs::QConfController::process_request([[maybe_unused]] QConfParameter &parameter
    } else if (model.get_kind() == QConfReadKind::OBJECT_LIST) {
       view.show_object_list(out_, model.get_object_list(), *model.get_desc());
    } else {
-      view.show_object(out_, lFirst(model.get_object_list()), *model.get_desc());
+      view.show_object(out_, model.get_object_list().front(), *model.get_desc());
    }
 
    DRETURN_VOID;

@@ -50,6 +50,6 @@ namespace ocs {
       explicit QConfHGroupShowViewJSON(const QConfParameter &parameter) : QConfViewJSON(parameter) {}
       ~QConfHGroupShowViewJSON() override = default;
 
-      void show_object(std::ostream &os, const lListElem *ep, const qconf_object_desc &desc) override;
+      void show_object(std::ostream &os, ocs::tom::ConstRawElement ep, const qconf_object_desc &desc) override;
    };
 }

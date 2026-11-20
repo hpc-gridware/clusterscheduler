@@ -63,17 +63,18 @@ ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] ocs::tom::ListPtr<ocs::tom
  * fail in a recoverable way here, which is why the client's
  * answer_exit_if_not_recoverable() has no equivalent.
  *
- * The condition and the selection are taken over and freed on every path.
+ * The condition and the selection are taken over; their owners free them on
+ * every path.
  *
  * @param answer_list for error reporting
  * @param target      the master list to read
- * @param where       which elements, or nullptr for all; taken over
+ * @param where       which elements, an empty owner for all; taken over
  * @param what        which fields; taken over
  * @return true on success
  */
 bool
-ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
-                             lCondition *where, lEnumeration *what) {
+ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const gdi::Target target,
+                             ocs::tom::RawWherePtr where, ocs::tom::RawWhatPtr what) {
    DENTER(TOP_LAYER);
 
    if (get_object() == QConfObj::EV) {
@@ -82,9 +83,7 @@ ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
        * SGE_TYPE_NONE in sge_c_gdi.cc and why the GDI GET is answered from the
        * LISTENER data store. The call is MT safe and takes its own lock, so
        * whichever store this request runs under does not matter (CS-2808). */
-      object_list_ = sge_select_event_clients("", where, what);
-      lFreeWhere(&where);
-      lFreeWhat(&what);
+      object_list_ = ocs::tom::RawListPtr(sge_select_event_clients("", where.get(), what.get()));
       DRETURN(true);
    }
 
@@ -97,8 +96,6 @@ ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
        * same way, without a catalogue entry. */
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "no master list for the object type in " SFQ, __func__);
-      lFreeWhere(&where);
-      lFreeWhat(&what);
       DRETURN(false);
    }
 
@@ -106,20 +103,19 @@ ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::
    // master list holds objects of it; object_list_ stays untyped, its type is the read's
    ocs_with_qconf_object(get_object(), [this, type, &where, &what](const auto &entry) {
       using T = typename ocs_qconf_object_entry_t<decltype(entry)>::type;
-      // fetch() owns the condition and the selection: the handles free them
-      const auto typed_where = ocs::tom::Where<T>::from_typed(std::exchange(where, nullptr));
-      const auto typed_what = ocs::tom::What<T>::from_typed(std::exchange(what, nullptr));
+      // fetch() owns the condition and the selection, built by the model for this type: the typed handles take
+      // them over unchecked, as before
+      const auto typed_where = ocs::tom::Where<T>::from_typed(where.release());
+      const auto typed_what = ocs::tom::What<T>::from_typed(what.release());
       const auto master_list = ocs::tom::ConstList<T>::from_typed(*DataStore::get_master_list(type));
       auto selected = master_list.select(typed_where, typed_what, "");
       // lSelect() gave no list where nothing matched, and the callers tell no list from an empty one
       if (selected && selected->empty()) {
          selected.reset();
       }
-      object_list_ = selected.release();
+      object_list_ = ocs::tom::RawListPtr(std::move(selected));
    });
-   // only for an object outside the dispatch table, which never reaches the lambda: nothing else frees them
-   lFreeWhere(&where);
-   lFreeWhat(&what);
+   // an object outside the dispatch table never reaches the lambda: the owners free the condition and the selection
 
    DRETURN(true);
 }
@@ -155,7 +151,7 @@ ocs::QConfModelServer::fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answe
       DRETURN(false);
    }
    // object_list_ holds whatever list the operation read, its type is known only at run time
-   object_list_ = thread_pool_provider().release();
+   object_list_ = ocs::tom::RawListPtr(thread_pool_provider());
 
    DRETURN(true);
 }

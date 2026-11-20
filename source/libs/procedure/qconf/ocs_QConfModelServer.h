@@ -63,7 +63,7 @@ namespace ocs {
 
    protected:
       bool fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, gdi::Target target,
-                 lCondition *where, lEnumeration *what) override;
+                 ocs::tom::RawWherePtr where, ocs::tom::RawWhatPtr what) override;
       bool fetch_thread_pools(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) override;
       bool fetch_centries(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) override;
       bool fetch_hgroups(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) override;

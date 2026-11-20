@@ -27,6 +27,7 @@
 
 #include "cull/cull.h"
 #include "spool/flatfile/sge_flatfile.h"
+#include "tom/ocs_Raw.h"
 
 #include "ocs_ProcedureView.h"
 #include "ocs_QConfObject.h"
@@ -75,11 +76,12 @@ namespace ocs {
        * and the plain form of the reserved host groups renders matchers last.
        *
        * @param os     the stream to write to
-       * @param list   the objects, already sorted
+       * @param list   the objects, already sorted; of an object type known only at run time
        * @param key_nm the field holding the name
        * @param desc   the descriptor of the type the names belong to
+       * @return none
        */
-      virtual void show_name_list(std::ostream &os, const lList *list, int key_nm,
+      virtual void show_name_list(std::ostream &os, ocs::tom::ConstRawList list, int key_nm,
                                   const qconf_object_desc &desc) = 0;
 
       /** @brief Write one object in the layout of its descriptor
@@ -89,16 +91,18 @@ namespace ocs {
        * because it adds keys derived from the member list.
        *
        * @param os   the stream to write to
-       * @param ep   the object
+       * @param ep   the object, of an object type known only at run time
        * @param desc its row in the descriptor table
+       * @return none
        */
-      virtual void show_object(std::ostream &os, const lListElem *ep, const qconf_object_desc &desc);
+      virtual void show_object(std::ostream &os, ocs::tom::ConstRawElement ep, const qconf_object_desc &desc);
 
       /** @brief Write several objects of one type
        * @param os   the stream to write to
-       * @param list the objects, in the order they are to appear
+       * @param list the objects, in the order they are to appear; of an object type known only at run time
        * @param desc the descriptor of their type
+       * @return none
        */
-      void show_object_list(std::ostream &os, const lList *list, const qconf_object_desc &desc);
+      void show_object_list(std::ostream &os, ocs::tom::ConstRawList list, const qconf_object_desc &desc);
    };
 }
