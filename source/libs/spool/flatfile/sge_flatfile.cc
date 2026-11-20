@@ -92,6 +92,8 @@
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_Model.h"
+#include "tom/ocs_Raw.h"
 
 #include "msg_common.h"
 
@@ -612,14 +614,14 @@ static bool is_delimiter(int token) {
 
 
 static bool 
-spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawElement object,
                                    dstring *buffer, 
                                    const spool_flatfile_instr *instr,
                                    const spooling_field *fields, bool recurse,
                                    bool root);
 
 static bool
-spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList list,
                                  dstring *buffer,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, bool recurse, const char *list_name);
@@ -651,21 +653,22 @@ spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const vo
                           const spool_flatfile_destination destination, 
                           const char *filepath, std::ostream *stream);
 
-static lListElem *
-_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, lListElem *root,
-                            const spool_flatfile_instr *instr,
+static ocs::tom::RawElementPtr
+_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+                            ocs::tom::RawElement root, const spool_flatfile_instr *instr,
                             const spooling_field *fields, int fields_out[], int *token,
                             const char *end_token, bool parse_values);
 
 static void
-_spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **object,
-                                 const lDescr *descr, lListElem *root,
+_spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::RawElement object,
+                                 ocs::tom::RawElementPtr *created,
+                                 const lDescr *descr, ocs::tom::RawElement root,
                                  const spool_flatfile_instr *instr, 
                                  const spooling_field *fields, int fields_out[],
                                  int *token, const char *end_token,
                                  bool parse_values);
 
-static lList *
+static ocs::tom::RawListPtr
 _spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, 
                           const spool_flatfile_instr *instr,
                           const spooling_field *fields, int fields_out[], int *token,
@@ -714,20 +717,24 @@ ocs_spool_row_is_uint32(const spooling_field &field) {
  * @return the buffer's text, or nullptr if nothing could be rendered
  */
 static const char *
-ocs_spool_row_append(const spooling_field &field, const lListElem *object,
+ocs_spool_row_append(const spooling_field &field, const ocs::tom::ConstRawElement object,
                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer) {
    return ocs_spool_append_value(*field.ops, object, answer_list, buffer);
 }
 
 /**
  * @brief The list of a row's list field
+ *
+ * The caller has tested that the element holds the field, so the checked read does not throw.
+ *
  * @param field the row, of a list field
  * @param object the element, holding the field
- * @return the list, nullptr if unset
+ * @return a handle on the list, empty if unset
+ * @throw ocs::tom::FieldException if the element does not hold the field
  */
-static const lList *
-ocs_spool_row_get_list(const spooling_field &field, const lListElem *object) {
-   return field.ops->get_list(object);
+static ocs::tom::ConstRawList
+ocs_spool_row_get_list(const spooling_field &field, const ocs::tom::ConstRawElement object) {
+   return object.get<ocs::tom::ConstRawList>(field.nm);
 }
 
 /**
@@ -742,13 +749,19 @@ ocs_spool_row_sub_descr(const spooling_field &field) {
 
 /**
  * @brief Store a list read for a row's list field
+ *
+ * The caller has tested that the element holds the field, and the list was created with the sub-type the row's
+ * record names, so the checked store does not throw.
+ *
  * @param field the row, of a list field
  * @param object the element, holding the field
- * @param list the list, of the field's sub-type, or nullptr; taken over
+ * @param list the owner of the list, of the field's sub-type, or an empty owner to clear the field; taken over
+ * @throw ocs::tom::FieldException if the element does not hold the field or the list is of another sub-type; the
+ *        list is freed then
  */
 static void
-ocs_spool_row_set_list(const spooling_field &field, lListElem *object, lList *list) {
-   field.ops->set_list(object, list);
+ocs_spool_row_set_list(const spooling_field &field, const ocs::tom::RawElement object, ocs::tom::RawListPtr list) {
+   object.set(field.nm, std::move(list));
 }
 
 /**
@@ -816,7 +829,7 @@ bool spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
       fields[i].width = sge_strlen(fields[i].name);
    }
 
-   for_each_ep_lv(object, list) {
+   for (const ocs::tom::ConstRawElement object : ocs::tom::ConstRawList(list)) {
       for (i = 0; fields[i].nm != NoName; i++) {
          const char *value;
          
@@ -889,7 +902,7 @@ spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    if (fields_in != nullptr) {
       fields = fields_in;
    } else { 
-      my_fields = spool_get_fields_to_spool(answer_list, lGetListDescr(list), 
+      my_fields = spool_get_fields_to_spool(answer_list, ocs::tom::ConstRawList(list).descr(),
                                             instr->spool_instr);
       if (my_fields == nullptr) {
          /* message generated in spool_get_fields_to_spool */
@@ -1469,9 +1482,9 @@ spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const vo
  * @brief Write the fields of one object
  *
  * Walks the rows of @p fields; the type dependent parts - list or value, the
- * value's format, the list of a list field - come from the typed code of a
- * row (see ocs_spool_row_is_list() and its siblings). A field the element
- * lacks is skipped with a warning.
+ * value's format, the list of a list field - come from the record of a
+ * row (see ocs_spool_row_is_list() and its siblings), read with the checked
+ * accessors. A field the element lacks is skipped with a warning.
  *
  * @param answer_list receives the messages
  * @param object the object to write
@@ -1485,7 +1498,7 @@ spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const vo
  * @return true; false if a pointer argument is nullptr
  */
 static bool
-spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
+spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawElement object,
                                    dstring *buffer,
                                    const spool_flatfile_instr *instr,
                                    const spooling_field *fields, bool recurse,
@@ -1496,7 +1509,6 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    bool first_field = true;
    dstring field_name = DSTRING_INIT;
    dstring field_buffer = DSTRING_INIT;
-   const lDescr *descr;
 
    int supress_field;
    char field_delimiter;
@@ -1506,7 +1518,7 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    bool show_empty_fields;
    bool align_data;
 
-   SGE_CHECK_POINTER_FALSE(object, answer_list);
+   SGE_CHECK_POINTER_FALSE(object.raw(), answer_list);
    SGE_CHECK_POINTER_FALSE(buffer, answer_list);
    SGE_CHECK_POINTER_FALSE(instr, answer_list);
    SGE_CHECK_POINTER_FALSE(fields, answer_list);
@@ -1519,14 +1531,11 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    show_empty_fields = instr->show_empty_fields;
    align_data = instr->align_data;
  
-   descr = lGetElemDescr(object);
- 
    /* loop over all fields */
    for (i = 0; fields[i].nm != NoName; i++) {
       const int nm = fields[i].nm;
       const char *name = fields[i].name;
       const char *value = nullptr;
-      int pos;
 
 
       /* If this isn't the root node, and this is the field we're supposed to
@@ -1535,12 +1544,11 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          continue;
       }
       
-      pos = lGetPosInDescr(descr, fields[i].nm);
-      if (pos < 0) {
+      if (!object.has(nm)) {
          answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC,
                                  ANSWER_QUALITY_WARNING, 
                                  MSG_NMNOTINELEMENT_S,
-                                 lNm2Str(nm));
+                                 ocs::tom::field_name(nm));
          continue;
       }
 
@@ -1579,7 +1587,7 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
       /* output value */
       if (fields[i].write_func != nullptr) {
-         if (fields[i].write_func(object, nm, &field_buffer, answer_list) == 0
+         if (fields[i].write_func(object.raw(), nm, &field_buffer, answer_list) == 0
              && !show_empty_fields) {
             continue;
          }
@@ -1607,19 +1615,19 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_WARNING, 
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
-                                       lNm2Str(nm), __func__);
+                                       ocs::tom::field_name(nm), __func__);
                sge_dstring_append(&field_buffer, NONE_STR);
             } else {
                continue;
             }
          } else {
-            const lList *sub_list = ocs_spool_row_get_list(fields[i], object);
+            const ocs::tom::ConstRawList sub_list = ocs_spool_row_get_list(fields[i], object);
 
             /* Bugfix: Issuezilla #1137
              * If a list field has no name and no value, it should be ignored
              * altogether.  I'm using this funny "if" arrangement to get the
              * desired effect with the minimum amount of overhead. */
-            if ((sub_list == nullptr) || (lGetNumberOfElem(sub_list) == 0)) {
+            if (sub_list.empty()) {   // an empty handle as well
                if (name != nullptr) {
                   if (sub_instr->show_empty_fields) {
                      sge_dstring_append(&field_buffer, NONE_STR);
@@ -1665,8 +1673,25 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    DRETURN(true);
 }
 
+/**
+ * @brief Write the elements of a list
+ *
+ * Writes each element with spool_flatfile_write_object_fields(), framed by the
+ * record delimiters of @p instr. For the share tree's recursion field only the
+ * id field of each element is written first, then every element in full.
+ *
+ * @param answer_list receives the messages
+ * @param list the list to write, maybe empty (an error)
+ * @param buffer receives the text, appended; freed on an error
+ * @param instr the layout of the list
+ * @param fields the rows of the elements, terminated by a `NoName` row
+ * @param recurse the list is the share tree's recursion field
+ * @param list_name the name written before every record but the first if
+ *                  #spool_flatfile_instr::ignore_list_name is set, or nullptr
+ * @return true on success, false if a pointer argument is nullptr or an element could not be written
+ */
 static bool
-spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
                                  dstring *buffer,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, bool recurse, const char *list_name) {
@@ -1684,7 +1709,7 @@ spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
    bool ignore_list_name;
    bool record_start_end_newline;
 
-   SGE_CHECK_POINTER_FALSE(list, answer_list);
+   SGE_CHECK_POINTER_FALSE(list.raw(), answer_list);
    SGE_CHECK_POINTER_FALSE(buffer, answer_list);
    SGE_CHECK_POINTER_FALSE(instr, answer_list);
 
@@ -1701,7 +1726,7 @@ spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
       my_fields = get_recursion_field_list(instr);
    }
 
-   for_each_ep_lv(ep, list) {
+   for (const ocs::tom::ConstRawElement ep : list) {
       /* from second record on write record delimiter */
       if (!first) {
          if (ignore_list_name && list_name != nullptr) {
@@ -1746,7 +1771,7 @@ spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
    if (recurse) {
 
       if (ret && instr->recursion_info.recursion_field != NoName) {
-         for_each_ep_lv(ep, list) {
+         for (const ocs::tom::ConstRawElement ep : list) {
             if (!spool_flatfile_write_object_fields(answer_list, ep, buffer, 
                                                     instr, fields, true, false)) {
                sge_dstring_free(buffer); 
@@ -1840,6 +1865,7 @@ namespace {
  * @param format spooling format
  * @param file filehandle to read from
  * @param filepath if `file` == nullptr, `filepath` is opened
+ * @param content if not nullptr, the text to read instead of a file
  *
  * @return on success the read object, else nullptr
  *
@@ -1863,7 +1889,7 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
    const ocs::tom::UniqueCheckSuspension suspension;
    bool file_opened = false;
    int token;
-   lListElem *object = nullptr;
+   ocs::tom::RawElementPtr object;
    const spooling_field *fields = fields_in;
    spooling_field *my_fields = nullptr;
 
@@ -1917,8 +1943,7 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
             chunk[n] = '\0';
             sge_dstring_append(&json, chunk);
          }
-         object = spool_json_read_object(answer_list, descr, fields, fields_out,
-                                         sge_dstring_get_string(&json));
+         object = spool_json_read_object(answer_list, descr, fields, fields_out, sge_dstring_get_string(&json));
          sge_dstring_free(&json);
       }
       if (my_fields != nullptr) {
@@ -1927,7 +1952,7 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
       if (file_opened) {
          fclose(file);
       }
-      DRETURN(object);
+      DRETURN(object.release());
    }
 
    /* initialize scanner, from the text when one was handed in */
@@ -1967,7 +1992,7 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
    object = _spool_flatfile_read_object(answer_list, descr, root, instr, 
                                         fields, fields_out, &token, nullptr,
                                         parse_values);
-   if (object == nullptr) {
+   if (!object) {
       /* The object can come from a string rather than a file - that is how the
        * qconf write procedure parses the text an editor sent (CS-2823). There is
        * no path to name then, and the file variant printed "(null)". */
@@ -1995,10 +2020,9 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
       my_fields = spool_free_spooling_fields(my_fields);
    }
 
-   DRETURN(object);
+   DRETURN(object.release());
 FCLOSE_ERROR:
-   lFreeElem(&object);
-   DRETURN(nullptr);
+   DRETURN(nullptr);   // object frees the element
 }
 
 /**
@@ -2019,15 +2043,15 @@ FCLOSE_ERROR:
  * @param token       the current scanner token, advanced while reading
  * @param end_token   characters ending the object, nullptr for none
  * @param parse_values whether to parse the attribute values
- * @return the object, nullptr if it could not be read
+ * @return the owner of the object, empty if it could not be read
  */
-static lListElem *
+static ocs::tom::RawElementPtr
 _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
-                            lListElem *root, const spool_flatfile_instr *instr,
+                            const ocs::tom::RawElement root, const spool_flatfile_instr *instr,
                             const spooling_field *fields, int fields_out[],
                             int *token, const char *end_token,
                             bool parse_values) {
-   lListElem *object = nullptr;
+   ocs::tom::RawElementPtr object;
    int *my_fields_out = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> read_answer_list;
 
@@ -2042,12 +2066,12 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
       my_fields_out[0] = NoName;
    }
 
-   _spool_flatfile_read_live_object(&read_answer_list, &object, descr, root, instr,
+   _spool_flatfile_read_live_object(&read_answer_list, nullptr, &object, descr, root, instr,
                                     fields, my_fields_out, token, end_token,
                                     parse_values);
 
    if (answer_list_has_error(&read_answer_list)) {
-      lFreeElem(&object);
+      object.reset();
    }
    answer_list_append_list(answer_list, &read_answer_list);
    read_answer_list.reset();
@@ -2062,14 +2086,17 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
 /**
  * @brief Read the fields of one object from the current scanner input into an element
  *
- * Creates the element when @p object points at nullptr. The type dependent
- * parts - list or value, the check of an unsigned value, the sub-type of a
- * list and storing it - come from the typed code of a row (see
- * ocs_spool_row_is_list() and its siblings); a value is converted by
- * ocs_spool_parse_value() through the row's record or by the row's read callback.
+ * Creates the element into @p created when @p object is empty, before the
+ * first field is read. The type dependent parts - list or value, the check of
+ * an unsigned value, the sub-type of a list and storing it - come from the
+ * record of a row (see ocs_spool_row_is_list() and its siblings); a value is
+ * converted by ocs_spool_parse_value() through the row's record or by the
+ * row's read callback.
  *
  * @param answer_list receives the messages
- * @param object the element to fill; created when it points at nullptr
+ * @param object the element to fill, an element of a list read before; empty to create one
+ * @param created receives the element created when @p object is empty; nullptr only with an element in
+ *                @p object
  * @param descr the descriptor of the element
  * @param root the root of a share tree while its children are read, else nullptr
  * @param instr the layout
@@ -2080,8 +2107,9 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
  * @param parse_values whether to parse the attribute values
  */
 static void
-_spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **object,
-                                 const lDescr *descr, lListElem *root,
+_spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::RawElement object,
+                                 ocs::tom::RawElementPtr *created,
+                                 const lDescr *descr, const ocs::tom::RawElement root,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, int fields_out[],
                                  int *token, const char *end_token,
@@ -2097,7 +2125,6 @@ FF_DEBUG("reading object");
 
    while (*token != 0 && !stop) {
       int nm = NoName;
-      int pos;
       bool is_list;
       bool field_end  = false;
       bool record_end = false;
@@ -2134,15 +2161,20 @@ FF_DEBUG("eof detected");
          continue;
       }
 
-      if (*object == nullptr) {
-         *object = lCreateElem(descr);
-         if (*object == nullptr) {
+      if (!object) {
+         try {
+            *created = ocs::tom::create_raw_elem(descr);
+         } catch (const ocs::tom::ListCoreError &) {
+            // no memory: reported as lCreateElem() reported it, by an empty result
+         }
+         if (!*created) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_ERRORCREATINGOBJECT);
             stop = true;
             continue;
          }
+         object = created->get();
       }
 
       /* read field name from file or from field list */
@@ -2232,16 +2264,15 @@ FF_DEBUG("eval next field");
          }
       }
 
-FF_DEBUG(lNm2Str(nm));
+FF_DEBUG(ocs::tom::field_name(nm));
 
       /* check if nm is an attribute of current object type */
-      pos = lGetPosInDescr(descr, nm);
-      if (pos < 0) {
+      if (ocs::tom::present_pos(descr, nm) < 0) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_ATTRIBUTENOTINOBJECT_S,
                                  (fields[field_index].name != nullptr) ?
-                                 fields[field_index].name : lNm2Str(nm));
+                                 fields[field_index].name : ocs::tom::field_name(nm));
          stop = true;
          continue;
       }
@@ -2256,7 +2287,7 @@ FF_DEBUG(lNm2Str(nm));
                                     ANSWER_QUALITY_ERROR,
                                     MSG_FLATFILE_DUPLICATEATTRIB_S,
                                     (fields[field_index].name != nullptr) ?
-                                    fields[field_index].name : lNm2Str(nm));
+                                    fields[field_index].name : ocs::tom::field_name(nm));
             stop = true;
             continue;
          }
@@ -2359,13 +2390,13 @@ FF_DEBUG("detected end_token");
                   DRETURN_VOID;
                }
             }
-            if (!ocs_spool_parse_value(*fields[field_index].ops, *object, answer_list,
+            if (!ocs_spool_parse_value(*fields[field_index].ops, object, answer_list,
                                        sge_dstring_get_string(&buffer))) {
                stop = true;
                continue;
             }
          } else {
-            if (fields[field_index].read_func(*object, nm,
+            if (fields[field_index].read_func(object, nm,
                                                sge_dstring_get_string(&buffer),
                                                answer_list) == 0) {
                stop = true;
@@ -2373,7 +2404,6 @@ FF_DEBUG("detected end_token");
             }
          }
       } else { /* a list */
-         lList *list;
          const lDescr *sub_descr;
 
 FF_DEBUG("reading list");
@@ -2404,7 +2434,7 @@ FF_DEBUG("empty list");
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_DONTKNOWHOWTOHANDLELIST_S, 
-                                       lNm2Str(nm));
+                                       ocs::tom::field_name(nm));
                stop = true;
                continue;
             }
@@ -2414,12 +2444,12 @@ FF_DEBUG("empty list");
             if (sub_descr == nullptr)  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
-                                       MSG_UNKNOWNOBJECTTYPEFOR_SS, 
-                                       lNm2Str(nm), __func__);
+                                       MSG_UNKNOWNOBJECTTYPEFOR_SS,
+                                       ocs::tom::field_name(nm), __func__);
                stop = true;
                continue;
             }
-           
+
             /* read sublist */
             {
                char new_end_token[MAX_STRING_SIZE];
@@ -2429,22 +2459,20 @@ FF_DEBUG("empty list");
                /* We're passing in nullptr for the fields_out parameter
                 * because we don't care about the fields read from sub
                 * lists. */
-               list = _spool_flatfile_read_list(answer_list, sub_descr, 
-                                                sub_instr, 
-                                                fields[field_index].sub_fields, 
-                                                nullptr, token,
-                                                new_end_token, parse_values,
-                                                fields[field_index].name);
-            
-               ocs_spool_row_set_list(fields[field_index], *object, list);
-               
-               if (instr->recursion_info.recursion_field == nm) {
-                  lListElem *rep = root;
+               ocs::tom::RawListPtr list = _spool_flatfile_read_list(answer_list, sub_descr,
+                                                                     sub_instr,
+                                                                     fields[field_index].sub_fields,
+                                                                     nullptr, token,
+                                                                     new_end_token, parse_values,
+                                                                     fields[field_index].name);
+               // the list stays reachable through the handle once the element holds it
+               const ocs::tom::RawList read_list = list.get();
 
-                  if (rep == nullptr) {
-                     rep = *object;
-                  }
-            
+               ocs_spool_row_set_list(fields[field_index], object, std::move(list));
+
+               if (instr->recursion_info.recursion_field == nm) {
+                  const ocs::tom::RawElement rep = root ? root : object;
+
                   if (instr->field_delimiter != '\0') {
                      if (!is_delimiter(*token) &&
                          *spool_text != instr->field_delimiter) {
@@ -2461,11 +2489,11 @@ FF_DEBUG("skipping field delimiter");
                   }
 
                   /* Read in the full element for each element in the list */
-                  for_each_rw_lv(ep, list) {
+                  for (const ocs::tom::RawElement ep : read_list) {
                      /* We're passing in nullptr for the fields_out parameter
                       * because we don't care about the fields read from sub
                       * lists. */
-                     _spool_flatfile_read_live_object(answer_list, &ep, descr,
+                     _spool_flatfile_read_live_object(answer_list, ep, nullptr, descr,
                                                       rep, instr, fields, nullptr,
                                                       token, end_token,
                                                       parse_values);
@@ -2570,6 +2598,7 @@ FF_DEBUG("after parsing object");
  * @param format data format
  * @param file file to read or nullptr if `filepath` shall be opened
  * @param filepath file to open if `file` == nullptr
+ * @param content if not nullptr, the text to read instead of a file
  *
  * @return the list read on success, else nullptr
  *
@@ -2592,7 +2621,7 @@ spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDe
    const ocs::tom::UniqueCheckSuspension suspension;
    bool file_opened = false;
    int token = 0;
-   lList *list = nullptr;
+   ocs::tom::RawListPtr list;
    const spooling_field *fields = fields_in;
    spooling_field *my_fields = nullptr;
    const char *end_token = nullptr;
@@ -2651,8 +2680,7 @@ spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDe
             chunk[n] = '\0';
             sge_dstring_append(&json, chunk);
          }
-         list = spool_json_read_list(answer_list, descr, fields, fields_out,
-                                     sge_dstring_get_string(&json));
+         list = spool_json_read_list(answer_list, descr, fields, fields_out, sge_dstring_get_string(&json));
          sge_dstring_free(&json);
       }
       if (my_fields != nullptr) {
@@ -2661,7 +2689,7 @@ spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDe
       if (file_opened) {
          fclose(file);
       }
-      DRETURN(list);
+      DRETURN(list.release());
    }
 
    /* initialize scanner, from the text when there is one */
@@ -2719,13 +2747,31 @@ spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDe
       my_fields = spool_free_spooling_fields(my_fields);
    }
 
-   DRETURN(list);
+   DRETURN(list.release());
 FCLOSE_ERROR:
-   lFreeList(&list);
-   DRETURN(nullptr);
+   DRETURN(nullptr);   // list frees the list
 }
 
-static lList *
+/**
+ * @brief Read a list from the current scanner input
+ *
+ * Reads objects of @p descr until the end token, each with
+ * _spool_flatfile_read_object(); the first object that cannot be read ends the
+ * list.
+ *
+ * @param answer_list receives the messages
+ * @param descr the descriptor of the elements
+ * @param instr the layout of the list
+ * @param fields the rows of the elements, terminated by a `NoName` row
+ * @param fields_out receives the fields read, nullptr if not needed
+ * @param token the current scanner token, advanced while reading
+ * @param end_token characters ending the list, nullptr for none
+ * @param parse_values whether to parse the attribute values
+ * @param list_name the list name to skip before a record if #spool_flatfile_instr::ignore_list_name is set, or
+ *                  nullptr
+ * @return the owner of the list, empty if no object could be read or the list could not be created
+ */
+static ocs::tom::RawListPtr
 _spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                           const spool_flatfile_instr *instr,
                           const spooling_field *fields, int fields_out[],
@@ -2736,15 +2782,18 @@ _spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lD
    bool first_record = true;
    bool end_token_detected = false;
    char new_end_token[MAX_STRING_SIZE];
-   lList *list;
-   lListElem *object;
+   ocs::tom::RawListPtr list;
 
-   list = lCreateList("list", descr);
-   if (list == nullptr) {
+   try {
+      list = ocs::tom::create_raw_list(descr, ocs::tom::Hashing::On, "list");
+   } catch (const ocs::tom::ListCoreError &) {
+      // no memory: reported as lCreateList() reported it, by an empty result
+   }
+   if (!list) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_ERRORCREATINGLIST);
-      DRETURN(nullptr);
+      DRETURN(ocs::tom::RawListPtr());
    }
 
    if (instr->record_end == '\0') {
@@ -2815,13 +2864,13 @@ FF_DEBUG("detected record_start");
       }
 
       /* read an object */
-      object = _spool_flatfile_read_object(answer_list, descr, nullptr, instr,
-                                           fields, fields_out, token, 
-                                           new_end_token, parse_values);
+      ocs::tom::RawElementPtr object = _spool_flatfile_read_object(answer_list, descr, nullptr, instr,
+                                                                   fields, fields_out, token,
+                                                                   new_end_token, parse_values);
 
       /* store object */
-      if (object != nullptr) {
-         lAppendElem(list, object);
+      if (object) {
+         ocs::tom::append(list.get(), std::move(object));
       } else {
          /* if no object was read due to an error, a message has been
           * created in _spool_flatfile_read_object
@@ -2859,8 +2908,8 @@ FF_DEBUG("detected record_end");
 FF_DEBUG("after parsing list");
 
    /* if no objects could be read, we need no list */
-   if (lGetNumberOfElem(list) == 0) {
-      lFreeList(&list);
+   if (list.get().empty()) {
+      list.reset();
    }
 
    DRETURN(list);
@@ -2916,7 +2965,8 @@ int spool_get_unprocessed_field(spooling_field in[], int out[], ocs::tom::ListPt
       }
       
       if (out[counter] == NoName) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_FLATFILE_ATTRIBISMISSING_S, (in[count].name == nullptr) ? lNm2Str(in[count].nm) : in[count].name);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_FLATFILE_ATTRIBISMISSING_S,
+                  (in[count].name == nullptr) ? ocs::tom::field_name(in[count].nm) : in[count].name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          return in[count].nm;
       }

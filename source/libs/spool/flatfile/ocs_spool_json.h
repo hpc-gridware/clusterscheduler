@@ -121,13 +121,14 @@ spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs:
 
 /*
  * Parse a JSON document (produced by the writers above) back into a CULL element
- * or list. @p fields_out (if non-null) receives the set of field ids found, for
- * the caller's unprocessed-field check (as the ASCII reader does).
+ * or list, returned as its owner (empty on error). @p fields_out (if non-null)
+ * receives the set of field ids found, for the caller's unprocessed-field check
+ * (as the ASCII reader does).
  */
-lListElem *
+ocs::tom::RawElementPtr
 spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                        const spooling_field *fields, int fields_out[], const char *json_text);
 
-lList *
+ocs::tom::RawListPtr
 spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                      const spooling_field *fields, int fields_out[], const char *json_text);

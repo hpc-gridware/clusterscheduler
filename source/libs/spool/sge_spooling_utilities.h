@@ -48,6 +48,7 @@
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_Raw.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/sge_answer.h"
@@ -94,22 +95,6 @@ extern const spool_instr_t spool_userprj_subinstr;  ///< Sublists of a user or p
 /** @} */
 
 /**
- * @brief The value of a field that is neither a list nor an object nor a reference
- *
- * The member named by the field's type is the valid one; a string and a host name are both held in `str`. A value
- * read by ocs_spool_field_ops::get() points into the element, a value given to ocs_spool_field_ops::set() is copied.
- */
-union ocs_spool_value {
-   std::uint32_t u32;   ///< FieldType::Uint32
-   std::uint64_t u64;   ///< FieldType::Uint64
-   std::int32_t i32;    ///< FieldType::Int32
-   std::int64_t i64;    ///< FieldType::Int64
-   double dbl;          ///< FieldType::Double
-   bool b;              ///< FieldType::Bool
-   const char *str;     ///< FieldType::String and FieldType::Host, nullptr if unset
-};
-
-/**
  * @brief How a walker renders and parses the value of a field that is neither a list nor an object
  *
  * A property of the field, fixed at compile time in its #ocs_spool_field_ops (#ocs_spool_field_ops::json). The
@@ -129,46 +114,16 @@ enum class ocs_spool_render : std::uint8_t {
 };
 
 /**
- * @brief The code that reads and writes the fields of one field type, shared by all fields of that type
- *
- * One constant per ocs::tom::FieldType (spool/ocs_spool_field_info.h), not one per field: the functions are not
- * templates, they take the field number and find the field in the element's own descriptor by position
- * (lGetPosViaElem()), then read or write it with the accessors by position of the list library. The field type
- * is right by construction: a row gets the #ocs_spool_field_ops record made from the model's field table for
- * exactly its field, and that record names the accessor set of the field's type. A field number is unique across
- * the object types, so an element of another type, or a reduced element without the field, does not hold it;
- * the accessors take the soft path then - a zero value, nothing stored - and never throw, as they run in the
- * worker threads of qmaster and at its start.
- *
- * Only the operations of the field type are set, the others are nullptr: get/set for a number, a bool, a string
- * or a host name, get_list/set_list for a list, get_object/set_object for an object, none for a reference.
- */
-struct ocs_spool_accessors {
-   /// the value of field `nm`, zero (nullptr for a string or a host name) if the element does not hold it
-   ocs_spool_value (*get)(const lListElem *ep, int nm);
-   /// stores the value of field `nm`, a string or host name copied; nothing if the element does not hold it
-   void (*set)(lListElem *ep, int nm, ocs_spool_value value);
-   /// the list of list field `nm`, nullptr if unset or if the element does not hold the field
-   const lList *(*get_list)(const lListElem *ep, int nm);
-   /// stores a list for list field `nm`, taking it over; freed if the element does not hold the field
-   void (*set_list)(lListElem *ep, int nm, lList *list);
-   /// the element of object field `nm`, nullptr if unset or if the element does not hold the field
-   const lListElem *(*get_object)(const lListElem *ep, int nm);
-   /// stores an element for object field `nm`, taking it over; freed if the element does not hold the field
-   void (*set_object)(lListElem *ep, int nm, lListElem *object);
-};
-
-/**
  * @brief The spooling properties of one field, as the run-time walkers use them
  *
  * Plain data, one small constant record per field: the field number, its type and the sub-type from the model's
- * field table, the renderings classified at compile time (spool/ocs_spool_field_info.h) and a pointer to the
- * accessor set shared by all fields of the field's type. A row of a typed field table points at the field's
- * record #ocs_spool_ops; a row built from a descriptor or a field number at run time points at the record in the
- * per-type tables of ocs_spool_type_ops_of() / ocs_spool_field_ops_of(), which is made by the same code. The
- * element arrives untyped because the walkers are shared by all object types; the type independent work -
- * formatting a value, converting a JSON value - is done once by the walkers on the #ocs_spool_value an operation
- * reads or writes.
+ * field table, and the renderings classified at compile time (spool/ocs_spool_field_info.h). A row of a typed field
+ * table points at the field's record #ocs_spool_ops; a row built from a descriptor or a field number at run time
+ * points at the record in the per-type tables of ocs_spool_type_ops_of() / ocs_spool_field_ops_of(), which is made
+ * by the same code. The element arrives untyped because the walkers are shared by all object types; they read and
+ * write the field with the checked run-time accessors of tom/ocs_Raw.h, ocs::tom::get<V>() and ocs::tom::set(), the
+ * value type `V` chosen from #type or, for a field of a rendering kind, from the kind, which is bound to the field
+ * type at compile time (ocs_spool_make_ops()).
  */
 struct ocs_spool_field_ops {
    int nm;                       ///< the field number
@@ -185,68 +140,14 @@ struct ocs_spool_field_ops {
    /// the names of the bits of a JSON bitfield or of the values of a JSON enumeration, nullptr terminated;
    /// nullptr for other fields
    const char *const *names;
-   const ocs_spool_accessors *access;   ///< the accessors of the field's type, never nullptr
 
    /**
-    * @brief Whether the field has a plain value, read by get() and written by set()
-    * @return true for a number, a bool, a string or a host name; false for a list, an object or a reference
+    * @brief Whether the field has a plain value: a number, a bool, a string or a host name
+    * @return true for a plain value; false for a list, an object or a reference
     */
-   [[nodiscard]] bool has_value() const {
-      return access->get != nullptr;
-   }
-
-   /**
-    * @brief The value of a field that is neither a list nor an object nor a reference, see has_value()
-    * @param ep the element
-    * @return the value, in the member the field's type names; zero if the element does not hold the field
-    */
-   [[nodiscard]] ocs_spool_value get(const lListElem *ep) const {
-      return access->get(ep, nm);
-   }
-
-   /**
-    * @brief Store the value of a field that is neither a list nor an object nor a reference, see has_value()
-    * @param ep the element
-    * @param value the value, in the member the field's type names; a string is copied
-    */
-   void set(lListElem *ep, const ocs_spool_value value) const {
-      access->set(ep, nm, value);
-   }
-
-   /**
-    * @brief The list of a list field
-    * @param ep the element
-    * @return the list, nullptr if unset or if the element does not hold the field
-    */
-   [[nodiscard]] const lList *get_list(const lListElem *ep) const {
-      return access->get_list(ep, nm);
-   }
-
-   /**
-    * @brief Store a list for a list field
-    * @param ep the element
-    * @param list the list, of the field's sub-type as the reader created it, or nullptr; taken over
-    */
-   void set_list(lListElem *ep, lList *list) const {
-      access->set_list(ep, nm, list);
-   }
-
-   /**
-    * @brief The element of an object field
-    * @param ep the element
-    * @return the element of the field, nullptr if unset or if the element does not hold the field
-    */
-   [[nodiscard]] const lListElem *get_object(const lListElem *ep) const {
-      return access->get_object(ep, nm);
-   }
-
-   /**
-    * @brief Store an element for an object field
-    * @param ep the element
-    * @param object the element, of the field's sub-type as the reader created it and bound nowhere; taken over
-    */
-   void set_object(lListElem *ep, lListElem *object) const {
-      access->set_object(ep, nm, object);
+   [[nodiscard]] constexpr bool has_value() const noexcept {
+      return type != ocs::tom::FieldType::List && type != ocs::tom::FieldType::Object &&
+             type != ocs::tom::FieldType::Ref;
    }
 };
 
@@ -292,12 +193,12 @@ const ocs_spool_field_ops *
 ocs_spool_field_ops_of(int nm);
 
 const char *
-ocs_spool_append_value(const ocs_spool_field_ops &ops, const lListElem *ep,
+ocs_spool_append_value(const ocs_spool_field_ops &ops, ocs::tom::ConstRawElement ep,
                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *buffer);
 
 bool
-ocs_spool_parse_value(const ocs_spool_field_ops &ops, lListElem *ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                      const char *value);
+ocs_spool_parse_value(const ocs_spool_field_ops &ops, ocs::tom::RawElement ep,
+                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);
 
 spooling_field *
 spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,

@@ -62,6 +62,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
@@ -501,13 +502,11 @@ static bool read_validate_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lListElem *ep;
 
    DPRINTF("reading " SFN " " SFQ "\n", object_type_get_name(object_type), key);
 
-   ep = spool_classic_default_read_func(answer_list, type, rule, key,
-                                         object_type);
-   if (ep == nullptr) {
+   ocs::tom::RawElementPtr ep(spool_classic_default_read_func(answer_list, type, rule, key, object_type));
+   if (!ep) {
       ret = false;
    } else {
       spooling_validate_func validate_func;
@@ -515,7 +514,7 @@ static bool read_validate_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       /* set key from filename, converted through the spooling record of the key field */
       if (key_nm != NoName) {
          if (const ocs_spool_field_ops *key_ops = ocs_spool_field_ops_of(key_nm); key_ops != nullptr) {
-            ocs_spool_parse_value(*key_ops, ep, nullptr, key);
+            ocs_spool_parse_value(*key_ops, ep.get(), nullptr, key);
          }
       }
 
@@ -525,20 +524,17 @@ static bool read_validate_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       validate_func = (spooling_validate_func)ocs::tom::get<SPR_validate_func>(rule);
 #pragma GCC diagnostic pop
       if (validate_func != nullptr) {
-         if (!validate_func(answer_list, type, rule, ep, object_type)) {
-            lFreeElem(&ep);
+         if (!validate_func(answer_list, type, rule, ep.get(), object_type)) {
+            ep.reset();
             ret = false;
          }
       }
 
       /* object read correctly and validate succeeded; a second object with a taken key is recorded and dropped */
-      if (ep != nullptr) {
-         if (filter.admit(ep, spool_key)) {
-            lAppendElem(*master_list, ep);
-         } else {
-            lFreeElem(&ep);
-         }
-      }
+      if (ep && filter.admit(ep.get(), spool_key)) {
+         // the master list exists: the caller created it from the type's descriptor
+         ocs::tom::append(*master_list, std::move(ep));
+      }   // else ep frees the dropped duplicate
    }
 
    DRETURN(ret);
@@ -590,7 +586,8 @@ bool spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
       descr = object_type_get_descr(object_type);
 
       if (*list == nullptr && descr != nullptr) {
-         *list = lCreateList("master list", descr);
+         // handed out through the function table's raw out parameter
+         *list = ocs::tom::create_raw_list(descr, ocs::tom::Hashing::On, "master list").release();
       }
 
       switch(object_type) {
@@ -744,7 +741,7 @@ bool spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
 
 #ifdef DEBUG_FLATFILE
       if (list != nullptr && *list != nullptr) {
-         lWriteListTo(*list, stderr);
+         ocs::tom::write_to(stderr, ocs::tom::ConstRawList(*list));
       }
 #endif
 

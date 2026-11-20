@@ -20,16 +20,17 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The spooling record of a field, classified at compile time, and the accessor sets it points at
+ * @brief The spooling record of a field, classified at compile time
  *
  * Every row a walker sees points at an #ocs_spool_field_ops record: a row of a typed field table
  * (spool/flatfile/ocs_spool_fields.h) at #ocs_spool_ops of its field, a row built at run time at the record
  * in the per-type tables of ocs_spool_type_ops.cc. Both are made by ocs_spool_make_ops() here, from the field
  * alone and at compile time: the field type and the sub-type from the model, the symbolic kind (sgeobj's
  * ocs_object_symbolic_of()), the JSON rendering, the JSON names and the complex type of a value from the
- * consteval predicates below. A record is data only; the code that reads and writes the field is the accessor set
- * of its field type (ocs_spool_field_info.cc), shared by all fields of that type, and the shared
- * ocs_spool_append_value() / ocs_spool_parse_value() there, so no code is instantiated per field.
+ * consteval predicates below. A record is data only. The walkers read and write a field with the checked
+ * run-time accessors of tom/ocs_Raw.h (ocs::tom::get<V>(), ocs::tom::set()), the value type chosen from the
+ * record's field type or rendering kind; the shared ocs_spool_append_value() / ocs_spool_parse_value() of
+ * ocs_spool_field_info.cc do so for the flatfile text, so no code is instantiated per field.
  *
  * Part of the base spooling library: no header of a backend is needed here.
  */
@@ -59,58 +60,6 @@
 #include "sgeobj/sge_userset.h"
 
 #include "spool/sge_spooling_utilities.h"
-
-/** @name The accessor sets, one per field type, defined in ocs_spool_field_info.cc
- * @{
- */
-extern const ocs_spool_accessors ocs_spool_access_uint32;   ///< FieldType::Uint32: get, set
-extern const ocs_spool_accessors ocs_spool_access_uint64;   ///< FieldType::Uint64: get, set
-extern const ocs_spool_accessors ocs_spool_access_int32;    ///< FieldType::Int32: get, set
-extern const ocs_spool_accessors ocs_spool_access_int64;    ///< FieldType::Int64: get, set
-extern const ocs_spool_accessors ocs_spool_access_double;   ///< FieldType::Double: get, set
-extern const ocs_spool_accessors ocs_spool_access_bool;     ///< FieldType::Bool: get, set
-extern const ocs_spool_accessors ocs_spool_access_string;   ///< FieldType::String: get, set
-extern const ocs_spool_accessors ocs_spool_access_host;     ///< FieldType::Host: get, set
-extern const ocs_spool_accessors ocs_spool_access_list;     ///< FieldType::List: get_list, set_list
-extern const ocs_spool_accessors ocs_spool_access_object;   ///< FieldType::Object: get_object, set_object
-extern const ocs_spool_accessors ocs_spool_access_none;     ///< FieldType::Ref: no operation
-/** @} */
-
-/**
- * @brief The accessor set of a field type
- *
- * Evaluated at compile time only, when a record is made; the result is the address of a constant of
- * ocs_spool_field_info.cc.
- *
- * @param type the field type
- * @return the accessor set, never nullptr
- */
-consteval const ocs_spool_accessors *ocs_spool_accessors_of(const ocs::tom::FieldType type) {
-   switch (type) {
-      case ocs::tom::FieldType::Uint32:
-         return &ocs_spool_access_uint32;
-      case ocs::tom::FieldType::Uint64:
-         return &ocs_spool_access_uint64;
-      case ocs::tom::FieldType::Int32:
-         return &ocs_spool_access_int32;
-      case ocs::tom::FieldType::Int64:
-         return &ocs_spool_access_int64;
-      case ocs::tom::FieldType::Double:
-         return &ocs_spool_access_double;
-      case ocs::tom::FieldType::Bool:
-         return &ocs_spool_access_bool;
-      case ocs::tom::FieldType::String:
-         return &ocs_spool_access_string;
-      case ocs::tom::FieldType::Host:
-         return &ocs_spool_access_host;
-      case ocs::tom::FieldType::List:
-         return &ocs_spool_access_list;
-      case ocs::tom::FieldType::Object:
-         return &ocs_spool_access_object;
-      default:
-         return &ocs_spool_access_none;
-   }
-}
 
 /**
  * @brief The descriptor of the sub-type of a list or an object field
@@ -313,8 +262,7 @@ consteval const char *const *ocs_spool_json_names(const int nm) {
  * @brief The spooling record of a field
  *
  * The symbolic and the JSON rendering kinds, the names and the complex type are classified here once, from the
- * field alone, and the accessor set of the field's type is chosen. Evaluated at compile time only: the result is a
- * constant, no code is instantiated per field.
+ * field alone. Evaluated at compile time only: the result is a constant, no code is instantiated per field.
  *
  * @tparam F the field
  * @return the record
@@ -324,7 +272,7 @@ consteval ocs_spool_field_ops ocs_spool_make_ops() {
    using Tr = ocs::tom::FieldTraits<F>;
    using ocs::tom::FieldType;
 
-   // the JSON walkers read the member of ocs_spool_value the kind implies
+   // the JSON walkers read the value type the kind implies with the checked accessors
    constexpr ocs_spool_render json = ocs_spool_json_render(F);
    static_assert(json != ocs_spool_render::datetime || Tr::type == FieldType::Uint64,
                  "a date-time field is a Uint64");
@@ -348,8 +296,7 @@ consteval ocs_spool_field_ops ocs_spool_make_ops() {
            json,
            static_cast<std::uint8_t>(ocs_spool_avalue_type(F)),
            ocs_spool_sub_descr<F>(),
-           ocs_spool_json_names(F),
-           ocs_spool_accessors_of(Tr::type)};
+           ocs_spool_json_names(F)};
 }
 
 /**

@@ -53,6 +53,7 @@
 #include "sgeobj/sge_utility.h"          /* SGE_CHECK_POINTER_FALSE */
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Model.h"
 #include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 
@@ -1452,75 +1453,82 @@ spool_json_string_or_unset(const rapidjson::Value &v, dstring *out) {
 }
 
 /**
+ * @brief Store a string or a host name value with the checked setter of the field's type
+ *
+ * The element holds the field; the callers test that first.
+ *
+ * @param ep     element to populate, holding the field
+ * @param field  the row of a string or host name field
+ * @param s      the value, copied; nullptr for unset
+ * @throw ocs::tom::FieldException with reason WrongType for a field of another type, OutOfMemory if the value
+ *        cannot be copied
+ */
+static void
+spool_json_set_text(const ocs::tom::RawElement ep, const spooling_field &field, const char *s) {
+   if (field.ops->type == ocs::tom::FieldType::Host) {
+      ep.set(field.nm, ocs::tom::Host(s));
+   } else {
+      ep.set(field.nm, s);
+   }
+}
+
+/**
  * @brief Set a field of an element from a JSON value, coercing per field type.
  *
  * The inverse of spool_json_write_scalar_value (bypassing read_func, to mirror the
- * writer which bypassed write_func). The value is stored through the row's typed
- * code; a list, an object or a reference field is left as it is.
+ * writer which bypassed write_func). The value is stored with the checked setter of
+ * the row's field type; a list, an object or a reference field is left as it is.
  *
  * @param ep     element to populate, holding the field
  * @param field  the row of the field
  * @param v      the JSON value
  */
 static void
-spool_json_set_field(lListElem *ep, const spooling_field &field, const rapidjson::Value &v) {
+spool_json_set_field(const ocs::tom::RawElement ep, const spooling_field &field, const rapidjson::Value &v) {
    if (!field.ops->has_value()) {
       return;
    }
-   dstring s = DSTRING_INIT;
-   ocs_spool_value value{};
+   const int nm = field.nm;
    switch (field.ops->type) {
       case ocs::tom::FieldType::Double:
-         value.dbl = v.IsNumber() ? v.GetDouble() : (v.IsString() ? strtod(v.GetString(), nullptr) : 0.0);
+         ep.set(nm, v.IsNumber() ? v.GetDouble() : (v.IsString() ? strtod(v.GetString(), nullptr) : 0.0));
          break;
       case ocs::tom::FieldType::Uint32:
-         value.u32 = spool_json_value_to_ulong(v);
+         ep.set(nm, static_cast<std::uint32_t>(spool_json_value_to_ulong(v)));
          break;
       case ocs::tom::FieldType::Uint64:
-         value.u64 = v.IsUint64() ? v.GetUint64() : static_cast<lUlong64>(spool_json_value_to_ulong(v));
+         ep.set(nm, static_cast<std::uint64_t>(v.IsUint64() ? v.GetUint64()
+                                                            : static_cast<lUlong64>(spool_json_value_to_ulong(v))));
          break;
       case ocs::tom::FieldType::Int64:
-         value.i64 = v.IsInt64() ? v.GetInt64() : static_cast<lLong>(spool_json_value_to_ulong(v));
+         ep.set(nm, static_cast<std::int64_t>(v.IsInt64() ? v.GetInt64()
+                                                          : static_cast<lLong>(spool_json_value_to_ulong(v))));
          break;
       case ocs::tom::FieldType::Int32:
-         value.i32 = v.IsInt() ? v.GetInt() : static_cast<int>(spool_json_value_to_ulong(v));
+         ep.set(nm, static_cast<std::int32_t>(v.IsInt() ? v.GetInt() : static_cast<int>(spool_json_value_to_ulong(v))));
          break;
       case ocs::tom::FieldType::Bool:
-         value.b = spool_json_value_to_bool(v);
+         ep.set(nm, spool_json_value_to_bool(v));
          break;
-      default:
-         // a string or a host name, the only other fields with a set operation
-         value.str = spool_json_string_or_unset(v, &s);
+      default: {
+         // a string or a host name, the only other fields with a plain value
+         dstring s = DSTRING_INIT;
+         spool_json_set_text(ep, field, spool_json_string_or_unset(v, &s));
+         sge_dstring_free(&s);
          break;
+      }
    }
-   field.ops->set(ep, value);
-   sge_dstring_free(&s);
 }
 
 /**
- * @brief Store a string or host name value through a row's typed code
- * @param ep     element to populate, holding the field
- * @param field  the row of a string or host name field
- * @param s      the value, copied; nullptr for unset
- */
-static void
-spool_json_set_string(lListElem *ep, const spooling_field &field, const char *s) {
-   ocs_spool_value value{};
-   value.str = s;
-   field.ops->set(ep, value);
-}
-
-/**
- * @brief Store a 32 bit unsigned value through a row's typed code
+ * @brief Store a 32 bit unsigned value with the checked setter
  * @param ep     element to populate, holding the field
  * @param field  the row of an unsigned 32 bit field
  * @param u      the value
  */
 static void
-spool_json_set_u32(lListElem *ep, const spooling_field &field, const uint32_t u) {
-   ocs_spool_value value{};
-   value.u32 = u;
-   field.ops->set(ep, value);
+spool_json_set_u32(const ocs::tom::RawElement ep, const spooling_field &field, const std::uint32_t u) {
+   ep.set(field.nm, u);
 }
 
 /**
@@ -1565,18 +1573,18 @@ spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *nam
  * @param v      the JSON value
  */
 static void
-spool_json_set_positional_name(lListElem *ep, const spooling_field &field, const rapidjson::Value &v) {
+spool_json_set_positional_name(const ocs::tom::RawElement ep, const spooling_field &field,
+                               const rapidjson::Value &v) {
    if (field.ops->type == ocs::tom::FieldType::Host && v.IsString() &&
        strcmp(v.GetString(), SPOOL_JSON_DEFAULT_HREF) == 0) {
-      spool_json_set_string(ep, field, HOSTREF_DEFAULT);
+      spool_json_set_text(ep, field, HOSTREF_DEFAULT);
    } else {
       spool_json_set_field(ep, field, v);
    }
 }
 
 /* forward */
-static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
-                                        const spooling_field *fields, int fields_out[],
+static bool spool_json_populate_members(ocs::tom::RawElement ep, const spooling_field *fields, int fields_out[],
                                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const rapidjson::Value &obj);
 
 /**
@@ -1586,16 +1594,16 @@ static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
  * {name,value}; named fields (incl. CE) -> array of objects keyed by name. An empty
  * array is read as a null (unset) list, mirroring the ASCII reader.
  *
- * The sub-type of the list field is known here only as the descriptor the row's typed
- * code names, so the list and its elements are created from it; the elements' fields
- * are stored through the typed code of the sub-rows.
+ * The sub-type of the list field is known here only as the descriptor the row's record
+ * names, so the list and its elements are created from it; the elements' fields
+ * are stored with the checked setters of the sub-rows' field types.
  *
  * @param field        the row of the list field, whose sub-rows describe the elements
  * @param answer_list  for returning errors
  * @param arr          the JSON array
- * @return the populated list, or nullptr for an empty/unreadable array
+ * @return the owner of the populated list, empty for an empty/unreadable array
  */
-static lList *
+static ocs::tom::RawListPtr
 spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const rapidjson::Value &arr) {
    const lDescr *sub_descr = field.ops->sub_descr;
@@ -1604,7 +1612,7 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
       /* an empty array is read as a null (unset) list, mirroring the ASCII reader;
        * this also makes an empty RQS filter scope behave as "match all" (the matcher
        * distinguishes a null scope from a present-but-empty one) */
-      return nullptr;
+      return {};
    }
 
    const bool positional = (fields[0].nm != NoName && fields[0].name == nullptr);
@@ -1613,29 +1621,30 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
       nfields++;
    }
 
-   lList *list = lCreateList("sublist", sub_descr);
+   auto list = ocs::tom::create_raw_list(sub_descr, ocs::tom::Hashing::On, "sublist");
    for (rapidjson::SizeType k = 0; k < arr.Size(); k++) {
       const rapidjson::Value &el = arr[k];
-      lListElem *sub = lCreateElem(sub_descr);
+      auto sub_owner = ocs::tom::create_raw_elem(sub_descr);
+      const ocs::tom::RawElement sub = sub_owner.get();
 
       if (positional && nfields <= 1) {
-         if (lGetPosInDescr(sub_descr, fields[0].nm) >= 0) {
+         if (sub.has(fields[0].nm)) {
             spool_json_set_positional_name(sub, fields[0], el);
          }
       } else if (positional && el.IsObject()) {
          const auto mn = el.FindMember("name");
          const auto mv = el.FindMember("value");
-         if (lGetPosInDescr(sub_descr, fields[0].nm) >= 0 && mn != el.MemberEnd()) {
+         if (sub.has(fields[0].nm) && mn != el.MemberEnd()) {
             spool_json_set_positional_name(sub, fields[0], mn->value);
          }
-         if (lGetPosInDescr(sub_descr, fields[1].nm) >= 0 && mv != el.MemberEnd()) {
+         if (sub.has(fields[1].nm) && mv != el.MemberEnd()) {
             if (fields[1].ops->json == ocs_spool_render::bitfield) {
                /* bitfield value is a name array -> bitmask */
                spool_json_set_u32(sub, fields[1], spool_json_bitfield_from_array(mv->value, fields[1].ops->names));
             } else if (fields[1].ops->type == ocs::tom::FieldType::List) {
                /* the value is itself a list (e.g. the cqueue threshold value is a
                 * complex list) -> read it as a nested sublist */
-               fields[1].ops->set_list(sub, spool_json_read_sublist(fields[1], answer_list, mv->value));
+               sub.set(fields[1].nm, spool_json_read_sublist(fields[1], answer_list, mv->value));
             } else {
                spool_json_set_field(sub, fields[1], mv->value);
             }
@@ -1643,9 +1652,9 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
       } else if (el.IsObject()) {
          /* sublists never carry a perm_list field, so populate_members cannot fail
           * here; the bool is discarded (read_sublist returns the list, not a status) */
-         (void) spool_json_populate_members(sub, sub_descr, fields, nullptr, answer_list, el);
+         (void) spool_json_populate_members(sub, fields, nullptr, answer_list, el);
       }
-      lAppendElem(list, sub);
+      ocs::tom::append(list.get(), std::move(sub_owner));
    }
    return list;
 }
@@ -1657,10 +1666,9 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
  * any member already consumed by a named field are excluded; list-valued params are
  * re-joined to their stored string form; the value is set through the field's read_func
  * (read_CF_value, which validates) when present. The name and the value are string
- * fields, stored through the typed code of the sub-rows.
+ * fields, stored with the checked setters of the sub-rows' field types.
  *
  * @param ep          element to populate
- * @param descr       descriptor of @p ep
  * @param fields      spooling fields of the object (to exclude named members)
  * @param flatten     the unnamed name=value sublist field to fill
  * @param fields_out  if non-null, receives the flattened field id
@@ -1669,18 +1677,18 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
  * @return false if a value was rejected (the sublist is not stored then), true otherwise
  */
 static bool
-spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field *fields,
+spool_json_read_flatten(const ocs::tom::RawElement ep, const spooling_field *fields,
                         const spooling_field *flatten, int fields_out[],
                         const rapidjson::Value &obj, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    const lDescr *sub_descr = flatten->ops->sub_descr;
-   if (lGetPosInDescr(descr, flatten->nm) < 0 || sub_descr == nullptr) {
+   if (!ep.has(flatten->nm) || sub_descr == nullptr) {
       return true;
    }
    const spooling_field *sf = flatten->sub_fields;
-   if (lGetPosInDescr(sub_descr, sf[0].nm) < 0 || lGetPosInDescr(sub_descr, sf[1].nm) < 0) {
+   if (ocs::tom::present_pos(sub_descr, sf[0].nm) < 0 || ocs::tom::present_pos(sub_descr, sf[1].nm) < 0) {
       return true;
    }
-   lList *cf_list = lCreateList("entries", sub_descr);
+   auto cf_list = ocs::tom::create_raw_list(sub_descr, ocs::tom::Hashing::On, "entries");
    for (auto m = obj.MemberBegin(); m != obj.MemberEnd(); ++m) {
       const char *key = m->name.GetString();
       if (key == nullptr || key[0] == '$') {
@@ -1696,8 +1704,9 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
       if (is_named) {
          continue;
       }
-      lListElem *cf = lCreateElem(sub_descr);
-      spool_json_set_string(cf, sf[0], key);
+      auto cf_owner = ocs::tom::create_raw_elem(sub_descr);
+      const ocs::tom::RawElement cf = cf_owner.get();
+      spool_json_set_text(cf, sf[0], key);
       dstring vb = DSTRING_INIT;
       const char *vstr;
       if (m->value.IsArray()) {
@@ -1738,16 +1747,15 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
       // a value the read_func rejects ends the read, as the flatfile reader does
       const bool accepted = sf[1].read_func == nullptr || sf[1].read_func(cf, sf[1].nm, vstr, answer_list) != 0;
       if (accepted && sf[1].read_func == nullptr) {
-         spool_json_set_string(cf, sf[1], vstr);
+         spool_json_set_text(cf, sf[1], vstr);
       }
       sge_dstring_free(&vb);
-      lAppendElem(cf_list, cf);
+      ocs::tom::append(cf_list.get(), std::move(cf_owner));
       if (!accepted) {
-         lFreeList(&cf_list);
-         return false;
+         return false;   // cf_list frees the entries read so far
       }
    }
-   flatten->ops->set_list(ep, cf_list);
+   ep.set(flatten->nm, std::move(cf_list));
    if (fields_out != nullptr) {
       add_nm_to_set(fields_out, flatten->nm);
    }
@@ -1759,12 +1767,12 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
  *
  * Walks the spooling fields, looking each up by name (the inverse of
  * spool_json_write_object_members); a trailing flatten field is un-flattened after the
- * named pass. The fields are stored through the rows' typed code; the branches by field
- * number name fields that are numbers (date-time, bitfield, enum) or strings (perm list),
- * so the member of the value they store is the one the field's type names.
+ * named pass. The fields are stored with the checked setters; the branches by rendering
+ * kind name fields that are numbers (date-time, bitfield, enum) or strings (perm list),
+ * bound to these field types when the record is made, so the value type a branch
+ * stores is the one the field's type names.
  *
  * @param ep          element to populate
- * @param descr       descriptor of @p ep
  * @param fields      spooling fields describing the object
  * @param fields_out  if non-null, receives the set of field ids found
  * @param answer_list receives an error if a field (e.g. perm_list) is malformed
@@ -1772,8 +1780,7 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
  * @return true on success, false if a field was malformed (answer_list set)
  */
 static bool
-spool_json_populate_members(lListElem *ep, const lDescr *descr,
-                            const spooling_field *fields, int fields_out[],
+spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field *fields, int fields_out[],
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const rapidjson::Value &obj) {
    const spooling_field *flatten = nullptr;
    for (int i = 0; fields[i].nm != NoName; i++) {
@@ -1784,13 +1791,13 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
          /* a top-level unnamed name=value sublist (config entries) is un-flattened
             after the named pass by gathering the remaining members */
          const spooling_field *sf = field.sub_fields;
-         if (lGetPosInDescr(descr, nm) >= 0 && field.ops->type == ocs::tom::FieldType::List && sf != nullptr &&
+         if (ep.has(nm) && field.ops->type == ocs::tom::FieldType::List && sf != nullptr &&
              sf[0].nm != NoName && sf[0].name == nullptr && sf[1].nm != NoName) {
             flatten = &field;
          }
          continue;
       }
-      if (lGetPosInDescr(descr, nm) < 0) {
+      if (!ep.has(nm)) {
          continue;
       }
       const auto m = obj.FindMember(name);
@@ -1803,27 +1810,25 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
 
       const ocs::tom::FieldType type = field.ops->type;
       if (type == ocs::tom::FieldType::List) {
-         field.ops->set_list(ep, spool_json_read_sublist(field, answer_list, m->value));
+         ep.set(nm, spool_json_read_sublist(field, answer_list, m->value));
       } else if (type == ocs::tom::FieldType::Object && field.sub_fields != nullptr) {
          /* nested JSON object (e.g. an RQS filter) -> sub-object; null / non-object
           * leaves the field unset, so an absent filter round-trips to null. The
-          * sub-type is known here only as the descriptor the row's typed code names. */
+          * sub-type is known here only as the descriptor the row's record names. */
          const lDescr *sub_descr = field.ops->sub_descr;
          if (m->value.IsObject() && sub_descr != nullptr) {
-            lListElem *sub = lCreateElem(sub_descr);
-            if (!spool_json_populate_members(sub, sub_descr, field.sub_fields, nullptr, answer_list, m->value)) {
-               lFreeElem(&sub);
-               return false;
+            auto sub = ocs::tom::create_raw_elem(sub_descr);
+            if (!spool_json_populate_members(sub.get(), field.sub_fields, nullptr, answer_list, m->value)) {
+               return false;   // sub frees itself
             }
-            field.ops->set_object(ep, sub);
+            ep.set(nm, std::move(sub));
          }
       } else if (field.ops->json == ocs_spool_render::datetime) {
          /* ISO date-time string -> gmt64 timestamp */
          dstring s = DSTRING_INIT;
-         ocs_spool_value value{};
-         value.u64 = spool_json_datetime_from_string(spool_json_value_to_string(m->value, &s));
-         field.ops->set(ep, value);
+         const std::uint64_t timestamp = spool_json_datetime_from_string(spool_json_value_to_string(m->value, &s));
          sge_dstring_free(&s);
+         ep.set(nm, timestamp);
       } else if (field.ops->json == ocs_spool_render::bitfield) {
          /* bit-name array -> bitfield */
          spool_json_set_u32(ep, field, spool_json_bitfield_from_array(m->value, field.ops->names));
@@ -1836,7 +1841,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
          dstring s = DSTRING_INIT;
          const bool ok = spool_json_perm_list_from_array(m->value, &s, answer_list);
          if (ok) {
-            spool_json_set_string(ep, field, sge_dstring_get_string(&s));
+            spool_json_set_text(ep, field, sge_dstring_get_string(&s));
          }
          sge_dstring_free(&s);
          if (!ok) {
@@ -1851,7 +1856,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
          spool_json_set_field(ep, field, m->value);
       }
    }
-   if (flatten != nullptr && !spool_json_read_flatten(ep, descr, fields, flatten, fields_out, obj, answer_list)) {
+   if (flatten != nullptr && !spool_json_read_flatten(ep, fields, flatten, fields_out, obj, answer_list)) {
       return false;
    }
    return true;
@@ -1865,9 +1870,9 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
  * @param fields       spooling fields describing the object
  * @param fields_out   if non-null, receives the set of field ids found
  * @param json_text    the JSON document text
- * @return the parsed element, or nullptr on a JSON syntax error (answer_list set)
+ * @return the owner of the parsed element, empty on a JSON syntax error or a malformed field (answer_list set)
  */
-lListElem *
+ocs::tom::RawElementPtr
 spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                        const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
@@ -1877,13 +1882,12 @@ spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDesc
    if (doc.HasParseError() || !doc.IsObject()) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_FLATFILE_INVALIDJSON);
-      DRETURN(nullptr);
+      DRETURN(ocs::tom::RawElementPtr());
    }
 
-   lListElem *ep = lCreateElem(descr);
-   if (!spool_json_populate_members(ep, descr, fields, fields_out, answer_list, doc)) {
-      lFreeElem(&ep);
-      DRETURN(nullptr);
+   auto ep = ocs::tom::create_raw_elem(descr);
+   if (!spool_json_populate_members(ep.get(), fields, fields_out, answer_list, doc)) {
+      ep.reset();
    }
    DRETURN(ep);
 }
@@ -1899,9 +1903,10 @@ spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDesc
  * @param fields       spooling fields describing the elements
  * @param fields_out   if non-null, receives the set of field ids found (from element 0)
  * @param json_text    the JSON document text
- * @return the parsed list, or nullptr on a JSON syntax error (answer_list set)
+ * @return the owner of the parsed list, empty on a JSON syntax error, a document without an array member or a
+ *         malformed field (answer_list set)
  */
-lList *
+ocs::tom::RawListPtr
 spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
                      const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
@@ -1911,7 +1916,7 @@ spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr 
    if (doc.HasParseError() || !doc.IsObject()) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_FLATFILE_INVALIDJSON);
-      DRETURN(nullptr);
+      DRETURN(ocs::tom::RawListPtr());
    }
 
    /* the document wraps the objects in an array member (skip $schema/$id) */
@@ -1923,21 +1928,19 @@ spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr 
       }
    }
    if (arr == nullptr) {
-      DRETURN(nullptr);
+      DRETURN(ocs::tom::RawListPtr());
    }
 
-   lList *list = lCreateList("list", descr);
+   auto list = ocs::tom::create_raw_list(descr, ocs::tom::Hashing::On, "list");
    for (rapidjson::SizeType k = 0; k < arr->Size(); k++) {
       if (!(*arr)[k].IsObject()) {
          continue;
       }
-      lListElem *ep = lCreateElem(descr);
-      if (!spool_json_populate_members(ep, descr, fields, k == 0 ? fields_out : nullptr, answer_list, (*arr)[k])) {
-         lFreeElem(&ep);
-         lFreeList(&list);
-         DRETURN(nullptr);
+      auto ep = ocs::tom::create_raw_elem(descr);
+      if (!spool_json_populate_members(ep.get(), fields, k == 0 ? fields_out : nullptr, answer_list, (*arr)[k])) {
+         DRETURN(ocs::tom::RawListPtr());   // ep and list free the elements read so far
       }
-      lAppendElem(list, ep);
+      ocs::tom::append(list.get(), std::move(ep));
    }
    DRETURN(list);
 }

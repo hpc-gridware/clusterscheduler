@@ -76,6 +76,7 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Model.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
@@ -215,7 +216,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
    const ocs_spool_type_ops *type_ops = ocs_spool_type_ops_of(descr);
    if (type_ops == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_UNKNOWNOBJECTTYPEFOR_SS,
-                              lNm2Str(descr[0].nm), __func__);
+                              ocs::tom::field_name(descr[0].nm), __func__);
       DRETURN(nullptr);
    }
 
@@ -265,14 +266,14 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
       if ((descr[f.pos].mt & instr->selection) != 0) {
          spooling_field *sub_fields = nullptr;
 
-         DPRINTF("field " SFQ " will be spooled\n", lNm2Str(descr[f.pos].nm));
+         DPRINTF("field " SFQ " will be spooled\n", ocs::tom::field_name(descr[f.pos].nm));
 
          fields[j].nm = descr[f.pos].nm;
          fields[j].ops = &type_ops->ops[descr[f.pos].nm - type_ops->base];
 
          if (instr->copy_field_names) {
             const char *name;
-            name = lNm2Str(descr[f.pos].nm);
+            name = ocs::tom::field_name(descr[f.pos].nm);
             if (name == nullptr || strlen(name) <= strip) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
@@ -292,7 +293,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
-                                       lNm2Str(descr[f.pos].nm), __func__);
+                                       ocs::tom::field_name(descr[f.pos].nm), __func__);
                fields = spool_free_spooling_fields(fields);
                DRETURN(nullptr);
             }
@@ -303,7 +304,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_UNKNOWNOBJECTTYPEFOR_SS,
-                                       lNm2Str(descr[f.pos].nm), __func__);
+                                       ocs::tom::field_name(descr[f.pos].nm), __func__);
                fields = spool_free_spooling_fields(fields);
                DRETURN(nullptr);
             }
@@ -311,7 +312,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
             /* recursive spooling, e.g. sharetree */
             if (instr->sub_instr == instr && descr == sub_descr) {
                sub_fields = fields;
-               DPRINTF("recursive structure detected for field %s\n", lNm2Str(descr[f.pos].nm));
+               DPRINTF("recursive structure detected for field %s\n", ocs::tom::field_name(descr[f.pos].nm));
             } else {
                sub_fields = _spool_get_fields_to_spool(answer_list, sub_descr,
                                                        instr->sub_instr);
