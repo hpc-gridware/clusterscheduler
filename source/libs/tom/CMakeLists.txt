@@ -50,3 +50,9 @@ target_sources(cull PRIVATE
 if (ENABLE_CULL_STATS)
    target_sources(cull PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cull_stats.cc)
 endif ()
+
+if (SGE_ARCH MATCHES "lx-arm.*")
+   # Raspians gcc 10.2 compiler shows incorrect warnings for memcpy calls (formerly set for the old pack.cc)
+   set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/ocs_PackCore.cc PROPERTIES COMPILE_FLAGS
+                               "-Wno-array-bounds -Wno-stringop-overflow")
+endif ()

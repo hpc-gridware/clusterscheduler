@@ -64,12 +64,11 @@ namespace {
 
    /** @brief Names of the counters in the dump, in the order of #Counter */
    constexpr std::array<const char *, NUM_COUNTERS> counter_names = {
-      "pos_calls", "pos_reduced", "pos_iters",
-      "dcopy_elem", "dcopy_elem_b", "dcopy_other", "dcopy_other_b",
+      "dcopy_elem", "dcopy_elem_b",
       "dcopy_unpack", "dcopy_unpack_b",
       "hash_create", "hash_bucket_b", "hash_insert", "hash_lookup", "hash_free_used", "hash_free_unused",
       "pack_descr", "pack_descr_b", "pack_elems", "pack_value_b",
-      "unpack_lists", "unpack_elems", "unpack_ns", "unpack_hash_ns",
+      "unpack_lists", "unpack_elems", "unpack_ns",
       "hash_build_lazy", "lookup_linear", "lookup_len_lt4", "lookup_len_lt8", "lookup_len_lt16",
       "lookup_len_lt32", "lookup_len_lt64", "lookup_len_lt128", "lookup_len_ge128",
       "descr_intern_hit", "descr_intern_new", "descr_intern_new_b", "descr_private", "descr_private_b",

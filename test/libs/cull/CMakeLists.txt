@@ -119,9 +119,9 @@ target_include_directories(test_ocs_cull_perf PRIVATE "./")
 target_link_libraries(test_ocs_cull_perf PRIVATE cull sgeobj uti commlists ${SGE_LIBS})
 add_test(NAME test_ocs_cull_perf COMMAND test_ocs_cull_perf)
 
-# CS-3103 M6: the old function interface of the list library is not public. No file outside libs/cull,
-# libs/tom, libs/sgeobj/tom and the tests includes its headers, and only tests include cull/cull_test_api.h
-# (errors); no product file calls a function of the old interface (errors). See check_cull_api.cmake.
+# CS-3103: the old function interface of the list library is gone; the internal headers of libs/tom stay
+# reserved to libs/tom, libs/sgeobj/tom and the tests (errors), and no product file calls a TOM internal
+# (errors). See check_cull_api.cmake.
 # Checked on every build (target check_cull_api) and by ctest (test check_cull_api).
 set(cull_api_extensions_dir "")
 if (NOT PROJECT_EXTENSIONS STREQUAL "None")

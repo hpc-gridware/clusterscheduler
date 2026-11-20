@@ -19,32 +19,12 @@
 #___INFO__MARK_END_NEW__
 
 # source/libs/cull
+# The list library keeps its name until CS-3103 renames it; its sources are those of the typed object model,
+# added by source/libs/tom. Only the public header cull/cull.h is left here.
 set(LIBRARY_NAME cull)
-set(LIBRARY_SOURCES
-        cull_db.cc
-        cull_dump_scan.cc
-        cull_file.cc
-        cull_list.cc
-        cull_multitype.cc
-        cull_pack.cc
-        cull_parse.cc
-        cull_sort.cc
-        cull_tree.cc
-        cull_what.cc
-        cull_what_print.cc
-        cull_where.cc
-        pack.cc)
 set(LIBRARY_INCLUDES "./")
 
-if (SGE_ARCH MATCHES "lx-arm.*")
-   # Raspians gcc 10.2 compiler shows incorrect warnings for memcpy calls
-   set_source_files_properties(pack.cc PROPERTIES COMPILE_FLAGS "-Wno-array-bounds -Wno-stringop-overflow")
-endif()
-
-# on Ubuntu 24.04 the XDR related system header causes warnings
-# set_source_files_properties(pack.cc PROPERTIES COMPILE_FLAGS "-Wno-changes-meaning -Wno-pedantic")
-
-add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
+add_library(${LIBRARY_NAME} STATIC)
 # the list library calls the utility library, so it is linked after it (CS-3088)
 target_link_libraries(${LIBRARY_NAME} PUBLIC uti)
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})

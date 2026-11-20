@@ -89,7 +89,7 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                set_atomic_on_hashed_field get_atomic_on_32_bit_field set_atomic_on_const hash_on_bool_field
                pack_type_with_int_field merge_by_key_double_key
                raw_set_std_string raw_get_mutable_from_const raw_handle_mutable_from_const raw_owner_copied
-               raw_set_typed_owner old_api_not_public member_bits_on_64_bit_field member_or_bits_on_const)
+               raw_set_typed_owner member_bits_on_64_bit_field member_or_bits_on_const)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}

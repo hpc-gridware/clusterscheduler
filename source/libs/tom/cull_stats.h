@@ -54,15 +54,10 @@
 #include <string>
 
 namespace ocs::cull_stats {
-   /** @brief What is counted; the dump names each counter in lower case, e.g. `pos_calls` */
+   /** @brief What is counted; the dump names each counter in lower case, e.g. `hash_create` */
    enum Counter {
-      POS_CALLS,        ///< lGetPosInDescr() calls (type)
-      POS_REDUCED,      ///< of them on a reduced descriptor, i.e. through the linear search (type)
-      POS_ITERS,        ///< descriptor entries visited by that search (type)
       DCOPY_ELEM,       ///< temporary copies made by lCreateElem() to mark every field reduced (type)
       DCOPY_ELEM_B,     ///< their bytes (type)
-      DCOPY_OTHER,      ///< descriptor copies made by lCopyDescr() (type); no longer counted since lCopyDescr() was removed
-      DCOPY_OTHER_B,    ///< their bytes (type)
       DCOPY_UNPACK,     ///< temporary descriptors built while unpacking, before the shared one is taken (type)
       DCOPY_UNPACK_B,   ///< their bytes (type)
       HASH_CREATE,      ///< hash tables created (field)
@@ -78,7 +73,6 @@ namespace ocs::cull_stats {
       UNPACK_LISTS,     ///< lists unpacked (type)
       UNPACK_ELEMS,     ///< their elements (type)
       UNPACK_NS,        ///< nanoseconds spent unpacking them, nested lists included (type)
-      UNPACK_HASH_NS,   ///< of that, nanoseconds spent building their hash tables (type); 0 since the tables are built on lookup
       HASH_BUILD_LAZY,  ///< hash tables built and published by a first lookup (field)
       LOOKUP_LINEAR,    ///< lookups on a hashable list searched linearly, as it is below the threshold (field)
       LOOKUP_LEN_LT4,   ///< lookups on a hashable list of fewer than 4 elements (field)
