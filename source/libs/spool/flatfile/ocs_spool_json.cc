@@ -627,7 +627,7 @@ spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer
  * a nested array (empty -> []) rather than null.
  *
  * The list's elements are of the sub-type of the list field the rows belong to, known
- * here only as the rows' descriptor; the fields are read through the rows' typed code.
+ * here only as the rows' descriptor; the fields are read through the checked run-time accessors.
  *
  * @param answer_list  for returning errors
  * @param list         the positional sublist
@@ -1295,7 +1295,7 @@ bool spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
  * @return true on success
  */
 bool spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
-                                int keynm, dstring *out) {
+                                const int keynm, dstring *out) {
    return spool_json_write_name_list_ex(answer_list, list, keynm, nullptr, out);
 }
 
@@ -1316,7 +1316,7 @@ bool spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
  * @return true on success
  */
 bool spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawList list,
-                                   int keynm, const char *type_name, dstring *out) {
+                                   const int keynm, const char *type_name, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
