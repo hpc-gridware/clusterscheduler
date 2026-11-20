@@ -63,6 +63,7 @@
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -1542,6 +1543,7 @@ test_modify_sublist() {
 
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-FREE-01", "find", "find_first<F> finds what the old lookups find",
        {"look up string, host, 32 and 64 bit keys in lists of 5 and 40 elements; null list and null key"},

@@ -33,6 +33,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
@@ -245,6 +246,7 @@ int main(int argc, const char *argv[]) {
    }
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    printf("Testing with %d jobs\n", num_jobs);
 

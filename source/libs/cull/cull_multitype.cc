@@ -67,6 +67,7 @@
 
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_Model.h"
 #include "tom/ocs_SoftPath.h"
 
 #define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
@@ -102,15 +103,16 @@ namespace {
       } catch (const ocs::tom::FieldException &e) {
          switch (e.reason()) {
             case ocs::tom::FieldException::Reason::NullElement:
-               CRITICAL(MSG_CULL_POINTER_NULLELEMENTFORX_S, lNm2Str(name));
+               CRITICAL(MSG_CULL_POINTER_NULLELEMENTFORX_S, ocs::tom::field_name(name));
                break;
             case ocs::tom::FieldException::Reason::WrongType: {
                const int pos = ocs::tom::field_pos(ep->descr, name);
-               incompatibleType2(wrong_type_fmt(), lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+               incompatibleType2(wrong_type_fmt(), ocs::tom::field_name(name),
+                                 multitypes[mt_get_type(ep->descr[pos].mt)]);
                break;
             }
             default:
-               CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
+               CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(name));
                break;
          }
          ocs::TerminationManager::trigger_abort();
@@ -151,14 +153,15 @@ namespace {
                break;
             case ocs::tom::FieldException::Reason::WrongType: {
                const int pos = ocs::tom::field_pos(ep->descr, name);
-               incompatibleType2(wrong_type_fmt(), lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+               incompatibleType2(wrong_type_fmt(), ocs::tom::field_name(name),
+                                 multitypes[mt_get_type(ep->descr[pos].mt)]);
                break;
             }
             default:
                if (no_such_name_fmt != nullptr) {
-                  incompatibleType2(no_such_name_fmt(), name, lNm2Str(name));
+                  incompatibleType2(no_such_name_fmt(), name, ocs::tom::field_name(name));
                } else {
-                  CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
+                  CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(name));
                   ocs::TerminationManager::trigger_abort();
                }
                break;
@@ -230,7 +233,7 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
 
    if (!element) {
       if (do_abort) {
-         CRITICAL(MSG_CULL_POINTER_NULLELEMENTFORX_S, lNm2Str(name));
+         CRITICAL(MSG_CULL_POINTER_NULLELEMENTFORX_S, ocs::tom::field_name(name));
          ocs::TerminationManager::trigger_abort();
       }
       DRETURN(-1);
@@ -239,7 +242,7 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
 
    if (do_abort && (pos < 0)) {
       /* someone has called lGetPosViaElem() with invalid name */
-      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(name));
       ocs::TerminationManager::trigger_abort();
    }
 
@@ -1236,7 +1239,7 @@ int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
    // field be written atomically while the element is still free and refuse it
    // afterwards
    if (mt_do_hashing(ep->descr[pos].mt)) {
-      CRITICAL("lSetUlong64Atomic() refuses the hashed field " SFQ, lNm2Str(name));
+      CRITICAL("lSetUlong64Atomic() refuses the hashed field " SFQ, ocs::tom::field_name(name));
       DRETURN(-1);
    }
 
@@ -2081,7 +2084,7 @@ ocs_add_by_key(const char *function, const legacy_message wrong_field_msg, const
          case ocs::tom::FieldException::Reason::ForeignField:
          case ocs::tom::FieldException::Reason::WrongType:
             ocs::tom::report_missing_field(function, nm, descr);
-            CRITICAL(wrong_field_msg(), lNm2Str(nm));
+            CRITICAL(wrong_field_msg(), ocs::tom::field_name(nm));
             break;
          default:
             ocs::tom::legacy_abort(function, e);
@@ -2447,14 +2450,14 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
    /* run time type checking */
    if (pos < 0) {
       ocs::tom::report_missing_field("lGetElemStrFirst", nm, listDescriptor);
-      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       ocs::tom::report_missing_field("lGetElemStrFirst", nm, listDescriptor);
-      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 
@@ -2532,7 +2535,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    /* run time type checking */
    if (pos < 0) {
       ocs::tom::report_missing_field("lGetElemStrNext", nm, listDescriptor);
-      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
    data_type = lGetPosType(listDescriptor, pos);
@@ -2578,9 +2581,9 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    } catch (const ocs::tom::FieldException &e) {
       ocs::tom::report_missing_field("lGetElemStrLike", nm, lp != nullptr ? lp->descr : nullptr);
       if (e.reason() == ocs::tom::FieldException::Reason::AbsentField) {
-         CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
+         CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(nm));
       } else {
-         CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+         CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       }
    }
    DRETURN(nullptr);
@@ -2805,7 +2808,7 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
    /* run time type checking */
    if (pos < 0) {
       ocs::tom::report_missing_field("lGetElemUlongFirst", nm, lGetListDescr(lp));
-      CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 
@@ -2873,7 +2876,7 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
    /* run time type checking */
    if (pos < 0) {
       ocs::tom::report_missing_field("lGetElemUlongNext", nm, lGetListDescr(lp));
-      CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 
@@ -3104,7 +3107,7 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
    /* run time type checking */
    if (pos < 0) {
       ocs::tom::report_missing_field("lGetElemUlong64First", nm, lGetListDescr(lp));
-      CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 
@@ -3172,7 +3175,7 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
    /* run time type checking */
    if (pos < 0) {
       ocs::tom::report_missing_field("lGetElemUlong64Next", nm, lGetListDescr(lp));
-      CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 
@@ -3234,7 +3237,7 @@ lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
       DRETURN(ocs::tom::lookup_first_str_nocase(lp, nm, str));
    } catch (const ocs::tom::FieldException &) {
       ocs::tom::report_missing_field("lGetElemCaseStr", nm, lp != nullptr ? lp->descr : nullptr);
-      CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
    }
    DRETURN(nullptr);
 }
@@ -3325,7 +3328,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
          DPRINTF(":::::::::::::::: lGetElemHostFirst - data type is not lHostT !!! :::::::\n");
       }
       ocs::tom::report_missing_field("lGetElemHostFirst", nm, listDescriptor);
-      CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 
@@ -3388,7 +3391,7 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    pos = lGetPosInDescr(listDescriptor, nm);
    if (pos < 0) {
       ocs::tom::report_missing_field("lGetElemHostNext", nm, listDescriptor);
-      CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
       DRETURN(nullptr);
    }
 

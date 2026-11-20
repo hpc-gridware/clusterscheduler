@@ -23,6 +23,7 @@
 
 #include "basis_types.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_centry_rsmap.h"
@@ -457,6 +458,7 @@ test_debit_check_mode() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    return ocs::module_test::run(argc, argv, {
       {"RSMAP-01", "implicit ids of a resource map with a bare amount (CS-2669)",

@@ -53,6 +53,7 @@
 #include "cull/cull_dump_scan.h"
 #include "cull/cull_file.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -404,6 +405,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-DUMP-01", "list", "dump() and undump() of a list write and read what lDumpList and lUndumpList do",
        {"dump 100 jobs, read them back"}, "the same text, the same jobs", {{"OPS-01", "covers"}}, {1}, test_list},

@@ -40,6 +40,7 @@
 
 #include "cull/cull_multitype.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_FieldException.h"
@@ -193,6 +194,7 @@ namespace {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-ATOM-01", "round trip", "get_atomic<F>() and set_atomic<F>() as lGetUlong64Atomic and lSetUlong64Atomic",
        {"write with one form and read with the other, read what the ordinary setter wrote, look the element up"},

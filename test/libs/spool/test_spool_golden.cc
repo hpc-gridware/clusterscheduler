@@ -75,6 +75,7 @@
 #include "symbols.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/ocs_DataStore.h"
@@ -2139,6 +2140,7 @@ int main(int argc, char *argv[]) {
    ocs::Bootstrap::get_ignore_fqdn();
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    for (const ObjectCase &c : object_cases()) {
       run_object_case(c);

@@ -27,6 +27,7 @@
 #include <initializer_list>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
@@ -457,6 +458,7 @@ static void test_ocs_attr_list_find_href() {
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_ocs_attr_list_find();
    test_ocs_attr_list_find_href();

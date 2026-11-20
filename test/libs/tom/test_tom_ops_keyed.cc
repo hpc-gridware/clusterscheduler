@@ -55,6 +55,7 @@
 #include <vector>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -462,6 +463,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-KEYED-01", "add", "emplace_back adds by key as the old add functions do",
        {"add complex entries, job references and hosts by key to lists of 5 and 40"}, "same lists, every key found",

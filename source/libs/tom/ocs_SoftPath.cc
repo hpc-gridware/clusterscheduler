@@ -39,6 +39,7 @@
 #include <unistd.h>
 
 #include "tom/cull_name.h"
+#include "tom/ocs_Model.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_component.h"
@@ -245,7 +246,7 @@ namespace ocs::tom {
          line += " | ";
          line += function;
          line += " | ";
-         line += name == SoftPathNoName ? "-" : lNm2Str(name);
+         line += name == SoftPathNoName ? "-" : ocs::tom::field_name(name);
          line += " | ";
          line += reason_name(reason);
          line += " | hit ";

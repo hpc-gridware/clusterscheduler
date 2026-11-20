@@ -36,6 +36,7 @@
 
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
+#include "tom/ocs_Model.h"
 #include "tom/ocs_SelectCore.h"
 
 namespace ocs::tom {
@@ -764,7 +765,7 @@ namespace ocs::tom {
       }
       lList *&held = ocs_cull_value(ep, pos).glp;
       if (held == nullptr) {
-         lList *lp = create_list(name != nullptr ? name : lNm2Str(ep->descr[pos].nm), descr, true);
+         lList *lp = create_list(name != nullptr ? name : ocs::tom::field_name(ep->descr[pos].nm), descr, true);
          store_list(ep, pos, lp);
       }
       return held;

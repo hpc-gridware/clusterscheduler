@@ -30,6 +30,7 @@
 #include "uti/sge_component.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
@@ -123,6 +124,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    // test fixtures: @hgrp1→{host1}, @hgrp2→{host2}; userset1→{user1}, userset2→{@staff}
    auto hgroup_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("");

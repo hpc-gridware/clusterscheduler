@@ -57,6 +57,7 @@
 #include "uti/sge_stdlib.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_Model.h"
 #include "tom/ocs_ListOpsCore.h"
 #include "tom/ocs_PrintCore.h"
 #include "tom/ocs_SortCore.h"
@@ -1179,7 +1180,7 @@ lListElem *lDechainObject(lListElem *parent, int name) {
 
    if (mt_get_type(parent->descr[pos].mt) != lObjectT) {
       incompatibleType2(MSG_CULL_DECHAINOBJECT_WRONGTYPEFORFIELDXY_S,
-                        lNm2Str(name));
+                        ocs::tom::field_name(name));
       DRETURN(nullptr);
    }
 

@@ -32,6 +32,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 
 #include "sge_qmaster_timed_event.h"
 
@@ -84,6 +85,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);
    sge_prof_set_enabled(false);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    te_init();
 
    te_register_event_handler(calendar_event_handler, TYPE_CALENDAR_EVENT);

@@ -43,6 +43,7 @@
 
 #include "basis_types.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
@@ -352,6 +353,7 @@ static void test_qref_cache_agrees_with_walk() {
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    if (!setup_bootstrap()) {
       printf("FAIL - cannot create the throwaway bootstrap environment\n");

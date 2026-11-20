@@ -47,6 +47,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 
 #include "sgeobj/tom/ocs_tom_SPC.h"
 #include "tom/ocs_Element.h"
@@ -88,6 +89,7 @@ static int init_framework(const char *method, const char *shlib,
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    /* create spooling context; the spooling loader creates it as SPC_Type, the default context takes it over */
    const auto spooling_context = ocs::tom::Element<ocs::tom::SPC>::from_typed(
       spool_create_dynamic_context(&answer_list, method, shlib, libargs));
@@ -120,6 +122,7 @@ int main(int argc, char *argv[]) {
 
    log_state_set_log_level(LOG_WARNING);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    if (argc < 2) {
       usage(argv[0]);

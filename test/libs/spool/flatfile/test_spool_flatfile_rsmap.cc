@@ -36,6 +36,7 @@
 #include "cull/cull_list.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_centry.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
@@ -593,6 +594,7 @@ test_characteristics_rejected_in_ocs() {
 int main(int, char **) {
    DENTER_MAIN(TOP_LAYER, "test_ff_rsmap");
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    /* base grammar - available in both OCS and GCS */
    test_bare_ids();

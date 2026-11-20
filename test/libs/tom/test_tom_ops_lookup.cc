@@ -63,6 +63,7 @@
 #include <unistd.h>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -475,6 +476,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-LOOKUP-01", "by key", "find_first finds what the old lookups find",
        {"look up jobs by number, complex entries by name and hosts by name, in lists of 5 and 40"},

@@ -39,6 +39,7 @@
 #include <unistd.h>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -317,6 +318,7 @@ test_lookup() {
       for (std::size_t t = 0; t < threw.size(); t++) {
          threads.emplace_back([&, t] {
             lInit(nmv); // the field names of the message are per thread
+            ocs::tom::install_model(ocs::tom::gcs_model());
             for (int i = 0; i < 2; i++) {
                threw[t] += throws_duplicate([&] { static_cast<void>(typed.find_first<JAT_task_number>(2u)); },
                                             "JAT_task_number", "2", "tasks") ? 1 : 0;
@@ -428,6 +430,7 @@ test_valid_after_throw() {
 
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"UNIQUE-01", "debug checks",
        "a debug build catches a duplicate key in a unique field where it is created",

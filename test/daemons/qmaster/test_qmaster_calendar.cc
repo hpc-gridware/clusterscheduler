@@ -31,6 +31,7 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/tom/ocs_tom_CAL.h"
@@ -506,6 +507,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_qmaster_calendar");
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    char label[256];
    int id = 1;

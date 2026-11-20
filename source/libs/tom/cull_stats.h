@@ -32,7 +32,8 @@
  *
  * A counter is booked either on an object type or on a field:
  * - type counters (#CULL_STATS_TYPE) take the field number of the first field
- *   of a descriptor; the dump resolves it to the type through the name space,
+ *   of a descriptor; the dump resolves it to the type through the installed
+ *   object model (ocs::tom::install_model(); without one the number is written),
  *   so a reduced descriptor counts towards the type it was reduced from;
  * - field counters (#CULL_STATS_FIELD) take the number of the field itself,
  *   e.g. the field a hash table is built on.

@@ -57,6 +57,7 @@
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -831,6 +832,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-SEL-01", "what", "what<F...>() and what<T>(fields) select what lWhat and lIntVector2What select",
        {"select the names of user sets and the names of their entries, nested and flat"}, "the same contents",

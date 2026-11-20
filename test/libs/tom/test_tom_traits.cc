@@ -38,6 +38,7 @@
 #include <type_traits>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 
@@ -181,6 +182,7 @@ test_host() {
 
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"TRAITS-01", "every type",
        "every object type of the name space comes from a generated field table",

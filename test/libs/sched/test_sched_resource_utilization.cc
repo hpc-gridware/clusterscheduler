@@ -44,6 +44,7 @@
 
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_RDE.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
@@ -303,6 +304,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_resource_utilization");
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;
 

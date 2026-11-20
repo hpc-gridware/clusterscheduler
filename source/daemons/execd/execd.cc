@@ -57,6 +57,7 @@
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
@@ -186,6 +187,7 @@ int main(int argc, char **argv) {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
 #if defined(LINUX)
    gen_procList ();

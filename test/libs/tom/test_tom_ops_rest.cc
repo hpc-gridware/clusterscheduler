@@ -50,6 +50,7 @@
 #include "cull/cull_tree.h"
 #include "cull/cull_what_print.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -461,6 +462,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-REST-01", "from_string", "from_string<F>() parses names as lString2List and lString2ListNone do",
        {"parse names with a repeated one, host names, \"none\" alone and beside a name"},

@@ -59,6 +59,7 @@
 #include <unistd.h>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -648,6 +649,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-LIST-01", "walk", "front/next and back/prev walk a list as the old functions do",
        {"walk a list of 5 and of 40 jobs forward and backward with both forms"}, "the same job numbers in order",

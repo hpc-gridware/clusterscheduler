@@ -30,6 +30,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
@@ -147,6 +148,7 @@ main(int argc, char *argv[]) {
    int failed = 0;
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    // The usage of the pe tasks of a job with accounting_summary has to be
    // aggregated into the master task's record - but wallclock is elapsed time

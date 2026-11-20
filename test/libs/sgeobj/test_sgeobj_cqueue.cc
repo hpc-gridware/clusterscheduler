@@ -34,6 +34,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_cqueue_verify.h"
@@ -183,6 +184,7 @@ test_slots_limit() {
  */
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_purge_default_entry();
    test_slots_limit();

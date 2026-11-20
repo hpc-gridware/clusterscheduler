@@ -143,4 +143,5 @@
 #define MSG_CULL_DESCRNOTFULLLENGTH_IU                     _MESSAGE(41187, _("CULL reduced descriptor starting at field %d has " sge_u32 " entries instead of the length of its type"))
 #define MSG_CULL_INVALIDPOSITION_SI                        _MESSAGE(41188, _("%-.100s() got the invalid position %d"))
 #define MSG_CULL_NULLELEMENTATPOS_SI                       _MESSAGE(41189, _("%-.100s() got a null element for position %d"))
+#define MSG_CULL_MODELREJECTED_S                           _MESSAGE(41190, _("inconsistent object model rejected: %s"))
 // clang-format on

@@ -53,6 +53,7 @@
 #include "cull/cull_whatP.h"
 #include "cull/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_pack.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
@@ -1856,6 +1857,7 @@ test_rest() {
 
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"LEGACY-01", "getters by name",
        "the getters by name abort on every error",

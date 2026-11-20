@@ -29,6 +29,7 @@
 
 #include "tom/cull_name.h"
 #include "tom/msg_cull.h"
+#include "tom/ocs_Model.h"
 
 namespace ocs::tom {
 
@@ -45,31 +46,31 @@ namespace ocs::tom {
       switch (op) {
          case KeyOp::FindStr:
          case KeyOp::FindLike:
-            CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::FindHost:
-            CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::FindUlong:
-            CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::FindUlong64:
-            CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::FindNocase:
-            CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::AddStr:
-            CRITICAL(MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::AddHost:
-            CRITICAL(MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::AddUlong:
-            CRITICAL(MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
          case KeyOp::AddUlong64:
-            CRITICAL(MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
+            CRITICAL(MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S, ocs::tom::field_name(nm));
             break;
       }
       DRETURN_VOID;

@@ -52,6 +52,7 @@
 #include <vector>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -452,6 +453,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-OWN-01", "create and free", "the owning handles create, free and hand over as the old functions do",
        {"create and free by scope, reset(), move assignment, release() and taking back"}, "no leak, same values",

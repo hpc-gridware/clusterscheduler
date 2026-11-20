@@ -26,6 +26,7 @@
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_US.h"
@@ -150,6 +151,7 @@ test_number_key_and_clear() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"SPD-01", "string key",
        "a spool holding two user sets of the same name",

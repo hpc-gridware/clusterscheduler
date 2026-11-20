@@ -45,6 +45,7 @@
 #include "uti/ocs_Bootstrap.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_AutoAddHosts.h"
 
 static int s_fail = 0;
@@ -274,6 +275,7 @@ test_default_domain() {
 int
 main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    const char *mode = argc > 1 ? argv[1] : "";
    bool ignore_fqdn = false;

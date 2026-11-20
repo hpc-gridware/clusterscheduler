@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_Role.h"
 #include "sgeobj/tom/ocs_tom_RL.h"
 #include "sgeobj/tom/ocs_tom_US.h"
@@ -461,6 +462,7 @@ static void test_is_authorized() {
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_parse_perm_list();
    test_match_rule();

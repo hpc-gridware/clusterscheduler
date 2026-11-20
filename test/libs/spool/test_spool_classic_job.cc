@@ -40,6 +40,7 @@
 #include "uti/sge_spool.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
@@ -175,6 +176,7 @@ test_failed_rename_is_reported() {
  */
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    // one task per file, so the tasks are spooled in task files of their own
    setenv("SGE_MAX_TASKS_PER_FILE", "1", 1);

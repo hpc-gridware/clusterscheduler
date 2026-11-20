@@ -167,6 +167,7 @@ set(LIBRARY_SOURCES
         ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_Matcher.cc
         ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_RequestLimits.cc
         cull/sge_sub_object.cc
+        tom/ocs_tom_model.cc
 )
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 

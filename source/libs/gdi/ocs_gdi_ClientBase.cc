@@ -74,6 +74,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 
 
 static void gdi_default_exit_func(int i) {
@@ -734,6 +735,7 @@ ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, ocs::to
    DENTER(TOP_LAYER);
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    component_set_component_id(component_id);
    component_set_qmaster_internal(is_qmaster_intern_client);
    component_set_thread_name(to_cstr(thread_id) ? to_cstr(thread_id) : to_cstr(component_id));

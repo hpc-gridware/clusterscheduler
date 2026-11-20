@@ -71,6 +71,7 @@
 
 #include "sgeobj/parse.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Role.h"
 #include "sgeobj/ocs_Session.h"
@@ -295,6 +296,7 @@ sge_qmaster_thread_init(ProgName prog_id, ThreadName thread_id, bool switch_to_a
 
    // initialize CULL per thread
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    if (ocs::gdi::ClientBase::setup(prog_id, thread_id, &alp, true) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);

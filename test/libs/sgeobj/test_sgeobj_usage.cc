@@ -34,6 +34,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_Usage.h"
 #include "sgeobj/ocs_UserProject.h"
 #include "tom/ocs_Element.h"
@@ -326,6 +327,7 @@ main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);
    sge_prof_set_enabled(false);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;
    test_sum_usage_user_only(&id);

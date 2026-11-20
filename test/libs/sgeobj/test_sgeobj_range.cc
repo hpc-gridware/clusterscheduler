@@ -29,6 +29,7 @@
 
 #include "uti/sge_component.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_range.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -711,6 +712,7 @@ static void test_range_list_parse_extended() {
 int main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);   // suppress sge_log stderr output during tests
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_range_get_all_ids();
    test_range_set_all_ids();

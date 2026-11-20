@@ -42,6 +42,7 @@
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -70,6 +71,7 @@ namespace {
    int no_sink_child(const char *missing) {
       setenv("OCS_SOFT_PATH_DIR", missing, 1);
       lInit(nmv);
+      ocs::tom::install_model(ocs::tom::gcs_model());
       cull_state_set_lerrno(0);
       const int result = lSetPosBool(nullptr, 0, true);
       return result == -1 && cull_state_get_lerrno() == LEELEMNULL && access(missing, F_OK) != 0 ? 0 : 1;
@@ -281,6 +283,7 @@ int main(int argc, char *argv[]) {
    }
    self = argv[0];
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    char dir[] = "/tmp/test_tom_soft_path.XXXXXX";
    if (mkdtemp(dir) == nullptr) {
       perror("mkdtemp");

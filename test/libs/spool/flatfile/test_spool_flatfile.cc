@@ -55,6 +55,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/tom/ocs_tom_ARA.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
@@ -201,6 +202,7 @@ int main(int argc, char **argv) {
 
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;
    CHECK(id, "PE: write-read-write round-trip produces identical output",   PE_test()   == 0); id++;

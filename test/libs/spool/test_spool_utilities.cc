@@ -47,6 +47,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_object.h"
 
 #include "spool/sge_spooling_utilities.h"
@@ -78,6 +79,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_utilities");
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;
    ocs::tom::ListPtr<ocs::tom::AN> alp;

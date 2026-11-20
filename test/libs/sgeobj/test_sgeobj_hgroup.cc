@@ -42,6 +42,7 @@
 #include "cull/pack.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
@@ -1561,6 +1562,7 @@ test_find_all_referencees() {
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_is_reserved();
    test_is_system_maintained();

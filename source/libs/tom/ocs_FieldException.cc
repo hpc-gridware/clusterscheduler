@@ -25,6 +25,7 @@
 #include "tom/ocs_FieldException.h"
 
 #include "tom/cull_name.h"
+#include "tom/ocs_Model.h"
 
 namespace ocs::tom {
 
@@ -37,17 +38,22 @@ namespace ocs::tom {
    /**
     * @brief The name of an object type, for messages
     *
-    * A type has no name of its own in the list library; its fields are named
-    * with the type's prefix, so the prefix of the first field names the type.
+    * The installed object model names the type (ocs::tom::type_name()). For a
+    * descriptor the model does not know as a type, e.g. the tail of one, the
+    * prefix of the first field's name stands in, since every field carries its
+    * type's prefix; without a model that is the fallback text "nm <n>".
     *
     * @param descr the descriptor, or nullptr
-    * @return the prefix, e.g. "JB", or "unknown"
+    * @return the type's name, e.g. "JB", or "unknown"
     */
-   static std::string type_name(const lDescr *descr) {
+   static std::string type_label(const lDescr *descr) {
       if (descr == nullptr || descr[0].nm == NoName) {
          return "unknown";
       }
-      std::string name = lNm2Str(descr[0].nm);
+      if (const char *name = ocs::tom::type_name(descr); name != nullptr) {
+         return name;
+      }
+      std::string name = ocs::tom::field_name(descr[0].nm);
       const std::string::size_type underscore = name.find('_');
       if (underscore != std::string::npos) {
          name.resize(underscore);
@@ -56,12 +62,12 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief The name of a field, for messages
+    * @brief The name of a field, for messages, as the installed object model names it
     * @param nm the field number, or NoName
-    * @return the name, e.g. "JB_job_number"
+    * @return the name, e.g. "JB_job_number", "no field" for NoName, or "nm <n>" for a field the model does not know
     */
-   static std::string field_name(const int nm) {
-      return nm == NoName ? std::string{"no field"} : std::string{lNm2Str(nm)};
+   static std::string field_label(const int nm) {
+      return nm == NoName ? std::string{"no field"} : std::string{ocs::tom::field_name(nm)};
    }
 
    /**
@@ -86,39 +92,40 @@ namespace ocs::tom {
       return "reduced to " + std::to_string(present) + " of " + std::to_string(length) + " fields";
    }
 
-   void throw_field_exception(const FieldException::Reason reason, const int nm, const lDescr *descr, const lDescr *expected) {
+   void throw_field_exception(const FieldException::Reason reason, const int nm, const lDescr *descr,
+                              const lDescr *expected) {
       std::string message;
       switch (reason) {
          case FieldException::Reason::NullElement:
-            message = "access to field " + field_name(nm) + " of a null element";
+            message = "access to field " + field_label(nm) + " of a null element";
             break;
          case FieldException::Reason::EmptyHandle:
-            message = "access to field " + field_name(nm) + " through an empty handle";
+            message = "access to field " + field_label(nm) + " through an empty handle";
             break;
          case FieldException::Reason::ForeignField:
-            message = "field " + field_name(nm) + " does not belong to an element of type " + type_name(descr);
+            message = "field " + field_label(nm) + " does not belong to an element of type " + type_label(descr);
             break;
          case FieldException::Reason::AbsentField:
-            message = "field " + field_name(nm) + " is absent in a reduced element of type " + type_name(descr);
+            message = "field " + field_label(nm) + " is absent in a reduced element of type " + type_label(descr);
             break;
          case FieldException::Reason::WrongType:
-            message = "an element of type " + type_name(descr) + " is taken as type " + type_name(expected);
+            message = "an element of type " + type_label(descr) + " is taken as type " + type_label(expected);
             if (nm != NoName) {
-               message += ", field " + field_name(nm);
+               message += ", field " + field_label(nm);
             }
             break;
          case FieldException::Reason::WrongSubType:
-            message = "field " + field_name(nm) + " holds elements of type " + type_name(descr) + ", declared " +
-                      type_name(expected);
+            message = "field " + field_label(nm) + " holds elements of type " + type_label(descr) + ", declared " +
+                      type_label(expected);
             break;
          case FieldException::Reason::OutOfMemory:
-            message = "out of memory copying field " + field_name(nm) + " of type " + type_name(descr);
+            message = "out of memory copying field " + field_label(nm) + " of type " + type_label(descr);
             break;
          case FieldException::Reason::DuplicateKey:
-            message = "duplicate key in unique field " + field_name(nm) + " of type " + type_name(descr);
+            message = "duplicate key in unique field " + field_label(nm) + " of type " + type_label(descr);
             break;
          case FieldException::Reason::ForeignList:
-            message = "an element of type " + type_name(descr) + " is not in the list the operation was called on";
+            message = "an element of type " + type_label(descr) + " is not in the list the operation was called on";
             break;
          case FieldException::Reason::NullList:
             message = "a list operation got a null list";
@@ -127,14 +134,15 @@ namespace ocs::tom {
             message = "an element or a list is to be created without a descriptor";
             break;
          case FieldException::Reason::NullKey:
-            message = "an element of type " + type_name(descr) + " is to be added or removed by a null key in field " +
-                      field_name(nm);
+            message = "an element of type " + type_label(descr) + " is to be added or removed by a null key in field " +
+                      field_label(nm);
             break;
          case FieldException::Reason::BoundElement:
-            message = "an element of type " + type_name(descr) + " to be added is bound in a list or an object already";
+            message = "an element of type " + type_label(descr) +
+                      " to be added is bound in a list or an object already";
             break;
          case FieldException::Reason::WrongLayout:
-            message = "an element of type " + type_name(descr) + " (descriptor " + layout_name(descr) +
+            message = "an element of type " + type_label(descr) + " (descriptor " + layout_name(descr) +
                       ") is to be added to a list of another layout (descriptor " + layout_name(expected) + ")";
             break;
       }
@@ -143,8 +151,8 @@ namespace ocs::tom {
 
    void throw_duplicate_key(const int nm, const lDescr *descr, const std::string &key, const char *list_name) {
       throw FieldException(FieldException::Reason::DuplicateKey, nm,
-                           "duplicate key \"" + key + "\" in unique field " + field_name(nm) + " of type " +
-                           type_name(descr) + " in list \"" + (list_name != nullptr ? list_name : "unnamed") + "\"");
+                           "duplicate key \"" + key + "\" in unique field " + field_label(nm) + " of type " +
+                           type_label(descr) + " in list \"" + (list_name != nullptr ? list_name : "unnamed") + "\"");
    }
 
 } // namespace ocs::tom

@@ -50,6 +50,8 @@
 #include "uti/sge_component.h"
 #include "uti/sge_stdlib.h"
 
+#include "tom/ocs_Model.h"
+
 #include "ocs_module_test.h"
 
 /** @brief The counted type */
@@ -81,6 +83,17 @@ lNameSpace nmv[] = {
    {1, ST_Size, ST_Name, ST_Type},
    {0, 0, nullptr, nullptr}
 };
+
+/** @brief The field table of ST_Type, for the object model that names the fields in the dump */
+static const ocs::tom::FieldInfo st_fields[] = {
+   {ST_name, "ST_name", ocs::tom::FieldType::String, ocs::tom::Flag::Hash | ocs::tom::Flag::Unique},
+   {ST_group, "ST_group", ocs::tom::FieldType::Uint32, ocs::tom::Flag::Hash},
+   {ST_value, "ST_value", ocs::tom::FieldType::Uint32, ocs::tom::Flag::None},
+   {ST_note, "ST_note", ocs::tom::FieldType::String, ocs::tom::Flag::None},
+};
+
+/** @brief The object types of this test, installed next to lInit(): the dump takes its names from the model */
+static const ocs::tom::TypeTable st_types[] = {{"ST", ST_Type, st_fields, std::size(st_fields)}};
 
 /// number of elements of the test list
 static constexpr int LIST_SIZE = 10;
@@ -450,7 +463,7 @@ static void test_merge_and_write() {
          program != nullptr && program->IsString() && strcmp(program->GetString(), "test_cull_stats") == 0 &&
          json_uint(doc, {"pid"}) == static_cast<uint64_t>(getpid()) &&
          json_at(doc, {"written"}) != nullptr && threads != nullptr && threads->IsObject());
-   CHECK(14, "both threads add up in their class, the field named through the name space",
+   CHECK(14, "both threads add up in their class, the field named through the installed object model",
          !doc.HasParseError() &&
          json_uint(doc, {"threads", "probe", "fields", "ST_Type", "ST_name", "hash_create"}) == 2 &&
          json_uint(doc, {"threads", "probe", "fields", "ST_Type", "ST_name", "hash_insert"}) == 2 * LIST_SIZE);
@@ -469,9 +482,16 @@ static void test_merge_and_write() {
    }
 }
 
+/**
+ * @brief Run the scenarios
+ * @param argc argument count
+ * @param argv arguments
+ * @return the exit code of the module test framework
+ */
 int main(int argc, char *argv[]) {
    // the lists here are short; with the threshold at 0 their first lookup builds the table
    lInit(nmv, 0);
+   ocs::tom::install_model({st_types, {}});
 
    return ocs::module_test::run(argc, argv, {
       {"STATS-01", "hash tables are counted from their build to their release",

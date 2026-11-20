@@ -28,6 +28,7 @@
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_centry.h"
@@ -618,6 +619,7 @@ test_inventory() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    // the parsers run with the debug check of N-H-18 armed: they must not hold a repeated key even for a moment; the
    // cases that build such lists on purpose suspend the check themselves
    return ocs::module_test::run(argc, argv, {

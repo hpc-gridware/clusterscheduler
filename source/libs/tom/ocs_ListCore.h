@@ -367,7 +367,8 @@ namespace ocs::tom {
     * @brief The list of a list field, created if the field holds none, as lGetOrCreateList()
     * @param ep the element, not nullptr
     * @param pos the position of the list field in the element's descriptor
-    * @param name the name of a list created here, nullptr for the field's name
+    * @param name the name of a list created here, nullptr for the field's name as the installed object model gives
+    *        it ("nm <n>" without a model)
     * @param descr the descriptor of the elements of a list created here
     * @return the list held in the field
     * @throw FieldException with reason WrongType if the field is not a list field, NullDescriptor

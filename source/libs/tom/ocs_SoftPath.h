@@ -55,7 +55,8 @@ namespace ocs::tom {
     *
     * Writes one line to `<sink>/<hostname>.log`: time, component and thread
     * (or the program name where no component is set up), pid, the accessor,
-    * the field, the reason, the hit count and the caller's stack. The
+    * the field (named by the installed object model, "nm <n>" without one),
+    * the reason, the hit count and the caller's stack. The
     * sink is `$OCS_SOFT_PATH_DIR` if set, else `soft_paths` in the
     * installation root; nothing is written if that directory does not exist.
     * Per process and per accessor, field and reason, at most 8 lines with

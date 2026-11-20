@@ -30,6 +30,7 @@
 #include "uti/sge_uidgid.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_manop.h"
@@ -311,6 +312,7 @@ test_reserved_names() {
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_manop_is_manager();
    test_manop_sup_groups();

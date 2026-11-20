@@ -97,12 +97,15 @@ namespace ocs::tom {
     * @brief Throw a FieldException whose message names the field and the type
     *
     * Out of line and cold, so that an inline accessor holds only a compare and
-    * a branch to it.
+    * a branch to it. The names come from the installed object model
+    * (ocs::tom::field_name(), ocs::tom::type_name()); without one a field is
+    * named "nm <n>".
     *
     * @param reason why the access failed
     * @param nm the field number, or NoName
     * @param descr the descriptor of the element, or nullptr if there is none
     * @param expected the descriptor of the type that was expected, or nullptr
+    * @throw FieldException always, with @p reason and @p nm
     */
    [[noreturn, gnu::cold]] void throw_field_exception(FieldException::Reason reason, int nm, const lDescr *descr,
                                                       const lDescr *expected = nullptr);
@@ -111,12 +114,14 @@ namespace ocs::tom {
     * @brief Throw a FieldException for a key of a unique field that a list already holds
     *
     * The message names the type, the field, the key and the list, so that the
-    * code that creates the duplicate can be found from it (N-H-18).
+    * code that creates the duplicate can be found from it (N-H-18). The names
+    * come from the installed object model, as for throw_field_exception().
     *
     * @param nm the field number of the unique field
     * @param descr the descriptor of the list
     * @param key the key, as text
     * @param list_name the name of the list, or nullptr
+    * @throw FieldException always, with Reason::DuplicateKey and @p nm
     */
    [[noreturn, gnu::cold]] void throw_duplicate_key(int nm, const lDescr *descr, const std::string &key,
                                                     const char *list_name);

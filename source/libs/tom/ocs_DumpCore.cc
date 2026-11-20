@@ -54,6 +54,7 @@
 #include "tom/ocs_cull_descr.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_Model.h"
 #include "tom/ocs_PackCore.h"
 
 namespace ocs::tom {
@@ -177,8 +178,8 @@ namespace ocs::tom {
             if (ret == EOF) {
                break;
             }
-            ret = fprintf(fp, "%s/* %-20.20s */ { %d, %d }\n", space.c_str(), lNm2Str(dp[f.pos].nm), dp[f.pos].nm,
-                          dp[f.pos].mt);
+            ret = fprintf(fp, "%s/* %-20.20s */ { %d, %d }\n", space.c_str(), ocs::tom::field_name(dp[f.pos].nm),
+                          dp[f.pos].nm, dp[f.pos].mt);
          }
          ret = fprintf(fp, "%s} /* DESCR END */\n", space.c_str());
          return ret == EOF ? -1 : 0;
@@ -210,7 +211,7 @@ namespace ocs::tom {
                break;
             }
             const lMultiType &value = ocs_cull_value(ep, f.pos);
-            const char *name = lNm2Str(ep->descr[f.pos].nm);
+            const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
                case lIntT:
                   ret = fprintf(fp, "%s/* %-20.20s */ %d\n", space, name, value.i);

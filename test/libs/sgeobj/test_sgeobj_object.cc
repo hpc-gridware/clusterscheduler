@@ -53,6 +53,7 @@
 #include "sgeobj/tom/ocs_tom_AUSRLIST.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_PRO.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
@@ -900,6 +901,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    auto queue = ocs::tom::ElementPtr<ocs::tom::QU>::create();
    lList *st_list = nullptr;

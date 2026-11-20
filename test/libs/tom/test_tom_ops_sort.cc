@@ -51,6 +51,7 @@
 
 #include "cull/cull_sort.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -412,6 +413,7 @@ void test_timing() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-SORT-01", "sort", "sort<desc<F>, asc<G>>() sorts as lPSortList does",
        {"sort 200 jobs by priority, the highest first, and by number"}, "the same order", {{"OPS-01", "covers"}},

@@ -54,8 +54,8 @@
 #include "uti/sge_component.h"
 
 #include "tom/cull_types.h"
-#include "tom/cull_state.h"
 #include "tom/cull_stats.h"
+#include "tom/ocs_Model.h"
 #include "tom/ocs_cull_descr.h"
 
 namespace {
@@ -207,49 +207,36 @@ namespace {
    }
 
    /**
-    * @brief The name space block a field number belongs to
-    * @param nm the field number
-    * @return the block, nullptr if there is no name space or no block holds it
-    */
-   const lNameSpace *find_block(const int nm) {
-      const lNameSpace *ns = cull_state_get_name_space();
-      for (const lNameSpace *block = ns; block != nullptr && block->lower != 0; block++) {
-         if (nm >= block->lower && nm < block->lower + block->size) {
-            return block;
-         }
-      }
-      return nullptr;
-   }
-
-   /**
     * @brief Name the object type a field belongs to
     *
-    * The name is the prefix of the type's first field plus "_Type", e.g.
-    * `JB_Type` for `JB_job_number`.
+    * The name is the prefix of the field's name plus "_Type", e.g. `JB_Type`
+    * for `JB_job_number`; every field carries its type's prefix. The field's
+    * name comes from the installed object model.
     *
     * @param nm the field number
-    * @return the type name, or the number when the name space does not know it
+    * @return the type name, "NoName" for NoName, or the number when no model is installed or it does not know the
+    *         field
     */
    std::string type_name(const int nm) {
       if (nm == NoName) {
          return "NoName";
       }
-      const lNameSpace *block = find_block(nm);
-      if (block == nullptr) {
+      const ocs::tom::FieldInfo *info = ocs::tom::field_info(nm);
+      if (info == nullptr) {
          return std::to_string(nm);
       }
-      const std::string first = block->namev[0];
-      return first.substr(0, first.find('_')) + "_Type";
+      const std::string name = info->name;
+      return name.substr(0, name.find('_')) + "_Type";
    }
 
    /**
-    * @brief Name a field
+    * @brief Name a field, as the installed object model names it
     * @param nm the field number
-    * @return the field name, or the number when the name space does not know it
+    * @return the field name, or the number when no model is installed or it does not know the field
     */
    std::string field_name(const int nm) {
-      const lNameSpace *block = find_block(nm);
-      return block == nullptr ? std::to_string(nm) : block->namev[nm - block->lower];
+      const ocs::tom::FieldInfo *info = ocs::tom::field_info(nm);
+      return info == nullptr ? std::to_string(nm) : info->name;
    }
 
    /**

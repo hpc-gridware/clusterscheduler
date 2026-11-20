@@ -27,6 +27,7 @@
 
 #include "basis_types.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_var.h"
 #include "tom/ocs_Element.h"
 
@@ -141,6 +142,7 @@ test_var_list_parse() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    return ocs::module_test::run(argc, argv, {
       {"VAR-01", "variable list parsing of malformed tokens (CS-2350)",

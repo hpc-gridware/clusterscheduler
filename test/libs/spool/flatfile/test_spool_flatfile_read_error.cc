@@ -41,6 +41,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
@@ -136,6 +137,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;
    char broken[64];

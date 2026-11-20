@@ -36,6 +36,7 @@
 #include "tom/cull_whereP.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_Model.h"
 
 namespace ocs::tom {
 
@@ -69,8 +70,7 @@ namespace ocs::tom {
          const char *sp = space.c_str();
          sge_dstring_sprintf_append(buffer, "%s-------------------------------\n", sp);
          for (const auto f : ocs_cull_present_fields(ep->descr)) {
-            const char *nm_str = lNm2Str(ep->descr[f.pos].nm);
-            const char *name = nm_str != nullptr ? nm_str : "(null)";
+            const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
             const lMultiType &value = ocs_cull_value(ep, f.pos);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
                case lIntT:
@@ -152,7 +152,7 @@ namespace ocs::tom {
                   name = "ALL";
                   break;
                default:
-                  name = lNm2Str(what[i].nm);
+                  name = ocs::tom::field_name(what[i].nm);
                   break;
             }
             sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d pos: %3d\n", what[i].nm, name, what[i].mt,
@@ -222,7 +222,8 @@ namespace ocs::tom {
             case SUBSCOPE: {
                // the line is cut at 255 bytes, as before
                char out[256];
-               snprintf(out, sizeof(out), "%s %s(%d) ", sp, lNm2Str(cp->operand.cmp.nm), cp->operand.cmp.nm);
+               snprintf(out, sizeof(out), "%s %s(%d) ", sp, ocs::tom::field_name(cp->operand.cmp.nm),
+                        cp->operand.cmp.nm);
                if (cp->op == SUBSCOPE) {
                   sge_dstring_sprintf_append(buffer, "%s ->\n", out);
                   append_where(buffer, cp->operand.cmp.val.cp, level + 1);

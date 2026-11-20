@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -170,6 +171,7 @@ test_owning_handles() {
 
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"LIST-01", "ranges and lookups",
        "a typed list iterates and looks up like the old interface",

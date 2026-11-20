@@ -36,6 +36,7 @@
 
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "tom/ocs_Element.h"
 
@@ -224,6 +225,7 @@ main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sched_request_amount");
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_numeric_amount_comes_from_doubleval();
    test_string_types_still_use_the_string();

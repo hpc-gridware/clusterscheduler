@@ -65,6 +65,7 @@
 #include "tom/ocs_cull_descr.h"
 
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_Model.h"
 
 /**
  * @defgroup cull_hash Hash tables for cull lists
@@ -958,13 +959,13 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    pos = ocs::tom::present_pos(descr, nm);
 
    if (pos < 0) {
-      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
+      CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, ocs::tom::field_name(nm));
       DRETURN(0);
    }
 
    cull_hash_slot *slot = list_hash_slot(lp, pos);
    if (slot != nullptr && slot->get() != nullptr) {
-      WARNING(MSG_CULL_HASHTABLEALREADYEXISTS_S, lNm2Str(nm));
+      WARNING(MSG_CULL_HASHTABLEALREADYEXISTS_S, ocs::tom::field_name(nm));
       DRETURN(0);
    }
 

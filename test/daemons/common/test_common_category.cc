@@ -37,6 +37,7 @@
 #include "cull/cull_multitype.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_Category.h"
 #include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/sge_centry.h"
@@ -488,6 +489,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_common_category");
    component_set_daemonized(true);
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    char label[64];
    int id = 1;

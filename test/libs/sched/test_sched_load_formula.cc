@@ -30,6 +30,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
@@ -219,6 +220,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sched_load_formula");
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    // build a single-entry complex with num_proc = 4
    auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");

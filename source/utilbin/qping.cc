@@ -57,6 +57,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_Version.h"
 
 #include "gdi/ocs_gdi_security.h"
@@ -966,6 +967,7 @@ int main(int argc, char *argv[]) {
    component_set_component_id(QPING);
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    for (i=1;i<argc;i++) {
       if (argv[i][0] == '-') {

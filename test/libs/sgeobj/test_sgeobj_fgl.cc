@@ -31,6 +31,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
@@ -189,6 +190,7 @@ void *thread1(void *data) {
    //sge_dstring_free(&thread_name);
 
    lInit(nmv); 
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    while (true) {
       pthread_mutex_lock(&request_mtx);
@@ -298,6 +300,7 @@ int main(int argc, char *argv[]) {
  
    // init required modules 
    lInit(nmv); 
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    // create some pseudo requests
    srand(time(nullptr));

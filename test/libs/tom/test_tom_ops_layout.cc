@@ -54,6 +54,7 @@
 #include "cull/cull_listP.h"
 #include "cull/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 
@@ -779,6 +780,7 @@ namespace {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-LAY-01", "descriptor", "descr() gives the layout lGetListDescr and lGetElemDescr give",
        {"read the layout of a full and a reduced list and element, and of empty handles"}, "the same descriptors",

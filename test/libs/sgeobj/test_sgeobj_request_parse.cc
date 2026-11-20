@@ -39,6 +39,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "tom/ocs_Element.h"
@@ -1268,6 +1269,7 @@ main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
 
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_splitting();
    test_amount_split();

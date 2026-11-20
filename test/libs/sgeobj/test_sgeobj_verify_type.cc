@@ -33,6 +33,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_object.h"
 #include "tom/ocs_ElementCore.h"
 
@@ -249,6 +250,7 @@ test_client_shapes() {
  */
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_verify_type();
    test_client_shapes();

@@ -35,6 +35,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mailrec.h"
@@ -143,6 +144,7 @@ test_mailrec_unparse() {
  */
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_unenrolled_extremes();
    test_mailrec_unparse();

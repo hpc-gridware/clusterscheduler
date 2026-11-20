@@ -33,6 +33,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_usage.h"
@@ -123,6 +124,7 @@ static std::string get_attribute_line(const std::string &content, const char *na
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_flatfile_usage");
    lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    int id = 1;
