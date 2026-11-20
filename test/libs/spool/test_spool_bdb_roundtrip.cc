@@ -59,8 +59,6 @@
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
@@ -230,7 +228,7 @@ std::string task_part(const uint32_t job_id, const uint32_t ja_task_id) {
 bool record_has_bytes(const bdb_info info, const bdb_database database, const std::string &key,
                       const lListElem *expected) {
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 8192, false, false) != PACK_SUCCESS) {
+   if (tom::try_init_buffer(&pb, 8192, false, false) != PACK_SUCCESS) {
       printf("      cannot initialise a pack buffer\n");
       return false;
    }
@@ -268,7 +266,7 @@ bool record_has_bytes(const bdb_info info, const bdb_database database, const st
          free(data_dbt.data);
       }
    }
-   clear_packbuffer(&pb);
+   tom::clear_buffer(&pb);
    return ok;
 }
 
@@ -508,7 +506,7 @@ void test_centry(const lListElem *context, const bdb_info info) {
    const auto before = ce.clone();
 
    CHECK(4, "a bound complex entry is written", write_ok(context, ce, "bdb_mem", SGE_TYPE_CENTRY));
-   CHECK(5, "the bound complex entry stays bound and unchanged", !lIsFreeElem(ce.raw()) && same(ce, *before));
+   CHECK(5, "the bound complex entry stays bound and unchanged", !tom::is_free(ce) && same(ce, *before));
    CHECK(6, "the record COMPLEX_ENTRY:bdb_mem holds the packed complex entry",
          record_matches(info, BDB_CONFIG_DB, db_key(SGE_TYPE_CENTRY, "bdb_mem"), ce.clone()));
 
@@ -563,7 +561,7 @@ void test_userset(const lListElem *context, const bdb_info info) {
    const lList *entries = us->get<US_entries>().raw();
 
    CHECK(16, "a free userset is written", write_ok(context, *us, "bdb_acl", SGE_TYPE_USERSET));
-   CHECK(17, "the free userset is free again after the write", lIsFreeElem(us.get().raw()));
+   CHECK(17, "the free userset is free again after the write", tom::is_free(*us));
    CHECK(18, "the free userset is unchanged and keeps its entry list",
          same(*us, *before) && us->get<US_entries>().raw() == entries);
    // a free element is written in the format of a bound one

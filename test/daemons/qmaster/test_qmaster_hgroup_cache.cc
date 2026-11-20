@@ -44,7 +44,6 @@
 #include "basis_types.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull_test_api.h"
 
 /*
  * CS-2451 stage 2, against a RUNNING qmaster.
@@ -117,7 +116,7 @@ write_hgroup(ocs::gdi::Command cmd, const char *name, const char *const members[
    for (int i = 0; i < num_members; i++) {
       hosts->emplace_back<HR_name>(ocs::tom::Host(members[i]));
    }
-   ocs::tom::set<HGRP_host_list>(ep, std::move(hosts));
+   ep.set<HGRP_host_list>(std::move(hosts));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, cmd, ocs::gdi::SubCommand::NONE, lp);
    bool ok = !answer_list_has_error(&alp);
@@ -173,15 +172,15 @@ cache_matches_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
    }
    answer_list.reset();
 
-   ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
-   bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(*walked);
+   ocs::tom::ConstList<ocs::tom::HR> cached = hgroup.get<HGRP_cached_hosts>();
+   bool ok = cached.size() == walked->size();
 
    if (ok) {
       ocs::tom::ConstElement<ocs::tom::HR> c = cached.front();
       ocs::tom::ConstElement<ocs::tom::HR> w = walked->front();
 
       while (c != nullptr && w != nullptr) {
-         if (sge_hostcmp(ocs::tom::get<HR_name>(c), ocs::tom::get<HR_name>(w)) != 0) {
+         if (sge_hostcmp(c.get<HR_name>(), w.get<HR_name>()) != 0) {
             ok = false;
             break;
          }
@@ -190,9 +189,9 @@ cache_matches_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
       }
    }
    if (!ok) {
-      printf("      cache/walk mismatch for %s: %d cached, %d walked\n",
-             static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)), lGetNumberOfElem(cached),
-             lGetNumberOfElem(*walked));
+      printf("      cache/walk mismatch for %s: %zu cached, %zu walked\n",
+             static_cast<const char *>(hgroup.get<HGRP_name>()), cached.size(),
+             walked->size());
    }
    return ok;
 }
@@ -206,8 +205,8 @@ cache_matches_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
  */
 static bool
 cache_contains(const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, const char *name, const char *host) {
-   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(master_hgroup_list, name);
-   return hgroup != nullptr && href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
+   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name));
+   return hgroup != nullptr && href_list_locate(hgroup.get<HGRP_cached_hosts>(), host) != nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -268,7 +267,7 @@ test_cache_content_and_invalidation() {
       ocs::tom::ConstElement<ocs::tom::HGRP> leaf = ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_LEAF);
 
       CHECK(5, GRP_LEAF " has a cache version after ADD",
-            leaf != nullptr && ocs::tom::get<HGRP_cache_version>(leaf) != 0);
+            leaf != nullptr && leaf.get<HGRP_cache_version>() != 0);
       CHECK(6, GRP_LEAF " caches its member",
             cache_contains(hgroup_list, GRP_LEAF, host_a));
       hgroup_list.reset();

@@ -58,7 +58,6 @@
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
-#include "cull/cull_test_api.h"
 
 #ifndef TEST_READ_ONLY
 
@@ -78,10 +77,14 @@ static const char *random_string(int length) {
    return buf;
 }
 
-/*
+/**
+ * @brief Generate jobs in the job master list
+ *
  * generate num jobs
  * every 10th job has array tasks
  * the number of array tasks varies between 1 to 100
+ * @param num how many jobs
+ * @return true
  */
 static bool generate_jobs(int num) {
    int i;
@@ -89,27 +92,26 @@ static bool generate_jobs(int num) {
    int num_total = 0;
 
    for (i = 0; i < num; i++) {
-      lListElem *job;
-
-      job = lCreateElem(ocs::tom::JB::descriptor.e); num_total++;
-      ocs::tom::set<JB_job_number>(job, i + 1);
-      ocs::tom::set<JB_job_name>(job, random_string(15));
-      ocs::tom::set<JB_project>(job, random_string(20));
-      ocs::tom::set<JB_department>(job, random_string(20));
-      ocs::tom::set<JB_directive_prefix>(job, random_string(100));
-      ocs::tom::set<JB_exec_file>(job, random_string(500));
-      ocs::tom::set<JB_script_file>(job, random_string(500));
-      ocs::tom::set<JB_owner>(job, random_string(10));
-      ocs::tom::set<JB_group>(job, random_string(10));
-      ocs::tom::set<JB_account>(job, random_string(20));
-      ocs::tom::set<JB_cwd>(job, random_string(100));
-      lAppendElem(ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(), job);
+      auto new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create(); num_total++;
+      new_job->set<JB_job_number>(i + 1);
+      new_job->set<JB_job_name>(random_string(15));
+      new_job->set<JB_project>(random_string(20));
+      new_job->set<JB_department>(random_string(20));
+      new_job->set<JB_directive_prefix>(random_string(100));
+      new_job->set<JB_exec_file>(random_string(500));
+      new_job->set<JB_script_file>(random_string(500));
+      new_job->set<JB_owner>(random_string(10));
+      new_job->set<JB_group>(random_string(10));
+      new_job->set<JB_account>(random_string(20));
+      new_job->set<JB_cwd>(random_string(100));
+      const ocs::tom::Element<ocs::tom::JB> job =
+         ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().push_back(std::move(new_job));
 
       if ((i % 10) == 0) {
          int j;
          num_array = (num_array + 1) % 100;
          for (j = 0; j < num_array; j++) {
-            ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job, j + 1); num_total++;
+            job.emplace_back_in<JB_ja_tasks, JAT_task_number>(j + 1); num_total++;
          }
       }
    }
@@ -132,6 +134,10 @@ static bool update_jobs() {
    return true;
 }
 
+/**
+ * @brief Spool every job, and every array task on its own
+ * @return true
+ */
 static bool spool_data() {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context;
@@ -141,11 +147,11 @@ static bool spool_data() {
 
    context = spool_get_default_context();
 
-   fprintf(stdout, "spooling " sge_u32 " jobs\n", lGetNumberOfElem(ocs::DataStore::master_list<SGE_TYPE_JOB>()));
+   fprintf(stdout, "spooling %zu jobs\n", ocs::DataStore::master_list<SGE_TYPE_JOB>().size());
 
    for (const ocs::tom::ConstElement<ocs::tom::JB> job : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
       ocs::tom::ConstList<ocs::tom::JAT> ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
-      if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) == 0) {
+      if (ja_tasks == nullptr || ja_tasks.size() == 0) {
          key = job_get_key(ocs::tom::get<JB_job_number>(job), 0, nullptr, &key_ds);
          spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB);
          num_total++;

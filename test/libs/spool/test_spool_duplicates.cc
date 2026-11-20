@@ -24,7 +24,6 @@
 
 #include <string>
 
-#include "cull/cull_test_api.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
@@ -37,20 +36,38 @@
 
 /**
  * @brief Read a list of objects through a filter as a spooling backend does
+ * @tparam T the object type
  * @param filter the filter of the list
  * @param lp the list
  * @param ep the object read; freed if the filter refuses it
  * @param spool_key where the object was read from
  * @return true if the object was appended
  */
+template <ocs::tom::ObjectType T>
 static bool
-read_into(ocs::spool::DuplicateFilter &filter, lList *lp, lListElem *ep, const char *spool_key) {
-   if (filter.admit(ep, spool_key)) {
-      lAppendElem(lp, ep);
+read_into(ocs::spool::DuplicateFilter &filter, const ocs::tom::List<T> lp, ocs::tom::ElementPtr<T> &&ep,
+          const char *spool_key) {
+   if (filter.admit(*ep, spool_key)) {
+      lp.push_back(std::move(ep));
       return true;
    }
-   lFreeElem(&ep);
+   ep.reset();
    return false;
+}
+
+/**
+ * @brief An object with one key field set
+ * @tparam F the key field
+ * @tparam V the type of the key value
+ * @param key the value of the key field
+ * @return the object
+ */
+template <auto F, typename V>
+static ocs::tom::ElementPtr<typename ocs::tom::FieldTraits<F>::Type>
+make_keyed(const V key) {
+   auto ep = ocs::tom::ElementPtr<typename ocs::tom::FieldTraits<F>::Type>::create();
+   ep->template set<F>(key);
+   return ep;
 }
 
 /**
@@ -63,18 +80,15 @@ test_string_key() {
    auto usersets = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
    ocs::spool::DuplicateFilter filter(ocs::tom::US::descriptor.e, "USERSET");
 
-   lListElem *a = lCreateElem(ocs::tom::US::descriptor.e);
-   ocs::tom::set<US_name>(a, "arusers");
-   lListElem *b = lCreateElem(ocs::tom::US::descriptor.e);
-   ocs::tom::set<US_name>(b, "deadlineusers");
-   lListElem *copy = lCreateElem(ocs::tom::US::descriptor.e);
-   ocs::tom::set<US_name>(copy, "arusers");
+   auto a = make_keyed<US_name>("arusers");
+   auto b = make_keyed<US_name>("deadlineusers");
+   auto copy = make_keyed<US_name>("arusers");
 
-   const bool first = read_into(filter, *usersets, a, "usersets/arusers");
-   const bool other = read_into(filter, *usersets, b, "usersets/deadlineusers");
-   const bool second = read_into(filter, *usersets, copy, "usersets/arusers.copy");
+   const bool first = read_into(filter, *usersets, std::move(a), "usersets/arusers");
+   const bool other = read_into(filter, *usersets, std::move(b), "usersets/deadlineusers");
+   const bool second = read_into(filter, *usersets, std::move(copy), "usersets/arusers.copy");
    CHECK(1, "distinct names are admitted, the second arusers is not", first && other && !second);
-   CHECK(2, "the list holds two user sets", lGetNumberOfElem(*usersets) == 2);
+   CHECK(2, "the list holds two user sets", usersets->size() == 2);
 
    const auto &duplicates = ocs::spool::duplicate_objects();
    CHECK(3, "one duplicate is recorded with type, attribute, key and both spool keys",
@@ -93,16 +107,14 @@ test_host_key() {
    auto hosts = ocs::tom::ListPtr<ocs::tom::EH>::create("exec hosts");
    ocs::spool::DuplicateFilter filter(ocs::tom::EH::descriptor.e, "EXECHOST");
 
-   lListElem *lower = lCreateElem(ocs::tom::EH::descriptor.e);
-   ocs::tom::set<EH_name>(lower, "host-1");
-   lListElem *upper = lCreateElem(ocs::tom::EH::descriptor.e);
-   ocs::tom::set<EH_name>(upper, "HOST-1");
+   auto lower = make_keyed<EH_name>(ocs::tom::Host("host-1"));
+   auto upper = make_keyed<EH_name>(ocs::tom::Host("HOST-1"));
 
-   const bool first = read_into(filter, *hosts, lower, "EXECHOST:host-1");
-   const bool second = read_into(filter, *hosts, upper, "EXECHOST:HOST-1");
+   const bool first = read_into(filter, *hosts, std::move(lower), "EXECHOST:host-1");
+   const bool second = read_into(filter, *hosts, std::move(upper), "EXECHOST:HOST-1");
    const auto &duplicates = ocs::spool::duplicate_objects();
    CHECK(4, "a host name differing only in case is a duplicate, recorded as the second copy holds it",
-         first && !second && lGetNumberOfElem(*hosts) == 1 && duplicates.size() == 1 &&
+         first && !second && hosts->size() == 1 && duplicates.size() == 1 &&
          duplicates[0].key == "HOST-1" && duplicates[0].first_spool_key == "EXECHOST:host-1");
 }
 
@@ -116,26 +128,26 @@ test_number_key_and_clear() {
    auto ars = ocs::tom::ListPtr<ocs::tom::AR>::create("advance reservations");
    ocs::spool::DuplicateFilter filter(ocs::tom::AR::descriptor.e, "AR");
 
-   lListElem *ar = lCreateElem(ocs::tom::AR::descriptor.e);
-   ocs::tom::set<AR_id>(ar, 17);
-   lListElem *again = lCreateElem(ocs::tom::AR::descriptor.e);
-   ocs::tom::set<AR_id>(again, 17);
-   const bool first = read_into(filter, *ars, ar, "AR:17");
-   const bool second = read_into(filter, *ars, again, "AR:17.copy");
-   CHECK(5, "an advance reservation id read twice is a duplicate", first && !second && lGetNumberOfElem(*ars) == 1);
+   auto ar = make_keyed<AR_id>(17);
+   auto again = make_keyed<AR_id>(17);
+   const bool first = read_into(filter, *ars, std::move(ar), "AR:17");
+   const bool second = read_into(filter, *ars, std::move(again), "AR:17.copy");
+   CHECK(5, "an advance reservation id read twice is a duplicate", first && !second && ars->size() == 1);
 
    auto usersets = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
    ocs::spool::DuplicateFilter unnamed_filter(ocs::tom::US::descriptor.e, "USERSET");
-   const bool unnamed_1 = read_into(unnamed_filter, *usersets, lCreateElem(ocs::tom::US::descriptor.e), "usersets/a");
-   const bool unnamed_2 = read_into(unnamed_filter, *usersets, lCreateElem(ocs::tom::US::descriptor.e), "usersets/b");
-   CHECK(6, "objects without a key are admitted", unnamed_1 && unnamed_2 && lGetNumberOfElem(*usersets) == 2);
+   const bool unnamed_1 = read_into(unnamed_filter, *usersets, ocs::tom::ElementPtr<ocs::tom::US>::create(),
+                                          "usersets/a");
+   const bool unnamed_2 = read_into(unnamed_filter, *usersets, ocs::tom::ElementPtr<ocs::tom::US>::create(),
+                                          "usersets/b");
+   CHECK(6, "objects without a key are admitted", unnamed_1 && unnamed_2 && usersets->size() == 2);
 
    ocs::spool::DuplicateFilter other_filter(ocs::tom::AR::descriptor.e, "AR");
-   lListElem *same_id = lCreateElem(ocs::tom::AR::descriptor.e);
-   ocs::tom::set<AR_id>(same_id, 17);
+   auto same_id = make_keyed<AR_id>(17);
    auto other_ars = ocs::tom::ListPtr<ocs::tom::AR>::create("other advance reservations");
    CHECK(7, "a filter knows only the keys of its own list",
-         read_into(other_filter, *other_ars, same_id, "AR:17") && ocs::spool::duplicate_objects().size() == 1);
+         read_into(other_filter, *other_ars, std::move(same_id), "AR:17") &&
+            ocs::spool::duplicate_objects().size() == 1);
 
    ocs::spool::clear_duplicate_objects();
    CHECK(8, "clearing forgets the recorded duplicates", ocs::spool::duplicate_objects().empty());

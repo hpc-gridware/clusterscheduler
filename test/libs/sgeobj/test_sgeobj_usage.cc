@@ -31,13 +31,12 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_Usage.h"
 #include "sgeobj/ocs_UserProject.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UPP.h"
@@ -118,7 +117,7 @@ static ocs::tom::ListPtr<ocs::tom::UA>
 make_usage_list(const char *list_name, const char *attr, const double value) {
    auto l = ocs::tom::ListPtr<ocs::tom::UA>::create(list_name);
    ocs::tom::Element<ocs::tom::UA> e = l->emplace_back<UA_name>(attr);
-   ocs::tom::set<UA_value>(e, value);
+   e.set<UA_value>(value);
    return l;
 }
 
@@ -130,7 +129,7 @@ make_usage_list(const char *list_name, const char *attr, const double value) {
 static ocs::tom::ElementPtr<ocs::tom::UU>
 make_user(const char *name) {
    auto u = ocs::tom::ElementPtr<ocs::tom::UU>::create();
-   ocs::tom::set<UU_name>(u, name);
+   u->set<UU_name>(name);
    return u;
 }
 
@@ -142,7 +141,7 @@ make_user(const char *name) {
 static ocs::tom::ElementPtr<ocs::tom::PR>
 make_project(const char *name) {
    auto p = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(p, name);
+   p->set<PR_name>(name);
    return p;
 }
 
@@ -162,25 +161,32 @@ static ocs::tom::ElementPtr<ocs::tom::JB>
 make_job(const uint32_t job_number, const char *owner, const char *project,
          const double cpu) {
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   ocs::tom::set<JB_job_number>(job, job_number);
-   ocs::tom::set<JB_owner>(job, owner);
+   job->set<JB_job_number>(job_number);
+   job->set<JB_owner>(owner);
    if (project != nullptr) {
-      ocs::tom::set<JB_project>(job, project);
+      job->set<JB_project>(project);
    }
 
    auto ja_tasks = ocs::tom::ListPtr<ocs::tom::JAT>::create("ja_tasks");
    auto ja_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
-   ocs::tom::set<JAT_task_number>(ja_task, 1);
-   ocs::tom::set<JAT_scaled_usage_list>(ja_task, make_usage_list("scaled", "cpu", cpu));
-   lAppendElem(*ja_tasks, std::move(ja_task));
-   ocs::tom::set<JB_ja_tasks>(job, std::move(ja_tasks));
+   ja_task->set<JAT_task_number>(1);
+   ja_task->set<JAT_scaled_usage_list>(make_usage_list("scaled", "cpu", cpu));
+   ja_tasks->push_back(std::move(ja_task));
+   job->set<JB_ja_tasks>(std::move(ja_tasks));
 
    return job;
 }
 
+/**
+ * @brief The value of an entry of a usage list of a user or a project
+ * @param parent the user or the project
+ * @param list_field the usage list field, given at run time
+ * @param attr the name of the entry
+ * @return the value, -1.0 if the list or the entry is missing
+ */
 static double
-get_usage_value(const lListElem *parent, int list_field, const char *attr) {
-   const lList *l = lGetList(parent, list_field);
+get_usage_value(const ocs::tom::ConstRawElement parent, const int list_field, const char *attr) {
+   const lList *l = parent.get<const lList *>(list_field);
    if (l == nullptr) {
       return -1.0;
    }
@@ -188,7 +194,7 @@ get_usage_value(const lListElem *parent, int list_field, const char *attr) {
    if (e == nullptr) {
       return -1.0;
    }
-   return ocs::tom::get<UA_value>(e);
+   return e.get<UA_value>();
 }
 
 /**
@@ -216,14 +222,13 @@ test_sum_usage_user_only(int *id) {
    /* CS-1239 sharetree routing invariant: user-only job does NOT populate
     * UU_project[*].UPP_usage. */
    CHECK((*id)++, "UU_project remains empty for user-only job",
-         static_cast<const lList *>(ocs::tom::get<UU_project>(user)) == nullptr ||
-         lGetNumberOfElem(ocs::tom::get<UU_project>(user)) == 0);
+         !user->get<UU_project>() || user->get<UU_project>().size() == 0);
 
    /* Debited-job entry for the finished job should be present so the
     * worker thread's drop_debited_job step has something to remove. */
    ocs::tom::ConstList<ocs::tom::UPU> debited = ocs::tom::get<UU_debited_job_usage>(user);
    const lListElem *upu = (debited != nullptr) ?
-                          static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 1)) : nullptr;
+                          static_cast<const lListElem *>(debited.find_first<UPU_job_number>(1)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 1", upu != nullptr);
 }
 
@@ -255,7 +260,7 @@ test_sum_usage_user_and_project(int *id) {
     * UU_project[p1].UPP_usage, NOT UU_usage. */
    ocs::tom::ConstList<ocs::tom::UPP> upp_list = ocs::tom::get<UU_project>(user);
    const lListElem *upp = (upp_list != nullptr) ?
-                          static_cast<const lListElem *>(ocs::tom::find_first<UPP_name>(upp_list, "p1")) : nullptr;
+                          static_cast<const lListElem *>(upp_list.find_first<UPP_name>("p1")) : nullptr;
    CHECK((*id)++, "UU_project[p1] entry created", upp != nullptr);
    if (upp != nullptr) {
       CHECK_NEAR((*id)++, "UU_project[p1].UPP_usage cpu == 7",
@@ -271,7 +276,7 @@ test_sum_usage_user_and_project(int *id) {
     * to UU_ when user is non-null). */
    ocs::tom::ConstList<ocs::tom::UPU> debited = ocs::tom::get<UU_debited_job_usage>(user);
    const lListElem *upu = (debited != nullptr) ?
-                          static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 2)) : nullptr;
+                          static_cast<const lListElem *>(debited.find_first<UPU_job_number>(2)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 2", upu != nullptr);
 }
 

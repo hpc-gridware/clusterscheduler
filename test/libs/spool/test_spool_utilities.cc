@@ -46,8 +46,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_dstring.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_object.h"

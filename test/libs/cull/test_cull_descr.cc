@@ -29,7 +29,8 @@
  * operations leave them alone.
  *
  * Since M3-3 the lists and elements of the library hold shared descriptors;
- * DESCR-05 to DESCR-08 check that through the list API.
+ * DESCR-05 to DESCR-08 check that through the raw interface of TOM and the
+ * list core.
  *
  * DESCR-03 is meant to be run under the thread and the address sanitizer as well.
  */
@@ -43,16 +44,21 @@
 #include <utility>
 #include <vector>
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 /** @brief Make this translation unit the one that defines the CULL field names */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_multitypeP.h"
-#include "cull/ocs_cull_descr.h"
+#include "cull/cull.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_Pack.h"
+#include "tom/ocs_PackCore.h"
+#include "tom/ocs_Raw.h"
+#include "tom/ocs_SelectCore.h"
 
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
@@ -302,41 +308,92 @@ static void test_soft_cap() {
 
 /**
  * @brief A list of n elements of TD_Type with ids 0 .. n-1 and names "n<id>"
+ *
+ * The elements are added with add_elem_ulong() of the core, as lAddElemUlong() added them.
+ *
  * @param n the number of elements
- * @return the list
+ * @return the owner of the list
  */
-static lList *make_list(const int n) {
-   lList *lp = lCreateList("descr", TD_Type);
+static ocs::tom::RawListPtr make_list(const int n) {
+   auto owner = ocs::tom::RawListPtr::create(TD_Type, ocs::tom::Hashing::On, "descr");
+   lList *lp = owner.get();
    for (int i = 0; i < n; i++) {
-      lListElem *ep = lAddElemUlong(&lp, TD_id, i, TD_Type);
-      lSetString(ep, TD_name, ("n" + std::to_string(i)).c_str());
-      lSetUlong(ep, TD_value, 2 * i);
+      const ocs::tom::RawElement ep = ocs::tom::add_elem_ulong(lp, TD_id, static_cast<lUlong>(i), TD_Type);
+      ep.set(TD_name, ("n" + std::to_string(i)).c_str());
+      ep.set(TD_value, static_cast<std::uint32_t>(2 * i));
    }
-   return lp;
+   return owner;
+}
+
+/**
+ * @brief The selection of some fields of a type
+ * @param descr the descriptor of the type
+ * @param fields the fields, in any order
+ * @return the owner of the selection
+ */
+static ocs::tom::RawWhatPtr what_of(const lDescr *descr, const std::initializer_list<int> fields) {
+   return ocs::tom::what_of(descr, std::span<const int>(fields.begin(), fields.size()));
+}
+
+/**
+ * @brief Select all elements of a list reduced to a selection, as lSelect() did
+ * @param name the name of the result
+ * @param lp the list
+ * @param what the selection
+ * @return the owner of the result, empty for no element or an error
+ */
+static ocs::tom::RawListPtr select_old(const char *name, const lList *lp, const lEnumeration *what) {
+   return ocs::tom::select_as(name, lp, nullptr, what, ocs::tom::Hashing::On);
+}
+
+/**
+ * @brief The descriptor of a list
+ * @param lp the list, may be empty
+ * @return the descriptor, nullptr for no list
+ */
+static const lDescr *descr_of(const ocs::tom::ConstRawList lp) {
+   return lp ? lp.descr() : nullptr;
+}
+
+/**
+ * @brief A buffer to read the bytes of another one from, as a receiver gets them
+ * @param pb the buffer packed into
+ * @return the buffer to read from
+ * @throw ocs::tom::PackException if the header cannot be read
+ */
+static ocs::tom::PackBuffer reader_of(ocs::tom::PackBuffer &pb) {
+   return ocs::tom::PackBuffer::reading(pb.data(), pb.size(), false);
+}
+
+/**
+ * @brief Unpack a list from the bytes of a buffer and free it again
+ * @param pb the buffer packed into
+ * @return PACK_SUCCESS, or the code of the PackException the unpack threw
+ */
+static int unpack_and_drop_list(ocs::tom::PackBuffer &pb) {
+   try {
+      ocs::tom::PackBuffer in = reader_of(pb);
+      static_cast<void>(ocs::tom::unpack_raw_list(&in.raw(), 0));
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
+   }
+   return PACK_SUCCESS;
 }
 
 /**
  * @brief Pack a list and unpack it again, as a receiver does
  * @param lp the list
- * @return the unpacked list, or nullptr on an error
+ * @return the owner of the unpacked list, empty on an error
  */
-static lList *pack_unpack(const lList *lp) {
-   lList *result = nullptr;
-   sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024, false, false) != PACK_SUCCESS) {
-      return nullptr;
+static ocs::tom::RawListPtr pack_unpack(const lList *lp) {
+   try {
+      ocs::tom::PackBuffer pb(false, 1024);
+      ocs::tom::pack_list(&pb.raw(), lp, nullptr, 0);
+      ocs::tom::PackBuffer in = reader_of(pb);
+      return ocs::tom::unpack_raw_list(&in.raw(), 0);
+   } catch (const ocs::tom::PackException &) {
+      return {};
    }
-   if (cull_pack_list(&pb, lp) == PACK_SUCCESS) {
-      char *buf = sge_malloc(pb.bytes_used);
-      memcpy(buf, pb.head_ptr, pb.bytes_used);
-      sge_pack_buffer in;
-      if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-         cull_unpack_list(&in, &result);
-      }
-      clear_packbuffer(&in);
-   }
-   clear_packbuffer(&pb);
-   return result;
 }
 
 /**
@@ -344,9 +401,9 @@ static lList *pack_unpack(const lList *lp) {
  * @param lp the list
  * @return true if all elements point at the descriptor of the list
  */
-static bool elements_borrow(const lList *lp) {
-   for_each_ep_lv(ep, lp) {
-      if (ep->descr != lp->descr) {
+static bool elements_borrow(const ocs::tom::ConstRawList lp) {
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      if (ep.descr() != lp.descr()) {
          return false;
       }
    }
@@ -356,63 +413,56 @@ static bool elements_borrow(const lList *lp) {
 /** @brief DESCR-05: full descriptors are the static block */
 static void test_full_static() {
    const size_t base = ocs_cull_descr_registry_size();
-   lList *lp = make_list(4);
-   lListElem *free_ep = lCreateElem(TD_Type);
+   ocs::tom::RawListPtr lp = make_list(4);
+   auto free_ep = ocs::tom::RawElementPtr::create(TD_Type);
    lDescr *heap = heap_copy(TD_Type);
-   lList *from_copy = lCreateList("from copy", heap);
+   auto from_copy = ocs::tom::RawListPtr::create(heap, ocs::tom::Hashing::On, "from copy");
    sge_free(&heap);
-   lList *copied = lCopyList("copied", lp);
-   lList *unpacked = pack_unpack(lp);
-   lListElem *dechained = lDechainElem(lp, lFirstRW(lp));
+   ocs::tom::RawListPtr copied = lp->clone();
+   ocs::tom::RawListPtr unpacked = pack_unpack(lp.get());
+   ocs::tom::RawElementPtr dechained = lp->take(lp->front());
 
    CHECK(17, "created, copied, unpacked lists and free elements of a full type use its static block",
-         lp->descr == TD_Type && free_ep->descr == TD_Type && from_copy->descr == TD_Type &&
-         copied->descr == TD_Type && unpacked != nullptr && unpacked->descr == TD_Type &&
-         dechained->descr == TD_Type);
+         lp->descr() == TD_Type && free_ep->descr() == TD_Type && from_copy->descr() == TD_Type &&
+         copied->descr() == TD_Type && unpacked && unpacked->descr() == TD_Type &&
+         dechained->descr() == TD_Type);
    CHECK(18, "bound elements borrow the static block and nothing is registered",
-         elements_borrow(lp) && elements_borrow(copied) && elements_borrow(unpacked) &&
+         elements_borrow(lp.get()) && elements_borrow(copied.get()) && elements_borrow(unpacked.get()) &&
          ocs_cull_descr_registry_size() == base);
-
-   lFreeElem(&dechained);
-   lFreeElem(&free_ep);
-   lFreeList(&unpacked);
-   lFreeList(&copied);
-   lFreeList(&from_copy);
-   lFreeList(&lp);
 }
 
 /** @brief DESCR-06: equal reductions share one descriptor across builders */
 static void test_reduced_shared() {
    const size_t base = ocs_cull_descr_registry_size();
-   lList *lp = make_list(8);
-   lEnumeration *what1 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_name);
-   lEnumeration *what2 = lWhat("%T(%I %I)", TD_Type, TD_name, TD_id);
-   lList *sel1 = lSelect("sel1", lp, nullptr, what1);
-   lList *sel2 = lSelect("sel2", lp, nullptr, what2);
-   lList *unpacked = pack_unpack(sel1);
-   lListElem *ep = lCreateElem(lGetListDescr(sel1));
-   lEnumeration *what3 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
-   lList *other = lSelect("other", lp, nullptr, what3);
+   ocs::tom::RawListPtr lp = make_list(8);
+   ocs::tom::RawWhatPtr what1 = what_of(TD_Type, {TD_id, TD_name});
+   ocs::tom::RawWhatPtr what2 = what_of(TD_Type, {TD_name, TD_id});
+   ocs::tom::RawListPtr sel1 = select_old("sel1", lp.get(), what1.get());
+   ocs::tom::RawListPtr sel2 = select_old("sel2", lp.get(), what2.get());
+   ocs::tom::RawListPtr unpacked = pack_unpack(sel1.get());
+   auto ep = ocs::tom::RawElementPtr::create(descr_of(sel1.get()));
+   ocs::tom::RawWhatPtr what3 = what_of(TD_Type, {TD_id, TD_value});
+   ocs::tom::RawListPtr other = select_old("other", lp.get(), what3.get());
    // a selection caches its reduction with a reference (DESCR-09); free them to count only lists and elements
-   lFreeWhat(&what3);
-   lFreeWhat(&what2);
-   lFreeWhat(&what1);
+   what3.reset();
+   what2.reset();
+   what1.reset();
 
    CHECK(19, "selected lists of one reduction, in either field order, share one counted descriptor",
-         sel1 != nullptr && sel2 != nullptr && sel1->descr == sel2->descr && ocs_cull_descr_is_counted(sel1->descr) &&
-         elements_borrow(sel1) && elements_borrow(sel2));
+         sel1 && sel2 && sel1->descr() == sel2->descr() && ocs_cull_descr_is_counted(sel1->descr()) &&
+         elements_borrow(sel1.get()) && elements_borrow(sel2.get()));
    CHECK(20, "the unpacked list and a free element of that reduction share it as well",
-         unpacked != nullptr && unpacked->descr == sel1->descr && ep->descr == sel1->descr &&
-         ocs_cull_descr_refs(sel1->descr) == 4);
+         unpacked && unpacked->descr() == sel1->descr() && ep->descr() == sel1->descr() &&
+         ocs_cull_descr_refs(sel1->descr()) == 4);
    CHECK(21, "a different reduction gets a descriptor of its own",
-         other != nullptr && other->descr != sel1->descr && ocs_cull_descr_registry_size() == base + 2);
+         other && other->descr() != sel1->descr() && ocs_cull_descr_registry_size() == base + 2);
 
-   lFreeList(&other);
-   lFreeElem(&ep);
-   lFreeList(&unpacked);
-   lFreeList(&sel2);
-   lFreeList(&sel1);
-   lFreeList(&lp);
+   other.reset();
+   ep.reset();
+   unpacked.reset();
+   sel2.reset();
+   sel1.reset();
+   lp.reset();
    CHECK(22, "freeing the lists and elements of the reductions empties the registry",
          ocs_cull_descr_registry_size() == base);
 }
@@ -420,37 +470,37 @@ static void test_reduced_shared() {
 /** @brief DESCR-07: users of a reduced descriptor in all orders */
 static void test_users_release() {
    const size_t base = ocs_cull_descr_registry_size();
-   lList *lp = make_list(6);
-   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
-   lList *sel = lSelect("sel", lp, nullptr, what);
+   ocs::tom::RawListPtr lp = make_list(6);
+   ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_id, TD_value});
+   ocs::tom::RawListPtr sel = select_old("sel", lp.get(), what.get());
    // the selection caches its reduction with a reference (DESCR-09); free it to count only lists and elements
-   lFreeWhat(&what);
-   const lDescr *dp = lGetListDescr(sel);
+   what.reset();
+   const lDescr *dp = descr_of(sel.get());
 
-   // a dechained element takes a reference, an appended one gives it up
-   lListElem *ep = lDechainElem(sel, lFirstRW(sel));
-   const bool after_dechain = ocs_cull_descr_refs(dp) == 2 && ep->descr == dp;
-   lList *second = lCreateList("second", dp);
-   lAppendElem(second, ep);
-   const bool after_append = ocs_cull_descr_refs(dp) == 2 && ep->descr == second->descr;
-   ep = lDechainElem(second, lFirstRW(second));
-   lFreeList(&sel);
+   // a taken element takes a reference, an appended one gives it up
+   ocs::tom::RawElementPtr ep = sel->take(sel->front());
+   const bool after_dechain = ocs_cull_descr_refs(dp) == 2 && ep->descr() == dp;
+   auto second = ocs::tom::RawListPtr::create(dp, ocs::tom::Hashing::On, "second");
+   const ocs::tom::RawElement bound = second->push_back(std::move(ep));
+   const bool after_append = ocs_cull_descr_refs(dp) == 2 && bound.descr() == second->descr();
+   ep = second->take(second->front());
+   sel.reset();
    const bool after_list_freed = ocs_cull_descr_refs(dp) == 2 && ocs_cull_descr_registry_size() == base + 1;
-   lFreeList(&second);
+   second.reset();
    const bool after_second_freed = ocs_cull_descr_refs(dp) == 1;
    CHECK(23, "lists hold one reference each, free elements one, bound elements none",
          after_dechain && after_append && after_list_freed && after_second_freed);
-   lFreeElem(&ep);
+   ep.reset();
    CHECK(24, "the last user frees the descriptor", ocs_cull_descr_registry_size() == base);
-
-   lFreeList(&lp);
 }
 
 /** @brief DESCR-08: a hash added to one list does not change other lists */
 static void test_hash_new() {
    const size_t base = ocs_cull_descr_registry_size();
-   lList *a = make_list(4 * OCS_CULL_HASH_MIN_ELEMS);
-   lList *b = make_list(4);
+   ocs::tom::RawListPtr a_owner = make_list(4 * OCS_CULL_HASH_MIN_ELEMS);
+   ocs::tom::RawListPtr b_owner = make_list(4);
+   lList *a = a_owner.get();
+   const lList *b = b_owner.get();
    const int static_mt = TD_Type[1].mt;
    const int ok = cull_hash_new(a, TD_name, false);
 
@@ -459,53 +509,53 @@ static void test_hash_new() {
          elements_borrow(a) && ocs_cull_descr_registry_size() == base);
    CHECK(26, "the static block and the other list are unchanged",
          TD_Type[1].mt == static_mt && !mt_do_hashing(TD_Type[1].mt) && b->descr == TD_Type);
-   const lListElem *found = lGetElemStr(a, TD_name, "n7");
-   lListElem *ep = lDechainElem(a, lFirstRW(a));
-   CHECK(27, "the added hash answers lookups, and a dechained element keeps the copy",
-         found != nullptr && lGetUlong(found, TD_id) == 7 && list_hash_table(a, 1) != nullptr &&
-         ep->descr == a->descr && ocs_cull_descr_refs(a->descr) == 2);
+   const ocs::tom::ConstRawElement found = a_owner->find_first(TD_name, static_cast<const char *>("n7"));
+   ocs::tom::RawElementPtr ep = a_owner->take(a_owner->front());
+   CHECK(27, "the added hash answers lookups, and a taken element keeps the copy",
+         found && found.get<std::uint32_t>(TD_id) == 7 && list_hash_table(a, 1) != nullptr &&
+         ep->descr() == a->descr && ocs_cull_descr_refs(a->descr) == 2);
 
-   lFreeElem(&ep);
-   lFreeList(&b);
-   lFreeList(&a);
+   ep.reset();
+   b_owner.reset();
+   a_owner.reset();
 
    // a hash on the first field changes the entry that carries the reference count mark of the copy
-   lList *g = lCreateList("first", GR_Type);
+   auto g_owner = ocs::tom::RawListPtr::create(GR_Type, ocs::tom::Hashing::On, "first");
+   lList *g = g_owner.get();
    const int first_ok = cull_hash_new(g, GR_id, true);
    CHECK(46, "a hash added on the first field leaves the copy counted, so that freeing the list frees it",
          first_ok == 1 && g->descr != GR_Type && ocs_cull_descr_is_counted(g->descr) &&
          mt_is_unique(g->descr[0].mt) && ocs_cull_descr_refs(g->descr) == 1);
-   lFreeList(&g);
 }
 
 /** @brief DESCR-09: builders and the selection cache hand out shared descriptors */
 static void test_builders() {
    const size_t base = ocs_cull_descr_registry_size();
-   lList *lp = make_list(8);
-   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_value, TD_id);
+   ocs::tom::RawListPtr lp = make_list(8);
+   ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_value, TD_id});
 
-   lList *sel1 = lSelect("sel1", lp, nullptr, what);
-   const lDescr *dp = lGetListDescr(sel1);
+   ocs::tom::RawListPtr sel1 = select_old("sel1", lp.get(), what.get());
+   const lDescr *dp = descr_of(sel1.get());
    const uint32_t refs_one = ocs_cull_descr_refs(dp);
-   lList *sel2 = lSelect("sel2", lp, nullptr, what);
+   ocs::tom::RawListPtr sel2 = select_old("sel2", lp.get(), what.get());
    CHECK(28, "a selection caches its reduction: a second select adds only the reference of its list",
-         refs_one == 2 && lGetListDescr(sel2) == dp && ocs_cull_descr_refs(dp) == 3 &&
+         refs_one == 2 && descr_of(sel2.get()) == dp && ocs_cull_descr_refs(dp) == 3 &&
          ocs_cull_descr_registry_size() == base + 1);
 
-   const lDescr *reduced = nullptr;
-   const int rc = lReduceDescr(&reduced, TD_Type, what);
-   const lDescr *got = lGetReducedDescr(TD_Type, what);
-   CHECK(29, "lReduceDescr and lGetReducedDescr return the shared reduction with a reference each",
-         rc == 0 && reduced == dp && got == dp && ocs_cull_descr_refs(dp) == 5);
+   // lReduceDescr() and lGetReducedDescr() both gave the shared reduction; reduced_descr() is their core
+   const lDescr *reduced = ocs::tom::reduced_descr(TD_Type, what.get());
+   const lDescr *got = ocs::tom::reduced_descr(TD_Type, what.get());
+   CHECK(29, "reduced_descr() returns the shared reduction with a reference each",
+         reduced == dp && got == dp && ocs_cull_descr_refs(dp) == 5);
    ocs_cull_descr_release(&reduced);
    ocs_cull_descr_release(&got);
 
-   lFreeWhat(&what);
+   what.reset();
    CHECK(30, "freeing the selection gives the cached reference up", ocs_cull_descr_refs(dp) == 2);
 
-   lFreeList(&sel2);
-   lFreeList(&sel1);
-   lFreeList(&lp);
+   sel2.reset();
+   sel1.reset();
+   lp.reset();
    CHECK(31, "after the last list the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
@@ -516,53 +566,35 @@ static void test_builders() {
  * @return the first word, or 0 on an error
  */
 static uint32_t first_word_of_packed(const lDescr *dp, const int flags) {
-   uint32_t word = 0;
-   sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
+   try {
+      ocs::tom::PackBuffer pb(false, 256);
+      ocs::tom::pack_descr(&pb.raw(), dp, flags);
+      ocs::tom::PackBuffer in = reader_of(pb);
+      return ocs::tom::get_uint32(&in.raw());
+   } catch (const ocs::tom::PackException &) {
       return 0;
    }
-   if (cull_pack_descr(&pb, dp, flags) == PACK_SUCCESS) {
-      sge_pack_buffer in;
-      char *buf = sge_malloc(pb.bytes_used);
-      memcpy(buf, pb.head_ptr, pb.bytes_used);
-      if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-         unpackint(&in, &word);
-      }
-      clear_packbuffer(&in);
-   }
-   clear_packbuffer(&pb);
-   return word;
 }
 
 /**
  * @brief Unpack a list whose descriptor is a hand-written type reference
  * @param first_nm the first field number written into the reference
  * @param count the field count written into the reference
- * @return the result of cull_unpack_list()
+ * @return the result of unpack_raw_list(): PACK_SUCCESS or the code it threw
  */
 static int unpack_type_ref(const uint32_t first_nm, const uint32_t count) {
-   int ret = PACK_FORMAT;
-   sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
-      return ret;
+   try {
+      ocs::tom::PackBuffer pb(false, 256);
+      ocs::tom::put_uint32(&pb.raw(), 1);
+      ocs::tom::put_str(&pb.raw(), "forged");
+      ocs::tom::put_uint32(&pb.raw(), CULL_PACK_DESCR_TYPE_REF);
+      ocs::tom::put_uint32(&pb.raw(), first_nm);
+      ocs::tom::put_uint32(&pb.raw(), count);
+      ocs::tom::put_uint32(&pb.raw(), 0);
+      return unpack_and_drop_list(pb);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-   packint(&pb, 1);
-   packstr(&pb, "forged");
-   packint(&pb, CULL_PACK_DESCR_TYPE_REF);
-   packint(&pb, first_nm);
-   packint(&pb, count);
-   packint(&pb, 0);
-   sge_pack_buffer in;
-   char *buf = sge_malloc(pb.bytes_used);
-   memcpy(buf, pb.head_ptr, pb.bytes_used);
-   if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-      lList *lp = nullptr;
-      ret = cull_unpack_list(&in, &lp);
-      lFreeList(&lp);
-   }
-   clear_packbuffer(&in);
-   clear_packbuffer(&pb);
-   return ret;
 }
 
 /** @brief DESCR-10: a full descriptor travels as a reference to its type */
@@ -574,119 +606,99 @@ static void test_type_ref() {
          "goes field by field",
          first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF &&
          first_word_of_packed(heap, 0) == CULL_PACK_DESCR_TYPE_REF &&
-         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 && first_word_of_packed(reduced, 0) == CULL_PACK_DESCR_TABLE_DEF);
+         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 &&
+         first_word_of_packed(reduced, 0) == CULL_PACK_DESCR_TABLE_DEF);
    ocs_cull_descr_release(&reduced);
    sge_free(&heap);
 
-   lList *lp = make_list(3);
-   lList *unpacked = pack_unpack(lp);
+   ocs::tom::RawListPtr lp = make_list(3);
+   ocs::tom::RawListPtr unpacked = pack_unpack(lp.get());
    CHECK(33, "the receiver takes the static block of the type and registers nothing",
-         unpacked != nullptr && unpacked->descr == TD_Type && lGetNumberOfElem(unpacked) == 3 &&
+         unpacked && unpacked->descr() == TD_Type && unpacked->size() == 3 &&
          ocs_cull_descr_registry_size() == base);
    CHECK(34, "a type reference to an unknown type, with no field or more fields than the type is a format error",
          unpack_type_ref(9999, 4) == PACK_FORMAT && unpack_type_ref(TD_id, 5) == PACK_FORMAT &&
          unpack_type_ref(TD_id, 0) == PACK_FORMAT && unpack_type_ref(TD_id, 4) == PACK_SUCCESS &&
          unpack_type_ref(TD_id, 3) == PACK_SUCCESS);
-   lFreeList(&unpacked);
-   lFreeList(&lp);
 }
 
 /**
  * @brief Pack lists into one buffer and unpack them from it again
  * @param lists the lists, in the order to pack them
- * @param out the unpacked lists, in the same order
+ * @param out the owners of the unpacked lists, in the same order
  * @param sent_entries set to the size of the sender's descriptor table
  * @param read_entries set to the size of the receiver's descriptor table
  * @param counted set to whether counting mode measures the same size
  * @return true if every list was packed and unpacked
  */
-static bool pack_unpack_many(const std::vector<const lList *> &lists, std::vector<lList *> &out,
+static bool pack_unpack_many(const std::vector<const lList *> &lists, std::vector<ocs::tom::RawListPtr> &out,
                              size_t *sent_entries, size_t *read_entries, bool *counted) {
-   bool ok = true;
-   sge_pack_buffer pb;
-   sge_pack_buffer cnt;
-   if (init_packbuffer(&pb, 1024, false, false) != PACK_SUCCESS || init_packbuffer(&cnt, 0, true, false) != PACK_SUCCESS) {
+   try {
+      ocs::tom::PackBuffer pb(false, 1024);
+      ocs::tom::PackBuffer cnt = ocs::tom::PackBuffer::counting();
+      const size_t header = pb.size();
+      for (const lList *lp : lists) {
+         ocs::tom::pack_list(&pb.raw(), lp, nullptr, 0);
+         ocs::tom::pack_list(&cnt.raw(), lp, nullptr, 0);
+      }
+      *sent_entries = ocs::tom::descr_table_size(&pb.raw());
+      *counted = cnt.size() == pb.size() - header && ocs::tom::descr_table_size(&cnt.raw()) == *sent_entries;
+      ocs::tom::PackBuffer in = reader_of(pb);
+      for (size_t i = 0; i < lists.size(); i++) {
+         out.push_back(ocs::tom::unpack_raw_list(&in.raw(), 0));
+      }
+      *read_entries = ocs::tom::descr_table_size(&in.raw());
+   } catch (const ocs::tom::PackException &) {
       return false;
    }
-   const size_t header = pb.bytes_used;
-   for (const lList *lp : lists) {
-      ok = ok && cull_pack_list(&pb, lp) == PACK_SUCCESS && cull_pack_list(&cnt, lp) == PACK_SUCCESS;
-   }
-   *sent_entries = ocs_cull_pack_table_size(&pb);
-   *counted = cnt.bytes_used == pb.bytes_used - header && ocs_cull_pack_table_size(&cnt) == *sent_entries;
-   char *buf = sge_malloc(pb.bytes_used);
-   memcpy(buf, pb.head_ptr, pb.bytes_used);
-   sge_pack_buffer in;
-   if (ok && init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-      for (size_t i = 0; i < lists.size(); i++) {
-         lList *lp = nullptr;
-         ok = ok && cull_unpack_list(&in, &lp) == PACK_SUCCESS;
-         out.push_back(lp);
-      }
-      *read_entries = ocs_cull_pack_table_size(&in);
-   } else {
-      ok = false;
-   }
-   clear_packbuffer(&in);
-   clear_packbuffer(&cnt);
-   clear_packbuffer(&pb);
-   return ok;
+   return true;
 }
 
 /** @brief DESCR-11: reduced descriptors go through the descriptor table of the buffer */
 static void test_descr_table() {
    const size_t base = ocs_cull_descr_registry_size();
-   lList *lp = make_list(4);
-   lEnumeration *what_a = lWhat("%T(%I %I)", TD_Type, TD_id, TD_name);
-   lEnumeration *what_b = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
-   lList *a1 = lSelect("a1", lp, nullptr, what_a);
-   lList *a2 = lSelect("a2", lp, nullptr, what_a);
-   lList *b1 = lSelect("b1", lp, nullptr, what_b);
-   lFreeWhat(&what_b);
-   lFreeWhat(&what_a);
+   ocs::tom::RawListPtr lp = make_list(4);
+   ocs::tom::RawWhatPtr what_a = what_of(TD_Type, {TD_id, TD_name});
+   ocs::tom::RawWhatPtr what_b = what_of(TD_Type, {TD_id, TD_value});
+   ocs::tom::RawListPtr a1 = select_old("a1", lp.get(), what_a.get());
+   ocs::tom::RawListPtr a2 = select_old("a2", lp.get(), what_a.get());
+   ocs::tom::RawListPtr b1 = select_old("b1", lp.get(), what_b.get());
+   what_b.reset();
+   what_a.reset();
 
-   std::vector<lList *> out;
+   std::vector<ocs::tom::RawListPtr> out;
    size_t sent = 0;
    size_t read = 0;
    bool counted = false;
-   const bool ok = pack_unpack_many({a1, lp, a2, b1, a2}, out, &sent, &read, &counted);
+   const bool ok = pack_unpack_many({a1.get(), lp.get(), a2.get(), b1.get(), a2.get()}, out, &sent, &read, &counted);
    CHECK(35, "each distinct reduction enters the table of the buffer once, on both sides, also when counting",
          ok && sent == 2 && read == 2 && counted);
    CHECK(36, "the unpacked lists share the descriptors of the sender's reductions and the full type keeps its block",
-         ok && out[0]->descr == a1->descr && out[2]->descr == a1->descr && out[4]->descr == a1->descr &&
-         out[3]->descr == b1->descr && out[1]->descr == TD_Type && lGetNumberOfElem(out[2]) == 4 &&
-         lGetUlong(lFirst(out[3]), TD_value) == 0 && lGetString(lFirst(out[0]), TD_name) != nullptr);
-   for (lList *l : out) {
-      lFreeList(&l);
-   }
-   CHECK(37, "the buffers gave their table references up", ocs_cull_descr_refs(a1->descr) == 2);
+         ok && out[0]->descr() == a1->descr() && out[2]->descr() == a1->descr() && out[4]->descr() == a1->descr() &&
+         out[3]->descr() == b1->descr() && out[1]->descr() == TD_Type && out[2]->size() == 4 &&
+         out[3]->front().get<std::uint32_t>(TD_value) == 0 && out[0]->front().get<const char *>(TD_name) != nullptr);
+   out.clear();
+   CHECK(37, "the buffers gave their table references up", ocs_cull_descr_refs(a1->descr()) == 2);
 
    // an index the buffer has not defined yet is a format error
-   sge_pack_buffer pb;
    int forged = PACK_SUCCESS;
-   if (init_packbuffer(&pb, 256, false, false) == PACK_SUCCESS) {
-      packint(&pb, 1);
-      packstr(&pb, "forged");
-      packint(&pb, CULL_PACK_DESCR_TABLE_REF);
-      packint(&pb, 0);
-      packint(&pb, 0);
-      char *buf = sge_malloc(pb.bytes_used);
-      memcpy(buf, pb.head_ptr, pb.bytes_used);
-      sge_pack_buffer in;
-      if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-         lList *l = nullptr;
-         forged = cull_unpack_list(&in, &l);
-         lFreeList(&l);
-      }
-      clear_packbuffer(&in);
-      clear_packbuffer(&pb);
+   try {
+      ocs::tom::PackBuffer pb(false, 256);
+      ocs::tom::put_uint32(&pb.raw(), 1);
+      ocs::tom::put_str(&pb.raw(), "forged");
+      ocs::tom::put_uint32(&pb.raw(), CULL_PACK_DESCR_TABLE_REF);
+      ocs::tom::put_uint32(&pb.raw(), 0);
+      ocs::tom::put_uint32(&pb.raw(), 0);
+      forged = unpack_and_drop_list(pb);
+   } catch (const ocs::tom::PackException &e) {
+      forged = e.code();
    }
    CHECK(38, "an index the buffer has not defined is a format error", forged == PACK_FORMAT);
 
-   lFreeList(&b1);
-   lFreeList(&a2);
-   lFreeList(&a1);
-   lFreeList(&lp);
+   b1.reset();
+   a2.reset();
+   a1.reset();
+   lp.reset();
    CHECK(39, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
@@ -697,70 +709,64 @@ static void test_descr_table() {
  *
  * @param fields the fields the sender's type has, each with a ulong, string or bool value
  * @param type_ref true for a type reference without flags, false for flag-filtered data packed field by field
- * @param expected the type passed to cull_unpack_elem_partial()
- * @param[out] out receives the element, owned by the caller
+ * @param expected the type passed to unpack_raw_elem()
+ * @param[out] out receives the owner of the element, empty on an error
  * @param[out] trailer_ok set to whether the trailer followed the element
- * @return the result of cull_unpack_elem_partial()
+ * @return the result of unpack_raw_elem(): PACK_SUCCESS or the code it threw
  */
 static int unpack_forged_elem(const std::vector<lDescr> &fields, const bool type_ref, const lDescr *expected,
-                              lListElem **out, bool *trailer_ok) {
+                              ocs::tom::RawElementPtr &out, bool *trailer_ok) {
    constexpr uint32_t trailer = 0xABCD;
-   int ret = PACK_FORMAT;
-   *out = nullptr;
+   out.reset();
    *trailer_ok = false;
-   sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
-      return ret;
-   }
-   packint(&pb, elem_kind_to_wire(FREE_ELEM));
-   if (type_ref) {
-      packint(&pb, CULL_PACK_DESCR_TYPE_REF);
-      packint(&pb, fields[0].nm);
-      packint(&pb, fields.size());
-   } else {
-      packint(&pb, fields.size());
-      for (const lDescr &f : fields) {
-         packint(&pb, f.nm);
-         packint(&pb, f.mt);
+   try {
+      ocs::tom::PackBuffer pb(false, 256);
+      sge_pack_buffer *raw = &pb.raw();
+      ocs::tom::put_uint32(raw, elem_kind_to_wire(FREE_ELEM));
+      if (type_ref) {
+         ocs::tom::put_uint32(raw, CULL_PACK_DESCR_TYPE_REF);
+         ocs::tom::put_uint32(raw, fields[0].nm);
+         ocs::tom::put_uint32(raw, static_cast<uint32_t>(fields.size()));
+      } else {
+         ocs::tom::put_uint32(raw, static_cast<uint32_t>(fields.size()));
+         for (const lDescr &f : fields) {
+            ocs::tom::put_uint32(raw, f.nm);
+            ocs::tom::put_uint32(raw, f.mt);
+         }
       }
-   }
-   for (size_t i = 0; i < fields.size(); i++) {
-      switch (mt_get_type(fields[i].mt)) {
-         case lStringT:
-            packstr(&pb, "s");
-            break;
-         case lBoolT:
-            packint(&pb, 1);
-            break;
-         default:
-            packint(&pb, 7 + i);
-            break;
+      for (size_t i = 0; i < fields.size(); i++) {
+         switch (mt_get_type(fields[i].mt)) {
+            case lStringT:
+               ocs::tom::put_str(raw, "s");
+               break;
+            case lBoolT:
+               ocs::tom::put_uint32(raw, 1);
+               break;
+            default:
+               ocs::tom::put_uint32(raw, static_cast<uint32_t>(7 + i));
+               break;
+         }
       }
+      ocs::tom::put_uint32(raw, trailer);
+      ocs::tom::PackBuffer in = reader_of(pb);
+      out = ocs::tom::unpack_raw_elem(&in.raw(), expected, type_ref ? 0 : CULL_SPOOL);
+      *trailer_ok = ocs::tom::get_uint32(&in.raw()) == trailer;
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-   packint(&pb, trailer);
-   sge_pack_buffer in;
-   char *buf = sge_malloc(pb.bytes_used);
-   memcpy(buf, pb.head_ptr, pb.bytes_used);
-   if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-      ret = cull_unpack_elem_partial(&in, out, expected, type_ref ? 0 : CULL_SPOOL);
-      uint32_t word = 0;
-      *trailer_ok = ret == PACK_SUCCESS && unpackint(&in, &word) == PACK_SUCCESS && word == trailer;
-   }
-   clear_packbuffer(&in);
-   clear_packbuffer(&pb);
-   return ret;
+   return PACK_SUCCESS;
 }
 
 /**
  * @brief Whether an element is a full GR_Type with the leading values of unpack_forged_elem() and initial ones after
- * @param ep the element
+ * @param ep the element, may be empty
  * @param sent how many leading fields the sender had
  * @return true if the element looks as expected
  */
-static bool grown_elem_ok(const lListElem *ep, const int sent) {
-   return ep != nullptr && ep->descr == GR_Type && lGetUlong(ep, GR_id) == 7 &&
-          sge_strnullcmp(lGetString(ep, GR_name), "s") == 0 &&
-          lGetUlong(ep, GR_value) == (sent > 2 ? 9u : 0u) && lGetBool(ep, GR_flag) == (sent > 3);
+static bool grown_elem_ok(const ocs::tom::ConstRawElement ep, const int sent) {
+   return ep && ep.descr() == GR_Type && ep.get<std::uint32_t>(GR_id) == 7 &&
+          sge_strnullcmp(ep.get<const char *>(GR_name), "s") == 0 &&
+          ep.get<std::uint32_t>(GR_value) == (sent > 2 ? 9u : 0u) && ep.get<bool>(GR_flag) == (sent > 3);
 }
 
 /** @brief DESCR-12: types grown at the end stay readable (N-W-6) */
@@ -772,69 +778,57 @@ static void test_grown_types() {
    longer.push_back({GR_flag + 1, lUlongT | CULL_SPOOL});
    const std::vector<lDescr> gap = {GR_Type[0], GR_Type[2]};
 
-   lListElem *ep = nullptr;
+   ocs::tom::RawElementPtr ep;
    bool trailer_a = false;
    bool trailer_b = false;
-   const int ref_ret = unpack_forged_elem(shorter, true, nullptr, &ep, &trailer_a);
-   bool ref_ok = ref_ret == PACK_SUCCESS && grown_elem_ok(ep, 2) && trailer_a;
-   lFreeElem(&ep);
-   const int spool_ret = unpack_forged_elem(shorter, false, GR_Type, &ep, &trailer_b);
-   const bool spool_ok = spool_ret == PACK_SUCCESS && grown_elem_ok(ep, 2) && trailer_b;
-   lFreeElem(&ep);
+   const int ref_ret = unpack_forged_elem(shorter, true, nullptr, ep, &trailer_a);
+   bool ref_ok = ref_ret == PACK_SUCCESS && grown_elem_ok(ep.get(), 2) && trailer_a;
+   const int spool_ret = unpack_forged_elem(shorter, false, GR_Type, ep, &trailer_b);
+   const bool spool_ok = spool_ret == PACK_SUCCESS && grown_elem_ok(ep.get(), 2) && trailer_b;
+   ep.reset();
    CHECK(40, "a shorter type reference and a shorter spooled type unpack into the full type with initial values "
          "after the sent fields, and the data behind them is read next",
          ref_ok && spool_ok && ocs_cull_descr_registry_size() == base);
 
-   unpack_forged_elem(full, false, GR_Type, &ep, &trailer_a);
-   ref_ok = grown_elem_ok(ep, 4) && trailer_a;
-   lFreeElem(&ep);
+   unpack_forged_elem(full, false, GR_Type, ep, &trailer_a);
+   ref_ok = grown_elem_ok(ep.get(), 4) && trailer_a;
    CHECK(41, "the full type packed field by field is the static block", ref_ok);
 
-   const int longer_ref = unpack_forged_elem(longer, true, nullptr, &ep, &trailer_a);
-   lFreeElem(&ep);
-   const int longer_spool = unpack_forged_elem(longer, false, nullptr, &ep, &trailer_a);
-   lFreeElem(&ep);
+   const int longer_ref = unpack_forged_elem(longer, true, nullptr, ep, &trailer_a);
+   const int longer_spool = unpack_forged_elem(longer, false, nullptr, ep, &trailer_a);
    CHECK(42, "a type longer than the local one is a format error", longer_ref == PACK_FORMAT &&
          longer_spool == PACK_FORMAT);
 
-   const int gap_expected = unpack_forged_elem(gap, false, GR_Type, &ep, &trailer_a);
-   lFreeElem(&ep);
-   const int other_expected = unpack_forged_elem(shorter, false, TD_Type, &ep, &trailer_a);
-   lFreeElem(&ep);
-   const int gap_free = unpack_forged_elem(gap, false, nullptr, &ep, &trailer_b);
-   const bool gap_reduced = gap_free == PACK_SUCCESS && ep != nullptr && (ep->descr[0].mt & CULL_IS_REDUCED) != 0;
-   lFreeElem(&ep);
+   const int gap_expected = unpack_forged_elem(gap, false, GR_Type, ep, &trailer_a);
+   const int other_expected = unpack_forged_elem(shorter, false, TD_Type, ep, &trailer_a);
+   const int gap_free = unpack_forged_elem(gap, false, nullptr, ep, &trailer_b);
+   const bool gap_reduced = gap_free == PACK_SUCCESS && ep && (ep->descr()[0].mt & CULL_IS_REDUCED) != 0;
+   ep.reset();
    CHECK(43, "on the spool path a descriptor that is not a version of the expected type is a format error, "
          "without an expected type it stays a reduced element",
          gap_expected == PACK_FORMAT && other_expected == PACK_FORMAT && gap_reduced);
 
    // a selection of the leading fields is marked reduced by the sender and never taken for a shorter type
-   lListElem *src = lCreateElem(GR_Type);
-   lSetUlong(src, GR_id, 3);
-   lSetString(src, GR_name, "n");
-   const int sel[] = {GR_id, GR_name, NoName};
-   lEnumeration *what = lIntVector2What(GR_Type, sel);
-   lListElem *copy = nullptr;
-   sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 256, false, false) == PACK_SUCCESS) {
-      if (cull_pack_elem_partial(&pb, src, what, CULL_SPOOL) == PACK_SUCCESS) {
-         char *buf = sge_malloc(pb.bytes_used);
-         memcpy(buf, pb.head_ptr, pb.bytes_used);
-         sge_pack_buffer in;
-         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            cull_unpack_elem_partial(&in, &copy, nullptr, CULL_SPOOL);
-         }
-         clear_packbuffer(&in);
-      }
-      clear_packbuffer(&pb);
+   auto src = ocs::tom::RawElementPtr::create(GR_Type);
+   src->set(GR_id, std::uint32_t{3});
+   src->set(GR_name, static_cast<const char *>("n"));
+   ocs::tom::RawWhatPtr what = what_of(GR_Type, {GR_id, GR_name});
+   ocs::tom::RawElementPtr copy;
+   try {
+      ocs::tom::PackBuffer pb(false, 256);
+      ocs::tom::pack_elem(&pb.raw(), src.get(), what.get(), CULL_SPOOL);
+      ocs::tom::PackBuffer in = reader_of(pb);
+      copy = ocs::tom::unpack_raw_elem(&in.raw(), nullptr, CULL_SPOOL);
+   } catch (const ocs::tom::PackException &) {
+      copy.reset();
    }
    CHECK(44, "a selection of the leading fields packed with flags stays a reduced element",
-         copy != nullptr && lCountPresent(copy->descr) == 2 && lCountDescr(copy->descr) == 4 &&
-         (copy->descr[0].mt & CULL_IS_REDUCED) != 0 &&
-         lGetUlong(copy, GR_id) == 3);
-   lFreeElem(&copy);
-   lFreeWhat(&what);
-   lFreeElem(&src);
+         copy && lCountPresent(copy->descr()) == 2 && ocs::tom::descr_length(copy->descr()) == 4 &&
+         (copy->descr()[0].mt & CULL_IS_REDUCED) != 0 &&
+         copy->get<std::uint32_t>(GR_id) == 3);
+   copy.reset();
+   what.reset();
+   src.reset();
    CHECK(45, "after the elements the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
@@ -861,12 +855,13 @@ static void test_slots() {
 
    lDescr built[5];
    full_length_name_flag(built, false);
-   CHECK(48, "a plain full-length array counts its present fields", lCountPresent(built) == 2 && lCountDescr(built) == 4);
+   CHECK(48, "a plain full-length array counts its present fields",
+         lCountPresent(built) == 2 && ocs::tom::descr_length(built) == 4);
 
    const lDescr *dp = ocs_cull_descr_intern(built);
    const cull_descr_header *h = dp != nullptr ? ocs_cull_descr_header_of(dp) : nullptr;
    bool range_ok = h != nullptr && h->n == 4 && h->np == 2 &&
-                   lCountPresent(dp) == 2 && lCountDescr(dp) == 4;
+                   lCountPresent(dp) == 2 && ocs::tom::descr_length(dp) == 4;
    std::vector<std::pair<int, int>> seen;
    if (dp != nullptr) {
       for (const auto f : ocs_cull_present_fields(dp)) {
@@ -889,20 +884,20 @@ static void test_slots() {
          dp2 != nullptr && dp2 != dp && ocs_cull_descr_registry_size() == base + 2 &&
          seen == (std::vector<std::pair<int, int>>{{3, 0}, {1, 1}}));
 
-   lListElem *ep = lCreateElem(dp);
-   bool values_ok = ep != nullptr && ep->descr == dp;
+   ocs::tom::RawElementPtr ep = dp != nullptr ? ocs::tom::RawElementPtr::create(dp) : ocs::tom::RawElementPtr();
+   bool values_ok = ep && ep->descr() == dp;
    if (values_ok) {
-      lSetString(ep, TD_name, "slot");
-      lSetBool(ep, TD_flag, true);
-      values_ok = strcmp(ep->cont[0].str, "slot") == 0 && ep->cont[1].b && strcmp(lGetString(ep, TD_name), "slot") == 0 &&
-                  lGetBool(ep, TD_flag);
-      lListElem *copy = lCopyElem(ep);
-      values_ok = values_ok && copy != nullptr && copy->descr == dp && strcmp(lGetString(copy, TD_name), "slot") == 0 &&
-                  lGetBool(copy, TD_flag);
-      lFreeElem(&copy);
+      ep->set(TD_name, static_cast<const char *>("slot"));
+      ep->set(TD_flag, true);
+      const lListElem *raw = ep.get();
+      values_ok = strcmp(raw->cont[0].str, "slot") == 0 && raw->cont[1].b &&
+                  strcmp(ep->get<const char *>(TD_name), "slot") == 0 && ep->get<bool>(TD_flag);
+      ocs::tom::RawElementPtr copy = ep.clone();
+      values_ok = values_ok && copy && copy->descr() == dp && strcmp(copy->get<const char *>(TD_name), "slot") == 0 &&
+                  copy->get<bool>(TD_flag);
    }
    CHECK(51, "an element of it holds two values in their slots, read, written and copied by field name", values_ok);
-   lFreeElem(&ep);
+   ep.reset();
 
    ocs_cull_descr_release(&dp);
    ocs_cull_descr_release(&dp2);
@@ -921,18 +916,18 @@ static void test_reduce() {
          seen.emplace_back(f.pos, f.slot);
       }
    }
-   bool order_ok = a != nullptr && a == b && lCountPresent(a) == 2 && lCountDescr(a) == 4 &&
+   bool order_ok = a != nullptr && a == b && lCountPresent(a) == 2 && ocs::tom::descr_length(a) == 4 &&
                    seen == (std::vector<std::pair<int, int>>{{1, 0}, {3, 1}}) && a[0].off == OCS_CULL_ABSENT &&
                    mt_get_type(a[1].mt) == lStringT && (a[0].mt & CULL_IS_REDUCED) != 0 &&
                    (a[4].mt & CULL_IS_REDUCED) != 0 && ocs_cull_descr_refs(a) == 2 &&
                    ocs_cull_descr_registry_size() == base + 1;
    CHECK(53, "a field list in any order and with duplicates yields one descriptor in type order", order_ok);
 
-   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_flag, TD_name);
-   const lDescr *c = lGetReducedDescr(TD_Type, what);
+   ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_flag, TD_name});
+   const lDescr *c = ocs::tom::reduced_descr(TD_Type, what.get());
    CHECK(54, "the builder and a selection of the same fields share the descriptor", c == a);
    ocs_cull_descr_release(&c);
-   lFreeWhat(&what);
+   what.reset();
 
    const lDescr *all = ocs_cull_descr_reduce(TD_Type, {TD_id, TD_name, TD_value, TD_flag});
    CHECK(55, "all fields of the type yield the static block", all == TD_Type);
@@ -949,35 +944,26 @@ static void test_reduce() {
 /**
  * @brief Unpack a list whose descriptor table entry lists field indices as given
  * @param indices the indices of TD_Type fields the sender lists
- * @return the result of cull_unpack_list()
+ * @return the result of unpack_raw_list(): PACK_SUCCESS or the code it threw
  */
 static int unpack_forged_by_index(const std::vector<uint32_t> &indices) {
-   int ret = PACK_FORMAT;
-   sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
-      return ret;
+   try {
+      ocs::tom::PackBuffer pb(false, 256);
+      sge_pack_buffer *raw = &pb.raw();
+      ocs::tom::put_uint32(raw, 1);
+      ocs::tom::put_str(raw, "forged");
+      ocs::tom::put_uint32(raw, CULL_PACK_DESCR_TABLE_DEF);
+      ocs::tom::put_uint32(raw, CULL_PACK_DESCR_BY_INDEX);
+      ocs::tom::put_uint32(raw, TD_id);
+      ocs::tom::put_uint32(raw, static_cast<uint32_t>(indices.size()));
+      for (const uint32_t idx : indices) {
+         ocs::tom::put_uint32(raw, idx);
+      }
+      ocs::tom::put_uint32(raw, 0);
+      return unpack_and_drop_list(pb);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-   packint(&pb, 1);
-   packstr(&pb, "forged");
-   packint(&pb, CULL_PACK_DESCR_TABLE_DEF);
-   packint(&pb, CULL_PACK_DESCR_BY_INDEX);
-   packint(&pb, TD_id);
-   packint(&pb, indices.size());
-   for (const uint32_t idx : indices) {
-      packint(&pb, idx);
-   }
-   packint(&pb, 0);
-   char *buf = sge_malloc(pb.bytes_used);
-   memcpy(buf, pb.head_ptr, pb.bytes_used);
-   sge_pack_buffer in;
-   if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-      lList *l = nullptr;
-      ret = cull_unpack_list(&in, &l);
-      lFreeList(&l);
-   }
-   clear_packbuffer(&in);
-   clear_packbuffer(&pb);
-   return ret;
 }
 
 /** @brief DESCR-15: the wire lists fields in type order (N-B-8) */
@@ -987,121 +973,131 @@ static void test_wire_order() {
    CHECK(58, "a table entry listing field indices out of order or twice is a format error",
          unpack_forged_by_index({2, 1}) == PACK_FORMAT && unpack_forged_by_index({1, 1}) == PACK_FORMAT);
 
-   lListElem *ep = nullptr;
+   ocs::tom::RawElementPtr ep;
    bool trailer = false;
    const int ret = unpack_forged_elem({{TD_value, lUlongT | CULL_SPOOL}, {TD_id, lUlongT | CULL_SPOOL}}, false,
-                                      nullptr, &ep, &trailer);
-   lFreeElem(&ep);
+                                      nullptr, ep, &trailer);
+   ep.reset();
    CHECK(59, "a descriptor packed field by field out of type order is a format error", ret == PACK_FORMAT);
 
-   lList *lp = make_list(3);
-   lEnumeration *what = lWhat("%T(%I %I %I)", TD_Type, TD_name, TD_id, TD_name);
-   lList *sel = lSelect("dup", lp, nullptr, what);
-   lList *back = sel != nullptr ? pack_unpack(sel) : nullptr;
-   const lListElem *first = back != nullptr ? lFirst(back) : nullptr;
+   ocs::tom::RawListPtr lp = make_list(3);
+   ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_name, TD_id, TD_name});
+   ocs::tom::RawListPtr sel = select_old("dup", lp.get(), what.get());
+   ocs::tom::RawListPtr back = sel ? pack_unpack(sel.get()) : ocs::tom::RawListPtr();
+   const ocs::tom::ConstRawElement first = back ? back->front() : ocs::tom::ConstRawElement();
    CHECK(61, "a field selected twice is selected once, and the reduction goes over the wire",
-         lCountWhat(what, TD_Type) == 2 && sel != nullptr && lCountPresent(lGetListDescr(sel)) == 2 &&
-         back != nullptr && lGetNumberOfElem(back) == 3 && first != nullptr && lGetUlong(first, TD_id) == 0 &&
-         strcmp(lGetString(first, TD_name), "n0") == 0);
-   lFreeList(&back);
-   lFreeList(&sel);
-   lFreeWhat(&what);
-   lFreeList(&lp);
+         ocs::tom::count_what(what.get(), TD_Type) == 2 && sel && lCountPresent(sel->descr()) == 2 &&
+         back && back->size() == 3 && first && first.get<std::uint32_t>(TD_id) == 0 &&
+         strcmp(first.get<const char *>(TD_name), "n0") == 0);
+   back.reset();
+   sel.reset();
+   what.reset();
+   lp.reset();
 
    CHECK(60, "after the buffers the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
 /**
- * @brief Whether reading a field through the accessor aborts the process
+ * @brief Whether reading a string field throws a FieldException with a given reason
  * @param ep the element
  * @param nm the field, of type string
- * @return true if a child that reads it dies instead of exiting normally
+ * @param reason the reason the exception must carry
+ * @return true if the read throws with @p reason
  */
-static bool read_aborts(const lListElem *ep, const int nm) {
-   fflush(stdout);
-   fflush(stderr);
-   const pid_t pid = fork();
-   if (pid == 0) {
-      // silence the expected CRITICAL message of the child
-      [[maybe_unused]] FILE *err = freopen("/dev/null", "w", stderr);
-      [[maybe_unused]] FILE *out = freopen("/dev/null", "w", stdout);
-      lGetString(ep, nm);
-      _exit(0);
+static bool read_throws(const ocs::tom::ConstRawElement ep, const int nm,
+                        const ocs::tom::FieldException::Reason reason) {
+   try {
+      static_cast<void>(ep.get<const char *>(nm));
+   } catch (const ocs::tom::FieldException &e) {
+      return e.reason() == reason;
    }
-   int status = 0;
-   if (pid < 0 || waitpid(pid, &status, 0) != pid) {
+   return false;
+}
+
+/**
+ * @brief Whether reading a string field of an element throws nothing at all
+ * @param ep the element
+ * @param nm the field
+ * @return true if the read throws no exception
+ */
+static bool reads_cleanly(const ocs::tom::ConstRawElement ep, const int nm) {
+   try {
+      static_cast<void>(ep.get<const char *>(nm));
+   } catch (...) {
       return false;
    }
-   return !(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+   return true;
 }
 
 /** @brief DESCR-16: positions, absent and foreign fields of full-length descriptors (N-B-2, N-B-3, N-B-4) */
 static void test_absent_fields() {
    const size_t base = ocs_cull_descr_registry_size();
-   lList *lp = make_list(2);
-   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_name, TD_value);
-   lList *red = lSelect("red", lp, nullptr, what);
-   const lListElem *full = lFirst(lp);
-   const lListElem *ep = red != nullptr ? lFirst(red) : nullptr;
-   const lDescr *dp = ep != nullptr ? lGetElemDescr(ep) : nullptr;
+   ocs::tom::RawListPtr lp = make_list(2);
+   ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_name, TD_value});
+   ocs::tom::RawListPtr red = select_old("red", lp.get(), what.get());
+   const ocs::tom::ConstRawElement full = lp->front();
+   const ocs::tom::ConstRawElement ep = red ? red->front() : ocs::tom::ConstRawElement();
+   const lDescr *dp = ep ? ep.descr() : nullptr;
 
    CHECK(62, "a reduced element has the length of its type and keeps the positions of the type",
-         dp != nullptr && lCountDescr(dp) == 4 && lCountPresent(dp) == 2 &&
-         lGetPosViaElem(ep, TD_name, 0) == lGetPosInDescr(TD_Type, TD_name) &&
-         lGetPosViaElem(ep, TD_value, 0) == lGetPosInDescr(TD_Type, TD_value) &&
-         lGetPosViaElem(full, TD_value, 0) == lGetPosViaElem(ep, TD_value, 0));
+         dp != nullptr && ocs::tom::descr_length(dp) == 4 && lCountPresent(dp) == 2 &&
+         ocs::tom::present_pos(dp, TD_name) == 1 && ocs::tom::present_pos(dp, TD_value) == 2 &&
+         ocs::tom::present_pos(full.descr(), TD_value) == 2);
 
    CHECK(63, "a field the reduction does not hold is not found and has no type",
-         dp != nullptr && lGetPosViaElem(ep, TD_id, 0) == -1 && lGetPosInDescr(dp, TD_flag) == -1 &&
-         _lGetPosInDescr(dp, TD_flag) == -1 && lGetType(dp, TD_id) == lEndT && lGetType(dp, TD_name) == lStringT);
+         dp != nullptr && ocs::tom::present_pos(dp, TD_id) == -1 && !ep.has(TD_id) &&
+         ocs::tom::present_pos(dp, TD_flag) == -1 && ocs::tom::field_type(dp, TD_id) == lEndT &&
+         ocs::tom::field_type(dp, TD_name) == lStringT);
 
    CHECK(64, "a field of another type is not found in a full or a reduced descriptor",
-         dp != nullptr && lGetPosInDescr(TD_Type, GR_name) == -1 && lGetPosInDescr(dp, GR_name) == -1 &&
-         lGetPosInDescr(TD_Type, TD_id + 4) == -1 && lGetPosViaElem(full, GR_id, 0) == -1);
+         dp != nullptr && ocs::tom::present_pos(TD_Type, GR_name) == -1 && ocs::tom::present_pos(dp, GR_name) == -1 &&
+         ocs::tom::present_pos(TD_Type, TD_id + 4) == -1 && !full.has(GR_id));
 
    CHECK(65, "the values of the held fields are those of the source",
-         ep != nullptr && lGetUlong(ep, TD_value) == lGetUlong(full, TD_value) &&
-         strcmp(lGetString(ep, TD_name), lGetString(full, TD_name)) == 0);
+         ep && ep.get<std::uint32_t>(TD_value) == full.get<std::uint32_t>(TD_value) &&
+         strcmp(ep.get<const char *>(TD_name), full.get<const char *>(TD_name)) == 0);
 
-   CHECK(66, "reading a field the reduction does not hold aborts",
-         ep != nullptr && !read_aborts(ep, TD_name) && read_aborts(ep, TD_id));
+   CHECK(66, "reading a field the reduction holds does not throw, one it does not hold throws AbsentField",
+         ep && reads_cleanly(ep, TD_name) &&
+         read_throws(ep, TD_id, ocs::tom::FieldException::Reason::AbsentField));
 
-   lFreeList(&red);
-   lFreeWhat(&what);
-   lFreeList(&lp);
+   red.reset();
+   what.reset();
+   lp.reset();
    CHECK(67, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
 /** @brief DESCR-17: an element of a type the installed object model does not hold (CS-439) */
 static void test_unregistered_type() {
    const size_t base = ocs_cull_descr_registry_size();
-   lListElem *ep = lCreateElem(UR_Type);
-   lSetUlong(ep, UR_id, 7);
-   lSetString(ep, UR_text, "packed");
-   lListElem *back = nullptr;
-   sge_pack_buffer pb;
+   auto ep = ocs::tom::RawElementPtr::create(UR_Type);
+   ep->set(UR_id, std::uint32_t{7});
+   ep->set(UR_text, static_cast<const char *>("packed"));
+   ocs::tom::RawElementPtr back;
    int pack_ret = PACK_FORMAT;
    int ret = PACK_SUCCESS;
-   if (init_packbuffer(&pb, 256, false, false) == PACK_SUCCESS) {
-      pack_ret = cull_pack_elem(&pb, ep);
-      if (pack_ret == PACK_SUCCESS) {
-         char *buf = sge_malloc(pb.bytes_used);
-         memcpy(buf, pb.head_ptr, pb.bytes_used);
-         sge_pack_buffer in;
-         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            ret = cull_unpack_elem(&in, &back, nullptr);
-         }
-         clear_packbuffer(&in);
-      }
-      clear_packbuffer(&pb);
+   try {
+      ocs::tom::PackBuffer pb(false, 256);
+      ocs::tom::pack_elem(&pb.raw(), ep.get(), nullptr, 0);
+      pack_ret = PACK_SUCCESS;
+      ocs::tom::PackBuffer in = reader_of(pb);
+      back = ocs::tom::unpack_raw_elem(&in.raw(), nullptr, 0);
+   } catch (const ocs::tom::PackException &e) {
+      ret = e.code();
    }
    CHECK(68, "an element of an unregistered type is packed, and unpacking it is a format error",
-         pack_ret == PACK_SUCCESS && ret == PACK_FORMAT && back == nullptr);
-   lFreeElem(&back);
-   lFreeElem(&ep);
+         pack_ret == PACK_SUCCESS && ret == PACK_FORMAT && !back);
+   back.reset();
+   ep.reset();
    CHECK(69, "after the element the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
+/**
+ * @brief Run the scenarios of this test
+ * @param argc the number of arguments
+ * @param argv the arguments, handed to the module test driver
+ * @return the exit status of the module test driver
+ */
 int main(int argc, char *argv[]) {
    ocs::module_test::install_test_model({{"TD", TD_Type, TD_Name, TD_Size}, {"GR", GR_Type, GR_Name, GR_Size}});
 
@@ -1155,7 +1151,7 @@ int main(int argc, char *argv[]) {
        {{"SHD-01", "partly"}}, {25, 26, 27, 46}, test_hash_new},
       {"DESCR-09", "builders and the selection cache",
        "a field selection builds its reduction once, and the builders return the shared descriptor",
-       {"select twice with one selection", "reduce with lReduceDescr and lGetReducedDescr",
+       {"select twice with one selection", "reduce with reduced_descr() twice",
         "free the selection and the lists"},
        "the second select and the builders only take references, freeing the selection gives the cached one up, "
        "and the registry is empty at the end",
@@ -1209,7 +1205,7 @@ int main(int argc, char *argv[]) {
        {"select two fields of a list", "look up held, absent and foreign fields by position and type",
         "read held and absent fields"},
        "positions equal those of the type, absent and foreign fields are not found and have no type, held values "
-       "are those of the source, and reading an absent field aborts",
+       "are those of the source, and reading an absent field throws AbsentField",
        {{"FLD-01", "partly"}, {"FLD-02", "unit level"}}, {62, 63, 64, 65, 66, 67}, test_absent_fields},
       {"DESCR-17", "types the object model does not hold",
        "data of a type outside the object model is rejected on the wire",

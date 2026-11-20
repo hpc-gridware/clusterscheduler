@@ -37,9 +37,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 #include <sge_log.h>
-#include "cull/cull_test_api.h"
 
 /*
  * @todo: make it a C++ program
@@ -138,6 +138,10 @@ load_or_create_rand_file() {
    }
 }
 
+/**
+ * @brief Create the jobs of the measurement in the job list
+ * @return true on success
+ */
 static bool
 create_jobs() {
    bool ret = true;
@@ -174,10 +178,10 @@ create_jobs() {
    for (int i = 0; i < num_jobs; i++) {
       ocs::tom::Element<ocs::tom::JB> ep = ocs::tom::emplace_back<JB_job_number>(&master_job_list, i + 1);
       int idx = i % num_users;
-      ocs::tom::set<JB_owner>(ep, users[idx].user);
-      ocs::tom::set<JB_group>(ep, users[idx].group);
-      ocs::tom::set<JB_uid>(ep, users[idx].uid);
-      ocs::tom::set<JB_gid>(ep, users[idx].gid);
+      ep.set<JB_owner>(users[idx].user);
+      ep.set<JB_group>(users[idx].group);
+      ep.set<JB_uid>(users[idx].uid);
+      ep.set<JB_gid>(users[idx].gid);
    }
    auto time_end = std::chrono::high_resolution_clock::now();
    auto millisecs = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start);
@@ -186,6 +190,10 @@ create_jobs() {
    return ret;
 }
 
+/**
+ * @brief Find every job by its number in random order and change it
+ * @return true if every job was found
+ */
 static bool
 update_jobs() {
    bool ret = true;
@@ -200,10 +208,10 @@ update_jobs() {
          ret = false;
          break;
       } else {
-         ocs::tom::add<JB_version>(job, 1);
-         ocs::tom::set<JB_script_file>(job, "/bin/sleep");
-         ocs::tom::set<JB_jobshare>(job, i);
-         ocs::tom::set<JB_urg>(job, job_id % 100);
+         job.add<JB_version>(1);
+         job.set<JB_script_file>("/bin/sleep");
+         job.set<JB_jobshare>(i);
+         job.set<JB_urg>(job_id % 100);
          // add some sub objects, e.g. a gdil
       }
    }
@@ -214,6 +222,10 @@ update_jobs() {
    return ret;
 }
 
+/**
+ * @brief Find every job by its number in random order and remove it, then free the list
+ * @return true if every job was found
+ */
 static bool
 delete_jobs() {
    bool ret = true;
@@ -222,16 +234,16 @@ delete_jobs() {
    auto time_start = std::chrono::high_resolution_clock::now();
    for (i = 0; i < num_jobs; i++) {
       uint32_t job_id = random_array[i];
-      lListElem *job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+      const ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
       if (job == nullptr) {
          fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;
          break;
       } else {
-         lRemoveElem(master_job_list, &job);
+         ocs::tom::List<ocs::tom::JB>(master_job_list).erase(job);
       }
    }
-   lFreeList(&master_job_list);
+   ocs::tom::free_raw_list(master_job_list);
 
    auto time_end = std::chrono::high_resolution_clock::now();
    auto millisecs = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start);

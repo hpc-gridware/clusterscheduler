@@ -36,7 +36,6 @@
 #include "tom/ocs_Element.h"
 
 #include "sort_hosts.h"
-#include "cull/cull_test_api.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -217,6 +216,12 @@ static void test_scaled_mixed_load(const ocs::tom::ConstElement<ocs::tom::EH> ho
 
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Run the checks of this module test
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sched_load_formula");
 
@@ -224,17 +229,17 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    // build a single-entry complex with num_proc = 4
    auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
-   lListElem *centry = lCreateElem(ocs::tom::CE::descriptor.e);
-   ocs::tom::set<CE_name>(centry, "num_proc");
-   ocs::tom::set<CE_stringval>(centry, "4");
-   ocs::tom::set<CE_doubleval>(centry, 4);
-   lAppendElem(*centry_list, centry);
+   auto new_centry = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   new_centry->set<CE_name>("num_proc");
+   new_centry->set<CE_stringval>("4");
+   new_centry->set<CE_doubleval>(4);
+   const ocs::tom::Element<ocs::tom::CE> centry = centry_list->push_back(std::move(new_centry));
 
    // build a host element carrying the complex values
    auto host_centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
-   lAppendElem(*host_centry_list, lCopyElem(centry));
+   host_centry_list->push_back(centry.clone());
    auto host = ocs::tom::ElementPtr<ocs::tom::EH>::create();
-   ocs::tom::set<EH_consumable_config_list>(host, std::move(host_centry_list));
+   host->set<EH_consumable_config_list>(std::move(host_centry_list));
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 

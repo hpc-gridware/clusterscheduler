@@ -41,7 +41,6 @@
 #include <cstdlib>
 #include <cerrno>
 
-
 #include <pthread.h>
 
 /** @brief How long a commproc may be silent before the test gives up, in seconds */
@@ -50,8 +49,6 @@
 #include "japi/drmaa.h"
 #include "japi/japi.h"
 #include "japi/japiP.h"
-
-#include "cull/cull_test_api.h"
 
 #include "uti/sge_component.h"
 #include "uti/sge_profiling.h"

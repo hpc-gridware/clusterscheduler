@@ -19,15 +19,20 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Unit tests for sorting in `libs/cull`
+ * @brief Unit tests for sorting in the core of the typed object model (libs/tom)
  *
- * Covers the sort order builders (lParseSortOrderVarArg, lCreateSortOrder,
- * lAddSortCriteria), lSortCompare, lSortList, lInsertSorted and lResortElem,
- * and checks that hash tables stay usable after the list was re-linked.
+ * Covers building a sort order (ocs::tom::make_sort_order), comparing two
+ * elements by it (sort_compare), sorting a list (sort_list), inserting into a
+ * sorted list (insert_sorted) and moving a changed element to its place
+ * (resort_elem), and checks that hash tables stay usable after the list was
+ * re-linked. The test type has no generated traits, so the lists are driven
+ * through the run-time typed handles of tom/ocs_Raw.h.
  */
 
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 
 /** @brief Make this translation unit the one that defines the CULL descriptors
  *
@@ -37,7 +42,13 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_types.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_Host.h"
+#include "tom/ocs_Raw.h"
+#include "tom/ocs_SortCore.h"
 #include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
@@ -102,8 +113,8 @@ static int s_fail = 0;
  * @param lp the list; nullptr counts as empty
  * @return the element count
  */
-static int nelem(const lList *lp) {
-   return static_cast<int>(lGetNumberOfElem(lp));
+static int nelem(const ocs::tom::ConstRawList lp) {
+   return static_cast<int>(lp.size());
 }
 
 /** @def CHECK
@@ -126,6 +137,28 @@ static int nelem(const lList *lp) {
       } \
    } while (0)
 
+/**
+ * @brief Build a sort order of the test type
+ * @param keys the criteria, the first deciding first
+ * @return the order, freed with ocs::tom::free_sort_order()
+ */
+static lSortOrder *make_order(const std::initializer_list<ocs::tom::SortKey> keys) {
+   return ocs::tom::make_sort_order(TEST_Type, std::span<const ocs::tom::SortKey>(keys.begin(), keys.size()));
+}
+
+/**
+ * @brief Create a test element with a string key and append it, as lAddElemStr() did
+ * @param lp the list
+ * @param nm the string field
+ * @param key the key
+ * @return the new element, owned by the list
+ */
+static ocs::tom::RawElement add_str(const ocs::tom::RawList lp, const int nm, const char *key) {
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   ep->set(nm, key);
+   return lp.push_back(std::move(ep));
+}
+
 /** @brief Build a list whose elements carry the given ulong values
  *
  * Every element also gets a unique key `k<value>` in TEST_string_ukey and the
@@ -133,18 +166,18 @@ static int nelem(const lList *lp) {
  *
  * @param values the TEST_ulong values, in list order
  * @param n the number of values
- * @return the new list, owned by the caller
+ * @return the new list
  */
-static lList *make_ulong_list(const lUlong *values, int n) {
-   lList *lp = lCreateList("sort", TEST_Type);
+static ocs::tom::RawListPtr make_ulong_list(const std::uint32_t *values, const int n) {
+   auto lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "sort");
    for (int i = 0; i < n; i++) {
       char key[32];
-      snprintf(key, sizeof(key), "k%u", (unsigned) values[i]);
-      lListElem *ep = lCreateElem(TEST_Type);
-      lSetUlong(ep, TEST_ulong, values[i]);
-      lSetUlong(ep, TEST_ulong_hashed, values[i] % 2);
-      lSetString(ep, TEST_string_ukey, key);
-      lAppendElem(lp, ep);
+      snprintf(key, sizeof(key), "k%u", static_cast<unsigned>(values[i]));
+      auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+      ep->set(TEST_ulong, values[i]);
+      ep->set(TEST_ulong_hashed, values[i] % 2);
+      ep->set(TEST_string_ukey, static_cast<const char *>(key));
+      lp->push_back(std::move(ep));
    }
    return lp;
 }
@@ -156,14 +189,13 @@ static lList *make_ulong_list(const lUlong *values, int n) {
  * @param n the number of expected values; the list must have exactly this many
  * @return true when the list holds exactly the expected values in that order
  */
-static bool ulong_order_is(const lList *lp, const lUlong *expected, int n) {
+static bool ulong_order_is(const ocs::tom::ConstRawList lp, const std::uint32_t *expected, const int n) {
    if (nelem(lp) != n) {
       return false;
    }
    int i = 0;
-   const lListElem *ep;
-   for_each_ep(ep, lp) {
-      if (lGetUlong(ep, TEST_ulong) != expected[i++]) {
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      if (ep.get<std::uint32_t>(TEST_ulong) != expected[i++]) {
          return false;
       }
    }
@@ -176,20 +208,19 @@ static bool ulong_order_is(const lList *lp, const lUlong *expected, int n) {
  * elements as a forward walk, back to front.
  *
  * @param lp the list to inspect
- * @return true when walking backwards from lLast reaches every element once
+ * @return true when walking backwards from the last element reaches every element once
  */
-static bool back_links_consistent(const lList *lp) {
+static bool back_links_consistent(const ocs::tom::ConstRawList lp) {
    int n = 0;
-   const lListElem *ep;
    const lListElem *expected_next = nullptr;
-   for (ep = lLast(lp); ep != nullptr; ep = lPrev(ep)) {
-      if (lNext(ep) != expected_next) {
+   for (ocs::tom::ConstRawElement ep = lp.back(); ep; ep = ep.prev()) {
+      if (ep.next().raw() != expected_next) {
          return false;
       }
-      expected_next = ep;
+      expected_next = ep.raw();
       n++;
    }
-   return n == nelem(lp) && expected_next == lFirst(lp);
+   return n == nelem(lp) && expected_next == lp.front().raw();
 }
 
 /** @brief Check that every element is still found through both hash tables
@@ -198,21 +229,21 @@ static bool back_links_consistent(const lList *lp) {
  * @return true when each unique key resolves to its own element and the
  *         non-unique hash yields exactly the elements carrying each value
  */
-static bool hashes_consistent(const lList *lp) {
-   const lListElem *ep;
+static bool hashes_consistent(const ocs::tom::ConstRawList lp) {
    int expected[2] = {0, 0};
-   for_each_ep(ep, lp) {
-      if (lGetElemStr(lp, TEST_string_ukey, lGetString(ep, TEST_string_ukey)) != ep) {
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      if (lp.find_first(TEST_string_ukey, ep.get<const char *>(TEST_string_ukey)).raw() != ep.raw()) {
          return false;
       }
-      expected[lGetUlong(ep, TEST_ulong_hashed)]++;
+      expected[ep.get<std::uint32_t>(TEST_ulong_hashed)]++;
    }
-   for (lUlong v = 0; v < 2; v++) {
+   const int pos = ocs::tom::field_pos(TEST_Type, TEST_ulong_hashed);
+   for (std::uint32_t v = 0; v < 2; v++) {
       int found = 0;
       const void *it = nullptr;
-      for (const lListElem *h = lGetElemUlongFirst(lp, TEST_ulong_hashed, v, &it);
-           h != nullptr; h = lGetElemUlongNext(lp, TEST_ulong_hashed, v, &it)) {
-         if (lGetUlong(h, TEST_ulong_hashed) != v) {
+      for (const lListElem *h = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.raw(), pos, v, &it);
+           h != nullptr; h = ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp.raw(), pos, v, &it)) {
+         if (ocs::tom::get<std::uint32_t>(h, TEST_ulong_hashed) != v) {
             return false;
          }
          found++;
@@ -224,137 +255,148 @@ static bool hashes_consistent(const lList *lp) {
    return true;
 }
 
-// ---------------------------------------------------------------------------
-// Sort order construction  [T01–T05]
-//
-// lParseSortOrderVarArg() parses "%I+"/"%I-" format strings; lCreateSortOrder()
-// with lAddSortCriteria() builds the same order by hand. Both must reject a
-// field that is not part of the descriptor.
-// ---------------------------------------------------------------------------
-
-static void test_sort_order() {
-   printf("\n--- sort order construction ---\n");
-
-   // T01: a valid single-field order parses
-   lSortOrder *so = lParseSortOrderVarArg(TEST_Type, "%I+", TEST_ulong);
-   CHECK(1, "lParseSortOrderVarArg with a known field", so != nullptr);
-   lFreeSortOrder(&so);
-   CHECK(2, "lFreeSortOrder resets the pointer", so == nullptr);
-
-   // T03: a field that is not in the descriptor is rejected
-   so = lParseSortOrderVarArg(TEST_Type, "%I+", 4711);
-   CHECK(3, "lParseSortOrderVarArg with an unknown field returns nullptr", so == nullptr);
-   lFreeSortOrder(&so);
-
-   // T04: lAddSortCriteria rejects an unknown field
-   so = lCreateSortOrder(1);
-   CHECK(4, "lAddSortCriteria with an unknown field returns -1",
-         so != nullptr && lAddSortCriteria(TEST_Type, so, 4711, 1) == -1);
-   lFreeSortOrder(&so);
-
-   // T05: a hand-built order sorts like the parsed one
-   const lUlong in[] = {3, 1, 2};
-   const lUlong desc[] = {3, 2, 1};
-   lList *lp = make_ulong_list(in, 3);
-   so = lCreateSortOrder(1);
-   lAddSortCriteria(TEST_Type, so, TEST_ulong, -1);
-   lSortList(lp, so);
-   CHECK(5, "lCreateSortOrder/lAddSortCriteria descending order", ulong_order_is(lp, desc, 3));
-   lFreeSortOrder(&so);
-   lFreeList(&lp);
+/**
+ * @brief The reason of the FieldException a call throws
+ * @param call the call
+ * @param reason the reason expected
+ * @return true if the call threw a FieldException with @p reason
+ */
+template <typename F>
+static bool throws_reason(F &&call, const ocs::tom::FieldException::Reason reason) {
+   try {
+      call();
+   } catch (const ocs::tom::FieldException &e) {
+      return e.reason() == reason;
+   }
+   return false;
 }
 
 // ---------------------------------------------------------------------------
-// lSortCompare  [T06–T09]
+// Sort order construction  [T01–T05]
+//
+// make_sort_order() builds an order from fields and directions, as
+// lParseSortOrderVarArg() did from "%I+"/"%I-" format strings and
+// lCreateSortOrder() with lAddSortCriteria() by hand. It must reject a field
+// that is not part of the descriptor.
+// ---------------------------------------------------------------------------
+
+/** @brief T01-T05: building and freeing a sort order */
+static void test_sort_order() {
+   printf("\n--- sort order construction ---\n");
+
+   // T01: a valid single-field order is built
+   lSortOrder *so = make_order({{TEST_ulong, true}});
+   CHECK(1, "make_sort_order with a known field", so != nullptr);
+   ocs::tom::free_sort_order(so);
+   CHECK(2, "free_sort_order resets the pointer", so == nullptr);
+
+   // T03: a field that is not in the descriptor is rejected
+   CHECK(3, "make_sort_order with an unknown field throws ForeignField",
+         throws_reason([] { lSortOrder *bad = make_order({{4711, true}}); ocs::tom::free_sort_order(bad); },
+                       ocs::tom::FieldException::Reason::ForeignField));
+
+   // CHECK 4 removed: lAddSortCriteria has no TOM counterpart (CS-3103)
+
+   // T05: an order built from a descending criterion sorts descending
+   const std::uint32_t in[] = {3, 1, 2};
+   const std::uint32_t desc[] = {3, 2, 1};
+   auto lp = make_ulong_list(in, 3);
+   so = make_order({{TEST_ulong, false}});
+   ocs::tom::sort_list(lp.get(), so);
+   CHECK(5, "make_sort_order descending order", ulong_order_is(lp.get(), desc, 3));
+   ocs::tom::free_sort_order(so);
+}
+
+// ---------------------------------------------------------------------------
+// sort_compare  [T06–T09]
 //
 // Returns <0, 0, >0 like strcmp, inverted for a descending criterion. A second
 // criterion decides only when the first is equal.
 // ---------------------------------------------------------------------------
 
+/** @brief T06-T09: comparing two elements by a sort order */
 static void test_sort_compare() {
-   printf("\n--- lSortCompare ---\n");
+   printf("\n--- sort_compare ---\n");
 
-   lListElem *a = lCreateElem(TEST_Type);
-   lListElem *b = lCreateElem(TEST_Type);
-   lSetUlong(a, TEST_ulong, 1);
-   lSetUlong(b, TEST_ulong, 2);
-   lSetString(a, TEST_string, "y");
-   lSetString(b, TEST_string, "x");
+   auto a = ocs::tom::RawElementPtr::create(TEST_Type);
+   auto b = ocs::tom::RawElementPtr::create(TEST_Type);
+   a->set(TEST_ulong, std::uint32_t{1});
+   b->set(TEST_ulong, std::uint32_t{2});
+   a->set(TEST_string, "y");
+   b->set(TEST_string, "x");
 
-   lSortOrder *up = lParseSortOrderVarArg(TEST_Type, "%I+", TEST_ulong);
-   lSortOrder *down = lParseSortOrderVarArg(TEST_Type, "%I-", TEST_ulong);
+   lSortOrder *up = make_order({{TEST_ulong, true}});
+   lSortOrder *down = make_order({{TEST_ulong, false}});
 
    // T06-T07: sign follows the direction of the criterion
-   CHECK(6, "ascending: smaller value compares less", lSortCompare(a, b, up) < 0);
-   CHECK(7, "descending: smaller value compares greater", lSortCompare(a, b, down) > 0);
+   CHECK(6, "ascending: smaller value compares less", ocs::tom::sort_compare(a.get(), b.get(), up) < 0);
+   CHECK(7, "descending: smaller value compares greater", ocs::tom::sort_compare(a.get(), b.get(), down) > 0);
 
    // T08: equal values compare equal
-   lSetUlong(b, TEST_ulong, 1);
-   CHECK(8, "equal values compare equal", lSortCompare(a, b, up) == 0);
+   b->set(TEST_ulong, std::uint32_t{1});
+   CHECK(8, "equal values compare equal", ocs::tom::sort_compare(a.get(), b.get(), up) == 0);
 
    // T09: the second criterion breaks the tie
-   lSortOrder *two = lParseSortOrderVarArg(TEST_Type, "%I+%I+", TEST_ulong, TEST_string);
-   CHECK(9, "second criterion decides a tie", lSortCompare(a, b, two) > 0);
+   lSortOrder *two = make_order({{TEST_ulong, true}, {TEST_string, true}});
+   CHECK(9, "second criterion decides a tie", ocs::tom::sort_compare(a.get(), b.get(), two) > 0);
 
-   lFreeSortOrder(&up);
-   lFreeSortOrder(&down);
-   lFreeSortOrder(&two);
-   lFreeElem(&a);
-   lFreeElem(&b);
+   ocs::tom::free_sort_order(up);
+   ocs::tom::free_sort_order(down);
+   ocs::tom::free_sort_order(two);
 }
 
 // ---------------------------------------------------------------------------
-// lSortList  [T10–T20]
+// sort_list  [T10–T23]
 //
 // Ascending, descending and two-key orders on ulong values, one sort per
 // remaining data type, nullptr strings first, and the trivial lists. After
 // every sort the back links must mirror the forward links.
 // ---------------------------------------------------------------------------
 
+/** @brief T10-T23: sorting a list by every data type and the trivial lists */
 static void test_sort_list() {
-   printf("\n--- lSortList ---\n");
+   printf("\n--- sort_list ---\n");
 
-   const lUlong in[] = {5, 1, 4, 2, 3};
-   const lUlong asc[] = {1, 2, 3, 4, 5};
-   const lUlong desc[] = {5, 4, 3, 2, 1};
+   const std::uint32_t in[] = {5, 1, 4, 2, 3};
+   const std::uint32_t asc[] = {1, 2, 3, 4, 5};
+   const std::uint32_t desc[] = {5, 4, 3, 2, 1};
 
    // T10-T11: ascending
-   lList *lp = make_ulong_list(in, 5);
-   lPSortList(lp, "%I+", TEST_ulong);
-   CHECK(10, "ulong ascending", ulong_order_is(lp, asc, 5));
-   CHECK(11, "ulong ascending: back links consistent", back_links_consistent(lp));
+   auto lp = make_ulong_list(in, 5);
+   lSortOrder *so = make_order({{TEST_ulong, true}});
+   ocs::tom::sort_list(lp.get(), so);
+   ocs::tom::free_sort_order(so);
+   CHECK(10, "ulong ascending", ulong_order_is(lp.get(), asc, 5));
+   CHECK(11, "ulong ascending: back links consistent", back_links_consistent(lp.get()));
 
    // T12: descending
-   lSortOrder *so = lParseSortOrderVarArg(TEST_Type, "%I-", TEST_ulong);
-   lSortList(lp, so);
-   CHECK(12, "ulong descending", ulong_order_is(lp, desc, 5));
-   lFreeSortOrder(&so);
-   lFreeList(&lp);
+   so = make_order({{TEST_ulong, false}});
+   ocs::tom::sort_list(lp.get(), so);
+   CHECK(12, "ulong descending", ulong_order_is(lp.get(), desc, 5));
+   ocs::tom::free_sort_order(so);
 
    // T13: two keys, the first ascending, the second descending
-   lp = lCreateList("two", TEST_Type);
+   lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "two");
    const char *grp[] = {"b", "a", "b", "a"};
-   const lUlong val[] = {1, 1, 2, 2};
+   const std::uint32_t val[] = {1, 1, 2, 2};
    for (int i = 0; i < 4; i++) {
-      lListElem *ep = lAddElemStr(&lp, TEST_string, grp[i], TEST_Type);
-      lSetUlong(ep, TEST_ulong, val[i]);
+      add_str(lp.get(), TEST_string, grp[i]).set(TEST_ulong, val[i]);
    }
-   so = lParseSortOrderVarArg(TEST_Type, "%I+%I-", TEST_string, TEST_ulong);
-   lSortList(lp, so);
-   const lUlong two_expected[] = {2, 1, 2, 1};
-   const lListElem *first = lFirst(lp);
-   const lListElem *third = lNext(lNext(first));
+   so = make_order({{TEST_string, true}, {TEST_ulong, false}});
+   ocs::tom::sort_list(lp.get(), so);
+   const std::uint32_t two_expected[] = {2, 1, 2, 1};
+   const ocs::tom::ConstRawElement first = lp->front();
+   const ocs::tom::ConstRawElement third = first.next().next();
    CHECK(13, "string ascending, then ulong descending",
-         ulong_order_is(lp, two_expected, 4) &&
-         strcmp(lGetString(first, TEST_string), "a") == 0 &&
-         strcmp(lGetString(third, TEST_string), "b") == 0);
-   lFreeSortOrder(&so);
-   lFreeList(&lp);
+         ulong_order_is(lp.get(), two_expected, 4) &&
+         strcmp(first.get<const char *>(TEST_string), "a") == 0 &&
+         strcmp(third.get<const char *>(TEST_string), "b") == 0);
+   ocs::tom::free_sort_order(so);
 
    // T14-T19: one ascending sort per remaining data type. Each element gets the
    // same rank in every field, so after sorting by any one field TEST_ulong
    // (holding the rank) must read 0, 1, 2.
-   const lUlong ranks[] = {0, 1, 2};
+   const std::uint32_t ranks[] = {0, 1, 2};
    struct {
       int nm;
       const char *label;
@@ -367,146 +409,171 @@ static void test_sort_list() {
       {TEST_string,  "string ascending"},
    };
    for (int f = 0; f < 6; f++) {
-      lp = lCreateList("types", TEST_Type);
+      lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "types");
       const int order[] = {2, 0, 1};
       for (int i = 0; i < 3; i++) {
-         int r = order[i];
+         const int r = order[i];
          char name[16];
          snprintf(name, sizeof(name), "h%d", r);
-         lListElem *ep = lCreateElem(TEST_Type);
-         lSetUlong(ep, TEST_ulong, r);
-         lSetInt(ep, TEST_int, r - 1);
-         lSetLong(ep, TEST_long, -100 + r);
-         lSetDouble(ep, TEST_double, 0.5 * r);
-         lSetUlong64(ep, TEST_ulong64, 0x100000000ULL * r);
-         lSetHost(ep, TEST_host, name);
-         lSetString(ep, TEST_string, name);
-         lAppendElem(lp, ep);
+         auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+         ep->set(TEST_ulong, static_cast<std::uint32_t>(r));
+         ep->set(TEST_int, static_cast<std::int32_t>(r - 1));
+         ep->set(TEST_long, static_cast<std::int64_t>(-100 + r));
+         ep->set(TEST_double, 0.5 * r);
+         ep->set(TEST_ulong64, static_cast<std::uint64_t>(0x100000000ULL * r));
+         ep->set(TEST_host, ocs::tom::Host(name));
+         ep->set(TEST_string, static_cast<const char *>(name));
+         lp->push_back(std::move(ep));
       }
-      lPSortList(lp, "%I+", fields[f].nm);
-      CHECK(14 + f, fields[f].label, ulong_order_is(lp, ranks, 3));
-      lFreeList(&lp);
+      so = make_order({{fields[f].nm, true}});
+      ocs::tom::sort_list(lp.get(), so);
+      ocs::tom::free_sort_order(so);
+      CHECK(14 + f, fields[f].label, ulong_order_is(lp.get(), ranks, 3));
    }
 
    // T20: bool sorts false before true
-   lp = lCreateList("bool", TEST_Type);
+   lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "bool");
    for (int i = 0; i < 3; i++) {
-      lListElem *ep = lCreateElem(TEST_Type);
-      lSetBool(ep, TEST_bool, i != 1);
-      lSetUlong(ep, TEST_ulong, i == 1 ? 0 : 1);
-      lAppendElem(lp, ep);
+      auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+      ep->set(TEST_bool, i != 1);
+      ep->set(TEST_ulong, std::uint32_t{i == 1 ? 0u : 1u});
+      lp->push_back(std::move(ep));
    }
-   lPSortList(lp, "%I+", TEST_bool);
-   CHECK(20, "bool ascending: false first", lGetBool(lFirst(lp), TEST_bool) == false);
-   lFreeList(&lp);
+   so = make_order({{TEST_bool, true}});
+   ocs::tom::sort_list(lp.get(), so);
+   ocs::tom::free_sort_order(so);
+   CHECK(20, "bool ascending: false first", !lp->front().get<bool>(TEST_bool));
 
    // T21: a nullptr string sorts before any other string
-   lp = lCreateList("null", TEST_Type);
-   lAddElemStr(&lp, TEST_string, "a", TEST_Type);
-   lAppendElem(lp, lCreateElem(TEST_Type));
-   lPSortList(lp, "%I+", TEST_string);
-   CHECK(21, "nullptr string sorts first", lGetString(lFirst(lp), TEST_string) == nullptr);
-   lFreeList(&lp);
+   lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "null");
+   add_str(lp.get(), TEST_string, "a");
+   lp->push_back(ocs::tom::RawElementPtr::create(TEST_Type));
+   so = make_order({{TEST_string, true}});
+   ocs::tom::sort_list(lp.get(), so);
+   ocs::tom::free_sort_order(so);
+   CHECK(21, "nullptr string sorts first", lp->front().get<const char *>(TEST_string) == nullptr);
 
    // T22-T23: trivial lists are accepted as sorted
-   so = lParseSortOrderVarArg(TEST_Type, "%I+", TEST_ulong);
-   CHECK(22, "lSortList on a nullptr list returns 0", lSortList(nullptr, so) == 0);
-   const lUlong one[] = {7};
+   so = make_order({{TEST_ulong, true}});
+   CHECK(22, "sort_list on a nullptr list accepts it",
+         [so] {
+            try {
+               ocs::tom::sort_list(nullptr, so);
+               return true;
+            } catch (...) {
+               return false;
+            }
+         }());
+   const std::uint32_t one[] = {7};
    lp = make_ulong_list(one, 1);
-   CHECK(23, "lSortList on a single element returns 0 and keeps it",
-         lSortList(lp, so) == 0 && ulong_order_is(lp, one, 1) && back_links_consistent(lp));
-   lFreeList(&lp);
-   lFreeSortOrder(&so);
+   ocs::tom::sort_list(lp.get(), so);
+   CHECK(23, "sort_list on a single element keeps it",
+         ulong_order_is(lp.get(), one, 1) && back_links_consistent(lp.get()));
+   ocs::tom::free_sort_order(so);
 }
 
 // ---------------------------------------------------------------------------
 // Hash tables after sorting  [T24–T26]
 //
-// lSortList() re-links the elements and then drops the non-unique hash tables
+// sort_list() re-links the elements and then drops the non-unique hash tables
 // (cull_hash_recreate_after_sort), which the next lookup builds again in the new
 // order. Every key must still resolve, and the non-unique hash must still yield
 // each element exactly once.
 // ---------------------------------------------------------------------------
 
+/** @brief T24-T26: the hash tables stay consistent across sorts */
 static void test_sort_keeps_hash() {
    printf("\n--- hash tables after sorting ---\n");
 
-   const lUlong in[] = {9, 3, 7, 1, 5, 8, 2, 6, 4};
-   lList *lp = make_ulong_list(in, 9);
-   CHECK(24, "hashes consistent before sorting", hashes_consistent(lp));
+   const std::uint32_t in[] = {9, 3, 7, 1, 5, 8, 2, 6, 4};
+   auto lp = make_ulong_list(in, 9);
+   CHECK(24, "hashes consistent before sorting", hashes_consistent(lp.get()));
 
-   lPSortList(lp, "%I+", TEST_ulong);
-   CHECK(25, "hashes consistent after ascending sort", hashes_consistent(lp));
+   lSortOrder *so = make_order({{TEST_ulong, true}});
+   ocs::tom::sort_list(lp.get(), so);
+   ocs::tom::free_sort_order(so);
+   CHECK(25, "hashes consistent after ascending sort", hashes_consistent(lp.get()));
 
-   lPSortList(lp, "%I-", TEST_ulong);
-   CHECK(26, "hashes consistent after descending sort", hashes_consistent(lp));
-   lFreeList(&lp);
+   so = make_order({{TEST_ulong, false}});
+   ocs::tom::sort_list(lp.get(), so);
+   ocs::tom::free_sort_order(so);
+   CHECK(26, "hashes consistent after descending sort", hashes_consistent(lp.get()));
 }
 
 // ---------------------------------------------------------------------------
-// lInsertSorted / lResortElem  [T27–T34]
+// insert_sorted / resort_elem  [T27–T34]
 //
-// lInsertSorted() puts an element before the first element that does not sort
-// before it, so a sorted list stays sorted. lResortElem() moves an element
+// insert_sorted() puts an element before the first element that does not sort
+// before it, so a sorted list stays sorted. resort_elem() moves an element
 // whose key changed back to its place. Both go through the hash-aware list
 // operations, so the new or moved element must be findable by its key.
 // ---------------------------------------------------------------------------
 
+/** @brief T27-T34: inserting into a sorted list and moving a changed element */
 static void test_insert_and_resort() {
-   printf("\n--- lInsertSorted / lResortElem ---\n");
+   printf("\n--- insert_sorted / resort_elem ---\n");
 
-   const lUlong in[] = {2, 4, 6};
-   lList *lp = make_ulong_list(in, 3);
-   lSortOrder *so = lParseSortOrderVarArg(TEST_Type, "%I+", TEST_ulong);
+   const std::uint32_t in[] = {2, 4, 6};
+   auto lp = make_ulong_list(in, 3);
+   lSortOrder *so = make_order({{TEST_ulong, true}});
 
-   auto insert = [&](lUlong v) {
+   auto insert = [&](const std::uint32_t v) {
       char key[32];
-      snprintf(key, sizeof(key), "k%u", (unsigned) v);
-      lListElem *ep = lCreateElem(TEST_Type);
-      lSetUlong(ep, TEST_ulong, v);
-      lSetUlong(ep, TEST_ulong_hashed, v % 2);
-      lSetString(ep, TEST_string_ukey, key);
-      return lInsertSorted(so, ep, lp);
+      snprintf(key, sizeof(key), "k%u", static_cast<unsigned>(v));
+      auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+      ep->set(TEST_ulong, v);
+      ep->set(TEST_ulong_hashed, v % 2);
+      ep->set(TEST_string_ukey, static_cast<const char *>(key));
+      ocs::tom::insert_sorted(lp.get(), ep.get(), so);
+      static_cast<void>(ep.release());   // the list owns it now
    };
 
    // T27-T29: at the front, in the middle, at the end
    insert(1);
-   const lUlong e1[] = {1, 2, 4, 6};
-   CHECK(27, "lInsertSorted at the front", ulong_order_is(lp, e1, 4));
+   const std::uint32_t e1[] = {1, 2, 4, 6};
+   CHECK(27, "insert_sorted at the front", ulong_order_is(lp.get(), e1, 4));
    insert(5);
-   const lUlong e2[] = {1, 2, 4, 5, 6};
-   CHECK(28, "lInsertSorted in the middle", ulong_order_is(lp, e2, 5));
+   const std::uint32_t e2[] = {1, 2, 4, 5, 6};
+   CHECK(28, "insert_sorted in the middle", ulong_order_is(lp.get(), e2, 5));
    insert(9);
-   const lUlong e3[] = {1, 2, 4, 5, 6, 9};
-   CHECK(29, "lInsertSorted at the end", ulong_order_is(lp, e3, 6) && back_links_consistent(lp));
+   const std::uint32_t e3[] = {1, 2, 4, 5, 6, 9};
+   CHECK(29, "insert_sorted at the end", ulong_order_is(lp.get(), e3, 6) && back_links_consistent(lp.get()));
 
    // T30: an equal key goes before the existing one
-   lListElem *dup = lCreateElem(TEST_Type);
-   lSetUlong(dup, TEST_ulong, 4);
-   lSetString(dup, TEST_string_ukey, "dup4");
-   lInsertSorted(so, dup, lp);
-   CHECK(30, "lInsertSorted puts an equal key first", lNext(lFirst(lp)) != dup &&
-         lNext(lNext(lFirst(lp))) == dup);
+   auto dup_owner = ocs::tom::RawElementPtr::create(TEST_Type);
+   dup_owner->set(TEST_ulong, std::uint32_t{4});
+   dup_owner->set(TEST_string_ukey, "dup4");
+   const lListElem *dup = dup_owner.get().raw();
+   ocs::tom::insert_sorted(lp.get(), dup_owner.get(), so);
+   static_cast<void>(dup_owner.release());   // the list owns it now
+   CHECK(30, "insert_sorted puts an equal key first", lp->front().next().raw() != dup &&
+         lp->front().next().next().raw() == dup);
 
    // T31: inserted elements are findable through the hashes
-   CHECK(31, "inserted elements are in the hash tables", hashes_consistent(lp));
+   CHECK(31, "inserted elements are in the hash tables", hashes_consistent(lp.get()));
 
-   // T32: nullptr arguments are rejected
-   CHECK(32, "lInsertSorted rejects nullptr arguments", lInsertSorted(so, nullptr, lp) == -1);
+   // T32: a null element is rejected
+   CHECK(32, "insert_sorted rejects a null element with NullElement",
+         throws_reason([&] { ocs::tom::insert_sorted(lp.get(), nullptr, so); },
+                       ocs::tom::FieldException::Reason::NullElement));
 
    // T33-T34: move the first element to the end after raising its key
-   lListElem *head = lFirstRW(lp);
-   lSetUlong(head, TEST_ulong, 100);
-   lResortElem(so, head, lp);
-   CHECK(33, "lResortElem moves a raised key to the end", lLast(lp) == head && back_links_consistent(lp));
-   CHECK(34, "lResortElem keeps the hash tables consistent", hashes_consistent(lp));
+   const ocs::tom::RawElement head = lp->front();
+   head.set(TEST_ulong, std::uint32_t{100});
+   ocs::tom::resort_elem(lp.get(), head, so);
+   CHECK(33, "resort_elem moves a raised key to the end",
+         lp->back().raw() == head.raw() && back_links_consistent(lp.get()));
+   CHECK(34, "resort_elem keeps the hash tables consistent", hashes_consistent(lp.get()));
 
-   lFreeSortOrder(&so);
-   lFreeList(&lp);
+   ocs::tom::free_sort_order(so);
 }
 
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Run all sorting tests
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});

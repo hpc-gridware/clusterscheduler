@@ -58,6 +58,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/tom/ocs_tom_CONF.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -67,9 +68,13 @@
 #include "spool/loader/sge_spooling_loader.h"
 
 #include "sig_handlers.h"
-#include "cull/cull_test_api.h"
 
-static lListElem *sge_get_configuration_for_host(const char *aName) {
+/**
+ * @brief A copy of the configuration of a host
+ * @param aName the host name, resolved if possible
+ * @return the copy, empty if the host has no configuration
+ */
+static ocs::tom::ElementPtr<ocs::tom::CONF> sge_get_configuration_for_host(const char *aName) {
    DENTER(TOP_LAYER);
 
    char unique_name[CL_MAXHOSTNAMELEN];
@@ -89,16 +94,20 @@ static lListElem *sge_get_configuration_for_host(const char *aName) {
       strcpy(unique_name, aName);
    }
 
-   auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(lCopyElem(ocs::tom::find_first<CONF_name>(cluster_config, unique_name)));
+   auto conf = ocs::tom::find_first<CONF_name>(cluster_config, unique_name).clone();
 
-   DRETURN(conf.release());
+   DRETURN(conf);
 }
 
+/**
+ * @brief Read the cluster configuration from the spool and merge the global and the local one
+ * @param aSpoolContext the spooling context
+ * @param anAnswer the answer list
+ * @return 0 on success, -1 otherwise
+ */
 static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer) {
    DENTER(TOP_LAYER);
 
-   lListElem *local = nullptr;
-   lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -109,18 +118,18 @@ static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::List
    answer_list_output(anAnswer);
 
    DPRINTF("qualified_hostname: '%s'\n", qualified_hostname);
-   local = sge_get_configuration_for_host(qualified_hostname);
-         
-   if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == nullptr) {
+   auto local = sge_get_configuration_for_host(qualified_hostname);
+
+   auto global = sge_get_configuration_for_host(SGE_GLOBAL_NAME);
+   if (global == nullptr) {
       DRETURN(-1);
    }
 
-   ret = merge_configuration(anAnswer, progid, cell_root, ocs::tom::ConstElement<ocs::tom::CONF>(global),
-                             ocs::tom::ConstElement<ocs::tom::CONF>(local)).first;
+   ret = merge_configuration(anAnswer, progid, cell_root, *global, *local).first;
    answer_list_output(anAnswer);
 
-   lFreeElem(&local);
-   lFreeElem(&global);
+   local.reset();
+   global.reset();
    
    if (0 != ret) {
       DRETURN(-1);
@@ -250,43 +259,42 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context, *ep;
-   const lList **master_list;
-   const lList *new_list;
-   int key_nm;
+   const lListElem *context;
+   ocs::tom::ConstRawElement ep;
    dstring buffer = DSTRING_INIT;
 
    context = spool_get_default_context();
-   
-   master_list = ocs::DataStore::get_master_list(type);
-   key_nm      = object_type_get_key_nm(type);
-   new_list    = ocs::tom::get<ET_new_version>(event);
+
+   const ocs::tom::ConstRawList master_list = *ocs::DataStore::get_master_list(type);
+   const int key_nm = object_type_get_key_nm(type);
+   const ocs::tom::ConstRawList new_list = event.get<ET_new_version>();
 
    if(action == SGE_EMA_LIST) {
       switch(type) {
          case SGE_TYPE_EXECHOST:
          case SGE_TYPE_CONFIG:
          case SGE_TYPE_HGROUP:
-            for_each_ep(ep, *master_list) {
-               const lListElem *new_ep = lGetElemHost(new_list, key_nm, lGetHost(ep, key_nm));
+            for (const ocs::tom::ConstRawElement old : master_list) {
+               const auto new_ep = new_list.find_first(key_nm, old.get<ocs::tom::Host>(key_nm));
 
                if (new_ep == nullptr) {
                   /* object not contained in new list, delete it */
-                  spool_delete_object(&answer_list, context, type, lGetHost(ep, key_nm));
+                  spool_delete_object(&answer_list, context, type, old.get<ocs::tom::Host>(key_nm).c_str());
                   answer_list_output(&answer_list);
                }
-            }   
+            }
 
-            for_each_ep(ep, new_list) {
-               const char *key = lGetHost(ep, key_nm);
-               const lListElem *old_ep = lGetElemHost(*master_list, key_nm, key);
+            for (const ocs::tom::ConstRawElement elem : new_list) {
+               ep = elem;
+               const ocs::tom::Host key = ep.get<ocs::tom::Host>(key_nm);
+               const auto old_ep = master_list.find_first(key_nm, key);
 
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
                 */
                if (old_ep == nullptr ||
                   spool_compare_objects(&answer_list, context, type, ep, old_ep) != 0)  {
-                  spool_write_object(&answer_list, context, ep, key, type);
+                  spool_write_object(&answer_list, context, ep, key.c_str(), type);
                   answer_list_output(&answer_list);
                }
             }
@@ -298,18 +306,19 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
          case SGE_TYPE_CQUEUE:
          case SGE_TYPE_USER:
          case SGE_TYPE_USERSET:
-            for_each_ep(ep, *master_list) {
-               const lListElem *new_ep = lGetElemStr(new_list, key_nm, lGetString(ep, key_nm));
+            for (const ocs::tom::ConstRawElement old : master_list) {
+               const auto new_ep = new_list.find_first(key_nm, old.get<const char *>(key_nm));
                if (new_ep == nullptr) {
                   /* object not contained in new list, delete it */
-                  spool_delete_object(&answer_list, context, type, lGetString(ep, key_nm));
+                  spool_delete_object(&answer_list, context, type, old.get<const char *>(key_nm));
                   answer_list_output(&answer_list);
                }
             }
 
-            for_each_ep(ep, new_list) {
-               const char *key = lGetString(ep, key_nm);
-               const lListElem *old_ep = lGetElemStr(*master_list, key_nm, key);
+            for (const ocs::tom::ConstRawElement elem : new_list) {
+               ep = elem;
+               const char *key = ep.get<const char *>(key_nm);
+               const auto old_ep = master_list.find_first(key_nm, key);
 
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
@@ -323,20 +332,21 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
             break;
 
          case SGE_TYPE_JOB:
-            for_each_ep(ep, *master_list) {
-               const lListElem *new_ep = lGetElemUlong(new_list, key_nm, lGetUlong(ep, key_nm));
+            for (const ocs::tom::ConstRawElement old : master_list) {
+               const auto new_ep = new_list.find_first(key_nm, old.get<uint32_t>(key_nm));
                if (new_ep == nullptr) {
                   const char *job_key;
-                  job_key = job_get_key(lGetUlong(ep, key_nm), 0, nullptr, &buffer);
+                  job_key = job_get_key(old.get<uint32_t>(key_nm), 0, nullptr, &buffer);
                   /* object not contained in new list, delete it */
                   spool_delete_object(&answer_list, context, type, job_key);
                   answer_list_output(&answer_list);
                }
             }
 
-            for_each_ep(ep, new_list) {
-               uint32_t key = lGetUlong(ep, key_nm);
-               const lListElem *old_ep = lGetElemUlong(*master_list, key_nm, key);
+            for (const ocs::tom::ConstRawElement elem : new_list) {
+               ep = elem;
+               uint32_t key = ep.get<uint32_t>(key_nm);
+               const auto old_ep = master_list.find_first(key_nm, key);
 
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
@@ -344,7 +354,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
                if(old_ep == nullptr ||
                   spool_compare_objects(&answer_list, context, type, ep, old_ep))  {
                   const char *job_key;
-                  job_key = job_get_key(lGetUlong(ep, key_nm), 0, nullptr, &buffer);
+                  job_key = job_get_key(ep.get<uint32_t>(key_nm), 0, nullptr, &buffer);
                   spool_write_object(&answer_list, context, ep, job_key, type);
                   answer_list_output(&answer_list);
                }
@@ -358,7 +368,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
              * JG: TODO: we have to compare them: delete / write only, when
              *           sharetree no longer exists or has changed
              */
-            ep = lFirst(*master_list);
+            ep = master_list.front();
             if(ep != nullptr) {
                /* delete sharetree */
                spool_delete_object(&answer_list, context, type, SHARETREE_FILE);
@@ -379,9 +389,9 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
                   const char *pe_task_id;
                   const char *job_key;
 
-                  job_id = ocs::tom::get<ET_intkey>(event);
-                  ja_task_id = ocs::tom::get<ET_intkey2>(event);
-                  pe_task_id = ocs::tom::get<ET_strkey>(event);
+                  job_id = event.get<ET_intkey>();
+                  ja_task_id = event.get<ET_intkey2>();
+                  pe_task_id = event.get<ET_strkey>();
 
                   job_key = job_get_key(job_id, ja_task_id, pe_task_id, &buffer);
                   spool_delete_object(&answer_list, context, type, job_key);
@@ -393,7 +403,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
                   uint32_t job_id;
                   const char *job_key;
 
-                  job_id = ocs::tom::get<ET_intkey>(event);
+                  job_id = event.get<ET_intkey>();
 
                   job_key = job_get_key(job_id, 0, nullptr, &buffer);
                   spool_delete_object(&answer_list, context, type, job_key);
@@ -426,24 +436,22 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
 
    sge_callback_result ret = SGE_EMA_OK;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context, *ep;
-   const lList **master_list;
-   const lList *master_job_list;
-   int key_nm;
+   const lListElem *context;
+   ocs::tom::ConstRawElement ep;
    const char *key;
    dstring buffer = DSTRING_INIT;
 
    context = spool_get_default_context();
-   
-   master_list = ocs::DataStore::get_master_list(type);
-   key_nm      = object_type_get_key_nm(type);
-   master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+
+   const ocs::tom::ConstRawList master_list = *ocs::DataStore::get_master_list(type);
+   const int key_nm = object_type_get_key_nm(type);
+   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    switch(action) {
       case SGE_EMA_LIST:
          switch(type) {
             case SGE_TYPE_SHARETREE:
-               ep = lFirst(*master_list);
+               ep = master_list.front();
                if(ep != nullptr) {
                   /* spool sharetree */
                   spool_write_object(&answer_list, context, ep, SHARETREE_FILE, type);
@@ -467,7 +475,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
             case SGE_TYPE_USER:
             case SGE_TYPE_USERSET:
             case SGE_TYPE_HGROUP:
-               key = ocs::tom::get<ET_strkey>(event);
+               key = event.get<ET_strkey>();
                spool_delete_object(&answer_list, context, type, key);
                answer_list_output(&answer_list);
 
@@ -481,8 +489,8 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
          switch(type) {
             case SGE_TYPE_EXECHOST:
             case SGE_TYPE_CONFIG:
-               key = ocs::tom::get<ET_strkey>(event);
-               ep = lGetElemHost(*master_list, key_nm, ocs::tom::get<ET_strkey>(event));
+               key = event.get<ET_strkey>();
+               ep = key != nullptr ? master_list.find_first(key_nm, ocs::tom::Host(key)) : nullptr;
                if(ep == nullptr) {
                   ERROR("%s element with id " SFQ " not found\n", object_type_get_name(type), key);
                   ret = SGE_EMA_FAILURE;
@@ -501,8 +509,8 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
             case SGE_TYPE_USER:
             case SGE_TYPE_USERSET:
             case SGE_TYPE_HGROUP:
-               key = ocs::tom::get<ET_strkey>(event);
-               ep = lGetElemStr(*master_list, key_nm, ocs::tom::get<ET_strkey>(event));
+               key = event.get<ET_strkey>();
+               ep = key != nullptr ? master_list.find_first(key_nm, key) : nullptr;
                if(ep == nullptr) {
                   ERROR("%s element with id " SFQ " not found\n", object_type_get_name(type), key);
                   ret = SGE_EMA_FAILURE;
@@ -515,7 +523,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
                break;
 
             case SGE_TYPE_SCHEDD_CONF:
-               ep = lFirst(*master_list);
+               ep = master_list.front();
                if(ep == nullptr) {
                   ERROR("%s element not found\n", object_type_get_name(type));
                   ret = SGE_EMA_FAILURE;
@@ -533,11 +541,11 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
                   const char *pe_task_id;
                   const char *job_key;
 
-                  job_id = ocs::tom::get<ET_intkey>(event);
-                  ja_task_id = ocs::tom::get<ET_intkey2>(event);
-                  pe_task_id = ocs::tom::get<ET_strkey>(event);
+                  job_id = event.get<ET_intkey>();
+                  ja_task_id = event.get<ET_intkey2>();
+                  pe_task_id = event.get<ET_strkey>();
 
-                  ep = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
+                  ep = master_job_list.find_first<JB_job_number>(job_id);
                   job_key = job_get_key(job_id, ja_task_id, pe_task_id, &buffer);
                   spool_write_object(&answer_list, context, ep, job_key, type);
                   answer_list_output(&answer_list);

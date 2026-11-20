@@ -43,7 +43,7 @@
 #include "tom/ocs_Model.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
 
 using ocs::tom::FieldTraits;
 using ocs::tom::FieldType;

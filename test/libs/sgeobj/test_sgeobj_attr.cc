@@ -34,7 +34,6 @@
 #include "sgeobj/tom/ocs_tom_ASTR.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "tom/ocs_Element.h"
-#include "cull/cull_test_api.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -70,13 +69,19 @@ static int s_fail = 0;
 // Builder helpers
 // ---------------------------------------------------------------------------
 
-// Create a standalone ASTR element mapping a hostname or hostgroup ref
-// to a string value. Use lAppendElem() to add it to an attr list.
-static lListElem *make_astr(const char *href, const char *value) {
+/**
+ * @brief Create a standalone ASTR element mapping a hostname or hostgroup ref to a string value
+ *
+ * Use lAppendElem() to add it to an attr list.
+ * @param href the host name or host group reference
+ * @param value the string value
+ * @return the element, owned by the caller
+ */
+static ocs::tom::ElementPtr<ocs::tom::ASTR> make_astr(const char *href, const char *value) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep, href);
-   ocs::tom::set<ASTR_value>(ep, value);
-   return ep.release();
+   ep->set<ASTR_href>(ocs::tom::Host(href));
+   ep->set<ASTR_value>(value);
+   return ep;
 }
 
 /**
@@ -192,8 +197,8 @@ static void test_ocs_attr_list_find() {
    // that value is returned without consulting any hostgroup.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("host1",         "direct"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("host1",         "direct"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "host1",
@@ -210,7 +215,7 @@ static void test_ocs_attr_list_find() {
    // has an entry, the HOSTREF_DEFAULT ("@/") value is used.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "unknownhost",
@@ -228,8 +233,8 @@ static void test_ocs_attr_list_find() {
    // The matching_host_or_group output is set to the matched group name.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("@grpA",         "group_value"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; match_hog = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "host2",
@@ -248,8 +253,8 @@ static void test_ocs_attr_list_find() {
    // @grpOuter transitively to discover host5 and return the outer group's value.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("@grpOuter",     "outer_value"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("@grpOuter",     "outer_value"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; match_hog = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "host5",
@@ -267,8 +272,8 @@ static void test_ocs_attr_list_find() {
    // Because no group match is found, the default value is used.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("@grpA",         "group_value"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "host4",
@@ -287,9 +292,9 @@ static void test_ocs_attr_list_find() {
    // callers must check is_ambiguous before using the value.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("@grpA",         "value_a"));
-      lAppendElem(*attrs, make_astr("@grpB",         "value_b"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("@grpA",         "value_a"));
+      attrs->push_back(make_astr("@grpB",         "value_b"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "host1",
@@ -307,8 +312,8 @@ static void test_ocs_attr_list_find() {
    // an error to the answer list. is_ambiguous remains set.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("@grpA", "value_a"));
-      lAppendElem(*attrs, make_astr("@grpB", "value_b"));
+      attrs->push_back(make_astr("@grpA", "value_a"));
+      attrs->push_back(make_astr("@grpB", "value_b"));
 
       value = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "host1",
@@ -325,9 +330,9 @@ static void test_ocs_attr_list_find() {
    // the function looks for an exact hostname match before expanding groups.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("host2",         "direct_value"));
-      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("host2",         "direct_value"));
+      attrs->push_back(make_astr("@grpA",         "group_value"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, "host2",
@@ -356,7 +361,7 @@ static void test_ocs_attr_list_find() {
    // false without touching any output parameter.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
       ok = find_str_value(*attrs, &al, nullptr,
@@ -387,6 +392,9 @@ static void test_ocs_attr_list_find() {
 // Scenarios T11–T14
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Scenarios of ocs_attr_list_find_href() [T11-T14]
+ */
 static void test_ocs_attr_list_find_href() {
    printf("\n--- ocs_attr_list_find_href ---\n");
 
@@ -400,8 +408,8 @@ static void test_ocs_attr_list_find_href() {
    // set to true to indicate that this was a direct (non-default) match.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("host1",         "direct"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("host1",         "direct"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = false;
       ok = find_str_value_href(*attrs, &al, "host1", &value, &found);
@@ -417,7 +425,7 @@ static void test_ocs_attr_list_find_href() {
    // configuration for this host was present.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = true;
       ok = find_str_value_href(*attrs, &al, "unknownhost", &value, &found);
@@ -433,8 +441,8 @@ static void test_ocs_attr_list_find_href() {
    // default value is used instead and found is set to false.
    {
       auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
-      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      attrs->push_back(make_astr("@grpA",         "group_value"));
+      attrs->push_back(make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = true;
       ok = find_str_value_href(*attrs, &al, "host2", &value, &found);

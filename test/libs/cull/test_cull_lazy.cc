@@ -31,6 +31,9 @@
  * counted at the build, and that sorting drops the non unique tables.
  *
  * LAZY-03 is meant to be run under the thread and the address sanitizer as well.
+ *
+ * The test type has no generated traits, so the lists are driven through the
+ * run-time typed handles of tom/ocs_Raw.h and the lookups of the core.
  */
 
 #include <atomic>
@@ -47,9 +50,16 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
-#include "cull/cull_listP.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_types.h"
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_Pack.h"
+#include "tom/ocs_PackCore.h"
+#include "tom/ocs_Raw.h"
+#include "tom/ocs_SelectCore.h"
+#include "tom/ocs_SortCore.h"
 
 #include "uti/sge_stdlib.h"
 
@@ -92,16 +102,28 @@ static std::string name_of(const int i) {
 }
 
 /**
+ * @brief Create a test element with a name and append it, as lAddElemStr() did
+ * @param lp the list
+ * @param name the name
+ * @return the new element, owned by the list
+ */
+static ocs::tom::RawElement add_named(const ocs::tom::RawList lp, const char *name) {
+   auto ep = ocs::tom::RawElementPtr::create(LZ_Type);
+   ep->set(LZ_name, name);
+   return lp.push_back(std::move(ep));
+}
+
+/**
  * @brief Create a hashable list of n elements e0 .. e<n-1> in groups of four
  * @param n the number of elements
  * @return the list
  */
-static lList *make_list(const int n) {
-   lList *lp = lCreateList("lazy", LZ_Type);
+static ocs::tom::RawListPtr make_list(const int n) {
+   auto lp = ocs::tom::RawListPtr::create(LZ_Type, ocs::tom::Hashing::On, "lazy");
    for (int i = 0; i < n; i++) {
-      lListElem *ep = lAddElemStr(&lp, LZ_name, name_of(i).c_str(), LZ_Type);
-      lSetUlong(ep, LZ_group, i % 4);
-      lSetUlong(ep, LZ_value, i);
+      const ocs::tom::RawElement ep = add_named(lp.get(), name_of(i).c_str());
+      ep.set(LZ_group, static_cast<std::uint32_t>(i % 4));
+      ep.set(LZ_value, static_cast<std::uint32_t>(i));
    }
    return lp;
 }
@@ -126,14 +148,24 @@ static bool slots_empty(const lList *lp) {
  * @param name the name
  * @return the first element with that name, or nullptr
  */
-static const lListElem *linear_find(const lList *lp, const char *name) {
-   for_each_ep_lv(ep, lp) {
-      const char *s = lGetString(ep, LZ_name);
+static const lListElem *linear_find(const ocs::tom::ConstRawList lp, const char *name) {
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      const char *s = ep.get<const char *>(LZ_name);
       if (s != nullptr && strcmp(s, name) == 0) {
-         return ep;
+         return ep.raw();
       }
    }
    return nullptr;
+}
+
+/**
+ * @brief Look an element up by name, as lGetElemStr() did
+ * @param lp the list
+ * @param name the name
+ * @return the element, or nullptr
+ */
+static const lListElem *find_name(const ocs::tom::ConstRawList lp, const char *name) {
+   return lp.find_first(LZ_name, name).raw();
 }
 
 /**
@@ -141,10 +173,10 @@ static const lListElem *linear_find(const lList *lp, const char *name) {
  * @param lp the list
  * @return true if every lookup returns the element the linear search returns
  */
-static bool all_found(const lList *lp) {
-   for_each_ep_lv(ep, lp) {
-      const char *name = lGetString(ep, LZ_name);
-      if (lGetElemStr(lp, LZ_name, name) != linear_find(lp, name)) {
+static bool all_found(const ocs::tom::ConstRawList lp) {
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      const char *name = ep.get<const char *>(LZ_name);
+      if (find_name(lp, name) != linear_find(lp, name)) {
          return false;
       }
    }
@@ -157,12 +189,13 @@ static bool all_found(const lList *lp) {
  * @param group the group
  * @return the values
  */
-static std::vector<uint32_t> group_values(const lList *lp, const uint32_t group) {
+static std::vector<uint32_t> group_values(const ocs::tom::ConstRawList lp, const uint32_t group) {
    std::vector<uint32_t> values;
    const void *iterator = nullptr;
-   for (const lListElem *ep = lGetElemUlongFirst(lp, LZ_group, group, &iterator); ep != nullptr;
-        ep = lGetElemUlongNext(lp, LZ_group, group, &iterator)) {
-      values.push_back(lGetUlong(ep, LZ_value));
+   for (const lListElem *ep = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.raw(), POS_GROUP, group,
+                                                                                    &iterator);
+        ep != nullptr; ep = ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp.raw(), POS_GROUP, group, &iterator)) {
+      values.push_back(ocs::tom::get<std::uint32_t>(ep, LZ_value));
    }
    return values;
 }
@@ -173,11 +206,11 @@ static std::vector<uint32_t> group_values(const lList *lp, const uint32_t group)
  * @param group the group
  * @return the values
  */
-static std::vector<uint32_t> group_values_in_list_order(const lList *lp, const uint32_t group) {
+static std::vector<uint32_t> group_values_in_list_order(const ocs::tom::ConstRawList lp, const uint32_t group) {
    std::vector<uint32_t> values;
-   for_each_ep_lv(ep, lp) {
-      if (lGetUlong(ep, LZ_group) == group) {
-         values.push_back(lGetUlong(ep, LZ_value));
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      if (ep.get<std::uint32_t>(LZ_group) == group) {
+         values.push_back(ep.get<std::uint32_t>(LZ_value));
       }
    }
    return values;
@@ -186,25 +219,30 @@ static std::vector<uint32_t> group_values_in_list_order(const lList *lp, const u
 /**
  * @brief Pack a list and unpack it again, as a receiver does
  * @param lp the list
- * @return the unpacked list, or nullptr on an error
+ * @return the unpacked list, empty on an error
  */
-static lList *pack_unpack(const lList *lp) {
-   lList *result = nullptr;
-   sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024, false, false) != PACK_SUCCESS) {
-      return nullptr;
+static ocs::tom::RawListPtr pack_unpack(const lList *lp) {
+   try {
+      ocs::tom::PackBuffer out(false, 1024);
+      ocs::tom::pack_list(&out.raw(), lp, nullptr, 0);
+      ocs::tom::PackBuffer in = ocs::tom::PackBuffer::reading(out.data(), out.size(), false);
+      return ocs::tom::unpack_raw_list(&in.raw());
+   } catch (const ocs::tom::PackException &) {
+      return ocs::tom::RawListPtr();
    }
-   if (cull_pack_list(&pb, lp) == PACK_SUCCESS) {
-      char *buf = sge_malloc(pb.bytes_used);
-      memcpy(buf, pb.head_ptr, pb.bytes_used);
-      sge_pack_buffer in;
-      if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-         cull_unpack_list(&in, &result);
-      }
-      clear_packbuffer(&in);
-   }
-   clear_packbuffer(&pb);
-   return result;
+}
+
+/**
+ * @brief Sort a list by one field of the test type
+ * @param lp the list
+ * @param nm the field
+ * @param ascending true for ascending, false for descending
+ */
+static void sort_by(lList *lp, const int nm, const bool ascending) {
+   const ocs::tom::SortKey keys[] = {{nm, ascending}};
+   lSortOrder *so = ocs::tom::make_sort_order(LZ_Type, keys);
+   ocs::tom::sort_list(lp, so);
+   ocs::tom::free_sort_order(so);
 }
 
 /**
@@ -219,36 +257,29 @@ static lList *pack_unpack(const lList *lp) {
 static void test_no_table() {
    const ocs::tom::UniqueCheckSuspension suspension;
    const int n = 2 * OCS_CULL_HASH_MIN_ELEMS;
-   lList *lp = make_list(n);
-   CHECK(1, "a created and filled list is hashable without a slot array or a table", slots_empty(lp));
+   const auto lp = make_list(n);
+   CHECK(1, "a created and filled list is hashable without a slot array or a table", slots_empty(lp.get()));
 
-   lList *unpacked = pack_unpack(lp);
-   lList *copy = lCopyList("copy", lp);
-   lCondition *where = lWhere("%T(%I>=%u)", LZ_Type, LZ_group, 0);
-   lEnumeration *what = lWhat("%T(ALL)", LZ_Type);
-   lList *selected = lSelect("selected", lp, where, what);
+   const auto unpacked = pack_unpack(lp.get());
+   const auto copy = ocs::tom::clone(lp.get(), ocs::tom::Hashing::On);
+   const ocs::tom::RawWherePtr where =
+           ocs::tom::where_compare(LZ_Type, LZ_group, ocs::tom::CompareOp::GreaterEqual, std::uint32_t{0});
+   const ocs::tom::RawWhatPtr what = ocs::tom::what_all();
+   const auto selected = ocs::tom::select_as("selected", lp.get(), where.get(), what.get(), ocs::tom::Hashing::On);
    CHECK(2, "unpacked, copied and selected lists are hashable without a slot array or a table",
-         lGetNumberOfElem(unpacked) == (uint32_t) n && slots_empty(unpacked) &&
-         lGetNumberOfElem(copy) == (uint32_t) n && slots_empty(copy) &&
-         lGetNumberOfElem(selected) == (uint32_t) n && slots_empty(selected));
+         unpacked->size() == static_cast<std::size_t>(n) && slots_empty(unpacked.get()) &&
+         copy->size() == static_cast<std::size_t>(n) && slots_empty(copy.get()) &&
+         selected->size() == static_cast<std::size_t>(n) && slots_empty(selected.get()));
 
-   lList *plain = lCreateListHash("plain", LZ_Type, false);
+   const auto plain = ocs::tom::RawListPtr::create(LZ_Type, ocs::tom::Hashing::Off, "plain");
    for (int i = 0; i < n; i++) {
-      lAddElemStr(&plain, LZ_name, name_of(i).c_str(), LZ_Type);
+      add_named(plain.get(), name_of(i).c_str());
    }
    CHECK(3, "a list created without hashing has no slots and stays linear after a lookup",
-         plain->nslots == 0 && lGetElemStr(plain, LZ_name, "e5") == linear_find(plain, "e5") &&
-         list_slots(plain) == nullptr);
+         plain.get().raw()->nslots == 0 && find_name(plain.get(), "e5") == linear_find(plain.get(), "e5") &&
+         list_slots(plain.get()) == nullptr);
 
-   CHECK(4, "the source list still has no table after being packed, copied and selected", slots_empty(lp));
-
-   lFreeWhere(&where);
-   lFreeWhat(&what);
-   lFreeList(&plain);
-   lFreeList(&selected);
-   lFreeList(&copy);
-   lFreeList(&unpacked);
-   lFreeList(&lp);
+   CHECK(4, "the source list still has no table after being packed, copied and selected", slots_empty(lp.get()));
 }
 
 /**
@@ -256,24 +287,23 @@ static void test_no_table() {
  * @return nothing; CHECK records the results
  */
 static void test_first_lookup() {
-   lList *lp = make_list(2 * OCS_CULL_HASH_MIN_ELEMS);
-   const lListElem *e3 = lGetElemStr(lp, LZ_name, "e3");
+   const auto owner = make_list(2 * OCS_CULL_HASH_MIN_ELEMS);
+   const ocs::tom::RawList lp = owner.get();
+   const lListElem *e3 = find_name(lp, "e3");
    CHECK(5, "the first lookup builds the table of its field only and answers like the linear search",
          e3 != nullptr && e3 == linear_find(lp, "e3") && list_hash_table(lp, POS_NAME) != nullptr &&
          list_hash_table(lp, POS_GROUP) == nullptr && all_found(lp));
 
-   lSetString(lFirstRW(lp), LZ_name, "renamed");
-   lAddElemStr(&lp, LZ_name, "appended", LZ_Type);
-   lListElem *e7 = lGetElemStrRW(lp, LZ_name, "e7");
-   lRemoveElem(lp, &e7);
+   lp.front().set(LZ_name, "renamed");
+   add_named(lp, "appended");
+   lp.erase(lp.find_first(LZ_name, "e7"));
    CHECK(6, "after a rename, an append and a removal every lookup answers like the linear search",
-         all_found(lp) && lGetElemStr(lp, LZ_name, "renamed") == lFirst(lp) &&
-         lGetElemStr(lp, LZ_name, "e0") == nullptr && lGetElemStr(lp, LZ_name, "appended") == lLast(lp) &&
-         lGetElemStr(lp, LZ_name, "e7") == nullptr);
+         all_found(lp) && find_name(lp, "renamed") == lp.front().raw() &&
+         find_name(lp, "e0") == nullptr && find_name(lp, "appended") == lp.back().raw() &&
+         find_name(lp, "e7") == nullptr);
 
    CHECK(7, "a non unique lookup builds its table and yields the group in list order",
          group_values(lp, 1) == group_values_in_list_order(lp, 1) && list_hash_table(lp, POS_GROUP) != nullptr);
-   lFreeList(&lp);
 }
 
 /**
@@ -288,7 +318,8 @@ static void test_concurrent() {
    bool published = true;
 
    for (int r = 0; r < rounds; r++) {
-      lList *lp = make_list(n);
+      const auto owner = make_list(n);
+      const ocs::tom::ConstRawList lp = owner.get();
       std::atomic<int> ready{0};
       std::atomic<bool> go{false};
       std::vector<std::thread> workers;
@@ -301,8 +332,8 @@ static void test_concurrent() {
             // every thread starts with a different key, on the unique and the non unique field
             for (int i = 0; i < n; i++) {
                const int k = (i + t) % n;
-               const lListElem *ep = lGetElemStr(lp, LZ_name, name_of(k).c_str());
-               if (ep == nullptr || lGetUlong(ep, LZ_value) != (uint32_t) k) {
+               const ocs::tom::ConstRawElement ep = lp.find_first(LZ_name, name_of(k).c_str());
+               if (!ep || ep.get<std::uint32_t>(LZ_value) != static_cast<std::uint32_t>(k)) {
                   wrong++;
                }
             }
@@ -319,7 +350,6 @@ static void test_concurrent() {
          w.join();
       }
       published = published && list_hash_table(lp, POS_NAME) != nullptr && list_hash_table(lp, POS_GROUP) != nullptr;
-      lFreeList(&lp);
    }
    CHECK(8, "all concurrent first lookups answer correctly", wrong.load() == 0);
    CHECK(9, "after every round a table is published on each field", published);
@@ -330,23 +360,22 @@ static void test_concurrent() {
  * @return nothing; CHECK records the results
  */
 static void test_threshold() {
-   lList *lp = make_list(OCS_CULL_HASH_MIN_ELEMS / 2);
+   const auto owner = make_list(OCS_CULL_HASH_MIN_ELEMS / 2);
+   const ocs::tom::RawList lp = owner.get();
    CHECK(10, "a lookup on a list below the threshold answers without building a table",
-         lGetElemStr(lp, LZ_name, "e2") == linear_find(lp, "e2") && slots_empty(lp));
+         find_name(lp, "e2") == linear_find(lp, "e2") && slots_empty(lp));
 
    for (uint32_t i = OCS_CULL_HASH_MIN_ELEMS / 2; i < OCS_CULL_HASH_MIN_ELEMS; i++) {
-      lAddElemStr(&lp, LZ_name, name_of(i).c_str(), LZ_Type);
+      add_named(lp, name_of(i).c_str());
    }
    CHECK(11, "a list grown to the threshold gets the table on its next lookup",
-         lGetElemStr(lp, LZ_name, "e2") == linear_find(lp, "e2") && list_hash_table(lp, POS_NAME) != nullptr);
+         find_name(lp, "e2") == linear_find(lp, "e2") && list_hash_table(lp, POS_NAME) != nullptr);
 
-   while (lGetNumberOfElem(lp) > 4) {
-      lListElem *last = lLastRW(lp);
-      lRemoveElem(lp, &last);
+   while (lp.size() > 4) {
+      lp.erase(lp.back());
    }
    CHECK(12, "a list shrunk below the threshold keeps its table, which still answers",
-         list_hash_table(lp, POS_NAME) != nullptr && all_found(lp) && lGetElemStr(lp, LZ_name, "e10") == nullptr);
-   lFreeList(&lp);
+         list_hash_table(lp, POS_NAME) != nullptr && all_found(lp) && find_name(lp, "e10") == nullptr);
 }
 
 /**
@@ -361,9 +390,10 @@ static void test_threshold() {
  */
 static void test_duplicate() {
    const ocs::tom::UniqueCheckSuspension suspension;
-   lList *lp = make_list(OCS_CULL_HASH_MIN_ELEMS);
-   lListElem *first = lAddElemStr(&lp, LZ_name, "dup", LZ_Type);
-   lListElem *second = lAddElemStr(&lp, LZ_name, "dup", LZ_Type);
+   const auto owner = make_list(OCS_CULL_HASH_MIN_ELEMS);
+   const ocs::tom::RawList lp = owner.get();
+   const ocs::tom::RawElement first = add_named(lp, "dup");
+   const ocs::tom::RawElement second = add_named(lp, "dup");
    bool thrown = false;
    try {
       const void *iterator = nullptr;
@@ -374,10 +404,9 @@ static void test_duplicate() {
    CHECK(13, "the lookup that would build the table throws and publishes no table",
          thrown && list_hash_table(lp, POS_NAME) == nullptr);
 
-   lRemoveElem(lp, &second);
+   lp.erase(second);
    CHECK(14, "after removing one of the two the lookup builds the table and finds the other one",
-         lGetElemStr(lp, LZ_name, "dup") == first && list_hash_table(lp, POS_NAME) != nullptr);
-   lFreeList(&lp);
+         find_name(lp, "dup") == first.raw() && list_hash_table(lp, POS_NAME) != nullptr);
 }
 
 /**
@@ -385,12 +414,13 @@ static void test_duplicate() {
  * @return nothing; CHECK records the results
  */
 static void test_sort() {
-   lList *lp = make_list(2 * OCS_CULL_HASH_MIN_ELEMS);
+   const auto owner = make_list(2 * OCS_CULL_HASH_MIN_ELEMS);
+   const ocs::tom::RawList lp = owner.get();
    const std::vector<uint32_t> before = group_values(lp, 1);
-   lGetElemStr(lp, LZ_name, "e1");
+   static_cast<void>(find_name(lp, "e1"));
    const cull_htable unique_table = list_hash_table(lp, POS_NAME);
 
-   lPSortList(lp, "%I-", LZ_value);
+   sort_by(lp, LZ_value, false);
    CHECK(15, "the sort drops the non unique table and keeps the unique one",
          list_hash_table(lp, POS_GROUP) == nullptr && list_hash_table(lp, POS_NAME) == unique_table &&
          unique_table != nullptr);
@@ -398,9 +428,14 @@ static void test_sort() {
    CHECK(16, "the next lookup yields the group in the new list order",
          after == group_values_in_list_order(lp, 1) && after != before && list_hash_table(lp, POS_GROUP) != nullptr);
    CHECK(17, "the unique table still finds every element", all_found(lp));
-   lFreeList(&lp);
 }
 
+/**
+ * @brief Run the scenarios of the lazy hash tables
+ * @param argc the number of arguments
+ * @param argv the arguments of the module test frame
+ * @return the exit code of the module test frame
+ */
 int main(int argc, char *argv[]) {
    ocs::module_test::install_test_model({{"LZ", LZ_Type, LZ_Name, LZ_Size}});
 

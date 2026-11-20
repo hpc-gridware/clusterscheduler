@@ -33,7 +33,6 @@
 #include "sgeobj/tom/ocs_tom_RL.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
-#include "cull/cull_test_api.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -80,29 +79,44 @@ static void restore_stderr(int saved) {
 // CULL builder helpers
 // ---------------------------------------------------------------------------
 
-static lListElem *make_userset(const char *name, std::initializer_list<const char *> members) {
+/**
+ * @brief Build a userset with the given entries
+ * @param name the name of the userset
+ * @param members the entries, users or @groups
+ * @return the userset
+ */
+static ocs::tom::ElementPtr<ocs::tom::US> make_userset(const char *name, std::initializer_list<const char *> members) {
    auto us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(us, name);
+   us->set<US_name>(name);
    for (const char *m : members) {
-      ocs::tom::emplace_back_in<US_entries, UE_name>(us, m);
+      us->emplace_back_in<US_entries, UE_name>(m);
    }
-   return us.release();
+   return us;
 }
 
-static lListElem *make_role(const char *name, bool enabled, const char *perm_list,
+/**
+ * @brief Build a role
+ * @param name the name of the role
+ * @param enabled whether the role is enabled
+ * @param perm_list the permission rules, as the role holds them
+ * @param parents the names of the parent roles
+ * @param usersets the names of the usersets of the role
+ * @return the role
+ */
+static ocs::tom::ElementPtr<ocs::tom::RL> make_role(const char *name, bool enabled, const char *perm_list,
                              std::initializer_list<const char *> parents,
                              std::initializer_list<const char *> usersets) {
    auto role = ocs::tom::ElementPtr<ocs::tom::RL>::create();
-   ocs::tom::set<RL_name>(role, name);
-   ocs::tom::set<RL_enabled>(role, enabled);
-   ocs::tom::set<RL_perm_list>(role, perm_list);
+   role->set<RL_name>(name);
+   role->set<RL_enabled>(enabled);
+   role->set<RL_perm_list>(perm_list);
    for (const char *p : parents) {
-      ocs::tom::emplace_back_in<RL_parent_role_list, ST_name>(role, p);
+      role->emplace_back_in<RL_parent_role_list, ST_name>(p);
    }
    for (const char *u : usersets) {
-      ocs::tom::emplace_back_in<RL_user_list, US_name>(role, u);
+      role->emplace_back_in<RL_user_list, US_name>(u);
    }
-   return role.release();
+   return role;
 }
 
 // ---------------------------------------------------------------------------
@@ -348,6 +362,9 @@ static void test_match_rule() {
 // converge on the same ancestor (diamond DAG pattern).
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Scenarios of collect_perm_rules()
+ */
 static void test_collect_perm_rules() {
    printf("\n--- collect_perm_rules ---\n");
 
@@ -355,15 +372,15 @@ static void test_collect_perm_rules() {
    ocs::Role::PermRuleList rules;
 
    // T25: a role with no parents yields only its own rules
-   lAppendElem(*role_list, make_role("base", true, "*:*:ADD:JOB:*:*", {}, {}));
+   role_list->push_back(make_role("base", true, "*:*:ADD:JOB:*:*", {}, {}));
    ocs::Role::collect_perm_rules("base", *role_list, rules);
    CHECK(25, "no-parent role: 1 rule collected",       rules.size() == 1);
    CHECK(25, "no-parent role: correct operation ADD",  !rules.empty() && rules[0].operation == "ADD");
 
    // T26: a linear chain A → B → C yields rules in child-first DFS order (A, B, C)
-   lAppendElem(*role_list, make_role("C", true, "*:*:GET:*:*:*", {},    {}));
-   lAppendElem(*role_list, make_role("B", true, "*:*:DEL:*:*:*", {"C"}, {}));
-   lAppendElem(*role_list, make_role("A", true, "*:*:ADD:*:*:*", {"B"}, {}));
+   role_list->push_back(make_role("C", true, "*:*:GET:*:*:*", {},    {}));
+   role_list->push_back(make_role("B", true, "*:*:DEL:*:*:*", {"C"}, {}));
+   role_list->push_back(make_role("A", true, "*:*:ADD:*:*:*", {"B"}, {}));
 
    rules.clear();
    ocs::Role::collect_perm_rules("A", *role_list, rules);
@@ -373,10 +390,10 @@ static void test_collect_perm_rules() {
    CHECK(26, "chain: C's rule third (GET)",          rules.size() > 2 && rules[2].operation == "GET");
 
    // T27: a diamond DAG (A→B→D and A→C→D) yields D's rules exactly once
-   lAppendElem(*role_list, make_role("D2", true, "*:*:MOD:*:*:*", {},          {}));
-   lAppendElem(*role_list, make_role("B2", true, "*:*:DEL:*:*:*", {"D2"},      {}));
-   lAppendElem(*role_list, make_role("C2", true, "*:*:GET:*:*:*", {"D2"},      {}));
-   lAppendElem(*role_list, make_role("A2", true, "*:*:ADD:*:*:*", {"B2","C2"}, {}));
+   role_list->push_back(make_role("D2", true, "*:*:MOD:*:*:*", {},          {}));
+   role_list->push_back(make_role("B2", true, "*:*:DEL:*:*:*", {"D2"},      {}));
+   role_list->push_back(make_role("C2", true, "*:*:GET:*:*:*", {"D2"},      {}));
+   role_list->push_back(make_role("A2", true, "*:*:ADD:*:*:*", {"B2","C2"}, {}));
 
    rules.clear();
    ocs::Role::collect_perm_rules("A2", *role_list, rules);
@@ -399,13 +416,16 @@ static void test_collect_perm_rules() {
 // true on the first matching rule. The default is deny.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Scenarios of is_authorized()
+ */
 static void test_is_authorized() {
    printf("\n--- is_authorized ---\n");
 
    // devs contains alice; ops contains bob
    auto userset_list = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
-   lAppendElem(*userset_list, make_userset("devs", {"alice"}));
-   lAppendElem(*userset_list, make_userset("ops",  {"bob"}));
+   userset_list->push_back(make_userset("devs", {"alice"}));
+   userset_list->push_back(make_userset("ops",  {"bob"}));
 
    ocs::Role::MatchContext ctx;
    ctx.origin       = "qsub";
@@ -421,11 +441,11 @@ static void test_is_authorized() {
    CHECK(28, "empty role list → false", !ocs::Role::is_authorized(*role_list, *userset_list, ctx));
 
    // T29: a role whose perm_list is NONE grants no permissions even when the user is a member
-   lAppendElem(*role_list, make_role("r_none", true, "NONE", {}, {"devs"}));
+   role_list->push_back(make_role("r_none", true, "NONE", {}, {"devs"}));
    CHECK(29, "NONE perm_list → false", !ocs::Role::is_authorized(*role_list, *userset_list, ctx));
 
    // T30: a role with a matching rule authorizes the request
-   lAppendElem(*role_list, make_role("r_submit", true, "*:qsub:ADD:JOB:*:*", {}, {"devs"}));
+   role_list->push_back(make_role("r_submit", true, "*:qsub:ADD:JOB:*:*", {}, {"devs"}));
    CHECK(30, "matching rule → true", ocs::Role::is_authorized(*role_list, *userset_list, ctx));
 
    // T31: a user who belongs to no role's user_list is denied
@@ -438,14 +458,14 @@ static void test_is_authorized() {
    // T32: a disabled role is skipped entirely; its rules have no effect
    role_list.reset();
    auto role_list_rl = ocs::tom::ListPtr<ocs::tom::RL>::create("roles");
-   lAppendElem(*role_list_rl, make_role("r_disabled", false, "*:*:*:*:*:*", {}, {"devs"}));
+   role_list_rl->push_back(make_role("r_disabled", false, "*:*:*:*:*:*", {}, {"devs"}));
    CHECK(32, "disabled role skipped → false", !ocs::Role::is_authorized(*role_list_rl, *userset_list, ctx));
 
    // T33: a rule inherited from a parent role is sufficient to authorize the request
    role_list_rl.reset();
    auto role_list_rl_2 = ocs::tom::ListPtr<ocs::tom::RL>::create("roles");
-   lAppendElem(*role_list_rl_2, make_role("r_parent", true, "*:qsub:ADD:JOB:*:*", {}, {}));
-   lAppendElem(*role_list_rl_2, make_role("r_child",  true, "NONE", {"r_parent"}, {"devs"}));
+   role_list_rl_2->push_back(make_role("r_parent", true, "*:qsub:ADD:JOB:*:*", {}, {}));
+   role_list_rl_2->push_back(make_role("r_child",  true, "NONE", {"r_parent"}, {"devs"}));
    CHECK(33, "inherited rule from parent → true", ocs::Role::is_authorized(*role_list_rl_2, *userset_list, ctx));
 
    // T34: a role whose rules cover a different operation/object type does not authorize the request
@@ -453,7 +473,7 @@ static void test_is_authorized() {
    ctx.request_group = "ops";
    role_list_rl_2.reset();
    auto role_list_rl_3 = ocs::tom::ListPtr<ocs::tom::RL>::create("roles");
-   lAppendElem(*role_list_rl_3, make_role("r_ops", true, "*:qconf:MOD:CQUEUE:*:*", {}, {"ops"}));
+   role_list_rl_3->push_back(make_role("r_ops", true, "*:qconf:MOD:CQUEUE:*:*", {}, {"ops"}));
    CHECK(34, "non-matching rule → false", !ocs::Role::is_authorized(*role_list_rl_3, *userset_list, ctx));
 
    role_list_rl_3.reset();

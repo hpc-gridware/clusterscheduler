@@ -33,8 +33,6 @@
 #include <cstring>
 #include <string>
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_centry.h"
@@ -73,63 +71,93 @@ static const char *g_current = "?";
    }                                                                           \
 } while (0)
 
-/* Build a fresh CE element ready for read_CE_stringval_host to fill in. */
-static lListElem *
-make_rsmap_ce(const char *name) {
+/**
+ * @brief Build a fresh CE element ready for read_CE_stringval_host to fill in
+ * @param name the name of the complex entry
+ * @return the complex entry
+ */
+static ocs::tom::ElementPtr<ocs::tom::CE> make_rsmap_ce(const char *name) {
    auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ce, name);
-   ocs::tom::set<CE_valtype>(ce, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   return ce.release();
+   ce->set<CE_name>(name);
+   ce->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   return ce;
 }
 
-/* read_CE_stringval_host expects a mutable buffer (sge_strtok_r modifies it),
- * so hand it a strdup and free after. */
+/**
+ * @brief Read a resource map value into a complex entry
+ *
+ * read_CE_stringval_host expects a mutable buffer (sge_strtok_r modifies it),
+ * so hand it a strdup and free after.
+ *
+ * @param ce the complex entry to fill
+ * @param input the value
+ * @param alp the answer list
+ * @return 1 if the reader accepted the value, 0 otherwise
+ */
 static int
-run_reader(lListElem *ce, const char *input, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
+run_reader(const ocs::tom::Element<ocs::tom::CE> ce, const char *input, ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    char *buf = strdup(input);
-   int rc = read_CE_stringval_host(ocs::tom::Element<ocs::tom::CE>(ce), buf, alp) ? 1 : 0;
+   int rc = read_CE_stringval_host(ce, buf, alp) ? 1 : 0;
    free(buf);
    return rc;
 }
 
-/* Write a CE back out the way the flatfile spooler does and return what it
- * produced, so that a value can be read in and written out again. */
+/**
+ * @brief Write a complex entry back out the way the flatfile spooler does
+ *
+ * Returns what it produced, so that a value can be read in and written out again.
+ *
+ * @param ce the complex entry
+ * @return the written value
+ */
 static std::string
-run_writer(const lListElem *ce) {
+run_writer(const ocs::tom::ConstElement<ocs::tom::CE> ce) {
    dstring buffer = DSTRING_INIT;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   write_CE_stringval_host(ocs::tom::ConstElement<ocs::tom::CE>(ce), &buffer, &alp);
+   write_CE_stringval_host(ce, &buffer, &alp);
    std::string out{sge_dstring_get_string(&buffer) == nullptr ? "" : sge_dstring_get_string(&buffer)};
    sge_dstring_free(&buffer);
    alp.reset();
    return out;
 }
 
-/* Read a value and write it straight back out. What comes out has to be
- * something the reader accepts again and which describes the same map. */
+/**
+ * @brief Read a value and write it straight back out
+ *
+ * What comes out has to be something the reader accepts again and which describes the same map.
+ * @param input the value
+ * @return what the writer produced, or "<reader rejected>"
+ */
 static std::string
 round_trip(const char *input) {
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   if (run_reader(ce, input, &alp) != 1) {
-      lFreeElem(&ce);
+   if (run_reader(*ce, input, &alp) != 1) {
+      ce.reset();
       alp.reset();
       return "<reader rejected>";
    }
-   std::string out = run_writer(ce);
-   lFreeElem(&ce);
+   std::string out = run_writer(*ce);
+   ce.reset();
    alp.reset();
    return out;
 }
 
-/* Look up a property by name inside a RESL's properties list; returns nullptr
- * if absent. Only used by the GCS-only characteristics tests. */
 #if defined(WITH_EXTENSIONS)
-static const lListElem *
-find_prop(const lListElem *resl, const char *name) {
-   ocs::tom::ConstList<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(resl);
+/**
+ * @brief Look up a property by name inside the properties list of a resource map entry
+ *
+ * Only used by the GCS-only characteristics tests.
+ *
+ * @param resl the resource map entry
+ * @param name the name of the property
+ * @return the property, empty if absent
+ */
+static ocs::tom::ConstElement<ocs::tom::CE>
+find_prop(const ocs::tom::ConstElement<ocs::tom::RESL> resl, const char *name) {
+   ocs::tom::ConstList<ocs::tom::CE> props = resl.get<RESL_properties>();
    if (props == nullptr) return nullptr;
-   return ocs::tom::find_first<CE_name>(props, name);
+   return props.find_first<CE_name>(name);
 }
 #endif /* WITH_EXTENSIONS */
 
@@ -166,70 +194,82 @@ test_write_range_compaction() {
 /* positive: base grammar — must still parse exactly as before CS-1338  */
 /* ------------------------------------------------------------------ */
 
+/**
+ * @brief Resource map ids given as bare names
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_bare_ids() {
    T_START("bare_ids");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(A B)", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "2(A B)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstList<ocs::tom::RESL> rm = ocs::tom::get<CE_resource_map_list>(ce);
+   ocs::tom::ConstList<ocs::tom::RESL> rm = ce->get<CE_resource_map_list>();
    T_ASSERT(rm != nullptr);
-   T_ASSERT(lGetNumberOfElem(rm) == 2);
+   T_ASSERT(rm.size() == 2);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r_a = ocs::tom::find_first<RESL_value>(rm, "A");
-   ocs::tom::ConstElement<ocs::tom::RESL> r_b = ocs::tom::find_first<RESL_value>(rm, "B");
-   T_ASSERT(r_a != nullptr && ocs::tom::get<RESL_amount>(r_a) == 1);
-   T_ASSERT(r_b != nullptr && ocs::tom::get<RESL_amount>(r_b) == 1);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r_a)) == nullptr);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r_b)) == nullptr);
+   ocs::tom::ConstElement<ocs::tom::RESL> r_a = rm.find_first<RESL_value>("A");
+   ocs::tom::ConstElement<ocs::tom::RESL> r_b = rm.find_first<RESL_value>("B");
+   T_ASSERT(r_a != nullptr && r_a.get<RESL_amount>() == 1);
+   T_ASSERT(r_b != nullptr && r_b.get<RESL_amount>() == 1);
+   T_ASSERT(r_a.get<RESL_properties>() == nullptr);
+   T_ASSERT(r_b.get<RESL_properties>() == nullptr);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
+/**
+ * @brief Resource map ids given as a range
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_range_only() {
    T_START("range_only");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "3(1-3)", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "3(1-3)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstList<ocs::tom::RESL> rm = ocs::tom::get<CE_resource_map_list>(ce);
+   ocs::tom::ConstList<ocs::tom::RESL> rm = ce->get<CE_resource_map_list>();
    T_ASSERT(rm != nullptr);
-   T_ASSERT(lGetNumberOfElem(rm) == 3);
-   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "1")) != nullptr);
-   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "2")) != nullptr);
-   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "3")) != nullptr);
+   T_ASSERT(rm.size() == 3);
+   T_ASSERT(rm.find_first<RESL_value>("1") != nullptr);
+   T_ASSERT(rm.find_first<RESL_value>("2") != nullptr);
+   T_ASSERT(rm.find_first<RESL_value>("3") != nullptr);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
+/**
+ * @brief Resource map ids given as a range and as names
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_mixed_range_and_names() {
    T_START("mixed_range_and_names");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "4(A B 1-2)", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "4(A B 1-2)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstList<ocs::tom::RESL> rm = ocs::tom::get<CE_resource_map_list>(ce);
+   ocs::tom::ConstList<ocs::tom::RESL> rm = ce->get<CE_resource_map_list>();
    T_ASSERT(rm != nullptr);
-   T_ASSERT(lGetNumberOfElem(rm) == 4);
-   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "A")) != nullptr);
-   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "B")) != nullptr);
-   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "1")) != nullptr);
-   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "2")) != nullptr);
+   T_ASSERT(rm.size() == 4);
+   T_ASSERT(rm.find_first<RESL_value>("A") != nullptr);
+   T_ASSERT(rm.find_first<RESL_value>("B") != nullptr);
+   T_ASSERT(rm.find_first<RESL_value>("1") != nullptr);
+   T_ASSERT(rm.find_first<RESL_value>("2") != nullptr);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
@@ -244,85 +284,97 @@ test_mixed_range_and_names() {
 /* ------------------------------------------------------------------ */
 #if defined(WITH_EXTENSIONS)
 
+/**
+ * @brief A resource map id with one characteristic
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_single_characteristic() {
    T_START("single_characteristic");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstList<ocs::tom::RESL> rm = ocs::tom::get<CE_resource_map_list>(ce);
-   T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 1);
+   ocs::tom::ConstList<ocs::tom::RESL> rm = ce->get<CE_resource_map_list>();
+   T_ASSERT(rm != nullptr && rm.size() == 1);
 
-   const lListElem *r = ocs::tom::find_first<RESL_value>(rm, "gpu0");
+   const auto r = rm.find_first<RESL_value>("gpu0");
    T_ASSERT(r != nullptr);
-   const lListElem *dev = find_prop(r, "device");
+   const auto dev = find_prop(r, "device");
    T_ASSERT(dev != nullptr);
    T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
    /* reader stores only name+stringval verbatim; valtype must remain unset */
    T_ASSERT(ocs::tom::get<CE_valtype>(dev) == 0);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
+/**
+ * @brief A resource map id with several characteristics
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_multiple_characteristics() {
    T_START("multiple_characteristics");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce,
+   T_ASSERT(run_reader(*ce,
                        "1(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc])",
                        &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ocs::tom::get<CE_resource_map_list>(ce), "gpu0");
+   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ce->get<CE_resource_map_list>(), "gpu0");
    T_ASSERT(r != nullptr);
 
-   const lListElem *dev = find_prop(r, "device");
-   const lListElem *mem = find_prop(r, "memory");
-   const lListElem *aff = find_prop(r, "affinity_mask");
+   const auto dev = find_prop(r, "device");
+   const auto mem = find_prop(r, "memory");
+   const auto aff = find_prop(r, "affinity_mask");
    T_ASSERT(dev != nullptr && strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
    T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
    T_ASSERT(aff != nullptr && strcmp(ocs::tom::get<CE_stringval>(aff), "SCCCCCCCCScccccccc") == 0);
 
    /* reader stores properties in file order; the writer sorts them at emit
     * time. Verify the count so the properties list length is exact. */
-   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r)) == 3);
+   T_ASSERT(r.get<RESL_properties>().size() == 3);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
+/**
+ * @brief Resource map ids with and without characteristics in one value
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_mixed_with_and_without_characteristics() {
    T_START("mixed_with_and_without_characteristics");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce,
+   T_ASSERT(run_reader(*ce,
                        "3(gpu0[device=/dev/nvidia0] gpu1 gpu2[device=/dev/nvidia2,memory=40G])",
                        &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstList<ocs::tom::RESL> rm = ocs::tom::get<CE_resource_map_list>(ce);
-   T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 3);
+   ocs::tom::ConstList<ocs::tom::RESL> rm = ce->get<CE_resource_map_list>();
+   T_ASSERT(rm != nullptr && rm.size() == 3);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r0 = ocs::tom::find_first<RESL_value>(rm, "gpu0");
-   ocs::tom::ConstElement<ocs::tom::RESL> r1 = ocs::tom::find_first<RESL_value>(rm, "gpu1");
-   ocs::tom::ConstElement<ocs::tom::RESL> r2 = ocs::tom::find_first<RESL_value>(rm, "gpu2");
+   ocs::tom::ConstElement<ocs::tom::RESL> r0 = rm.find_first<RESL_value>("gpu0");
+   ocs::tom::ConstElement<ocs::tom::RESL> r1 = rm.find_first<RESL_value>("gpu1");
+   ocs::tom::ConstElement<ocs::tom::RESL> r2 = rm.find_first<RESL_value>("gpu2");
    T_ASSERT(r0 != nullptr && r1 != nullptr && r2 != nullptr);
 
-   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r0)) == 1);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r1)) == nullptr);
-   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r2)) == 2);
+   T_ASSERT(r0.get<RESL_properties>().size() == 1);
+   T_ASSERT(r1.get<RESL_properties>() == nullptr);
+   T_ASSERT(r2.get<RESL_properties>().size() == 2);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
@@ -331,81 +383,95 @@ test_mixed_with_and_without_characteristics() {
 /* negative: syntax errors the reader must reject                       */
 /* ------------------------------------------------------------------ */
 
+/**
+ * @brief A characteristics block without its closing bracket is rejected
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_reject_unclosed_bracket() {
    T_START("reject_unclosed_bracket");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0)", &alp) == 0);
+   T_ASSERT(run_reader(*ce, "1(gpu0[device=/dev/nvidia0)", &alp) == 0);
    T_ASSERT(alp != nullptr);
    /* reader must clear the partial resource_map_list on failure so callers
     * don't observe half-parsed state */
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
+   T_ASSERT(!ce->get<CE_resource_map_list>());
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
+/**
+ * @brief A characteristic without '=' is rejected
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_reject_missing_eq() {
    T_START("reject_missing_eq");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "1(gpu0[device])", &alp) == 0);
+   T_ASSERT(run_reader(*ce, "1(gpu0[device])", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
+   T_ASSERT(!ce->get<CE_resource_map_list>());
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
+/**
+ * @brief Characteristics on a range of ids are rejected
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_reject_characteristics_on_range() {
    T_START("reject_characteristics_on_range");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(1-2[device=/dev/nvidia0])", &alp) == 0);
+   T_ASSERT(run_reader(*ce, "2(1-2[device=/dev/nvidia0])", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
+   T_ASSERT(!ce->get<CE_resource_map_list>());
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
-/*
- * A bare number is a range of exactly one id, and there it names a single instance: it takes
- * characteristics like any other identifier. Only a range covering more than one is refused.
+/**
+ * @brief A bare number is a range of exactly one id, and there it names a single instance
+ *
+ * it takes characteristics like any other identifier. Only a range covering more than one is refused.
+ * @return 0 if every assertion held, 1 otherwise
  */
 static int
 test_characteristics_on_numeric_id() {
    T_START("characteristics_on_numeric_id");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(0[device=/dev/nvidia0] 1[device=/dev/nvidia1])", &alp) == 1);
-   T_ASSERT(lGetNumberOfElem(ocs::tom::get<CE_resource_map_list>(ce)) == 2);
+   T_ASSERT(run_reader(*ce, "2(0[device=/dev/nvidia0] 1[device=/dev/nvidia1])", &alp) == 1);
+   T_ASSERT(ce->get<CE_resource_map_list>().size() == 2);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> resl = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(ce, "0");
+   ocs::tom::ConstElement<ocs::tom::RESL> resl = ce->find_first_in<CE_resource_map_list, RESL_value>("0");
    T_ASSERT(resl != nullptr);
-   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(resl)) == 1);
-   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(ocs::tom::get<RESL_properties>(resl).front()),
+   T_ASSERT(resl.get<RESL_properties>().size() == 1);
+   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(resl.get<RESL_properties>().front()),
                    "/dev/nvidia0") == 0);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
 
    /* a range of one written as a range is still a single instance */
    ce = make_rsmap_ce("gpu");
-   T_ASSERT(run_reader(ce, "1(3-3[device=/dev/nvidia3])", &alp) == 1);
-   T_ASSERT((static_cast<const lListElem *>(ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(ce, "3"))) != nullptr);
+   T_ASSERT(run_reader(*ce, "1(3-3[device=/dev/nvidia3])", &alp) == 1);
+   T_ASSERT((ce->find_first_in<CE_resource_map_list, RESL_value>("3") != nullptr));
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
@@ -416,24 +482,27 @@ test_characteristics_on_numeric_id() {
 /* duplicate-id semantics (CS-1338, Option A: all occurrences must match) */
 /* ------------------------------------------------------------------ */
 
-/* Regression: bare + bare duplicate. amount=2, no properties. */
+/**
+ * @brief Regression: a bare id given twice is stored once with amount 2 and no properties
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_duplicate_bare() {
    T_START("duplicate_bare");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(gpu0 gpu0)", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "2(gpu0 gpu0)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstList<ocs::tom::RESL> rm = ocs::tom::get<CE_resource_map_list>(ce);
-   T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 1);
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(rm, "gpu0");
+   ocs::tom::ConstList<ocs::tom::RESL> rm = ce->get<CE_resource_map_list>();
+   T_ASSERT(rm != nullptr && rm.size() == 1);
+   ocs::tom::ConstElement<ocs::tom::RESL> r = rm.find_first<RESL_value>("gpu0");
    T_ASSERT(r != nullptr);
-   T_ASSERT(ocs::tom::get<RESL_amount>(r) == 2);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r)) == nullptr);
+   T_ASSERT(r.get<RESL_amount>() == 2);
+   T_ASSERT(r.get<RESL_properties>() == nullptr);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
@@ -442,112 +511,133 @@ test_duplicate_bare() {
  * likewise GCS only. */
 #if defined(WITH_EXTENSIONS)
 
-/* Duplicate id with identical characteristics: stored once, amount=2. */
+/**
+ * @brief Duplicate id with identical characteristics
+ *
+ * stored once, amount=2.
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_duplicate_matching_characteristics() {
    T_START("duplicate_matching_characteristics");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0[memory=80G])", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "2(gpu0[memory=80G] gpu0[memory=80G])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstList<ocs::tom::RESL> rm = ocs::tom::get<CE_resource_map_list>(ce);
-   T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 1);
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(rm, "gpu0");
+   ocs::tom::ConstList<ocs::tom::RESL> rm = ce->get<CE_resource_map_list>();
+   T_ASSERT(rm != nullptr && rm.size() == 1);
+   ocs::tom::ConstElement<ocs::tom::RESL> r = rm.find_first<RESL_value>("gpu0");
    T_ASSERT(r != nullptr);
-   T_ASSERT(ocs::tom::get<RESL_amount>(r) == 2);
-   ocs::tom::ConstList<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(r);
-   T_ASSERT(props != nullptr && lGetNumberOfElem(props) == 1);
-   ocs::tom::ConstElement<ocs::tom::CE> mem = ocs::tom::find_first<CE_name>(props, "memory");
-   T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
+   T_ASSERT(r.get<RESL_amount>() == 2);
+   ocs::tom::ConstList<ocs::tom::CE> props = r.get<RESL_properties>();
+   T_ASSERT(props != nullptr && props.size() == 1);
+   ocs::tom::ConstElement<ocs::tom::CE> mem = props.find_first<CE_name>("memory");
+   T_ASSERT(mem != nullptr && strcmp(mem.get<CE_stringval>(), "80G") == 0);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
-/* Comparison is order-independent: same characteristics in different input
- * order are treated as identical. */
+/**
+ * @brief Comparison is order-independent
+ *
+ * same characteristics in different input order are treated as identical.
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_duplicate_matching_reordered() {
    T_START("duplicate_matching_reordered");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(gpu0[a=1,b=2] gpu0[b=2,a=1])", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "2(gpu0[a=1,b=2] gpu0[b=2,a=1])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ocs::tom::get<CE_resource_map_list>(ce), "gpu0");
-   T_ASSERT(r != nullptr && ocs::tom::get<RESL_amount>(r) == 2);
-   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r)) == 2);
+   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ce->get<CE_resource_map_list>(), "gpu0");
+   T_ASSERT(r != nullptr && r.get<RESL_amount>() == 2);
+   T_ASSERT(r.get<RESL_properties>().size() == 2);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
-/* Duplicate id with conflicting characteristics: reject. */
+/**
+ * @brief Duplicate id with conflicting characteristics
+ *
+ * reject.
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_reject_duplicate_conflict() {
    T_START("reject_duplicate_conflict");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0[memory=40G])", &alp) == 0);
+   T_ASSERT(run_reader(*ce, "2(gpu0[memory=80G] gpu0[memory=40G])", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
+   T_ASSERT(!ce->get<CE_resource_map_list>());
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
-/* Whitespace inside a [...] block is stripped — this makes admin-typed
- * '\\' + <newline> line-continuation transparent. The flatfile scanner
- * turns that continuation into a single space; the reader must not treat
- * that space as an id-list separator. */
+/**
+ * @brief Whitespace inside a [...] block is stripped — this makes admin-typed '\\' + <newline> line-continuation
+ *        transparent
+ *
+ * The flatfile scanner turns that continuation into a single space; the reader must not treat that space as an
+ * id-list separator.
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_whitespace_inside_brackets() {
    T_START("whitespace_inside_brackets");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /* Simulate what the flatfile scanner delivers after resolving a
     * '\' + newline continuation:
     *     gpu0[device=/dev/nvidia0,\<newline>       memory=80G]
     * becomes a single space between ',' and 'memory' in the buffer. */
-   T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0, memory=80G])", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "1(gpu0[device=/dev/nvidia0, memory=80G])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ocs::tom::get<CE_resource_map_list>(ce), "gpu0");
-   T_ASSERT(r != nullptr && ocs::tom::get<RESL_amount>(r) == 1);
-   ocs::tom::ConstList<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(r);
-   T_ASSERT(props != nullptr && lGetNumberOfElem(props) == 2);
+   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ce->get<CE_resource_map_list>(), "gpu0");
+   T_ASSERT(r != nullptr && r.get<RESL_amount>() == 1);
+   ocs::tom::ConstList<ocs::tom::CE> props = r.get<RESL_properties>();
+   T_ASSERT(props != nullptr && props.size() == 2);
 
-   ocs::tom::ConstElement<ocs::tom::CE> dev = ocs::tom::find_first<CE_name>(props, "device");
-   ocs::tom::ConstElement<ocs::tom::CE> mem = ocs::tom::find_first<CE_name>(props, "memory");
-   T_ASSERT(dev != nullptr && strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
+   ocs::tom::ConstElement<ocs::tom::CE> dev = props.find_first<CE_name>("device");
+   ocs::tom::ConstElement<ocs::tom::CE> mem = props.find_first<CE_name>("memory");
+   T_ASSERT(dev != nullptr && strcmp(dev.get<CE_stringval>(), "/dev/nvidia0") == 0);
    // whitespace must NOT leak into the characteristic name — 'memory', not ' memory'
-   T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
+   T_ASSERT(mem != nullptr && strcmp(mem.get<CE_stringval>(), "80G") == 0);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
 
-/* Bare + annotated occurrences of the same id are also a mismatch. */
+/**
+ * @brief Bare + annotated occurrences of the same id are also a mismatch
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_reject_duplicate_bare_vs_annotated() {
    T_START("reject_duplicate_bare_vs_annotated");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0)", &alp) == 0);
+   T_ASSERT(run_reader(*ce, "2(gpu0[memory=80G] gpu0)", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
+   T_ASSERT(!ce->get<CE_resource_map_list>());
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }
@@ -559,31 +649,35 @@ test_reject_duplicate_bare_vs_annotated() {
 /* OCS build: characteristics must be refused, not silently ignored     */
 /* ------------------------------------------------------------------ */
 
-/* An OCS build must reject any id carrying a characteristics block, and must
- * not leave a half-parsed resource map behind. Silently dropping the
- * characteristics would be worse than failing: a site could believe device
- * isolation was configured when nothing was applied. */
+/**
+ * @brief An OCS build must reject any id carrying a characteristics block, and must not leave a half-parsed resource
+ *        map behind
+ *
+ * Silently dropping the characteristics would be worse than failing: a site could believe device isolation was
+ * configured when nothing was applied.
+ * @return 0 if every assertion held, 1 otherwise
+ */
 static int
 test_characteristics_rejected_in_ocs() {
    T_START("characteristics_rejected_in_ocs");
-   lListElem *ce = make_rsmap_ce("gpu");
+   auto ce = make_rsmap_ce("gpu");
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 0);
+   T_ASSERT(run_reader(*ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
+   T_ASSERT(!ce->get<CE_resource_map_list>());
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
 
    /* the plain grammar keeps working in OCS */
    ce = make_rsmap_ce("gpu");
    alp = nullptr;
-   T_ASSERT(run_reader(ce, "2(gpu0 gpu1)", &alp) == 1);
+   T_ASSERT(run_reader(*ce, "2(gpu0 gpu1)", &alp) == 1);
    T_ASSERT(alp == nullptr);
-   T_ASSERT(lGetNumberOfElem(lGetList(ce, CE_resource_map_list)) == 2);
+   T_ASSERT(ce->get<CE_resource_map_list>().size() == 2);
 
-   lFreeElem(&ce);
+   ce.reset();
    alp.reset();
    return 0;
 }

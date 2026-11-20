@@ -24,8 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -39,37 +37,45 @@
 #include "basis_types.h"
 
 /**
- * Builds a CONF element holding the given entry names in the given order.
+ * @brief Build a CONF element holding the given entry names in the given order
+ * @param names the entry names, ended by nullptr
+ * @return the configuration
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CONF>
 make_conf(const char *names[]) {
    auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::create();
 
-   ocs::tom::set<CONF_name>(conf, SGE_GLOBAL_NAME);
+   conf->set<CONF_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
    for (int i = 0; names[i] != nullptr; i++) {
-      ocs::tom::Element<ocs::tom::CF> ep = ocs::tom::emplace_back_in<CONF_entries, CF_name>(conf, names[i]);
-      ocs::tom::set<CF_value>(ep, "value");
+      ocs::tom::Element<ocs::tom::CF> ep = conf->emplace_back_in<CONF_entries, CF_name>(names[i]);
+      ep.set<CF_value>("value");
    }
 
-   return conf.release();
+   return conf;
 }
 
 /**
- * Compares the entry names of a configuration against the expected ones and prints
- * both sequences if they differ. Returns the number of errors found.
+ * @brief Compare the entry names of a configuration against the expected ones
+ *
+ * Prints both sequences if they differ.
+ *
+ * @param test the name of the test case, printed on failure
+ * @param conf the configuration
+ * @param expected the expected entry names, ended by nullptr
+ * @return the number of errors found (0 or 1)
  */
 static int
-check_conf(const char *test, lListElem *conf, const char *expected[]) {
-   ocs::tom::ConstList<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(conf);
+check_conf(const char *test, const ocs::tom::ConstElement<ocs::tom::CONF> conf, const char *expected[]) {
+   ocs::tom::ConstList<ocs::tom::CF> entries = conf.get<CONF_entries>();
    ocs::tom::ConstElement<ocs::tom::CF> ep;
    int i = 0;
 
    for (ep = entries.front(); ep; ep = ep.next()) {
-      if (expected[i] == nullptr || strcmp(ocs::tom::get<CF_name>(ep), expected[i]) != 0) {
+      if (expected[i] == nullptr || strcmp(ep.get<CF_name>(), expected[i]) != 0) {
          printf("FAILED: %s\n", test);
          printf("   got:     ");
          for (ep = entries.front(); ep; ep = ep.next()) {
-            printf("%s ", ocs::tom::get<CF_name>(ep));
+            printf("%s ", ep.get<CF_name>());
          }
          printf("\n   expected:");
          for (int j = 0; expected[j] != nullptr; j++) {
@@ -129,6 +135,12 @@ check_usage_patterns(const char *test, const char *value, bool expected_valid,
    return ret;
 }
 
+/**
+ * @brief Run the checks of the configuration ordering and of the usage patterns
+ * @param argc the number of arguments, unused
+ * @param argv the arguments, unused
+ * @return the number of failed checks
+ */
 int
 main(int argc, char *argv[]) {
    int ret = 0;
@@ -137,32 +149,32 @@ main(int argc, char *argv[]) {
    {
       static const char *in[] = {"topology_file", "loglevel", "mailer", "execd_spool_dir", nullptr};
       static const char *out[] = {"execd_spool_dir", "mailer", "loglevel", "topology_file", nullptr};
-      lListElem *conf = make_conf(in);
+      auto conf = make_conf(in);
 
-      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
-      ret += check_conf("arbitrary order is sorted", conf, out);
-      lFreeElem(&conf);
+      conf_sort_entries(*conf);
+      ret += check_conf("arbitrary order is sorted", *conf, out);
+      conf.reset();
    }
 
    // a configuration which is already sorted is left alone
    {
       static const char *in[] = {"execd_spool_dir", "mailer", "loglevel", "topology_file", nullptr};
-      lListElem *conf = make_conf(in);
+      auto conf = make_conf(in);
 
-      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
-      ret += check_conf("sorted order is kept", conf, in);
-      lFreeElem(&conf);
+      conf_sort_entries(*conf);
+      ret += check_conf("sorted order is kept", *conf, in);
+      conf.reset();
    }
 
    // entries which are not known are kept and appended at the end, in the incoming order
    {
       static const char *in[] = {"zzz_unknown", "loglevel", "aaa_unknown", "mailer", nullptr};
       static const char *out[] = {"mailer", "loglevel", "zzz_unknown", "aaa_unknown", nullptr};
-      lListElem *conf = make_conf(in);
+      auto conf = make_conf(in);
 
-      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
-      ret += check_conf("unknown entries are appended", conf, out);
-      lFreeElem(&conf);
+      conf_sort_entries(*conf);
+      ret += check_conf("unknown entries are appended", *conf, out);
+      conf.reset();
    }
 
    // a name appearing more than once keeps all its occurrences, next to each other; a debug build refuses the
@@ -171,35 +183,35 @@ main(int argc, char *argv[]) {
       const ocs::tom::UniqueCheckSuspension suspension;
       static const char *in[] = {"loglevel", "mailer", "loglevel", nullptr};
       static const char *out[] = {"mailer", "loglevel", "loglevel", nullptr};
-      lListElem *conf = make_conf(in);
+      auto conf = make_conf(in);
 
-      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
-      ret += check_conf("duplicate names are kept", conf, out);
-      lFreeElem(&conf);
+      conf_sort_entries(*conf);
+      ret += check_conf("duplicate names are kept", *conf, out);
+      conf.reset();
    }
 
    // entry names are matched case insensitively, just like in merge_configuration()
    {
       static const char *in[] = {"Topology_File", "MAILER", nullptr};
       static const char *out[] = {"MAILER", "Topology_File", nullptr};
-      lListElem *conf = make_conf(in);
+      auto conf = make_conf(in);
 
-      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
-      ret += check_conf("names are matched case insensitively", conf, out);
-      lFreeElem(&conf);
+      conf_sort_entries(*conf);
+      ret += check_conf("names are matched case insensitively", *conf, out);
+      conf.reset();
    }
 
    // a configuration without any entry does not cause any harm
    {
       static const char *in[] = {nullptr};
-      lListElem *conf = make_conf(in);
+      auto conf = make_conf(in);
 
-      conf_sort_entries(ocs::tom::Element<ocs::tom::CONF>(conf));
-      if (static_cast<const lList *>(ocs::tom::get<CONF_entries>(conf)) != nullptr) {
+      conf_sort_entries(*conf);
+      if (conf->get<CONF_entries>()) {
          printf("FAILED: empty configuration - entry list should still be empty\n");
          ret++;
       }
-      lFreeElem(&conf);
+      conf.reset();
    }
 
    // usage_patterns: valid groups are returned in configuration order

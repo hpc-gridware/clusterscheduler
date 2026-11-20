@@ -47,7 +47,7 @@ eval "\"$cxx\" -O3 -DNDEBUG -std=c++23 -fno-lto -fno-asynchronous-unwind-tables 
    -S -o \"$out\" \"$here/prt01_probe.cc\""
 echo "# $("$cxx" --version | head -1)"
 
-for fn in prt01_typed_number prt01_typed_string prt01_untyped_number prt01_untyped_string prt01_old_number prt01_old_string; do
+for fn in prt01_typed_number prt01_typed_string prt01_untyped_number prt01_untyped_string; do
    label=$(grep -m1 -oE "^_Z[0-9]*${fn}[A-Za-z0-9_]*:" "$out")
    echo "=== $fn"
    # the body up to the end of the function, without directives, comments and local labels

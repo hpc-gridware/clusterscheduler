@@ -36,7 +36,6 @@
  * @brief Unit tests for mt in `libs/spool`
  */
 
-
 /* system */
 #include <pthread.h>
 #include <cstdio>
@@ -47,8 +46,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
-
-#include "cull/cull_test_api.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"

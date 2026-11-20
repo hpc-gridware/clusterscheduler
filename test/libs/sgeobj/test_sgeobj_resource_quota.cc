@@ -42,7 +42,6 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/sge_answer.h"
-#include "cull/cull_test_api.h"
 
 /** @brief The six filter parts of a resource quota rule, as written in the configuration
  *
@@ -103,23 +102,29 @@ static int s_fail = 0;
 static ocs::tom::ElementPtr<ocs::tom::RQR> build_rule(const filter_t &f) {
    auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
    if (auto filter = rqs_parse_filter_from_string(f.users, nullptr)) {
-      ocs::tom::set<RQR_filter_users>(rule, std::move(filter));
+      rule->set<RQR_filter_users>(std::move(filter));
    }
    if (auto filter = rqs_parse_filter_from_string(f.projects, nullptr)) {
-      ocs::tom::set<RQR_filter_projects>(rule, std::move(filter));
+      rule->set<RQR_filter_projects>(std::move(filter));
    }
    if (auto filter = rqs_parse_filter_from_string(f.pes, nullptr)) {
-      ocs::tom::set<RQR_filter_pes>(rule, std::move(filter));
+      rule->set<RQR_filter_pes>(std::move(filter));
    }
    if (auto filter = rqs_parse_filter_from_string(f.hosts, nullptr)) {
-      ocs::tom::set<RQR_filter_hosts>(rule, std::move(filter));
+      rule->set<RQR_filter_hosts>(std::move(filter));
    }
    if (auto filter = rqs_parse_filter_from_string(f.queues, nullptr)) {
-      ocs::tom::set<RQR_filter_queues>(rule, std::move(filter));
+      rule->set<RQR_filter_queues>(std::move(filter));
    }
    return rule;
 }
 
+/**
+ * @brief Run the checks of this module test
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sge_resource_quota");
 
@@ -129,23 +134,23 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // test fixtures: @hgrp1→{host1}, @hgrp2→{host2}; userset1→{user1}, userset2→{@staff}
    auto hgroup_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("");
    auto hgroup = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
-   ocs::tom::set<HGRP_name>(hgroup, "@hgrp1");
-   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, "host1");
-   lAppendElem(*hgroup_list, std::move(hgroup));
+   hgroup->set<HGRP_name>(ocs::tom::Host("@hgrp1"));
+   hgroup->emplace_back_in<HGRP_host_list, HR_name>("host1");
+   hgroup_list->push_back(std::move(hgroup));
    auto hgroup_hgrp = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
-   ocs::tom::set<HGRP_name>(hgroup_hgrp, "@hgrp2");
-   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup_hgrp, "host2");
-   lAppendElem(*hgroup_list, std::move(hgroup_hgrp));
+   hgroup_hgrp->set<HGRP_name>(ocs::tom::Host("@hgrp2"));
+   hgroup_hgrp->emplace_back_in<HGRP_host_list, HR_name>("host2");
+   hgroup_list->push_back(std::move(hgroup_hgrp));
 
    auto userset_list = ocs::tom::ListPtr<ocs::tom::US>::create("");
    auto userset = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(userset, "userset1");
-   ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "user1");
-   lAppendElem(*userset_list, std::move(userset));
+   userset->set<US_name>("userset1");
+   userset->emplace_back_in<US_entries, UE_name>("user1");
+   userset_list->push_back(std::move(userset));
    auto userset_us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(userset_us, "userset2");
-   ocs::tom::emplace_back_in<US_entries, UE_name>(userset_us, "@staff");
-   lAppendElem(*userset_list, std::move(userset_us));
+   userset_us->set<US_name>("userset2");
+   userset_us->emplace_back_in<US_entries, UE_name>("@staff");
+   userset_list->push_back(std::move(userset_us));
 
    // positive filter matching — T01–T48
    filter_test_t positive_tests[] = {
@@ -552,13 +557,13 @@ int main(int /*argc*/, char * /*argv*/[]) {
          auto rules = ocs::tom::ListPtr<ocs::tom::RQR>::create("");
          ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-         ocs::tom::set<RQS_name>(rqs, "cs2687");
+         rqs->set<RQS_name>("cs2687");
          auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
          if (auto filter = rqs_parse_filter_from_string(t.hosts, nullptr)) {
-            ocs::tom::set<RQR_filter_hosts>(rule, std::move(filter));
+            rule->set<RQR_filter_hosts>(std::move(filter));
          }
-         lAppendElem(*rules, std::move(rule));
-         ocs::tom::set<RQS_rule>(rqs, std::move(rules));
+         rules->push_back(std::move(rule));
+         rqs->set<RQS_rule>(std::move(rules));
 
          const bool ret = rqs_verify_attributes(*rqs, &alp, true, ocs::tom::ConstList<ocs::tom::CE>());
 

@@ -41,7 +41,6 @@
 #include "tom/ocs_Element.h"
 
 #include "sge_complex_schedd.h"
-#include "cull/cull_test_api.h"
 
 static int failures = 0;
 

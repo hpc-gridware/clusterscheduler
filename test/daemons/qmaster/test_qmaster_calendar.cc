@@ -41,7 +41,6 @@
 #include "sge_calendar_qmaster.h"
 #include "msg_common.h"
 #include "sgeobj/sge_answer.h"
-#include "cull/cull_test_api.h"
 
 /** @brief One calendar definition to parse and check */
 typedef struct {
@@ -315,15 +314,15 @@ static ocs::tom::ElementPtr<ocs::tom::CAL> createCalObject(cal_entry_t *calendar
    sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR, nullptr);
 
    auto sourceCal = ocs::tom::ElementPtr<ocs::tom::CAL>::create();
-   ocs::tom::set<CAL_name>(sourceCal, "test");
-   ocs::tom::set<CAL_year_calendar>(sourceCal, calendar->year_cal);
-   ocs::tom::set<CAL_week_calendar>(sourceCal, calendar->week_cal);
+   sourceCal->set<CAL_name>("test");
+   sourceCal->set<CAL_year_calendar>(calendar->year_cal);
+   sourceCal->set<CAL_week_calendar>(calendar->week_cal);
 
    auto destCal = ocs::tom::ElementPtr<ocs::tom::CAL>::create();
 
    if (0 != calendar_mod(nullptr, nullptr, &answerList, *destCal, *sourceCal, 1, "", "", nullptr,
                          ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, &monitor)) {
-      lWriteListTo(*answerList, stdout);
+      answerList->print(stdout);
       destCal.reset();
       answerList.reset();
    }
@@ -343,13 +342,13 @@ static ocs::tom::ElementPtr<ocs::tom::CAL> createCalObject(cal_entry_t *calendar
  */
 static bool check_state_change(const ocs::tom::ConstElement<ocs::tom::CQU> stateObject, const uint32_t state,
                                struct tm *time, const int elem_nr) {
-   if (ocs::tom::get<CQU_state>(stateObject) != state) {
+   if (stateObject.get<CQU_state>() != state) {
       printf("wrong state in state list (elem %d): expected %d, got %d\n",
-             elem_nr, (int)state, (int)ocs::tom::get<CQU_state>(stateObject));
+             elem_nr, (int)state, (int)stateObject.get<CQU_state>());
       return false;
    }
    time_t expected = mktime(time);
-   time_t result = sge_gmt64_to_time_t(ocs::tom::get<CQU_till>(stateObject));
+   time_t result = sge_gmt64_to_time_t(stateObject.get<CQU_till>());
    if (result != expected) {
       printf("state list elem %d: ", elem_nr);
       printDateError(&result, time);
@@ -367,7 +366,7 @@ static bool check_state_change(const ocs::tom::ConstElement<ocs::tom::CQU> state
 static bool check_state_change_list(date_entry_t *t, const ocs::tom::ConstList<ocs::tom::CQU> state_changes) {
    int nr;
    if (t->state2 != -1) {
-      if ((nr = lGetNumberOfElem(state_changes)) != 2) {
+      if ((nr = state_changes.size()) != 2) {
          printf("wrong number of elements in state change list: expected 2, got %d\n", nr);
          return false;
       }
@@ -378,7 +377,7 @@ static bool check_state_change_list(date_entry_t *t, const ocs::tom::ConstList<o
       state = state.next();
       return check_state_change(state, t->state2, &t->result2, 2);
    } else {
-      if ((nr = lGetNumberOfElem(state_changes)) != 1) {
+      if ((nr = state_changes.size()) != 1) {
          printf("wrong number of elements in state change list: expected 1, got %d\n", nr);
          return false;
       }

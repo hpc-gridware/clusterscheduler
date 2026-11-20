@@ -43,7 +43,6 @@
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "tom/ocs_Element.h"
-#include "cull/cull_test_api.h"
 
 /*
  * A request which carries a parameter list is refused outright on a build without the
@@ -108,7 +107,7 @@ parse(const char *request) {
 static const char *
 value_of(const ocs::tom::ConstList<ocs::tom::CE> lp, const char *name) {
    ocs::tom::ConstElement<ocs::tom::CE> ep = lp.find_first<CE_name>(name);
-   return ep == nullptr ? nullptr : ocs::tom::get<CE_stringval>(ep);
+   return ep == nullptr ? nullptr : ep.get<CE_stringval>();
 }
 
 /// The empty instance list, for a call that books or holds nothing
@@ -123,60 +122,60 @@ test_splitting() {
 
    /* the ordinary cases have to keep working */
    lp = parse("mem=2G");
-   check_int("T01", "one request yields one element", (int)lGetNumberOfElem(*lp), 1);
+   check_int("T01", "one request yields one element", (int)lp->size(), 1);
    check_str("T01b", "its value is kept", value_of(lp, "mem"), "2G");
    lp.reset();
 
    lp = parse("mem=2G,arch=lx-amd64");
-   check_int("T02", "a comma separates two requests", (int)lGetNumberOfElem(*lp), 2);
+   check_int("T02", "a comma separates two requests", (int)lp->size(), 2);
    lp.reset();
 
    lp = parse("mem=2G arch=lx-amd64");
-   check_int("T03", "a space separates two requests", (int)lGetNumberOfElem(*lp), 2);
+   check_int("T03", "a space separates two requests", (int)lp->size(), 2);
    lp.reset();
 
    lp = parse("mem=2G,,arch=lx-amd64");
    check_int("T04", "repeated separators do not produce empty elements",
-             (int)lGetNumberOfElem(*lp), 2);
+             (int)lp->size(), 2);
    lp.reset();
 
    /* the bracket list is one value, whatever it contains */
    lp = parse("gpu=4[same=id]");
-   check_int("T05", "a bracket list does not split the request", (int)lGetNumberOfElem(*lp), 1);
+   check_int("T05", "a bracket list does not split the request", (int)lp->size(), 1);
    check_str("T05b", "the whole string is kept in CE_stringval",
              value_of(lp, "gpu"), "4[same=id]");
    lp.reset();
 
    lp = parse("gpu=4[id=gpu1*,same=id],mem=2G");
    check_int("T06", "a comma inside brackets does not split, the one outside does",
-             (int)lGetNumberOfElem(*lp), 2);
+             (int)lp->size(), 2);
    check_str("T06b", "the bracket list is intact", value_of(lp, "gpu"), "4[id=gpu1*,same=id]");
    check_str("T06c", "the following request is intact", value_of(lp, "mem"), "2G");
    lp.reset();
 
    lp = parse("gpu=4[id=a b]");
-   check_int("T07", "a space inside brackets does not split", (int)lGetNumberOfElem(*lp), 1);
+   check_int("T07", "a space inside brackets does not split", (int)lp->size(), 1);
    check_str("T07b", "including the space", value_of(lp, "gpu"), "4[id=a b]");
    lp.reset();
 
    /* a nested bracket, as in a character class inside a pattern */
    lp = parse("gpu=1[id=gpu[01]*],mem=2G");
    check_int("T08", "a nested bracket is counted, the list ends at the matching one",
-             (int)lGetNumberOfElem(*lp), 2);
+             (int)lp->size(), 2);
    check_str("T08b", "the nested class survives", value_of(lp, "gpu"), "1[id=gpu[01]*]");
    lp.reset();
 
    /* the same rule makes a character class in a string request work, which it did not before */
    lp = parse("h=node[1,2]");
    check_int("T09", "a character class in a string request is one request",
-             (int)lGetNumberOfElem(*lp), 1);
+             (int)lp->size(), 1);
    check_str("T09b", "and keeps its comma", value_of(lp, "h"), "node[1,2]");
    lp.reset();
 
    /* an unbalanced bracket swallows the rest rather than splitting silently */
    lp = parse("gpu=4[same=id,mem=2G");
    check_int("T10", "an unbalanced bracket yields one element, not two",
-             (int)lGetNumberOfElem(*lp), 1);
+             (int)lp->size(), 1);
    lp.reset();
 
    /* a bare boolean request still becomes TRUE when values are not required */
@@ -186,7 +185,7 @@ test_splitting() {
 
    /* the last of two requests for one complex wins, as before */
    lp = parse("gpu=1,gpu=2");
-   check_int("T12", "a repeated complex yields one element", (int)lGetNumberOfElem(*lp), 1);
+   check_int("T12", "a repeated complex yields one element", (int)lp->size(), 1);
    check_str("T12b", "and keeps the last value", value_of(lp, "gpu"), "2");
    lp.reset();
 }
@@ -200,46 +199,46 @@ make_centry_list() {
    auto lp = ocs::tom::ListPtr<ocs::tom::CE>::create("complexes");
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, "gpu");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_HOST);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   lAppendElem(*lp, std::move(ep));
+   ep->set<CE_name>("gpu");
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ep->set<CE_relop>(CMPLXLE_OP);
+   ep->set<CE_consumable>(CONSUMABLE_HOST);
+   ep->set<CE_requestable>(REQU_YES);
+   lp->push_back(std::move(ep));
 
    auto ep_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep_ce, "gpu_memory");
-   ocs::tom::set<CE_valtype>(ep_ce, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   ocs::tom::set<CE_relop>(ep_ce, CMPLXLE_OP);
-   ocs::tom::set<CE_consumable>(ep_ce, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep_ce, REQU_YES);
-   lAppendElem(*lp, std::move(ep_ce));
+   ep_ce->set<CE_name>("gpu_memory");
+   ep_ce->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ep_ce->set<CE_relop>(CMPLXLE_OP);
+   ep_ce->set<CE_consumable>(CONSUMABLE_NO);
+   ep_ce->set<CE_requestable>(REQU_YES);
+   lp->push_back(std::move(ep_ce));
 
    // a string characteristic, so that a parameter value may be a pattern
    auto ep_ce_2 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep_ce_2, "gpu_model");
-   ocs::tom::set<CE_valtype>(ep_ce_2, static_cast<uint32_t>(ocs::CEntry::Type::STR));
-   ocs::tom::set<CE_relop>(ep_ce_2, CMPLXEQ_OP);
-   ocs::tom::set<CE_consumable>(ep_ce_2, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep_ce_2, REQU_YES);
-   lAppendElem(*lp, std::move(ep_ce_2));
+   ep_ce_2->set<CE_name>("gpu_model");
+   ep_ce_2->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   ep_ce_2->set<CE_relop>(CMPLXEQ_OP);
+   ep_ce_2->set<CE_consumable>(CONSUMABLE_NO);
+   ep_ce_2->set<CE_requestable>(REQU_YES);
+   lp->push_back(std::move(ep_ce_2));
 
    // may not be requested, so it may not be matched against either
    auto ep_ce_3 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep_ce_3, "gpu_serial");
-   ocs::tom::set<CE_valtype>(ep_ce_3, static_cast<uint32_t>(ocs::CEntry::Type::STR));
-   ocs::tom::set<CE_relop>(ep_ce_3, CMPLXEQ_OP);
-   ocs::tom::set<CE_consumable>(ep_ce_3, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep_ce_3, REQU_NO);
-   lAppendElem(*lp, std::move(ep_ce_3));
+   ep_ce_3->set<CE_name>("gpu_serial");
+   ep_ce_3->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   ep_ce_3->set<CE_relop>(CMPLXEQ_OP);
+   ep_ce_3->set<CE_consumable>(CONSUMABLE_NO);
+   ep_ce_3->set<CE_requestable>(REQU_NO);
+   lp->push_back(std::move(ep_ce_3));
 
    auto ep_ce_4 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep_ce_4, "mem");
-   ocs::tom::set<CE_valtype>(ep_ce_4, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   ocs::tom::set<CE_relop>(ep_ce_4, CMPLXLE_OP);
-   ocs::tom::set<CE_consumable>(ep_ce_4, CONSUMABLE_YES);
-   ocs::tom::set<CE_requestable>(ep_ce_4, REQU_YES);
-   lAppendElem(*lp, std::move(ep_ce_4));
+   ep_ce_4->set<CE_name>("mem");
+   ep_ce_4->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ep_ce_4->set<CE_relop>(CMPLXLE_OP);
+   ep_ce_4->set<CE_consumable>(CONSUMABLE_YES);
+   ep_ce_4->set<CE_requestable>(REQU_YES);
+   lp->push_back(std::move(ep_ce_4));
 
    return lp;
 }
@@ -260,9 +259,9 @@ test_amount_split() {
              centry_list_fill_request(lp, &answer_list, centries, true, false, true),
              PARAM_LIST_RC);
    ocs::tom::ConstElement<ocs::tom::CE> ep = ocs::tom::find_first<CE_name>(*lp, "gpu");
-   check_int("T20b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep), 4);
+   check_int("T20b", "CE_doubleval is the amount", (int)ep.get<CE_doubleval>(), 4);
    check_str("T20c", "CE_stringval still carries the parameters",
-             ocs::tom::get<CE_stringval>(ep), "4[same=id]");
+             ep.get<CE_stringval>(), "4[same=id]");
    answer_list.reset();
    lp.reset();
 
@@ -272,7 +271,7 @@ test_amount_split() {
    check_int("T21", "a plain amount is accepted",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
    ocs::tom::ConstElement<ocs::tom::CE> ep_ce = ocs::tom::find_first<CE_name>(*lp, "gpu");
-   check_int("T21b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep_ce), 4);
+   check_int("T21b", "CE_doubleval is the amount", (int)ep_ce.get<CE_doubleval>(), 4);
    answer_list.reset();
    lp.reset();
 
@@ -317,7 +316,7 @@ test_amount_split() {
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
    ocs::tom::ConstElement<ocs::tom::CE> ep_ce_2 = ocs::tom::find_first<CE_name>(*lp, "mem");
    check_int("T24b", "the multiplier is applied",
-             (int)(ocs::tom::get<CE_doubleval>(ep_ce_2) / (1024 * 1024)), 2048);
+             (int)(ep_ce_2.get<CE_doubleval>() / (1024 * 1024)), 2048);
    answer_list.reset();
    lp.reset();
 
@@ -472,12 +471,12 @@ test_parameter_validation() {
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_complex(const char *name, const char *shortcut) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, name);
-   ocs::tom::set<CE_shortcut>(ep, shortcut);
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::INT));
-   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
+   ep->set<CE_name>(name);
+   ep->set<CE_shortcut>(shortcut);
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::INT));
+   ep->set<CE_relop>(CMPLXLE_OP);
+   ep->set<CE_consumable>(CONSUMABLE_NO);
+   ep->set<CE_requestable>(REQU_YES);
    return ep;
 }
 
@@ -550,10 +549,10 @@ test_parameter_values_and_defaults() {
    /* a default value must be an amount. requestable YES is the case with no other validation,
       so it is the one worth pinning */
    ep = make_complex("gpu2", "g2");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_HOST);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   ocs::tom::set<CE_defaultval>(ep, "4");
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ep->set<CE_consumable>(CONSUMABLE_HOST);
+   ep->set<CE_requestable>(REQU_YES);
+   ep->set<CE_defaultval>("4");
    answer_list = nullptr;
    check_int("T64", "a numeric default is accepted",
              centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false) ? 1 : 0, 1);
@@ -561,10 +560,10 @@ test_parameter_values_and_defaults() {
    ep.reset();
 
    ep = make_complex("gpu2", "g2");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_HOST);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   ocs::tom::set<CE_defaultval>(ep, "4[same=id]");
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ep->set<CE_consumable>(CONSUMABLE_HOST);
+   ep->set<CE_requestable>(REQU_YES);
+   ep->set<CE_defaultval>("4[same=id]");
    answer_list = nullptr;
    check_int("T65", "a default carrying a parameter list is refused",
              centry_elem_validate(*ep, ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false) ? 1 : 0, 0);
@@ -585,14 +584,14 @@ test_parameter_values_and_defaults() {
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_resource_definition() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, "gpu");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   ocs::tom::set<CE_doubleval>(ep, 8);
+   ep->set<CE_name>("gpu");
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ep->set<CE_doubleval>(8);
 
-   ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, "0");
-   ocs::tom::set<RESL_amount>(resl, 4);
-   ocs::tom::Element<ocs::tom::RESL> resl_resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, "1");
-   ocs::tom::set<RESL_amount>(resl_resl, 4);
+   ocs::tom::Element<ocs::tom::RESL> resl = ep->emplace_back_in<CE_resource_map_list, RESL_value>("0");
+   resl.set<RESL_amount>(4);
+   ocs::tom::Element<ocs::tom::RESL> resl_resl = ep->emplace_back_in<CE_resource_map_list, RESL_value>("1");
+   resl_resl.set<RESL_amount>(4);
 
    return ep;
 }
@@ -611,18 +610,18 @@ make_resource_definition() {
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_resource_definition_numa() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, "gpu");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   ocs::tom::set<CE_doubleval>(ep, 8);
+   ep->set<CE_name>("gpu");
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ep->set<CE_doubleval>(8);
 
    static const char *const node_of[] = {"0", "0", "1", "1"};
    for (int i = 0; i < 4; i++) {
       char id[2] = {static_cast<char>('0' + i), '\0'};
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, id);
-      ocs::tom::set<RESL_amount>(resl, 2);
+      ocs::tom::Element<ocs::tom::RESL> resl = ep->emplace_back_in<CE_resource_map_list, RESL_value>(id);
+      resl.set<RESL_amount>(2);
 
-      ocs::tom::Element<ocs::tom::CE> property = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, "numa_node");
-      ocs::tom::set<CE_stringval>(property, node_of[i]);
+      ocs::tom::Element<ocs::tom::CE> property = resl.emplace_back_in<RESL_properties, CE_name>("numa_node");
+      property.set<CE_stringval>(node_of[i]);
    }
 
    return ep;
@@ -640,7 +639,7 @@ make_utilization(const char *id, const uint32_t used) {
    if (id != nullptr) {
       taken = ocs::tom::ListPtr<ocs::tom::RESL>::create("taken");
       ocs::tom::Element<ocs::tom::RESL> resl = taken->emplace_back<RESL_value>(id);
-      ocs::tom::set<RESL_amount>(resl, used);
+      resl.set<RESL_amount>(used);
    }
    return taken;
 }
@@ -678,7 +677,7 @@ test_best_free_id() {
    /* both cards half used: four free in the map, two on the best id */
    use = make_utilization("0", 2);
    ocs::tom::Element<ocs::tom::RESL> resl = use->emplace_back<RESL_value>("1");
-   ocs::tom::set<RESL_amount>(resl, 2);
+   resl.set<RESL_amount>(2);
    check_int("T92", "the count is of one id, not of the map",
              (int)(centry_rsmap_best_free_id(*def, use, &free), free), 2);
    use.reset();
@@ -687,7 +686,7 @@ test_best_free_id() {
       "no such resource map" */
    use = make_utilization("0", 4);
    ocs::tom::Element<ocs::tom::RESL> resl_resl = use->emplace_back<RESL_value>("1");
-   ocs::tom::set<RESL_amount>(resl_resl, 4);
+   resl_resl.set<RESL_amount>(4);
    check_int("T93", "a full map reports an id", centry_rsmap_best_free_id(*def, use, &free) != nullptr, 1);
    check_int("T93b", "with a free count of zero", (int)free, 0);
    use.reset();
@@ -734,7 +733,7 @@ test_best_free_group() {
    auto def_partial = make_resource_definition_numa();
    ocs::tom::Element<ocs::tom::RESL> stray =
       ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def_partial, "9");
-   ocs::tom::set<RESL_amount>(stray, 99);
+   stray.set<RESL_amount>(99);
    key = centry_rsmap_best_free_group(*def_partial, no_instances, "numa_node", &free);
    check_int("T98", "an instance without the characteristic is left out", (int)free, 4);
    check_int("T98b", "so the group is still a node", key != nullptr && strcmp(key, "9") != 0, 1);
@@ -760,7 +759,7 @@ test_select_group_instances() {
    auto def = make_resource_definition();
    check_int("T100", "four taken from the plain map",
              took(selected, centry_rsmap_select_group_instances(*def, nullptr, nullptr, "id", 4)), 1);
-   check_int("T100b", "come from a single id", (int)lGetNumberOfElem(*selected), 1);
+   check_int("T100b", "come from a single id", (int)selected->size(), 1);
    check_int("T100c", "with the whole amount on it",
              (int)ocs::tom::get<RESL_amount>(selected->front()), 4);
    selected.reset();
@@ -774,7 +773,7 @@ test_select_group_instances() {
    auto numa = make_resource_definition_numa();
    check_int("T102", "three taken from one node",
              took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 3)), 1);
-   check_int("T102b", "spread over the two cards of it", (int)lGetNumberOfElem(*selected), 2);
+   check_int("T102b", "spread over the two cards of it", (int)selected->size(), 2);
    check_int("T102c", "filling the first before touching the second",
              (int)ocs::tom::get<RESL_amount>(selected->front()), 2);
    check_int("T102d", "and taking the remainder from the second",
@@ -793,7 +792,7 @@ test_select_group_instances() {
     * this job holds is subtracted along with what other jobs hold */
    auto already = ocs::tom::ListPtr<ocs::tom::RESL>::create("already");
    ocs::tom::Element<ocs::tom::RESL> held = already->emplace_back<RESL_value>("0");
-   ocs::tom::set<RESL_amount>(held, 2);
+   held.set<RESL_amount>(2);
 
    check_int("T105", "a later scope takes from the group the first one took from",
              took(selected, centry_rsmap_select_group_instances(*numa, nullptr, already, "numa_node", 2)), 1);
@@ -841,7 +840,7 @@ test_select_group_instances() {
     * handed out and cannot be exchanged for the group the rest of the job uses */
    auto granted = ocs::tom::ListPtr<ocs::tom::RESL>::create("granted");
    ocs::tom::Element<ocs::tom::RESL> granted_ep = granted->emplace_back<RESL_value>("0");
-   ocs::tom::set<RESL_amount>(granted_ep, 2);
+   granted_ep.set<RESL_amount>(2);
 
    check_int("T109c", "a group already granted here wins over the required one",
              took(selected, centry_rsmap_select_group_instances(*numa, nullptr, granted, "numa_node", 2, nullptr,
@@ -865,12 +864,12 @@ test_select_instances() {
 
    check_int("T110", "four are taken from one id",
              took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 4)), 1);
-   check_int("T110b", "so a single entry is returned", (int)lGetNumberOfElem(*selected), 1);
+   check_int("T110b", "so a single entry is returned", (int)selected->size(), 1);
    selected.reset();
 
    check_int("T111", "six spread over both ids",
              took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 6)), 1);
-   check_int("T111b", "two entries", (int)lGetNumberOfElem(*selected), 2);
+   check_int("T111b", "two entries", (int)selected->size(), 2);
    check_int("T111c", "the first id filled before the second is touched",
              (int)ocs::tom::get<RESL_amount>(selected->front()), 4);
    check_int("T111d", "and the remainder from the second",
@@ -886,12 +885,12 @@ test_select_instances() {
     * utilization yet - nothing is debited until the assignment is complete. */
    auto already = ocs::tom::ListPtr<ocs::tom::RESL>::create("already");
    ocs::tom::Element<ocs::tom::RESL> held = already->emplace_back<RESL_value>("0");
-   ocs::tom::set<RESL_amount>(held, 4);
+   held.set<RESL_amount>(4);
 
    check_int("T113", "a later scope skips the id the first one used up",
              took(selected, centry_rsmap_select_instances(*def, nullptr, already, 4)), 1);
    check_str("T113b", "and takes from the other", ocs::tom::get<RESL_value>(selected->front()), "1");
-   check_int("T113c", "in one entry", (int)lGetNumberOfElem(*selected), 1);
+   check_int("T113c", "in one entry", (int)selected->size(), 1);
    selected.reset();
 
    check_int("T114", "and cannot take more than the rest of the map holds",
@@ -985,12 +984,12 @@ make_named_map() {
    static const char *ids[] = {"gpu1a", "gpu1b", "gpu2a", "gpu2b"};
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, "gpu");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ep->set<CE_name>("gpu");
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
    for (const char *id : ids) {
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, id);
-      ocs::tom::set<RESL_amount>(resl, 1);
+      ocs::tom::Element<ocs::tom::RESL> resl = ep->emplace_back_in<CE_resource_map_list, RESL_value>(id);
+      resl.set<RESL_amount>(1);
    }
 
    return ep;
@@ -1039,7 +1038,7 @@ test_id_expression() {
 
    check_int("T131", "more matches than are asked for is not a problem",
              took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 2, "!gpu1a")), 1);
-   check_int("T131b", "the amount is taken", (int)lGetNumberOfElem(*selected), 2);
+   check_int("T131b", "the amount is taken", (int)selected->size(), 2);
    check_str("T131c", "from the accepted set only",
              ocs::tom::get<RESL_value>(selected->front()), "gpu1b");
    selected.reset();
@@ -1062,11 +1061,11 @@ test_id_expression() {
 
    /* id= and same= together: the instances agree in the identifier and match the expression */
    auto shared = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(shared, "gpu");
-   ocs::tom::set<CE_valtype>(shared, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   shared->set<CE_name>("gpu");
+   shared->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    for (const char *id : {"gpu1", "gpu2"}) {
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(shared, id);
-      ocs::tom::set<RESL_amount>(resl, 4);          /* four shares of each card */
+      ocs::tom::Element<ocs::tom::RESL> resl = shared->emplace_back_in<CE_resource_map_list, RESL_value>(id);
+      resl.set<RESL_amount>(4);          /* four shares of each card */
    }
 
    check_int("T136", "a whole card is taken from the one the expression names",
@@ -1074,7 +1073,7 @@ test_id_expression() {
                                                                 "gpu2*")), 1);
    check_str("T136b", "and it is that card",
              ocs::tom::get<RESL_value>(selected->front()), "gpu2");
-   check_int("T136c", "in one entry", (int)lGetNumberOfElem(*selected), 1);
+   check_int("T136c", "in one entry", (int)selected->size(), 1);
    selected.reset();
 
    check_int("T137", "a card the expression excludes cannot serve the request",
@@ -1098,11 +1097,11 @@ test_id_expression() {
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_characteristic(const char *name, ocs::CEntry::Type type, uint32_t relop) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, name);
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
-   ocs::tom::set<CE_relop>(ep, relop);
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
+   ep->set<CE_name>(name);
+   ep->set<CE_valtype>(static_cast<uint32_t>(type));
+   ep->set<CE_relop>(relop);
+   ep->set<CE_consumable>(CONSUMABLE_NO);
+   ep->set<CE_requestable>(REQU_YES);
    return ep;
 }
 
@@ -1117,10 +1116,10 @@ make_characteristic(const char *name, ocs::CEntry::Type type, uint32_t relop) {
 static void
 set_characteristic(const ocs::tom::Element<ocs::tom::CE> def, const char *id, const char *pname,
                    const ocs::CEntry::Type type, const char *value) {
-   ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(def, id);
-   ocs::tom::Element<ocs::tom::CE> prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, pname);
-   ocs::tom::set<CE_valtype>(prop, static_cast<uint32_t>(type));
-   ocs::tom::set<CE_stringval>(prop, value);
+   ocs::tom::Element<ocs::tom::RESL> resl = def.find_first_in_rw<CE_resource_map_list, RESL_value>(id);
+   ocs::tom::Element<ocs::tom::CE> prop = resl.emplace_back_in<RESL_properties, CE_name>(pname);
+   prop.set<CE_valtype>(static_cast<uint32_t>(type));
+   prop.set<CE_stringval>(value);
    ocs::tom::ListPtr<ocs::tom::AN> answers;
    centry_fill_and_check(prop, &answers, false, false);
    answers.reset();
@@ -1133,12 +1132,12 @@ set_characteristic(const ocs::tom::Element<ocs::tom::CE> def, const char *id, co
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_map_with_characteristics() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, "gpu");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ep->set<CE_name>("gpu");
+   ep->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
    for (const char *id : {"gpu0", "gpu1"}) {
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, id);
-      ocs::tom::set<RESL_amount>(resl, 1);
+      ocs::tom::Element<ocs::tom::RESL> resl = ep->emplace_back_in<CE_resource_map_list, RESL_value>(id);
+      resl.set<RESL_amount>(1);
    }
 
    /* gpu0 is the cool, small, A100; gpu1 the hot, large, H100 */
@@ -1167,23 +1166,23 @@ test_characteristic_matching() {
    auto centries = ocs::tom::ListPtr<ocs::tom::CE>::create("complexes");
 
    auto gpu = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(gpu, "gpu");
-   ocs::tom::set<CE_valtype>(gpu, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   ocs::tom::set<CE_consumable>(gpu, CONSUMABLE_HOST);
-   ocs::tom::set<CE_requestable>(gpu, REQU_YES);
-   lAppendElem(*centries, std::move(gpu));
+   gpu->set<CE_name>("gpu");
+   gpu->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   gpu->set<CE_consumable>(CONSUMABLE_HOST);
+   gpu->set<CE_requestable>(REQU_YES);
+   centries->push_back(std::move(gpu));
 
    /* >= : the request is an upper bound, "no hotter than" */
-   lAppendElem(*centries, make_characteristic("gpu_temp", ocs::CEntry::Type::INT, CMPLXGE_OP));
+   centries->push_back(make_characteristic("gpu_temp", ocs::CEntry::Type::INT, CMPLXGE_OP));
    /* <= : the request is a lower bound, "at least" */
-   lAppendElem(*centries, make_characteristic("gpu_mem", ocs::CEntry::Type::MEM, CMPLXLE_OP));
+   centries->push_back(make_characteristic("gpu_mem", ocs::CEntry::Type::MEM, CMPLXLE_OP));
    /* == on a string: matched exactly */
-   lAppendElem(*centries, make_characteristic("gpu_name", ocs::CEntry::Type::STR, CMPLXEQ_OP));
+   centries->push_back(make_characteristic("gpu_name", ocs::CEntry::Type::STR, CMPLXEQ_OP));
    /* defined, but no instance of the map carries it */
-   lAppendElem(*centries, make_characteristic("gpu_clock", ocs::CEntry::Type::INT, CMPLXLE_OP));
+   centries->push_back(make_characteristic("gpu_clock", ocs::CEntry::Type::INT, CMPLXLE_OP));
    /* the string types differ in whether a value may be a pattern, and in case */
-   lAppendElem(*centries, make_characteristic("gpu_re", ocs::CEntry::Type::RESTR, CMPLXEQ_OP));
-   lAppendElem(*centries, make_characteristic("gpu_ci", ocs::CEntry::Type::CSTR, CMPLXEQ_OP));
+   centries->push_back(make_characteristic("gpu_re", ocs::CEntry::Type::RESTR, CMPLXEQ_OP));
+   centries->push_back(make_characteristic("gpu_ci", ocs::CEntry::Type::CSTR, CMPLXEQ_OP));
 
    auto def = make_map_with_characteristics();
 
@@ -1236,7 +1235,7 @@ test_characteristic_matching() {
    for (int i = 0; cases[i].id != nullptr; i++) {
       auto request = centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(), cases[i].request, false);
       ocs::tom::Element<ocs::tom::CE> req = request->front();
-      ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+      req.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
       auto required = centry_rsmap_resolve_request_properties(req, centries);
 
@@ -1247,14 +1246,14 @@ test_characteristic_matching() {
    /* an instance which does not carry the characteristic at all never matches, even when the
       operator would let anything through */
    auto bare = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(bare, "gpu");
-   ocs::tom::set<CE_valtype>(bare, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(bare, "gpu9");
-   ocs::tom::set<RESL_amount>(resl, 1);
+   bare->set<CE_name>("gpu");
+   bare->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::Element<ocs::tom::RESL> resl = bare->emplace_back_in<CE_resource_map_list, RESL_value>("gpu9");
+   resl.set<RESL_amount>(1);
 
    auto request = centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(), "gpu=1[gpu_temp=99]", false);
    ocs::tom::Element<ocs::tom::CE> req = request->front();
-   ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   req.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    auto required = centry_rsmap_resolve_request_properties(req, centries);
    check_int("T151", "an instance carrying no characteristics matches none of them",
              (int)centry_rsmap_free(*bare, no_instances, nullptr, required), 0);

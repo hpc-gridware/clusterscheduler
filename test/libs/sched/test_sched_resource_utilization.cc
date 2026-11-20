@@ -54,7 +54,6 @@
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
 #include "sge_select_queue.h"
-#include "cull/cull_test_api.h"
 
 // the empty handles a typed caller passes where the old interface took nullptr: a nullptr literal next to a handle
 // would fit both the typed form and its transitional overload (N-X-2)
@@ -97,20 +96,36 @@ static int s_fail = 0;
       } \
    } while (0)
 
-static void do_utilization_test(int *id, lListElem *cr, test_array_t *ta) {
+/**
+ * @brief Check utilization_max() for every interval of a test array
+ * @param id the number of the next check; advanced by one per interval
+ * @param cr the resource utilization diagram
+ * @param ta the intervals with their expected utilization, ended by a start time of 0
+ */
+static void do_utilization_test(int *id, const ocs::tom::ConstElement<ocs::tom::RUE> cr, test_array_t *ta) {
    ocs::TopologyString binding_inuse;
    for (int i = 0; ta[i].start_time != 0; i++, (*id)++) {
-      double uti = utilization_max(nullptr, nullptr, ocs::tom::ConstElement<ocs::tom::RUE>(cr),
+      double uti = utilization_max(nullptr, nullptr, cr,
                                    ta[i].start_time, ta[i].duration,
                                    0.0, 0.0, 0.0, false, binding_inuse);
       CHECK(*id, ta[i].desc, uti == ta[i].uti);
    }
 }
 
-static void do_qeti_test(int *id, lListElem *cr,
+/**
+ * @brief Check the points in time the qeti iterator gives for a resource utilization diagram
+ *
+ * The iterator walks a list of diagrams; it gets a copy of @p cr in a list of its own.
+ *
+ * @param id the number of the next check; advanced by one per point in time
+ * @param cr the resource utilization diagram
+ * @param qeti_expected_result the expected points in time, nullptr if the iterator must give none
+ * @param desc the label of each expected point in time
+ */
+static void do_qeti_test(int *id, const ocs::tom::ConstElement<ocs::tom::RUE> cr,
                          uint64_t *qeti_expected_result, const char **desc) {
    auto cr_list = ocs::tom::ListPtr<ocs::tom::RUE>::create("");
-   lAppendElem(*cr_list, cr);
+   cr_list->push_back(cr.clone());
    sge_qeti_t *iter = sge_qeti_allocate2(*cr_list);
 
    if (qeti_expected_result == nullptr) {
@@ -127,10 +142,13 @@ static void do_qeti_test(int *id, lListElem *cr,
       }
    }
 
-   lDechainElem(*cr_list, cr);
    sge_qeti_release(&iter);
 }
 
+/**
+ * @brief utilization_max() and the qeti iterator on a diagram of three bookings
+ * @param id the number of the next check; advanced by every check
+ */
 static void test_normal_utilization(int *id) {
    /*
     *  8-|          --------    ----
@@ -161,7 +179,7 @@ static void test_normal_utilization(int *id) {
    };
 
    auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(cr, "slots");
+   cr->set<RUE_name>("slots");
 
    printf("\n--- normal utilization ---\n");
 
@@ -174,9 +192,13 @@ static void test_normal_utilization(int *id) {
 
 }
 
+/**
+ * @brief utilization_max() and the qeti iterator on diagrams of overlapping, reserving and negative bookings
+ * @param id the number of the next check; advanced by every check
+ */
 static void test_extensive_utilization(int *id) {
    auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(cr, "slots");
+   cr->set<RUE_name>("slots");
 
    // --- extensive: add unlimited reservations ---
    printf("\n--- extensive: add unlimited reservations ---\n");
@@ -301,6 +323,12 @@ static int test_rsmap_utilization();
 static int test_rsmap_below();
 static int test_below_window_before_closed_period();
 
+/**
+ * @brief Run the checks of this module test
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_resource_utilization");
    component_set_daemonized(true);
@@ -312,7 +340,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    printf("\n--- baseline ---\n");
    {
       auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-      ocs::tom::set<RUE_name>(cr, "slots");
+      cr->set<RUE_name>("slots");
 
       ocs::TopologyString binding_inuse;
       double uti = utilization_max(nullptr, no_host, *cr, 1000, 100, 0.0, 0.0, 0.0, false, binding_inuse);
@@ -330,7 +358,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    printf("\n--- concurrent accumulation ---\n");
    {
       auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-      ocs::tom::set<RUE_name>(cr, "slots");
+      cr->set<RUE_name>("slots");
 
       utilization_add(*cr, 1500, 100, 4, 200, 1, PE_TAG, "pe_slots", "STARTING", false, false, no_binding, no_rsmap);
       utilization_add(*cr, 1500, 100, 4, 201, 1, PE_TAG, "pe_slots", "STARTING", false, false, no_binding, no_rsmap);
@@ -372,7 +400,7 @@ make_rsmap(const char *id, uint32_t amount, ...) {
          ids = ocs::tom::ListPtr<ocs::tom::RESL>::create("rsmap");
       }
       ocs::tom::Element<ocs::tom::RESL> ep = ids->emplace_back<RESL_value>(id);
-      ocs::tom::set<RESL_amount>(ep, amount);
+      ep.set<RESL_amount>(amount);
       id = va_arg(ap, const char *);
       if (id != nullptr) {
          amount = va_arg(ap, uint32_t);
@@ -389,7 +417,7 @@ make_rsmap(const char *id, uint32_t amount, ...) {
 static uint32_t
 rsmap_at(const lListElem *rde, const char *id) {
    ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first_in<RDE_resource_map_list, RESL_value>(rde, id);
-   return (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
+   return (ep != nullptr) ? ep.get<RESL_amount>() : 0;
 }
 
 /**
@@ -401,7 +429,7 @@ rde_at_time(const lListElem *cr, uint64_t time) {
    ocs::tom::ConstElement<ocs::tom::RDE> ep;
 
    for (ep = ocs::tom::get<RUE_utilized>(cr).front(); ep; ep = ep.next()) {
-      if (ocs::tom::get<RDE_time>(ep) > time) {
+      if (ep.get<RDE_time>() > time) {
          break;
       }
       hit = ep;
@@ -438,7 +466,7 @@ static int test_rsmap_utilization() {
    printf("\n - test resource map instances in the diagram - \n\n");
 
    auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(cr, "gpu");
+   cr->set<RUE_name>("gpu");
 
    // a reservation takes two instances of gpu0 from 1000 for 200 seconds
    auto two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
@@ -508,7 +536,7 @@ static int test_rsmap_utilization() {
    for (int i = 0; windows[i].id != nullptr; i++) {
       auto taken = utilization_rsmap_max(*cr, 1000, windows[i].start, windows[i].duration);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), windows[i].id);
-      uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
+      uint32_t got = (ep != nullptr) ? ep.get<RESL_amount>() : 0;
 
       if (got != windows[i].expected) {
          printf("   FAIL: %s: expected " sge_u32 " of %s over [" sge_u64 "," sge_u64 "),"
@@ -524,13 +552,13 @@ static int test_rsmap_utilization() {
    // What a job holds right now is in the utilization of the moment as well as in the diagram,
    // so the two are combined by taking the larger and not by adding them up. gpu0 is held twice
    // over [1000,1200) in the diagram; saying the same in the now list must not make it four.
-   ocs::tom::set<RUE_utilized_now_resource_map_list>(cr, make_rsmap("gpu0", 2, "gpu2", 1, nullptr));
+   cr->set<RUE_utilized_now_resource_map_list>(make_rsmap("gpu0", 2, "gpu2", 1, nullptr));
 
    printf("with the same instances also recorded as held right now\n");
    {
       auto taken = utilization_rsmap_max(*cr, 1000, 1000, 200);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu0");
-      uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
+      uint32_t got = (ep != nullptr) ? ep.get<RESL_amount>() : 0;
       if (got != 2) {
          printf("   FAIL: gpu0 is held twice, in both places, expected 2 got " sge_u32 "\n", got);
          ret++;
@@ -540,7 +568,7 @@ static int test_rsmap_utilization() {
 
       // an instance only the now list knows about still counts
       ocs::tom::ConstElement<ocs::tom::RESL> ep_resl = ocs::tom::find_first<RESL_value>(taken.get(), "gpu2");
-      got = (ep_resl != nullptr) ? ocs::tom::get<RESL_amount>(ep_resl) : 0;
+      got = (ep_resl != nullptr) ? ep_resl.get<RESL_amount>() : 0;
       if (got != 1) {
          printf("   FAIL: gpu2 is held right now, expected 1 got " sge_u32 "\n", got);
          ret++;
@@ -554,7 +582,7 @@ static int test_rsmap_utilization() {
       // every job holding something now has ended by then, so the now list does not count;
       // what remains is what the diagram says at its end, which here is nothing
       auto taken = utilization_rsmap_max(*cr, 1000, DISPATCH_TIME_QUEUE_END, 100);
-      if (lGetNumberOfElem(taken.get()) != 0) {
+      if (ocs::tom::size(taken.get()) != 0) {
          printf("   FAIL: something is taken at queue end, expected nothing\n");
          ret++;
       } else {
@@ -567,7 +595,7 @@ static int test_rsmap_utilization() {
       // gpu2 is held now and nothing says it still is at 1200, so it does not count there
       auto taken = utilization_rsmap_max(*cr, 1000, 1200, 100);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu2");
-      uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
+      uint32_t got = (ep != nullptr) ? ep.get<RESL_amount>() : 0;
       if (got != 0) {
          printf("   FAIL: gpu2 is held now but the window is later, expected 0 got "
                 sge_u32 "\n", got);
@@ -582,13 +610,13 @@ static int test_rsmap_utilization() {
    // and must not record any.
    {
       auto global_cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-      ocs::tom::set<RUE_name>(global_cr, "gpu");
+      global_cr->set<RUE_name>("gpu");
       utilization_add(*global_cr, 1000, 100, 1, 200, 1, GLOBAL_TAG, "global", "STARTING", false,
                       false, no_binding, one_of_gpu1);
 
       auto taken = utilization_rsmap_max(*global_cr, 1000, 1000, 100);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu1");
-      if (ep == nullptr || ocs::tom::get<RESL_amount>(ep) != 1) {
+      if (ep == nullptr || ep.get<RESL_amount>() != 1) {
          printf("   FAIL: a map on the global host records nothing\n");
          ret++;
       } else {
@@ -597,12 +625,12 @@ static int test_rsmap_utilization() {
       global_cr.reset();
 
       auto queue_cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-      ocs::tom::set<RUE_name>(queue_cr, "gpu");
+      queue_cr->set<RUE_name>("gpu");
       utilization_add(*queue_cr, 1000, 100, 1, 201, 1, QUEUE_TAG, "a.q", "STARTING", false,
                       false, no_binding, one_of_gpu1);
 
       taken = utilization_rsmap_max(*queue_cr, 1000, 1000, 100);
-      if (lGetNumberOfElem(taken.get()) != 0) {
+      if (ocs::tom::size(taken.get()) != 0) {
          printf("   FAIL: a queue recorded resource map instances\n");
          ret++;
       } else {
@@ -627,27 +655,36 @@ static int test_rsmap_utilization() {
  * Each identifier also carries a characteristic "rack", both cards being in rack r1, so that
  * grouping by the identifier and grouping by a characteristic can be told apart.
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::CE>
 make_two_cards() {
    auto def = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(def, "gpu");
-   ocs::tom::set<CE_valtype>(def, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   def->set<CE_name>("gpu");
+   def->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
    for (const char *id : {"gpu0", "gpu1"}) {
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def, id);
-      ocs::tom::set<RESL_amount>(resl, 2);
-      ocs::tom::Element<ocs::tom::CE> prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, "rack");
-      ocs::tom::set<CE_stringval>(prop, "r1");
+      ocs::tom::Element<ocs::tom::RESL> resl = def->emplace_back_in<CE_resource_map_list, RESL_value>(id);
+      resl.set<RESL_amount>(2);
+      ocs::tom::Element<ocs::tom::CE> prop = resl.emplace_back_in<RESL_properties, CE_name>("rack");
+      prop.set<CE_stringval>("r1");
    }
 
-   return def.release();
+   return def;
 }
 
+/**
+ * @brief Check when utilization_rsmap_below() says a group of a resource map has an amount free
+ * @param def the complex entry of the resource map
+ * @param cr the resource utilization diagram
+ * @param key_name the grouping, "id" or a characteristic
+ * @param amount the instances wanted from one group
+ * @param expected the point in time expected
+ * @param what the label of the check
+ * @return 0 if the point in time is the expected one, 1 otherwise
+ */
 static int
-check_below(const lListElem *def, const lListElem *cr, const char *key_name, uint32_t amount,
-            uint64_t expected, const char *what) {
-   uint64_t got = utilization_rsmap_below(ocs::tom::ConstElement<ocs::tom::CE>(def),
-                                          ocs::tom::ConstElement<ocs::tom::RUE>(cr), key_name, amount);
+check_below(const ocs::tom::ConstElement<ocs::tom::CE> def, const ocs::tom::ConstElement<ocs::tom::RUE> cr,
+            const char *key_name, uint32_t amount, uint64_t expected, const char *what) {
+   uint64_t got = utilization_rsmap_below(def, cr, key_name, amount);
 
    if (got != expected) {
       printf("   FAIL: %s: expected " sge_u64 ", got " sge_u64 "\n", what, expected, got);
@@ -669,12 +706,12 @@ static int test_rsmap_below() {
 
    printf("\n - test when a group of a resource map comes free - \n\n");
 
-   lListElem *def = make_two_cards();
+   auto def = make_two_cards();
    auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(cr, "gpu");
+   cr->set<RUE_name>("gpu");
 
    // nothing booked at all: any group can serve the request straight away
-   ret += check_below(def, *cr, "id", 2, DISPATCH_TIME_NOW, "an empty diagram answers now");
+   ret += check_below(*def, *cr, "id", 2, DISPATCH_TIME_NOW, "an empty diagram answers now");
 
    // one share of each card held to 1000 and 2000. Two shares in total are free the whole
    // time, but never two of one card until the first is given back.
@@ -685,25 +722,25 @@ static int test_rsmap_below() {
    utilization_add(*cr, 0, 2000, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
                    no_binding, one_of_gpu1);
 
-   ret += check_below(def, *cr, "id", 1, DISPATCH_TIME_NOW,
+   ret += check_below(*def, *cr, "id", 1, DISPATCH_TIME_NOW,
                       "one share is free on both cards now");
-   ret += check_below(def, *cr, "id", 2, 1000,
+   ret += check_below(*def, *cr, "id", 2, 1000,
                       "a whole card comes free when the share on gpu0 is given back");
 
    // grouped by a characteristic both cards are one group, so the shares add up and two of
    // the group are free from the start
-   ret += check_below(def, *cr, "rack", 2, DISPATCH_TIME_NOW,
+   ret += check_below(*def, *cr, "rack", 2, DISPATCH_TIME_NOW,
                       "grouped by rack the two free shares are in one group");
-   ret += check_below(def, *cr, "rack", 3, 1000,
+   ret += check_below(*def, *cr, "rack", 3, 1000,
                       "three of the group need the gpu0 share back");
-   ret += check_below(def, *cr, "rack", 4, 2000,
+   ret += check_below(*def, *cr, "rack", 4, 2000,
                       "the whole group needs both shares back");
 
    // A gap which closes again must not be offered. On a fresh diagram gpu0 is free from 1000,
    // taken again from 1500 to 2500 and free for good after that, while gpu1 is held to 3000.
    // The gap at 1000 fits a whole card but does not last, so the answer is gpu0 at 2500.
    auto gap = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(gap, "gpu");
+   gap->set<RUE_name>("gpu");
    auto two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
    utilization_add(*gap, 0, 1000, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
                    no_binding, one_of_gpu0);
@@ -712,27 +749,27 @@ static int test_rsmap_below() {
    utilization_add(*gap, 0, 3000, 1, 104, 1, HOST_TAG, "node01", "STARTING", false, false,
                    no_binding, one_of_gpu1);
 
-   ret += check_below(def, *gap, "id", 2, 2500,
+   ret += check_below(*def, *gap, "id", 2, 2500,
                       "the gap at 1000 closes again, so gpu0 answers at 2500 instead");
 
    // a group still taken at the end of the diagram never comes free, but another group which
    // is free throughout still answers
    auto full = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(full, "gpu");
+   full->set<RUE_name>("gpu");
    auto both_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
    utilization_add(*full, 0, std::numeric_limits<uint64_t>::max(), 2, 105, 1, HOST_TAG, "node01", "STARTING", false,
                    false, no_binding, both_of_gpu0);
 
-   ret += check_below(def, *full, "id", 2, DISPATCH_TIME_NOW,
+   ret += check_below(*def, *full, "id", 2, DISPATCH_TIME_NOW,
                       "gpu0 never comes free, gpu1 is untouched and answers now");
 
    auto both_cards = make_rsmap("gpu0", 2, "gpu1", 2, nullptr);
    auto all_full = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(all_full, "gpu");
+   all_full->set<RUE_name>("gpu");
    utilization_add(*all_full, 0, std::numeric_limits<uint64_t>::max(), 4, 104, 1, HOST_TAG, "node01", "STARTING", false,
                    false, no_binding, both_cards);
 
-   ret += check_below(def, *all_full, "id", 2, std::numeric_limits<uint64_t>::max(),
+   ret += check_below(*def, *all_full, "id", 2, std::numeric_limits<uint64_t>::max(),
                       "when no card ever comes free there is nothing to reserve");
 
    one_of_gpu0.reset();
@@ -744,7 +781,7 @@ static int test_rsmap_below() {
    gap.reset();
    full.reset();
    all_full.reset();
-   lFreeElem(&def);
+   def.reset();
 
    if (ret == 0) {
       printf("\n - when a group comes free: ok -\n");
@@ -782,7 +819,7 @@ static int test_below_window_before_closed_period() {
    printf("\n - test a reservation in front of a calendar closed period - \n\n");
 
    auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(cr, "slots");
+   cr->set<RUE_name>("slots");
 
    // the running job, and the stretch the calendar blocks off later on
    utilization_add(*cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, no_binding, no_rsmap);

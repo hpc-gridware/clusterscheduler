@@ -29,11 +29,14 @@
  * cover the other direction, because the old build then reads the new buffers
  * as its own.
  *
- * The recorded buffers live in test_cull_pack_format_golden.h. They are written
- * by `test_cull_pack_format --dump`, run on a build of the base revision; the
- * source therefore uses only the public CULL interface, which both revisions
- * share. Such a build is compiled with OCS_PACK_FORMAT_DUMP_ONLY, as it has no
- * recorded buffers yet.
+ * The recorded buffers live in test_cull_pack_format_golden.h. They were
+ * written by `test_cull_pack_format --dump`, run on a build of the base
+ * revision, and are never regenerated for a change that keeps the format. Since
+ * CS-3103 the test drives the core of the typed object model (pack_elem(),
+ * pack_list(), unpack_raw_elem(), unpack_raw_list() and the non-throwing buffer
+ * fronts of ocs_PackCore.h); the test types have no generated traits, so the
+ * elements are built with the run-time typed handles of tom/ocs_Raw.h. A build
+ * for --dump alone is compiled with OCS_PACK_FORMAT_DUMP_ONLY.
  */
 
 #include <cstdint>
@@ -50,7 +53,13 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "tom/cull_types.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_Host.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_PackBuffer.h"
+#include "tom/ocs_PackCore.h"
+#include "tom/ocs_Raw.h"
 
 #include "uti/sge_stdlib.h"
 
@@ -128,21 +137,24 @@ using bytes = std::vector<uint8_t>;
  * @param with_children whether to add a sub-object and two sublist elements
  * @return the free element
  */
-static lListElem *make_elem(const char *name, uint32_t n, bool with_children) {
-   lListElem *ep = lCreateElem(PF_Type);
-   lSetString(ep, PF_name, name);
-   lSetHost(ep, PF_host, "host-0001.example.com");
-   lSetUlong(ep, PF_group, n % 2);
-   lSetUlong64(ep, PF_u64, (uint64_t{1} << 40) + n);
-   lSetDouble(ep, PF_dbl, 0.25 * n);
-   lSetBool(ep, PF_bool, n % 2 == 0);
+static ocs::tom::RawElementPtr make_elem(const char *name, const uint32_t n, const bool with_children) {
+   auto ep = ocs::tom::RawElementPtr::create(PF_Type);
+   ep->set(PF_name, name);
+   ep->set(PF_host, ocs::tom::Host("host-0001.example.com"));
+   ep->set(PF_group, n % 2);
+   ep->set(PF_u64, (uint64_t{1} << 40) + n);
+   ep->set(PF_dbl, 0.25 * n);
+   ep->set(PF_bool, n % 2 == 0);
    if (with_children) {
-      lListElem *obj = lCreateElem(PFS_Type);
-      lSetString(obj, PFS_name, "object");
-      lSetUlong(obj, PFS_value, n);
-      lSetObject(ep, PF_obj, obj);
-      lAddSubStr(ep, PFS_name, "s1", PF_sub, PFS_Type);
-      lAddSubStr(ep, PFS_name, "s2", PF_sub, PFS_Type);
+      auto obj = ocs::tom::RawElementPtr::create(PFS_Type);
+      obj->set(PFS_name, "object");
+      obj->set(PFS_value, n);
+      ep->set(PF_obj, std::move(obj));
+      // the sublist as lAddSubStr() made it: created by the keyed add of the core, named ""
+      lList *sub = nullptr;
+      static_cast<void>(ocs::tom::add_elem_str(sub, PFS_name, "s1", PFS_Type));
+      static_cast<void>(ocs::tom::add_elem_str(sub, PFS_name, "s2", PFS_Type));
+      ep->set(PF_sub, ocs::tom::RawListPtr(sub));
    }
    return ep;
 }
@@ -152,31 +164,34 @@ static lListElem *make_elem(const char *name, uint32_t n, bool with_children) {
  *
  * @return the list, hashed
  */
-static lList *make_list() {
-   lList *lp = lCreateList("pack format", PF_Type);
-   lAppendElem(lp, make_elem("a", 1, true));
-   lAppendElem(lp, make_elem("b", 2, true));
-   lAppendElem(lp, make_elem(nullptr, 3, false));
+static ocs::tom::RawListPtr make_list() {
+   auto lp = ocs::tom::RawListPtr::create(PF_Type, ocs::tom::Hashing::On, "pack format");
+   lp->push_back(make_elem("a", 1, true));
+   lp->push_back(make_elem("b", 2, true));
+   lp->push_back(make_elem(nullptr, 3, false));
    return lp;
 }
 
 /**
  * @brief Run a pack function into a fresh buffer and return its bytes
  *
- * @param pack the pack function
+ * @param pack the pack function; a PackException is a failure
  * @return the packed bytes; empty if packing failed
  */
-static bytes pack(const std::function<int(sge_pack_buffer *)> &pack) {
+static bytes pack(const std::function<void(sge_pack_buffer *)> &pack) {
    bytes result;
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024, false, false) != PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 1024, false, false) != PACK_SUCCESS) {
       return result;
    }
-   if (pack(&pb) == PACK_SUCCESS) {
+   try {
+      pack(&pb);
       const auto *p = reinterpret_cast<const uint8_t *>(pb.head_ptr);
-      result.assign(p, p + pb.bytes_used);
+      result.assign(p, p + ocs::tom::buffer_used(&pb));
+   } catch (const ocs::tom::PackException &) {
+      // an empty result reports the failure
    }
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
    return result;
 }
 
@@ -185,15 +200,22 @@ static bytes pack(const std::function<int(sge_pack_buffer *)> &pack) {
  *
  * @param data the buffer
  * @param size its length in bytes
- * @param unpack the unpack function
- * @return true if the buffer was set up and unpack returned PACK_SUCCESS
+ * @param unpack the unpack function; a PackException is a failure
+ * @return true if the buffer was set up and unpack threw nothing
  */
-static bool unpack(const uint8_t *data, size_t size, const std::function<int(sge_pack_buffer *)> &unpack) {
+static bool unpack(const uint8_t *data, const size_t size, const std::function<void(sge_pack_buffer *)> &unpack) {
    char *buf = sge_malloc(size);
    memcpy(buf, data, size);
    sge_pack_buffer pb;
-   bool ok = init_packbuffer_from_buffer(&pb, buf, size, false) == PACK_SUCCESS && unpack(&pb) == PACK_SUCCESS;
-   clear_packbuffer(&pb);
+   bool ok = ocs::tom::try_init_buffer_from(&pb, buf, static_cast<std::uint32_t>(size), false) == PACK_SUCCESS;
+   if (ok) {
+      try {
+         unpack(&pb);
+      } catch (const ocs::tom::PackException &) {
+         ok = false;
+      }
+   }
+   ocs::tom::clear_buffer(&pb);
    return ok;
 }
 
@@ -214,29 +236,26 @@ struct packed_set {
  */
 static packed_set pack_set() {
    packed_set s;
-   lList *lp = make_list();
-   lListElem *free_ep = make_elem("free", 4, true);
-   const lListElem *bound = lFirst(lp);
-   const lListElem *object = lGetObject(bound, PF_obj);
+   const auto lp = make_list();
+   const auto free_ep = make_elem("free", 4, true);
+   const ocs::tom::ConstRawElement bound = lp->front();
+   const ocs::tom::ConstRawElement object = bound.get<ocs::tom::ConstRawElement>(PF_obj);
 
-   s.free_elem = pack([&](sge_pack_buffer *pb) { return cull_pack_elem(pb, free_ep); });
-   s.bound_elem = pack([&](sge_pack_buffer *pb) { return cull_pack_elem(pb, bound); });
-   s.object_elem = pack([&](sge_pack_buffer *pb) { return cull_pack_elem(pb, object); });
+   s.free_elem = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_elem(pb, free_ep.get(), nullptr, 0); });
+   s.bound_elem = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_elem(pb, bound, nullptr, 0); });
+   s.object_elem = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_elem(pb, object, nullptr, 0); });
 
-   lListElem *trans = nullptr;
+   ocs::tom::RawElementPtr trans;
    if (unpack(s.bound_elem.data(), s.bound_elem.size(),
-              [&](sge_pack_buffer *pb) { return cull_unpack_elem(pb, &trans, PF_Type); })) {
-      s.trans_elem = pack([&](sge_pack_buffer *pb) { return cull_pack_elem(pb, trans); });
+              [&](sge_pack_buffer *pb) { trans = ocs::tom::unpack_raw_elem(pb, PF_Type); })) {
+      s.trans_elem = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_elem(pb, trans.get(), nullptr, 0); });
    }
 
-   s.list = pack([&](sge_pack_buffer *pb) { return cull_pack_list(pb, lp); });
-   lEnumeration *what = lWhat("%T(%I %I %I)", PF_Type, PF_name, PF_group, PF_sub);
-   s.partial_list = pack([&](sge_pack_buffer *pb) { return cull_pack_list_partial(pb, lp, what, 0); });
+   s.list = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_list(pb, lp.get(), nullptr, 0); });
+   const int fields[] = {PF_name, PF_group, PF_sub};
+   const ocs::tom::RawWhatPtr what = ocs::tom::what_of(PF_Type, fields);
+   s.partial_list = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_list(pb, lp.get(), what.get(), 0); });
 
-   lFreeWhat(&what);
-   lFreeElem(&trans);
-   lFreeElem(&free_ep);
-   lFreeList(&lp);
    return s;
 }
 
@@ -334,13 +353,12 @@ static bool same(const bytes &b, const uint8_t *golden, size_t size) {
  * @param size its length
  * @return the bytes packed from the unpacked element; empty on failure
  */
-static bytes repack_elem(const uint8_t *golden, size_t size) {
+static bytes repack_elem(const uint8_t *golden, const size_t size) {
    bytes result;
-   lListElem *ep = nullptr;
-   if (unpack(golden, size, [&](sge_pack_buffer *pb) { return cull_unpack_elem(pb, &ep, PF_Type); })) {
-      result = pack([&](sge_pack_buffer *pb) { return cull_pack_elem(pb, ep); });
+   ocs::tom::RawElementPtr ep;
+   if (unpack(golden, size, [&](sge_pack_buffer *pb) { ep = ocs::tom::unpack_raw_elem(pb, PF_Type); })) {
+      result = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_elem(pb, ep.get(), nullptr, 0); });
    }
-   lFreeElem(&ep);
    return result;
 }
 
@@ -351,13 +369,12 @@ static bytes repack_elem(const uint8_t *golden, size_t size) {
  * @param size its length
  * @return the bytes packed from the unpacked list; empty on failure
  */
-static bytes repack_list(const uint8_t *golden, size_t size) {
+static bytes repack_list(const uint8_t *golden, const size_t size) {
    bytes result;
-   lList *lp = nullptr;
-   if (unpack(golden, size, [&](sge_pack_buffer *pb) { return cull_unpack_list(pb, &lp); })) {
-      result = pack([&](sge_pack_buffer *pb) { return cull_pack_list(pb, lp); });
+   ocs::tom::RawListPtr lp;
+   if (unpack(golden, size, [&](sge_pack_buffer *pb) { lp = ocs::tom::unpack_raw_list(pb); })) {
+      result = pack([&](sge_pack_buffer *pb) { ocs::tom::pack_list(pb, lp.get(), nullptr, 0); });
    }
-   lFreeList(&lp);
    return result;
 }
 
@@ -410,6 +427,12 @@ static void test_read_old() {
 
 #endif
 
+/**
+ * @brief Run the scenarios, or write the recorded buffers with --dump
+ * @param argc the number of arguments
+ * @param argv the arguments: --dump, or those of the module test frame
+ * @return the exit code of --dump or of the module test frame
+ */
 int main(int argc, char *argv[]) {
    ocs::module_test::install_test_model({{"PF", PF_Type, PF_Name, PF_Size}, {"PFS", PFS_Type, PFS_Name, PFS_Size}});
 

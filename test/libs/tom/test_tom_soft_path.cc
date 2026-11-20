@@ -21,9 +21,10 @@
 /** @file
  * @brief Debug builds record the soft error paths of the old accessors (CS-3062, LEG-03 step 1)
  *
- * Each soft path an old accessor can still take under the contract of N-L-4
- * (CS-3062) is called once with a sink directory set: a null element, a null
- * argument, a bound element and a null list. A field the element does not hold
+ * Each soft path the free accessors that replaced the old ones (and select_as())
+ * can still take under the contract of N-L-4 (CS-3062) is called once with a
+ * sink directory set: a null element, a null argument, a bound element and a
+ * null list. A field the element does not hold
  * and a negative position abort since then and are no soft paths any more. The test checks that the return value and the error
  * number stay what they were and that one line names the accessor, the field,
  * the reason and this test as the caller. A hot loop on one soft path writes a
@@ -44,10 +45,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
+#include "tom/cull_state.h"
 #include "tom/ocs_DumpCore.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_ElementCore.h"
@@ -86,7 +88,7 @@ namespace {
       setenv("OCS_SOFT_PATH_DIR", missing, 1);
       ocs::tom::install_model(ocs::tom::gcs_model());
       cull_state_set_lerrno(0);
-      const int result = lSetPosBool(nullptr, 0, true);
+      const int result = ocs::tom::set<TEST_bool>(nullptr, true);
       return result == -1 && cull_state_get_lerrno() == LEELEMNULL && access(missing, F_OK) != 0 ? 0 : 1;
    }
 
@@ -144,7 +146,7 @@ namespace {
    }
 
    /**
-    * @brief Call an old setter and check its result and error number
+    * @brief Check the result and the error number of a free accessor
     * @param result the setter's return value
     * @param lerrno the error number expected with -1
     * @return true if the setter returned -1 with that error number
@@ -155,30 +157,21 @@ namespace {
 
    /** @brief A TEST element in a list, a reduced copy of it, and a job with its task list */
    struct Fixture {
-      lList *list = nullptr;         ///< holds the full element
-      lListElem *full = nullptr;     ///< a full TEST element
-      lList *reduced_list = nullptr; ///< holds the reduced element
-      lListElem *reduced = nullptr;  ///< a TEST element holding TEST_obj_any only
-      lEnumeration *what = nullptr;  ///< the selection of the reduced element
-      lListElem *job = nullptr;      ///< a job, for the list field of lXchgList
+      ocs::tom::ListPtr<ocs::tom::TEST> list;         ///< holds the full element
+      lListElem *full = nullptr;                      ///< a full TEST element
+      ocs::tom::ListPtr<ocs::tom::TEST> reduced_list; ///< holds the reduced element
+      lListElem *reduced = nullptr;                   ///< a TEST element holding TEST_obj_any only
+      ocs::tom::ElementPtr<ocs::tom::JB> job_owner;   ///< owns the job
+      lListElem *job = nullptr;                       ///< a job, for the list field of exchange
 
       /** @brief Build the elements */
       Fixture() {
-         list = lCreateList("full", ocs::tom::TEST::descriptor.e);
-         full = lCreateElem(ocs::tom::TEST::descriptor.e);
-         lAppendElem(list, full);
-         what = lWhat("%T(%I)", ocs::tom::TEST::descriptor.e, TEST_obj_any);
-         reduced_list = lSelect("reduced", list, nullptr, what);
-         reduced = ocs::tom::RawList{reduced_list}.front();
-         job = lCreateElem(ocs::tom::JB::descriptor.e);
-      }
-
-      /** @brief Free the elements */
-      ~Fixture() {
-         lFreeList(&list);
-         lFreeList(&reduced_list);
-         lFreeWhat(&what);
-         lFreeElem(&job);
+         list = ocs::tom::ListPtr<ocs::tom::TEST>::create("full");
+         full = list->push_back(ocs::tom::ElementPtr<ocs::tom::TEST>::create()).raw();
+         reduced_list = list->select(ocs::tom::what<TEST_obj_any>(), "reduced");
+         reduced = reduced_list->front().raw();
+         job_owner = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+         job = job_owner.get().raw();
       }
    };
 
@@ -197,37 +190,33 @@ namespace {
 #else
       Fixture f;
 
-      // a null list to copy: nullptr
-      CHECK(1, "a null list of lCopyList is recorded, the result is unchanged",
-            lCopyList("copy", nullptr) == nullptr && lines_for("lCopyList", "-", "null-list") == 1);
+      // a null list to select from: no list, as lSelect() gave nullptr
+      CHECK(1, "a null list of select_as is recorded, the result is unchanged",
+            !ocs::tom::select_as("copy", nullptr, nullptr, nullptr, ocs::tom::Hashing::On) &&
+               lines_for("select_as", "-", "null-list") == 1);
 
-      // a null element to copy: nullptr
-      CHECK(2, "a null element of lCopyElem is recorded, the result is unchanged",
-            lCopyElem(nullptr) == nullptr && lines_for("lCopyElem", "-", "null-element") == 1);
+      // CHECK 2 removed: lCopyElem() has no TOM counterpart for its recorded null element, clone() records nothing
+      // (CS-3103)
 
-      // a null element: -1 with LEELEMNULL
+      // a null element: -1 with LEELEMNULL, as lSetDouble() gave
       cull_state_set_lerrno(0);
-      const bool null_elem = returned(lSetDouble(nullptr, TEST_double, 1.0), LEELEMNULL);
+      const bool null_elem = returned(ocs::tom::set<TEST_double>(nullptr, 1.0), LEELEMNULL);
       CHECK(3, "a null element is recorded, the result is unchanged",
-            null_elem && lines_for("lSetDouble", "TEST_double", "null-element") == 1);
+            null_elem && lines_for("ocs::tom::set", "TEST_double", "null-element") == 1);
 
-      // a null element of a setter by position: -1 with LEELEMNULL
-      cull_state_set_lerrno(0);
-      const bool null_pos = returned(lSetPosUlong(nullptr, 0, 1), LEELEMNULL);
-      CHECK(4, "a null element of a setter by position is recorded, the result is unchanged",
-            null_pos && lines_for("lSetPosUlong", "-", "null-element") == 1);
+      // CHECK 4 removed: lSetPosUlong() has no TOM counterpart for its soft return, the raw set() throws (CS-3103)
 
-      // a null output pointer of lXchgList: -1 with LEELEMNULL
+      // a null output pointer of exchange, which replaced lXchgList(): -1 with LEELEMNULL
       cull_state_set_lerrno(0);
-      const bool null_arg = returned(lXchgList(f.job, JB_ja_tasks, nullptr), LEELEMNULL);
+      const bool null_arg = returned(ocs::tom::exchange<JB_ja_tasks>(f.job, nullptr), LEELEMNULL);
       CHECK(5, "a null argument is recorded, the result is unchanged",
-            null_arg && lines_for("lXchgList", "JB_ja_tasks", "null-argument") == 1);
+            null_arg && lines_for("ocs::tom::exchange", "JB_ja_tasks", "null-argument") == 1);
 
-      // an element bound in a list cannot become an object field: -1 with LEBOUNDELEM
+      // an element bound in a list cannot become an object field: -1 with LEBOUNDELEM, as lSetObject() gave
       cull_state_set_lerrno(0);
-      const bool bound = returned(lSetObject(f.reduced, TEST_obj_any, f.full), LEBOUNDELEM);
+      const bool bound = returned(ocs::tom::set<TEST_obj_any>(f.reduced, f.full), LEBOUNDELEM);
       CHECK(6, "a bound element is recorded, the result is unchanged",
-            bound && lines_for("lSetObject", "TEST_obj_any", "bound-element") == 1);
+            bound && lines_for("ocs::tom::set", "TEST_obj_any", "bound-element") == 1);
 
       // the free setter on a null element, as the old lSetUlong
       cull_state_set_lerrno(0);
@@ -236,7 +225,7 @@ namespace {
             free_setter && lines_for("ocs::tom::set", "TEST_uint32", "null-element") == 1);
 
       CHECK(8, "a recorded line names the calling function",
-            line_names_caller("lCopyList", "-", "null-list", "test_each_soft_path"));
+            line_names_caller("select_as", "-", "null-list", "test_each_soft_path"));
 #endif
    }
 
@@ -250,9 +239,9 @@ namespace {
 #else
       Fixture f;
       for (int i = 0; i < 10000; i++) {
-         static_cast<void>(lSetLong(nullptr, TEST_long, i));
+         static_cast<void>(ocs::tom::set<TEST_long>(nullptr, i));
       }
-      const int n = lines_for("lSetLong", "TEST_long", "null-element");
+      const int n = lines_for("ocs::tom::set", "TEST_long", "null-element");
       CHECK(9, "10 000 calls from one place write at least one and at most 8 lines", n >= 1 && n <= 8);
 #endif
    }
@@ -276,7 +265,8 @@ namespace {
       int status = 0;
       waitpid(pid, &status, 0);
       CHECK(10, "without the sink directory nothing is written and the result is unchanged",
-            WIFEXITED(status) && WEXITSTATUS(status) == 0 && lines_for("lSetPosBool", "-", "null-element") == 0);
+            WIFEXITED(status) && WEXITSTATUS(status) == 0 &&
+               lines_for("ocs::tom::set", "TEST_bool", "null-element") == 0);
 #endif
    }
 
@@ -1042,11 +1032,11 @@ int main(int argc, char *argv[]) {
    setenv("OCS_SOFT_PATH_DIR", dir, 1);
    const int rc = ocs::module_test::run(argc, argv, {
       {"SOFT-01", "each soft path",
-       "every soft error path the contract of N-L-4 keeps in the old accessors and the free setter is recorded "
+       "every soft error path the contract of N-L-4 keeps in the free accessors and select_as is recorded "
        "with accessor, field, reason and caller, and the result stays as it was",
        {"call each soft path once with a sink directory"},
        "one line per call, return value and error number unchanged", {{"LEG-03", "covers"}},
-       {1, 2, 3, 4, 5, 6, 7, 8}, test_each_soft_path},
+       {1, 3, 5, 6, 7, 8}, test_each_soft_path},
       {"SOFT-02", "hot loop",
        "a soft path taken in a loop writes a bounded number of lines",
        {"call one soft path 10 000 times"}, "between 1 and 8 lines", {{"LEG-03", "covers"}}, {9}, test_hot_loop},

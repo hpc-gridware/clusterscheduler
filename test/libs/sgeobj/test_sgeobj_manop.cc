@@ -39,7 +39,6 @@
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Packet.h"
-#include "cull/cull_test_api.h"
 
 /*
  * CS-2394: managers and operators are the members of the reserved "manager" and
@@ -81,26 +80,33 @@ static int s_fail = 0;
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** @brief Replace the userset master list with a list holding the given usersets. */
+/**
+ * @brief Replace the userset master list with a list holding the given usersets
+ * @param usersets the usersets, in this order; the master list takes them over
+ */
+template <typename... Usersets>
 static void
-set_master_usersets(std::initializer_list<lListElem *> usersets) {
+set_master_usersets(Usersets &&...usersets) {
    ocs::DataStore::replace_master_list<SGE_TYPE_USERSET>(ocs::tom::ListPtr<ocs::tom::US>::create("usersets"));
-   const auto master_userset_list = ocs::DataStore::master_list_rw<SGE_TYPE_USERSET>();
-   for (lListElem *us : usersets) {
-      lAppendElem(master_userset_list, us);
-   }
+   [[maybe_unused]] const auto master_userset_list = ocs::DataStore::master_list_rw<SGE_TYPE_USERSET>();
+   (master_userset_list.push_back(std::forward<Usersets>(usersets)), ...);
 }
 
-/** @brief Build a US_ACL userset with the given UE_name entries (user or @group). */
-static lListElem *
+/**
+ * @brief Build a US_ACL userset with the given UE_name entries (user or @group)
+ * @param name the name of the userset
+ * @param members the entries
+ * @return the userset
+ */
+static ocs::tom::ElementPtr<ocs::tom::US>
 make_userset(const char *name, std::initializer_list<const char *> members) {
    auto us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(us, name);
-   ocs::tom::set<US_type>(us, US_ACL);
+   us->set<US_name>(name);
+   us->set<US_type>(US_ACL);
    for (const char *m : members) {
-      ocs::tom::emplace_back_in<US_entries, UE_name>(us, m);
+      us->emplace_back_in<US_entries, UE_name>(m);
    }
-   return us.release();
+   return us;
 }
 
 /**
@@ -145,12 +151,15 @@ free_packet(ocs::gdi::Packet **packet) {
 // manop_is_manager()  [T01–T08]
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief manop_is_manager() [T01-T08]
+ */
 static void
 test_manop_is_manager() {
    ocs::gdi::Packet *packet;
 
    // T01: user listed by name in the "manager" userset
-   set_master_usersets({make_userset(MANAGER_USERSET, {"root", "alice"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"root", "alice"}));
    packet = make_packet("alice", "users", {});
    CHECK(1, "user in manager userset -> manager", manop_is_manager(packet));
    free_packet(&packet);
@@ -167,31 +176,31 @@ test_manop_is_manager() {
 
    // T04: the reserved userset does not exist -> nobody is a manager.
    // This is the case the legacy fallback used to cover; it is gone (CS-2394).
-   set_master_usersets({make_userset("arusers", {"alice"})});
+   set_master_usersets(make_userset("arusers", {"alice"}));
    packet = make_packet("alice", "users", {});
    CHECK(4, "no manager userset -> no manager", !manop_is_manager(packet));
    free_packet(&packet);
 
    // T05: an empty manager userset grants nothing
-   set_master_usersets({make_userset(MANAGER_USERSET, {})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {}));
    packet = make_packet("alice", "users", {});
    CHECK(5, "empty manager userset -> no manager", !manop_is_manager(packet));
    free_packet(&packet);
 
    // T06: membership via the primary group (@group), see CS-493
-   set_master_usersets({make_userset(MANAGER_USERSET, {"root", "@admins"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"root", "@admins"}));
    packet = make_packet("alice", "admins", {});
    CHECK(6, "primary group in manager userset -> manager", manop_is_manager(packet));
    free_packet(&packet);
 
    // T07: the group name only matches with the @ prefix
-   set_master_usersets({make_userset(MANAGER_USERSET, {"admins"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"admins"}));
    packet = make_packet("alice", "admins", {});
    CHECK(7, "group without @ prefix -> no manager", !manop_is_manager(packet));
    free_packet(&packet);
 
    // T08: a user name is not matched against @group entries
-   set_master_usersets({make_userset(MANAGER_USERSET, {"@alice"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"@alice"}));
    packet = make_packet("alice", "users", {});
    CHECK(8, "@user entry does not match user name -> no manager", !manop_is_manager(packet));
    free_packet(&packet);
@@ -204,11 +213,14 @@ test_manop_is_manager() {
 // additionally switched by the enable_sup_grp_eval configuration parameter.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief manop_is_manager() with supplementary groups [T09-T11]
+ */
 static void
 test_manop_sup_groups() {
    ocs::gdi::Packet *packet;
 
-   set_master_usersets({make_userset(MANAGER_USERSET, {"root", "@staff"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"root", "@staff"}));
 
    // T09: supplementary group evaluation switched off -> no match
    mconf_set_enable_sup_grp_eval(false);
@@ -241,13 +253,16 @@ test_manop_sup_groups() {
 // manop_is_operator()  [T12–T18]
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief manop_is_operator() [T12-T18]
+ */
 static void
 test_manop_is_operator() {
    ocs::gdi::Packet *packet;
 
    // T12: user listed in the "operator" userset
-   set_master_usersets({make_userset(MANAGER_USERSET, {"root"}),
-                        make_userset(OPERATOR_USERSET, {"root", "olivia"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"root"}),
+                       make_userset(OPERATOR_USERSET, {"root", "olivia"}));
    packet = make_packet("olivia", "users", {});
    CHECK(12, "user in operator userset -> operator", manop_is_operator(packet));
    free_packet(&packet);
@@ -268,20 +283,20 @@ test_manop_is_operator() {
    free_packet(&packet);
 
    // T16: no operator userset, but the user is a manager -> still an operator
-   set_master_usersets({make_userset(MANAGER_USERSET, {"alice"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"alice"}));
    packet = make_packet("alice", "users", {});
    CHECK(16, "no operator userset, manager -> operator", manop_is_operator(packet));
    free_packet(&packet);
 
    // T17: neither userset exists -> nobody is an operator
-   set_master_usersets({});
+   set_master_usersets();
    packet = make_packet("alice", "users", {});
    CHECK(17, "no usersets at all -> no operator", !manop_is_operator(packet));
    free_packet(&packet);
 
    // T18: membership via primary group in the operator userset
-   set_master_usersets({make_userset(MANAGER_USERSET, {"root"}),
-                        make_userset(OPERATOR_USERSET, {"@ops"})});
+   set_master_usersets(make_userset(MANAGER_USERSET, {"root"}),
+                       make_userset(OPERATOR_USERSET, {"@ops"}));
    packet = make_packet("olivia", "ops", {});
    CHECK(18, "primary group in operator userset -> operator", manop_is_operator(packet));
    free_packet(&packet);
@@ -291,19 +306,22 @@ test_manop_is_operator() {
 // Reserved names are not confused with similar usersets  [T19–T20]
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Reserved names are not confused with similar usersets [T19-T20]
+ */
 static void
 test_reserved_names() {
    ocs::gdi::Packet *packet;
 
    // T19: a userset with a similar name does not grant manager permissions
-   set_master_usersets({make_userset("managers", {"alice"}),
-                        make_userset("mymanager", {"alice"})});
+   set_master_usersets(make_userset("managers", {"alice"}),
+                       make_userset("mymanager", {"alice"}));
    packet = make_packet("alice", "users", {});
    CHECK(19, "look-alike userset names -> no manager", !manop_is_manager(packet));
    free_packet(&packet);
 
    // T20: the userset name is matched case sensitively
-   set_master_usersets({make_userset("MANAGER", {"alice"})});
+   set_master_usersets(make_userset("MANAGER", {"alice"}));
    packet = make_packet("alice", "users", {});
    CHECK(20, "userset name is case sensitive -> no manager", !manop_is_manager(packet));
    free_packet(&packet);

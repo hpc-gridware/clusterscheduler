@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <span>
 #include <type_traits>
 #include <vector>
 
@@ -33,8 +34,6 @@
 #include "uti/sge_component.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_stdlib.h"
-
-#include "cull/cull_test_api.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_object_type.h"
@@ -59,7 +58,10 @@
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_PackCore.h"
 #include "tom/ocs_Raw.h"
+#include "tom/ocs_Select.h"
+#include "tom/ocs_SelectCore.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -347,7 +349,7 @@ static void test_object_type_dispatch() {
          printf("      %s dispatched to the entry of another value\n", object_type_get_name(type));
          value_and_name_agree = false;
       }
-      if (dispatched->key_nm != NoName && lGetPosInDescr(descr, dispatched->key_nm) < 0) {
+      if (dispatched->key_nm != NoName && ocs::tom::field_pos(descr, dispatched->key_nm) < 0) {
          printf("      %s: key field not in the descriptor\n", object_type_get_name(type));
          key_in_descr = false;
       }
@@ -381,14 +383,14 @@ static void test_object_type_dispatch() {
    CHECK(73, "void callable → true if called", job_called && !shutdown_called && calls == 1);
 
    // T74: the typed body finds an element by the dispatched key field
-   lList *cqueue_list = nullptr;
-   ocs::tom::emplace_back<CQ_name>(&cqueue_list, "all.q");
-   const auto found = ocs_with_object_type(SGE_TYPE_CQUEUE, [cqueue_list](const auto &entry) {
+   auto cqueue_list = ocs::tom::ListPtr<ocs::tom::CQ>::create("cqueues");
+   cqueue_list->emplace_back<CQ_name>("all.q");
+   const auto found = ocs_with_object_type(SGE_TYPE_CQUEUE, [&cqueue_list](const auto &entry) {
       using E = ocs_object_type_entry_t<decltype(entry)>;
       // nested: the traits of the key exist only for a type that has a key
       if constexpr (E::has_key) {
          if constexpr (ocs::tom::FieldTraits<E::key>::type == ocs::tom::FieldType::String) {
-            return static_cast<bool>(ocs::tom::find_first<E::key>(cqueue_list, "all.q"));
+            return static_cast<bool>(ocs::tom::find_first<E::key>(*cqueue_list, "all.q"));
          } else {
             return false;
          }
@@ -397,7 +399,7 @@ static void test_object_type_dispatch() {
       }
    });
    CHECK(74, "typed lookup by the dispatched key field", found.value_or(false));
-   lFreeList(&cqueue_list);
+   cqueue_list.reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -408,7 +410,13 @@ static void test_object_type_dispatch() {
 // When a descriptor is provided the element's own type must also match.
 // ---------------------------------------------------------------------------
 
-static void test_object_verify_cull(lListElem *queue, lList *st_list) {
+/**
+ * @brief object_verify_cull() on a queue with sub-lists of the right and of the wrong type [T32-T37]
+ * @param queue the queue; T37 leaves a sub-list of the wrong type in it
+ * @param st_list a string list, copied into the sub-lists
+ */
+static void test_object_verify_cull(const ocs::tom::Element<ocs::tom::QU> queue,
+                                    const ocs::tom::ConstList<ocs::tom::ST> st_list) {
    printf("\n--- object_verify_cull ---\n");
 
    // T32: both pointers nullptr → false
@@ -424,11 +432,12 @@ static void test_object_verify_cull(lListElem *queue, lList *st_list) {
    CHECK(35, "queue vs JB → false",              object_verify_cull(queue, ocs::tom::JB::descriptor.e) == false);
 
    // T36: sub-list with the correct element type (QU_pe_list expects ST) → true
-   ocs::tom::set<QU_pe_list>(queue, lCopyList("pe_list", st_list));
+   queue.set<QU_pe_list>(st_list.clone("pe_list"));
    CHECK(36, "QU_pe_list with ST elements → true",  object_verify_cull(queue, ocs::tom::QU::descriptor.e) == true);
 
    // T37: sub-list with wrong element type — QU_owner_list expects US, not ST → false
-   ocs::tom::set<QU_owner_list>(queue, lCopyList("owner_list", st_list));
+   // handed over raw, which stores the list of another type unchecked
+   ocs::tom::set<QU_owner_list>(queue, st_list.clone("owner_list").release());
    CHECK(37, "QU_owner_list with ST elements → false", object_verify_cull(queue, ocs::tom::QU::descriptor.e) == false);
 }
 
@@ -436,7 +445,11 @@ static void test_object_verify_cull(lListElem *queue, lList *st_list) {
 // object_list_verify_cull — structural type check on a list  [T38–T41]
 // ---------------------------------------------------------------------------
 
-static void test_object_list_verify_cull(lList *st_list) {
+/**
+ * @brief object_list_verify_cull() on a string list [T38-T41]
+ * @param st_list the string list
+ */
+static void test_object_list_verify_cull(const ocs::tom::ConstList<ocs::tom::ST> st_list) {
    printf("\n--- object_list_verify_cull ---\n");
 
    // T38: both pointers nullptr → false
@@ -477,6 +490,9 @@ static void test_object_name_get_type_extended() {
 // When both elements are nullptr the result is false (no difference).
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief object_has_differences(), the element-level difference detection
+ */
 static void test_object_has_differences() {
    printf("\n--- object_has_differences ---\n");
 
@@ -488,8 +504,8 @@ static void test_object_has_differences() {
    CHECK(44, "identical elements → false",            object_has_differences(*a, &alp, *b) == false);
 
    // T45: set a string field to different values → difference detected
-   ocs::tom::set<UE_name>(a, "alice");
-   ocs::tom::set<UE_name>(b, "bob");
+   a->set<UE_name>("alice");
+   b->set<UE_name>("bob");
    CHECK(45, "differing string field → true",         object_has_differences(*a, &alp, *b) == true);
 
    // T46: one nullptr, one valid element → true (one side has data, the other does not)
@@ -501,24 +517,23 @@ static void test_object_has_differences() {
    // T100/T101: a Uint64 field (CS-3189: it fell into the default branch and always counted as different)
    auto p = ocs::tom::ElementPtr<ocs::tom::PRO>::create();
    auto q = ocs::tom::ElementPtr<ocs::tom::PRO>::create();
-   ocs::tom::set<PRO_vsize>(p, 4294967296ULL);
-   ocs::tom::set<PRO_vsize>(q, 4294967296ULL);
+   p->set<PRO_vsize>(4294967296ULL);
+   q->set<PRO_vsize>(4294967296ULL);
    CHECK(100, "equal Uint64 field → false",            object_has_differences(*p, &alp, *q) == false);
-   ocs::tom::set<PRO_vsize>(q, 4294967297ULL);
+   q->set<PRO_vsize>(4294967297ULL);
    CHECK(101, "differing Uint64 field → true",         object_has_differences(*p, &alp, *q) == true);
 
    // T102: host names compare as sge_hostcmp() does, so a host in another case is the same host
    auto h1 = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    auto h2 = ocs::tom::ElementPtr<ocs::tom::EH>::create();
-   ocs::tom::set<EH_name>(h1, ocs::tom::Host{"HostA"});
-   ocs::tom::set<EH_name>(h2, ocs::tom::Host{"hosta"});
+   h1->set<EH_name>(ocs::tom::Host{"HostA"});
+   h2->set<EH_name>(ocs::tom::Host{"hosta"});
    CHECK(102, "host field in another case → false",   object_has_differences(*h1, &alp, *h2) == false);
 
    // T103/T104: a reduced element differs from the full one in both directions, two equal reductions do not
-   lEnumeration *what = lWhat("%T(%I)", ocs::tom::PRO::descriptor.e, PRO_vsize);
-   auto reduced = ocs::tom::select(p.get().raw(), what);
-   auto reduced_too = ocs::tom::select(p.get().raw(), what);
-   lFreeWhat(&what);
+   const auto what = ocs::tom::what<PRO_vsize>();
+   auto reduced = p->select(what);
+   auto reduced_too = p->select(what);
    CHECK(103, "reduced vs full and full vs reduced → true",
          object_has_differences(reduced.get().raw(), &alp, *p) &&
             object_has_differences(*p, &alp, reduced.get().raw()));
@@ -528,11 +543,11 @@ static void test_object_has_differences() {
    // T105: a list field compares element by element
    auto j1 = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    auto j2 = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j1, "PATH");
-   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j2, "PATH");
+   j1->emplace_back_in<JB_env_list, VA_variable>("PATH");
+   j2->emplace_back_in<JB_env_list, VA_variable>("PATH");
    const bool same_lists = !object_has_differences(*j1, &alp, *j2);
-   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j1, "HOME");
-   ocs::tom::emplace_back_in<JB_env_list, VA_variable>(j2, "LANG");
+   j1->emplace_back_in<JB_env_list, VA_variable>("HOME");
+   j2->emplace_back_in<JB_env_list, VA_variable>("LANG");
    CHECK(105, "equal list field → false, a differing sub-element → true",
          same_lists && object_has_differences(*j1, &alp, *j2));
 
@@ -548,21 +563,24 @@ static void test_object_has_differences() {
 // without element comparison.  Both nullptr is treated as no difference.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief object_list_has_differences(), the list-level difference detection [T48-T50, T106]
+ */
 static void test_object_list_has_differences() {
    printf("\n--- object_list_has_differences ---\n");
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lList *l1 = nullptr;
-   lList *l2 = nullptr;
-   ocs::tom::emplace_back<UE_name>(&l1, "alice");
-   ocs::tom::emplace_back<UE_name>(&l2, "alice");
+   auto l1 = ocs::tom::ListPtr<ocs::tom::UE>::create("l1");
+   auto l2 = ocs::tom::ListPtr<ocs::tom::UE>::create("l2");
+   l1->emplace_back<UE_name>("alice");
+   l2->emplace_back<UE_name>("alice");
 
    // T48: lists with identical elements → false
-   CHECK(48, "identical lists → false",               object_list_has_differences(l1, &alp, l2) == false);
+   CHECK(48, "identical lists → false",               object_list_has_differences(*l1, &alp, *l2) == false);
 
    // T49: lists of different lengths → true (length check short-circuits element comparison)
-   ocs::tom::emplace_back<UE_name>(&l2, "bob");
-   CHECK(49, "different lengths → true",              object_list_has_differences(l1, &alp, l2) == true);
+   l2->emplace_back<UE_name>("bob");
+   CHECK(49, "different lengths → true",              object_list_has_differences(*l1, &alp, *l2) == true);
 
    // T50: both nullptr → false
    CHECK(50, "both nullptr → false",                  object_list_has_differences(nullptr, &alp, nullptr) == false);
@@ -573,8 +591,8 @@ static void test_object_list_has_differences() {
          object_list_has_differences(empty.get().raw(), &alp, nullptr) == false &&
             object_list_has_differences(nullptr, &alp, empty.get().raw()) == false);
 
-   lFreeList(&l1);
-   lFreeList(&l2);
+   l1.reset();
+   l2.reset();
    alp.reset();
 }
 
@@ -589,6 +607,9 @@ static void test_object_list_has_differences() {
 // do not accumulate.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief The field invariants of the GDI validation
+ */
 static void test_object_verify_field_constraints() {
    printf("\n--- object_verify_{string,ulong,double}_null/not_null ---\n");
 
@@ -596,22 +617,22 @@ static void test_object_verify_field_constraints() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    // T51: string field has a value → passes
-   ocs::tom::set<JB_job_name>(ep, "test_job");
+   ep->set<JB_job_name>("test_job");
    CHECK(51, "string field set → string_not_null passes",   object_verify_string_not_null<JB_job_name>(*ep, &alp) == true);
    alp.reset();
 
    // T52: string field is nullptr → fails and populates answer_list
-   ocs::tom::set<JB_job_name>(ep, nullptr);
+   ep->set<JB_job_name>(nullptr);
    CHECK(52, "string field nullptr → string_not_null fails", object_verify_string_not_null<JB_job_name>(*ep, &alp) == false);
    alp.reset();
 
    // T53: ulong field is non-zero → passes
-   ocs::tom::set<JB_job_number>(ep, 1);
+   ep->set<JB_job_number>(1);
    CHECK(53, "ulong field 1 → ulong_not_null passes",       object_verify_ulong_not_null<JB_job_number>(*ep, &alp) == true);
    alp.reset();
 
    // T54: ulong field is 0 (default) → fails
-   ocs::tom::set<JB_job_number>(ep, 0);
+   ep->set<JB_job_number>(0);
    CHECK(54, "ulong field 0 → ulong_not_null fails",        object_verify_ulong_not_null<JB_job_number>(*ep, &alp) == false);
    alp.reset();
 
@@ -620,7 +641,7 @@ static void test_object_verify_field_constraints() {
    alp.reset();
 
    // T56: ulong field non-zero → ulong_null fails
-   ocs::tom::set<JB_job_number>(ep, 42);
+   ep->set<JB_job_number>(42);
    CHECK(56, "ulong field 42 → ulong_null fails",           object_verify_ulong_null<JB_job_number>(*ep, &alp) == false);
    alp.reset();
 
@@ -629,7 +650,7 @@ static void test_object_verify_field_constraints() {
    alp.reset();
 
    // T58: double field non-zero → double_null fails
-   ocs::tom::set<JB_urg>(ep, 0.5);
+   ep->set<JB_urg>(0.5);
    CHECK(58, "double field 0.5 → double_null fails",        object_verify_double_null<JB_urg>(*ep, &alp) == false);
    alp.reset();
 
@@ -642,6 +663,9 @@ static void test_object_verify_field_constraints() {
 // also rejected.  Returns 0 on success, STATUS_EUNKNOWN on failure.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief object_verify_name(), the GDI name validity check [T59-T60]
+ */
 static void test_object_verify_name() {
    printf("\n--- object_verify_name ---\n");
 
@@ -649,12 +673,12 @@ static void test_object_verify_name() {
    auto ep = ocs::tom::ElementPtr<ocs::tom::QU>::create();
 
    // T59: alphanumeric name with embedded punctuation is accepted
-   ocs::tom::set<QU_qname>(ep, "all.q");
+   ep->set<QU_qname>("all.q");
    CHECK(59, "valid name → 0",                         object_verify_name<QU_qname>(*ep, &alp) == 0);
    alp.reset();
 
    // T60: name starting with a digit is always rejected regardless of other characters
-   ocs::tom::set<QU_qname>(ep, "1bad");
+   ep->set<QU_qname>("1bad");
    CHECK(60, "leading digit → STATUS_EUNKNOWN",        object_verify_name<QU_qname>(*ep, &alp) == STATUS_EUNKNOWN);
    alp.reset();
 
@@ -679,17 +703,21 @@ static void test_object_verify_name() {
  * @param dropped how many fields at the end the older JB lacks
  * @return true on success
  */
-static bool pack_job_as_shorter(sge_pack_buffer *pb, const lListElem *job, const int dropped) {
-   const int n = lCountDescr(ocs::tom::JB::descriptor.e) - dropped;
+static bool pack_job_as_shorter(sge_pack_buffer *pb, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                const int dropped) {
+   const int n = ocs::tom::descr_length(ocs::tom::JB::descriptor.e) - dropped;
    std::vector<int> nms;
    for (int i = 0; i < n; i++) {
       nms.push_back(ocs::tom::JB::descriptor.e[i].nm);
    }
-   nms.push_back(NoName);
-   lEnumeration *what = lIntVector2What(ocs::tom::JB::descriptor.e, nms.data());
+   const auto what = ocs::tom::what<ocs::tom::JB>(std::span<const int>(nms));
    const size_t start = pb->bytes_used;
-   const bool ok = cull_pack_elem_partial(pb, job, what, CULL_SPOOL) == PACK_SUCCESS;
-   lFreeWhat(&what);
+   bool ok = true;
+   try {
+      ocs::tom::pack_elem(pb, job, what.get(), CULL_SPOOL);
+   } catch (const ocs::tom::PackException &) {
+      ok = false;
+   }
    // element: kind, field count, then (nm, mt) per field
    for (int i = 0; ok && i < n; i++) {
       char *mt_word = pb->head_ptr + start + 8 + 8 * i + 4;
@@ -706,59 +734,77 @@ static void test_spooled_job_of_shorter_type() {
    printf("\n--- spooled job of a shorter JB ---\n");
 
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   ocs::tom::set<JB_job_number>(job, 42);
-   ocs::tom::set<JB_owner>(job, "owner");
-   ocs::tom::set<JB_sync_options>(job, 5);
+   job->set<JB_job_number>(42);
+   job->set<JB_owner>("owner");
+   job->set<JB_sync_options>(5);
 
-   lListElem *read = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::JB> read;
    int ret = PACK_FORMAT;
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (pack_job_as_shorter(&pb, *job, 4)) {
          char *buf = sge_malloc(pb.bytes_used);
          memcpy(buf, pb.head_ptr, pb.bytes_used);
          sge_pack_buffer in;
-         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            ret = cull_unpack_elem_partial(&in, &read, ocs::tom::JB::descriptor.e, CULL_SPOOL);
+         if (ocs::tom::try_init_buffer_from(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            try {
+               read = ocs::tom::ElementPtr<ocs::tom::JB>(
+                  ocs::tom::unpack_elem(&in, ocs::tom::JB::descriptor.e, CULL_SPOOL));
+               ret = PACK_SUCCESS;
+            } catch (const ocs::tom::PackException &e) {
+               ret = e.code();
+            }
          }
-         clear_packbuffer(&in);
+         ocs::tom::clear_buffer(&in);
       }
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
    }
 
    // T61: the job is read into the full JB with its values
    CHECK(61, "shorter spooled job → full JB",
-         ret == PACK_SUCCESS && read != nullptr && lGetElemDescr(read) == ocs::tom::JB::descriptor.e &&
-         ocs::tom::get<JB_job_number>(read) == 42 && strcmp(ocs::tom::get<JB_owner>(read), "owner") == 0);
+         ret == PACK_SUCCESS && read != nullptr && read->descr() == ocs::tom::JB::descriptor.e &&
+         read->get<JB_job_number>() == 42 && strcmp(read->get<JB_owner>(), "owner") == 0);
 
    // T62: a spooled field the older type lacked holds its initial value
-   CHECK(62, "added spooled field → initial value", read != nullptr && ocs::tom::get<JB_sync_options>(read) == 0);
+   CHECK(62, "added spooled field → initial value", read != nullptr && read->get<JB_sync_options>() == 0);
 
-   lFreeElem(&read);
+   read.reset();
 }
 
 /**
  * @brief Send an element over the wire and read it back
  *
  * @param ep the element to pack
- * @param back receives the unpacked element, nullptr on error
+ * @param back receives the unpacked element, empty on error
  * @return the result of unpacking, or #PACK_FORMAT if packing failed
  */
-static int pack_roundtrip(const lListElem *ep, lListElem **back) {
+static int pack_roundtrip(const ocs::tom::ConstElement<ocs::tom::PACK> ep,
+                          ocs::tom::ElementPtr<ocs::tom::PACK> *back) {
    int ret = PACK_FORMAT;
-   *back = nullptr;
+   back->reset();
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
-      if (cull_pack_elem(&pb, ep) == PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+      bool packed = true;
+      try {
+         ocs::tom::pack_elem(&pb, ep, nullptr, 0);
+      } catch (const ocs::tom::PackException &) {
+         packed = false;
+      }
+      if (packed) {
          char *buf = sge_malloc(pb.bytes_used);
          memcpy(buf, pb.head_ptr, pb.bytes_used);
          sge_pack_buffer in;
-         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            ret = cull_unpack_elem(&in, back, nullptr);
+         if (ocs::tom::try_init_buffer_from(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            try {
+               *back = ocs::tom::ElementPtr<ocs::tom::PACK>(ocs::tom::unpack_elem(&in, nullptr, 0));
+               ret = PACK_SUCCESS;
+            } catch (const ocs::tom::PackException &e) {
+               ret = e.code();
+            }
          }
-         clear_packbuffer(&in);
+         ocs::tom::clear_buffer(&in);
       }
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
    }
    return ret;
 }
@@ -770,48 +816,46 @@ static void test_pack_type_roundtrip() {
    // T63: PACK is known to the installed object model
    CHECK(63, "PACK_id is known to the object model", strcmp(ocs::tom::field_name(PACK_id), "PACK_id") == 0);
 
-   lEnumeration *what = lWhat("%T(%I %I)", ocs::tom::QU::descriptor.e, QU_qname, QU_qhostname);
-   auto what_elem = ocs_what_to_elem(what);
-   lListElem *what_back = nullptr;
+   const auto what = ocs::tom::what<QU_qname, QU_qhostname>();
+   auto what_elem = ocs_what_to_elem(what.get());
+   ocs::tom::ElementPtr<ocs::tom::PACK> what_back;
    const int what_ret = pack_roundtrip(*what_elem, &what_back);
 
    // T64: the element comes back with the static PACK descriptor
    CHECK(64, "packed what → PACK element",
-         what_ret == PACK_SUCCESS && what_back != nullptr && lGetElemDescr(what_back) == ocs::tom::PACK::descriptor.e);
+         what_ret == PACK_SUCCESS && what_back != nullptr && what_back->descr() == ocs::tom::PACK::descriptor.e);
 
    // T65: the what read from it selects the same fields
-   lEnumeration *what_read =
-      what_back != nullptr ? ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK>(what_back)) : nullptr;
+   ocs::tom::RawWhatPtr what_read(what_back != nullptr ? ocs_what_from_elem(*what_back) : nullptr);
    CHECK(65, "what from the element → same fields",
-         what_read != nullptr && lCountWhat(what_read, ocs::tom::QU::descriptor.e) == 2 &&
-         lCountWhat(what, ocs::tom::QU::descriptor.e) == 2);
+         what_read != nullptr && ocs::tom::count_what(what_read.get(), ocs::tom::QU::descriptor.e) == 2 &&
+         ocs::tom::count_what(what.get(), ocs::tom::QU::descriptor.e) == 2);
 
-   lCondition *where = lWhere("%T(%I==%s)", ocs::tom::QU::descriptor.e, QU_qname, "all.q");
-   auto where_elem = ocs_where_to_elem(where);
-   lListElem *where_back = nullptr;
+   const auto where = ocs::tom::field<QU_qname>() == "all.q";
+   auto where_elem = ocs_where_to_elem(where.get());
+   ocs::tom::ElementPtr<ocs::tom::PACK> where_back;
    const int where_ret = pack_roundtrip(*where_elem, &where_back);
-   lCondition *where_read = where_ret == PACK_SUCCESS && where_back != nullptr
-                               ? ocs_where_from_elem(ocs::tom::ConstElement<ocs::tom::PACK>(where_back))
-                               : nullptr;
+   ocs::tom::RawWherePtr where_read(where_ret == PACK_SUCCESS && where_back != nullptr
+                                       ? ocs_where_from_elem(*where_back)
+                                       : nullptr);
 
    // T66: the where read from it matches as the original does
    auto match = ocs::tom::ElementPtr<ocs::tom::QU>::create();
-   ocs::tom::set<QU_qname>(match, "all.q");
+   match->set<QU_qname>("all.q");
    auto other = ocs::tom::ElementPtr<ocs::tom::QU>::create();
-   ocs::tom::set<QU_qname>(other, "other.q");
+   other->set<QU_qname>("other.q");
    CHECK(66, "where from the element → same matches",
-         where_read != nullptr && lCompare(*match, where_read) == 1 && lCompare(*other, where_read) == 0);
+         where_read != nullptr && ocs::tom::matches(*match, where_read.get()) &&
+            !ocs::tom::matches(*other, where_read.get()));
 
    other.reset();
    match.reset();
-   lFreeWhere(&where_read);
-   lFreeElem(&where_back);
+   where_read.reset();
+   where_back.reset();
    where_elem.reset();
-   lFreeWhere(&where);
-   lFreeWhat(&what_read);
-   lFreeElem(&what_back);
+   what_read.reset();
+   what_back.reset();
    what_elem.reset();
-   lFreeWhat(&what);
 }
 
 // ---------------------------------------------------------------------------
@@ -957,26 +1001,35 @@ static void test_object_get_type_name(const ocs::tom::ConstElement<ocs::tom::QU>
  * @param ep the element to pack
  * @param descr the type the unpacked element is checked against
  * @param answer_list receives the errors of object_unpack_elem_verify()
- * @param back receives the unpacked element, nullptr if it was rejected
+ * @param back receives the unpacked element, empty if it was rejected
  * @return the result of object_unpack_elem_verify(), false if packing failed
  */
-static bool unpack_verify_roundtrip(const lListElem *ep, const lDescr *descr,
-                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem **back) {
+static bool unpack_verify_roundtrip(const ocs::tom::ConstRawElement ep, const lDescr *descr,
+                                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::RawElementPtr *back) {
    bool ret = false;
-   *back = nullptr;
+   back->reset();
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
-      if (cull_pack_elem(&pb, ep) == PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+      bool packed = true;
+      try {
+         ocs::tom::pack_elem(&pb, ep, nullptr, 0);
+      } catch (const ocs::tom::PackException &) {
+         packed = false;
+      }
+      if (packed) {
          char *buf = sge_malloc(pb.bytes_used);
          memcpy(buf, pb.head_ptr, pb.bytes_used);
          sge_pack_buffer in;
          // the buffer takes buf over on every path, also when the header is refused
-         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            ret = object_unpack_elem_verify(answer_list, &in, back, descr);
+         if (ocs::tom::try_init_buffer_from(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            // object_unpack_elem_verify() hands the element out through a raw out-parameter
+            lListElem *raw_back = nullptr;
+            ret = object_unpack_elem_verify(answer_list, &in, &raw_back, descr);
+            *back = ocs::tom::RawElementPtr(raw_back);
          }
-         clear_packbuffer(&in);
+         ocs::tom::clear_buffer(&in);
       }
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
    }
    return ret;
 }
@@ -989,15 +1042,15 @@ static void test_object_unpack_elem_verify(const ocs::tom::ConstElement<ocs::tom
    printf("\n--- object_unpack_elem_verify ---\n");
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *back = nullptr;
-   const bool accepted = unpack_verify_roundtrip(queue.raw(), ocs::tom::QU::descriptor.e, &alp, &back);
+   ocs::tom::RawElementPtr back;
+   const bool accepted = unpack_verify_roundtrip(queue, ocs::tom::QU::descriptor.e, &alp, &back);
    CHECK(110, "queue checked as QU → true, the element is handed out",
-         accepted && back != nullptr && lGetElemDescr(back) == ocs::tom::QU::descriptor.e && !alp);
-   lFreeElem(&back);
+         accepted && back && back->descr() == ocs::tom::QU::descriptor.e && !alp);
+   back.reset();
 
-   const bool rejected = !unpack_verify_roundtrip(queue.raw(), ocs::tom::JB::descriptor.e, &alp, &back);
+   const bool rejected = !unpack_verify_roundtrip(queue, ocs::tom::JB::descriptor.e, &alp, &back);
    CHECK(111, "queue checked as JB → false, the element is freed, one error",
-         rejected && back == nullptr && alp && alp->size() == 1);
+         rejected && !back && alp && alp->size() == 1);
    alp.reset();
 
    lListElem *none = nullptr;
@@ -1016,16 +1069,16 @@ static void test_object_find_repeated_keys() {
    // a list with a repeated key on purpose; a debug build refuses it already at the append (N-H-18)
    const ocs::tom::UniqueCheckSuspension suspension;
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   lList *env = nullptr;
-   ocs::tom::emplace_back<VA_variable>(&env, "A");
-   ocs::tom::emplace_back<VA_variable>(&env, "B");
-   ocs::tom::set<JB_env_list>(job, env);
+   auto env = ocs::tom::ListPtr<ocs::tom::VA>::create("env");
+   env->emplace_back<VA_variable>("A");
+   env->emplace_back<VA_variable>("B");
+   job->set<JB_env_list>(std::move(env));
 
    std::vector<ocs::RepeatedKey> found;
    ocs_object_find_repeated_keys(*job, found);
    CHECK(113, "distinct variables → nothing found", found.empty());
 
-   lList *job_env = ocs::tom::get<JB_env_list>(job);
+   lList *job_env = job->get<JB_env_list>();
    ocs::tom::emplace_back<VA_variable>(&job_env, "A");
    ocs::tom::emplace_back<VA_variable>(&job_env, "A");
    ocs_object_find_repeated_keys(*job, found);
@@ -1059,21 +1112,26 @@ static void test_object_list_add_unique_layouts() {
    ocs::tom::emplace_back<ST_name>(&source, "b");
    ocs_object_list_add_unique(&created, &source);
    CHECK(117, "no target → created with the source's elements", source == nullptr && ocs::tom::size(created) == 1);
-   lFreeList(&created);
+   ocs::tom::free_raw_list(created);
 
    // a reduced list of the same type has another layout: as lAddList() it is not joined, but freed
-   lEnumeration *what = lWhat("%T(%I)", ocs::tom::ST::descriptor.e, ST_name);
-   ocs::tom::RawListPtr reduced = ocs::tom::select(target, nullptr, what);
+   const auto what = ocs::tom::what<ST_name>();
+   ocs::tom::RawListPtr reduced = ocs::tom::select(target, nullptr, what.get());
    lList *reduced_raw = reduced.release();
    ocs_object_list_add_unique(&target, &reduced_raw);
    CHECK(118, "another layout → nothing appended, the source is consumed",
          reduced_raw == nullptr && ocs::tom::size(target) == 2);
-   lFreeWhat(&what);
-   lFreeList(&target);
+   ocs::tom::free_raw_list(target);
 }
 
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Run the checks of this module test
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_object");
 
@@ -1083,8 +1141,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    auto queue = ocs::tom::ElementPtr<ocs::tom::QU>::create();
-   lList *st_list = nullptr;
-   ocs::tom::emplace_back<ST_name>(&st_list, "test pe");
+   auto st_list = ocs::tom::ListPtr<ocs::tom::ST>::create("st_list");
+   st_list->emplace_back<ST_name>("test pe");
 
    test_object_has_type(*queue);
    test_object_get_type(*queue);
@@ -1096,8 +1154,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_name_get_type();
    test_object_type_get_descr_and_key();
    test_object_type_dispatch();
-   test_object_verify_cull(*queue, st_list);
-   test_object_list_verify_cull(st_list);
+   test_object_verify_cull(*queue, *st_list);
+   test_object_list_verify_cull(*st_list);
    test_object_name_get_type_extended();
    test_object_has_differences();
    test_object_list_has_differences();
@@ -1115,7 +1173,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_list_add_unique_layouts();
 
    queue.reset();
-   lFreeList(&st_list);
+   st_list.reset();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

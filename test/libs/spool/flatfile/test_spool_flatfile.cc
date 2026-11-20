@@ -50,8 +50,6 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
@@ -94,6 +92,7 @@
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_SC.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/tom/ocs_tom_SPC.h"
 #include "sgeobj/tom/ocs_tom_SPR.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
@@ -240,136 +239,141 @@ int main(int argc, char **argv) {
    DRETURN(s_fail == 0 ? 0 : 1);
 }
 
+/**
+ * @brief Write a parallel environment with resource utilization and user lists with classic spooling, read it back
+ *        and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PE_test() {
    int ret = 0;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
    /* Build a PE structure */
    
-   ocs::tom::set<PE_name>(ep, "Test_Name");
-   ocs::tom::set<PE_slots>(ep, 7);
-   ocs::tom::set<PE_start_proc_args>(ep, "start_args");
-   ocs::tom::set<PE_stop_proc_args>(ep, "stop_args");
-   ocs::tom::set<PE_allocation_rule>(ep, "allocation_rule");
-   ocs::tom::set<PE_control_slaves>(ep, true);
-   ocs::tom::set<PE_job_is_first_task>(ep, true);
-   ocs::tom::set<PE_urgency_slots>(ep, "urgency_slots");
+   ep->set<PE_name>("Test_Name");
+   ep->set<PE_slots>(7);
+   ep->set<PE_start_proc_args>("start_args");
+   ep->set<PE_stop_proc_args>("stop_args");
+   ep->set<PE_allocation_rule>("allocation_rule");
+   ep->set<PE_control_slaves>(true);
+   ep->set<PE_job_is_first_task>(true);
+   ep->set<PE_urgency_slots>("urgency_slots");
 
    auto lp = ocs::tom::ListPtr<ocs::tom::RUE>::create("Resource Utilization List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(ep2, "Test_Name2");
-   ocs::tom::set<RUE_utilized_now>(ep2, 12.345);
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<RUE_name>("Test_Name2");
+   ep2->set<RUE_utilized_now>(12.345);
+   lp->push_back(std::move(ep2));
    
    auto ep2_rue = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
-   ocs::tom::set<RUE_name>(ep2_rue, "Test_Name3");
-   ocs::tom::set<RUE_utilized_now>(ep2_rue, 678.9);
-   lAppendElem(*lp, std::move(ep2_rue));
+   ep2_rue->set<RUE_name>("Test_Name3");
+   ep2_rue->set<RUE_utilized_now>(678.9);
+   lp->push_back(std::move(ep2_rue));
    
-   ocs::tom::set<PE_resource_utilization>(ep, std::move(lp));
+   ep->set<PE_resource_utilization>(std::move(lp));
    
    auto lp_us = ocs::tom::ListPtr<ocs::tom::US>::create("User_List");
 
    auto ep2_us = ocs::tom::ElementPtr<ocs::tom::US>::create();   
-   ocs::tom::set<US_name>(ep2_us, "First_User_List");
-   ocs::tom::set<US_type>(ep2_us, 101);
-   ocs::tom::set<US_fshare>(ep2_us, 303);
-   ocs::tom::set<US_oticket>(ep2_us, 505);
-   ocs::tom::set<US_job_cnt>(ep2_us, 707);
-   ocs::tom::set<US_pending_job_cnt>(ep2_us, 909);
+   ep2_us->set<US_name>("First_User_List");
+   ep2_us->set<US_type>(101);
+   ep2_us->set<US_fshare>(303);
+   ep2_us->set<US_oticket>(505);
+   ep2_us->set<US_job_cnt>(707);
+   ep2_us->set<US_pending_job_cnt>(909);
    
    auto lp2 = ocs::tom::ListPtr<ocs::tom::UE>::create("User_Entry_List");
    
    auto ep3 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3, "First_User");
-   lAppendElem(*lp2, std::move(ep3));
+   ep3->set<UE_name>("First_User");
+   lp2->push_back(std::move(ep3));
    
    auto ep3_ue = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3_ue, "Second_User");
-   lAppendElem(*lp2, std::move(ep3_ue));
+   ep3_ue->set<UE_name>("Second_User");
+   lp2->push_back(std::move(ep3_ue));
 
-   ocs::tom::set<US_entries>(ep2_us, std::move(lp2));
+   ep2_us->set<US_entries>(std::move(lp2));
    
-   lAppendElem(*lp_us, std::move(ep2_us));
+   lp_us->push_back(std::move(ep2_us));
    
    auto ep2_us_2 = ocs::tom::ElementPtr<ocs::tom::US>::create();   
-   ocs::tom::set<US_name>(ep2_us_2, "Second_User_List");
-   ocs::tom::set<US_type>(ep2_us_2, 202);
-   ocs::tom::set<US_fshare>(ep2_us_2, 404);
-   ocs::tom::set<US_oticket>(ep2_us_2, 606);
-   ocs::tom::set<US_job_cnt>(ep2_us_2, 808);
-   ocs::tom::set<US_pending_job_cnt>(ep2_us_2, 0);
+   ep2_us_2->set<US_name>("Second_User_List");
+   ep2_us_2->set<US_type>(202);
+   ep2_us_2->set<US_fshare>(404);
+   ep2_us_2->set<US_oticket>(606);
+   ep2_us_2->set<US_job_cnt>(808);
+   ep2_us_2->set<US_pending_job_cnt>(0);
    
    auto lp2_ue = ocs::tom::ListPtr<ocs::tom::UE>::create("User_Entry_List");
    
    auto ep3_ue_2 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3_ue_2, "Third_User");
-   lAppendElem(*lp2_ue, std::move(ep3_ue_2));
+   ep3_ue_2->set<UE_name>("Third_User");
+   lp2_ue->push_back(std::move(ep3_ue_2));
    
    auto ep3_ue_3 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3_ue_3, "Fourth_User");
-   lAppendElem(*lp2_ue, std::move(ep3_ue_3));
+   ep3_ue_3->set<UE_name>("Fourth_User");
+   lp2_ue->push_back(std::move(ep3_ue_3));
 
-   ocs::tom::set<US_entries>(ep2_us_2, std::move(lp2_ue));
+   ep2_us_2->set<US_entries>(std::move(lp2_ue));
    
-   lAppendElem(*lp_us, std::move(ep2_us_2));
+   lp_us->push_back(std::move(ep2_us_2));
    
-   ocs::tom::set<PE_user_list>(ep, std::move(lp_us));
+   ep->set<PE_user_list>(std::move(lp_us));
    
    auto lp_us_2 = ocs::tom::ListPtr<ocs::tom::US>::create("XUser_List");
    
    auto ep2_us_3 = ocs::tom::ElementPtr<ocs::tom::US>::create();   
-   ocs::tom::set<US_name>(ep2_us_3, "First_XUser_List");
-   ocs::tom::set<US_type>(ep2_us_3, 101);
-   ocs::tom::set<US_fshare>(ep2_us_3, 303);
-   ocs::tom::set<US_oticket>(ep2_us_3, 505);
-   ocs::tom::set<US_job_cnt>(ep2_us_3, 707);
-   ocs::tom::set<US_pending_job_cnt>(ep2_us_3, 909);
+   ep2_us_3->set<US_name>("First_XUser_List");
+   ep2_us_3->set<US_type>(101);
+   ep2_us_3->set<US_fshare>(303);
+   ep2_us_3->set<US_oticket>(505);
+   ep2_us_3->set<US_job_cnt>(707);
+   ep2_us_3->set<US_pending_job_cnt>(909);
    
    auto lp2_ue_2 = ocs::tom::ListPtr<ocs::tom::UE>::create("XUser_Entry_List");
    
    auto ep3_ue_4 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3_ue_4, "First_XUser");
-   lAppendElem(*lp2_ue_2, std::move(ep3_ue_4));
+   ep3_ue_4->set<UE_name>("First_XUser");
+   lp2_ue_2->push_back(std::move(ep3_ue_4));
    
    auto ep3_ue_5 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3_ue_5, "Second_XUser");
-   lAppendElem(*lp2_ue_2, std::move(ep3_ue_5));
+   ep3_ue_5->set<UE_name>("Second_XUser");
+   lp2_ue_2->push_back(std::move(ep3_ue_5));
 
-   ocs::tom::set<US_entries>(ep2_us_3, std::move(lp2_ue_2));
+   ep2_us_3->set<US_entries>(std::move(lp2_ue_2));
    
-   lAppendElem(*lp_us_2, std::move(ep2_us_3));
+   lp_us_2->push_back(std::move(ep2_us_3));
    
    auto ep2_us_4 = ocs::tom::ElementPtr<ocs::tom::US>::create();   
-   ocs::tom::set<US_name>(ep2_us_4, "Second_XUser_List");
-   ocs::tom::set<US_type>(ep2_us_4, 202);
-   ocs::tom::set<US_fshare>(ep2_us_4, 404);
-   ocs::tom::set<US_oticket>(ep2_us_4, 606);
-   ocs::tom::set<US_job_cnt>(ep2_us_4, 808);
-   ocs::tom::set<US_pending_job_cnt>(ep2_us_4, 0);
+   ep2_us_4->set<US_name>("Second_XUser_List");
+   ep2_us_4->set<US_type>(202);
+   ep2_us_4->set<US_fshare>(404);
+   ep2_us_4->set<US_oticket>(606);
+   ep2_us_4->set<US_job_cnt>(808);
+   ep2_us_4->set<US_pending_job_cnt>(0);
    
    auto lp2_ue_3 = ocs::tom::ListPtr<ocs::tom::UE>::create("XUser_Entry_List");
    
    auto ep3_ue_6 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3_ue_6, "Third_XUser");
-   lAppendElem(*lp2_ue_3, std::move(ep3_ue_6));
+   ep3_ue_6->set<UE_name>("Third_XUser");
+   lp2_ue_3->push_back(std::move(ep3_ue_6));
    
    auto ep3_ue_7 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep3_ue_7, "Fourth_XUser");
-   lAppendElem(*lp2_ue_3, std::move(ep3_ue_7));
+   ep3_ue_7->set<UE_name>("Fourth_XUser");
+   lp2_ue_3->push_back(std::move(ep3_ue_7));
 
-   ocs::tom::set<US_entries>(ep2_us_4, std::move(lp2_ue_3));
+   ep2_us_4->set<US_entries>(std::move(lp2_ue_3));
    
-   lAppendElem(*lp_us_2, std::move(ep2_us_4));
+   lp_us_2->push_back(std::move(ep2_us_4));
    
-   ocs::tom::set<PE_xuser_list>(ep, std::move(lp_us_2));
+   ep->set<PE_xuser_list>(std::move(lp_us_2));
 
    /* Write a PE file using classic spooling */
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
@@ -377,20 +381,20 @@ static int PE_test() {
                                        file1, false);
 
    /* Read a PE file using flatfile spooling */
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::PE>(spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
 
    /* Write a PE file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
 
-   lFreeElem(&ep);
+   ep.reset();
    ret = diff(file1, file2);
    
    sge_unlink(nullptr, file1);
@@ -403,16 +407,20 @@ static int PE_test() {
    return ret;
 }
 
+/**
+ * @brief Write a calendar with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CAL_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CAL> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_cal = ocs::tom::ElementPtr<ocs::tom::CAL>::create();   
-   ocs::tom::set<CAL_name>(ep_cal, "Test_Name");
-   ocs::tom::set<CAL_year_calendar>(ep_cal, "2004");
-   ocs::tom::set<CAL_week_calendar>(ep_cal, "KW 05");
+   ep_cal->set<CAL_name>("Test_Name");
+   ep_cal->set<CAL_year_calendar>("2004");
+   ep_cal->set<CAL_week_calendar>("KW 05");
 
    /* Write a CAL file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, *ep_cal, false,
@@ -424,19 +432,19 @@ static int CAL_test() {
    
    /* Read a CAL file using flatfile spooling */
    ep_cal.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CAL::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::CAL>(spool_flatfile_read_object(&alp, ocs::tom::CAL::descriptor.e, nullptr,
                                    CAL_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a CAL file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CAL_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
    
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -451,23 +459,27 @@ static int CAL_test() {
    return ret;
 }
 
+/**
+ * @brief Write a checkpointing environment with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CK_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CK> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_ck = ocs::tom::ElementPtr<ocs::tom::CK>::create();
-   ocs::tom::set<CK_name>(ep_ck, "Test_Name");
-   ocs::tom::set<CK_interface>(ep_ck, "interface");
-   ocs::tom::set<CK_ckpt_command>(ep_ck, "ckpt_command");
-   ocs::tom::set<CK_migr_command>(ep_ck, "migr_command");
-   ocs::tom::set<CK_rest_command>(ep_ck, "rest_command");
-   ocs::tom::set<CK_ckpt_dir>(ep_ck, "ckpt_dir");
-   ocs::tom::set<CK_when>(ep_ck, "when");
-   ocs::tom::set<CK_signal>(ep_ck, "signal");
-   ocs::tom::set<CK_job_pid>(ep_ck, 1313);
-   ocs::tom::set<CK_clean_command>(ep_ck, "clean_command");
+   ep_ck->set<CK_name>("Test_Name");
+   ep_ck->set<CK_interface>("interface");
+   ep_ck->set<CK_ckpt_command>("ckpt_command");
+   ep_ck->set<CK_migr_command>("migr_command");
+   ep_ck->set<CK_rest_command>("rest_command");
+   ep_ck->set<CK_ckpt_dir>("ckpt_dir");
+   ep_ck->set<CK_when>("when");
+   ep_ck->set<CK_signal>("signal");
+   ep_ck->set<CK_job_pid>(1313);
+   ep_ck->set<CK_clean_command>("clean_command");
    
    /* Write a CK file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, *ep_ck, false,
@@ -479,19 +491,19 @@ static int CK_test() {
    
    /* Read a CK file using flatfile spooling */
    ep_ck.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CK::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::CK>(spool_flatfile_read_object(&alp, ocs::tom::CK::descriptor.e, nullptr,
                                    CK_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
       
    /* Write a CK file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CK_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
    
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -505,70 +517,74 @@ static int CK_test() {
    return ret;
 }
 
+/**
+ * @brief Write a share tree node in the name=value format with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int STN_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::STN> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
    auto ep_stn = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-   ocs::tom::set<STN_name>(ep_stn, "Test_Name");
-   ocs::tom::set<STN_type>(ep_stn, 1);
-   ocs::tom::set<STN_id>(ep_stn, 0);
-   ocs::tom::set<STN_shares>(ep_stn, 99);
-   ocs::tom::set<STN_version>(ep_stn, 1);
+   ep_stn->set<STN_name>("Test_Name");
+   ep_stn->set<STN_type>(1);
+   ep_stn->set<STN_id>(0);
+   ep_stn->set<STN_shares>(99);
+   ep_stn->set<STN_version>(1);
    
    auto lp = ocs::tom::ListPtr<ocs::tom::STN>::create("Sharetree List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-   ocs::tom::set<STN_name>(ep2, "Test_Name2");
-   ocs::tom::set<STN_type>(ep2, 1);
-   ocs::tom::set<STN_id>(ep2, 1);
-   ocs::tom::set<STN_shares>(ep2, 99);
+   ep2->set<STN_name>("Test_Name2");
+   ep2->set<STN_type>(1);
+   ep2->set<STN_id>(1);
+   ep2->set<STN_shares>(99);
    
    auto lp2 = ocs::tom::ListPtr<ocs::tom::STN>::create("Sharetree List");
    
    auto ep3 = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-   ocs::tom::set<STN_name>(ep3, "Test_Name3");
-   ocs::tom::set<STN_type>(ep3, 1);
-   ocs::tom::set<STN_id>(ep3, 2);
-   ocs::tom::set<STN_shares>(ep3, 99);
-   ocs::tom::set<STN_children>(ep3, nullptr);
-   lAppendElem(*lp2, std::move(ep3));
+   ep3->set<STN_name>("Test_Name3");
+   ep3->set<STN_type>(1);
+   ep3->set<STN_id>(2);
+   ep3->set<STN_shares>(99);
+   ep3->set<STN_children>(nullptr);
+   lp2->push_back(std::move(ep3));
    
    auto ep3_stn = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-   ocs::tom::set<STN_name>(ep3_stn, "Test_Name4");
-   ocs::tom::set<STN_type>(ep3_stn, 1);
-   ocs::tom::set<STN_id>(ep3_stn, 4);
-   ocs::tom::set<STN_shares>(ep3_stn, 99);
-   ocs::tom::set<STN_children>(ep3_stn, nullptr);
-   lAppendElem(*lp2, std::move(ep3_stn));
+   ep3_stn->set<STN_name>("Test_Name4");
+   ep3_stn->set<STN_type>(1);
+   ep3_stn->set<STN_id>(4);
+   ep3_stn->set<STN_shares>(99);
+   ep3_stn->set<STN_children>(nullptr);
+   lp2->push_back(std::move(ep3_stn));
    
-   ocs::tom::set<STN_children>(ep2, std::move(lp2));
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<STN_children>(std::move(lp2));
+   lp->push_back(std::move(ep2));
    
    auto ep2_stn = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-   ocs::tom::set<STN_name>(ep2_stn, "Test_Name5");
-   ocs::tom::set<STN_type>(ep2_stn, 1);
-   ocs::tom::set<STN_id>(ep2_stn, 5);
-   ocs::tom::set<STN_shares>(ep2_stn, 99);
+   ep2_stn->set<STN_name>("Test_Name5");
+   ep2_stn->set<STN_type>(1);
+   ep2_stn->set<STN_id>(5);
+   ep2_stn->set<STN_shares>(99);
    
    auto lp2_stn = ocs::tom::ListPtr<ocs::tom::STN>::create("Sharetree List");
    
    auto ep3_stn_2 = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-   ocs::tom::set<STN_name>(ep3_stn_2, "Test_Name6");
-   ocs::tom::set<STN_type>(ep3_stn_2, 1);
-   ocs::tom::set<STN_id>(ep3_stn_2, 7);
-   ocs::tom::set<STN_shares>(ep3_stn_2, 99);
-   ocs::tom::set<STN_children>(ep3_stn_2, nullptr);
-   lAppendElem(*lp2_stn, std::move(ep3_stn_2));
+   ep3_stn_2->set<STN_name>("Test_Name6");
+   ep3_stn_2->set<STN_type>(1);
+   ep3_stn_2->set<STN_id>(7);
+   ep3_stn_2->set<STN_shares>(99);
+   ep3_stn_2->set<STN_children>(nullptr);
+   lp2_stn->push_back(std::move(ep3_stn_2));
    
-   ocs::tom::set<STN_children>(ep2_stn, std::move(lp2_stn));
-   lAppendElem(*lp, std::move(ep2_stn));
+   ep2_stn->set<STN_children>(std::move(lp2_stn));
+   lp->push_back(std::move(ep2_stn));
    
-   ocs::tom::set<STN_children>(ep_stn, std::move(lp));
+   ep_stn->set<STN_children>(std::move(lp));
 
    fields = sge_build_STN_field_list(true, true);
    
@@ -582,18 +598,18 @@ static int STN_test() {
 
    /* Read a STN file using flatfile spooling */
    ep_stn.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::STN::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::STN>(spool_flatfile_read_object(&alp, ocs::tom::STN::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_name_value_list_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a STN file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        fields,
                                        &qconf_name_value_list_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
-   lFreeElem(&ep);
+   ep.reset();
 
    
    ret = diff(file1, file2);
@@ -609,21 +625,25 @@ static int STN_test() {
    return ret;
 }
 
+/**
+ * @brief Write a complex entry with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CE_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CE> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep_ce, "Test_Name");
-   ocs::tom::set<CE_shortcut>(ep_ce, "shortcut");
-   ocs::tom::set<CE_valtype>(ep_ce, 1);
-   ocs::tom::set<CE_relop>(ep_ce, 5);
-   ocs::tom::set<CE_consumable>(ep_ce, 1);
-   ocs::tom::set<CE_defaultval>(ep_ce, "10");
-   ocs::tom::set<CE_requestable>(ep_ce, REQU_NO);
-   ocs::tom::set<CE_urgency_weight>(ep_ce, "20");
+   ep_ce->set<CE_name>("Test_Name");
+   ep_ce->set<CE_shortcut>("shortcut");
+   ep_ce->set<CE_valtype>(1);
+   ep_ce->set<CE_relop>(5);
+   ep_ce->set<CE_consumable>(1);
+   ep_ce->set<CE_defaultval>("10");
+   ep_ce->set<CE_requestable>(REQU_NO);
+   ep_ce->set<CE_urgency_weight>("20");
    
    /* Write a CE file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, *ep_ce, false,
@@ -635,19 +655,19 @@ static int CE_test() {
    
    /* Read a CE file using flatfile spooling */
    ep_ce.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::CE>(spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
          
    /* Write a CE file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
 
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -661,41 +681,44 @@ static int CE_test() {
    return ret;
 }
 
+/**
+ * @brief Write a list of two complex entries with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CEL_test() {
    int ret = 0;
-   lList *lp = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
-   lp = lCreateList("Complex List", ocs::tom::CE::descriptor.e);
+   auto lp = ocs::tom::ListPtr<ocs::tom::CE>::create("Complex List");
    
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, "Test_Name1");
-   ocs::tom::set<CE_shortcut>(ep, "tn1");
-   ocs::tom::set<CE_valtype>(ep, 1);
-   ocs::tom::set<CE_relop>(ep, 5);
-   ocs::tom::set<CE_consumable>(ep, 2);
-   ocs::tom::set<CE_defaultval>(ep, "15");
-   ocs::tom::set<CE_requestable>(ep, REQU_NO);
-   ocs::tom::set<CE_urgency_weight>(ep, "25");
-   lAppendElem(lp, std::move(ep));
+   ep->set<CE_name>("Test_Name1");
+   ep->set<CE_shortcut>("tn1");
+   ep->set<CE_valtype>(1);
+   ep->set<CE_relop>(5);
+   ep->set<CE_consumable>(2);
+   ep->set<CE_defaultval>("15");
+   ep->set<CE_requestable>(REQU_NO);
+   ep->set<CE_urgency_weight>("25");
+   lp->push_back(std::move(ep));
    
    auto ep_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep_ce, "Test_Name2");
-   ocs::tom::set<CE_shortcut>(ep_ce, "tn2");
-   ocs::tom::set<CE_valtype>(ep_ce, 1);
-   ocs::tom::set<CE_relop>(ep_ce, 5);
-   ocs::tom::set<CE_consumable>(ep_ce, 0);
-   ocs::tom::set<CE_defaultval>(ep_ce, "15");
-   ocs::tom::set<CE_requestable>(ep_ce, REQU_YES);
-   ocs::tom::set<CE_urgency_weight>(ep_ce, "25");
-   lAppendElem(lp, std::move(ep_ce));
+   ep_ce->set<CE_name>("Test_Name2");
+   ep_ce->set<CE_shortcut>("tn2");
+   ep_ce->set<CE_valtype>(1);
+   ep_ce->set<CE_relop>(5);
+   ep_ce->set<CE_consumable>(0);
+   ep_ce->set<CE_defaultval>("15");
+   ep_ce->set<CE_requestable>(REQU_YES);
+   ep_ce->set<CE_urgency_weight>("25");
+   lp->push_back(std::move(ep_ce));
    
-   spool_flatfile_align_list(&alp,(const lList *)lp, CE_fields, 0);
+   spool_flatfile_align_list(&alp, *lp, CE_fields, 0);
    
    /* Write a CEL file using classic spooling */
-   file1 = spool_flatfile_write_list(&alp, lp,
+   file1 = spool_flatfile_write_list(&alp, *lp,
                                      CE_fields,
                                      &qconf_ce_list_sfi,
                                      SP_DEST_TMP, 
@@ -703,19 +726,19 @@ static int CEL_test() {
                                      file1, false);
    
    /* Read a CE file using flatfile spooling */
-   lFreeList(&lp);
-   lp = spool_flatfile_read_list(&alp, ocs::tom::CE::descriptor.e,
+   lp.reset();
+   lp = ocs::tom::ListPtr<ocs::tom::CE>(spool_flatfile_read_list(&alp, ocs::tom::CE::descriptor.e,
                                    CE_fields, nullptr, true, &qconf_ce_list_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a CEL file using flatfile spooling */
-   file2 = spool_flatfile_write_list(&alp, lp,
+   file2 = spool_flatfile_write_list(&alp, *lp,
                                      CE_fields,
                                      &qconf_ce_list_sfi,
                                      SP_DEST_TMP, 
                                      SP_FORM_ASCII, 
                                      nullptr, false);
-   lFreeList(&lp);
+   lp.reset();
 
    
    ret = diff(file1, file2);
@@ -763,253 +786,276 @@ static int diff(const char *file1, const char *file2) {
    return ret;
 }
 
-static lList *buildUsageList() {   
+/**
+ * @brief A usage list of three entries
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::UA> buildUsageList() {   
 
    auto lp = ocs::tom::ListPtr<ocs::tom::UA>::create("Usage List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2, "Test_Name2");
-   ocs::tom::set<UA_value>(ep2, 11.22);
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<UA_name>("Test_Name2");
+   ep2->set<UA_value>(11.22);
+   lp->push_back(std::move(ep2));
    
    auto ep2_ua = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2_ua, "Test_Name3");
-   ocs::tom::set<UA_value>(ep2_ua, 33.44);
-   lAppendElem(*lp, std::move(ep2_ua));
+   ep2_ua->set<UA_name>("Test_Name3");
+   ep2_ua->set<UA_value>(33.44);
+   lp->push_back(std::move(ep2_ua));
    
    auto ep2_ua_2 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2_ua_2, "Test_Name4");
-   ocs::tom::set<UA_value>(ep2_ua_2, 55.66);
-   lAppendElem(*lp, std::move(ep2_ua_2));
+   ep2_ua_2->set<UA_name>("Test_Name4");
+   ep2_ua_2->set<UA_value>(55.66);
+   lp->push_back(std::move(ep2_ua_2));
 
-   return lp.release();
+   return lp;
 }
 
-static lList *buildLTUsageList() {
+/**
+ * @brief A long term usage list of two entries
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::UA> buildLTUsageList() {
 
    auto lp = ocs::tom::ListPtr<ocs::tom::UA>::create("LT Usage List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2, "Test_Name5");
-   ocs::tom::set<UA_value>(ep2, 11.22);
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<UA_name>("Test_Name5");
+   ep2->set<UA_value>(11.22);
+   lp->push_back(std::move(ep2));
    
    auto ep2_ua = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2_ua, "Test_Name6");
-   ocs::tom::set<UA_value>(ep2_ua, 33.44);
-   lAppendElem(*lp, std::move(ep2_ua));
+   ep2_ua->set<UA_name>("Test_Name6");
+   ep2_ua->set<UA_value>(33.44);
+   lp->push_back(std::move(ep2_ua));
    
    auto ep2_ua_2 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2_ua_2, "Test_Name7");
-   ocs::tom::set<UA_value>(ep2_ua_2, 55.66);
-   lAppendElem(*lp, std::move(ep2_ua_2));
+   ep2_ua_2->set<UA_name>("Test_Name7");
+   ep2_ua_2->set<UA_value>(55.66);
+   lp->push_back(std::move(ep2_ua_2));
  
-   return lp.release();
+   return lp;
 }      
 
-static lList *buildProjectList() {
+/**
+ * @brief A list of two projects with their usage
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::UPP> buildProjectList() {
 
    auto lp = ocs::tom::ListPtr<ocs::tom::UPP>::create("Project List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::UPP>::create();
-   ocs::tom::set<UPP_name>(ep2, "Test_Name8");
+   ep2->set<UPP_name>("Test_Name8");
    
    auto lp2 = ocs::tom::ListPtr<ocs::tom::UA>::create("Usage List");
    
    auto ep3 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3, "Test_Name9");
-   ocs::tom::set<UA_value>(ep3, 11.22);
-   lAppendElem(*lp2, std::move(ep3));
+   ep3->set<UA_name>("Test_Name9");
+   ep3->set<UA_value>(11.22);
+   lp2->push_back(std::move(ep3));
    
    auto ep3_ua = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua, "Test_Name10");
-   ocs::tom::set<UA_value>(ep3_ua, 33.44);
-   lAppendElem(*lp2, std::move(ep3_ua));
+   ep3_ua->set<UA_name>("Test_Name10");
+   ep3_ua->set<UA_value>(33.44);
+   lp2->push_back(std::move(ep3_ua));
    
    auto ep3_ua_2 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_2, "Test_Name11");
-   ocs::tom::set<UA_value>(ep3_ua_2, 55.66);
-   lAppendElem(*lp2, std::move(ep3_ua_2));
+   ep3_ua_2->set<UA_name>("Test_Name11");
+   ep3_ua_2->set<UA_value>(55.66);
+   lp2->push_back(std::move(ep3_ua_2));
       
-   ocs::tom::set<UPP_usage>(ep2, std::move(lp2));
+   ep2->set<UPP_usage>(std::move(lp2));
    
    auto lp2_ua = ocs::tom::ListPtr<ocs::tom::UA>::create("LT Usage List");
    
    auto ep3_ua_3 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_3, "Test_Name12");
-   ocs::tom::set<UA_value>(ep3_ua_3, 11.22);
-   lAppendElem(*lp2_ua, std::move(ep3_ua_3));
+   ep3_ua_3->set<UA_name>("Test_Name12");
+   ep3_ua_3->set<UA_value>(11.22);
+   lp2_ua->push_back(std::move(ep3_ua_3));
    
    auto ep3_ua_4 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_4, "Test_Name13");
-   ocs::tom::set<UA_value>(ep3_ua_4, 33.44);
-   lAppendElem(*lp2_ua, std::move(ep3_ua_4));
+   ep3_ua_4->set<UA_name>("Test_Name13");
+   ep3_ua_4->set<UA_value>(33.44);
+   lp2_ua->push_back(std::move(ep3_ua_4));
    
    auto ep3_ua_5 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_5, "Test_Name14");
-   ocs::tom::set<UA_value>(ep3_ua_5, 55.66);
-   lAppendElem(*lp2_ua, std::move(ep3_ua_5));
+   ep3_ua_5->set<UA_name>("Test_Name14");
+   ep3_ua_5->set<UA_value>(55.66);
+   lp2_ua->push_back(std::move(ep3_ua_5));
       
-   ocs::tom::set<UPP_long_term_usage>(ep2, std::move(lp2_ua));
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<UPP_long_term_usage>(std::move(lp2_ua));
+   lp->push_back(std::move(ep2));
    
    auto ep2_upp = ocs::tom::ElementPtr<ocs::tom::UPP>::create();
-   ocs::tom::set<UPP_name>(ep2_upp, "Test_Name15");
+   ep2_upp->set<UPP_name>("Test_Name15");
    
    auto lp2_ua_2 = ocs::tom::ListPtr<ocs::tom::UA>::create("Usage List");
    
    auto ep3_ua_6 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_6, "Test_Name16");
-   ocs::tom::set<UA_value>(ep3_ua_6, 11.22);
-   lAppendElem(*lp2_ua_2, std::move(ep3_ua_6));
+   ep3_ua_6->set<UA_name>("Test_Name16");
+   ep3_ua_6->set<UA_value>(11.22);
+   lp2_ua_2->push_back(std::move(ep3_ua_6));
    
    auto ep3_ua_7 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_7, "Test_Name17");
-   ocs::tom::set<UA_value>(ep3_ua_7, 33.44);
-   lAppendElem(*lp2_ua_2, std::move(ep3_ua_7));
+   ep3_ua_7->set<UA_name>("Test_Name17");
+   ep3_ua_7->set<UA_value>(33.44);
+   lp2_ua_2->push_back(std::move(ep3_ua_7));
    
    auto ep3_ua_8 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_8, "Test_Name18");
-   ocs::tom::set<UA_value>(ep3_ua_8, 55.66);
-   lAppendElem(*lp2_ua_2, std::move(ep3_ua_8));
+   ep3_ua_8->set<UA_name>("Test_Name18");
+   ep3_ua_8->set<UA_value>(55.66);
+   lp2_ua_2->push_back(std::move(ep3_ua_8));
       
-   ocs::tom::set<UPP_usage>(ep2_upp, std::move(lp2_ua_2));
+   ep2_upp->set<UPP_usage>(std::move(lp2_ua_2));
    
    auto lp2_ua_3 = ocs::tom::ListPtr<ocs::tom::UA>::create("LT Usage List");
    
    auto ep3_ua_9 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_9, "Test_Name19");
-   ocs::tom::set<UA_value>(ep3_ua_9, 11.22);
-   lAppendElem(*lp2_ua_3, std::move(ep3_ua_9));
+   ep3_ua_9->set<UA_name>("Test_Name19");
+   ep3_ua_9->set<UA_value>(11.22);
+   lp2_ua_3->push_back(std::move(ep3_ua_9));
    
    auto ep3_ua_10 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_10, "Test_Name20");
-   ocs::tom::set<UA_value>(ep3_ua_10, 33.44);
-   lAppendElem(*lp2_ua_3, std::move(ep3_ua_10));
+   ep3_ua_10->set<UA_name>("Test_Name20");
+   ep3_ua_10->set<UA_value>(33.44);
+   lp2_ua_3->push_back(std::move(ep3_ua_10));
    
    auto ep3_ua_11 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep3_ua_11, "Test_Name21");
-   ocs::tom::set<UA_value>(ep3_ua_11, 55.66);
-   lAppendElem(*lp2_ua_3, std::move(ep3_ua_11));
+   ep3_ua_11->set<UA_name>("Test_Name21");
+   ep3_ua_11->set<UA_value>(55.66);
+   lp2_ua_3->push_back(std::move(ep3_ua_11));
       
-   ocs::tom::set<UPP_long_term_usage>(ep2_upp, std::move(lp2_ua_3));
-   lAppendElem(*lp, std::move(ep2_upp));
+   ep2_upp->set<UPP_long_term_usage>(std::move(lp2_ua_3));
+   lp->push_back(std::move(ep2_upp));
 
-   return lp.release();
+   return lp;
 }
 
-static lList *buildDebitedUsageList() {
+/**
+ * @brief A list of the usage debited to two jobs
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::UPU> buildDebitedUsageList() {
 
    auto lp = ocs::tom::ListPtr<ocs::tom::UPU>::create("Debited Usage List");
    
    auto ep = ocs::tom::ElementPtr<ocs::tom::UPU>::create();
-   ocs::tom::set<UPU_job_number>(ep, 13579);
+   ep->set<UPU_job_number>(13579);
    
    auto lp2 = ocs::tom::ListPtr<ocs::tom::UA>::create("Old Usage List");
    
    auto ep1 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep1, "Test_Name26");
-   ocs::tom::set<UA_value>(ep1, 11.22);
-   lAppendElem(*lp2, std::move(ep1));
+   ep1->set<UA_name>("Test_Name26");
+   ep1->set<UA_value>(11.22);
+   lp2->push_back(std::move(ep1));
    
    auto ep1_ua = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep1_ua, "Test_Name27");
-   ocs::tom::set<UA_value>(ep1_ua, 33.44);
-   lAppendElem(*lp2, std::move(ep1_ua));
+   ep1_ua->set<UA_name>("Test_Name27");
+   ep1_ua->set<UA_value>(33.44);
+   lp2->push_back(std::move(ep1_ua));
    
    auto ep1_ua_2 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep1_ua_2, "Test_Name28");
-   ocs::tom::set<UA_value>(ep1_ua_2, 55.66);
-   lAppendElem(*lp2, std::move(ep1_ua_2));
+   ep1_ua_2->set<UA_name>("Test_Name28");
+   ep1_ua_2->set<UA_value>(55.66);
+   lp2->push_back(std::move(ep1_ua_2));
       
-   ocs::tom::set<UPU_old_usage_list>(ep, std::move(lp2));
-   lAppendElem(*lp, std::move(ep));
+   ep->set<UPU_old_usage_list>(std::move(lp2));
+   lp->push_back(std::move(ep));
    
    auto ep_upu = ocs::tom::ElementPtr<ocs::tom::UPU>::create();
-   ocs::tom::set<UPU_job_number>(ep_upu, 97531);
+   ep_upu->set<UPU_job_number>(97531);
    
    auto lp2_ua = ocs::tom::ListPtr<ocs::tom::UA>::create("Old Usage List");
    
    auto ep1_ua_3 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep1_ua_3, "Test_Name29");
-   ocs::tom::set<UA_value>(ep1_ua_3, 11.22);
-   lAppendElem(*lp2_ua, std::move(ep1_ua_3));
+   ep1_ua_3->set<UA_name>("Test_Name29");
+   ep1_ua_3->set<UA_value>(11.22);
+   lp2_ua->push_back(std::move(ep1_ua_3));
    
    auto ep1_ua_4 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep1_ua_4, "Test_Name30");
-   ocs::tom::set<UA_value>(ep1_ua_4, 33.44);
-   lAppendElem(*lp2_ua, std::move(ep1_ua_4));
+   ep1_ua_4->set<UA_name>("Test_Name30");
+   ep1_ua_4->set<UA_value>(33.44);
+   lp2_ua->push_back(std::move(ep1_ua_4));
    
    auto ep1_ua_5 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep1_ua_5, "Test_Name31");
-   ocs::tom::set<UA_value>(ep1_ua_5, 55.66);
-   lAppendElem(*lp2_ua, std::move(ep1_ua_5));
+   ep1_ua_5->set<UA_name>("Test_Name31");
+   ep1_ua_5->set<UA_value>(55.66);
+   lp2_ua->push_back(std::move(ep1_ua_5));
       
-   ocs::tom::set<UPU_old_usage_list>(ep_upu, std::move(lp2_ua));
-   lAppendElem(*lp, std::move(ep_upu));
+   ep_upu->set<UPU_old_usage_list>(std::move(lp2_ua));
+   lp->push_back(std::move(ep_upu));
 
-   return lp.release();
+   return lp;
 }   
 
-static lList *buildACLList() {
+/**
+ * @brief A list of two usersets for the access list of a project
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::US> buildACLList() {
 
    auto lp = ocs::tom::ListPtr<ocs::tom::US>::create("ACL List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2, "Test_Name22");
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<US_name>("Test_Name22");
+   lp->push_back(std::move(ep2));
    
    auto ep2_us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2_us, "Test_Name23");
-   lAppendElem(*lp, std::move(ep2_us));
+   ep2_us->set<US_name>("Test_Name23");
+   lp->push_back(std::move(ep2_us));
 
-   return lp.release();
+   return lp;
 }   
    
-static lList *buildXACLList() {
+/**
+ * @brief A list of two usersets for the denied access list of a project
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::US> buildXACLList() {
 
    auto lp = ocs::tom::ListPtr<ocs::tom::US>::create("XACL List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2, "Test_Name24");
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<US_name>("Test_Name24");
+   lp->push_back(std::move(ep2));
    
    auto ep2_us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2_us, "Test_Name25");
-   lAppendElem(*lp, std::move(ep2_us));
+   ep2_us->set<US_name>("Test_Name25");
+   lp->push_back(std::move(ep2_us));
 
-   return lp.release();
+   return lp;
 }   
 
+/**
+ * @brief Write a user with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int UU_test() {
    int ret = 0;
-   lListElem *user = nullptr;
-   lList *lp = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::UU> user;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
    auto user_uu = ocs::tom::ElementPtr<ocs::tom::UU>::create();
-   ocs::tom::set<UU_name>(user_uu, "Test_Name");
-   ocs::tom::set<UU_oticket>(user_uu, 100);
-   ocs::tom::set<UU_fshare>(user_uu, 50);
-   ocs::tom::set<UU_delete_time>(user_uu, (uint64_t)123456789000000);
-   ocs::tom::set<UU_default_project>(user_uu, "default_project");
+   user_uu->set<UU_name>("Test_Name");
+   user_uu->set<UU_oticket>(100);
+   user_uu->set<UU_fshare>(50);
+   user_uu->set<UU_delete_time>((uint64_t)123456789000000);
+   user_uu->set<UU_default_project>("default_project");
 
-   ocs::tom::set<UU_usage_time_stamp>(user_uu, 987654321);
+   user_uu->set<UU_usage_time_stamp>(987654321);
 
-   lp = buildUsageList();
-   ocs::tom::set<UU_usage>(user_uu, lp);
+   user_uu->set<UU_usage>(buildUsageList());
    
-   lp = buildLTUsageList();
-   ocs::tom::set<UU_long_term_usage>(user_uu, lp);
+   user_uu->set<UU_long_term_usage>(buildLTUsageList());
    
-   lp = buildProjectList();
-   ocs::tom::set<UU_project>(user_uu, lp);
+   user_uu->set<UU_project>(buildProjectList());
    
-   lp = buildDebitedUsageList();
-   ocs::tom::set<UU_debited_job_usage>(user_uu, lp);
+   user_uu->set<UU_debited_job_usage>(buildDebitedUsageList());
 
 
    fields = sge_build_UU_field_list(true);
@@ -1022,16 +1068,16 @@ static int UU_test() {
                                      SP_FORM_ASCII, 
                                      file1, false);
    user_uu.reset();
-   user = spool_flatfile_read_object(&alp, ocs::tom::UU::descriptor.e, nullptr,
+   user = ocs::tom::ElementPtr<ocs::tom::UU>(spool_flatfile_read_object(&alp, ocs::tom::UU::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, user, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *user, false,
                                      fields,
                                      &qconf_sfi,
                                      SP_DEST_TMP,
                                      SP_FORM_ASCII, 
                                      file2, false);
-   lFreeElem(&user);
+   user.reset();
    ret = diff(file1, file2);
    
    sge_unlink(nullptr, file1);
@@ -1045,38 +1091,35 @@ static int UU_test() {
    return ret;
 }
 
+/**
+ * @brief Write a project with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PR_test() {
    int ret = 0;
-   lListElem *prj = nullptr;
-   lList *lp = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::PR> prj;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
    auto prj_pr = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(prj_pr, "Test_Name");
-   ocs::tom::set<PR_oticket>(prj_pr, 100);
-   ocs::tom::set<PR_fshare>(prj_pr, 50);
-   ocs::tom::set<PR_usage_time_stamp>(prj_pr, 987654321);
+   prj_pr->set<PR_name>("Test_Name");
+   prj_pr->set<PR_oticket>(100);
+   prj_pr->set<PR_fshare>(50);
+   prj_pr->set<PR_usage_time_stamp>(987654321);
 
-   lp = buildUsageList();
-   ocs::tom::set<PR_usage>(prj_pr, lp);
+   prj_pr->set<PR_usage>(buildUsageList());
    
-   lp = buildLTUsageList();
-   ocs::tom::set<PR_long_term_usage>(prj_pr, lp);
+   prj_pr->set<PR_long_term_usage>(buildLTUsageList());
    
-   lp = buildProjectList();
-   ocs::tom::set<PR_project>(prj_pr, lp);
+   prj_pr->set<PR_project>(buildProjectList());
    
-   lp = buildACLList();
-   ocs::tom::set<PR_acl>(prj_pr, lp);
+   prj_pr->set<PR_acl>(buildACLList());
    
-   lp = buildXACLList();
-   ocs::tom::set<PR_xacl>(prj_pr, lp);
+   prj_pr->set<PR_xacl>(buildXACLList());
    
-   lp = buildDebitedUsageList();
-   ocs::tom::set<PR_debited_job_usage>(prj_pr, lp);
+   prj_pr->set<PR_debited_job_usage>(buildDebitedUsageList());
 
    fields = sge_build_PR_field_list(true);
 
@@ -1090,19 +1133,19 @@ static int PR_test() {
    
    /* Read a PR file using flatfile spooling */
    prj_pr.reset();
-   prj = spool_flatfile_read_object(&alp, ocs::tom::PR::descriptor.e, nullptr,
+   prj = ocs::tom::ElementPtr<ocs::tom::PR>(spool_flatfile_read_object(&alp, ocs::tom::PR::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
          
    /* Write a PR file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, prj, false,
+   file2 = spool_flatfile_write_object(&alp, *prj, false,
                                      fields,
                                      &qconf_sfi,
                                      SP_DEST_TMP,
                                      SP_FORM_ASCII, 
                                      file2, false);
 
-   lFreeElem(&prj);
+   prj.reset();
    answer_list_output(&alp);   
    
    ret = diff(file1, file2);
@@ -1118,34 +1161,38 @@ static int PR_test() {
    return ret;
 }
 
+/**
+ * @brief Write a userset with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int US_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::US> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
    auto ep_us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep_us, "Test_Name");
-   ocs::tom::set<US_type>(ep_us, 1);
-   ocs::tom::set<US_fshare>(ep_us, 10);
-   ocs::tom::set<US_oticket>(ep_us, 100);
+   ep_us->set<US_name>("Test_Name");
+   ep_us->set<US_type>(1);
+   ep_us->set<US_fshare>(10);
+   ep_us->set<US_oticket>(100);
    
    auto lp = ocs::tom::ListPtr<ocs::tom::UE>::create("Entry List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep2, "Test_Name2");
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<UE_name>("Test_Name2");
+   lp->push_back(std::move(ep2));
    
    auto ep2_ue = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep2_ue, "Test_Name3");
-   lAppendElem(*lp, std::move(ep2_ue));
+   ep2_ue->set<UE_name>("Test_Name3");
+   lp->push_back(std::move(ep2_ue));
    
    auto ep2_ue_2 = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-   ocs::tom::set<UE_name>(ep2_ue_2, "Test_Name4");
-   lAppendElem(*lp, std::move(ep2_ue_2));
+   ep2_ue_2->set<UE_name>("Test_Name4");
+   lp->push_back(std::move(ep2_ue_2));
    
-   ocs::tom::set<US_entries>(ep_us, std::move(lp));
+   ep_us->set<US_entries>(std::move(lp));
    
    /* Write a US file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, *ep_us, false,
@@ -1157,12 +1204,12 @@ static int US_test() {
 
    /* Read a US file using flatfile spooling */
    ep_us.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::US::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::US>(spool_flatfile_read_object(&alp, ocs::tom::US::descriptor.e, nullptr,
                                    US_fields, nullptr, true, &qconf_param_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
       
    /* Write a US file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        US_fields,
                                        &qconf_param_sfi,
                                        SP_DEST_TMP,
@@ -1177,211 +1224,214 @@ static int US_test() {
    sge_free(&file1);
    sge_free(&file2);
    
-   lFreeElem(&ep);
+   ep.reset();
    
    answer_list_output(&alp);   
    
    return ret;
 }
 
+/**
+ * @brief Write an execution host with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int EH_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
-   lList *lp = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::EH> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
    auto ep_eh = ocs::tom::ElementPtr<ocs::tom::EH>::create();
-   ocs::tom::set<EH_name>(ep_eh, "Test_Name");
+   ep_eh->set<EH_name>(ocs::tom::Host("Test_Name"));
    
    auto lp_hs = ocs::tom::ListPtr<ocs::tom::HS>::create("Load Scaling List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::HS>::create();
-   ocs::tom::set<HS_name>(ep2, "Test_Name2");
-   ocs::tom::set<HS_value>(ep2, 1234.567);
-   lAppendElem(*lp_hs, std::move(ep2));
+   ep2->set<HS_name>("Test_Name2");
+   ep2->set<HS_value>(1234.567);
+   lp_hs->push_back(std::move(ep2));
    
    auto ep2_hs = ocs::tom::ElementPtr<ocs::tom::HS>::create();
-   ocs::tom::set<HS_name>(ep2_hs, "Test_Name3");
-   ocs::tom::set<HS_value>(ep2_hs, 6.7);
-   lAppendElem(*lp_hs, std::move(ep2_hs));
+   ep2_hs->set<HS_name>("Test_Name3");
+   ep2_hs->set<HS_value>(6.7);
+   lp_hs->push_back(std::move(ep2_hs));
    
-   ocs::tom::set<EH_scaling_list>(ep_eh, std::move(lp_hs));
+   ep_eh->set<EH_scaling_list>(std::move(lp_hs));
    
    auto lp_ce = ocs::tom::ListPtr<ocs::tom::CE>::create("Consumable Config List");
    
    auto ep2_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep2_ce, "Test_Name4");
-   ocs::tom::set<CE_shortcut>(ep2_ce, "tn4");
-   ocs::tom::set<CE_valtype>(ep2_ce, 1);
-   ocs::tom::set<CE_relop>(ep2_ce, 5);
-   ocs::tom::set<CE_consumable>(ep2_ce, 1);
-   ocs::tom::set<CE_defaultval>(ep2_ce, "15");
-   ocs::tom::set<CE_requestable>(ep2_ce, REQU_NO);
-   ocs::tom::set<CE_urgency_weight>(ep2_ce, "25");
-   ocs::tom::set<CE_stringval>(ep2_ce, "stringval");
-   lAppendElem(*lp_ce, std::move(ep2_ce));
+   ep2_ce->set<CE_name>("Test_Name4");
+   ep2_ce->set<CE_shortcut>("tn4");
+   ep2_ce->set<CE_valtype>(1);
+   ep2_ce->set<CE_relop>(5);
+   ep2_ce->set<CE_consumable>(1);
+   ep2_ce->set<CE_defaultval>("15");
+   ep2_ce->set<CE_requestable>(REQU_NO);
+   ep2_ce->set<CE_urgency_weight>("25");
+   ep2_ce->set<CE_stringval>("stringval");
+   lp_ce->push_back(std::move(ep2_ce));
    
    auto ep2_ce_2 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep2_ce_2, "Test_Name5");
-   ocs::tom::set<CE_shortcut>(ep2_ce_2, "tn5");
-   ocs::tom::set<CE_valtype>(ep2_ce_2, 1);
-   ocs::tom::set<CE_relop>(ep2_ce_2, 5);
-   ocs::tom::set<CE_consumable>(ep2_ce_2, 0);
-   ocs::tom::set<CE_defaultval>(ep2_ce_2, "15");
-   ocs::tom::set<CE_requestable>(ep2_ce_2, REQU_YES);
-   ocs::tom::set<CE_urgency_weight>(ep2_ce_2, "25");
-   ocs::tom::set<CE_doubleval>(ep2_ce_2, 6969.9696);
-   lAppendElem(*lp_ce, std::move(ep2_ce_2));
+   ep2_ce_2->set<CE_name>("Test_Name5");
+   ep2_ce_2->set<CE_shortcut>("tn5");
+   ep2_ce_2->set<CE_valtype>(1);
+   ep2_ce_2->set<CE_relop>(5);
+   ep2_ce_2->set<CE_consumable>(0);
+   ep2_ce_2->set<CE_defaultval>("15");
+   ep2_ce_2->set<CE_requestable>(REQU_YES);
+   ep2_ce_2->set<CE_urgency_weight>("25");
+   ep2_ce_2->set<CE_doubleval>(6969.9696);
+   lp_ce->push_back(std::move(ep2_ce_2));
    
-   ocs::tom::set<EH_consumable_config_list>(ep_eh, std::move(lp_ce));
+   ep_eh->set<EH_consumable_config_list>(std::move(lp_ce));
    
-   lp = lCreateList("Actual Complex Values List", ocs::tom::CE::descriptor.e);
+   auto lp = ocs::tom::ListPtr<ocs::tom::CE>::create("Actual Complex Values List");
 
    auto ep2_ce_3 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep2_ce_3, "Test_Name6");
-   ocs::tom::set<CE_shortcut>(ep2_ce_3, "tn6");
-   ocs::tom::set<CE_valtype>(ep2_ce_3, 1);
-   ocs::tom::set<CE_relop>(ep2_ce_3, 5);
-   ocs::tom::set<CE_consumable>(ep2_ce_3, 1);
-   ocs::tom::set<CE_defaultval>(ep2_ce_3, "15");
-   ocs::tom::set<CE_requestable>(ep2_ce_3, REQU_NO);
-   ocs::tom::set<CE_urgency_weight>(ep2_ce_3, "25");
-   ocs::tom::set<CE_stringval>(ep2_ce_3, "stringval");
-   lAppendElem(lp, std::move(ep2_ce_3));
+   ep2_ce_3->set<CE_name>("Test_Name6");
+   ep2_ce_3->set<CE_shortcut>("tn6");
+   ep2_ce_3->set<CE_valtype>(1);
+   ep2_ce_3->set<CE_relop>(5);
+   ep2_ce_3->set<CE_consumable>(1);
+   ep2_ce_3->set<CE_defaultval>("15");
+   ep2_ce_3->set<CE_requestable>(REQU_NO);
+   ep2_ce_3->set<CE_urgency_weight>("25");
+   ep2_ce_3->set<CE_stringval>("stringval");
+   lp->push_back(std::move(ep2_ce_3));
    
    auto ep2_ce_4 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep2_ce_4, "Test_Name7");
-   ocs::tom::set<CE_shortcut>(ep2_ce_4, "tn7");
-   ocs::tom::set<CE_valtype>(ep2_ce_4, 1);
-   ocs::tom::set<CE_relop>(ep2_ce_4, 5);
-   ocs::tom::set<CE_consumable>(ep2_ce_4, 0);
-   ocs::tom::set<CE_defaultval>(ep2_ce_4, "15");
-   ocs::tom::set<CE_requestable>(ep2_ce_4, REQU_YES);
-   ocs::tom::set<CE_urgency_weight>(ep2_ce_4, "25");
-   ocs::tom::set<CE_doubleval>(ep2_ce_4, 6969.9696);
-   lAppendElem(lp, std::move(ep2_ce_4));
+   ep2_ce_4->set<CE_name>("Test_Name7");
+   ep2_ce_4->set<CE_shortcut>("tn7");
+   ep2_ce_4->set<CE_valtype>(1);
+   ep2_ce_4->set<CE_relop>(5);
+   ep2_ce_4->set<CE_consumable>(0);
+   ep2_ce_4->set<CE_defaultval>("15");
+   ep2_ce_4->set<CE_requestable>(REQU_YES);
+   ep2_ce_4->set<CE_urgency_weight>("25");
+   ep2_ce_4->set<CE_doubleval>(6969.9696);
+   lp->push_back(std::move(ep2_ce_4));
 
-   ocs::tom::set<EH_resource_utilization>(ep_eh, lp);
+   ocs::tom::set<EH_resource_utilization>(ep_eh, lp.release());
    
    auto lp_hl = ocs::tom::ListPtr<ocs::tom::HL>::create("Load Values List");
    
    auto ep2_hl = ocs::tom::ElementPtr<ocs::tom::HL>::create();
-   ocs::tom::set<HL_name>(ep2_hl, "Test_Name8");
-   ocs::tom::set<HL_value>(ep2_hl, "1234.567");
-   lAppendElem(*lp_hl, std::move(ep2_hl));
+   ep2_hl->set<HL_name>("Test_Name8");
+   ep2_hl->set<HL_value>("1234.567");
+   lp_hl->push_back(std::move(ep2_hl));
    
    auto ep2_hl_2 = ocs::tom::ElementPtr<ocs::tom::HL>::create();
-   ocs::tom::set<HL_name>(ep2_hl_2, "Test_Name9");
-   ocs::tom::set<HL_value>(ep2_hl_2, "6.7");
-   lAppendElem(*lp_hl, std::move(ep2_hl_2));
+   ep2_hl_2->set<HL_name>("Test_Name9");
+   ep2_hl_2->set<HL_value>("6.7");
+   lp_hl->push_back(std::move(ep2_hl_2));
    
-   ocs::tom::set<EH_load_list>(ep_eh, std::move(lp_hl));
+   ep_eh->set<EH_load_list>(std::move(lp_hl));
 
-   ocs::tom::set<EH_processors>(ep_eh, 64);
+   ep_eh->set<EH_processors>(64);
    
    auto lp_ru = ocs::tom::ListPtr<ocs::tom::RU>::create("Resched Unknown List");
    
    auto ep2_ru = ocs::tom::ElementPtr<ocs::tom::RU>::create();
-   ocs::tom::set<RU_job_number>(ep2_ru, 1);
-   ocs::tom::set<RU_task_number>(ep2_ru, 1);
-   ocs::tom::set<RU_state>(ep2_ru, 0);
-   lAppendElem(*lp_ru, std::move(ep2_ru));
+   ep2_ru->set<RU_job_number>(1);
+   ep2_ru->set<RU_task_number>(1);
+   ep2_ru->set<RU_state>(0);
+   lp_ru->push_back(std::move(ep2_ru));
    
    auto ep2_ru_2 = ocs::tom::ElementPtr<ocs::tom::RU>::create();
-   ocs::tom::set<RU_job_number>(ep2_ru_2, 1);
-   ocs::tom::set<RU_task_number>(ep2_ru_2, 2);
-   ocs::tom::set<RU_state>(ep2_ru_2, 1);
-   lAppendElem(*lp_ru, std::move(ep2_ru_2));
+   ep2_ru_2->set<RU_job_number>(1);
+   ep2_ru_2->set<RU_task_number>(2);
+   ep2_ru_2->set<RU_state>(1);
+   lp_ru->push_back(std::move(ep2_ru_2));
    
    auto ep2_ru_3 = ocs::tom::ElementPtr<ocs::tom::RU>::create();
-   ocs::tom::set<RU_job_number>(ep2_ru_3, 2);
-   ocs::tom::set<RU_task_number>(ep2_ru_3, 1);
-   ocs::tom::set<RU_state>(ep2_ru_3, 2);
-   lAppendElem(*lp_ru, std::move(ep2_ru_3));
+   ep2_ru_3->set<RU_job_number>(2);
+   ep2_ru_3->set<RU_task_number>(1);
+   ep2_ru_3->set<RU_state>(2);
+   lp_ru->push_back(std::move(ep2_ru_3));
 
-   ocs::tom::set<EH_reschedule_unknown_list>(ep_eh, std::move(lp_ru));
+   ep_eh->set<EH_reschedule_unknown_list>(std::move(lp_ru));
    
    auto lp_us = ocs::tom::ListPtr<ocs::tom::US>::create("User List");
    
    auto ep2_us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2_us, "Test_Name9");
-   lAppendElem(*lp_us, std::move(ep2_us));
+   ep2_us->set<US_name>("Test_Name9");
+   lp_us->push_back(std::move(ep2_us));
    
    auto ep2_us_2 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2_us_2, "Test_Name10");
-   lAppendElem(*lp_us, std::move(ep2_us_2));
+   ep2_us_2->set<US_name>("Test_Name10");
+   lp_us->push_back(std::move(ep2_us_2));
    
-   ocs::tom::set<EH_acl>(ep_eh, std::move(lp_us));
+   ep_eh->set<EH_acl>(std::move(lp_us));
    
    auto lp_us_2 = ocs::tom::ListPtr<ocs::tom::US>::create("XUser List");
    
    auto ep2_us_3 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2_us_3, "Test_Name11");
-   lAppendElem(*lp_us_2, std::move(ep2_us_3));
+   ep2_us_3->set<US_name>("Test_Name11");
+   lp_us_2->push_back(std::move(ep2_us_3));
    
    auto ep2_us_4 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep2_us_4, "Test_Name12");
-   lAppendElem(*lp_us_2, std::move(ep2_us_4));
+   ep2_us_4->set<US_name>("Test_Name12");
+   lp_us_2->push_back(std::move(ep2_us_4));
    
-   ocs::tom::set<EH_xacl>(ep_eh, std::move(lp_us_2));
+   ep_eh->set<EH_xacl>(std::move(lp_us_2));
    
    auto lp_pr = ocs::tom::ListPtr<ocs::tom::PR>::create("Projects List");
    
    auto ep2_pr = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep2_pr, "Test_Name13");
-   lAppendElem(*lp_pr, std::move(ep2_pr));
+   ep2_pr->set<PR_name>("Test_Name13");
+   lp_pr->push_back(std::move(ep2_pr));
    
    auto ep2_pr_2 = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep2_pr_2, "Test_Name14");
-   lAppendElem(*lp_pr, std::move(ep2_pr_2));
+   ep2_pr_2->set<PR_name>("Test_Name14");
+   lp_pr->push_back(std::move(ep2_pr_2));
    
-   ocs::tom::set<EH_prj>(ep_eh, std::move(lp_pr));
+   ep_eh->set<EH_prj>(std::move(lp_pr));
    
    auto lp_pr_2 = ocs::tom::ListPtr<ocs::tom::PR>::create("XProjects List");
    
    auto ep2_pr_3 = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep2_pr_3, "Test_Name15");
-   lAppendElem(*lp_pr_2, std::move(ep2_pr_3));
+   ep2_pr_3->set<PR_name>("Test_Name15");
+   lp_pr_2->push_back(std::move(ep2_pr_3));
    
    auto ep2_pr_4 = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep2_pr_4, "Test_Name16");
-   lAppendElem(*lp_pr_2, std::move(ep2_pr_4));
+   ep2_pr_4->set<PR_name>("Test_Name16");
+   lp_pr_2->push_back(std::move(ep2_pr_4));
    
-   ocs::tom::set<EH_xprj>(ep_eh, std::move(lp_pr_2));
+   ep_eh->set<EH_xprj>(std::move(lp_pr_2));
    
    auto lp_hs_2 = ocs::tom::ListPtr<ocs::tom::HS>::create("Usage Scaling List");
    
    auto ep2_hs_2 = ocs::tom::ElementPtr<ocs::tom::HS>::create();
-   ocs::tom::set<HS_name>(ep2_hs_2, "Test_Name17");
-   ocs::tom::set<HS_value>(ep2_hs_2, 1234.567);
-   lAppendElem(*lp_hs_2, std::move(ep2_hs_2));
+   ep2_hs_2->set<HS_name>("Test_Name17");
+   ep2_hs_2->set<HS_value>(1234.567);
+   lp_hs_2->push_back(std::move(ep2_hs_2));
    
    auto ep2_hs_3 = ocs::tom::ElementPtr<ocs::tom::HS>::create();
-   ocs::tom::set<HS_name>(ep2_hs_3, "Test_Name18");
-   ocs::tom::set<HS_value>(ep2_hs_3, 6.7);
-   lAppendElem(*lp_hs_2, std::move(ep2_hs_3));
+   ep2_hs_3->set<HS_name>("Test_Name18");
+   ep2_hs_3->set<HS_value>(6.7);
+   lp_hs_2->push_back(std::move(ep2_hs_3));
    
-   ocs::tom::set<EH_usage_scaling_list>(ep_eh, std::move(lp_hs_2));
+   ep_eh->set<EH_usage_scaling_list>(std::move(lp_hs_2));
    
    auto lp_stu = ocs::tom::ListPtr<ocs::tom::STU>::create("Report Vars List");
    
    auto ep2_stu = ocs::tom::ElementPtr<ocs::tom::STU>::create();
-   ocs::tom::set<STU_name>(ep2_stu, "Test_Name19");
-   lAppendElem(*lp_stu, std::move(ep2_stu));
+   ep2_stu->set<STU_name>("Test_Name19");
+   lp_stu->push_back(std::move(ep2_stu));
    
    auto ep2_stu_2 = ocs::tom::ElementPtr<ocs::tom::STU>::create();
-   ocs::tom::set<STU_name>(ep2_stu_2, "Test_Name20");
-   lAppendElem(*lp_stu, std::move(ep2_stu_2));
+   ep2_stu_2->set<STU_name>("Test_Name20");
+   lp_stu->push_back(std::move(ep2_stu_2));
    
-   ocs::tom::set<EH_report_variables>(ep_eh, std::move(lp_stu));
+   ep_eh->set<EH_report_variables>(std::move(lp_stu));
 
    /* the time at which the host added itself. The spool file carries the raw value, so that it
     * can be read back - the formatted date and time which qconf -se shows contains a blank,
     * which is the delimiter between the name of an attribute and its value in this format */
-   ocs::tom::set<EH_auto_added_time>(ep_eh, 1792143190772380);
+   ep_eh->set<EH_auto_added_time>(1792143190772380);
 
    fields = sge_build_EH_field_list(true, false, false, false);
 
@@ -1395,12 +1445,12 @@ static int EH_test() {
    
    /* Read a EH file using flatfile spooling */
    ep_eh.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::EH::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::EH>(spool_flatfile_read_object(&alp, ocs::tom::EH::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
       
    /* Write a EH file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
@@ -1415,7 +1465,7 @@ static int EH_test() {
    sge_free(&file2);
    sge_free(&fields);
 
-   lFreeElem(&ep);
+   ep.reset();
 
    if (ret != 0) {
       return ret;
@@ -1426,772 +1476,776 @@ static int EH_test() {
    return ret;
 }
 
+/**
+ * @brief Write a cluster queue with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CQ_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CQ> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_cq = ocs::tom::ElementPtr<ocs::tom::CQ>::create();
    
-   ocs::tom::set<CQ_name>(ep_cq, "Test_Name");
+   ep_cq->set<CQ_name>("Test_Name");
    
-   ocs::tom::emplace_back_in<CQ_hostlist, HR_name>(ep_cq, "Test_Name2");
-   ocs::tom::emplace_back_in<CQ_hostlist, HR_name>(ep_cq, "Test_Name3");
-   ocs::tom::emplace_back_in<CQ_hostlist, HR_name>(ep_cq, "Test_Name4");
-   ocs::tom::emplace_back_in<CQ_hostlist, HR_name>(ep_cq, "Test_Name5");
-   ocs::tom::emplace_back_in<CQ_hostlist, HR_name>(ep_cq, "Test_Name6");
-   ocs::tom::emplace_back_in<CQ_hostlist, HR_name>(ep_cq, "Test_Name7");
+   ep_cq->emplace_back_in<CQ_hostlist, HR_name>("Test_Name2");
+   ep_cq->emplace_back_in<CQ_hostlist, HR_name>("Test_Name3");
+   ep_cq->emplace_back_in<CQ_hostlist, HR_name>("Test_Name4");
+   ep_cq->emplace_back_in<CQ_hostlist, HR_name>("Test_Name5");
+   ep_cq->emplace_back_in<CQ_hostlist, HR_name>("Test_Name6");
+   ep_cq->emplace_back_in<CQ_hostlist, HR_name>("Test_Name7");
 
    auto lp = ocs::tom::ListPtr<ocs::tom::AULNG>::create("Seq No. List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2, "Test_Name4");
-   ocs::tom::set<AULNG_value>(ep2, 12);
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<AULNG_href>(ocs::tom::Host("Test_Name4"));
+   ep2->set<AULNG_value>(12);
+   lp->push_back(std::move(ep2));
    
    auto ep2_aulng = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng, "Test_Name5");
-   ocs::tom::set<AULNG_value>(ep2_aulng, 16);
-   lAppendElem(*lp, std::move(ep2_aulng));
+   ep2_aulng->set<AULNG_href>(ocs::tom::Host("Test_Name5"));
+   ep2_aulng->set<AULNG_value>(16);
+   lp->push_back(std::move(ep2_aulng));
 
-   ocs::tom::set<CQ_seq_no>(ep_cq, std::move(lp));
+   ep_cq->set<CQ_seq_no>(std::move(lp));
 
    auto lp_acelist = ocs::tom::ListPtr<ocs::tom::ACELIST>::create("Load Thresholds");
    
    auto ep2_acelist = ocs::tom::ElementPtr<ocs::tom::ACELIST>::create();
-   ocs::tom::set<ACELIST_href>(ep2_acelist, "Test_Name6");
+   ep2_acelist->set<ACELIST_href>(ocs::tom::Host("Test_Name6"));
 
    auto lp2 = ocs::tom::ListPtr<ocs::tom::CE>::create("Complex List");
    
    auto ep3 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep3, "Test_Name7");
-   ocs::tom::set<CE_stringval>(ep3, "stringval");
-   lAppendElem(*lp2, std::move(ep3));
+   ep3->set<CE_name>("Test_Name7");
+   ep3->set<CE_stringval>("stringval");
+   lp2->push_back(std::move(ep3));
    
-   ocs::tom::set<ACELIST_value>(ep2_acelist, std::move(lp2));
+   ep2_acelist->set<ACELIST_value>(std::move(lp2));
    
-   lAppendElem(*lp_acelist, std::move(ep2_acelist));
+   lp_acelist->push_back(std::move(ep2_acelist));
 
-   ocs::tom::set<CQ_load_thresholds>(ep_cq, std::move(lp_acelist));
+   ep_cq->set<CQ_load_thresholds>(std::move(lp_acelist));
    
    auto lp_acelist_2 = ocs::tom::ListPtr<ocs::tom::ACELIST>::create("Suspend Thresholds");
 
    auto ep2_acelist_2 = ocs::tom::ElementPtr<ocs::tom::ACELIST>::create();
-   ocs::tom::set<ACELIST_href>(ep2_acelist_2, "Test_Name15");
+   ep2_acelist_2->set<ACELIST_href>(ocs::tom::Host("Test_Name15"));
 
    auto lp2_ce = ocs::tom::ListPtr<ocs::tom::CE>::create("Complex_List2");
    
    auto ep3_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep3_ce, "Test_Name16");
-   ocs::tom::set<CE_stringval>(ep3_ce, "stringval");
-   lAppendElem(*lp2_ce, std::move(ep3_ce));
+   ep3_ce->set<CE_name>("Test_Name16");
+   ep3_ce->set<CE_stringval>("stringval");
+   lp2_ce->push_back(std::move(ep3_ce));
 
-   ocs::tom::set<ACELIST_value>(ep2_acelist_2, std::move(lp2_ce));
+   ep2_acelist_2->set<ACELIST_value>(std::move(lp2_ce));
    
-   lAppendElem(*lp_acelist_2, std::move(ep2_acelist_2));
+   lp_acelist_2->push_back(std::move(ep2_acelist_2));
 
-   ocs::tom::set<CQ_suspend_thresholds>(ep_cq, std::move(lp_acelist_2));
+   ep_cq->set<CQ_suspend_thresholds>(std::move(lp_acelist_2));
    
    auto lp_aulng = ocs::tom::ListPtr<ocs::tom::AULNG>::create("NSuspend List");
    
    auto ep2_aulng_2 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng_2, "Test_Name18");
-   ocs::tom::set<AULNG_value>(ep2_aulng_2, 12);
-   lAppendElem(*lp_aulng, std::move(ep2_aulng_2));
+   ep2_aulng_2->set<AULNG_href>(ocs::tom::Host("Test_Name18"));
+   ep2_aulng_2->set<AULNG_value>(12);
+   lp_aulng->push_back(std::move(ep2_aulng_2));
    
    auto ep2_aulng_3 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng_3, "Test_Name19");
-   ocs::tom::set<AULNG_value>(ep2_aulng_3, 16);
-   lAppendElem(*lp_aulng, std::move(ep2_aulng_3));
+   ep2_aulng_3->set<AULNG_href>(ocs::tom::Host("Test_Name19"));
+   ep2_aulng_3->set<AULNG_value>(16);
+   lp_aulng->push_back(std::move(ep2_aulng_3));
 
-   ocs::tom::set<CQ_nsuspend>(ep_cq, std::move(lp_aulng));
+   ep_cq->set<CQ_nsuspend>(std::move(lp_aulng));
 
    auto lp_ainter = ocs::tom::ListPtr<ocs::tom::AINTER>::create("Suspend Intervals");
    
    auto ep2_ainter = ocs::tom::ElementPtr<ocs::tom::AINTER>::create();
-   ocs::tom::set<AINTER_href>(ep2_ainter, "Test_Name20");
-   ocs::tom::set<AINTER_value>(ep2_ainter, "1");
-   lAppendElem(*lp_ainter, std::move(ep2_ainter));
+   ep2_ainter->set<AINTER_href>(ocs::tom::Host("Test_Name20"));
+   ep2_ainter->set<AINTER_value>("1");
+   lp_ainter->push_back(std::move(ep2_ainter));
    
    auto ep2_ainter_2 = ocs::tom::ElementPtr<ocs::tom::AINTER>::create();
-   ocs::tom::set<AINTER_href>(ep2_ainter_2, "Test_Name21");
-   ocs::tom::set<AINTER_value>(ep2_ainter_2, "2");
-   lAppendElem(*lp_ainter, std::move(ep2_ainter_2));
+   ep2_ainter_2->set<AINTER_href>(ocs::tom::Host("Test_Name21"));
+   ep2_ainter_2->set<AINTER_value>("2");
+   lp_ainter->push_back(std::move(ep2_ainter_2));
 
-   ocs::tom::set<CQ_suspend_interval>(ep_cq, std::move(lp_ainter));
+   ep_cq->set<CQ_suspend_interval>(std::move(lp_ainter));
 
    auto lp_astr = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Priority List");
    
    auto ep2_astr = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr, "Test_Name22");
-   ocs::tom::set<ASTR_value>(ep2_astr, "3");
-   lAppendElem(*lp_astr, std::move(ep2_astr));
+   ep2_astr->set<ASTR_href>(ocs::tom::Host("Test_Name22"));
+   ep2_astr->set<ASTR_value>("3");
+   lp_astr->push_back(std::move(ep2_astr));
    
    auto ep2_astr_2 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_2, "Test_Name23");
-   ocs::tom::set<ASTR_value>(ep2_astr_2, "4");
-   lAppendElem(*lp_astr, std::move(ep2_astr_2));
+   ep2_astr_2->set<ASTR_href>(ocs::tom::Host("Test_Name23"));
+   ep2_astr_2->set<ASTR_value>("4");
+   lp_astr->push_back(std::move(ep2_astr_2));
 
-   ocs::tom::set<CQ_priority>(ep_cq, std::move(lp_astr));
+   ep_cq->set<CQ_priority>(std::move(lp_astr));
 
    auto lp_ainter_2 = ocs::tom::ListPtr<ocs::tom::AINTER>::create("Min CPU Intervals");
    
    auto ep2_ainter_3 = ocs::tom::ElementPtr<ocs::tom::AINTER>::create();
-   ocs::tom::set<AINTER_href>(ep2_ainter_3, "Test_Name24");
-   ocs::tom::set<AINTER_value>(ep2_ainter_3, "5");
-   lAppendElem(*lp_ainter_2, std::move(ep2_ainter_3));
+   ep2_ainter_3->set<AINTER_href>(ocs::tom::Host("Test_Name24"));
+   ep2_ainter_3->set<AINTER_value>("5");
+   lp_ainter_2->push_back(std::move(ep2_ainter_3));
    
    auto ep2_ainter_4 = ocs::tom::ElementPtr<ocs::tom::AINTER>::create();
-   ocs::tom::set<AINTER_href>(ep2_ainter_4, "Test_Name25");
-   ocs::tom::set<AINTER_value>(ep2_ainter_4, "6");
-   lAppendElem(*lp_ainter_2, std::move(ep2_ainter_4));
+   ep2_ainter_4->set<AINTER_href>(ocs::tom::Host("Test_Name25"));
+   ep2_ainter_4->set<AINTER_value>("6");
+   lp_ainter_2->push_back(std::move(ep2_ainter_4));
 
-   ocs::tom::set<CQ_min_cpu_interval>(ep_cq, std::move(lp_ainter_2));
+   ep_cq->set<CQ_min_cpu_interval>(std::move(lp_ainter_2));
 
    auto lp_astr_2 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Processor List");
    
    auto ep2_astr_3 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_3, "Test_Name26");
-   ocs::tom::set<ASTR_value>(ep2_astr_3, "7");
-   lAppendElem(*lp_astr_2, std::move(ep2_astr_3));
+   ep2_astr_3->set<ASTR_href>(ocs::tom::Host("Test_Name26"));
+   ep2_astr_3->set<ASTR_value>("7");
+   lp_astr_2->push_back(std::move(ep2_astr_3));
    
    auto ep2_astr_4 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_4, "Test_Name27");
-   ocs::tom::set<ASTR_value>(ep2_astr_4, "8");
-   lAppendElem(*lp_astr_2, std::move(ep2_astr_4));
+   ep2_astr_4->set<ASTR_href>(ocs::tom::Host("Test_Name27"));
+   ep2_astr_4->set<ASTR_value>("8");
+   lp_astr_2->push_back(std::move(ep2_astr_4));
 
-   ocs::tom::set<CQ_processors>(ep_cq, std::move(lp_astr_2));
+   ep_cq->set<CQ_processors>(std::move(lp_astr_2));
 
    auto lp_aqtlist = ocs::tom::ListPtr<ocs::tom::AQTLIST>::create("Q-Type List");
    
    auto ep2_aqtlist = ocs::tom::ElementPtr<ocs::tom::AQTLIST>::create();
-   ocs::tom::set<AQTLIST_href>(ep2_aqtlist, "Test_Name28");
-   ocs::tom::set<AQTLIST_value>(ep2_aqtlist, 12);
-   lAppendElem(*lp_aqtlist, std::move(ep2_aqtlist));
+   ep2_aqtlist->set<AQTLIST_href>(ocs::tom::Host("Test_Name28"));
+   ep2_aqtlist->set<AQTLIST_value>(12);
+   lp_aqtlist->push_back(std::move(ep2_aqtlist));
    
    auto ep2_aqtlist_2 = ocs::tom::ElementPtr<ocs::tom::AQTLIST>::create();
-   ocs::tom::set<AQTLIST_href>(ep2_aqtlist_2, "Test_Name29");
-   ocs::tom::set<AQTLIST_value>(ep2_aqtlist_2, 16);
-   lAppendElem(*lp_aqtlist, std::move(ep2_aqtlist_2));
+   ep2_aqtlist_2->set<AQTLIST_href>(ocs::tom::Host("Test_Name29"));
+   ep2_aqtlist_2->set<AQTLIST_value>(16);
+   lp_aqtlist->push_back(std::move(ep2_aqtlist_2));
 
-   ocs::tom::set<CQ_qtype>(ep_cq, std::move(lp_aqtlist));
+   ep_cq->set<CQ_qtype>(std::move(lp_aqtlist));
 
    auto lp_astrlist = ocs::tom::ListPtr<ocs::tom::ASTRLIST>::create("Checkpoint List");
    
    auto ep2_astrlist = ocs::tom::ElementPtr<ocs::tom::ASTRLIST>::create();
-   ocs::tom::set<ASTRLIST_href>(ep2_astrlist, "Test_Name30");
+   ep2_astrlist->set<ASTRLIST_href>(ocs::tom::Host("Test_Name30"));
    
    auto lp2_st = ocs::tom::ListPtr<ocs::tom::ST>::create("String List");
    
    auto ep3_st = ocs::tom::ElementPtr<ocs::tom::ST>::create();
-   ocs::tom::set<ST_name>(ep3_st, "Test_Name31");
-   lAppendElem(*lp2_st, std::move(ep3_st));
+   ep3_st->set<ST_name>("Test_Name31");
+   lp2_st->push_back(std::move(ep3_st));
    
    auto ep3_st_2 = ocs::tom::ElementPtr<ocs::tom::ST>::create();
-   ocs::tom::set<ST_name>(ep3_st_2, "Test_Name32");
-   lAppendElem(*lp2_st, std::move(ep3_st_2));
+   ep3_st_2->set<ST_name>("Test_Name32");
+   lp2_st->push_back(std::move(ep3_st_2));
    
-   ocs::tom::set<ASTRLIST_value>(ep2_astrlist, std::move(lp2_st));
-   lAppendElem(*lp_astrlist, std::move(ep2_astrlist));
+   ep2_astrlist->set<ASTRLIST_value>(std::move(lp2_st));
+   lp_astrlist->push_back(std::move(ep2_astrlist));
 
-   ocs::tom::set<CQ_ckpt_list>(ep_cq, std::move(lp_astrlist));
+   ep_cq->set<CQ_ckpt_list>(std::move(lp_astrlist));
 
    auto lp_astrlist_2 = ocs::tom::ListPtr<ocs::tom::ASTRLIST>::create("PE List");
    
    auto ep2_astrlist_2 = ocs::tom::ElementPtr<ocs::tom::ASTRLIST>::create();
-   ocs::tom::set<ASTRLIST_href>(ep2_astrlist_2, "Test_Name36");
+   ep2_astrlist_2->set<ASTRLIST_href>(ocs::tom::Host("Test_Name36"));
    
    auto lp2_st_2 = ocs::tom::ListPtr<ocs::tom::ST>::create("String List");
    
    auto ep3_st_3 = ocs::tom::ElementPtr<ocs::tom::ST>::create();
-   ocs::tom::set<ST_name>(ep3_st_3, "Test_Name37");
-   lAppendElem(*lp2_st_2, std::move(ep3_st_3));
+   ep3_st_3->set<ST_name>("Test_Name37");
+   lp2_st_2->push_back(std::move(ep3_st_3));
 
    auto ep3_st_4 = ocs::tom::ElementPtr<ocs::tom::ST>::create();
-   ocs::tom::set<ST_name>(ep3_st_4, "Test_Name38");
-   lAppendElem(*lp2_st_2, std::move(ep3_st_4));
+   ep3_st_4->set<ST_name>("Test_Name38");
+   lp2_st_2->push_back(std::move(ep3_st_4));
    
-   ocs::tom::set<ASTRLIST_value>(ep2_astrlist_2, std::move(lp2_st_2));
-   lAppendElem(*lp_astrlist_2, std::move(ep2_astrlist_2));
+   ep2_astrlist_2->set<ASTRLIST_value>(std::move(lp2_st_2));
+   lp_astrlist_2->push_back(std::move(ep2_astrlist_2));
    
-   ocs::tom::set<CQ_pe_list>(ep_cq, std::move(lp_astrlist_2));
+   ep_cq->set<CQ_pe_list>(std::move(lp_astrlist_2));
 
    auto lp_abool = ocs::tom::ListPtr<ocs::tom::ABOOL>::create("Rerun List");
    
    auto ep2_abool = ocs::tom::ElementPtr<ocs::tom::ABOOL>::create();
-   ocs::tom::set<ABOOL_href>(ep2_abool, "Test_Name42");
-   ocs::tom::set<ABOOL_value>(ep2_abool, true);
-   lAppendElem(*lp_abool, std::move(ep2_abool));
+   ep2_abool->set<ABOOL_href>(ocs::tom::Host("Test_Name42"));
+   ep2_abool->set<ABOOL_value>(true);
+   lp_abool->push_back(std::move(ep2_abool));
    
    auto ep2_abool_2 = ocs::tom::ElementPtr<ocs::tom::ABOOL>::create();
-   ocs::tom::set<ABOOL_href>(ep2_abool_2, "Test_Name43");
-   ocs::tom::set<ABOOL_value>(ep2_abool_2, false);
-   lAppendElem(*lp_abool, std::move(ep2_abool_2));
+   ep2_abool_2->set<ABOOL_href>(ocs::tom::Host("Test_Name43"));
+   ep2_abool_2->set<ABOOL_value>(false);
+   lp_abool->push_back(std::move(ep2_abool_2));
 
-   ocs::tom::set<CQ_rerun>(ep_cq, std::move(lp_abool));
+   ep_cq->set<CQ_rerun>(std::move(lp_abool));
 
    auto lp_aulng_2 = ocs::tom::ListPtr<ocs::tom::AULNG>::create("Job Slots");
    
    auto ep2_aulng_4 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng_4, "Test_Name44");
-   ocs::tom::set<AULNG_value>(ep2_aulng_4, 12);
-   lAppendElem(*lp_aulng_2, std::move(ep2_aulng_4));
+   ep2_aulng_4->set<AULNG_href>(ocs::tom::Host("Test_Name44"));
+   ep2_aulng_4->set<AULNG_value>(12);
+   lp_aulng_2->push_back(std::move(ep2_aulng_4));
    
    auto ep2_aulng_5 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng_5, "Test_Name45");
-   ocs::tom::set<AULNG_value>(ep2_aulng_5, 16);
-   lAppendElem(*lp_aulng_2, std::move(ep2_aulng_5));
+   ep2_aulng_5->set<AULNG_href>(ocs::tom::Host("Test_Name45"));
+   ep2_aulng_5->set<AULNG_value>(16);
+   lp_aulng_2->push_back(std::move(ep2_aulng_5));
 
    auto ep2_aulng_6 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng_6, "Test_Name45_1");
-   ocs::tom::set<AULNG_value>(ep2_aulng_6, 16);
-   lAppendElem(*lp_aulng_2, std::move(ep2_aulng_6));
+   ep2_aulng_6->set<AULNG_href>(ocs::tom::Host("Test_Name45_1"));
+   ep2_aulng_6->set<AULNG_value>(16);
+   lp_aulng_2->push_back(std::move(ep2_aulng_6));
 
    auto ep2_aulng_7 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng_7, "Test_Name45_2");
-   ocs::tom::set<AULNG_value>(ep2_aulng_7, 16);
-   lAppendElem(*lp_aulng_2, std::move(ep2_aulng_7));
+   ep2_aulng_7->set<AULNG_href>(ocs::tom::Host("Test_Name45_2"));
+   ep2_aulng_7->set<AULNG_value>(16);
+   lp_aulng_2->push_back(std::move(ep2_aulng_7));
 
    auto ep2_aulng_8 = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
-   ocs::tom::set<AULNG_href>(ep2_aulng_8, "Test_Name45_3");
-   ocs::tom::set<AULNG_value>(ep2_aulng_8, 16);
-   lAppendElem(*lp_aulng_2, std::move(ep2_aulng_8));
+   ep2_aulng_8->set<AULNG_href>(ocs::tom::Host("Test_Name45_3"));
+   ep2_aulng_8->set<AULNG_value>(16);
+   lp_aulng_2->push_back(std::move(ep2_aulng_8));
 
-   ocs::tom::set<CQ_job_slots>(ep_cq, std::move(lp_aulng_2));
+   ep_cq->set<CQ_job_slots>(std::move(lp_aulng_2));
 
    auto lp_astr_3 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Tmp Dir List");
    
    auto ep2_astr_5 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_5, "Test_Name46");
-   ocs::tom::set<ASTR_value>(ep2_astr_5, "value");
-   lAppendElem(*lp_astr_3, std::move(ep2_astr_5));
+   ep2_astr_5->set<ASTR_href>(ocs::tom::Host("Test_Name46"));
+   ep2_astr_5->set<ASTR_value>("value");
+   lp_astr_3->push_back(std::move(ep2_astr_5));
    
    auto ep2_astr_6 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_6, "Test_Name47");
-   ocs::tom::set<ASTR_value>(ep2_astr_6, "value");
-   lAppendElem(*lp_astr_3, std::move(ep2_astr_6));
+   ep2_astr_6->set<ASTR_href>(ocs::tom::Host("Test_Name47"));
+   ep2_astr_6->set<ASTR_value>("value");
+   lp_astr_3->push_back(std::move(ep2_astr_6));
 
-   ocs::tom::set<CQ_tmpdir>(ep_cq, std::move(lp_astr_3));
+   ep_cq->set<CQ_tmpdir>(std::move(lp_astr_3));
 
    auto lp_astr_4 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell List");
    
    auto ep2_astr_7 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_7, "Test_Name48");
-   ocs::tom::set<ASTR_value>(ep2_astr_7, "value");
-   lAppendElem(*lp_astr_4, std::move(ep2_astr_7));
+   ep2_astr_7->set<ASTR_href>(ocs::tom::Host("Test_Name48"));
+   ep2_astr_7->set<ASTR_value>("value");
+   lp_astr_4->push_back(std::move(ep2_astr_7));
    
    auto ep2_astr_8 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_8, "Test_Name49");
-   ocs::tom::set<ASTR_value>(ep2_astr_8, "value");
-   lAppendElem(*lp_astr_4, std::move(ep2_astr_8));
+   ep2_astr_8->set<ASTR_href>(ocs::tom::Host("Test_Name49"));
+   ep2_astr_8->set<ASTR_value>("value");
+   lp_astr_4->push_back(std::move(ep2_astr_8));
 
-   ocs::tom::set<CQ_shell>(ep_cq, std::move(lp_astr_4));
+   ep_cq->set<CQ_shell>(std::move(lp_astr_4));
 
    auto lp_astr_5 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Prolog List");
    
    auto ep2_astr_9 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_9, "Test_Name50");
-   ocs::tom::set<ASTR_value>(ep2_astr_9, "value");
-   lAppendElem(*lp_astr_5, std::move(ep2_astr_9));
+   ep2_astr_9->set<ASTR_href>(ocs::tom::Host("Test_Name50"));
+   ep2_astr_9->set<ASTR_value>("value");
+   lp_astr_5->push_back(std::move(ep2_astr_9));
    
    auto ep2_astr_10 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_10, "Test_Name51");
-   ocs::tom::set<ASTR_value>(ep2_astr_10, "value");
-   lAppendElem(*lp_astr_5, std::move(ep2_astr_10));
+   ep2_astr_10->set<ASTR_href>(ocs::tom::Host("Test_Name51"));
+   ep2_astr_10->set<ASTR_value>("value");
+   lp_astr_5->push_back(std::move(ep2_astr_10));
 
-   ocs::tom::set<CQ_prolog>(ep_cq, std::move(lp_astr_5));
+   ep_cq->set<CQ_prolog>(std::move(lp_astr_5));
 
    auto lp_astr_6 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Epilog List");
    
    auto ep2_astr_11 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_11, "Test_Name52");
-   ocs::tom::set<ASTR_value>(ep2_astr_11, "value");
-   lAppendElem(*lp_astr_6, std::move(ep2_astr_11));
+   ep2_astr_11->set<ASTR_href>(ocs::tom::Host("Test_Name52"));
+   ep2_astr_11->set<ASTR_value>("value");
+   lp_astr_6->push_back(std::move(ep2_astr_11));
    
    auto ep2_astr_12 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_12, "Test_Name53");
-   ocs::tom::set<ASTR_value>(ep2_astr_12, "value");
-   lAppendElem(*lp_astr_6, std::move(ep2_astr_12));
+   ep2_astr_12->set<ASTR_href>(ocs::tom::Host("Test_Name53"));
+   ep2_astr_12->set<ASTR_value>("value");
+   lp_astr_6->push_back(std::move(ep2_astr_12));
 
-   ocs::tom::set<CQ_epilog>(ep_cq, std::move(lp_astr_6));
+   ep_cq->set<CQ_epilog>(std::move(lp_astr_6));
 
    auto lp_astr_7 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Start Modes");
    
    auto ep2_astr_13 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_13, "Test_Name54");
-   ocs::tom::set<ASTR_value>(ep2_astr_13, "value");
-   lAppendElem(*lp_astr_7, std::move(ep2_astr_13));
+   ep2_astr_13->set<ASTR_href>(ocs::tom::Host("Test_Name54"));
+   ep2_astr_13->set<ASTR_value>("value");
+   lp_astr_7->push_back(std::move(ep2_astr_13));
    
    auto ep2_astr_14 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_14, "Test_Name55");
-   ocs::tom::set<ASTR_value>(ep2_astr_14, "value");
-   lAppendElem(*lp_astr_7, std::move(ep2_astr_14));
+   ep2_astr_14->set<ASTR_href>(ocs::tom::Host("Test_Name55"));
+   ep2_astr_14->set<ASTR_value>("value");
+   lp_astr_7->push_back(std::move(ep2_astr_14));
 
-   ocs::tom::set<CQ_shell_start_mode>(ep_cq, std::move(lp_astr_7));
+   ep_cq->set<CQ_shell_start_mode>(std::move(lp_astr_7));
 
    auto lp_astr_8 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Start Methods");
    
    auto ep2_astr_15 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_15, "Test_Name56");
-   ocs::tom::set<ASTR_value>(ep2_astr_15, "value");
-   lAppendElem(*lp_astr_8, std::move(ep2_astr_15));
+   ep2_astr_15->set<ASTR_href>(ocs::tom::Host("Test_Name56"));
+   ep2_astr_15->set<ASTR_value>("value");
+   lp_astr_8->push_back(std::move(ep2_astr_15));
    
    auto ep2_astr_16 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_16, "Test_Name57");
-   ocs::tom::set<ASTR_value>(ep2_astr_16, "value");
-   lAppendElem(*lp_astr_8, std::move(ep2_astr_16));
+   ep2_astr_16->set<ASTR_href>(ocs::tom::Host("Test_Name57"));
+   ep2_astr_16->set<ASTR_value>("value");
+   lp_astr_8->push_back(std::move(ep2_astr_16));
 
-   ocs::tom::set<CQ_starter_method>(ep_cq, std::move(lp_astr_8));
+   ep_cq->set<CQ_starter_method>(std::move(lp_astr_8));
 
    auto lp_astr_9 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Suspend Methods");
    
    auto ep2_astr_17 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_17, "Test_Name58");
-   ocs::tom::set<ASTR_value>(ep2_astr_17, "value");
-   lAppendElem(*lp_astr_9, std::move(ep2_astr_17));
+   ep2_astr_17->set<ASTR_href>(ocs::tom::Host("Test_Name58"));
+   ep2_astr_17->set<ASTR_value>("value");
+   lp_astr_9->push_back(std::move(ep2_astr_17));
    
    auto ep2_astr_18 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_18, "Test_Name59");
-   ocs::tom::set<ASTR_value>(ep2_astr_18, "value");
-   lAppendElem(*lp_astr_9, std::move(ep2_astr_18));
+   ep2_astr_18->set<ASTR_href>(ocs::tom::Host("Test_Name59"));
+   ep2_astr_18->set<ASTR_value>("value");
+   lp_astr_9->push_back(std::move(ep2_astr_18));
 
-   ocs::tom::set<CQ_suspend_method>(ep_cq, std::move(lp_astr_9));
+   ep_cq->set<CQ_suspend_method>(std::move(lp_astr_9));
 
    auto lp_astr_10 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Resume Methods");
    
    auto ep2_astr_19 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_19, "Test_Name60");
-   ocs::tom::set<ASTR_value>(ep2_astr_19, "value");
-   lAppendElem(*lp_astr_10, std::move(ep2_astr_19));
+   ep2_astr_19->set<ASTR_href>(ocs::tom::Host("Test_Name60"));
+   ep2_astr_19->set<ASTR_value>("value");
+   lp_astr_10->push_back(std::move(ep2_astr_19));
    
    auto ep2_astr_20 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_20, "Test_Name61");
-   ocs::tom::set<ASTR_value>(ep2_astr_20, "value");
-   lAppendElem(*lp_astr_10, std::move(ep2_astr_20));
+   ep2_astr_20->set<ASTR_href>(ocs::tom::Host("Test_Name61"));
+   ep2_astr_20->set<ASTR_value>("value");
+   lp_astr_10->push_back(std::move(ep2_astr_20));
 
-   ocs::tom::set<CQ_resume_method>(ep_cq, std::move(lp_astr_10));
+   ep_cq->set<CQ_resume_method>(std::move(lp_astr_10));
 
    auto lp_astr_11 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Terminate Methods");
    
    auto ep2_astr_21 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_21, "Test_Name62");
-   ocs::tom::set<ASTR_value>(ep2_astr_21, "value");
-   lAppendElem(*lp_astr_11, std::move(ep2_astr_21));
+   ep2_astr_21->set<ASTR_href>(ocs::tom::Host("Test_Name62"));
+   ep2_astr_21->set<ASTR_value>("value");
+   lp_astr_11->push_back(std::move(ep2_astr_21));
    
    auto ep2_astr_22 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_22, "Test_Name63");
-   ocs::tom::set<ASTR_value>(ep2_astr_22, "value");
-   lAppendElem(*lp_astr_11, std::move(ep2_astr_22));
+   ep2_astr_22->set<ASTR_href>(ocs::tom::Host("Test_Name63"));
+   ep2_astr_22->set<ASTR_value>("value");
+   lp_astr_11->push_back(std::move(ep2_astr_22));
 
-   ocs::tom::set<CQ_terminate_method>(ep_cq, std::move(lp_astr_11));
+   ep_cq->set<CQ_terminate_method>(std::move(lp_astr_11));
 
    auto lp_ainter_3 = ocs::tom::ListPtr<ocs::tom::AINTER>::create("Notify List");
    
    auto ep2_ainter_5 = ocs::tom::ElementPtr<ocs::tom::AINTER>::create();
-   ocs::tom::set<AINTER_href>(ep2_ainter_5, "Test_Name64");
-   ocs::tom::set<AINTER_value>(ep2_ainter_5, "46");
-   lAppendElem(*lp_ainter_3, std::move(ep2_ainter_5));
+   ep2_ainter_5->set<AINTER_href>(ocs::tom::Host("Test_Name64"));
+   ep2_ainter_5->set<AINTER_value>("46");
+   lp_ainter_3->push_back(std::move(ep2_ainter_5));
    
    auto ep2_ainter_6 = ocs::tom::ElementPtr<ocs::tom::AINTER>::create();
-   ocs::tom::set<AINTER_href>(ep2_ainter_6, "Test_Name65");
-   ocs::tom::set<AINTER_value>(ep2_ainter_6, "77");
-   lAppendElem(*lp_ainter_3, std::move(ep2_ainter_6));
+   ep2_ainter_6->set<AINTER_href>(ocs::tom::Host("Test_Name65"));
+   ep2_ainter_6->set<AINTER_value>("77");
+   lp_ainter_3->push_back(std::move(ep2_ainter_6));
 
-   ocs::tom::set<CQ_notify>(ep_cq, std::move(lp_ainter_3));
+   ep_cq->set<CQ_notify>(std::move(lp_ainter_3));
 
    auto lp_ausrlist = ocs::tom::ListPtr<ocs::tom::AUSRLIST>::create("Owner List");
    
    auto ep2_ausrlist = ocs::tom::ElementPtr<ocs::tom::AUSRLIST>::create();
-   ocs::tom::set<AUSRLIST_href>(ep2_ausrlist, "Test_Name66");
+   ep2_ausrlist->set<AUSRLIST_href>(ocs::tom::Host("Test_Name66"));
    
    auto lp2_us = ocs::tom::ListPtr<ocs::tom::US>::create("Userset List");
    
    auto ep3_us = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep3_us, "Test_Name67");
-   lAppendElem(*lp2_us, std::move(ep3_us));
+   ep3_us->set<US_name>("Test_Name67");
+   lp2_us->push_back(std::move(ep3_us));
    
    auto ep3_us_2 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep3_us_2, "Test_Name68");
-   lAppendElem(*lp2_us, std::move(ep3_us_2));
+   ep3_us_2->set<US_name>("Test_Name68");
+   lp2_us->push_back(std::move(ep3_us_2));
    
-   ocs::tom::set<AUSRLIST_value>(ep2_ausrlist, std::move(lp2_us));
-   lAppendElem(*lp_ausrlist, std::move(ep2_ausrlist));
+   ep2_ausrlist->set<AUSRLIST_value>(std::move(lp2_us));
+   lp_ausrlist->push_back(std::move(ep2_ausrlist));
  
-   ocs::tom::set<CQ_owner_list>(ep_cq, std::move(lp_ausrlist));
+   ep_cq->set<CQ_owner_list>(std::move(lp_ausrlist));
 
    auto lp_ausrlist_2 = ocs::tom::ListPtr<ocs::tom::AUSRLIST>::create("ACL List");
    
    auto ep2_ausrlist_2 = ocs::tom::ElementPtr<ocs::tom::AUSRLIST>::create();
-   ocs::tom::set<AUSRLIST_href>(ep2_ausrlist_2, "Test_Name72");
+   ep2_ausrlist_2->set<AUSRLIST_href>(ocs::tom::Host("Test_Name72"));
    
    auto lp2_us_2 = ocs::tom::ListPtr<ocs::tom::US>::create("Userset List");
    
    auto ep3_us_3 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep3_us_3, "Test_Name73");
-   lAppendElem(*lp2_us_2, std::move(ep3_us_3));
+   ep3_us_3->set<US_name>("Test_Name73");
+   lp2_us_2->push_back(std::move(ep3_us_3));
    
    auto ep3_us_4 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep3_us_4, "Test_Name74");
-   lAppendElem(*lp2_us_2, std::move(ep3_us_4));
+   ep3_us_4->set<US_name>("Test_Name74");
+   lp2_us_2->push_back(std::move(ep3_us_4));
    
-   ocs::tom::set<AUSRLIST_value>(ep2_ausrlist_2, std::move(lp2_us_2));
-   lAppendElem(*lp_ausrlist_2, std::move(ep2_ausrlist_2));
+   ep2_ausrlist_2->set<AUSRLIST_value>(std::move(lp2_us_2));
+   lp_ausrlist_2->push_back(std::move(ep2_ausrlist_2));
 
-   ocs::tom::set<CQ_acl>(ep_cq, std::move(lp_ausrlist_2));
+   ep_cq->set<CQ_acl>(std::move(lp_ausrlist_2));
 
    auto lp_ausrlist_3 = ocs::tom::ListPtr<ocs::tom::AUSRLIST>::create("XUser List");
    
    auto ep2_ausrlist_3 = ocs::tom::ElementPtr<ocs::tom::AUSRLIST>::create();
-   ocs::tom::set<AUSRLIST_href>(ep2_ausrlist_3, "Test_Name78");
+   ep2_ausrlist_3->set<AUSRLIST_href>(ocs::tom::Host("Test_Name78"));
    
    auto lp2_us_3 = ocs::tom::ListPtr<ocs::tom::US>::create("Userset List");
    
    auto ep3_us_5 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep3_us_5, "Test_Name79");
-   lAppendElem(*lp2_us_3, std::move(ep3_us_5));
+   ep3_us_5->set<US_name>("Test_Name79");
+   lp2_us_3->push_back(std::move(ep3_us_5));
    
    auto ep3_us_6 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-   ocs::tom::set<US_name>(ep3_us_6, "Test_Name80");
-   lAppendElem(*lp2_us_3, std::move(ep3_us_6));
+   ep3_us_6->set<US_name>("Test_Name80");
+   lp2_us_3->push_back(std::move(ep3_us_6));
    
-   ocs::tom::set<AUSRLIST_value>(ep2_ausrlist_3, std::move(lp2_us_3));
-   lAppendElem(*lp_ausrlist_3, std::move(ep2_ausrlist_3));
+   ep2_ausrlist_3->set<AUSRLIST_value>(std::move(lp2_us_3));
+   lp_ausrlist_3->push_back(std::move(ep2_ausrlist_3));
 
-   ocs::tom::set<CQ_xacl>(ep_cq, std::move(lp_ausrlist_3));
+   ep_cq->set<CQ_xacl>(std::move(lp_ausrlist_3));
 
    auto lp_asolist = ocs::tom::ListPtr<ocs::tom::ASOLIST>::create("Subordinate List");
    
    auto ep2_asolist = ocs::tom::ElementPtr<ocs::tom::ASOLIST>::create();
-   ocs::tom::set<ASOLIST_href>(ep2_asolist, "Test_Name84");
+   ep2_asolist->set<ASOLIST_href>(ocs::tom::Host("Test_Name84"));
 
    auto lp2_so = ocs::tom::ListPtr<ocs::tom::SO>::create("Subordinate List");
    
    auto ep3_so = ocs::tom::ElementPtr<ocs::tom::SO>::create();
-   ocs::tom::set<SO_name>(ep3_so, "Test_Name85");
-   ocs::tom::set<SO_threshold>(ep3_so, 13);
-   lAppendElem(*lp2_so, std::move(ep3_so));
+   ep3_so->set<SO_name>("Test_Name85");
+   ep3_so->set<SO_threshold>(13);
+   lp2_so->push_back(std::move(ep3_so));
    
    auto ep3_so_2 = ocs::tom::ElementPtr<ocs::tom::SO>::create();
-   ocs::tom::set<SO_name>(ep3_so_2, "Test_Name86");
-   ocs::tom::set<SO_threshold>(ep3_so_2, 16);
-   lAppendElem(*lp2_so, std::move(ep3_so_2));
+   ep3_so_2->set<SO_name>("Test_Name86");
+   ep3_so_2->set<SO_threshold>(16);
+   lp2_so->push_back(std::move(ep3_so_2));
 
-   ocs::tom::set<ASOLIST_value>(ep2_asolist, std::move(lp2_so));
+   ep2_asolist->set<ASOLIST_value>(std::move(lp2_so));
    
-   lAppendElem(*lp_asolist, std::move(ep2_asolist));
+   lp_asolist->push_back(std::move(ep2_asolist));
    
-   ocs::tom::set<CQ_subordinate_list>(ep_cq, std::move(lp_asolist));
+   ep_cq->set<CQ_subordinate_list>(std::move(lp_asolist));
   
    auto lp_acelist_3 = ocs::tom::ListPtr<ocs::tom::ACELIST>::create("Consumable Configs List");
    
    auto ep2_acelist_3 = ocs::tom::ElementPtr<ocs::tom::ACELIST>::create();
-   ocs::tom::set<ACELIST_href>(ep2_acelist_3, "Test_Name93");
+   ep2_acelist_3->set<ACELIST_href>(ocs::tom::Host("Test_Name93"));
 
    auto lp2_ce_2 = ocs::tom::ListPtr<ocs::tom::CE>::create("Complex List");
    
    auto ep3_ce_2 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep3_ce_2, "Test_Name94");
-   ocs::tom::set<CE_stringval>(ep3_ce_2, "stringval");
-   lAppendElem(*lp2_ce_2, std::move(ep3_ce_2));
+   ep3_ce_2->set<CE_name>("Test_Name94");
+   ep3_ce_2->set<CE_stringval>("stringval");
+   lp2_ce_2->push_back(std::move(ep3_ce_2));
 
-   ocs::tom::set<ACELIST_value>(ep2_acelist_3, std::move(lp2_ce_2));
+   ep2_acelist_3->set<ACELIST_value>(std::move(lp2_ce_2));
    
-   lAppendElem(*lp_acelist_3, std::move(ep2_acelist_3));
+   lp_acelist_3->push_back(std::move(ep2_acelist_3));
 
-   ocs::tom::set<CQ_consumable_config_list>(ep_cq, std::move(lp_acelist_3));
+   ep_cq->set<CQ_consumable_config_list>(std::move(lp_acelist_3));
    
    auto lp_aprjlist = ocs::tom::ListPtr<ocs::tom::APRJLIST>::create("Projects List");
    
    auto ep2_aprjlist = ocs::tom::ElementPtr<ocs::tom::APRJLIST>::create();
-   ocs::tom::set<APRJLIST_href>(ep2_aprjlist, "Test_Name96");
+   ep2_aprjlist->set<APRJLIST_href>(ocs::tom::Host("Test_Name96"));
    
    auto lp2_pr = ocs::tom::ListPtr<ocs::tom::PR>::create("Project List");
    
    auto ep3_pr = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep3_pr, "Test_Name97");
-   lAppendElem(*lp2_pr, std::move(ep3_pr));
+   ep3_pr->set<PR_name>("Test_Name97");
+   lp2_pr->push_back(std::move(ep3_pr));
    
    auto ep3_pr_2 = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep3_pr_2, "Test_Name98");
-   lAppendElem(*lp2_pr, std::move(ep3_pr_2));
+   ep3_pr_2->set<PR_name>("Test_Name98");
+   lp2_pr->push_back(std::move(ep3_pr_2));
    
-   ocs::tom::set<APRJLIST_value>(ep2_aprjlist, std::move(lp2_pr));
-   lAppendElem(*lp_aprjlist, std::move(ep2_aprjlist));
+   ep2_aprjlist->set<APRJLIST_value>(std::move(lp2_pr));
+   lp_aprjlist->push_back(std::move(ep2_aprjlist));
 
-   ocs::tom::set<CQ_projects>(ep_cq, std::move(lp_aprjlist));
+   ep_cq->set<CQ_projects>(std::move(lp_aprjlist));
 
    auto lp_aprjlist_2 = ocs::tom::ListPtr<ocs::tom::APRJLIST>::create("XProjects List");
    
    auto ep2_aprjlist_2 = ocs::tom::ElementPtr<ocs::tom::APRJLIST>::create();
-   ocs::tom::set<APRJLIST_href>(ep2_aprjlist_2, "Test_Name102");
+   ep2_aprjlist_2->set<APRJLIST_href>(ocs::tom::Host("Test_Name102"));
    
    auto lp2_pr_2 = ocs::tom::ListPtr<ocs::tom::PR>::create("Project List");
    
    auto ep3_pr_3 = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep3_pr_3, "Test_Name103");
-   lAppendElem(*lp2_pr_2, std::move(ep3_pr_3));
+   ep3_pr_3->set<PR_name>("Test_Name103");
+   lp2_pr_2->push_back(std::move(ep3_pr_3));
    
    auto ep3_pr_4 = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep3_pr_4, "Test_Name104");
-   lAppendElem(*lp2_pr_2, std::move(ep3_pr_4));
+   ep3_pr_4->set<PR_name>("Test_Name104");
+   lp2_pr_2->push_back(std::move(ep3_pr_4));
    
-   ocs::tom::set<APRJLIST_value>(ep2_aprjlist_2, std::move(lp2_pr_2));
-   lAppendElem(*lp_aprjlist_2, std::move(ep2_aprjlist_2));
+   ep2_aprjlist_2->set<APRJLIST_value>(std::move(lp2_pr_2));
+   lp_aprjlist_2->push_back(std::move(ep2_aprjlist_2));
 
-   ocs::tom::set<CQ_xprojects>(ep_cq, std::move(lp_aprjlist_2));
+   ep_cq->set<CQ_xprojects>(std::move(lp_aprjlist_2));
 
    auto lp_astr_12 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Calendar List");
    
    auto ep2_astr_23 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_23, "Test_Name108");
-   ocs::tom::set<ASTR_value>(ep2_astr_23, "value");
-   lAppendElem(*lp_astr_12, std::move(ep2_astr_23));
+   ep2_astr_23->set<ASTR_href>(ocs::tom::Host("Test_Name108"));
+   ep2_astr_23->set<ASTR_value>("value");
+   lp_astr_12->push_back(std::move(ep2_astr_23));
    
    auto ep2_astr_24 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_24, "Test_Name109");
-   ocs::tom::set<ASTR_value>(ep2_astr_24, "value");
-   lAppendElem(*lp_astr_12, std::move(ep2_astr_24));
+   ep2_astr_24->set<ASTR_href>(ocs::tom::Host("Test_Name109"));
+   ep2_astr_24->set<ASTR_value>("value");
+   lp_astr_12->push_back(std::move(ep2_astr_24));
 
-   ocs::tom::set<CQ_calendar>(ep_cq, std::move(lp_astr_12));
+   ep_cq->set<CQ_calendar>(std::move(lp_astr_12));
 
    auto lp_astr_13 = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Initial State List");
    
    auto ep2_astr_25 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_25, "Test_Name110");
-   ocs::tom::set<ASTR_value>(ep2_astr_25, "value");
-   lAppendElem(*lp_astr_13, std::move(ep2_astr_25));
+   ep2_astr_25->set<ASTR_href>(ocs::tom::Host("Test_Name110"));
+   ep2_astr_25->set<ASTR_value>("value");
+   lp_astr_13->push_back(std::move(ep2_astr_25));
    
    auto ep2_astr_26 = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep2_astr_26, "Test_Name111");
-   ocs::tom::set<ASTR_value>(ep2_astr_26, "value");
-   lAppendElem(*lp_astr_13, std::move(ep2_astr_26));
+   ep2_astr_26->set<ASTR_href>(ocs::tom::Host("Test_Name111"));
+   ep2_astr_26->set<ASTR_value>("value");
+   lp_astr_13->push_back(std::move(ep2_astr_26));
 
-   ocs::tom::set<CQ_initial_state>(ep_cq, std::move(lp_astr_13));
+   ep_cq->set<CQ_initial_state>(std::move(lp_astr_13));
 
    auto lp_atime = ocs::tom::ListPtr<ocs::tom::ATIME>::create("s_rt List");
    
    auto ep2_atime = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime, "Test_Name112");
-   ocs::tom::set<ATIME_value>(ep2_atime, "00:00:00");
-   lAppendElem(*lp_atime, std::move(ep2_atime));
+   ep2_atime->set<ATIME_href>(ocs::tom::Host("Test_Name112"));
+   ep2_atime->set<ATIME_value>("00:00:00");
+   lp_atime->push_back(std::move(ep2_atime));
    
    auto ep2_atime_2 = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime_2, "Test_Name113");
-   ocs::tom::set<ATIME_value>(ep2_atime_2, "23:59:59");
-   lAppendElem(*lp_atime, std::move(ep2_atime_2));
+   ep2_atime_2->set<ATIME_href>(ocs::tom::Host("Test_Name113"));
+   ep2_atime_2->set<ATIME_value>("23:59:59");
+   lp_atime->push_back(std::move(ep2_atime_2));
 
-   ocs::tom::set<CQ_s_rt>(ep_cq, std::move(lp_atime));
+   ep_cq->set<CQ_s_rt>(std::move(lp_atime));
 
    auto lp_atime_2 = ocs::tom::ListPtr<ocs::tom::ATIME>::create("h_rt List");
    
    auto ep2_atime_3 = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime_3, "Test_Name114");
-   ocs::tom::set<ATIME_value>(ep2_atime_3, "00:00:00");
-   lAppendElem(*lp_atime_2, std::move(ep2_atime_3));
+   ep2_atime_3->set<ATIME_href>(ocs::tom::Host("Test_Name114"));
+   ep2_atime_3->set<ATIME_value>("00:00:00");
+   lp_atime_2->push_back(std::move(ep2_atime_3));
    
    auto ep2_atime_4 = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime_4, "Test_Name115");
-   ocs::tom::set<ATIME_value>(ep2_atime_4, "23:59:59");
-   lAppendElem(*lp_atime_2, std::move(ep2_atime_4));
+   ep2_atime_4->set<ATIME_href>(ocs::tom::Host("Test_Name115"));
+   ep2_atime_4->set<ATIME_value>("23:59:59");
+   lp_atime_2->push_back(std::move(ep2_atime_4));
 
-   ocs::tom::set<CQ_h_rt>(ep_cq, std::move(lp_atime_2));
+   ep_cq->set<CQ_h_rt>(std::move(lp_atime_2));
 
    auto lp_atime_3 = ocs::tom::ListPtr<ocs::tom::ATIME>::create("s_cpu List");
    
    auto ep2_atime_5 = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime_5, "Test_Name116");
-   ocs::tom::set<ATIME_value>(ep2_atime_5, "00:00:00");
-   lAppendElem(*lp_atime_3, std::move(ep2_atime_5));
+   ep2_atime_5->set<ATIME_href>(ocs::tom::Host("Test_Name116"));
+   ep2_atime_5->set<ATIME_value>("00:00:00");
+   lp_atime_3->push_back(std::move(ep2_atime_5));
    
    auto ep2_atime_6 = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime_6, "Test_Name117");
-   ocs::tom::set<ATIME_value>(ep2_atime_6, "23:59:59");
-   lAppendElem(*lp_atime_3, std::move(ep2_atime_6));
+   ep2_atime_6->set<ATIME_href>(ocs::tom::Host("Test_Name117"));
+   ep2_atime_6->set<ATIME_value>("23:59:59");
+   lp_atime_3->push_back(std::move(ep2_atime_6));
 
-   ocs::tom::set<CQ_s_cpu>(ep_cq, std::move(lp_atime_3));
+   ep_cq->set<CQ_s_cpu>(std::move(lp_atime_3));
 
    auto lp_atime_4 = ocs::tom::ListPtr<ocs::tom::ATIME>::create("h_cpu List");
    
    auto ep2_atime_7 = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime_7, "Test_Name118");
-   ocs::tom::set<ATIME_value>(ep2_atime_7, "00:00:00");
-   lAppendElem(*lp_atime_4, std::move(ep2_atime_7));
+   ep2_atime_7->set<ATIME_href>(ocs::tom::Host("Test_Name118"));
+   ep2_atime_7->set<ATIME_value>("00:00:00");
+   lp_atime_4->push_back(std::move(ep2_atime_7));
    
    auto ep2_atime_8 = ocs::tom::ElementPtr<ocs::tom::ATIME>::create();
-   ocs::tom::set<ATIME_href>(ep2_atime_8, "Test_Name119");
-   ocs::tom::set<ATIME_value>(ep2_atime_8, "23:59:59");
-   lAppendElem(*lp_atime_4, std::move(ep2_atime_8));
+   ep2_atime_8->set<ATIME_href>(ocs::tom::Host("Test_Name119"));
+   ep2_atime_8->set<ATIME_value>("23:59:59");
+   lp_atime_4->push_back(std::move(ep2_atime_8));
 
-   ocs::tom::set<CQ_h_cpu>(ep_cq, std::move(lp_atime_4));
+   ep_cq->set<CQ_h_cpu>(std::move(lp_atime_4));
 
    auto lp_amem = ocs::tom::ListPtr<ocs::tom::AMEM>::create("s_fsize List");
    
    auto ep2_amem = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem, "Test_Name120");
-   ocs::tom::set<AMEM_value>(ep2_amem, "1048576");
-   lAppendElem(*lp_amem, std::move(ep2_amem));
+   ep2_amem->set<AMEM_href>(ocs::tom::Host("Test_Name120"));
+   ep2_amem->set<AMEM_value>("1048576");
+   lp_amem->push_back(std::move(ep2_amem));
    
    auto ep2_amem_2 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_2, "Test_Name121");
-   ocs::tom::set<AMEM_value>(ep2_amem_2, "1024");
-   lAppendElem(*lp_amem, std::move(ep2_amem_2));
+   ep2_amem_2->set<AMEM_href>(ocs::tom::Host("Test_Name121"));
+   ep2_amem_2->set<AMEM_value>("1024");
+   lp_amem->push_back(std::move(ep2_amem_2));
 
-   ocs::tom::set<CQ_s_fsize>(ep_cq, std::move(lp_amem));
+   ep_cq->set<CQ_s_fsize>(std::move(lp_amem));
 
    auto lp_amem_2 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("h_fsize List");
    
    auto ep2_amem_3 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_3, "Test_Name122");
-   ocs::tom::set<AMEM_value>(ep2_amem_3, "1048576");
-   lAppendElem(*lp_amem_2, std::move(ep2_amem_3));
+   ep2_amem_3->set<AMEM_href>(ocs::tom::Host("Test_Name122"));
+   ep2_amem_3->set<AMEM_value>("1048576");
+   lp_amem_2->push_back(std::move(ep2_amem_3));
    
    auto ep2_amem_4 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_4, "Test_Name123");
-   ocs::tom::set<AMEM_value>(ep2_amem_4, "1024");
-   lAppendElem(*lp_amem_2, std::move(ep2_amem_4));
+   ep2_amem_4->set<AMEM_href>(ocs::tom::Host("Test_Name123"));
+   ep2_amem_4->set<AMEM_value>("1024");
+   lp_amem_2->push_back(std::move(ep2_amem_4));
 
-   ocs::tom::set<CQ_h_fsize>(ep_cq, std::move(lp_amem_2));
+   ep_cq->set<CQ_h_fsize>(std::move(lp_amem_2));
 
    auto lp_amem_3 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("s_data List");
    
    auto ep2_amem_5 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_5, "Test_Name124");
-   ocs::tom::set<AMEM_value>(ep2_amem_5, "1048576");
-   lAppendElem(*lp_amem_3, std::move(ep2_amem_5));
+   ep2_amem_5->set<AMEM_href>(ocs::tom::Host("Test_Name124"));
+   ep2_amem_5->set<AMEM_value>("1048576");
+   lp_amem_3->push_back(std::move(ep2_amem_5));
    
    auto ep2_amem_6 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_6, "Test_Name125");
-   ocs::tom::set<AMEM_value>(ep2_amem_6, "1024");
-   lAppendElem(*lp_amem_3, std::move(ep2_amem_6));
+   ep2_amem_6->set<AMEM_href>(ocs::tom::Host("Test_Name125"));
+   ep2_amem_6->set<AMEM_value>("1024");
+   lp_amem_3->push_back(std::move(ep2_amem_6));
 
-   ocs::tom::set<CQ_s_data>(ep_cq, std::move(lp_amem_3));
+   ep_cq->set<CQ_s_data>(std::move(lp_amem_3));
 
    auto lp_amem_4 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("h_data List");
    
    auto ep2_amem_7 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_7, "Test_Name126");
-   ocs::tom::set<AMEM_value>(ep2_amem_7, "1048576");
-   lAppendElem(*lp_amem_4, std::move(ep2_amem_7));
+   ep2_amem_7->set<AMEM_href>(ocs::tom::Host("Test_Name126"));
+   ep2_amem_7->set<AMEM_value>("1048576");
+   lp_amem_4->push_back(std::move(ep2_amem_7));
    
    auto ep2_amem_8 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_8, "Test_Name127");
-   ocs::tom::set<AMEM_value>(ep2_amem_8, "1024");
-   lAppendElem(*lp_amem_4, std::move(ep2_amem_8));
+   ep2_amem_8->set<AMEM_href>(ocs::tom::Host("Test_Name127"));
+   ep2_amem_8->set<AMEM_value>("1024");
+   lp_amem_4->push_back(std::move(ep2_amem_8));
 
-   ocs::tom::set<CQ_h_data>(ep_cq, std::move(lp_amem_4));
+   ep_cq->set<CQ_h_data>(std::move(lp_amem_4));
 
    auto lp_amem_5 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("s_stack List");
    
    auto ep2_amem_9 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_9, "Test_Name128");
-   ocs::tom::set<AMEM_value>(ep2_amem_9, "1048576");
-   lAppendElem(*lp_amem_5, std::move(ep2_amem_9));
+   ep2_amem_9->set<AMEM_href>(ocs::tom::Host("Test_Name128"));
+   ep2_amem_9->set<AMEM_value>("1048576");
+   lp_amem_5->push_back(std::move(ep2_amem_9));
    
    auto ep2_amem_10 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_10, "Test_Name129");
-   ocs::tom::set<AMEM_value>(ep2_amem_10, "1024");
-   lAppendElem(*lp_amem_5, std::move(ep2_amem_10));
+   ep2_amem_10->set<AMEM_href>(ocs::tom::Host("Test_Name129"));
+   ep2_amem_10->set<AMEM_value>("1024");
+   lp_amem_5->push_back(std::move(ep2_amem_10));
 
-   ocs::tom::set<CQ_s_stack>(ep_cq, std::move(lp_amem_5));
+   ep_cq->set<CQ_s_stack>(std::move(lp_amem_5));
 
    auto lp_amem_6 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("h_stack List");
    
    auto ep2_amem_11 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_11, "Test_Name130");
-   ocs::tom::set<AMEM_value>(ep2_amem_11, "1048576");
-   lAppendElem(*lp_amem_6, std::move(ep2_amem_11));
+   ep2_amem_11->set<AMEM_href>(ocs::tom::Host("Test_Name130"));
+   ep2_amem_11->set<AMEM_value>("1048576");
+   lp_amem_6->push_back(std::move(ep2_amem_11));
    
    auto ep2_amem_12 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_12, "Test_Name131");
-   ocs::tom::set<AMEM_value>(ep2_amem_12, "1024");
-   lAppendElem(*lp_amem_6, std::move(ep2_amem_12));
+   ep2_amem_12->set<AMEM_href>(ocs::tom::Host("Test_Name131"));
+   ep2_amem_12->set<AMEM_value>("1024");
+   lp_amem_6->push_back(std::move(ep2_amem_12));
 
-   ocs::tom::set<CQ_h_stack>(ep_cq, std::move(lp_amem_6));
+   ep_cq->set<CQ_h_stack>(std::move(lp_amem_6));
 
    auto lp_amem_7 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("s_core List");
    
    auto ep2_amem_13 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_13, "Test_Name132");
-   ocs::tom::set<AMEM_value>(ep2_amem_13, "1048576");
-   lAppendElem(*lp_amem_7, std::move(ep2_amem_13));
+   ep2_amem_13->set<AMEM_href>(ocs::tom::Host("Test_Name132"));
+   ep2_amem_13->set<AMEM_value>("1048576");
+   lp_amem_7->push_back(std::move(ep2_amem_13));
    
    auto ep2_amem_14 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_14, "Test_Name133");
-   ocs::tom::set<AMEM_value>(ep2_amem_14, "1024");
-   lAppendElem(*lp_amem_7, std::move(ep2_amem_14));
+   ep2_amem_14->set<AMEM_href>(ocs::tom::Host("Test_Name133"));
+   ep2_amem_14->set<AMEM_value>("1024");
+   lp_amem_7->push_back(std::move(ep2_amem_14));
 
-   ocs::tom::set<CQ_s_core>(ep_cq, std::move(lp_amem_7));
+   ep_cq->set<CQ_s_core>(std::move(lp_amem_7));
 
    auto lp_amem_8 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("h_core List");
    
    auto ep2_amem_15 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_15, "Test_Name134");
-   ocs::tom::set<AMEM_value>(ep2_amem_15, "1048576");
-   lAppendElem(*lp_amem_8, std::move(ep2_amem_15));
+   ep2_amem_15->set<AMEM_href>(ocs::tom::Host("Test_Name134"));
+   ep2_amem_15->set<AMEM_value>("1048576");
+   lp_amem_8->push_back(std::move(ep2_amem_15));
    
    auto ep2_amem_16 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_16, "Test_Name135");
-   ocs::tom::set<AMEM_value>(ep2_amem_16, "1024");
-   lAppendElem(*lp_amem_8, std::move(ep2_amem_16));
+   ep2_amem_16->set<AMEM_href>(ocs::tom::Host("Test_Name135"));
+   ep2_amem_16->set<AMEM_value>("1024");
+   lp_amem_8->push_back(std::move(ep2_amem_16));
 
-   ocs::tom::set<CQ_h_core>(ep_cq, std::move(lp_amem_8));
+   ep_cq->set<CQ_h_core>(std::move(lp_amem_8));
 
    auto lp_amem_9 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("s_rss List");
    
    auto ep2_amem_17 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_17, "Test_Name136");
-   ocs::tom::set<AMEM_value>(ep2_amem_17, "1048576");
-   lAppendElem(*lp_amem_9, std::move(ep2_amem_17));
+   ep2_amem_17->set<AMEM_href>(ocs::tom::Host("Test_Name136"));
+   ep2_amem_17->set<AMEM_value>("1048576");
+   lp_amem_9->push_back(std::move(ep2_amem_17));
    
    auto ep2_amem_18 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_18, "Test_Name137");
-   ocs::tom::set<AMEM_value>(ep2_amem_18, "1024");
-   lAppendElem(*lp_amem_9, std::move(ep2_amem_18));
+   ep2_amem_18->set<AMEM_href>(ocs::tom::Host("Test_Name137"));
+   ep2_amem_18->set<AMEM_value>("1024");
+   lp_amem_9->push_back(std::move(ep2_amem_18));
 
-   ocs::tom::set<CQ_s_rss>(ep_cq, std::move(lp_amem_9));
+   ep_cq->set<CQ_s_rss>(std::move(lp_amem_9));
 
    auto lp_amem_10 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("h_rss List");
    
    auto ep2_amem_19 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_19, "Test_Name138");
-   ocs::tom::set<AMEM_value>(ep2_amem_19, "1048576");
-   lAppendElem(*lp_amem_10, std::move(ep2_amem_19));
+   ep2_amem_19->set<AMEM_href>(ocs::tom::Host("Test_Name138"));
+   ep2_amem_19->set<AMEM_value>("1048576");
+   lp_amem_10->push_back(std::move(ep2_amem_19));
    
    auto ep2_amem_20 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_20, "Test_Name139");
-   ocs::tom::set<AMEM_value>(ep2_amem_20, "1024");
-   lAppendElem(*lp_amem_10, std::move(ep2_amem_20));
+   ep2_amem_20->set<AMEM_href>(ocs::tom::Host("Test_Name139"));
+   ep2_amem_20->set<AMEM_value>("1024");
+   lp_amem_10->push_back(std::move(ep2_amem_20));
 
-   ocs::tom::set<CQ_h_rss>(ep_cq, std::move(lp_amem_10));
+   ep_cq->set<CQ_h_rss>(std::move(lp_amem_10));
 
    auto lp_amem_11 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("s_vmem List");
    
    auto ep2_amem_21 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_21, "Test_Name140");
-   ocs::tom::set<AMEM_value>(ep2_amem_21, "1048576");
-   lAppendElem(*lp_amem_11, std::move(ep2_amem_21));
+   ep2_amem_21->set<AMEM_href>(ocs::tom::Host("Test_Name140"));
+   ep2_amem_21->set<AMEM_value>("1048576");
+   lp_amem_11->push_back(std::move(ep2_amem_21));
    
    auto ep2_amem_22 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_22, "Test_Name141");
-   ocs::tom::set<AMEM_value>(ep2_amem_22, "1024");
-   lAppendElem(*lp_amem_11, std::move(ep2_amem_22));
+   ep2_amem_22->set<AMEM_href>(ocs::tom::Host("Test_Name141"));
+   ep2_amem_22->set<AMEM_value>("1024");
+   lp_amem_11->push_back(std::move(ep2_amem_22));
 
-   ocs::tom::set<CQ_s_vmem>(ep_cq, std::move(lp_amem_11));
+   ep_cq->set<CQ_s_vmem>(std::move(lp_amem_11));
 
    auto lp_amem_12 = ocs::tom::ListPtr<ocs::tom::AMEM>::create("h_vmem List");
    
    auto ep2_amem_23 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_23, "Test_Name142");
-   ocs::tom::set<AMEM_value>(ep2_amem_23, "1048576");
-   lAppendElem(*lp_amem_12, std::move(ep2_amem_23));
+   ep2_amem_23->set<AMEM_href>(ocs::tom::Host("Test_Name142"));
+   ep2_amem_23->set<AMEM_value>("1048576");
+   lp_amem_12->push_back(std::move(ep2_amem_23));
    
    auto ep2_amem_24 = ocs::tom::ElementPtr<ocs::tom::AMEM>::create();
-   ocs::tom::set<AMEM_href>(ep2_amem_24, "Test_Name143");
-   ocs::tom::set<AMEM_value>(ep2_amem_24, "1024");
-   lAppendElem(*lp_amem_12, std::move(ep2_amem_24));
+   ep2_amem_24->set<AMEM_href>(ocs::tom::Host("Test_Name143"));
+   ep2_amem_24->set<AMEM_value>("1024");
+   lp_amem_12->push_back(std::move(ep2_amem_24));
 
-   ocs::tom::set<CQ_h_vmem>(ep_cq, std::move(lp_amem_12));
+   ep_cq->set<CQ_h_vmem>(std::move(lp_amem_12));
 
    /* Write a CQ file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, *ep_cq, false,
@@ -2203,19 +2257,19 @@ static int CQ_test() {
    
    /* Read a CQ file using flatfile spooling */
    ep_cq.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CQ::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::CQ>(spool_flatfile_read_object(&alp, ocs::tom::CQ::descriptor.e, nullptr,
                                    CQ_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a CQ file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CQ_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
    
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -2229,89 +2283,93 @@ static int CQ_test() {
    return ret;
 }
 
+/**
+ * @brief Write a scheduler configuration with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int SC_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::SC> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_sc = ocs::tom::ElementPtr<ocs::tom::SC>::create();
-   ocs::tom::set<SC_algorithm>(ep_sc, "algorithm");
-   ocs::tom::set<SC_schedule_interval>(ep_sc, "30");
-   ocs::tom::set<SC_maxujobs>(ep_sc, 1024);
-   ocs::tom::set<SC_queue_sort_method>(ep_sc, 1);
+   ep_sc->set<SC_algorithm>("algorithm");
+   ep_sc->set<SC_schedule_interval>("30");
+   ep_sc->set<SC_maxujobs>(1024);
+   ep_sc->set<SC_queue_sort_method>(1);
 
    auto lp = ocs::tom::ListPtr<ocs::tom::CE>::create("Job Load Adjustments");
 
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep2, "Test_Name1");
-   ocs::tom::set<CE_shortcut>(ep2, "tn1");
-   ocs::tom::set<CE_valtype>(ep2, 1);
-   ocs::tom::set<CE_relop>(ep2, 5);
-   ocs::tom::set<CE_consumable>(ep2, 1);
-   ocs::tom::set<CE_defaultval>(ep2, "15");
-   ocs::tom::set<CE_requestable>(ep2, REQU_NO);
-   ocs::tom::set<CE_urgency_weight>(ep2, "25");
-   ocs::tom::set<CE_stringval>(ep2, "stringval");
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<CE_name>("Test_Name1");
+   ep2->set<CE_shortcut>("tn1");
+   ep2->set<CE_valtype>(1);
+   ep2->set<CE_relop>(5);
+   ep2->set<CE_consumable>(1);
+   ep2->set<CE_defaultval>("15");
+   ep2->set<CE_requestable>(REQU_NO);
+   ep2->set<CE_urgency_weight>("25");
+   ep2->set<CE_stringval>("stringval");
+   lp->push_back(std::move(ep2));
    
    auto ep2_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep2_ce, "Test_Name2");
-   ocs::tom::set<CE_shortcut>(ep2_ce, "tn2");
-   ocs::tom::set<CE_valtype>(ep2_ce, 1);
-   ocs::tom::set<CE_relop>(ep2_ce, 5);
-   ocs::tom::set<CE_consumable>(ep2_ce, 0);
-   ocs::tom::set<CE_defaultval>(ep2_ce, "15");
-   ocs::tom::set<CE_requestable>(ep2_ce, REQU_YES);
-   ocs::tom::set<CE_urgency_weight>(ep2_ce, "25");
-   ocs::tom::set<CE_stringval>(ep2_ce, "stringval");
-   lAppendElem(*lp, std::move(ep2_ce));
+   ep2_ce->set<CE_name>("Test_Name2");
+   ep2_ce->set<CE_shortcut>("tn2");
+   ep2_ce->set<CE_valtype>(1);
+   ep2_ce->set<CE_relop>(5);
+   ep2_ce->set<CE_consumable>(0);
+   ep2_ce->set<CE_defaultval>("15");
+   ep2_ce->set<CE_requestable>(REQU_YES);
+   ep2_ce->set<CE_urgency_weight>("25");
+   ep2_ce->set<CE_stringval>("stringval");
+   lp->push_back(std::move(ep2_ce));
 
-   ocs::tom::set<SC_job_load_adjustments>(ep_sc, std::move(lp));
-   ocs::tom::set<SC_load_adjustment_decay_time>(ep_sc, "45");
-   ocs::tom::set<SC_load_formula>(ep_sc, "load_formula");
-   ocs::tom::set<SC_schedd_job_info>(ep_sc, "schedd_job_info");
-   ocs::tom::set<SC_flush_submit_sec>(ep_sc, 128);
-   ocs::tom::set<SC_flush_finish_sec>(ep_sc, 512);
-   ocs::tom::set<SC_params>(ep_sc, "params");
-   ocs::tom::set<SC_reprioritize_interval>(ep_sc, "15");
-   ocs::tom::set<SC_halftime>(ep_sc, 32);
+   ep_sc->set<SC_job_load_adjustments>(std::move(lp));
+   ep_sc->set<SC_load_adjustment_decay_time>("45");
+   ep_sc->set<SC_load_formula>("load_formula");
+   ep_sc->set<SC_schedd_job_info>("schedd_job_info");
+   ep_sc->set<SC_flush_submit_sec>(128);
+   ep_sc->set<SC_flush_finish_sec>(512);
+   ep_sc->set<SC_params>("params");
+   ep_sc->set<SC_reprioritize_interval>("15");
+   ep_sc->set<SC_halftime>(32);
    
    auto lp_ua = ocs::tom::ListPtr<ocs::tom::UA>::create("Usage Weight List");
    
    auto ep2_ua = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2_ua, "Test_Name3");
-   ocs::tom::set<UA_value>(ep2_ua, 11.22);
-   lAppendElem(*lp_ua, std::move(ep2_ua));
+   ep2_ua->set<UA_name>("Test_Name3");
+   ep2_ua->set<UA_value>(11.22);
+   lp_ua->push_back(std::move(ep2_ua));
    
    auto ep2_ua_2 = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep2_ua_2, "Test_Name4");
-   ocs::tom::set<UA_value>(ep2_ua_2, 33.44);
-   lAppendElem(*lp_ua, std::move(ep2_ua_2));
+   ep2_ua_2->set<UA_name>("Test_Name4");
+   ep2_ua_2->set<UA_value>(33.44);
+   lp_ua->push_back(std::move(ep2_ua_2));
       
-   ocs::tom::set<SC_usage_weight_list>(ep_sc, std::move(lp_ua));
+   ep_sc->set<SC_usage_weight_list>(std::move(lp_ua));
    
-   ocs::tom::set<SC_compensation_factor>(ep_sc, 11.22);
-   ocs::tom::set<SC_weight_user>(ep_sc, 11.22);
-   ocs::tom::set<SC_weight_project>(ep_sc, 33.44);
-   ocs::tom::set<SC_weight_department>(ep_sc, 66.77);
-   ocs::tom::set<SC_weight_job>(ep_sc, 88.99);
-   ocs::tom::set<SC_weight_tickets_functional>(ep_sc, 36);
-   ocs::tom::set<SC_weight_tickets_share>(ep_sc, 18);
-   ocs::tom::set<SC_share_override_tickets>(ep_sc, true);
-   ocs::tom::set<SC_share_functional_shares>(ep_sc, true);
-   ocs::tom::set<SC_max_functional_jobs_to_schedule>(ep_sc, 2048);
-   ocs::tom::set<SC_report_pjob_tickets>(ep_sc, true);
-   ocs::tom::set<SC_max_pending_tasks_per_job>(ep_sc, 256);
-   ocs::tom::set<SC_halflife_decay_list>(ep_sc, "halflife_decay_list");
-   ocs::tom::set<SC_policy_hierarchy>(ep_sc, "policy_hierarchy");
-   ocs::tom::set<SC_weight_ticket>(ep_sc, 11.99);
-   ocs::tom::set<SC_weight_waiting_time>(ep_sc, 22.88);
-   ocs::tom::set<SC_weight_deadline>(ep_sc, 33.77);
-   ocs::tom::set<SC_weight_urgency>(ep_sc, 44.66);
-   ocs::tom::set<SC_weight_priority>(ep_sc, 55.99);
-   ocs::tom::set<SC_max_reservation>(ep_sc, 33.00);
-   ocs::tom::set<SC_default_duration>(ep_sc, "default_duration");
+   ep_sc->set<SC_compensation_factor>(11.22);
+   ep_sc->set<SC_weight_user>(11.22);
+   ep_sc->set<SC_weight_project>(33.44);
+   ep_sc->set<SC_weight_department>(66.77);
+   ep_sc->set<SC_weight_job>(88.99);
+   ep_sc->set<SC_weight_tickets_functional>(36);
+   ep_sc->set<SC_weight_tickets_share>(18);
+   ep_sc->set<SC_share_override_tickets>(true);
+   ep_sc->set<SC_share_functional_shares>(true);
+   ep_sc->set<SC_max_functional_jobs_to_schedule>(2048);
+   ep_sc->set<SC_report_pjob_tickets>(true);
+   ep_sc->set<SC_max_pending_tasks_per_job>(256);
+   ep_sc->set<SC_halflife_decay_list>("halflife_decay_list");
+   ep_sc->set<SC_policy_hierarchy>("policy_hierarchy");
+   ep_sc->set<SC_weight_ticket>(11.99);
+   ep_sc->set<SC_weight_waiting_time>(22.88);
+   ep_sc->set<SC_weight_deadline>(33.77);
+   ep_sc->set<SC_weight_urgency>(44.66);
+   ep_sc->set<SC_weight_priority>(55.99);
+   ep_sc->set<SC_max_reservation>(33.00);
+   ep_sc->set<SC_default_duration>("default_duration");
 
    /* Write a SC file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, *ep_sc, false,
@@ -2323,19 +2381,19 @@ static int SC_test() {
    
    /* Read a SC file using flatfile spooling */
    ep_sc.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::SC::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::SC>(spool_flatfile_read_object(&alp, ocs::tom::SC::descriptor.e, nullptr,
                                    SC_fields, nullptr, true, &qconf_comma_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a SC file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        SC_fields,
                                        &qconf_comma_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
    
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -2349,20 +2407,24 @@ static int SC_test() {
    return ret;
 }
 
+/**
+ * @brief Write a queue instance with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int QU_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::QU> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields = nullptr;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_qu = ocs::tom::ElementPtr<ocs::tom::QU>::create();
-   ocs::tom::set<QU_qhostname>(ep_qu, "Test_Name");
-   ocs::tom::set<QU_qname>(ep_qu, "Test_Name2");
-   ocs::tom::set<QU_state>(ep_qu, 1);
-   ocs::tom::set<QU_pending_signal>(ep_qu, 2);
-   ocs::tom::set<QU_pending_signal_delivery_time>(ep_qu, 3000000);
-   ocs::tom::set<QU_version>(ep_qu, 4);
+   ep_qu->set<QU_qhostname>(ocs::tom::Host("Test_Name"));
+   ep_qu->set<QU_qname>("Test_Name2");
+   ep_qu->set<QU_state>(1);
+   ep_qu->set<QU_pending_signal>(2);
+   ep_qu->set<QU_pending_signal_delivery_time>(3000000);
+   ep_qu->set<QU_version>(4);
 
 
    fields = sge_build_QU_field_list(false, true);
@@ -2377,19 +2439,19 @@ static int QU_test() {
    
    /* Read a QU file using flatfile spooling */
    ep_qu.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::QU::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::QU>(spool_flatfile_read_object(&alp, ocs::tom::QU::descriptor.e, nullptr,
                                    fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a QU file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
    
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -2404,18 +2466,22 @@ static int QU_test() {
    return ret;
 }
 
+/**
+ * @brief Write a host group with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int HGRP_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::HGRP> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_hgrp = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
-   ocs::tom::set<HGRP_name>(ep_hgrp, "Test_Name");
+   ep_hgrp->set<HGRP_name>(ocs::tom::Host("Test_Name"));
   
-   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(ep_hgrp, "Test_Name2");
-   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(ep_hgrp, "Test_Name3");
-   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(ep_hgrp, "Test_Name4");
+   ep_hgrp->emplace_back_in<HGRP_host_list, HR_name>("Test_Name2");
+   ep_hgrp->emplace_back_in<HGRP_host_list, HR_name>("Test_Name3");
+   ep_hgrp->emplace_back_in<HGRP_host_list, HR_name>("Test_Name4");
    
    
    /* Write a HGRP file using classic spooling */
@@ -2428,18 +2494,18 @@ static int HGRP_test() {
    
    /* Read a HGRP file using flatfile spooling */
    ep_hgrp.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::HGRP::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::HGRP>(spool_flatfile_read_object(&alp, ocs::tom::HGRP::descriptor.e, nullptr,
                                    HGRP_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a HGRP file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        HGRP_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -2453,56 +2519,60 @@ static int HGRP_test() {
    return ret;
 }
 
+/**
+ * @brief Write a configuration with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CONF_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CONF> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    spooling_field *fields;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
    
    auto ep_conf = ocs::tom::ElementPtr<ocs::tom::CONF>::create();
-   ocs::tom::set<CONF_version>(ep_conf, 101);
-   ocs::tom::set<CONF_name>(ep_conf, "host1");
+   ep_conf->set<CONF_version>(101);
+   ep_conf->set<CONF_name>(ocs::tom::Host("host1"));
    
    auto lp = ocs::tom::ListPtr<ocs::tom::CF>::create("Config List");
    
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::CF>::create();
-   ocs::tom::set<CF_name>(ep2, "gid_range");
-   ocs::tom::set<CF_value>(ep2, "1000-1100");
-   lAppendElem(*lp, std::move(ep2));
+   ep2->set<CF_name>("gid_range");
+   ep2->set<CF_value>("1000-1100");
+   lp->push_back(std::move(ep2));
    
    auto ep2_cf = ocs::tom::ElementPtr<ocs::tom::CF>::create();
-   ocs::tom::set<CF_name>(ep2_cf, "max_aj_tasks");
-   ocs::tom::set<CF_value>(ep2_cf, "1001");
-   lAppendElem(*lp, std::move(ep2_cf));
+   ep2_cf->set<CF_name>("max_aj_tasks");
+   ep2_cf->set<CF_value>("1001");
+   lp->push_back(std::move(ep2_cf));
    
    auto ep2_cf_2 = ocs::tom::ElementPtr<ocs::tom::CF>::create();
-   ocs::tom::set<CF_name>(ep2_cf_2, "admin_user");
-   ocs::tom::set<CF_value>(ep2_cf_2, "testuser");
-   lAppendElem(*lp, std::move(ep2_cf_2));
+   ep2_cf_2->set<CF_name>("admin_user");
+   ep2_cf_2->set<CF_value>("testuser");
+   lp->push_back(std::move(ep2_cf_2));
    
    auto ep2_cf_3 = ocs::tom::ElementPtr<ocs::tom::CF>::create();
-   ocs::tom::set<CF_name>(ep2_cf_3, "user_lists");
-   ocs::tom::set<CF_value>(ep2_cf_3, "me you someone_else");
-   lAppendElem(*lp, std::move(ep2_cf_3));
+   ep2_cf_3->set<CF_name>("user_lists");
+   ep2_cf_3->set<CF_value>("me you someone_else");
+   lp->push_back(std::move(ep2_cf_3));
    
    auto ep2_cf_4 = ocs::tom::ElementPtr<ocs::tom::CF>::create();
-   ocs::tom::set<CF_name>(ep2_cf_4, "login_shells");
-   ocs::tom::set<CF_value>(ep2_cf_4, "sh,ksh,csh,tcsh");
-   lAppendElem(*lp, std::move(ep2_cf_4));
+   ep2_cf_4->set<CF_name>("login_shells");
+   ep2_cf_4->set<CF_value>("sh,ksh,csh,tcsh");
+   lp->push_back(std::move(ep2_cf_4));
 
    auto ep2_cf_5 = ocs::tom::ElementPtr<ocs::tom::CF>::create();
-   ocs::tom::set<CF_name>(ep2_cf_5, "execd_params");
-   ocs::tom::set<CF_value>(ep2_cf_5, "PTF_MIN_PRIORITY=20,PTF_MAX_PRIORITY=0,SET_LIB_PATH=true");
-   lAppendElem(*lp, std::move(ep2_cf_5));
+   ep2_cf_5->set<CF_name>("execd_params");
+   ep2_cf_5->set<CF_value>("PTF_MIN_PRIORITY=20,PTF_MAX_PRIORITY=0,SET_LIB_PATH=true");
+   lp->push_back(std::move(ep2_cf_5));
 
    auto ep2_cf_6 = ocs::tom::ElementPtr<ocs::tom::CF>::create();
-   ocs::tom::set<CF_name>(ep2_cf_6, "reporting_params");
-   ocs::tom::set<CF_value>(ep2_cf_6, "accounting=true reporting=false flush_time=00:00:05 joblog=true sharelog=00:10:00=true");
-   lAppendElem(*lp, std::move(ep2_cf_6));
+   ep2_cf_6->set<CF_name>("reporting_params");
+   ep2_cf_6->set<CF_value>("accounting=true reporting=false flush_time=00:00:05 joblog=true sharelog=00:10:00=true");
+   lp->push_back(std::move(ep2_cf_6));
    
-   ocs::tom::set<CONF_entries>(ep_conf, std::move(lp));
+   ep_conf->set<CONF_entries>(std::move(lp));
    
 
    fields = sge_build_CONF_field_list(true);
@@ -2518,19 +2588,19 @@ static int CONF_test() {
    
    /* Read a CONF file using flatfile spooling */
    ep_conf.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CONF::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::CONF>(spool_flatfile_read_object(&alp, ocs::tom::CONF::descriptor.e, nullptr,
                                    fields, nullptr, false, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
 
    /* Write a CONF file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, true);
 
-   lFreeElem(&ep);
+   ep.reset();
    
    ret = diff(file1, file2);
    
@@ -2545,129 +2615,136 @@ static int CONF_test() {
    return ret;
 }
 
+/**
+ * @brief Write a list of two resource quota sets with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int RQS_test() {
    int ret = 0;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr;
    const char *file2 = nullptr;
-   lList* rqs_list = lCreateList("test", ocs::tom::RQS::descriptor.e);
+   auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::create("test");
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
-   ocs::tom::set<RQS_name>(ep, "Test_Name1");
-   ocs::tom::set<RQS_description>(ep, "Test Description");
-   ocs::tom::set<RQS_enabled>(ep, false);
+   ep->set<RQS_name>("Test_Name1");
+   ep->set<RQS_description>("Test Description");
+   ep->set<RQS_enabled>(false);
    auto lp1 = ocs::tom::ListPtr<ocs::tom::RQR>::create("Rule_List");
    /* rule 1 */
    auto ep2 = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
       auto ep3 = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
-      ocs::tom::set<RQRF_expand>(ep3, true);
-      ocs::tom::emplace_back_in<RQRF_scope, ST_name>(ep3, "Test_User1");
+      ep3->set<RQRF_expand>(true);
+      ep3->emplace_back_in<RQRF_scope, ST_name>("Test_User1");
 
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3, "Test_User2");
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3, "Test_User3");
-      ocs::tom::set<RQR_filter_users>(ep2, std::move(ep3));
+      ep3->emplace_back_in<RQRF_xscope, ST_name>("Test_User2");
+      ep3->emplace_back_in<RQRF_xscope, ST_name>("Test_User3");
+      ep2->set<RQR_filter_users>(std::move(ep3));
       
       auto ep3_rqrf = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
-      ocs::tom::set<RQRF_expand>(ep3_rqrf, false);
-      ocs::tom::emplace_back_in<RQRF_scope, ST_name>(ep3_rqrf, "Test_Host1");
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3_rqrf, "Test_Host2");
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3_rqrf, "Test_Host3");
-      ocs::tom::set<RQR_filter_hosts>(ep2, std::move(ep3_rqrf));
+      ep3_rqrf->set<RQRF_expand>(false);
+      ep3_rqrf->emplace_back_in<RQRF_scope, ST_name>("Test_Host1");
+      ep3_rqrf->emplace_back_in<RQRF_xscope, ST_name>("Test_Host2");
+      ep3_rqrf->emplace_back_in<RQRF_xscope, ST_name>("Test_Host3");
+      ep2->set<RQR_filter_hosts>(std::move(ep3_rqrf));
 
       auto ep3_rqrf_2 = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
-      ocs::tom::set<RQRF_expand>(ep3_rqrf_2, false);
-      ocs::tom::emplace_back_in<RQRF_scope, ST_name>(ep3_rqrf_2, "Test_PE1");
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3_rqrf_2, "Test_PE2");
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3_rqrf_2, "Test_PE3");
-      ocs::tom::set<RQR_filter_pes>(ep2, std::move(ep3_rqrf_2));
+      ep3_rqrf_2->set<RQRF_expand>(false);
+      ep3_rqrf_2->emplace_back_in<RQRF_scope, ST_name>("Test_PE1");
+      ep3_rqrf_2->emplace_back_in<RQRF_xscope, ST_name>("Test_PE2");
+      ep3_rqrf_2->emplace_back_in<RQRF_xscope, ST_name>("Test_PE3");
+      ep2->set<RQR_filter_pes>(std::move(ep3_rqrf_2));
 
 
       auto limit_list = ocs::tom::ListPtr<ocs::tom::RQRL>::create("Limit_List");
       auto limit = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
-      ocs::tom::set<RQRL_name>(limit, "slots");
-      ocs::tom::set<RQRL_value>(limit, "2*$num_proc");
-      lAppendElem(*limit_list, std::move(limit));
-      ocs::tom::set<RQR_limit>(ep2, std::move(limit_list));
-   lAppendElem(*lp1, std::move(ep2));
+      limit->set<RQRL_name>("slots");
+      limit->set<RQRL_value>("2*$num_proc");
+      limit_list->push_back(std::move(limit));
+      ep2->set<RQR_limit>(std::move(limit_list));
+   lp1->push_back(std::move(ep2));
    /* rule 2 */
    auto ep2_rqr = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
       auto ep3_rqrf_3 = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
-      ocs::tom::set<RQRF_expand>(ep3_rqrf_3, true);
-      ocs::tom::emplace_back_in<RQRF_scope, ST_name>(ep3_rqrf_3, "Test_Queue1");
+      ep3_rqrf_3->set<RQRF_expand>(true);
+      ep3_rqrf_3->emplace_back_in<RQRF_scope, ST_name>("Test_Queue1");
 
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3_rqrf_3, "Test_Queue2");
-      ocs::tom::set<RQR_filter_queues>(ep2_rqr, std::move(ep3_rqrf_3));
+      ep3_rqrf_3->emplace_back_in<RQRF_xscope, ST_name>("Test_Queue2");
+      ep2_rqr->set<RQR_filter_queues>(std::move(ep3_rqrf_3));
 
       auto limit_list_rqrl = ocs::tom::ListPtr<ocs::tom::RQRL>::create("Limit_List");
       auto limit_rqrl = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
-      ocs::tom::set<RQRL_name>(limit_rqrl, "arch");
-      ocs::tom::set<RQRL_value>(limit_rqrl, "lx-amd64");
-      lAppendElem(*limit_list_rqrl, std::move(limit_rqrl));
-      ocs::tom::set<RQR_limit>(ep2_rqr, std::move(limit_list_rqrl));
-   lAppendElem(*lp1, std::move(ep2_rqr));
+      limit_rqrl->set<RQRL_name>("arch");
+      limit_rqrl->set<RQRL_value>("lx-amd64");
+      limit_list_rqrl->push_back(std::move(limit_rqrl));
+      ep2_rqr->set<RQR_limit>(std::move(limit_list_rqrl));
+   lp1->push_back(std::move(ep2_rqr));
    /* rule 3 */
    auto ep2_rqr_2 = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
-   ocs::tom::set<RQR_name>(ep2_rqr_2, "rule3");
+   ep2_rqr_2->set<RQR_name>("rule3");
       auto ep3_rqrf_4 = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
-      ocs::tom::set<RQRF_expand>(ep3_rqrf_4, true);
-      ocs::tom::emplace_back_in<RQRF_scope, ST_name>(ep3_rqrf_4, "Test_Pe1");
+      ep3_rqrf_4->set<RQRF_expand>(true);
+      ep3_rqrf_4->emplace_back_in<RQRF_scope, ST_name>("Test_Pe1");
 
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3_rqrf_4, "Test_Pe2");
-      ocs::tom::set<RQR_filter_pes>(ep2_rqr_2, std::move(ep3_rqrf_4));
+      ep3_rqrf_4->emplace_back_in<RQRF_xscope, ST_name>("Test_Pe2");
+      ep2_rqr_2->set<RQR_filter_pes>(std::move(ep3_rqrf_4));
 
       auto limit_list_rqrl_2 = ocs::tom::ListPtr<ocs::tom::RQRL>::create("Limit_List");
       auto limit_rqrl_2 = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
-      ocs::tom::set<RQRL_name>(limit_rqrl_2, "mem");
-      ocs::tom::set<RQRL_value>(limit_rqrl_2, "1G");
-      lAppendElem(*limit_list_rqrl_2, std::move(limit_rqrl_2));
-      ocs::tom::set<RQR_limit>(ep2_rqr_2, std::move(limit_list_rqrl_2));
-   lAppendElem(*lp1, std::move(ep2_rqr_2));
-   ocs::tom::set<RQS_rule>(ep, std::move(lp1));
-   lAppendElem(rqs_list, std::move(ep));
+      limit_rqrl_2->set<RQRL_name>("mem");
+      limit_rqrl_2->set<RQRL_value>("1G");
+      limit_list_rqrl_2->push_back(std::move(limit_rqrl_2));
+      ep2_rqr_2->set<RQR_limit>(std::move(limit_list_rqrl_2));
+   lp1->push_back(std::move(ep2_rqr_2));
+   ep->set<RQS_rule>(std::move(lp1));
+   rqs_list->push_back(std::move(ep));
 
    /* rule 4 */
    auto ep_rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
-   ocs::tom::set<RQS_name>(ep_rqs, "Test_Name2");
-   ocs::tom::set<RQS_description>(ep_rqs, "Test Description");
-   ocs::tom::set<RQS_enabled>(ep_rqs, true);
+   ep_rqs->set<RQS_name>("Test_Name2");
+   ep_rqs->set<RQS_description>("Test Description");
+   ep_rqs->set<RQS_enabled>(true);
    auto lp1_rqr = ocs::tom::ListPtr<ocs::tom::RQR>::create("Rule_List");
    auto ep2_rqr_3 = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
       auto ep3_rqrf_5 = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
-      ocs::tom::set<RQRF_expand>(ep3_rqrf_5, false);
-      ocs::tom::emplace_back_in<RQRF_scope, ST_name>(ep3_rqrf_5, "roland");
+      ep3_rqrf_5->set<RQRF_expand>(false);
+      ep3_rqrf_5->emplace_back_in<RQRF_scope, ST_name>("roland");
 
-      ocs::tom::emplace_back_in<RQRF_xscope, ST_name>(ep3_rqrf_5, "andre");
-      ocs::tom::set<RQR_filter_users>(ep2_rqr_3, std::move(ep3_rqrf_5));
+      ep3_rqrf_5->emplace_back_in<RQRF_xscope, ST_name>("andre");
+      ep2_rqr_3->set<RQR_filter_users>(std::move(ep3_rqrf_5));
 
       auto limit_list_rqrl_3 = ocs::tom::ListPtr<ocs::tom::RQRL>::create("Limit_List");
       /* first limit */
       auto limit_rqrl_3 = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
-      ocs::tom::set<RQRL_name>(limit_rqrl_3, "mem");
-      ocs::tom::set<RQRL_value>(limit_rqrl_3, "10G");
-      lAppendElem(*limit_list_rqrl_3, std::move(limit_rqrl_3));
+      limit_rqrl_3->set<RQRL_name>("mem");
+      limit_rqrl_3->set<RQRL_value>("10G");
+      limit_list_rqrl_3->push_back(std::move(limit_rqrl_3));
       /* second limit */
       auto limit_rqrl_4 = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
-      ocs::tom::set<RQRL_name>(limit_rqrl_4, "arch");
-      ocs::tom::set<RQRL_value>(limit_rqrl_4, "sol-sparc64");
-      lAppendElem(*limit_list_rqrl_3, std::move(limit_rqrl_4));
+      limit_rqrl_4->set<RQRL_name>("arch");
+      limit_rqrl_4->set<RQRL_value>("sol-sparc64");
+      limit_list_rqrl_3->push_back(std::move(limit_rqrl_4));
 
-      ocs::tom::set<RQR_limit>(ep2_rqr_3, std::move(limit_list_rqrl_3));
-   lAppendElem(*lp1_rqr, std::move(ep2_rqr_3));
-   ocs::tom::set<RQS_rule>(ep_rqs, std::move(lp1_rqr));
-   lAppendElem(rqs_list, std::move(ep_rqs));
+      ep2_rqr_3->set<RQR_limit>(std::move(limit_list_rqrl_3));
+   lp1_rqr->push_back(std::move(ep2_rqr_3));
+   ep_rqs->set<RQS_rule>(std::move(lp1_rqr));
+   rqs_list->push_back(std::move(ep_rqs));
 
 
    /* Write a RQS file using classic spooling */
-   file1 = spool_flatfile_write_list(&alp, rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   file1 = spool_flatfile_write_list(&alp, *rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII,
+                                     file1, false);
 
    /* Read a RQS file using flatfile spooling */
-   lFreeList(&rqs_list);
-   rqs_list = spool_flatfile_read_list(&alp, ocs::tom::RQS::descriptor.e, RQS_fields, nullptr, true, &qconf_rqs_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+   rqs_list.reset();
+   rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>(spool_flatfile_read_list(&alp, ocs::tom::RQS::descriptor.e, RQS_fields,
+                                                                        nullptr, true, &qconf_rqs_sfi, SP_FORM_ASCII,
+                                                                        nullptr, file1));
 
    /* Write a RQS file using flatfile spooling */
-   file2 = spool_flatfile_write_list(&alp, rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeList(&rqs_list);
+   file2 = spool_flatfile_write_list(&alp, *rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII,
+                                     file2, false);
+   rqs_list.reset();
 
    ret = diff(file1, file2);
 
@@ -2681,65 +2758,69 @@ static int RQS_test() {
    return ret;
 }
 
+/**
+ * @brief Write an advance reservation with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int AR_test() {
    int ret = 0;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::AR> ep;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const char *file1 = nullptr, *file2 = nullptr;
    
    auto ep_ar = ocs::tom::ElementPtr<ocs::tom::AR>::create();
-   ocs::tom::set<AR_id>(ep_ar, 1);
-   ocs::tom::set<AR_name>(ep_ar, "Test_Name");
+   ep_ar->set<AR_id>(1);
+   ep_ar->set<AR_name>("Test_Name");
 
    auto lp = ocs::tom::ListPtr<ocs::tom::RN>::create("range_list");
    auto ep1 = ocs::tom::ElementPtr<ocs::tom::RN>::create();
-   ocs::tom::set<RN_min>(ep1, 1);
-   ocs::tom::set<RN_max>(ep1, 2);
-   ocs::tom::set<RN_step>(ep1, 3);
-   lAppendElem(*lp, std::move(ep1));
+   ep1->set<RN_min>(1);
+   ep1->set<RN_max>(2);
+   ep1->set<RN_step>(3);
+   lp->push_back(std::move(ep1));
    auto ep1_rn = ocs::tom::ElementPtr<ocs::tom::RN>::create();
-   ocs::tom::set<RN_min>(ep1_rn, 4);
-   ocs::tom::set<RN_max>(ep1_rn, 5);
-   ocs::tom::set<RN_step>(ep1_rn, 6);
-   lAppendElem(*lp, std::move(ep1_rn));
-   ocs::tom::set<AR_pe_range>(ep_ar, std::move(lp));
+   ep1_rn->set<RN_min>(4);
+   ep1_rn->set<RN_max>(5);
+   ep1_rn->set<RN_step>(6);
+   lp->push_back(std::move(ep1_rn));
+   ep_ar->set<AR_pe_range>(std::move(lp));
 
    auto lp_ce = ocs::tom::ListPtr<ocs::tom::CE>::create("resource_list");
    auto ep1_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep1_ce, "ce1");
-   ocs::tom::set<CE_stringval>(ep1_ce, "101");
-   lAppendElem(*lp_ce, std::move(ep1_ce));
+   ep1_ce->set<CE_name>("ce1");
+   ep1_ce->set<CE_stringval>("101");
+   lp_ce->push_back(std::move(ep1_ce));
    auto ep1_ce_2 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep1_ce_2, "ce2");
-   ocs::tom::set<CE_doubleval>(ep1_ce_2, 102);
-   lAppendElem(*lp_ce, std::move(ep1_ce_2));
-   ocs::tom::set<AR_resource_list>(ep_ar, std::move(lp_ce));
+   ep1_ce_2->set<CE_name>("ce2");
+   ep1_ce_2->set<CE_doubleval>(102);
+   lp_ce->push_back(std::move(ep1_ce_2));
+   ep_ar->set<AR_resource_list>(std::move(lp_ce));
 
-   ocs::tom::emplace_back_in<AR_queue_list, QR_name>(ep_ar, "queue1.q");
-   ocs::tom::emplace_back_in<AR_queue_list, QR_name>(ep_ar, "queue2.q");
-   ocs::tom::emplace_back_in<AR_queue_list, QR_name>(ep_ar, "queue3.q");
-   ocs::tom::emplace_back_in<AR_queue_list, QR_name>(ep_ar, "queue4.q");
+   ep_ar->emplace_back_in<AR_queue_list, QR_name>("queue1.q");
+   ep_ar->emplace_back_in<AR_queue_list, QR_name>("queue2.q");
+   ep_ar->emplace_back_in<AR_queue_list, QR_name>("queue3.q");
+   ep_ar->emplace_back_in<AR_queue_list, QR_name>("queue4.q");
 
-   ocs::tom::Element<ocs::tom::JG> ep1_jg = ocs::tom::emplace_back_in<AR_granted_slots, JG_qname>(ep_ar, "all.q@bla");
-   ocs::tom::set<JG_slots>(ep1_jg, 5);
-   ocs::tom::Element<ocs::tom::JG> ep1_jg_2 = ocs::tom::emplace_back_in<AR_granted_slots, JG_qname>(ep_ar, "my.q@bla");
-   ocs::tom::set<JG_slots>(ep1_jg_2, 10);
+   ocs::tom::Element<ocs::tom::JG> ep1_jg = ep_ar->emplace_back_in<AR_granted_slots, JG_qname>("all.q@bla");
+   ep1_jg.set<JG_slots>(5);
+   ocs::tom::Element<ocs::tom::JG> ep1_jg_2 = ep_ar->emplace_back_in<AR_granted_slots, JG_qname>("my.q@bla");
+   ep1_jg_2.set<JG_slots>(10);
 
-   ocs::tom::emplace_back_in<AR_mail_list, MR_user>(ep_ar, "user1");
-   ocs::tom::Element<ocs::tom::MR> ep1_mr = ocs::tom::emplace_back_in<AR_mail_list, MR_user>(ep_ar, "user2");
-   ocs::tom::set<MR_host>(ep1_mr, "sun.com");
+   ep_ar->emplace_back_in<AR_mail_list, MR_user>("user1");
+   ocs::tom::Element<ocs::tom::MR> ep1_mr = ep_ar->emplace_back_in<AR_mail_list, MR_user>("user2");
+   ep1_mr.set<MR_host>("sun.com");
 
-   ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep_ar, "queue1.q");
-   ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep_ar, "queue2.q");
-   ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep_ar, "queue3.q");
-   ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep_ar, "queue4.q");
+   ep_ar->emplace_back_in<AR_master_queue_list, QR_name>("queue1.q");
+   ep_ar->emplace_back_in<AR_master_queue_list, QR_name>("queue2.q");
+   ep_ar->emplace_back_in<AR_master_queue_list, QR_name>("queue3.q");
+   ep_ar->emplace_back_in<AR_master_queue_list, QR_name>("queue4.q");
 
-   ocs::tom::Element<ocs::tom::ARA> ep1_ara = ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep_ar, "user1");
-   ocs::tom::set<ARA_group>(ep1_ara, "group1");
-   ocs::tom::Element<ocs::tom::ARA> ep1_ara_2 = ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep_ar, "user2");
-   ocs::tom::set<ARA_group>(ep1_ara_2, "group2");
-   ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep_ar, "@userset1");
-   ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep_ar, "@userset2");
+   ocs::tom::Element<ocs::tom::ARA> ep1_ara = ep_ar->emplace_back_in<AR_acl_list, ARA_name>("user1");
+   ep1_ara.set<ARA_group>("group1");
+   ocs::tom::Element<ocs::tom::ARA> ep1_ara_2 = ep_ar->emplace_back_in<AR_acl_list, ARA_name>("user2");
+   ep1_ara_2.set<ARA_group>("group2");
+   ep_ar->emplace_back_in<AR_acl_list, ARA_name>("@userset1");
+   ep_ar->emplace_back_in<AR_acl_list, ARA_name>("@userset2");
 
   
    
@@ -2753,18 +2834,18 @@ static int AR_test() {
 
    /* Read a AR file using flatfile spooling */
    ep_ar.reset();
-   ep = spool_flatfile_read_object(&alp, ocs::tom::AR::descriptor.e, nullptr,
+   ep = ocs::tom::ElementPtr<ocs::tom::AR>(spool_flatfile_read_object(&alp, ocs::tom::AR::descriptor.e, nullptr,
                                    AR_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
+                                   SP_FORM_ASCII, nullptr, file1));
    
    /* Write a AR file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        AR_fields,
                                        &qconf_sfi,
                                        SP_DEST_TMP,
                                        SP_FORM_ASCII, 
                                        file2, true);
-   lFreeElem(&ep);
+   ep.reset();
 
    ret = diff(file1, file2);
   
@@ -2777,26 +2858,30 @@ static int AR_test() {
    return ret;
 }
 
+/**
+ * @brief Write a parallel environment holding only its name with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PE_minimal_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // only name set — all other fields remain at CULL defaults
-   ocs::tom::set<PE_name>(ep, "minimal_pe");
+   ep->set<PE_name>("minimal_pe");
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::PE>(spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -2806,17 +2891,20 @@ static int PE_minimal_test() {
    return ret;
 }
 
-// SECURITY REGRESSION (CS-2352, MEDIUM-SPOOL-001, CWE-732/CWE-276):
-// spool_flatfile_open_file() used to create SP_DEST_SPOOL files with mode 0666
-// (world-/group-writable, world-readable), relying solely on the daemon umask.
-// Spool files hold authoritative cluster state and must be owner-only (0600).
-// Write a minimal object via SP_DEST_SPOOL under umask(0) so the on-disk mode
-// reflects exactly the requested create mode, then assert it is 0600 with no
-// group/other bits. Pre-fix the file is 0666, so this returns non-zero.
+/**
+ * @brief SECURITY REGRESSION (CS-2352, MEDIUM-SPOOL-001, CWE-732/CWE-276)
+ *
+ * spool_flatfile_open_file() used to create SP_DEST_SPOOL files with mode 0666 (world-/group-writable,
+ * world-readable), relying solely on the daemon umask. Spool files hold authoritative cluster state and must be
+ * owner-only (0600). Write a minimal object via SP_DEST_SPOOL under umask(0) so the on-disk mode reflects exactly
+ * the requested create mode, then assert it is 0600 with no group/other bits. Pre-fix the file is 0666, so this
+ * returns non-zero.
+ * @return 0 if the file is created with mode 0600, 1 otherwise
+ */
 static int SPOOL_perm_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
-   ocs::tom::set<PE_name>(ep, "perm_pe");
+   ep->set<PE_name>("perm_pe");
 
    char path[1024];
    snprintf(path, sizeof(path), "/tmp/test_spool_perm.%ld", (long)getpid());
@@ -2851,17 +2939,18 @@ static int SPOOL_perm_test() {
    return ret;
 }
 
-// SECURITY REGRESSION (CS-2352 directory hardening, CWE-732 / CWE-276):
-// CS-2352 hardened the classic-spool *file* mode to 0600, but the directories
-// that contain those files were created 0755 - world-readable and traversable -
-// so their entry names (job IDs, queue-instance and object names, per-host
-// config) still leaked to any local user able to reach the spool tree. The
-// classic-spool startup function now creates its directories owner-only (0700).
-// This exercises the real path via spool_classic_default_startup_func(), which -
-// among the object directories - creates the "configs" subdirectory holding the
-// global and per-host configurations (which now live in the spool dir, not the
-// common dir), and asserts the resulting mode is exactly 0700. Red->green:
-// pre-fix the directory is 0755.
+/**
+ * @brief SECURITY REGRESSION (CS-2352 directory hardening, CWE-732 / CWE-276)
+ *
+ * CS-2352 hardened the classic-spool *file* mode to 0600, but the directories that contain those files were created
+ * 0755 - world-readable and traversable - so their entry names (job IDs, queue-instance and object names, per-host
+ * config) still leaked to any local user able to reach the spool tree. The classic-spool startup function now
+ * creates its directories owner-only (0700). This exercises the real path via spool_classic_default_startup_func(),
+ * which - among the object directories - creates the "configs" subdirectory holding the global and per-host
+ * configurations (which now live in the spool dir, not the common dir), and asserts the resulting mode is exactly
+ * 0700. Red->green: pre-fix the directory is 0755.
+ * @return 0 if the directory is created with mode 0700, 1 otherwise
+ */
 static int SPOOL_dir_perm_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
@@ -2887,7 +2976,7 @@ static int SPOOL_dir_perm_test() {
    }
 
    auto rule = ocs::tom::ElementPtr<ocs::tom::SPR>::create();
-   ocs::tom::set<SPR_url>(rule, base);
+   rule->set<SPR_url>(base);
 
    // Neutralise the ambient umask so the resulting mode is exactly what the
    // code requested (otherwise it would be mode & ~umask).
@@ -2975,7 +3064,7 @@ static int SPOOL_restrict_existing_test() {
    }
 
    auto rule = ocs::tom::ElementPtr<ocs::tom::SPR>::create();
-   ocs::tom::set<SPR_url>(rule, base);
+   rule->set<SPR_url>(base);
    const bool ok = spool_classic_default_startup_func(&alp, *rule, false);
    rule.reset();
    umask(old_umask);
@@ -3007,15 +3096,16 @@ static int SPOOL_restrict_existing_test() {
    return ret;
 }
 
-// Regression for the classic spooling parameter change (RBAC config-in-spool-dir
-// work): the configuration objects moved into the spool directory, so the classic
-// spooling parameter is now a single absolute spool directory path. The obsolete
-// two-argument "<common_dir>;<spool_dir>" form must be rejected (hard error, not
-// silently accepted), as must a null or non-absolute path. The accept path (a
-// valid single directory) allocates a full spooling context and is exercised by
-// qmaster startup and the testsuite, so it is intentionally not re-created here;
-// this test focuses on the rejection contract, which returns nullptr without
-// allocating.
+/**
+ * @brief Regression for the classic spooling parameter change (RBAC config-in-spool-dir work)
+ *
+ * the configuration objects moved into the spool directory, so the classic spooling parameter is now a single
+ * absolute spool directory path. The obsolete two-argument "<common_dir>;<spool_dir>" form must be rejected (hard
+ * error, not silently accepted), as must a null or non-absolute path. The accept path (a valid single directory)
+ * allocates a full spooling context and is exercised by qmaster startup and the testsuite, so it is intentionally
+ * not re-created here; this test focuses on the rejection contract, which returns nullptr without allocating.
+ * @return 0 if every argument is rejected, 1 otherwise
+ */
 static int SPOOL_classic_params_test() {
    struct { const char *args; const char *desc; } rejected[] = {
       {nullptr,          "null args"},
@@ -3027,10 +3117,10 @@ static int SPOOL_classic_params_test() {
    int ret = 0;
    for (const auto &c : rejected) {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
-      lListElem *ctx = spool_classic_create_context(&alp, c.args);
-      if (ctx != nullptr) {
+      ocs::tom::ElementPtr<ocs::tom::SPC> ctx(spool_classic_create_context(&alp, c.args));
+      if (ctx) {
          printf("   spool_classic_create_context accepted %s (expected reject)\n", c.desc);
-         lFreeElem(&ctx);
+         ctx.reset();
          ret = 1;
       }
       alp.reset();
@@ -3081,30 +3171,35 @@ static int SPOOL_key_safe_test() {
    return ret;
 }
 
+/**
+ * @brief Write a complex entry holding only the mandatory fields with classic spooling, read it back and write it
+ *        again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CE_minimal_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // minimum valid CE: name + shortcut + lowest valid enum values; no defaultval or urgency_weight
-   ocs::tom::set<CE_name>(ep, "minimal_ce");
-   ocs::tom::set<CE_shortcut>(ep, "mc");
-   ocs::tom::set<CE_valtype>(ep, 1);            // INT = first valid type (0 is not valid)
-   ocs::tom::set<CE_relop>(ep, CMPLXEQ_OP);    // == = first valid relop
-   ocs::tom::set<CE_requestable>(ep, REQU_NO);  // NO = first valid requestable
+   ep->set<CE_name>("minimal_ce");
+   ep->set<CE_shortcut>("mc");
+   ep->set<CE_valtype>(1);            // INT = first valid type (0 is not valid)
+   ep->set<CE_relop>(CMPLXEQ_OP);    // == = first valid relop
+   ep->set<CE_requestable>(REQU_NO);  // NO = first valid requestable
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::CE>(spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3114,26 +3209,30 @@ static int CE_minimal_test() {
    return ret;
 }
 
+/**
+ * @brief Write a parallel environment with zero slots with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PE_zero_slots_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
-   ocs::tom::set<PE_name>(ep, "zero_slots_pe");
-   ocs::tom::set<PE_slots>(ep, 0);
+   ep->set<PE_name>("zero_slots_pe");
+   ep->set<PE_slots>(0);
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::PE>(spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3143,26 +3242,31 @@ static int PE_zero_slots_test() {
    return ret;
 }
 
+/**
+ * @brief Write a parallel environment with the maximum number of slots with classic spooling, read it back and write
+ *        it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PE_max_slots_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
-   ocs::tom::set<PE_name>(ep, "max_slots_pe");
-   ocs::tom::set<PE_slots>(ep, 4294967295U);   ///< UINT32_MAX — stress-tests ulong serialization
+   ep->set<PE_name>("max_slots_pe");
+   ep->set<PE_slots>(4294967295U);   ///< UINT32_MAX — stress-tests ulong serialization
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::PE>(spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3172,34 +3276,38 @@ static int PE_max_slots_test() {
    return ret;
 }
 
+/**
+ * @brief Write a complex entry with zero values with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CE_zero_values_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // enum fields at minimum valid values; consumable=0 (CONSUMABLE_NO is genuinely 0);
    // string fields explicitly set to "0" — tests zero-valued numeric strings round-trip
-   ocs::tom::set<CE_name>(ep, "zero_ce");
-   ocs::tom::set<CE_shortcut>(ep, "zc");
-   ocs::tom::set<CE_valtype>(ep, 1);            // INT (0 is not a valid type)
-   ocs::tom::set<CE_relop>(ep, CMPLXEQ_OP);    // == (0 is not a valid relop)
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);  // 0 = "NO" (valid)
-   ocs::tom::set<CE_defaultval>(ep, "0");
-   ocs::tom::set<CE_requestable>(ep, REQU_NO);  // 1 (0 is not a valid requestable)
-   ocs::tom::set<CE_urgency_weight>(ep, "0");
+   ep->set<CE_name>("zero_ce");
+   ep->set<CE_shortcut>("zc");
+   ep->set<CE_valtype>(1);            // INT (0 is not a valid type)
+   ep->set<CE_relop>(CMPLXEQ_OP);    // == (0 is not a valid relop)
+   ep->set<CE_consumable>(CONSUMABLE_NO);  // 0 = "NO" (valid)
+   ep->set<CE_defaultval>("0");
+   ep->set<CE_requestable>(REQU_NO);  // 1 (0 is not a valid requestable)
+   ep->set<CE_urgency_weight>("0");
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::CE>(spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3209,33 +3317,37 @@ static int CE_zero_values_test() {
    return ret;
 }
 
+/**
+ * @brief Write a complex entry with maximum values with classic spooling, read it back and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CE_max_values_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // large numeric string in urgency_weight — tests wide-value serialization
-   ocs::tom::set<CE_name>(ep, "max_ce");
-   ocs::tom::set<CE_shortcut>(ep, "m");
-   ocs::tom::set<CE_valtype>(ep, 1);
-   ocs::tom::set<CE_relop>(ep, 5);
-   ocs::tom::set<CE_consumable>(ep, 1);
-   ocs::tom::set<CE_defaultval>(ep, "1234567890");
-   ocs::tom::set<CE_requestable>(ep, REQU_NO);
-   ocs::tom::set<CE_urgency_weight>(ep, "1234567890");
+   ep->set<CE_name>("max_ce");
+   ep->set<CE_shortcut>("m");
+   ep->set<CE_valtype>(1);
+   ep->set<CE_relop>(5);
+   ep->set<CE_consumable>(1);
+   ep->set<CE_defaultval>("1234567890");
+   ep->set<CE_requestable>(REQU_NO);
+   ep->set<CE_urgency_weight>("1234567890");
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::CE>(spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3245,33 +3357,38 @@ static int CE_max_values_test() {
    return ret;
 }
 
+/**
+ * @brief Write a parallel environment with blanks in its procedure arguments with classic spooling, read it back and
+ *        write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PE_spaces_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // embedded spaces in proc args test token preservation across write/read
-   ocs::tom::set<PE_name>(ep, "spaces_pe");
-   ocs::tom::set<PE_slots>(ep, 4);
-   ocs::tom::set<PE_start_proc_args>(ep, "/bin/sh -c start_script arg1 arg2");
-   ocs::tom::set<PE_stop_proc_args>(ep, "/bin/sh -c stop_script arg1 arg2");
-   ocs::tom::set<PE_allocation_rule>(ep, "$pe_slots");
-   ocs::tom::set<PE_control_slaves>(ep, true);
-   ocs::tom::set<PE_job_is_first_task>(ep, false);
-   ocs::tom::set<PE_urgency_slots>(ep, "min");
+   ep->set<PE_name>("spaces_pe");
+   ep->set<PE_slots>(4);
+   ep->set<PE_start_proc_args>("/bin/sh -c start_script arg1 arg2");
+   ep->set<PE_stop_proc_args>("/bin/sh -c stop_script arg1 arg2");
+   ep->set<PE_allocation_rule>("$pe_slots");
+   ep->set<PE_control_slaves>(true);
+   ep->set<PE_job_is_first_task>(false);
+   ep->set<PE_urgency_slots>("min");
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::PE>(spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3281,33 +3398,38 @@ static int PE_spaces_test() {
    return ret;
 }
 
+/**
+ * @brief Write a complex entry with values in decimal and scientific notation with classic spooling, read it back
+ *        and write it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int CE_special_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::CE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // decimal and scientific notation strings test parser tolerance for unusual number formats
-   ocs::tom::set<CE_name>(ep, "special_ce");
-   ocs::tom::set<CE_shortcut>(ep, "sc");
-   ocs::tom::set<CE_valtype>(ep, 1);
-   ocs::tom::set<CE_relop>(ep, 5);
-   ocs::tom::set<CE_consumable>(ep, 0);
-   ocs::tom::set<CE_defaultval>(ep, "0.001");
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   ocs::tom::set<CE_urgency_weight>(ep, "1.5e2");
+   ep->set<CE_name>("special_ce");
+   ep->set<CE_shortcut>("sc");
+   ep->set<CE_valtype>(1);
+   ep->set<CE_relop>(5);
+   ep->set<CE_consumable>(0);
+   ep->set<CE_defaultval>("0.001");
+   ep->set<CE_requestable>(REQU_YES);
+   ep->set<CE_urgency_weight>("1.5e2");
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::CE>(spool_flatfile_read_object(&alp, ocs::tom::CE::descriptor.e, nullptr,
                                    CE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        CE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3317,29 +3439,34 @@ static int CE_special_test() {
    return ret;
 }
 
+/**
+ * @brief Write a parallel environment with explicitly empty user lists with classic spooling, read it back and write
+ *        it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PE_empty_lists_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
    // explicitly empty lists (not null) — verify they serialize identically to null lists
-   ocs::tom::set<PE_name>(ep, "empty_lists_pe");
-   ocs::tom::set<PE_slots>(ep, 1);
-   ocs::tom::set<PE_user_list>(ep,  lCreateList("", ocs::tom::US::descriptor.e));
-   ocs::tom::set<PE_xuser_list>(ep, lCreateList("", ocs::tom::US::descriptor.e));
+   ep->set<PE_name>("empty_lists_pe");
+   ep->set<PE_slots>(1);
+   ep->set<PE_user_list>(ocs::tom::ListPtr<ocs::tom::US>::create(""));
+   ep->set<PE_xuser_list>(ocs::tom::ListPtr<ocs::tom::US>::create(""));
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::PE>(spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);
@@ -3349,14 +3476,19 @@ static int PE_empty_lists_test() {
    return ret;
 }
 
+/**
+ * @brief Write a parallel environment with a user list of ten entries with classic spooling, read it back and write
+ *        it again
+ * @return 0 if the file written first and the file written after the read are equal, non-zero otherwise
+ */
 static int PE_large_list_test() {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   lListElem *ep = lCreateElem(ocs::tom::PE::descriptor.e);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
-   ocs::tom::set<PE_name>(ep, "large_list_pe");
-   ocs::tom::set<PE_slots>(ep, 10);
+   ep->set<PE_name>("large_list_pe");
+   ep->set<PE_slots>(10);
 
    // 10-element user_list — verifies that list ordering and content survive round-trip
    auto lp = ocs::tom::ListPtr<ocs::tom::US>::create("User_List");
@@ -3364,23 +3496,23 @@ static int PE_large_list_test() {
       char name[32];
       snprintf(name, sizeof(name), "user%02d", i);
       auto ep2 = ocs::tom::ElementPtr<ocs::tom::US>::create();
-      ocs::tom::set<US_name>(ep2, name);
-      ocs::tom::set<US_fshare>(ep2, i * 100);
-      lAppendElem(*lp, std::move(ep2));
+      ep2->set<US_name>(name);
+      ep2->set<US_fshare>(i * 100);
+      lp->push_back(std::move(ep2));
    }
-   ocs::tom::set<PE_user_list>(ep, std::move(lp));
+   ep->set<PE_user_list>(std::move(lp));
 
-   file1 = spool_flatfile_write_object(&alp, ep, false,
+   file1 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file1, false);
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
+   ep.reset();
+   ep = ocs::tom::ElementPtr<ocs::tom::PE>(spool_flatfile_read_object(&alp, ocs::tom::PE::descriptor.e, nullptr,
                                    PE_fields, nullptr, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, file1);
-   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                   SP_FORM_ASCII, nullptr, file1));
+   file2 = spool_flatfile_write_object(&alp, *ep, false,
                                        PE_fields, &qconf_sfi,
                                        SP_DEST_TMP, SP_FORM_ASCII, file2, false);
-   lFreeElem(&ep);
+   ep.reset();
    int ret = diff(file1, file2);
    sge_unlink(nullptr, file1);
    sge_unlink(nullptr, file2);

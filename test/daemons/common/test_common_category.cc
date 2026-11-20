@@ -34,8 +34,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_Category.h"
@@ -152,16 +150,16 @@ static ocs::tom::ListPtr<ocs::tom::US> test_create_access() {
             if (acc_elem != nullptr) {
                auto users_ptr = ocs::tom::ListPtr<ocs::tom::UE>::create("user");
                const ocs::tom::List<ocs::tom::UE> users = *users_ptr;
-               ocs::tom::set<US_name>(acc_elem, access_str);
-               ocs::tom::set<US_entries>(acc_elem, std::move(users_ptr));
-               ocs::tom::set<US_consider_with_categories>(acc_elem, true);
-               lAppendElem(*access_list, std::move(acc_elem));
+               acc_elem->set<US_name>(access_str);
+               acc_elem->set<US_entries>(std::move(users_ptr));
+               acc_elem->set<US_consider_with_categories>(true);
+               access_list->push_back(std::move(acc_elem));
 
                for (access_str = strtok_r(nullptr, " ", &iter_dash); access_str;
                     access_str = strtok_r(nullptr, " ", &iter_dash)) {
                   auto user = ocs::tom::ElementPtr<ocs::tom::UE>::create();
-                  ocs::tom::set<UE_name>(user, access_str);
-                  lAppendElem(users, std::move(user));
+                  user->set<UE_name>(access_str);
+                  users.push_back(std::move(user));
                }
             }
          }
@@ -180,7 +178,7 @@ static ocs::tom::ListPtr<ocs::tom::US> test_create_access() {
 static ocs::tom::ListPtr<ocs::tom::PR> test_create_project(const char *project) {
    auto project_list = ocs::tom::ListPtr<ocs::tom::PR>::create("projects");
    ocs::tom::Element<ocs::tom::PR> prj = project_list->emplace_back<PR_name>(project);
-   ocs::tom::set<PR_consider_with_categories>(prj, true);
+   prj.set<PR_consider_with_categories>(true);
    return project_list;
 }
 
@@ -191,23 +189,23 @@ static ocs::tom::ListPtr<ocs::tom::PR> test_create_project(const char *project) 
 static ocs::tom::ListPtr<ocs::tom::RQS> test_create_rqs() {
    auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::create("my_rqs");
    auto rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
-   ocs::tom::set<RQS_name>(rqs, "Test_Name1");
-   ocs::tom::set<RQS_enabled>(rqs, true);
+   rqs->set<RQS_name>("Test_Name1");
+   rqs->set<RQS_enabled>(true);
    auto rule_list = ocs::tom::ListPtr<ocs::tom::RQR>::create("Rule_List");
    auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
    auto filter = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
-   ocs::tom::set<RQRF_expand>(filter, true);
-   ocs::tom::emplace_back_in<RQRF_scope, ST_name>(filter, "rqs_user");
-   ocs::tom::set<RQR_filter_users>(rule, std::move(filter));
+   filter->set<RQRF_expand>(true);
+   filter->emplace_back_in<RQRF_scope, ST_name>("rqs_user");
+   rule->set<RQR_filter_users>(std::move(filter));
    auto limit_list = ocs::tom::ListPtr<ocs::tom::RQRL>::create("limit_list");
    auto limit = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
-   ocs::tom::set<RQRL_name>(limit, "slots");
-   ocs::tom::set<RQRL_value>(limit, "2*$num_proc");
-   lAppendElem(*limit_list, std::move(limit));
-   ocs::tom::set<RQR_limit>(rule, std::move(limit_list));
-   lAppendElem(*rule_list, std::move(rule));
-   ocs::tom::set<RQS_rule>(rqs, std::move(rule_list));
-   lAppendElem(*rqs_list, std::move(rqs));
+   limit->set<RQRL_name>("slots");
+   limit->set<RQRL_value>("2*$num_proc");
+   limit_list->push_back(std::move(limit));
+   rule->set<RQR_limit>(std::move(limit_list));
+   rule_list->push_back(std::move(rule));
+   rqs->set<RQS_rule>(std::move(rule_list));
+   rqs_list->push_back(std::move(rqs));
    return rqs_list;
 }
 
@@ -228,13 +226,13 @@ static ocs::tom::ListPtr<ocs::tom::CE> test_create_request(const char *requestSt
               request_str = strtok_r(nullptr, " ", &iter_dash)) {
             auto request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
             if (request != nullptr) {
-               ocs::tom::set<CE_name>(request, request_str);
-               ocs::tom::set<CE_stringval>(request, strtok_r(nullptr, " ", &iter_dash));
+               request->set<CE_name>(request_str);
+               request->set<CE_stringval>(strtok_r(nullptr, " ", &iter_dash));
             } else {
                requests.reset();
                goto end;
             }
-            lAppendElem(*requests, std::move(request));
+            requests->push_back(std::move(request));
          }
          sge_free(&request_cp);
          request_cp = nullptr;
@@ -262,12 +260,12 @@ static ocs::tom::ListPtr<ocs::tom::QR> test_create_queue(const char *queueStr, c
               queues_str = strtok_r(nullptr, " ", &iter_dash)) {
             auto queue = ocs::tom::ElementPtr<ocs::tom::QR>::create();
             if (queue != nullptr) {
-               ocs::tom::set<QR_name>(queue, queues_str);
+               queue->set<QR_name>(queues_str);
             } else {
                queues.reset();
                goto end;
             }
-            lAppendElem(*queues, std::move(queue));
+            queues->push_back(std::move(queue));
          }
          sge_free(&queue_cp);
          queue_cp = nullptr;
@@ -288,14 +286,14 @@ static void test_create_pe(const char *peStr, const ocs::tom::Element<ocs::tom::
    char *iter_dash = nullptr;
 
    for (const char *pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str = strtok_r(nullptr, " ", &iter_dash)) {
-      ocs::tom::set<JB_pe>(job_elem, pe_str);
+      job_elem.set<JB_pe>(pe_str);
       pe_str = strtok_r(nullptr, " ", &iter_dash);
       ocs::tom::ListPtr<ocs::tom::RN> range;
       range_list_parse_from_string(range, nullptr, pe_str, false, false, INF_ALLOWED);
       if (range != nullptr) {
-         ocs::tom::set<JB_pe_range>(job_elem, std::move(range));
+         job_elem.set<JB_pe_range>(std::move(range));
       } else {
-         ocs::tom::set<JB_pe>(job_elem, nullptr);
+         job_elem.set<JB_pe>(nullptr);
          printf("error generating pe object: %s\n", peStr);
       }
    }
@@ -311,7 +309,7 @@ static void test_create_groups(const char *groupStr, const ocs::tom::Element<ocs
    char *cp = strdup(groupStr);
    char *iter_dash = nullptr;
    for (const char *s = strtok_r(cp, " ", &iter_dash); s; s = strtok_r(nullptr, " ", &iter_dash)) {
-      ocs::tom::emplace_back_in<JB_grp_list, ST_name>(job_elem, s);
+      job_elem.emplace_back_in<JB_grp_list, ST_name>(s);
    }
    sge_free(&cp);
 }
@@ -326,19 +324,19 @@ static ocs::tom::ElementPtr<ocs::tom::JB> test_create_job(const data_entry_t *te
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    if (job != nullptr) {
-      ocs::tom::set<JB_type>(job, test->type);
+      job->set<JB_type>(test->type);
 
       if (test->project != nullptr) {
-         ocs::tom::set<JB_project>(job, test->project);
+         job->set<JB_project>(test->project);
       }
       if (test->owner != nullptr) {
-         ocs::tom::set<JB_owner>(job, test->owner);
+         job->set<JB_owner>(test->owner);
       }
       if (test->group != nullptr) {
-         ocs::tom::set<JB_group>(job, test->group);
+         job->set<JB_group>(test->group);
       }
       if (test->ckpt != nullptr) {
-         ocs::tom::set<JB_checkpoint_name>(job, test->ckpt);
+         job->set<JB_checkpoint_name>(test->ckpt);
       }
       if (test->g_h_r != nullptr) {
          if (auto requests = test_create_request(test->g_h_r, count); requests != nullptr) {
@@ -448,10 +446,10 @@ static bool run_test(const data_entry_t *t, const char *expected) {
 static std::string build_mem_cat(const char *val) {
    auto req = ocs::tom::ListPtr<ocs::tom::CE>::create("r");
    auto e_ptr = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(e_ptr, "mem_free");
-   ocs::tom::set<CE_stringval>(e_ptr, val);
-   ocs::tom::set<CE_valtype>(e_ptr, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   ocs::tom::set<CE_consumable>(e_ptr, CONSUMABLE_NO);
+   e_ptr->set<CE_name>("mem_free");
+   e_ptr->set<CE_stringval>(val);
+   e_ptr->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   e_ptr->set<CE_consumable>(CONSUMABLE_NO);
    const ocs::tom::Element<ocs::tom::CE> e = req->push_back(std::move(e_ptr));
    ocs::tom::ListPtr<ocs::tom::AN> al;
    centry_fill_and_check(e, &al, false, false);

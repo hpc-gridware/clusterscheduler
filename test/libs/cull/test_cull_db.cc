@@ -19,13 +19,15 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Unit tests for list moves and the database functions in `libs/cull`
+ * @brief Unit tests for list moves and the database functions of the list core in `libs/tom`
  *
- * Covers the functions that move elements between lists (lAppendList,
- * lDechainList, lAddSubList, lOverrideStrList, lSplit, lSelectDestroy), the
- * navigation helpers (lPrev, lGetElemIndex, lFindLastRW, lFindNextRW,
- * lFindPrevRW, lCreateElemList), the string list converters (lString2List,
- * lString2ListNone, lDiffListStr).
+ * Covers the functions that move elements between lists (append_list(),
+ * split_from(), split_list()), the navigation helpers (prev(), find_last(),
+ * find_next(), find_prev()) and the string list converters
+ * (string_to_list(), string_to_list_none(), remove_common_str()). They
+ * replace lAppendList(), lDechainList(), lSplit(), lSelectDestroy(), lPrev(),
+ * lFindLastRW(), lFindNextRW(), lFindPrevRW(), lString2List(),
+ * lString2ListNone() and lDiffListStr().
  *
  * A moved element takes its descriptor from the target list, and with it the
  * target's hash tables. After every move the tests check that each element is
@@ -48,7 +50,13 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_ListOpsCore.h"
+#include "tom/ocs_Raw.h"
+#include "tom/ocs_SelectCore.h"
 #include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
@@ -58,14 +66,13 @@
 /** @brief The main synthetic CULL object type, defined only for these tests
  *
  * A unique hashed string key, a non-unique hashed group number, a host for
- * lString2List, a non-unique hashed string for lOverrideStrList and a sublist
- * for lAddSubList.
+ * string_to_list(), a non-unique hashed string and a sublist.
  */
 enum {
    TEST_key = 1,   ///< a string attribute that is a unique hashed key
    TEST_group,   ///< an unsigned long attribute with a non-unique hash
    TEST_host,   ///< a host name attribute
-   TEST_opt,   ///< a string attribute with a non-unique hash, the field lOverrideStrList works on
+   TEST_opt,   ///< a string attribute with a non-unique hash
    TEST_list   ///< a sublist of the same type
 };
 
@@ -113,8 +120,8 @@ static int s_fail = 0;
  * @param lp the list; nullptr counts as empty
  * @return the element count
  */
-static int nelem(const lList *lp) {
-   return static_cast<int>(lGetNumberOfElem(lp));
+static int nelem(const ocs::tom::ConstRawList lp) {
+   return static_cast<int>(lp.size());
 }
 
 /** @def CHECK
@@ -137,25 +144,72 @@ static int nelem(const lList *lp) {
       } \
    } while (0)
 
+/**
+ * @brief Lends the list of an owner as a list reference to a core function that may replace or free it
+ *
+ * The core functions split_list(), string_to_list(), string_to_list_none() and
+ * remove_common_str() take an `lList *&`; the owner gets back whatever the
+ * reference holds when this object goes out of scope.
+ */
+class ListRef {
+public:
+   /**
+    * @brief Take the list out of an owner
+    * @param owner the owner, empty until this object is destroyed
+    */
+   explicit ListRef(ocs::tom::RawListPtr &owner) noexcept : owner_(owner), lp_(owner.release()) {}
+
+   ListRef(const ListRef &) = delete;
+   ListRef &operator=(const ListRef &) = delete;
+
+   /** @brief Give the list the reference holds now back to the owner */
+   ~ListRef() {
+      owner_ = ocs::tom::RawListPtr(lp_);
+   }
+
+   /**
+    * @brief The reference for the core function
+    * @return the reference to the list, nullptr if there is none
+    */
+   lList *&ref() noexcept {
+      return lp_;
+   }
+
+private:
+   ocs::tom::RawListPtr &owner_;   ///< the owner the list goes back to
+   lList *lp_;                     ///< the list lent out
+};
+
 /** @brief Build a list with keys `<prefix>0` .. `<prefix><n-1>`
  *
  * Element i carries TEST_group = i % 2.
  *
  * @param prefix the key prefix, distinct per list so keys never collide
  * @param n the number of elements
- * @return the new list, owned by the caller
+ * @return the owner of the new list
  */
-static lList *make_list(const char *prefix, int n) {
-   lList *lp = lCreateList(prefix, TEST_Type);
+static ocs::tom::RawListPtr make_list(const char *prefix, const int n) {
+   auto lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, prefix);
    for (int i = 0; i < n; i++) {
       char key[32];
       snprintf(key, sizeof(key), "%s%d", prefix, i);
-      lListElem *ep = lCreateElem(TEST_Type);
-      lSetString(ep, TEST_key, key);
-      lSetUlong(ep, TEST_group, i % 2);
-      lAppendElem(lp, ep);
+      auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+      ep->set(TEST_key, static_cast<const char *>(key));
+      ep->set(TEST_group, static_cast<std::uint32_t>(i % 2));
+      lp->push_back(std::move(ep));
    }
    return lp;
+}
+
+/** @brief The element of a list with a string key
+ *
+ * @param lp the list, may be empty
+ * @param nm the string field
+ * @param key the key
+ * @return the element, nullptr if none holds the key
+ */
+static lListElem *find_str(const ocs::tom::RawList lp, const int nm, const char *key) {
+   return lp.find_first(nm, key);
 }
 
 /** @brief Check that a list's hash tables match its elements
@@ -166,24 +220,24 @@ static lList *make_list(const char *prefix, int n) {
  * @param lp the list to inspect; nullptr counts as consistent
  * @return true when both hash tables agree with the list
  */
-static bool hashes_consistent(const lList *lp) {
-   if (lp == nullptr) {
+static bool hashes_consistent(const ocs::tom::ConstRawList lp) {
+   if (!lp) {
       return true;
    }
-   const lListElem *ep;
    int expected[2] = {0, 0};
-   for_each_ep(ep, lp) {
-      if (lGetElemStr(lp, TEST_key, lGetString(ep, TEST_key)) != ep) {
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      if (lp.find_first(TEST_key, ep.get<const char *>(TEST_key)).raw() != ep.raw()) {
          return false;
       }
-      expected[lGetUlong(ep, TEST_group) % 2]++;
+      expected[ep.get<std::uint32_t>(TEST_group) % 2]++;
    }
-   for (lUlong g = 0; g < 2; g++) {
+   const int pos = ocs::tom::field_pos(lp.descr(), TEST_group);
+   for (std::uint32_t g = 0; g < 2; g++) {
       int found = 0;
       const void *it = nullptr;
-      for (const lListElem *h = lGetElemUlongFirst(lp, TEST_group, g, &it); h != nullptr;
-           h = lGetElemUlongNext(lp, TEST_group, g, &it)) {
-         if (lGetUlong(h, TEST_group) != g) {
+      for (const lListElem *h = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp, pos, g, &it); h != nullptr;
+           h = ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp, pos, g, &it)) {
+         if (ocs::tom::get<std::uint32_t>(h, TEST_group) != g) {
             return false;
          }
          found++;
@@ -198,238 +252,267 @@ static bool hashes_consistent(const lList *lp) {
 /** @brief Check that the prev pointers mirror the next pointers
  *
  * @param lp the list to inspect; nullptr counts as consistent
- * @return true when walking backwards from lLast reaches every element once
+ * @return true when walking backwards from back() reaches every element once
  */
-static bool back_links_consistent(const lList *lp) {
-   if (lp == nullptr) {
+static bool back_links_consistent(const ocs::tom::ConstRawList lp) {
+   if (!lp) {
       return true;
    }
    int n = 0;
    const lListElem *expected_next = nullptr;
-   for (const lListElem *ep = lLast(lp); ep != nullptr; ep = lPrev(ep)) {
-      if (lNext(ep) != expected_next) {
+   for (ocs::tom::ConstRawElement ep = lp.back(); ep; ep = ep.prev()) {
+      if (ep.next().raw() != expected_next) {
          return false;
       }
-      expected_next = ep;
+      expected_next = ep.raw();
       n++;
    }
-   return n == nelem(lp) && expected_next == lFirst(lp);
+   return n == nelem(lp) && expected_next == lp.front().raw();
+}
+
+/** @brief The condition TEST_group == value
+ *
+ * @param op the comparison
+ * @param value the value
+ * @return the owner of the condition
+ */
+static ocs::tom::RawWherePtr group_is(const ocs::tom::CompareOp op, const std::uint32_t value) {
+   return ocs::tom::where_compare(TEST_Type, TEST_group, op, value);
 }
 
 // ---------------------------------------------------------------------------
 // Navigation  [T01–T09]
 // ---------------------------------------------------------------------------
 
+/** @brief prev(), find_last(), find_prev() and find_next() */
 static void test_navigation() {
    printf("\n--- navigation ---\n");
 
-   lList *lp = lCreateElemList("blank", TEST_Type, 3);
-   CHECK(1, "lCreateElemList creates the requested number of elements", nelem(lp) == 3);
-   lFreeList(&lp);
+   // CHECK 1 removed: lCreateElemList() has no TOM counterpart (CS-3103)
 
-   lp = make_list("n", 5);   // groups 0 1 0 1 0
-   const lListElem *third = lNext(lNext(lFirst(lp)));
-   CHECK(2, "lGetElemIndex counts from 0", lGetElemIndex(third, lp) == 2);
-   lListElem *loose = lCreateElem(TEST_Type);
-   CHECK(3, "lGetElemIndex of an element outside any list is -1", lGetElemIndex(loose, lp) == -1);
-   lFreeElem(&loose);
+   ocs::tom::RawListPtr lp = make_list("n", 5);   // groups 0 1 0 1 0
+   const ocs::tom::RawElement third = lp->front().next().next();
+   // CHECK 2 removed: lGetElemIndex() has no TOM counterpart (CS-3103)
+   // CHECK 3 removed: lGetElemIndex() has no TOM counterpart (CS-3103)
 
-   CHECK(4, "lPrev/lPrevRW step back", lPrev(third) == lNext(lFirst(lp)) && lPrevRW(lFirst(lp)) == nullptr);
+   CHECK(4, "prev() steps back", third.prev().raw() == lp->front().next().raw() && !lp->front().prev());
 
-   lCondition *odd = lWhere("%T(%I==%u)", TEST_Type, TEST_group, 1);
-   lListElem *last_odd = lFindLastRW(lp, odd);
-   CHECK(5, "lFindLastRW finds the last match", last_odd != nullptr &&
-         strcmp(lGetString(last_odd, TEST_key), "n3") == 0);
-   lListElem *prev_odd = lFindPrevRW(last_odd, odd);
-   CHECK(6, "lFindPrevRW finds the previous match", prev_odd != nullptr &&
-         strcmp(lGetString(prev_odd, TEST_key), "n1") == 0);
-   CHECK(7, "lFindPrevRW before the first match is nullptr", lFindPrevRW(prev_odd, odd) == nullptr);
-   CHECK(8, "lFindNextRW finds the next match", lFindNextRW(prev_odd, odd) == last_odd);
-   CHECK(9, "lFindNextRW after the last match is nullptr", lFindNextRW(last_odd, odd) == nullptr);
-   lFreeWhere(&odd);
-
-   lFreeList(&lp);
+   ocs::tom::RawWherePtr odd = group_is(ocs::tom::CompareOp::Equal, 1);
+   const lListElem *last_odd = ocs::tom::find_last(lp.get(), odd.get());
+   CHECK(5, "find_last() finds the last match", last_odd != nullptr &&
+         strcmp(ocs::tom::get<const char *>(last_odd, TEST_key), "n3") == 0);
+   const lListElem *prev_odd = ocs::tom::find_prev(last_odd, odd.get());
+   CHECK(6, "find_prev() finds the previous match", prev_odd != nullptr &&
+         strcmp(ocs::tom::get<const char *>(prev_odd, TEST_key), "n1") == 0);
+   CHECK(7, "find_prev() before the first match is nullptr", ocs::tom::find_prev(prev_odd, odd.get()) == nullptr);
+   CHECK(8, "find_next() finds the next match", ocs::tom::find_next(prev_odd, odd.get()) == last_odd);
+   CHECK(9, "find_next() after the last match is nullptr", ocs::tom::find_next(last_odd, odd.get()) == nullptr);
 }
 
 // ---------------------------------------------------------------------------
 // Moving elements between lists  [T10–T27]
 // ---------------------------------------------------------------------------
 
+/** @brief append_list() and split_from() */
 static void test_moves() {
    printf("\n--- moving elements between lists ---\n");
 
-   // T10-T13: lAppendList moves all elements and leaves the source empty
-   lList *a = make_list("a", 3);
-   lList *b = make_list("b", 4);
-   CHECK(10, "lAppendList returns 0", lAppendList(a, b) == 0);
-   CHECK(11, "lAppendList moves every element", nelem(a) == 7 && nelem(b) == 0);
-   CHECK(12, "lAppendList: moved elements are found in the target",
-         hashes_consistent(a) && back_links_consistent(a) && lGetElemStr(a, TEST_key, "b3") != nullptr);
-   CHECK(13, "lAppendList: moved elements are gone from the source", lGetElemStr(b, TEST_key, "b0") == nullptr);
-   lFreeList(&b);
+   // T10-T13: append_list() moves all elements and leaves the source empty
+   ocs::tom::RawListPtr a = make_list("a", 3);
+   ocs::tom::RawListPtr b = make_list("b", 4);
+   // CHECK 10 removed: the return value 0 of lAppendList() has no TOM counterpart (CS-3103)
+   ocs::tom::append_list(a.get(), b.get());
+   CHECK(11, "append_list() moves every element", nelem(a.get()) == 7 && nelem(b.get()) == 0);
+   CHECK(12, "append_list(): moved elements are found in the target",
+         hashes_consistent(a.get()) && back_links_consistent(a.get()) && find_str(a.get(), TEST_key, "b3") != nullptr);
+   CHECK(13, "append_list(): moved elements are gone from the source", find_str(b.get(), TEST_key, "b0") == nullptr);
+   b.reset();
 
    // T14: different descriptors are refused
-   lList *alien = lCreateList("alien", ALIEN_Type);
-   CHECK(14, "lAppendList with a different descriptor fails", lAppendList(a, alien) == -1);
-   lFreeList(&alien);
-
-   // T15-T18: lDechainList moves the tail into a new list
-   lListElem *at = lGetElemStrRW(a, TEST_key, "b0");   // fourth element
-   lList *tail = nullptr;
-   lDechainList(a, &tail, at);
-   CHECK(15, "lDechainList splits at the element", nelem(a) == 3 && nelem(tail) == 4 &&
-         lFirst(tail) == at);
-   CHECK(16, "lDechainList: both halves have consistent links", back_links_consistent(a) && back_links_consistent(tail));
-   CHECK(17, "lDechainList: both halves have consistent hashes", hashes_consistent(a) && hashes_consistent(tail));
-   CHECK(18, "lDechainList: moved keys left the source",
-         lGetElemStr(a, TEST_key, "b0") == nullptr && lGetElemStr(tail, TEST_key, "a0") == nullptr);
-
-   // T19-T20: lDechainList into an existing list appends
-   lListElem *a1 = lGetElemStrRW(a, TEST_key, "a1");
-   lDechainList(a, &tail, a1);
-   CHECK(19, "lDechainList appends to an existing target",
-         nelem(a) == 1 && nelem(tail) == 6 && lLast(tail) == lGetElemStr(tail, TEST_key, "a2"));
-   CHECK(20, "lDechainList: target still consistent", back_links_consistent(tail) && hashes_consistent(tail) &&
-         hashes_consistent(a));
-   lFreeList(&a);
-   lFreeList(&tail);
-
-   // T21-T24: lAddSubList creates, then extends the sublist
-   lListElem *holder = lCreateElem(TEST_Type);
-   lList *first = make_list("s", 2);
-   lAddSubList(holder, TEST_list, first);
-   CHECK(21, "lAddSubList into an empty field stores the list", lGetList(holder, TEST_list) == first);
-   lList *more = make_list("t", 2);
-   lAddSubList(holder, TEST_list, more);
-   const lList *sub = lGetList(holder, TEST_list);
-   CHECK(22, "lAddSubList into a filled field appends", nelem(sub) == 4);
-   CHECK(23, "lAddSubList: appended keys are found", hashes_consistent(sub) && lGetElemStr(sub, TEST_key, "t1") != nullptr);
-   lList *empty = lCreateList("empty", TEST_Type);
-   lAddSubList(holder, TEST_list, empty);
-   CHECK(24, "lAddSubList with an empty list leaves the field unchanged", nelem(lGetList(holder, TEST_list)) == 4);
-   lFreeList(&empty);   // an empty list is not consumed
-   lFreeElem(&holder);
-
-   // T25-T27: lOverrideStrList replaces every occurrence of the override string
-   // in the target by the entries of the update list
-   lList *opts = lCreateList("opts", TEST_Type);
-   const char *old_opts[] = {"-q", "-l", "-q"};
-   for (int i = 0; i < 3; i++) {
-      char key[32];
-      snprintf(key, sizeof(key), "o%d", i);
-      lListElem *ep = lCreateElem(TEST_Type);
-      lSetString(ep, TEST_key, key);
-      lSetString(ep, TEST_opt, old_opts[i]);
-      lAppendElem(opts, ep);
+   auto alien = ocs::tom::RawListPtr::create(ALIEN_Type, ocs::tom::Hashing::On, "alien");
+   auto alien_elem = ocs::tom::RawElementPtr::create(ALIEN_Type);
+   alien_elem->set(ALIEN_key, static_cast<const char *>("x"));
+   alien->push_back(std::move(alien_elem));
+   bool refused = false;
+   try {
+      ocs::tom::append_list(a.get(), alien.get());
+   } catch (const ocs::tom::FieldException &e) {
+      refused = e.reason() == ocs::tom::FieldException::Reason::WrongType;
    }
-   lList *update = lCreateList("update", TEST_Type);
-   lListElem *nq = lCreateElem(TEST_Type);
-   lSetString(nq, TEST_key, "u0");
-   lSetString(nq, TEST_opt, "-q");
-   lAppendElem(update, nq);
-   CHECK(25, "lOverrideStrList returns 0", lOverrideStrList(opts, update, TEST_opt, "-q") == 0);
-   // lOverrideStrList frees the update list itself
-   const lListElem *q = lGetElemStr(opts, TEST_opt, "-q");
-   CHECK(26, "lOverrideStrList replaced both old -q entries by the new one",
-         q != nullptr && strcmp(lGetString(q, TEST_key), "u0") == 0 && nelem(opts) == 2);
-   CHECK(27, "lOverrideStrList kept the other options",
-         lGetElemStr(opts, TEST_opt, "-l") != nullptr && hashes_consistent(opts));
-   lFreeList(&opts);
+   CHECK(14, "append_list() with a different descriptor throws WrongType and moves nothing",
+         refused && nelem(a.get()) == 7 && nelem(alien.get()) == 1);
+   alien.reset();
+
+   // T15-T18: split_from() moves the tail into a new list
+   lListElem *at = find_str(a.get(), TEST_key, "b0");   // fourth element
+   ocs::tom::RawListPtr tail(ocs::tom::split_from(a.get(), at, "a"));
+   CHECK(15, "split_from() splits at the element", nelem(a.get()) == 3 && nelem(tail.get()) == 4 &&
+         tail->front().raw() == at);
+   CHECK(16, "split_from(): both halves have consistent links",
+         back_links_consistent(a.get()) && back_links_consistent(tail.get()));
+   CHECK(17, "split_from(): both halves have consistent hashes",
+         hashes_consistent(a.get()) && hashes_consistent(tail.get()));
+   CHECK(18, "split_from(): moved keys left the source",
+         find_str(a.get(), TEST_key, "b0") == nullptr && find_str(tail.get(), TEST_key, "a0") == nullptr);
+
+   // T19-T20: lDechainList() into an existing list appended; that is split_from() and append_list()
+   lListElem *a1 = find_str(a.get(), TEST_key, "a1");
+   ocs::tom::RawListPtr part(ocs::tom::split_from(a.get(), a1, "a"));
+   ocs::tom::append_list(tail.get(), part.get());
+   part.reset();
+   CHECK(19, "split_from() and append_list() append to an existing target",
+         nelem(a.get()) == 1 && nelem(tail.get()) == 6 &&
+         tail->back().raw() == find_str(tail.get(), TEST_key, "a2"));
+   CHECK(20, "split_from() and append_list(): target still consistent",
+         back_links_consistent(tail.get()) && hashes_consistent(tail.get()) && hashes_consistent(a.get()));
+
+   // CHECK 21 removed: lAddSubList() has no TOM counterpart (CS-3103)
+   // CHECK 22 removed: lAddSubList() has no TOM counterpart (CS-3103)
+   // CHECK 23 removed: lAddSubList() has no TOM counterpart (CS-3103)
+   // CHECK 24 removed: lAddSubList() has no TOM counterpart (CS-3103)
+   // CHECK 25 removed: lOverrideStrList() has no TOM counterpart (CS-3103)
+   // CHECK 26 removed: lOverrideStrList() has no TOM counterpart (CS-3103)
+   // CHECK 27 removed: lOverrideStrList() has no TOM counterpart (CS-3103)
 }
 
 // ---------------------------------------------------------------------------
 // Selecting by condition  [T28–T35]
 // ---------------------------------------------------------------------------
 
+/** @brief split_list(), with and without a list for the elements that do not match */
 static void test_select() {
    printf("\n--- selecting by condition ---\n");
 
-   lCondition *even = lWhere("%T(%I==%u)", TEST_Type, TEST_group, 0);
+   ocs::tom::RawWherePtr even = group_is(ocs::tom::CompareOp::Equal, 0);
 
-   // T28-T30: lSplit moves the non-matching elements into a new list
-   lList *src = make_list("x", 5);   // groups 0 1 0 1 0
-   lList *rest = nullptr;
-   CHECK(28, "lSplit returns 0", lSplit(&src, &rest, "rest", even) == 0);
-   CHECK(29, "lSplit keeps the matches and moves the others",
-         nelem(src) == 3 && nelem(rest) == 2 && lGetElemStr(rest, TEST_key, "x1") != nullptr);
-   CHECK(30, "lSplit: both lists consistent", hashes_consistent(src) && hashes_consistent(rest) &&
-         back_links_consistent(src) && back_links_consistent(rest));
-   lFreeList(&rest);
+   // T28-T30: split_list() moves the non-matching elements into a new list
+   ocs::tom::RawListPtr src = make_list("x", 5);   // groups 0 1 0 1 0
+   ocs::tom::RawListPtr rest;
+   // CHECK 28 removed: the return value 0 of lSplit() has no TOM counterpart (CS-3103)
+   {
+      ListRef src_ref(src);
+      ListRef rest_ref(rest);
+      ocs::tom::split_list(src_ref.ref(), &rest_ref.ref(), "rest", even.get());
+   }
+   CHECK(29, "split_list() keeps the matches and moves the others",
+         nelem(src.get()) == 3 && nelem(rest.get()) == 2 && find_str(rest.get(), TEST_key, "x1") != nullptr);
+   CHECK(30, "split_list(): both lists consistent", hashes_consistent(src.get()) && hashes_consistent(rest.get()) &&
+         back_links_consistent(src.get()) && back_links_consistent(rest.get()));
+   rest.reset();
 
-   // T31: lSplit without a target list frees the non-matching elements
-   lFreeList(&src);
+   // T31: split_list() without a target list frees the non-matching elements
    src = make_list("y", 4);
-   lSplit(&src, nullptr, nullptr, even);
-   CHECK(31, "lSplit without a target drops the non-matching elements",
-         nelem(src) == 2 && hashes_consistent(src));
+   {
+      ListRef src_ref(src);
+      ocs::tom::split_list(src_ref.ref(), nullptr, nullptr, even.get());
+   }
+   CHECK(31, "split_list() without a target drops the non-matching elements",
+         nelem(src.get()) == 2 && hashes_consistent(src.get()));
 
    // T32: when nothing matches, the source list is freed
-   lCondition *none = lWhere("%T(%I==%u)", TEST_Type, TEST_group, 5);
-   lSplit(&src, nullptr, nullptr, none);
-   CHECK(32, "lSplit leaving nothing frees the source", src == nullptr);
+   ocs::tom::RawWherePtr none = group_is(ocs::tom::CompareOp::Equal, 5);
+   {
+      ListRef src_ref(src);
+      ocs::tom::split_list(src_ref.ref(), nullptr, nullptr, none.get());
+   }
+   CHECK(32, "split_list() leaving nothing frees the source", !src);
 
    // T33: when everything matches, no target list is created
-   lList *all = make_list("z", 3);
-   lList *nothing = nullptr;
-   lCondition *any = lWhere("%T(%I<%u)", TEST_Type, TEST_group, 5);
-   lSplit(&all, &nothing, "nothing", any);
-   CHECK(33, "lSplit with everything matching creates no target", nothing == nullptr && nelem(all) == 3);
-   lFreeList(&all);
+   ocs::tom::RawListPtr all = make_list("z", 3);
+   ocs::tom::RawListPtr nothing;
+   ocs::tom::RawWherePtr any = group_is(ocs::tom::CompareOp::Lower, 5);
+   {
+      ListRef all_ref(all);
+      ListRef nothing_ref(nothing);
+      ocs::tom::split_list(all_ref.ref(), &nothing_ref.ref(), "nothing", any.get());
+   }
+   CHECK(33, "split_list() with everything matching creates no target", !nothing && nelem(all.get()) == 3);
 
-   // T34-T35: lSelectDestroy keeps the matching elements of the same list
-   lList *sel = make_list("w", 6);
-   sel = lSelectDestroy(sel, even);
-   CHECK(34, "lSelectDestroy keeps the matches", nelem(sel) == 3 && hashes_consistent(sel));
-   sel = lSelectDestroy(sel, none);
-   CHECK(35, "lSelectDestroy without a match returns nullptr", sel == nullptr);
-
-   lFreeWhere(&even);
-   lFreeWhere(&none);
-   lFreeWhere(&any);
+   // T34-T35: lSelectDestroy() was split_list() without a target list, keeping the matching elements
+   ocs::tom::RawListPtr sel = make_list("w", 6);
+   {
+      ListRef sel_ref(sel);
+      ocs::tom::split_list(sel_ref.ref(), nullptr, nullptr, even.get());
+   }
+   CHECK(34, "split_list() without a target keeps the matches", nelem(sel.get()) == 3 && hashes_consistent(sel.get()));
+   {
+      ListRef sel_ref(sel);
+      ocs::tom::split_list(sel_ref.ref(), nullptr, nullptr, none.get());
+   }
+   CHECK(35, "split_list() without a target and without a match leaves no list", !sel);
 }
 
 // ---------------------------------------------------------------------------
 // String lists  [T36–T44]
 // ---------------------------------------------------------------------------
 
+/** @brief string_to_list(), string_to_list_none() and remove_common_str() */
 static void test_string_lists() {
    printf("\n--- string lists ---\n");
 
-   // T36-T37: lString2List splits, skips duplicates
-   lList *lp = nullptr;
-   CHECK(36, "lString2List returns 0", lString2List("a,b a,c", &lp, TEST_Type, TEST_key, ", ") == 0);
-   CHECK(37, "lString2List drops duplicates", nelem(lp) == 3 && hashes_consistent(lp));
-   lFreeList(&lp);
+   // T36-T37: string_to_list() splits, skips duplicates
+   ocs::tom::RawListPtr lp;
+   // CHECK 36 removed: the return value 0 of lString2List() has no TOM counterpart (CS-3103)
+   {
+      ListRef lp_ref(lp);
+      ocs::tom::string_to_list("a,b a,c", lp_ref.ref(), TEST_Type, TEST_key, ", ");
+   }
+   CHECK(37, "string_to_list() drops duplicates", nelem(lp.get()) == 3 && hashes_consistent(lp.get()));
+   lp.reset();
 
-   // T38: lString2List on a host field
-   lString2List("h1 h2 h1", &lp, TEST_Type, TEST_host, " ");
-   CHECK(38, "lString2List on a host field", nelem(lp) == 2 && lGetElemHost(lp, TEST_host, "h2") != nullptr);
-   lFreeList(&lp);
+   // T38: string_to_list() on a host field
+   {
+      ListRef lp_ref(lp);
+      ocs::tom::string_to_list("h1 h2 h1", lp_ref.ref(), TEST_Type, TEST_host, " ");
+   }
+   CHECK(38, "string_to_list() on a host field",
+         nelem(lp.get()) == 2 && lp->find_first(TEST_host, ocs::tom::Host("h2")));
+   lp.reset();
 
-   // T39: lString2List of nullptr is an error
-   CHECK(39, "lString2List of nullptr returns 1", lString2List(nullptr, &lp, TEST_Type, TEST_key, " ") == 1);
+   // CHECK 39 removed: the return value 1 of lString2List(nullptr) has no TOM counterpart (CS-3103)
 
-   // T40-T42: lString2ListNone treats "none" as empty
-   CHECK(40, "lString2ListNone(\"none\") gives no list",
-         lString2ListNone("NONE", &lp, TEST_Type, TEST_key, " ") == 0 && lp == nullptr);
-   CHECK(41, "lString2ListNone with \"none\" among others is an error",
-         lString2ListNone("a none", &lp, TEST_Type, TEST_key, " ") == 1 && lp == nullptr);
-   CHECK(42, "lString2ListNone without \"none\" is lString2List",
-         lString2ListNone("a b", &lp, TEST_Type, TEST_key, " ") == 0 && nelem(lp) == 2);
-   lFreeList(&lp);
+   // T40-T42: string_to_list_none() treats "none" as empty
+   bool thrown = false;
+   try {
+      ListRef lp_ref(lp);
+      ocs::tom::string_to_list_none("NONE", lp_ref.ref(), TEST_Type, TEST_key, " ");
+   } catch (const ocs::tom::ListCoreError &) {
+      thrown = true;
+   }
+   CHECK(40, "string_to_list_none(\"none\") gives no list", !thrown && !lp);
+   thrown = false;
+   try {
+      ListRef lp_ref(lp);
+      ocs::tom::string_to_list_none("a none", lp_ref.ref(), TEST_Type, TEST_key, " ");
+   } catch (const ocs::tom::ListCoreError &) {
+      thrown = true;
+   }
+   CHECK(41, "string_to_list_none() with \"none\" among others throws ListCoreError and leaves no list",
+         thrown && !lp);
+   thrown = false;
+   try {
+      ListRef lp_ref(lp);
+      ocs::tom::string_to_list_none("a b", lp_ref.ref(), TEST_Type, TEST_key, " ");
+   } catch (const ocs::tom::ListCoreError &) {
+      thrown = true;
+   }
+   CHECK(42, "string_to_list_none() without \"none\" is string_to_list()", !thrown && nelem(lp.get()) == 2);
+   lp.reset();
 
-   // T43-T44: lDiffListStr removes the common keys from both lists
-   lList *l1 = nullptr;
-   lList *l2 = nullptr;
-   lString2List("a b c", &l1, TEST_Type, TEST_key, " ");
-   lString2List("b c d", &l2, TEST_Type, TEST_key, " ");
-   lDiffListStr(TEST_key, &l1, &l2);
-   CHECK(43, "lDiffListStr leaves only a in the first list",
-         nelem(l1) == 1 && lGetElemStr(l1, TEST_key, "a") != nullptr && hashes_consistent(l1));
-   CHECK(44, "lDiffListStr leaves only d in the second list",
-         nelem(l2) == 1 && lGetElemStr(l2, TEST_key, "d") != nullptr && hashes_consistent(l2));
-   lFreeList(&l1);
-   lFreeList(&l2);
+   // T43-T44: remove_common_str() removes the common keys from both lists
+   ocs::tom::RawListPtr l1;
+   ocs::tom::RawListPtr l2;
+   {
+      ListRef l1_ref(l1);
+      ListRef l2_ref(l2);
+      ocs::tom::string_to_list("a b c", l1_ref.ref(), TEST_Type, TEST_key, " ");
+      ocs::tom::string_to_list("b c d", l2_ref.ref(), TEST_Type, TEST_key, " ");
+      ocs::tom::remove_common_str(l1_ref.ref(), l2_ref.ref(), TEST_key, true);
+   }
+   CHECK(43, "remove_common_str() leaves only a in the first list",
+         nelem(l1.get()) == 1 && find_str(l1.get(), TEST_key, "a") != nullptr && hashes_consistent(l1.get()));
+   CHECK(44, "remove_common_str() leaves only d in the second list",
+         nelem(l2.get()) == 1 && find_str(l2.get(), TEST_key, "d") != nullptr && hashes_consistent(l2.get()));
 }
 
 // ---------------------------------------------------------------------------

@@ -34,6 +34,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Select.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 
@@ -41,7 +42,6 @@
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "basis_types.h"
-#include "cull/cull_test_api.h"
 
 /*
  * CS-2438 chunk 1, against a RUNNING qmaster.
@@ -96,8 +96,7 @@ static int s_fail = 0;
 static ocs::tom::ElementPtr<ocs::tom::HGRP>
 fetch_hgroup(const char *name) {
    ocs::tom::ListPtr<ocs::tom::HGRP> lp;
-   const auto where = ocs::tom::Where<ocs::tom::HGRP>::from_typed(lWhere("%T(%I==%s)", ocs::tom::HGRP::descriptor.e,
-                                                                         HGRP_name, name));
+   const auto where = ocs::tom::field<HGRP_name>() == name;
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
                                         ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::HGRP>());
@@ -136,7 +135,7 @@ modify_refused(const char *name, ocs::tom::ListPtr<ocs::tom::HR> &&new_host_list
    auto hosts = std::move(new_host_list);
    auto lp = ocs::tom::ListPtr<ocs::tom::HGRP>::create("mod");
    ocs::tom::Element<ocs::tom::HGRP> ep = lp->emplace_back<HGRP_name>(ocs::tom::Host(name));
-   ocs::tom::set<HGRP_host_list>(ep, std::move(hosts));
+   ep.set<HGRP_host_list>(std::move(hosts));
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
                                         ocs::gdi::SubCommand::NONE, lp);
@@ -156,7 +155,7 @@ member_count(const char *name) {
    if (hgrp == nullptr) {
       return -1;
    }
-   return lGetNumberOfElem(ocs::tom::get<HGRP_host_list>(hgrp));
+   return ocs::tom::size(ocs::tom::get<HGRP_host_list>(hgrp));
 }
 
 // ---------------------------------------------------------------------------

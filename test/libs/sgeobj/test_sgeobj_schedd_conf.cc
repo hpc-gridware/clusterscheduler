@@ -41,13 +41,12 @@
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_SC.h"
 
 static int s_fail = 0;
@@ -85,8 +84,16 @@ typedef struct {
    u_long      type;             ///< CULL attribute type (lStringT, lDoubleT, lUlongT)
 } schedd_conf_t;
 
-// run_tests: for each setting, create a default schedd_conf, overwrite one attribute,
-// validate the whole config, and CHECK that the result matches the expected outcome
+/**
+ * @brief For each setting, create a default scheduler configuration, overwrite one attribute, validate the whole
+ *        configuration and check that the result matches the expected outcome
+ *
+ * run_tests: for each setting, create a default schedd_conf, overwrite one attribute,
+ * validate the whole config, and CHECK that the result matches the expected outcome
+ * @param id the number of the next check; advanced by every check
+ * @param conf the attribute and its type
+ * @param settings the values and the expected outcomes, ended by a nullptr value
+ */
 static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
    for (int i = 0; settings[i].test_value != nullptr; i++, (*id)++) {
       auto schedd_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_conf");
@@ -97,7 +104,7 @@ static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
       if (schedd_conf) {
          switch (conf->type) {
             case lStringT:
-               lSetString(schedd_conf, (int)conf->test_attribute, settings[i].test_value);
+               ocs::tom::set(schedd_conf, static_cast<int>(conf->test_attribute), settings[i].test_value);
                break;
             case lDoubleT:
                break;

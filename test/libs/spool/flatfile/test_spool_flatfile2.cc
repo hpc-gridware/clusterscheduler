@@ -48,8 +48,6 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
@@ -113,6 +111,12 @@ static int diff(const char *file1, const char *file2) {
    return ret;
 }
 
+/**
+ * @brief Run the checks of this module test
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_flatfile2");
 
@@ -140,9 +144,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    auto lp = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Terminate Methods");
    auto ep = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
-   ocs::tom::set<ASTR_href>(ep, "global");
-   ocs::tom::set<ASTR_value>(ep, "/tmp/myterminate_method.sh");
-   lAppendElem(*lp, std::move(ep));
+   ep->set<ASTR_href>(ocs::tom::Host("global"));
+   ep->set<ASTR_value>("/tmp/myterminate_method.sh");
+   lp->push_back(std::move(ep));
    ocs::tom::set<CQ_terminate_method>(created, std::move(lp));
 
    auto cqueue_list = ocs::tom::ListPtr<ocs::tom::CQ>::create("CQ List");
@@ -162,14 +166,14 @@ int main(int /*argc*/, char * /*argv*/[]) {
       file1 = spool_flatfile_write_object(&alp, cqueue, false,
                                           CQ_fields, &qconf_sfi,
                                           SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
-      lListElem *reread = spool_flatfile_read_object(&alp, ocs::tom::CQ::descriptor.e, nullptr,
-                                                     CQ_fields, nullptr, true, &qconf_sfi,
-                                                     SP_FORM_ASCII, nullptr, file1);
-      if (reread != nullptr) {
-         file2 = spool_flatfile_write_object(&alp, reread, false,
+      ocs::tom::ElementPtr<ocs::tom::CQ> reread(spool_flatfile_read_object(&alp, ocs::tom::CQ::descriptor.e, nullptr,
+                                                                           CQ_fields, nullptr, true, &qconf_sfi,
+                                                                           SP_FORM_ASCII, nullptr, file1));
+      if (reread) {
+         file2 = spool_flatfile_write_object(&alp, *reread, false,
                                              CQ_fields, &qconf_sfi,
                                              SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
-         lFreeElem(&reread);
+         reread.reset();
       }
       CHECK(id, "CQ single-object write-read-write round-trip produces identical output",
             diff(file1, file2) == 0); id++;
@@ -184,39 +188,41 @@ int main(int /*argc*/, char * /*argv*/[]) {
    {
       const char *file1 = nullptr;
       const char *file2 = nullptr;
-      lList *read_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::CE> read_list;
 
-      lList *ce_list = lCreateList("CE List", ocs::tom::CE::descriptor.e);
+      auto ce_list = ocs::tom::ListPtr<ocs::tom::CE>::create("CE List");
       auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-      ocs::tom::set<CE_name>(ce, "test_ce");
-      ocs::tom::set<CE_shortcut>(ce, "tc");
-      ocs::tom::set<CE_valtype>(ce, 1);
-      ocs::tom::set<CE_relop>(ce, CMPLXEQ_OP);
-      ocs::tom::set<CE_requestable>(ce, REQU_YES);
-      ocs::tom::set<CE_defaultval>(ce, "0");
-      ocs::tom::set<CE_urgency_weight>(ce, "1");
-      lAppendElem(ce_list, std::move(ce));
-      spool_flatfile_align_list(&alp, (const lList *)ce_list, CE_fields, 0);
+      ce->set<CE_name>("test_ce");
+      ce->set<CE_shortcut>("tc");
+      ce->set<CE_valtype>(1);
+      ce->set<CE_relop>(CMPLXEQ_OP);
+      ce->set<CE_requestable>(REQU_YES);
+      ce->set<CE_defaultval>("0");
+      ce->set<CE_urgency_weight>("1");
+      ce_list->push_back(std::move(ce));
+      spool_flatfile_align_list(&alp, *ce_list, CE_fields, 0);
       alp.reset();
 
-      file1 = spool_flatfile_write_list(&alp, ce_list, CE_fields,
+      file1 = spool_flatfile_write_list(&alp, *ce_list, CE_fields,
                                         &qconf_ce_list_sfi,
                                         SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
       CHECK(id, "CE list write: spool_flatfile_write_list returns non-null", file1 != nullptr); id++;
 
       if (file1 != nullptr) {
-         read_list = spool_flatfile_read_list(&alp, ocs::tom::CE::descriptor.e, CE_fields, nullptr, true,
-                                             &qconf_ce_list_sfi, SP_FORM_ASCII, nullptr, file1);
+         read_list = ocs::tom::ListPtr<ocs::tom::CE>(spool_flatfile_read_list(&alp, ocs::tom::CE::descriptor.e,
+                                                                              CE_fields, nullptr, true,
+                                                                              &qconf_ce_list_sfi, SP_FORM_ASCII,
+                                                                              nullptr, file1));
       }
       CHECK(id, "CE list read: spool_flatfile_read_list returns non-null", read_list != nullptr); id++;
 
       if (read_list != nullptr) {
-         spool_flatfile_align_list(&alp, (const lList *)read_list, CE_fields, 0);
+         spool_flatfile_align_list(&alp, *read_list, CE_fields, 0);
          alp.reset();
-         file2 = spool_flatfile_write_list(&alp, read_list, CE_fields,
+         file2 = spool_flatfile_write_list(&alp, *read_list, CE_fields,
                                            &qconf_ce_list_sfi,
                                            SP_DEST_TMP, SP_FORM_ASCII, nullptr, false);
-         lFreeList(&read_list);
+         read_list.reset();
       }
       CHECK(id, "CE list write-read-write round-trip produces identical output",
             diff(file1, file2) == 0); id++;
@@ -225,7 +231,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       sge_free(&file1);
       sge_free(&file2);
       alp.reset();
-      lFreeList(&ce_list);
+      ce_list.reset();
    }
 
    // --- error handling ---

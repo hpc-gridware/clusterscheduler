@@ -49,7 +49,7 @@
 #include "tom/ocs_Model.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
 
 /**
  * @brief The fallback text the model gives for an unknown field

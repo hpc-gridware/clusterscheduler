@@ -39,24 +39,25 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_ElementCore.h"
 #include "tom/ocs_Sort.h"
 #include "tom/ocs_Raw.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
 
 using namespace ocs::tom;
 
 /**
- * @brief Build a list of tasks with consecutive numbers, the old way
+ * @brief Build a list of tasks with consecutive numbers, starting at 1
  * @param n the number of tasks
  * @return the list
  */
-static lList *
+static ListPtr<JAT>
 make_tasks(const std::uint32_t n) {
-   lList *tasks = lCreateList("tasks", ocs::tom::JAT::descriptor.e);
+   auto tasks = ListPtr<JAT>::create("tasks");
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemUlong(&tasks, JAT_task_number, i, ocs::tom::JAT::descriptor.e);
+      tasks->emplace_back<JAT_task_number>(i);
    }
    return tasks;
 }
@@ -76,32 +77,34 @@ static int count(const Range &range) {
 }
 
 /**
- * @brief HDL-05: ranges and lookups yield what the old interface yields
+ * @brief HDL-05: ranges and lookups yield the elements a plain walk of the list yields
  * @return nothing; CHECK records the results
  */
 static void
 test_ranges_and_lookups() {
-   lListElem *job = lCreateElem(ocs::tom::JB::descriptor.e);
-   lSetList(job, JB_ja_tasks, make_tasks(5));
+   auto job_owner = ElementPtr<JB>::create();
+   const Element<JB> job = job_owner.get();
+   job.set<JB_ja_tasks>(make_tasks(5));
 
-   std::vector<const lListElem *> old_order;
-   for (ConstRawElement ep = ConstRawList{lGetList(job, JB_ja_tasks)}.front(); ep; ep = ep.next()) {
-      old_order.push_back(ep.raw());
+   std::vector<const lListElem *> walk_order;
+   for (ConstRawElement ep = ConstRawList{job.get<JB_ja_tasks>()}.front(); ep; ep = ep.next()) {
+      walk_order.push_back(ep.raw());
    }
    std::vector<const lListElem *> new_order;
-   for (const auto task : Element<JB>{job}.get<JB_ja_tasks>()) {
+   for (const auto task : job.get<JB_ja_tasks>()) {
       new_order.push_back(task);
    }
    CHECK(1, "range-for over the task list of a job yields the elements of a walk with front() and next(), in order",
-         new_order == old_order && new_order.size() == 5);
+         new_order == walk_order && new_order.size() == 5);
 
    for (const std::uint32_t n : {5u, 40u}) {
-      lList *raw = make_tasks(n);
+      auto owner = make_tasks(n);
       // a second task 3, so that find_all has two matches; task numbers are unique, so take another field
-      lSetUlong(RawList{raw}.front(), JAT_status, 7);
-      lSetUlong(RawList{raw}.back(), JAT_status, 7);
-      const ConstList<JAT> tasks{raw};
-      const bool lookups = tasks.find_first<JAT_task_number>(3u).raw() == lGetElemUlong(raw, JAT_task_number, 3) &&
+      owner->front().set<JAT_status>(7u);
+      owner->back().set<JAT_status>(7u);
+      const ConstList<JAT> tasks = owner.get();
+      // the third element of the walk is task 3, which the lookup must hand out
+      const bool lookups = tasks.find_first<JAT_task_number>(3u).raw() == tasks.front().next().next().raw() &&
                            tasks.find_first<JAT_task_number>(3u).get<JAT_task_number>() == 3 &&
                            !tasks.find_first<JAT_task_number>(n + 1) && tasks.size() == n;
       CHECK(n == 5 ? 2 : 4, n == 5 ? "find_first below the hash threshold" : "find_first above the hash threshold",
@@ -109,17 +112,17 @@ test_ranges_and_lookups() {
       CHECK(n == 5 ? 3 : 5, n == 5 ? "find_all below the hash threshold" : "find_all above the hash threshold",
             count(tasks.find_all<JAT_status>(7u)) == 2 && count(tasks.find_all<JAT_task_number>(n + 1)) == 0 &&
             tasks.find_all<JAT_task_number>(n + 1).empty());
-      lFreeList(&raw);
    }
 
 #ifdef ENABLE_DEBUG_CHECKS
    // a list of queues in the task list of a job is a wrong declaration, found when the handle is handed out
-   lList *queues = lCreateList("queues", ocs::tom::QU::descriptor.e);
-   lAppendElem(queues, lCreateElem(ocs::tom::QU::descriptor.e));
-   lSetList(job, JB_ja_tasks, queues);
+   // the setters check the sub-type as well, so the core store plants the wrong list as lSetList() did
+   auto queues = RawListPtr::create(ocs::tom::QU::descriptor.e, Hashing::On, "queues");
+   queues->push_back(RawElementPtr::create(ocs::tom::QU::descriptor.e));
+   ocs::tom::store_list(job.raw(), ocs::tom::field_pos(job.descr(), JB_ja_tasks), queues.release());
    bool thrown = false;
    try {
-      static_cast<void>(Element<JB>{job}.get<JB_ja_tasks>());
+      static_cast<void>(job.get<JB_ja_tasks>());
    } catch (const FieldException &e) {
       thrown = e.reason() == FieldException::Reason::WrongSubType && std::strstr(e.what(), "JB_ja_tasks") != nullptr &&
                std::strstr(e.what(), "QU") != nullptr && std::strstr(e.what(), "JAT") != nullptr;
@@ -128,7 +131,6 @@ test_ranges_and_lookups() {
 #else
    CHECK(6, "the sub-type check exists in debug builds only; this is a release build", true);
 #endif
-   lFreeElem(&job);
 }
 
 /**
@@ -148,7 +150,7 @@ test_owning_handles() {
 
    lListElem *released = b.release();
    CHECK(8, "a released element is no longer owned", !b && released != nullptr);
-   lFreeElem(&released);
+   ocs::tom::free_raw_elem(released);
 
    bool caught = false;
    try {
@@ -171,12 +173,11 @@ test_owning_handles() {
    second = std::move(first);
    CHECK(10, "move assignment frees the list held before and takes the other", !first && second.get().size() == 1);
 
-   lListElem *job = lCreateElem(ocs::tom::JB::descriptor.e);
+   auto job = ElementPtr<JB>::create();
    ListPtr<JAT> tasks = ListPtr<JAT>::create("tasks");
    tasks.get().push_back(ElementPtr<JAT>::create());
-   Element<JB>{job}.set<JB_ja_tasks>(std::move(tasks));
-   CHECK(11, "a setter takes the owning handle over", !tasks && lGetNumberOfElem(lGetList(job, JB_ja_tasks)) == 1);
-   lFreeElem(&job);
+   job->set<JB_ja_tasks>(std::move(tasks));
+   CHECK(11, "a setter takes the owning handle over", !tasks && job->get<JB_ja_tasks>().size() == 1);
 }
 
 namespace {

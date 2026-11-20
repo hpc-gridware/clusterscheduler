@@ -22,30 +22,28 @@
  * @brief Module test of duplicate keys in unique fields: the debug checks, the dropped table and the logic error of the lookup (CS-3052, HDL-07, HDL-08)
  *
  * A list below the hash threshold is searched linearly, a list above it
- * through its table; every case runs on both. The old interface aborts on a
- * duplicate, so those cases run in a child process.
+ * through its table; every case runs on both. The free forms that replaced
+ * the old interface throw where the old functions aborted on a duplicate.
  */
 
-#include <csignal>
 #include <cstdint>
-#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_ElementCore.h"
 #include "tom/ocs_Raw.h"
+#include "tom/ocs_Select.h"
+#include "tom/cull_listP.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
 
 using namespace ocs::tom;
 
@@ -54,27 +52,6 @@ static constexpr std::uint32_t SHORT_LIST = 5;
 
 /** @brief A list above the hash threshold, searched through its table */
 static constexpr std::uint32_t LONG_LIST = 40;
-
-/**
- * @brief Whether a call aborts, run in a child process
- * @param call the call
- * @return true if the child ended with SIGABRT
- */
-static bool
-aborts(const std::function<void()> &call) {
-   std::fflush(nullptr);
-   const pid_t pid = fork();
-   if (pid == 0) {
-      // keep the expected messages and the stack trace out of the test output
-      [[maybe_unused]] FILE *quiet_stderr = std::freopen("/dev/null", "w", stderr);
-      [[maybe_unused]] FILE *quiet_stdout = std::freopen("/dev/null", "w", stdout);
-      call();
-      _exit(0);
-   }
-   int status = 0;
-   waitpid(pid, &status, 0);
-   return WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
-}
 
 /**
  * @brief Whether a call throws the duplicate key exception, with a message naming field, key and list
@@ -97,15 +74,15 @@ throws_duplicate(const std::function<void()> &call, const char *field, const cha
 }
 
 /**
- * @brief A list of tasks numbered 1 to n, filled through the old interface
+ * @brief A list of tasks numbered 1 to n
  * @param n the number of tasks
  * @return the list
  */
-static lList *
+static ListPtr<JAT>
 make_tasks(const std::uint32_t n) {
-   lList *tasks = lCreateList("tasks", ocs::tom::JAT::descriptor.e);
+   auto tasks = ListPtr<JAT>::create("tasks");
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemUlong(&tasks, JAT_task_number, i, ocs::tom::JAT::descriptor.e);
+      tasks->emplace_back<JAT_task_number>(i);
    }
    return tasks;
 }
@@ -115,11 +92,11 @@ make_tasks(const std::uint32_t n) {
  * @param n the number of entries
  * @return the list
  */
-static lList *
+static ListPtr<UE>
 make_entries(const std::uint32_t n) {
-   lList *entries = lCreateList("entries", ocs::tom::UE::descriptor.e);
+   auto entries = ListPtr<UE>::create("entries");
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemStr(&entries, UE_name, ("u" + std::to_string(i)).c_str(), ocs::tom::UE::descriptor.e);
+      entries->emplace_back<UE_name>(("u" + std::to_string(i)).c_str());
    }
    return entries;
 }
@@ -129,11 +106,11 @@ make_entries(const std::uint32_t n) {
  * @param n the number of hosts
  * @return the list
  */
-[[maybe_unused]] static lList *
+[[maybe_unused]] static ListPtr<EH>
 make_hosts(const std::uint32_t n) {
-   lList *hosts = lCreateList("hosts", ocs::tom::EH::descriptor.e);
+   auto hosts = ListPtr<EH>::create("hosts");
    for (std::uint32_t i = 1; i <= n; i++) {
-      lAddElemHost(&hosts, EH_name, ("host-" + std::to_string(i)).c_str(), ocs::tom::EH::descriptor.e);
+      hosts->emplace_back<EH_name>(Host{("host-" + std::to_string(i)).c_str()});
    }
    return hosts;
 }
@@ -145,8 +122,8 @@ make_hosts(const std::uint32_t n) {
  * @return true if it is
  */
 static bool
-has_table(const lList *lp, const int nm) {
-   return list_hash_table(lp, lGetPosInDescr(lGetListDescr(lp), nm)) != nullptr;
+has_table(const ConstRawList lp, const int nm) {
+   return list_hash_table(lp.raw(), field_pos(lp.descr(), nm)) != nullptr;
 }
 
 /**
@@ -156,12 +133,12 @@ has_table(const lList *lp, const int nm) {
  * @return true if the list is consistent
  */
 static bool
-tasks_consistent(const lList *tasks, const std::uint32_t n) {
-   if (lGetNumberOfElem(tasks) != n) {
+tasks_consistent(const ConstList<JAT> tasks, const std::uint32_t n) {
+   if (tasks.size() != n) {
       return false;
    }
-   for (const ConstRawElement ep : ConstRawList{tasks}) {
-      if (lGetElemUlong(tasks, JAT_task_number, lGetUlong(ep, JAT_task_number)) != ep.raw()) {
+   for (const auto task : tasks) {
+      if (tasks.find_first<JAT_task_number>(task.get<JAT_task_number>()).raw() != task.raw()) {
          return false;
       }
    }
@@ -179,47 +156,60 @@ test_debug_checks() {
    for (const std::uint32_t n : {SHORT_LIST, LONG_LIST}) {
       const char *size = n == SHORT_LIST ? "below the hash threshold" : "above the hash threshold";
 
-      lList *tasks = make_tasks(n);
-      const List<JAT> typed{tasks};
+      auto tasks = make_tasks(n);
+      const List<JAT> typed = tasks.get();
       ElementPtr<JAT> task = ElementPtr<JAT>::create();
       task.get().set<JAT_task_number>(3u);
       const bool typed_append = throws_duplicate([&] { typed.push_back(std::move(task)); }, "JAT_task_number", "3", "tasks") &&
-                                task && lGetNumberOfElem(tasks) == n;
-      const Element<JAT> last{RawList{tasks}.back().raw()};
+                                task && typed.size() == n;
+      const Element<JAT> last = typed.back();
       const bool typed_set = throws_duplicate([&] { last.set<JAT_task_number>(3u); }, "JAT_task_number", "3", "tasks") &&
                              last.get<JAT_task_number>() == n;
       CHECK(check++, (std::string{"a typed append and a typed set of a duplicate number throw, "} + size).c_str(),
             typed_append && typed_set);
 
-      const bool old_number = aborts([&] {
-         lListElem *ep = lCreateElem(ocs::tom::JAT::descriptor.e);
-         lSetUlong(ep, JAT_task_number, 3);
-         lAppendElem(tasks, ep);
-      }) && aborts([&] { lSetUlong(RawList{tasks}.back().raw(), JAT_task_number, 3); }) &&
-                              aborts([&] { lAddUlong(RawList{tasks}.back().raw(), JAT_task_number, 3 - n); });
-      lFreeList(&tasks);
+      // the free forms that replaced lAppendElem(), lSetUlong() and lAddUlong(), which aborted here
+      ElementPtr<JAT> other = ElementPtr<JAT>::create();
+      other.get().set<JAT_task_number>(3u);
+      const bool free_number =
+         throws_duplicate([&] { ocs::tom::append(typed.raw(), std::move(other)); }, "JAT_task_number", "3", "tasks") &&
+         throws_duplicate([&] { ocs::tom::set<JAT_task_number>(last.raw(), 3u); }, "JAT_task_number", "3", "tasks") &&
+         throws_duplicate([&] { ocs::tom::add<JAT_task_number>(last.raw(), 3 - n); }, "JAT_task_number", "3",
+                          "tasks") &&
+         typed.size() == n && last.get<JAT_task_number>() == n;
 
-      lList *entries = make_entries(n);
+      auto entries = make_entries(n);
       const bool typed_string =
-         throws_duplicate([&] { Element<UE>{RawList{entries}.back().raw()}.set<UE_name>("u2"); }, "UE_name", "u2",
+         throws_duplicate([&] { entries->back().set<UE_name>("u2"); }, "UE_name", "u2", "entries");
+      // the free forms that replaced lAddElemStr() and lSetString(); the list reference form needs the raw list
+      lList *entries_raw = entries.release();
+      const bool free_string =
+         throws_duplicate([&] { static_cast<void>(ocs::tom::emplace_back<UE_name>(&entries_raw, "u2")); }, "UE_name",
+                          "u2", "entries") &&
+         throws_duplicate([&] { ocs::tom::set<UE_name>(RawList{entries_raw}.back().raw(), "u2"); }, "UE_name", "u2",
                           "entries");
-      const bool old_string = aborts([&] { lAddElemStr(&entries, UE_name, "u2", ocs::tom::UE::descriptor.e); }) &&
-                              aborts([&] { lSetString(RawList{entries}.back().raw(), UE_name, "u2"); });
-      lFreeList(&entries);
+      entries = ListPtr<UE>(entries_raw);
+      const bool free_string_unchanged = entries->size() == n;
 
       // host names are compared as the table compares them: a name in upper case is the same host
-      lList *hosts = make_hosts(n);
+      auto hosts = make_hosts(n);
       const bool typed_host =
-         throws_duplicate([&] { Element<EH>{RawList{hosts}.back().raw()}.set<EH_name>(Host{"HOST-2"}); },
-                          "EH_name", "HOST-2", "hosts");
-      const bool old_host = aborts([&] { lAddElemHost(&hosts, EH_name, "HOST-2", ocs::tom::EH::descriptor.e); }) &&
-                            aborts([&] { lSetHost(RawList{hosts}.back().raw(), EH_name, "HOST-2"); });
-      lFreeList(&hosts);
+         throws_duplicate([&] { hosts->back().set<EH_name>(Host{"HOST-2"}); }, "EH_name", "HOST-2", "hosts");
+      // the free forms that replaced lAddElemHost() and lSetHost()
+      lList *hosts_raw = hosts.release();
+      const bool free_host =
+         throws_duplicate([&] { static_cast<void>(ocs::tom::emplace_back<EH_name>(&hosts_raw, "HOST-2")); },
+                          "EH_name", "HOST-2", "hosts") &&
+         throws_duplicate([&] { ocs::tom::set<EH_name>(RawList{hosts_raw}.back().raw(), "HOST-2"); }, "EH_name",
+                          "HOST-2", "hosts");
+      hosts = ListPtr<EH>(hosts_raw);
+      const bool free_host_unchanged = hosts->size() == n;
 
       CHECK(check++, (std::string{"a typed set of a duplicate string and host name throws, "} + size).c_str(),
             typed_string && typed_host);
-      CHECK(check++, (std::string{"the old interface aborts on a duplicate number, string and host name, "} + size).c_str(),
-            old_number && old_string && old_host);
+      CHECK(check++, (std::string{"the free forms that replaced the old interface throw on a duplicate number, "
+                                  "string and host name, where the old functions aborted, "} + size).c_str(),
+            free_number && free_string && free_string_unchanged && free_host && free_host_unchanged);
    }
 #else
    for (int check = 1; check <= 6; check++) {
@@ -240,41 +230,39 @@ static void
 test_dropped_table() {
    const UniqueCheckSuspension suspension;
 
-   lList *tasks = make_tasks(LONG_LIST);
-   static_cast<void>(lGetElemUlong(tasks, JAT_task_number, 1));
-   const bool built = has_table(tasks, JAT_task_number);
-   lListElem *ep = lCreateElem(ocs::tom::JAT::descriptor.e);
-   lSetUlong(ep, JAT_task_number, 3);
-   lAppendElem(tasks, ep);
-   const bool dropped = !has_table(tasks, JAT_task_number);
+   auto tasks = make_tasks(LONG_LIST);
+   static_cast<void>(tasks->find_first<JAT_task_number>(1u));
+   const bool built = has_table(tasks.get(), JAT_task_number);
+   auto ep = ElementPtr<JAT>::create();
+   ep->set<JAT_task_number>(3u);
+   tasks->push_back(std::move(ep));
+   const bool dropped = !has_table(tasks.get(), JAT_task_number);
    // stage 2: the next lookup builds the table again, meets the duplicate and throws, publishing nothing
-   const bool lookup_throws = throws_duplicate([&] { static_cast<void>(List<JAT>{tasks}.find_first<JAT_task_number>(3u)); },
+   const bool lookup_throws = throws_duplicate([&] { static_cast<void>(tasks->find_first<JAT_task_number>(3u)); },
                                                "JAT_task_number", "3", "tasks");
    CHECK(7, "an append of a duplicate number does not throw and drops the table; the next lookup throws and publishes "
-            "no table", built && dropped && lookup_throws && !has_table(tasks, JAT_task_number) &&
-            lGetNumberOfElem(tasks) == LONG_LIST + 1);
-   lFreeList(&tasks);
+            "no table", built && dropped && lookup_throws && !has_table(tasks.get(), JAT_task_number) &&
+            tasks->size() == LONG_LIST + 1);
 
-   lList *entries = make_entries(LONG_LIST);
-   static_cast<void>(lGetElemStr(entries, UE_name, "u1"));
-   const bool string_built = has_table(entries, UE_name);
-   lSetString(RawList{entries}.back().raw(), UE_name, "u2");
-   const bool string_dropped = !has_table(entries, UE_name);
+   auto entries = make_entries(LONG_LIST);
+   static_cast<void>(entries->find_first<UE_name>("u1"));
+   const bool string_built = has_table(entries.get(), UE_name);
+   entries->back().set<UE_name>("u2");
+   const bool string_dropped = !has_table(entries.get(), UE_name);
    CHECK(8, "a set of a duplicate string drops the table", string_built && string_dropped);
-   lFreeList(&entries);
 
-   lList *unique = make_tasks(LONG_LIST);
-   static_cast<void>(lGetElemUlong(unique, JAT_task_number, 1));
-   lListElem *renamed = RawList{unique}.back().raw();
-   lSetUlong(renamed, JAT_task_number, 1000);
-   lListElem *more = lCreateElem(ocs::tom::JAT::descriptor.e);
-   lSetUlong(more, JAT_task_number, 1001);
-   lAppendElem(unique, more);
+   auto unique = make_tasks(LONG_LIST);
+   static_cast<void>(unique->find_first<JAT_task_number>(1u));
+   const Element<JAT> renamed = unique->back();
+   renamed.set<JAT_task_number>(1000u);
+   auto more_owner = ElementPtr<JAT>::create();
+   more_owner->set<JAT_task_number>(1001u);
+   const Element<JAT> more = unique->push_back(std::move(more_owner));
    CHECK(9, "a set and an append of new keys keep the table and are found through it",
-         has_table(unique, JAT_task_number) && lGetElemUlong(unique, JAT_task_number, 1000) == renamed &&
-         lGetElemUlong(unique, JAT_task_number, 1001) == more &&
-         lGetElemUlong(unique, JAT_task_number, LONG_LIST) == nullptr && tasks_consistent(unique, LONG_LIST + 1));
-   lFreeList(&unique);
+         has_table(unique.get(), JAT_task_number) &&
+         unique->find_first<JAT_task_number>(1000u).raw() == renamed.raw() &&
+         unique->find_first<JAT_task_number>(1001u).raw() == more.raw() &&
+         !unique->find_first<JAT_task_number>(LONG_LIST) && tasks_consistent(unique.get(), LONG_LIST + 1));
 }
 
 /**
@@ -282,11 +270,11 @@ test_dropped_table() {
  * @param n the number of tasks; task n gets the number 2
  * @return the list, without a table
  */
-static lList *
+static ListPtr<JAT>
 make_tasks_with_duplicate(const std::uint32_t n) {
    const UniqueCheckSuspension suspension;
-   lList *tasks = make_tasks(n);
-   lSetUlong(RawList{tasks}.back().raw(), JAT_task_number, 2);
+   auto tasks = make_tasks(n);
+   tasks->back().set<JAT_task_number>(2u);
    return tasks;
 }
 
@@ -296,8 +284,9 @@ make_tasks_with_duplicate(const std::uint32_t n) {
  * Above the hash threshold the lookup builds the table, meets the second
  * element and publishes nothing, in every build; below it a debug build's
  * linear search goes on to the end of the list, while a release build stops at
- * the first match and finds the first of the two (CS-3052). The old lookup
- * aborts with the same message where the core throws.
+ * the first match and finds the first of the two (CS-3052). The free lookup on
+ * a raw list, which replaced lGetElemUlong(), throws where the core throws, as
+ * the old lookup aborted there.
  *
  * @return nothing; CHECK records the results
  */
@@ -312,8 +301,8 @@ test_lookup() {
    for (const std::uint32_t n : {LONG_LIST, SHORT_LIST}) {
       const char *size = n == SHORT_LIST ? "below the hash threshold" : "above the hash threshold";
       const bool finds_duplicate = n == LONG_LIST || linear_finds_duplicate;
-      lList *tasks = make_tasks_with_duplicate(n);
-      const List<JAT> typed{tasks};
+      auto tasks = make_tasks_with_duplicate(n);
+      const List<JAT> typed = tasks.get();
 
       // several threads look up at the same time, twice each; every lookup throws and none publishes a table
       std::vector<int> threw(4, 0);
@@ -339,35 +328,40 @@ test_lookup() {
                                                     "no table is published, "
                                                   : "no lookup of the repeated key throws in a release build, from "
                                                     "four threads, and no table is published, "} + size).c_str(),
-            all && !has_table(tasks, JAT_task_number));
+            all && !has_table(typed, JAT_task_number));
 
-      const bool old_aborts = aborts([&] { static_cast<void>(lGetElemUlong(tasks, JAT_task_number, 2)); });
-      CHECK(check++, (std::string{finds_duplicate ? "the old lookup aborts, " : "the old lookup finds the key, "} +
-                      size).c_str(), old_aborts == finds_duplicate);
+      // the free lookup on the raw list: throws where the old lookup aborted, else finds the first of the two
+      const bool free_lookup =
+         finds_duplicate
+            ? throws_duplicate([&] { static_cast<void>(ocs::tom::find_first<JAT_task_number>(typed.raw(), 2u)); },
+                               "JAT_task_number", "2", "tasks")
+            : static_cast<const lListElem *>(ocs::tom::find_first<JAT_task_number>(typed.raw(), 2u)) ==
+                 typed.front().next().raw();
+      CHECK(check++, (std::string{finds_duplicate ? "the free lookup throws, " : "the free lookup finds the first of "
+                                                                                 "the two, "} + size).c_str(),
+            free_lookup);
 
       // above the threshold every lookup builds the table and throws; below it only the repeated key is found twice
       const bool other = n == LONG_LIST
                             ? throws_duplicate([&] { static_cast<void>(typed.find_first<JAT_task_number>(1u)); },
                                                "JAT_task_number", "2", "tasks")
-                            : lGetElemUlong(tasks, JAT_task_number, 1) == ConstRawList{tasks}.front().raw();
+                            : typed.find_first<JAT_task_number>(1u).raw() == typed.front().raw();
       CHECK(check++, (std::string{"a lookup of another key "} +
                       (n == LONG_LIST ? "throws as well, the table cannot be built, " : "finds its element, ") + size)
                         .c_str(), other);
-      lFreeList(&tasks);
    }
 
    // a field hashed without CULL_UNIQUE holds a key several times by design: found first, then the next
-   lList *changes = lCreateList("changes", ocs::tom::CX::descriptor.e);
+   auto changes = ListPtr<CX>::create("changes");
    for (std::uint32_t i = 0; i < LONG_LIST; i++) {
-      lAddElemStr(&changes, CX_variable, i % 2 == 0 ? "a" : "b", ocs::tom::CX::descriptor.e);
+      changes->emplace_back<CX_variable>(i % 2 == 0 ? "a" : "b");
    }
    const void *iterator = nullptr;
-   const lListElem *first = lGetElemStrFirst(changes, CX_variable, "a", &iterator);
-   const lListElem *second = lGetElemStrNext(changes, CX_variable, "a", &iterator);
+   const lListElem *first = ocs::tom::find_first<CX_variable>(changes->raw(), "a", &iterator);
+   const lListElem *second = ocs::tom::find_next<CX_variable>(changes->raw(), "a", &iterator);
    CHECK(20, "a non unique hashed field holding a key many times is looked up and iterated as before",
-         first == ConstRawList{changes}.front().raw() && second != nullptr && second != first &&
-         std::strcmp(lGetString(second, CX_variable), "a") == 0);
-   lFreeList(&changes);
+         first == changes->front().raw() && second != nullptr && second != first &&
+         std::strcmp(ConstElement<CX>{second}.get<CX_variable>(), "a") == 0);
 }
 
 /**
@@ -380,9 +374,9 @@ test_lookup() {
 static void
 test_valid_after_throw() {
 #ifdef ENABLE_DEBUG_CHECKS
-   lList *tasks = make_tasks(LONG_LIST);
-   static_cast<void>(lGetElemUlong(tasks, JAT_task_number, 1));
-   const List<JAT> typed{tasks};
+   auto tasks = make_tasks(LONG_LIST);
+   const List<JAT> typed = tasks.get();
+   static_cast<void>(typed.find_first<JAT_task_number>(1u));
 
    bool thrown = false;
    try {
@@ -393,36 +387,32 @@ test_valid_after_throw() {
       thrown = true;
    }
    CHECK(10, "after a throw from an append the list, its elements and its table are consistent",
-         thrown && has_table(tasks, JAT_task_number) && tasks_consistent(tasks, LONG_LIST));
+         thrown && has_table(typed, JAT_task_number) && tasks_consistent(typed, LONG_LIST));
 
    thrown = false;
    try {
-      Element<JAT>{RawList{tasks}.front().raw()}.set<JAT_task_number>(7u);
+      typed.front().set<JAT_task_number>(7u);
    } catch (const FieldException &) {
       thrown = true;
    }
    CHECK(11, "after a throw from a set the list, its elements and its table are consistent",
-         thrown && has_table(tasks, JAT_task_number) && tasks_consistent(tasks, LONG_LIST) &&
-         lGetUlong(ConstRawList{tasks}.front().raw(), JAT_task_number) == 1);
+         thrown && has_table(typed, JAT_task_number) && tasks_consistent(typed, LONG_LIST) &&
+         typed.front().get<JAT_task_number>() == 1);
 
-   lEnumeration *what = lWhat("%T(%I)", ocs::tom::JAT::descriptor.e, JAT_task_number);
-   lList *reduced = lSelect("reduced", tasks, nullptr, what);
-   lFreeWhat(&what);
+   auto reduced = typed.select(what<JAT_task_number>(), "reduced");
    thrown = false;
    try {
-      Element<JAT>{RawList{reduced}.front().raw()}.set<JAT_status>(1u);
+      reduced->front().set<JAT_status>(1u);
    } catch (const FieldException &e) {
       thrown = e.reason() == FieldException::Reason::AbsentField;
    }
    CHECK(12, "after a throw from a set on an absent field the reduced list is consistent",
-         thrown && tasks_consistent(reduced, LONG_LIST));
-   lFreeList(&reduced);
+         thrown && tasks_consistent(reduced.get(), LONG_LIST));
 
-   Element<JAT>{RawList{tasks}.front().raw()}.set<JAT_task_number>(500u);
-   const bool usable = lGetElemUlong(tasks, JAT_task_number, 500) == ConstRawList{tasks}.front().raw() &&
-                       lGetElemUlong(tasks, JAT_task_number, 1) == nullptr && tasks_consistent(tasks, LONG_LIST);
+   typed.front().set<JAT_task_number>(500u);
+   const bool usable = typed.find_first<JAT_task_number>(500u).raw() == typed.front().raw() &&
+                       !typed.find_first<JAT_task_number>(1u) && tasks_consistent(typed, LONG_LIST);
    CHECK(13, "the list stays usable for a change and a lookup", usable);
-   lFreeList(&tasks);
 #else
    for (int check = 10; check <= 13; check++) {
       CHECK(check, "the throws come from the debug checks, which exist in debug builds only; this is a release build",
@@ -437,10 +427,10 @@ int main(int argc, char *argv[]) {
       {"UNIQUE-01", "debug checks",
        "a debug build catches a duplicate key in a unique field where it is created",
        {"append a task with a number the list holds, and set a task's number to one the list holds, through a "
-        "typed handle and through the old interface",
+        "typed handle and through the free forms that replaced the old interface",
         "set a user entry's name and a host's name to one the list holds, the host name in upper case",
         "each below and above the hash threshold"},
-       "the typed side throws, naming field, key and list, and changes nothing; the old interface aborts",
+       "both throw, naming field, key and list, and change nothing (the old interface aborted)",
        {{"HDL-07", "covers step 5"}}, {1, 2, 3, 4, 5, 6}, test_debug_checks},
       {"UNIQUE-02", "dropped table",
        "an append or a set of a duplicate key drops the table it would corrupt",
@@ -460,10 +450,10 @@ int main(int argc, char *argv[]) {
        "a lookup on a unique field that holds a key twice is a logic error in every build",
        {"fill a list above and one below the hash threshold with a task number twice, without a lookup",
         "look the number up through the typed list, twice each from four threads",
-        "look it up through the old lookup, in a child process",
+        "look it up through the free lookup on the raw list",
         "look up another number",
         "look up and iterate a key held many times in a non unique hashed field"},
-       "the typed lookups throw naming field, key and list, and no table is published; the old lookup aborts; above "
+       "the typed and the free lookups throw naming field, key and list, and no table is published; above "
        "the threshold every lookup throws, below it only the repeated key; the non unique field is unaffected",
        {{"HDL-07", "covers steps 1 to 3"}}, {14, 15, 16, 17, 18, 19, 20}, test_lookup},
    });

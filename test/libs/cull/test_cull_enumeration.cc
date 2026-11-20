@@ -33,12 +33,20 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Unit tests for enumeration in `libs/cull`
+ * @brief Unit tests for field selections in the core of the typed object model (libs/tom)
+ *
+ * The selections are built with the core builders ocs::tom::make_what() and
+ * make_what_special(), which lWhat() parsed its format string into, and with
+ * the run-time builder ocs::tom::what_of(); the test types have no generated
+ * traits, so the typed what<F...>() does not apply.
  */
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
+#include <span>
 
 /** @brief Make this translation unit the one that defines the CULL descriptors
  *
@@ -49,12 +57,17 @@
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "uti/sge_component.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_test_api.h"
-#include "cull/cull_whatP.h"
-#include "cull/ocs_cull_descr.h"
+#include "tom/cull_types.h"
+#include "tom/cull_whatP.h"
+#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_PrintCore.h"
+#include "tom/ocs_Raw.h"
+#include "tom/ocs_SelectCore.h"
 #include "ocs_test_model.h"
 
 /** @brief A synthetic CULL object type, defined only for these tests
@@ -172,8 +185,80 @@ static int s_fail = 0;
       } \
    } while (0)
 
-static bool test_lWhat_enumeration(lEnumeration *what, int *result,
-                                   int *pos_what, int *pos_result, int max) {
+/**
+ * @brief Build a selection of fields of one type with the core builder
+ * @param descr the descriptor of the type
+ * @param entries the fields with their nested selections, which the selection takes over
+ * @return the selection
+ */
+static lEnumeration *make(const lDescr *descr, const std::initializer_list<ocs::tom::WhatEntry> entries) {
+   return ocs::tom::make_what(descr, std::span<const ocs::tom::WhatEntry>(entries.begin(), entries.size()));
+}
+
+/**
+ * @brief The selection of every field, as lWhat("%T(ALL)") gave it
+ * @return the selection
+ */
+static lEnumeration *all() {
+   return ocs::tom::make_what_special(WHAT_ALL);
+}
+
+/**
+ * @brief The selection of no field, as lWhat("%T(NONE)") gave it
+ * @return the selection
+ */
+static lEnumeration *none() {
+   return ocs::tom::make_what_special(WHAT_NONE);
+}
+
+/**
+ * @brief The nested selection the tests use on TEST_object, as
+ *        lWhat("%T(%I %I %I -> %T(%I %I -> %T(%I %I)) %I -> %T(NONE) %I -> %T(ALL))") built it
+ *
+ * TEST_object is given three times; the selection keeps it once, with the first nested selection.
+ *
+ * @return the selection
+ */
+static ocs::tom::RawWhatPtr make_nested_object_what() {
+   return ocs::tom::RawWhatPtr(make(TEST_Type, {
+      {TEST_int, nullptr},
+      {TEST_host, nullptr},
+      {TEST_object, make(TEST1_Type, {{TEST1_int, nullptr},
+                                      {TEST1_object, make(TEST1_Type, {{TEST1_int, nullptr},
+                                                                       {TEST1_host, nullptr}})}})},
+      {TEST_object, none()},
+      {TEST_object, all()},
+   }));
+}
+
+/**
+ * @brief The nested selection the tests use on TEST_list, TEST_object and TEST_ref, as
+ *        lWhat("%T(%I %I %I -> %T(%I %I -> %T(%I %I)) %I -> %T(NONE) %I -> %T(ALL))") built it
+ * @return the selection of five fields
+ */
+static ocs::tom::RawWhatPtr make_complex_what() {
+   return ocs::tom::RawWhatPtr(make(TEST_Type, {
+      {TEST_int, nullptr},
+      {TEST_host, nullptr},
+      {TEST_list, make(TEST1_Type, {{TEST1_int, nullptr},
+                                    {TEST1_object, make(TEST1_Type, {{TEST1_int, nullptr},
+                                                                     {TEST1_host, nullptr}})}})},
+      {TEST_object, none()},
+      {TEST_ref, all()},
+   }));
+}
+
+/**
+ * @brief Compare the entries of a selection with an expected table, recursing into nested selections
+ * @param what the selection
+ * @param result the expected table: per entry nm, mt, pos and the number of entries of its nested selection
+ * @param pos_what the entry of @p what to start at; advanced
+ * @param pos_result the entry of @p result to start at; advanced
+ * @param max the number of entries to compare
+ * @return true if every entry matches
+ */
+static bool test_what_enumeration(const lEnumeration *what, const int *result,
+                                  int *pos_what, int *pos_result, const int max) {
    bool ret = true;
 
    for (int i = 0; i < max; i++) {
@@ -183,12 +268,11 @@ static bool test_lWhat_enumeration(lEnumeration *what, int *result,
               what[*pos_what].mt  == result[*pos_result + 1] &&
               what[*pos_what].pos == result[*pos_result + 2]);
 
-      int tmp_max = result[*pos_result + 3];
+      const int tmp_max = result[*pos_result + 3];
       *pos_result = *pos_result + 4;
 
       if (what[*pos_what].ep != nullptr) {
-         ret &= test_lWhat_enumeration(what[*pos_what].ep, result,
-                                       &tmp_pos_what, pos_result, tmp_max);
+         ret &= test_what_enumeration(what[*pos_what].ep, result, &tmp_pos_what, pos_result, tmp_max);
       }
 
       *pos_what = *pos_what + 1;
@@ -197,224 +281,183 @@ static bool test_lWhat_enumeration(lEnumeration *what, int *result,
    return ret;
 }
 
-static bool test_lWhat_simple() {
+/**
+ * @brief The entries of a selection of three plain and object fields, as lWhat("%T(%I%I%I)") laid them out
+ * @return true if the entries are the expected ones
+ */
+static bool test_what_simple() {
    // lIntT=5, lHostT=10, lObjectT=8 in current CULL enum
-   lEnumeration *what = lWhat("%T(%I%I%I)", TEST_Type, TEST_int, TEST_host, TEST_object);
-   int result[] = {1,       5,  0, 0,   // TEST_int:    nm=1, mt=lIntT=5,    pos=0
-                   2,      10,  1, 0,   // TEST_host:   nm=2, mt=lHostT=10,  pos=1
-                   10,      8,  9, 0,   // TEST_object: nm=10, mt=lObjectT=8, pos=9
-                   NoName, lEndT, 0, 0};
+   const ocs::tom::RawWhatPtr what(make(TEST_Type, {{TEST_int, nullptr}, {TEST_host, nullptr},
+                                                    {TEST_object, nullptr}}));
+   const int result[] = {1,       5,  0, 0,   // TEST_int:    nm=1, mt=lIntT=5,    pos=0
+                         2,      10,  1, 0,   // TEST_host:   nm=2, mt=lHostT=10,  pos=1
+                         10,      8,  9, 0,   // TEST_object: nm=10, mt=lObjectT=8, pos=9
+                         NoName, lEndT, 0, 0};
    int pos_what = 0;
    int pos_result = 0;
-   bool ret = test_lWhat_enumeration(what, result, &pos_what, &pos_result, 4);
-   lFreeWhat(&what);
-   return ret;
+   return test_what_enumeration(what.get(), result, &pos_what, &pos_result, 4);
 }
 
+/**
+ * @brief Compare two selections by their printed form
+ * @param what1 the first selection
+ * @param what2 the second selection
+ * @return 0 if both print the same, as strcmp() otherwise
+ */
 static int enumeration_compare(const lEnumeration *what1, const lEnumeration *what2) {
    dstring str1 = DSTRING_INIT;
    dstring str2 = DSTRING_INIT;
-   lWriteWhatToDString(what1, &str1);
-   lWriteWhatToDString(what2, &str2);
-   int ret = strcmp(sge_dstring_get_string(&str1), sge_dstring_get_string(&str2));
+   ocs::tom::print_what(&str1, what1, 0);
+   ocs::tom::print_what(&str2, what2, 0);
+   const int ret = strcmp(sge_dstring_get_string(&str1), sge_dstring_get_string(&str2));
    sge_dstring_free(&str1);
    sge_dstring_free(&str2);
    return ret;
 }
 
+/**
+ * @brief Run all selection tests
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_cull_enumeration");
    component_set_daemonized(true);
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size},
                                          {"TEST1", TEST1_Type, TEST1_Name, TEST1_Size}});
 
-   // --- lWhat ---
-   printf("\n--- lWhat ---\n");
+   // --- building a selection ---
+   printf("\n--- make_what ---\n");
    {
       // ALL sentinel: nm=-99, mt=-99, pos=-1
-      lEnumeration *what = lWhat("%T(ALL)", TEST_Type);
-      CHECK(1, "lWhat ALL sentinel: nm=-99 mt=-99 pos=-1",
-            what[0].nm == -99 && what[0].mt == -99 && what[0].pos == -1);
-      lFreeWhat(&what);
+      const ocs::tom::RawWhatPtr what = ocs::tom::what_all();
+      CHECK(1, "what_all sentinel: nm=-99 mt=-99 pos=-1",
+            what.get()[0].nm == -99 && what.get()[0].mt == -99 && what.get()[0].pos == -1);
    }
    {
       // NONE sentinel: nm=-99, mt=-99, pos=-2
-      lEnumeration *what = lWhat("%T(NONE)", TEST_Type);
-      CHECK(2, "lWhat NONE sentinel: nm=-99 mt=-99 pos=-2",
-            what[0].nm == -99 && what[0].mt == -99 && what[0].pos == -2);
-      lFreeWhat(&what);
+      const ocs::tom::RawWhatPtr what(none());
+      CHECK(2, "make_what_special(WHAT_NONE) sentinel: nm=-99 mt=-99 pos=-2",
+            what.get()[0].nm == -99 && what.get()[0].mt == -99 && what.get()[0].pos == -2);
    }
-   CHECK(3, "lWhat simple 3-field selection internal structure correct", test_lWhat_simple());
+   CHECK(3, "make_what simple 3-field selection internal structure correct", test_what_simple());
    {
       // complex nested what: verify top-level count and copy consistency
-      lEnumeration *what = lWhat("%T(%I %I "
-                                 "%I -> %T(%I %I -> %T(%I %I)) "
-                                 "%I -> %T(NONE) "
-                                 "%I -> %T(ALL))",
-                                 TEST_Type, TEST_int, TEST_host,
-                                 TEST_object, TEST1_Type, TEST1_int, TEST1_object,
-                                 TEST1_Type, TEST1_int, TEST1_host,
-                                 TEST_object, TEST1_Type,
-                                 TEST_object, TEST1_Type);
-      lEnumeration *copy = lCopyWhat(what);
-      CHECK(4, "lWhat complex nested what: copy is structurally identical",
-            enumeration_compare(what, copy) == 0);
-      lFreeWhat(&what);
-      lFreeWhat(&copy);
+      const ocs::tom::RawWhatPtr what = make_nested_object_what();
+      const ocs::tom::RawWhatPtr copy = ocs::tom::clone(what.get());
+      CHECK(4, "make_what complex nested what: copy is structurally identical",
+            enumeration_compare(what.get(), copy.get()) == 0);
    }
 
-   // --- lCountWhat ---
-   printf("\n--- lCountWhat ---\n");
+   // --- count_what ---
+   printf("\n--- count_what ---\n");
    {
-      lEnumeration *what1 = lWhat("%T(%I %I "
-                                  "%I -> %T(%I %I -> %T(%I %I)) "
-                                  "%I -> %T(NONE) "
-                                  "%I -> %T(ALL))",
-                                  TEST_Type, TEST_int, TEST_host,
-                                  TEST_list, TEST1_Type, TEST1_int, TEST1_object,
-                                  TEST1_Type, TEST1_int, TEST1_host,
-                                  TEST_object, TEST1_Type,
-                                  TEST_ref, TEST1_Type);
-      lEnumeration *what2 = lWhat("%T(%I %I %I %I %I)", TEST_Type, TEST_int,
-                                  TEST_list, TEST_object, TEST_ref, TEST_host);
-      int count = lCountWhat(what1, TEST_Type);
-      CHECK(5, "lCountWhat complex expression returns 5", count == 5);
-      CHECK(6, "two equivalent whats yield same count", count == lCountWhat(what2, TEST_Type));
-      lFreeWhat(&what1);
-      lFreeWhat(&what2);
+      const ocs::tom::RawWhatPtr what1 = make_complex_what();
+      const ocs::tom::RawWhatPtr what2(make(TEST_Type, {{TEST_int, nullptr}, {TEST_list, nullptr},
+                                                        {TEST_object, nullptr}, {TEST_ref, nullptr},
+                                                        {TEST_host, nullptr}}));
+      const int count = ocs::tom::count_what(what1.get(), TEST_Type);
+      CHECK(5, "count_what complex expression returns 5", count == 5);
+      CHECK(6, "two equivalent whats yield same count", count == ocs::tom::count_what(what2.get(), TEST_Type));
    }
 
-   // --- lReduceDescr ---
-   printf("\n--- lReduceDescr ---\n");
+   // --- reduced_descr ---
+   printf("\n--- reduced_descr ---\n");
    {
-      lEnumeration *what1 = lWhat("%T(ALL)", TEST_Type);
-      lEnumeration *what2 = lWhat("%T(NONE)", TEST_Type);
-      lEnumeration *what3 = lWhat("%T(%I %I "
-                                  "%I -> %T(%I %I -> %T(%I %I)) "
-                                  "%I -> %T(NONE) "
-                                  "%I -> %T(ALL))",
-                                  TEST_Type, TEST_int, TEST_host,
-                                  TEST_list, TEST1_Type, TEST1_int, TEST1_object,
-                                  TEST1_Type, TEST1_int, TEST1_host,
-                                  TEST_object, TEST1_Type,
-                                  TEST_ref, TEST1_Type);
-      const lDescr *dst1 = nullptr;
-      const lDescr *dst2 = nullptr;
-      const lDescr *dst3 = nullptr;
-      lReduceDescr(&dst1, TEST_Type, what1);
-      lReduceDescr(&dst2, TEST_Type, what2);
-      lReduceDescr(&dst3, TEST_Type, what3);
-      // TEST_Type has 11 fields; ALL selects all → lCountDescr == lCountWhat == 11
-      CHECK(7,  "ALL: lCountDescr == 11", lCountDescr(dst1) == 11);
-      CHECK(8,  "ALL: lCountWhat == 11",  lCountWhat(what1, TEST_Type) == 11);
-      CHECK(9,  "NONE: lCountDescr == -1", lCountDescr(dst2) == -1);
-      CHECK(10, "NONE: lCountWhat == 0",  lCountWhat(what2, TEST_Type) == 0);
+      const ocs::tom::RawWhatPtr what1(all());
+      const ocs::tom::RawWhatPtr what2(none());
+      const ocs::tom::RawWhatPtr what3 = make_complex_what();
+      const lDescr *dst1 = ocs::tom::reduced_descr(TEST_Type, what1.get());
+      const lDescr *dst2 = ocs::tom::reduced_descr(TEST_Type, what2.get());
+      const lDescr *dst3 = ocs::tom::reduced_descr(TEST_Type, what3.get());
+      // TEST_Type has 11 fields; ALL selects all → descr_length == count_what == 11
+      CHECK(7,  "ALL: descr_length == 11", ocs::tom::descr_length(dst1) == 11);
+      CHECK(8,  "ALL: count_what == 11",  ocs::tom::count_what(what1.get(), TEST_Type) == 11);
+      CHECK(9,  "NONE: descr_length == -1", ocs::tom::descr_length(dst2) == -1);
+      CHECK(10, "NONE: count_what == 0",  ocs::tom::count_what(what2.get(), TEST_Type) == 0);
       // a reduction has the length of its type and holds the selected fields (CS-439)
-      CHECK(11, "partial: lCountDescr == 11, lCountPresent == 5", lCountDescr(dst3) == 11 && lCountPresent(dst3) == 5);
-      CHECK(12, "partial: lCountWhat == 5",  lCountWhat(what3, TEST_Type) == 5);
-      lFreeWhat(&what1);
-      lFreeWhat(&what2);
-      lFreeWhat(&what3);
-      ocs_cull_descr_release(&dst1);
-      ocs_cull_descr_release(&dst2);
-      ocs_cull_descr_release(&dst3);
+      CHECK(11, "partial: descr_length == 11, lCountPresent == 5",
+            ocs::tom::descr_length(dst3) == 11 && lCountPresent(dst3) == 5);
+      CHECK(12, "partial: count_what == 5",  ocs::tom::count_what(what3.get(), TEST_Type) == 5);
+      ocs::tom::release_descr(dst1);
+      ocs::tom::release_descr(dst2);
+      ocs::tom::release_descr(dst3);
    }
 
-   // --- lCopyWhat ---
-   printf("\n--- lCopyWhat ---\n");
+   // --- clone ---
+   printf("\n--- clone ---\n");
    {
-      lEnumeration *what1 = lWhat("%T(ALL)", TEST_Type);
-      lEnumeration *what2 = lWhat("%T(NONE)", TEST_Type);
-      lEnumeration *what3 = lWhat("%T(%I %I "
-                                  "%I -> %T(%I %I -> %T(%I %I)) "
-                                  "%I -> %T(NONE) "
-                                  "%I -> %T(ALL))",
-                                  TEST_Type, TEST_int, TEST_host,
-                                  TEST_list, TEST1_Type, TEST1_int, TEST1_object,
-                                  TEST1_Type, TEST1_int, TEST1_host,
-                                  TEST_object, TEST1_Type,
-                                  TEST_ref, TEST1_Type);
-      lEnumeration *copy1 = lCopyWhat(what1);
-      lEnumeration *copy2 = lCopyWhat(what2);
-      lEnumeration *copy3 = lCopyWhat(what3);
-      CHECK(13, "copy of ALL is structurally identical", enumeration_compare(what1, copy1) == 0);
-      CHECK(14, "copy of NONE is structurally identical", enumeration_compare(what2, copy2) == 0);
-      CHECK(15, "copy of complex what is structurally identical", enumeration_compare(what3, copy3) == 0);
-      lFreeWhat(&what1);
-      lFreeWhat(&what2);
-      lFreeWhat(&what3);
-      lFreeWhat(&copy1);
-      lFreeWhat(&copy2);
-      lFreeWhat(&copy3);
+      const ocs::tom::RawWhatPtr what1(all());
+      const ocs::tom::RawWhatPtr what2(none());
+      const ocs::tom::RawWhatPtr what3 = make_complex_what();
+      const ocs::tom::RawWhatPtr copy1 = ocs::tom::clone(what1.get());
+      const ocs::tom::RawWhatPtr copy2 = ocs::tom::clone(what2.get());
+      const ocs::tom::RawWhatPtr copy3 = ocs::tom::clone(what3.get());
+      CHECK(13, "copy of ALL is structurally identical", enumeration_compare(what1.get(), copy1.get()) == 0);
+      CHECK(14, "copy of NONE is structurally identical", enumeration_compare(what2.get(), copy2.get()) == 0);
+      CHECK(15, "copy of complex what is structurally identical", enumeration_compare(what3.get(), copy3.get()) == 0);
    }
 
-   // --- lIntVector2What ---
-   printf("\n--- lIntVector2What ---\n");
+   // --- what_of ---
+   printf("\n--- what_of ---\n");
    {
-      lEnumeration *what1 = lWhat("%T(%I %I %I %I)",
-                                  TEST_Type, TEST_int, TEST_list, TEST_object, TEST_ref);
-      const int vector1[] = {TEST_int, TEST_list, TEST_object, TEST_ref, NoName};
-      lEnumeration *what2 = lIntVector2What(TEST_Type, vector1);
-      CHECK(16, "lIntVector2What matches manually built what", enumeration_compare(what1, what2) == 0);
-      lFreeWhat(&what1);
-      lFreeWhat(&what2);
+      const ocs::tom::RawWhatPtr what1(make(TEST_Type, {{TEST_int, nullptr}, {TEST_list, nullptr},
+                                                        {TEST_object, nullptr}, {TEST_ref, nullptr}}));
+      const int vector1[] = {TEST_int, TEST_list, TEST_object, TEST_ref};
+      const ocs::tom::RawWhatPtr what2 = ocs::tom::what_of(TEST_Type, vector1);
+      CHECK(16, "what_of matches manually built what", enumeration_compare(what1.get(), what2.get()) == 0);
    }
 
-   // --- lSelect ---
-   printf("\n--- lSelect ---\n");
+   // --- select ---
+   printf("\n--- select ---\n");
    {
-      lEnumeration *what = lWhat("%T(%I %I -> %T( %I %I -> %T (%I %I %I %I) %I %I) %I -> %T(%I) %I)",
-                                 TEST_Type,   ///< a test attribute
-                                 TEST_int,   ///< an int attribute
-                                 TEST_list, TEST1_Type,
-                                 TEST1_int,   ///< an int attribute
-                                 TEST1_list, TEST_Type,
-                                 TEST_int, TEST_list, TEST_object, TEST_string,
-                                 TEST1_object, TEST1_string,
-                                 TEST_object, TEST1_Type, TEST1_string,
-                                 TEST_string);
-      lList *list = lCreateList("", TEST_Type);
-      lListElem *elem = lCreateElem(TEST_Type);
-      lSetInt(elem, TEST_int, 0);
-      lSetHost(elem, TEST_host, "zero");
-      lSetString(elem, TEST_string, "zero");
-      lSetDouble(elem, TEST_double, 0);
-      lSetLong(elem, TEST_long, 0);
-      lSetUlong(elem, TEST_ulong, 0);
-      lSetUlong64(elem, TEST_ulong64, 0);
-      lSetBool(elem, TEST_bool, false);
+      // lWhat("%T(%I %I -> %T( %I %I -> %T (%I %I %I %I) %I %I) %I -> %T(%I) %I)")
+      const ocs::tom::RawWhatPtr what(make(TEST_Type, {
+         {TEST_int, nullptr},
+         {TEST_list, make(TEST1_Type, {{TEST1_int, nullptr},
+                                       {TEST1_list, make(TEST_Type, {{TEST_int, nullptr}, {TEST_list, nullptr},
+                                                                     {TEST_object, nullptr},
+                                                                     {TEST_string, nullptr}})},
+                                       {TEST1_object, nullptr},
+                                       {TEST1_string, nullptr}})},
+         {TEST_object, make(TEST1_Type, {{TEST1_string, nullptr}})},
+         {TEST_string, nullptr},
+      }));
+      auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "");
+      auto elem = ocs::tom::RawElementPtr::create(TEST_Type);
+      elem->set(TEST_int, std::int32_t{0});
+      elem->set(TEST_host, ocs::tom::Host("zero"));
+      elem->set(TEST_string, "zero");
+      elem->set(TEST_double, 0.0);
+      elem->set(TEST_long, std::int64_t{0});
+      elem->set(TEST_ulong, std::uint32_t{0});
+      elem->set(TEST_ulong64, std::uint64_t{0});
+      elem->set(TEST_bool, false);
       // the levels alternate between the types as the sublist fields do: TEST_list holds TEST1 elements,
       // TEST1_list holds TEST elements; an element of the other type would not have the list's layout
-      lListElem *elem1 = lCreateElem(TEST1_Type);
-      lSetInt(elem1, TEST1_int, 0);
-      lSetString(elem1, TEST1_string, "zero");
+      auto elem1 = ocs::tom::RawElementPtr::create(TEST1_Type);
+      elem1->set(TEST1_int, std::int32_t{0});
+      elem1->set(TEST1_string, "zero");
       for (int i = 0; i < 5; i++) {
-         lList *tmp_list = lCreateList("", TEST1_Type);
-         lListElem *tmp_elem = lCopyElem(elem);
+         auto tmp_list = ocs::tom::RawListPtr::create(TEST1_Type, ocs::tom::Hashing::On, "");
+         auto tmp_elem = elem.clone();
          for (int j = 0; j < 5; j++) {
-            lList *tmp_list1 = lCreateList("", TEST_Type);
-            lListElem *tmp_elem1 = lCopyElem(elem1);
+            auto tmp_list1 = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "");
+            auto tmp_elem1 = elem1.clone();
             for (int k = 0; k < 5; k++) {
-               lList *tmp_list2 = lCreateList("", TEST1_Type);
-               lListElem *tmp_elem2 = lCopyElem(elem);
-               lSetList(tmp_elem2, TEST_list, tmp_list2);
-               lAppendElem(tmp_list1, tmp_elem2);
+               auto tmp_elem2 = elem.clone();
+               tmp_elem2->set(TEST_list, ocs::tom::RawListPtr::create(TEST1_Type, ocs::tom::Hashing::On, ""));
+               tmp_list1->push_back(std::move(tmp_elem2));
             }
-            lSetList(tmp_elem1, TEST1_list, tmp_list1);
-            lAppendElem(tmp_list, tmp_elem1);
+            tmp_elem1->set(TEST1_list, std::move(tmp_list1));
+            tmp_list->push_back(std::move(tmp_elem1));
          }
-         lSetList(tmp_elem, TEST_list, tmp_list);
-         lAppendElem(list, tmp_elem);
+         tmp_elem->set(TEST_list, std::move(tmp_list));
+         list->push_back(std::move(tmp_elem));
       }
-      lList *list1 = lSelect("", list, nullptr, what);
+      const ocs::tom::RawListPtr list1 = ocs::tom::select(list.get(), nullptr, what.get(), ocs::tom::Hashing::On);
       // all 5 elements are selected, reduced to the 4 fields of the outer level of the what
-      CHECK(17, "lSelect with complex nested what selects every element, reduced to the what",
-            list1 != nullptr && lGetNumberOfElem(list1) == 5 && lCountPresent(lGetListDescr(list1)) == 4);
-      lFreeWhat(&what);
-      lFreeElem(&elem);
-      lFreeElem(&elem1);
-      lFreeList(&list);
-      lFreeList(&list1);
+      CHECK(17, "select with complex nested what selects every element, reduced to the what",
+            list1 && list1->size() == 5 && lCountPresent(list1->descr()) == 4);
    }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

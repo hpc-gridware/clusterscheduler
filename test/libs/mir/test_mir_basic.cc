@@ -47,13 +47,14 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/ocs_DataStore.h"
 
+#include "tom/ocs_PackCore.h"
+
 #include "mir/sge_mirror.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
-#include "cull/cull_test_api.h"
 
 int events;             ///< how many events the mirror has seen
 uint32_t events_size;   ///< how many bytes they took on the wire, to show what a subscription costs
@@ -78,7 +79,7 @@ print_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const sge_ob
    dstring buffer_wrapper;
 
    events++;
-   init_packbuffer(&pb, 0, true, false);
+   ocs::tom::try_init_buffer(&pb, 0, true, false);
    event.pack(pb);
    events_size += pb.bytes_used;
 

@@ -37,7 +37,6 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
-#include "cull/cull_test_api.h"
 
 /** @name The size of the fine-grained-locking benchmark
  *

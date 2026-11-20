@@ -48,7 +48,6 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_qref.h"
-#include "cull/cull_test_api.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -325,7 +324,7 @@ static void test_qref_cache_agrees_with_walk() {
    /* Without this the whole comparison could pass with no cache anywhere -- two
     * runs of the same walk always agree. */
    {
-      bool all = (lGetNumberOfElem(*cached) > 0);
+      bool all = (cached->size() > 0);
 
       for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(cached)) {
          all &= hgroup_has_host_cache(hgroup);

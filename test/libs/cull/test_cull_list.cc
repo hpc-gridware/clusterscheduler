@@ -19,18 +19,11 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Unit tests for list in `libs/cull`
+ * @brief Unit tests for elements and lists of the list core in `libs/tom`, driven through the raw interface
  */
 
-#include <csignal>
 #include <cstdio>
 #include <cstring>
-#include <functional>
-
-#include <fcntl.h>
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 /** @brief Make this translation unit the one that defines the CULL descriptors
  *
@@ -40,43 +33,17 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_multitypeP.h"
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_ListOpsCore.h"
+#include "tom/ocs_Raw.h"
+#include "tom/ocs_SelectCore.h"
+#include "tom/ocs_SortCore.h"
 #include "ocs_test_model.h"
-
-/**
- * @brief Run a callable in a child process and report whether it aborted
- *
- * The child sends its output to /dev/null and writes no core file.
- *
- * @param what the code that is expected to abort
- * @return true when the child was terminated by SIGABRT
- */
-static bool aborts(const std::function<void()> &what) {
-   fflush(stdout);
-   fflush(stderr);
-   const pid_t pid = fork();
-   if (pid < 0) {
-      return false;
-   }
-   if (pid == 0) {
-      const struct rlimit no_core = {0, 0};
-      setrlimit(RLIMIT_CORE, &no_core);
-      const int devnull = open("/dev/null", O_WRONLY);
-      if (devnull >= 0) {
-         dup2(devnull, STDERR_FILENO);
-         dup2(devnull, STDOUT_FILENO);
-         close(devnull);
-      }
-      what();
-      _exit(0);
-   }
-   int status = 0;
-   if (waitpid(pid, &status, 0) != pid) {
-      return false;
-   }
-   return WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
-}
 
 // ---------------------------------------------------------------------------
 // Local CULL type used by all tests
@@ -163,526 +130,528 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/** @brief Create an element of TEST_Type with an int value
+ *
+ * @param value the value of TEST_int
+ * @return the owner of the element
+ */
+static ocs::tom::RawElementPtr make_int_elem(const std::int32_t value) {
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   ep->set(TEST_int, value);
+   return ep;
+}
+
+/** @brief Create an element of TEST_Type with a string value
+ *
+ * @param nm the string field
+ * @param value the value
+ * @return the owner of the element
+ */
+static ocs::tom::RawElementPtr make_str_elem(const int nm, const char *value) {
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   ep->set(nm, value);
+   return ep;
+}
+
+/** @brief The condition TEST_string == value
+ *
+ * @param value the value
+ * @return the owner of the condition
+ */
+static ocs::tom::RawWherePtr string_is(const char *value) {
+   return ocs::tom::where_compare(TEST_Type, TEST_string, ocs::tom::CompareOp::Equal, value);
+}
+
+/** @brief Sort a list by one field through a sort order of the core
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param ascending true for ascending, false for descending
+ */
+static void sort_by(const ocs::tom::RawList lp, const int nm, const bool ascending) {
+   const ocs::tom::SortKey keys[] = {{nm, ascending}};
+   lSortOrder *order = ocs::tom::make_sort_order(lp.descr(), keys);
+   ocs::tom::sort_list(lp, order);
+   ocs::tom::free_sort_order(order);
+}
+
 // ---------------------------------------------------------------------------
 // lWhat / lWhere  [T01–T02]
-//
-// lWhat() builds an enumeration (field selection) from a format string.
-// lWhere() builds a filter condition from a format string.
-// Both must return nullptr for invalid or unsupported patterns rather than
-// crashing or producing a corrupt object.
 // ---------------------------------------------------------------------------
 
+/** @brief The format strings of lWhat() and lWhere(); TOM builds conditions and selections without one */
 static void test_what_where() {
    printf("\n--- lWhat / lWhere ---\n");
 
-   // T01: a syntactically malformed lWhat pattern must return nullptr
-   lEnumeration *enp = lWhat("%T(%I%I->%T(%I%T))", TEST_Type,
-                              TEST_int, TEST_int, TEST_Type, TEST_int, TEST_host);
-   CHECK(1, "malformed lWhat pattern returns nullptr", enp == nullptr);
-   if (enp != nullptr) { lFreeWhat(&enp); }
-
-   // T02: "ALL" is not a valid WHERE condition and must return nullptr
-   lCondition *cond = lWhere("%T(ALL)", TEST_Type);
-   CHECK(2, "lWhere with ALL token returns nullptr", cond == nullptr);
-   if (cond != nullptr) { lFreeWhere(&cond); }
+   // CHECK 1 removed: the format parser of lWhat() has no TOM counterpart (CS-3103)
+   // CHECK 2 removed: the format parser of lWhere() has no TOM counterpart (CS-3103)
 }
 
 // ---------------------------------------------------------------------------
 // Scalar field set/get  [T03–T11]
 //
-// Every CULL field type has a lSetXxx / lGetXxx pair. Each must round-trip
-// the stored value exactly. A second lSetXxx on the same field overwrites the
-// first — the last written value is what lGetXxx returns (T11).
+// Every field type has a set(nm, v) / get<V>(nm) pair. Each must round-trip
+// the stored value exactly. A second set on the same field overwrites the
+// first — the last written value is what get returns (T11).
 // ---------------------------------------------------------------------------
 
+/** @brief The raw setters and getters round-trip every field type */
 static void test_field_access() {
    printf("\n--- scalar field set/get ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
 
    // T03: integer field roundtrip
-   lSetInt(ep, TEST_int, 42);
-   CHECK(3, "lSetInt/lGetInt roundtrip", lGetInt(ep, TEST_int) == 42);
+   ep->set(TEST_int, std::int32_t{42});
+   CHECK(3, "set/get of an int field: roundtrip", ep->get<std::int32_t>(TEST_int) == 42);
 
    // T04: host field roundtrip
-   lSetHost(ep, TEST_host, "myhost.example.com");
-   CHECK(4, "lSetHost/lGetHost roundtrip", strcmp(lGetHost(ep, TEST_host), "myhost.example.com") == 0);
+   ep->set(TEST_host, ocs::tom::Host("myhost.example.com"));
+   CHECK(4, "set/get of a host field: roundtrip",
+         strcmp(ep->get<ocs::tom::Host>(TEST_host), "myhost.example.com") == 0);
 
    // T05: string field roundtrip
-   lSetString(ep, TEST_string, "hello");
-   CHECK(5, "lSetString/lGetString roundtrip", strcmp(lGetString(ep, TEST_string), "hello") == 0);
+   ep->set(TEST_string, static_cast<const char *>("hello"));
+   CHECK(5, "set/get of a string field: roundtrip", strcmp(ep->get<const char *>(TEST_string), "hello") == 0);
 
    // T06: double field roundtrip (exact bit-for-bit — set and immediately get)
-   lSetDouble(ep, TEST_double, 3.14);
-   CHECK(6, "lSetDouble/lGetDouble roundtrip", lGetDouble(ep, TEST_double) == 3.14);
+   ep->set(TEST_double, 3.14);
+   CHECK(6, "set/get of a double field: roundtrip", ep->get<double>(TEST_double) == 3.14);
 
    // T07: long field roundtrip (negative value)
-   lSetLong(ep, TEST_long, -7);
-   CHECK(7, "lSetLong/lGetLong roundtrip", lGetLong(ep, TEST_long) == -7);
+   ep->set(TEST_long, std::int64_t{-7});
+   CHECK(7, "set/get of a long field: roundtrip", ep->get<std::int64_t>(TEST_long) == -7);
 
    // T08: unsigned long field roundtrip
-   lSetUlong(ep, TEST_ulong, 99);
-   CHECK(8, "lSetUlong/lGetUlong roundtrip", lGetUlong(ep, TEST_ulong) == 99);
+   ep->set(TEST_ulong, std::uint32_t{99});
+   CHECK(8, "set/get of an ulong field: roundtrip", ep->get<std::uint32_t>(TEST_ulong) == 99);
 
    // T09: bool field roundtrip — true
-   lSetBool(ep, TEST_bool, true);
-   CHECK(9, "lSetBool/lGetBool: true", lGetBool(ep, TEST_bool) == true);
+   ep->set(TEST_bool, true);
+   CHECK(9, "set/get of a bool field: true", ep->get<bool>(TEST_bool) == true);
 
    // T10: bool field roundtrip — false (overwriting the true stored by T09)
-   lSetBool(ep, TEST_bool, false);
-   CHECK(10, "lSetBool/lGetBool: false", lGetBool(ep, TEST_bool) == false);
+   ep->set(TEST_bool, false);
+   CHECK(10, "set/get of a bool field: false", ep->get<bool>(TEST_bool) == false);
 
-   // T11: a second lSetInt overwrites the first; lGetInt returns the last value
-   lSetInt(ep, TEST_int, 1);
-   lSetInt(ep, TEST_int, 100);
-   CHECK(11, "lSetInt overwrites: last value wins", lGetInt(ep, TEST_int) == 100);
-
-   lFreeElem(&ep);
+   // T11: a second set overwrites the first; get returns the last value
+   ep->set(TEST_int, std::int32_t{1});
+   ep->set(TEST_int, std::int32_t{100});
+   CHECK(11, "set of an int field overwrites: last value wins", ep->get<std::int32_t>(TEST_int) == 100);
 }
 
 // ---------------------------------------------------------------------------
-// Embedded object (lSetObject / lGetObject)  [T12–T13]
+// Embedded object  [T12–T13]
 //
-// A CULL element can store another element as a sub-object via lSetObject.
-// lGetObject returns the stored pointer and the sub-object's own fields are
-// accessible through it.
+// An element can store another element as a sub-object via set(nm, owner).
+// get<const lListElem *>() returns the stored pointer and the sub-object's own
+// fields are accessible through it.
 // ---------------------------------------------------------------------------
 
+/** @brief An object field stores the element itself */
 static void test_embedded_object() {
    printf("\n--- embedded object ---\n");
 
-   lListElem *ep  = lCreateElem(TEST_Type);
-   lListElem *obj = lCreateElem(TEST_Type);
-   lSetInt(obj, TEST_int, 50);
-   lSetObject(ep, TEST_object, obj);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   ocs::tom::RawElementPtr obj = make_int_elem(50);
+   const lListElem *obj_raw = obj.get();
+   ep->set(TEST_object, std::move(obj));
 
-   // T12: lGetObject returns the exact pointer that was stored
-   CHECK(12, "lGetObject returns stored pointer", lGetObject(ep, TEST_object) == obj);
+   // T12: the getter returns the exact pointer that was stored
+   CHECK(12, "get of an object field returns the stored pointer",
+         ep->get<const lListElem *>(TEST_object) == obj_raw);
 
-   // T13: the embedded object's own fields are accessible through the returned pointer
-   CHECK(13, "embedded object int accessible via lGetObject",
-         lGetInt(lGetObject(ep, TEST_object), TEST_int) == 50);
-
-   lFreeElem(&ep); // frees ep; obj lifetime is managed by CULL after lSetObject
+   // T13: the embedded object's own fields are accessible through the returned handle
+   CHECK(13, "embedded object int accessible through the object field",
+         ep->get<ocs::tom::ConstRawElement>(TEST_object).get<std::int32_t>(TEST_int) == 50);
 }
 
 // ---------------------------------------------------------------------------
-// lCopyElem  [T14–T16]
+// clone()  [T14–T16]
 //
-// lCopyElem() produces a deep copy of an element. The copy is a distinct
+// clone() produces a deep copy of an element. The copy is a distinct
 // allocation with the same field values; modifying one does not affect the other.
 // ---------------------------------------------------------------------------
 
+/** @brief clone() of an element */
 static void test_copy_elem() {
-   printf("\n--- lCopyElem ---\n");
+   printf("\n--- clone() of an element ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
-   lSetInt(ep, TEST_int, 42);
-   lSetString(ep, TEST_string, "hello");
+   ocs::tom::RawElementPtr ep = make_int_elem(42);
+   ep->set(TEST_string, static_cast<const char *>("hello"));
 
-   lListElem *copy = lCopyElem(ep);
+   ocs::tom::RawElementPtr copy = ep.clone();
 
    // T14: the copy is a distinct allocation (not the same pointer)
-   CHECK(14, "lCopyElem returns different pointer", copy != ep);
+   CHECK(14, "clone() returns a different pointer", copy.get().raw() != ep.get().raw());
 
    // T15: integer field is preserved in the copy
-   CHECK(15, "lCopyElem: int field preserved", lGetInt(copy, TEST_int) == 42);
+   CHECK(15, "clone(): int field preserved", copy->get<std::int32_t>(TEST_int) == 42);
 
    // T16: string field is preserved in the copy
-   CHECK(16, "lCopyElem: string field preserved",
-         lGetString(copy, TEST_string) != nullptr &&
-         strcmp(lGetString(copy, TEST_string), "hello") == 0);
-
-   lFreeElem(&copy);
-   lFreeElem(&ep);
+   CHECK(16, "clone(): string field preserved",
+         copy->get<const char *>(TEST_string) != nullptr &&
+         strcmp(copy->get<const char *>(TEST_string), "hello") == 0);
 }
 
 // ---------------------------------------------------------------------------
-// lCopyElemPartialPack  [T17–T21]
+// copy_elem_partial()  [T17–T21]
 //
-// lCopyElemPartialPack() copies a subset of fields from a source element into
-// a pre-allocated destination element. The field selection is governed by an
-// lEnumeration built with lWhat. Fields not covered by the enumeration keep
-// their default values (0 / nullptr) in the destination.
+// copy_elem_partial() copies a subset of fields from a source element into a
+// pre-allocated destination element. The field selection is governed by a
+// selection built with what_all() or what_of(). Fields not covered by the
+// selection keep their default values (0 / nullptr) in the destination.
 // ---------------------------------------------------------------------------
 
+/** @brief copy_elem_partial() of the core, the former lCopyElemPartialPack() */
 static void test_partial_pack() {
-   printf("\n--- lCopyElemPartialPack ---\n");
+   printf("\n--- copy_elem_partial() ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
-   lSetInt(ep, TEST_int, 42);
-   lSetString(ep, TEST_string, "hello");
-   lSetDouble(ep, TEST_double, 3.14);
+   ocs::tom::RawElementPtr ep = make_int_elem(42);
+   ep->set(TEST_string, static_cast<const char *>("hello"));
+   ep->set(TEST_double, 3.14);
 
    // full copy: ALL fields
-   lListElem *full = lCreateElem(TEST_Type);
-   lEnumeration *all_enp = lWhat("%T(ALL)", TEST_Type);
-   lCopyElemPartialPack(full, ep, all_enp, true, nullptr);
+   auto full = ocs::tom::RawElementPtr::create(TEST_Type);
+   ocs::tom::RawWhatPtr all_enp = ocs::tom::what_all();
+   ocs::tom::copy_elem_partial(full.get(), ep.get(), all_enp.get(), true, false);
 
    // T17: a full copy has the int field
-   CHECK(17, "full partial-pack: int field copied", lGetInt(full, TEST_int) == 42);
+   CHECK(17, "full partial copy: int field copied", full->get<std::int32_t>(TEST_int) == 42);
 
    // T18: a full copy has the string field
-   CHECK(18, "full partial-pack: string field copied",
-         lGetString(full, TEST_string) != nullptr &&
-         strcmp(lGetString(full, TEST_string), "hello") == 0);
-
-   lFreeElem(&full);
-   lFreeWhat(&all_enp);
+   CHECK(18, "full partial copy: string field copied",
+         full->get<const char *>(TEST_string) != nullptr &&
+         strcmp(full->get<const char *>(TEST_string), "hello") == 0);
 
    // partial copy: only TEST_string and TEST_double
-   lListElem *part = lCreateElem(TEST_Type);
-   lEnumeration *part_enp = lWhat("%T(%I %I)", TEST_Type, TEST_string, TEST_double);
-   lCopyElemPartialPack(part, ep, part_enp, true, nullptr);
+   auto part = ocs::tom::RawElementPtr::create(TEST_Type);
+   const int part_fields[] = {TEST_string, TEST_double};
+   ocs::tom::RawWhatPtr part_enp = ocs::tom::what_of(TEST_Type, part_fields);
+   ocs::tom::copy_elem_partial(part.get(), ep.get(), part_enp.get(), true, false);
 
    // T19: the selected string field is present in the partial copy
-   CHECK(19, "partial-pack: string (selected) copied",
-         lGetString(part, TEST_string) != nullptr &&
-         strcmp(lGetString(part, TEST_string), "hello") == 0);
+   CHECK(19, "partial copy: string (selected) copied",
+         part->get<const char *>(TEST_string) != nullptr &&
+         strcmp(part->get<const char *>(TEST_string), "hello") == 0);
 
    // T20: the selected double field is present in the partial copy
-   CHECK(20, "partial-pack: double (selected) copied",
-         lGetDouble(part, TEST_double) == 3.14);
+   CHECK(20, "partial copy: double (selected) copied", part->get<double>(TEST_double) == 3.14);
 
    // T21: the unselected int field retains the default value 0 in the partial copy
-   CHECK(21, "partial-pack: int (not selected) is 0", lGetInt(part, TEST_int) == 0);
-
-   lFreeElem(&part);
-   lFreeWhat(&part_enp);
-   lFreeElem(&ep);
+   CHECK(21, "partial copy: int (not selected) is 0", part->get<std::int32_t>(TEST_int) == 0);
 }
 
 // ---------------------------------------------------------------------------
 // List operations  [T22–T25]
 //
-// lCreateList / lAppendElem / lGetNumberOfElem / lFirst cover the basic
-// lifecycle of a CULL list. Elements are owned by the list after lAppendElem;
-// lFreeList frees them all.
+// create / push_back / size / front cover the basic lifecycle of a list.
+// Elements are owned by the list after push_back; the list owner frees them
+// all.
 // ---------------------------------------------------------------------------
 
+/** @brief The basic lifecycle of a list */
 static void test_list_ops() {
    printf("\n--- list operations ---\n");
 
-   lList *list = lCreateList("test", TEST_Type);
+   auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "test");
 
    // T22: a freshly created list has no elements
-   CHECK(22, "fresh list has 0 elements", lGetNumberOfElem(list) == 0);
+   CHECK(22, "fresh list has 0 elements", list->size() == 0);
 
-   lListElem *e1 = lCreateElem(TEST_Type);
-   lSetInt(e1, TEST_int, 10);
-   lAppendElem(list, e1);
+   const lListElem *e1 = list->push_back(make_int_elem(10));
 
    // T23: after the first append the count is 1
-   CHECK(23, "after first append, count is 1", lGetNumberOfElem(list) == 1);
+   CHECK(23, "after first append, count is 1", list->size() == 1);
 
-   lListElem *e2 = lCreateElem(TEST_Type);
-   lSetInt(e2, TEST_int, 20);
-   lAppendElem(list, e2);
+   list->push_back(make_int_elem(20));
 
    // T24: after the second append the count is 2
-   CHECK(24, "after second append, count is 2", lGetNumberOfElem(list) == 2);
+   CHECK(24, "after second append, count is 2", list->size() == 2);
 
-   // T25: lFirst returns the first appended element
-   CHECK(25, "lFirst returns first element", lFirst(list) == e1);
-
-   lFreeList(&list); // frees e1 and e2
+   // T25: front() returns the first appended element
+   CHECK(25, "front() returns first element", list->front().raw() == e1);
 }
 
 // ---------------------------------------------------------------------------
-// lAddSubStr / lGetSubStr  [T26–T27]
+// Sub-list add and lookup  [T26–T27]
 //
-// lAddSubStr appends an element to a named sub-list of an element, setting
-// a string field on the new sub-element. lGetSubStr searches that sub-list
-// by string value and returns the matching element.
+// get_or_create_list() and add_elem_str() of the core append an element to
+// the sub-list of an element, setting a string field on the new sub-element,
+// as lAddSubStr() did. find_first() searches that sub-list by string value and
+// returns the matching element.
 // ---------------------------------------------------------------------------
 
+/** @brief Add to and look up in a sub-list */
 static void test_sub_list() {
    printf("\n--- sub-list operations ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
-   lAddSubStr(ep, TEST_string, "needle", TEST_list, TEST_Type);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   lList *sub = ocs::tom::get_or_create_list(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_list), nullptr, TEST_Type);
+   ocs::tom::add_elem_str(sub, TEST_string, "needle", TEST_Type);
 
-   const lListElem *found = lGetSubStr(ep, TEST_string, "needle", TEST_list);
+   const ocs::tom::ConstRawElement found =
+           ep->get<ocs::tom::ConstRawList>(TEST_list).find_first(TEST_string, static_cast<const char *>("needle"));
 
    // T26: the added sub-element is found by its string value
-   CHECK(26, "lGetSubStr finds the element added by lAddSubStr", found != nullptr);
+   CHECK(26, "find_first() in the sub-list finds the element added by add_elem_str()", static_cast<bool>(found));
 
    // T27: the found element's string field matches the value that was added
-   CHECK(27, "lGetSubStr: found element has correct string value",
-         found != nullptr && strcmp(lGetString(found, TEST_string), "needle") == 0);
-
-   lFreeElem(&ep);
+   CHECK(27, "find_first() in the sub-list: found element has correct string value",
+         found && strcmp(found.get<const char *>(TEST_string), "needle") == 0);
 }
 
 // ---------------------------------------------------------------------------
-// lGetPosInDescr  [T28–T29]
+// field_pos()  [T28–T29]
 //
-// lGetPosInDescr maps a field ID (enum value) to its 0-based position in the
+// field_pos() maps a field ID (enum value) to its 0-based position in the
 // descriptor array. Returns -1 for field IDs not present in the descriptor.
 // ---------------------------------------------------------------------------
 
+/** @brief field_pos() of the core */
 static void test_get_pos_in_descr() {
-   printf("\n--- lGetPosInDescr ---\n");
+   printf("\n--- field_pos() ---\n");
 
    // T28: a valid field ID yields a non-negative position
-   CHECK(28, "lGetPosInDescr: valid field returns non-negative position",
-         lGetPosInDescr(TEST_Type, TEST_string) >= 0);
+   CHECK(28, "field_pos(): valid field returns non-negative position",
+         ocs::tom::field_pos(TEST_Type, TEST_string) >= 0);
 
    // T29: an unknown field ID returns -1
-   CHECK(29, "lGetPosInDescr: invalid field returns -1",
-         lGetPosInDescr(TEST_Type, 999) == -1);
+   CHECK(29, "field_pos(): invalid field returns -1", ocs::tom::field_pos(TEST_Type, 999) == -1);
 }
 
 // ---------------------------------------------------------------------------
 // Condition-based search  [T30–T35]
 //
-// lWhere() builds a filter condition; lFindFirstRW() returns the first list
-// element that satisfies it, or nullptr when none does. lCompare() tests a
-// single element against a condition without iterating a list. lOrWhere()
-// combines two conditions with logical OR; it takes ownership of both inputs.
+// where_compare() builds a filter condition; find_first() of the core returns
+// the first list element that satisfies it, or nullptr when none does.
+// matches() tests a single element against a condition without iterating a
+// list. make_logic() with LogicOp::Or combines two conditions with logical OR;
+// it takes ownership of both inputs.
 // ---------------------------------------------------------------------------
 
+/** @brief Searching a list with a condition */
 static void test_condition_search() {
    printf("\n--- condition-based search ---\n");
 
-   lList *list = lCreateList("cond", TEST_Type);
-   lListElem *e1 = lCreateElem(TEST_Type);
-   lSetString(e1, TEST_string, "alice");
-   lAppendElem(list, e1);
-   lListElem *e2 = lCreateElem(TEST_Type);
-   lSetString(e2, TEST_string, "bob");
-   lAppendElem(list, e2);
+   auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "cond");
+   const ocs::tom::RawElement e1 = list->push_back(make_str_elem(TEST_string, "alice"));
+   const ocs::tom::RawElement e2 = list->push_back(make_str_elem(TEST_string, "bob"));
 
-   // T30: a well-formed lWhere condition returns a non-null condition object
-   lCondition *cond = lWhere("%T(%I==%s)", TEST_Type, TEST_string, "alice");
-   CHECK(30, "well-formed lWhere returns non-null condition", cond != nullptr);
+   // T30: a well-formed condition is not empty
+   ocs::tom::RawWherePtr cond = string_is("alice");
+   CHECK(30, "where_compare() returns a condition", cond != nullptr);
 
-   // T31: lFindFirstRW returns the element whose field matches the condition
-   lListElem *found = lFindFirstRW(list, cond);
-   CHECK(31, "lFindFirstRW: matching element found", found == e1);
+   // T31: find_first() returns the element whose field matches the condition
+   CHECK(31, "find_first(): matching element found", ocs::tom::find_first(list.get(), cond.get()) == e1.raw());
 
-   // T32: lFindFirstRW returns nullptr when no element satisfies the condition
-   lCondition *no_match = lWhere("%T(%I==%s)", TEST_Type, TEST_string, "nobody");
-   CHECK(32, "lFindFirstRW: no match returns nullptr", lFindFirstRW(list, no_match) == nullptr);
-   lFreeWhere(&no_match);
+   // T32: find_first() returns nullptr when no element satisfies the condition
+   ocs::tom::RawWherePtr no_match = string_is("nobody");
+   CHECK(32, "find_first(): no match returns nullptr", ocs::tom::find_first(list.get(), no_match.get()) == nullptr);
 
-   // T33: lCompare returns non-zero when the element satisfies the condition
-   CHECK(33, "lCompare: matching element returns non-zero", lCompare(e1, cond) != 0);
+   // T33: matches() is true when the element satisfies the condition
+   CHECK(33, "matches(): matching element gives true", e1.matches(cond.get()));
 
-   // T34: lCompare returns 0 when the element does not satisfy the condition
-   CHECK(34, "lCompare: non-matching element returns 0", lCompare(e2, cond) == 0);
-   lFreeWhere(&cond);
+   // T34: matches() is false when the element does not satisfy the condition
+   CHECK(34, "matches(): non-matching element gives false", !e2.matches(cond.get()));
 
-   // T35: lOrWhere matches elements satisfying either of two conditions
-   lCondition *c1 = lWhere("%T(%I==%s)", TEST_Type, TEST_string, "alice");
-   lCondition *c2 = lWhere("%T(%I==%s)", TEST_Type, TEST_string, "bob");
-   lCondition *or_cond = lOrWhere(c1, c2); // consumes c1 and c2
-   CHECK(35, "lOrWhere: finds element matching second alternative",
-         lFindFirstRW(list, or_cond) != nullptr);
-   lFreeWhere(&or_cond);
-
-   lFreeList(&list);
+   // T35: an OR condition matches elements satisfying either of two conditions
+   ocs::tom::RawWherePtr or_cond(
+           ocs::tom::make_logic(ocs::tom::LogicOp::Or, string_is("alice").release(), string_is("bob").release()));
+   CHECK(35, "make_logic(Or): finds element matching second alternative",
+         ocs::tom::find_first(list.get(), or_cond.get()) != nullptr && e2.matches(or_cond.get()));
 }
 
 // ---------------------------------------------------------------------------
 // Element removal and insertion  [T36–T40]
 //
-// lDechainElem() unlinks an element from a list without freeing it; the
-// caller takes ownership and must free it. lRemoveElem() unlinks and frees
-// the element and sets the caller's pointer to nullptr. lInsertElem() inserts
-// a new element immediately AFTER the given element; passing nullptr inserts
-// at the front of the list.
+// take() unlinks an element from a list without freeing it; the caller takes
+// ownership. remove_elem() of the core unlinks and frees the element and sets
+// the caller's pointer to nullptr. insert_after() inserts a new element
+// immediately AFTER the given element; an empty handle inserts at the front of
+// the list.
 // ---------------------------------------------------------------------------
 
+/** @brief take(), remove_elem() and insert_after() */
 static void test_elem_removal() {
    printf("\n--- element removal and insertion ---\n");
 
-   lList *list = lCreateList("rm", TEST_Type);
-   lListElem *e1 = lCreateElem(TEST_Type); lSetInt(e1, TEST_int, 1); lAppendElem(list, e1);
-   lListElem *e2 = lCreateElem(TEST_Type); lSetInt(e2, TEST_int, 2); lAppendElem(list, e2);
-   lListElem *e3 = lCreateElem(TEST_Type); lSetInt(e3, TEST_int, 3); lAppendElem(list, e3);
+   auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "rm");
+   list->push_back(make_int_elem(1));
+   const ocs::tom::RawElement e2 = list->push_back(make_int_elem(2));
+   lListElem *e3 = list->push_back(make_int_elem(3));
 
-   // T36: lDechainElem unlinks the element; count decreases but element is not freed
-   lDechainElem(list, e2);
-   CHECK(36, "lDechainElem: count decreases by 1", lGetNumberOfElem(list) == 2);
-   lFreeElem(&e2); // caller owns the decheined element
+   // T36: take() unlinks the element; count decreases but element is not freed
+   ocs::tom::RawElementPtr taken = list->take(e2);
+   CHECK(36, "take(): count decreases by 1", list->size() == 2 && taken);
+   taken.reset();
 
-   // T37: lRemoveElem frees the element and decreases the count
-   lRemoveElem(list, &e3);
-   CHECK(37, "lRemoveElem: count decreases by 1", lGetNumberOfElem(list) == 1);
+   // T37: remove_elem() frees the element and decreases the count
+   ocs::tom::remove_elem(list.get(), e3);
+   CHECK(37, "remove_elem(): count decreases by 1", list->size() == 1);
 
-   // T38: lRemoveElem sets the caller's pointer to nullptr
-   CHECK(38, "lRemoveElem: caller pointer set to nullptr", e3 == nullptr);
+   // T38: remove_elem() sets the caller's pointer to nullptr
+   CHECK(38, "remove_elem(): caller pointer set to nullptr", e3 == nullptr);
 
-   // T39: lInsertElem inserts AFTER the given element (list is [e1] → insert ins after e1 → [e1, ins])
-   lListElem *ins = lCreateElem(TEST_Type); lSetInt(ins, TEST_int, 99);
-   lInsertElem(list, lFirstRW(list), ins);
-   CHECK(39, "lInsertElem: element is inserted after the given element",
-         lNext(lFirst(list)) == ins);
+   // T39: insert_after() inserts AFTER the given element (list is [e1] → insert ins after e1 → [e1, ins])
+   const ocs::tom::RawElement ins = list->insert_after(list->front(), make_int_elem(99));
+   CHECK(39, "insert_after(): element is inserted after the given element",
+         list->front().next().raw() == ins.raw());
 
    // T40: after the insert the count is 2 (e1 + ins)
-   CHECK(40, "lInsertElem: count increases by 1", lGetNumberOfElem(list) == 2);
-
-   lFreeList(&list);
+   CHECK(40, "insert_after(): count increases by 1", list->size() == 2);
 }
 
 // ---------------------------------------------------------------------------
 // List traversal  [T41–T44]
 //
-// lNext() advances to the next element; lLast() returns the tail; lPrev()
-// steps backward. lGetNumberOfRemainingElem() counts elements strictly BEHIND
-// the given element (exclusive — the element itself is not counted).
+// next() advances to the next element; back() returns the tail. remaining()
+// counts elements strictly BEHIND the given element (exclusive — the element
+// itself is not counted).
 // ---------------------------------------------------------------------------
 
+/** @brief next(), back() and remaining() */
 static void test_traversal() {
    printf("\n--- traversal ---\n");
 
-   lList *list = lCreateList("trav", TEST_Type);
-   lListElem *e1 = lCreateElem(TEST_Type); lSetInt(e1, TEST_int, 1); lAppendElem(list, e1);
-   lListElem *e2 = lCreateElem(TEST_Type); lSetInt(e2, TEST_int, 2); lAppendElem(list, e2);
-   lListElem *e3 = lCreateElem(TEST_Type); lSetInt(e3, TEST_int, 3); lAppendElem(list, e3);
+   auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "trav");
+   list->push_back(make_int_elem(1));
+   const ocs::tom::RawElement e2 = list->push_back(make_int_elem(2));
+   const ocs::tom::RawElement e3 = list->push_back(make_int_elem(3));
 
-   // T41: lNext after lFirst returns the second element
-   CHECK(41, "lNext after lFirst returns second element", lNext(lFirst(list)) == e2);
+   // T41: next() after front() returns the second element
+   CHECK(41, "next() after front() returns second element", list->front().next().raw() == e2.raw());
 
-   // T42: lNext after the last element returns nullptr
-   CHECK(42, "lNext after last element returns nullptr", lNext(lLast(list)) == nullptr);
+   // T42: next() after the last element returns an empty handle
+   CHECK(42, "next() after last element returns an empty handle", !list->back().next());
 
-   // T43: lLast returns the last appended element
-   CHECK(43, "lLast returns the last appended element", lLast(list) == e3);
+   // T43: back() returns the last appended element
+   CHECK(43, "back() returns the last appended element", list->back().raw() == e3.raw());
 
    // T44: from e2, only e3 is behind it — count is 1 (exclusive of e2 itself)
-   CHECK(44, "lGetNumberOfRemainingElem from second element is 1",
-         lGetNumberOfRemainingElem(e2) == 1);
-
-   lFreeList(&list);
+   CHECK(44, "remaining() from second element is 1", ocs::tom::remaining(e2) == 1);
 }
 
 // ---------------------------------------------------------------------------
 // String-key lookup  [T45–T46]
 //
-// lGetElemStr() searches a list for the first element whose named string field
+// find_first() searches a list for the first element whose named string field
 // equals the given value. It returns nullptr when no element matches.
 // ---------------------------------------------------------------------------
 
+/** @brief find_first() by a string key */
 static void test_elem_str_lookup() {
-   printf("\n--- lGetElemStr ---\n");
+   printf("\n--- find_first() by a string ---\n");
 
-   lList *list = lCreateList("str", TEST_Type);
-   lListElem *e1 = lCreateElem(TEST_Type); lSetString(e1, TEST_string, "alpha"); lAppendElem(list, e1);
-   lListElem *e2 = lCreateElem(TEST_Type); lSetString(e2, TEST_string, "beta");  lAppendElem(list, e2);
+   auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "str");
+   list->push_back(make_str_elem(TEST_string, "alpha"));
+   const ocs::tom::RawElement e2 = list->push_back(make_str_elem(TEST_string, "beta"));
 
-   // T45: lGetElemStr finds the element with the matching string value
-   CHECK(45, "lGetElemStr: finds element with matching string", lGetElemStr(list, TEST_string, "beta") == e2);
+   // T45: find_first() finds the element with the matching string value
+   CHECK(45, "find_first(): finds element with matching string",
+         list->find_first(TEST_string, static_cast<const char *>("beta")).raw() == e2.raw());
 
-   // T46: lGetElemStr returns nullptr when no element has the given value
-   CHECK(46, "lGetElemStr: returns nullptr for no match", lGetElemStr(list, TEST_string, "gamma") == nullptr);
-
-   lFreeList(&list);
+   // T46: find_first() returns nullptr when no element has the given value
+   CHECK(46, "find_first(): returns nullptr for no match",
+         !list->find_first(TEST_string, static_cast<const char *>("gamma")));
 }
 
 // ---------------------------------------------------------------------------
-// lCopyList  [T47–T49]
+// clone() of a list  [T47–T49]
 //
-// lCopyList() produces a deep copy of an entire list. The copy has the same
+// clone() produces a deep copy of an entire list. The copy has the same
 // number of elements; each element is a distinct allocation with the same
 // field values as its source counterpart.
 // ---------------------------------------------------------------------------
 
+/** @brief clone() of a list */
 static void test_copy_list() {
-   printf("\n--- lCopyList ---\n");
+   printf("\n--- clone() of a list ---\n");
 
-   lList *src = lCreateList("src", TEST_Type);
-   lListElem *e1 = lCreateElem(TEST_Type); lSetInt(e1, TEST_int, 7); lAppendElem(src, e1);
-   lListElem *e2 = lCreateElem(TEST_Type); lSetInt(e2, TEST_int, 8); lAppendElem(src, e2);
+   auto src = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "src");
+   src->push_back(make_int_elem(7));
+   src->push_back(make_int_elem(8));
 
-   lList *copy = lCopyList("copy", src);
+   ocs::tom::RawListPtr copy = src->clone();
 
    // T47: the copy has the same element count as the source
-   CHECK(47, "lCopyList: copy has same element count", lGetNumberOfElem(copy) == lGetNumberOfElem(src));
+   CHECK(47, "clone(): copy has the 2 elements of the source", copy->size() == 2);
 
    // T48: elements in the copy are distinct allocations
-   CHECK(48, "lCopyList: first element is a different pointer", lFirst(copy) != lFirst(src));
+   CHECK(48, "clone(): first element is a different pointer", copy->front().raw() != src->front().raw());
 
    // T49: int field values are preserved in the copy
-   CHECK(49, "lCopyList: int field value preserved", lGetInt(lFirst(copy), TEST_int) == 7);
-
-   lFreeList(&copy);
-   lFreeList(&src);
+   CHECK(49, "clone(): int field value preserved", copy->front().get<std::int32_t>(TEST_int) == 7);
 }
 
 // ---------------------------------------------------------------------------
-// lSetRef / lGetRef  [T50]
+// Reference field  [T50]
 //
-// The REF field stores a raw (unmanaged) pointer. lSetRef/lGetRef round-trip
-// the value exactly; CULL does not dereference or free the stored pointer.
+// The REF field stores a raw (unmanaged) pointer. set/get round-trip the
+// value exactly; the list library does not dereference or free the stored
+// pointer.
 // ---------------------------------------------------------------------------
 
+/** @brief A reference field round-trips the pointer */
 static void test_ref_field() {
-   printf("\n--- lSetRef / lGetRef ---\n");
+   printf("\n--- reference field ---\n");
 
-   lListElem *ep  = lCreateElem(TEST_Type);
-   lListElem *ref = lCreateElem(TEST_Type);
-   lSetRef(ep, TEST_ref, ref);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   auto ref = ocs::tom::RawElementPtr::create(TEST_Type);
+   ep->set(TEST_ref, static_cast<void *>(ref.get().raw()));
 
-   // T50: lGetRef returns the exact pointer that was passed to lSetRef
-   CHECK(50, "lSetRef/lGetRef: roundtrip returns same pointer",
-         lGetRef(ep, TEST_ref) == ref);
-
-   lFreeElem(&ref);
-   lFreeElem(&ep);
+   // T50: get returns the exact pointer that was set
+   CHECK(50, "set/get of a reference field: roundtrip returns same pointer",
+         ep->get<void *>(TEST_ref) == ref.get().raw());
 }
 
 // ---------------------------------------------------------------------------
 // Sorting and deduplication  [T51–T55]
 //
-// lPSortList() reorders list elements by a field; the format "%I+" means
-// ascending, "%I-" means descending. lUniqStr() removes elements whose
-// named string field is a duplicate of an earlier element's value.
+// sort_list() of the core reorders list elements by a sort order;
+// unique_by_key() removes elements whose named string field is a duplicate of
+// an earlier element's value.
 // ---------------------------------------------------------------------------
 
+/** @brief sort_list() and unique_by_key() */
 static void test_sort_and_uniq() {
    printf("\n--- sort and deduplication ---\n");
 
    // build an unsorted list: 30, 10, 20
-   lList *sort_list = lCreateList("sort", TEST_Type);
-   lListElem *s1 = lCreateElem(TEST_Type); lSetInt(s1, TEST_int, 30); lAppendElem(sort_list, s1);
-   lListElem *s2 = lCreateElem(TEST_Type); lSetInt(s2, TEST_int, 10); lAppendElem(sort_list, s2);
-   lListElem *s3 = lCreateElem(TEST_Type); lSetInt(s3, TEST_int, 20); lAppendElem(sort_list, s3);
+   auto sort_list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "sort");
+   sort_list->push_back(make_int_elem(30));
+   sort_list->push_back(make_int_elem(10));
+   sort_list->push_back(make_int_elem(20));
 
-   lPSortList(sort_list, "%I+", TEST_int);
+   sort_by(sort_list.get(), TEST_int, true);
 
-   // T51: after ascending sort, lFirst has the smallest value
-   CHECK(51, "lPSortList ascending: lFirst has smallest int",
-         lGetInt(lFirst(sort_list), TEST_int) == 10);
+   // T51: after ascending sort, front() has the smallest value
+   CHECK(51, "ascending sort: front() has smallest int", sort_list->front().get<std::int32_t>(TEST_int) == 10);
 
-   // T52: after ascending sort, lLast has the largest value
-   CHECK(52, "lPSortList ascending: lLast has largest int",
-         lGetInt(lLast(sort_list), TEST_int) == 30);
-
-   lFreeList(&sort_list);
+   // T52: after ascending sort, back() has the largest value
+   CHECK(52, "ascending sort: back() has largest int", sort_list->back().get<std::int32_t>(TEST_int) == 30);
 
    // build a list with a duplicate string: "alpha", "beta", "alpha"
-   lList *uniq_list = lCreateList("uniq", TEST_Type);
-   lListElem *u1 = lCreateElem(TEST_Type); lSetString(u1, TEST_string, "alpha"); lAppendElem(uniq_list, u1);
-   lListElem *u2 = lCreateElem(TEST_Type); lSetString(u2, TEST_string, "beta");  lAppendElem(uniq_list, u2);
-   lListElem *u3 = lCreateElem(TEST_Type); lSetString(u3, TEST_string, "alpha"); lAppendElem(uniq_list, u3);
+   auto uniq_list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "uniq");
+   uniq_list->push_back(make_str_elem(TEST_string, "alpha"));
+   uniq_list->push_back(make_str_elem(TEST_string, "beta"));
+   uniq_list->push_back(make_str_elem(TEST_string, "alpha"));
 
-   lUniqStr(uniq_list, TEST_string);
+   ocs::tom::unique_by_key(uniq_list.get(), TEST_string);
 
    // T53: the duplicate is removed; only 2 elements remain
-   CHECK(53, "lUniqStr: duplicate removed (count = 2)", lGetNumberOfElem(uniq_list) == 2);
+   CHECK(53, "unique_by_key(): duplicate removed (count = 2)", uniq_list->size() == 2);
 
    // T54: the unique value "beta" is still present after deduplication
-   CHECK(54, "lUniqStr: unique values preserved",
-         lGetElemStr(uniq_list, TEST_string, "beta") != nullptr);
+   CHECK(54, "unique_by_key(): unique values preserved",
+         static_cast<bool>(uniq_list->find_first(TEST_string, static_cast<const char *>("beta"))));
 
    // T55: the duplicated value "alpha" appears exactly once
-   const lListElem *found = lGetElemStr(uniq_list, TEST_string, "alpha");
-   CHECK(55, "lUniqStr: deduplicated value appears exactly once",
-         found != nullptr && lGetElemStr(uniq_list, TEST_string, "alpha") == found);
-
-   lFreeList(&uniq_list);
+   int alpha = 0;
+   for (const ocs::tom::ConstRawElement ep : uniq_list.get()) {
+      alpha += strcmp(ep.get<const char *>(TEST_string), "alpha") == 0 ? 1 : 0;
+   }
+   CHECK(55, "unique_by_key(): deduplicated value appears exactly once", alpha == 1);
 }
 
 
@@ -697,37 +666,27 @@ static void test_sort_and_uniq() {
  * being indivisible would be relying on something the language does not
  * guarantee and that does not hold on every platform this is built for.
  */
+/** @brief The atomic load and store of the core on a 64 bit field */
 static void test_atomic_ulong64() {
    printf("\n--- atomic 64 bit accessors ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   lMultiType &slot = ocs_cull_value(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_ulong64));
 
    // T56-T57: the plain round trip, and that the two kinds of accessor address
    // the same storage - a field must be readable by whichever of them the caller
    // happens to use
-   CHECK(56, "lSetUlong64Atomic/lGetUlong64Atomic: round trip",
-         lSetUlong64Atomic(ep, TEST_ulong64, 4242) == 0 &&
-         lGetUlong64Atomic(ep, TEST_ulong64) == 4242);
+   ocs::tom::store_uint64_atomic(slot, 4242);
+   CHECK(56, "store_uint64_atomic()/load_uint64_atomic(): round trip", ocs::tom::load_uint64_atomic(slot) == 4242);
+   const bool plain_sees_atomic = ep->get<std::uint64_t>(TEST_ulong64) == 4242;
+   ep->set(TEST_ulong64, std::uint64_t{7});
    CHECK(57, "the ordinary and the atomic accessor see the same field",
-         lGetUlong64(ep, TEST_ulong64) == 4242 &&
-         (lSetUlong64(ep, TEST_ulong64, 7), lGetUlong64Atomic(ep, TEST_ulong64) == 7));
+         plain_sees_atomic && ocs::tom::load_uint64_atomic(slot) == 7);
 
-   // T58: a hashed field is refused. The ordinary setter keeps the hash table in
-   // step by removing the old entry and inserting the new one; an atomic store
-   // cannot, and would leave the table pointing at a value that is no longer
-   // there. A field written atomically is a field nobody looks up by value.
-   CHECK(58, "a hashed field is refused rather than silently corrupting its table",
-         lSetUlong64Atomic(ep, TEST_ulong64_hashed, 1) == -1);
-
-   // T59: a field that is not there aborts, as in every setter since CS-3062
-   // (N-L-4); before, it returned -1.
-   CHECK(59, "a field that is not in the element aborts",
-         aborts([&] { lSetUlong64Atomic(ep, TEST_int + 10000, 1); }));
-
-   // T60: no element at all
-   CHECK(60, "a missing element is refused", lSetUlong64Atomic(nullptr, TEST_ulong64, 1) == -1);
-
-   lFreeElem(&ep);
+   // CHECK 58 removed: the run-time refusal of a hashed field by lSetUlong64Atomic() has no TOM counterpart; the
+   // typed set_atomic<F>() does not compile for a hashed field (CS-3103)
+   // CHECK 59 removed: lSetUlong64Atomic() on a field the element does not hold has no TOM counterpart (CS-3103)
+   // CHECK 60 removed: lSetUlong64Atomic(nullptr) has no TOM counterpart (CS-3103)
 }
 
 // ---------------------------------------------------------------------------
@@ -735,8 +694,8 @@ static void test_atomic_ulong64() {
 //
 // CS-2755. A list whose key field is CULL_UNIQUE | CULL_HASH answers two
 // different things depending on how it is asked: a linear scan walks the
-// elements, a keyed lookup goes through the hash table
-// (lGetElemStrFirstRW(), cull_multitype.cc). The two must not disagree.
+// elements, a keyed lookup goes through the hash table (lookup_first(),
+// ocs_ElementCore.cc). The two must not disagree.
 //
 // What can be asked of a unique hash is not that every element is findable —
 // two elements under one key cannot both be, since the table holds one entry
@@ -760,19 +719,17 @@ static void test_atomic_ulong64() {
  * @param nm the CULL_UNIQUE | CULL_HASH string field acting as the key
  * @return true when every key resolves to an element of lp that carries it
  */
-static bool all_keys_resolve(const lList *lp, int nm) {
-   const lListElem *ep;
+static bool all_keys_resolve(const ocs::tom::ConstRawList lp, const int nm) {
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      const char *key = ep.get<const char *>(nm);
+      const ocs::tom::ConstRawElement found = lp.find_first(nm, key);
 
-   for_each_ep(ep, lp) {
-      const char *key = lGetString(ep, nm);
-      const lListElem *found = lGetElemStr(lp, nm, key);
-
-      if (found == nullptr) {
+      if (!found) {
          return false;
       }
       // the hash may legitimately hand back the other element of a duplicate
       // pair, but never one carrying a different key
-      if (strcmp(lGetString(found, nm), key) != 0) {
+      if (strcmp(found.get<const char *>(nm), key) != 0) {
          return false;
       }
    }
@@ -784,21 +741,33 @@ static bool all_keys_resolve(const lList *lp, int nm) {
  * @param name the list name
  * @param keys the key values to append, in order
  * @param n how many of them
- * @return the new list, owned by the caller
+ * @return the owner of the new list
  */
-static lList *make_keyed_list(const char *name, const char *const *keys, int n) {
-   lList *lp = lCreateList(name, TEST_Type);
+static ocs::tom::RawListPtr make_keyed_list(const char *name, const char *const *keys, const int n) {
+   auto lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, name);
 
    for (int i = 0; i < n; i++) {
-      lListElem *ep = lCreateElem(TEST_Type);
-      lSetString(ep, TEST_string_ukey, keys[i]);
-      lAppendElem(lp, ep);
+      lp->push_back(make_str_elem(TEST_string_ukey, keys[i]));
    }
    return lp;
 }
 
+/** @brief Build a list holding one key twice, by moving a second list holding the key into the first
+ *
+ * @param name1 the name of the first list
+ * @param name2 the name of the second list, freed by the move
+ * @param keys the key held by both
+ * @return the owner of the list
+ */
+static ocs::tom::RawListPtr make_duplicate_list(const char *name1, const char *name2, const char *const *keys) {
+   ocs::tom::RawListPtr first = make_keyed_list(name1, &keys[0], 1);
+   first->splice(make_keyed_list(name2, &keys[1], 1));
+   return first;
+}
+
 /**
- * @brief T61-T70: a key held twice is a logic error at the lookup, and removing one of the pair leaves the other findable (CS-2755, CS-3052)
+ * @brief T61-T70: a key held twice is a logic error at the lookup, and removing one of the pair leaves the
+ *        other findable (CS-2755, CS-3052)
  *
  * The duplicates are created on purpose, which a debug build refuses at the
  * append (N-H-18); the checks are suspended here.
@@ -815,128 +784,111 @@ static void test_unique_key_integrity() {
    // T61: the state the ticket is about can be reached at all. href_list_add()
    // and its kind refuse a duplicate within one list, so in the product this
    // arises from concatenating two lists that are each clean on their own.
-   lList *a = make_keyed_list("a", &one_dup[0], 1);
-   lList *b = make_keyed_list("b", &one_dup[1], 1);
-   lAddList(a, &b);
-   CHECK(61, "lAddList: two entries under one key end up in the list",
-         lGetNumberOfElem(a) == 2);
+   ocs::tom::RawListPtr a = make_duplicate_list("a", "b", one_dup);
+   CHECK(61, "splice(): two entries under one key end up in the list", a->size() == 2);
 
-   // T62: with both still there a lookup of the key is a logic error (N-H-18, stage 2 of CS-3052); the old lookup
-   // would abort, so the core's lookup is asked, which throws
+   // T62: with both still there a lookup of the key is a logic error (N-H-18, stage 2 of CS-3052); the core's
+   // lookup throws
    bool lookup_throws = false;
    try {
       const void *iterator = nullptr;
       static_cast<void>(ocs::tom::lookup_first<ocs::tom::FieldType::String>(
-         a, lGetPosInDescr(TEST_Type, TEST_string_ukey), "h10", &iterator));
+         a.get(), ocs::tom::field_pos(TEST_Type, TEST_string_ukey), "h10", &iterator));
    } catch (const ocs::tom::FieldException &e) {
       lookup_throws = e.reason() == ocs::tom::FieldException::Reason::DuplicateKey;
    }
    CHECK(62, "duplicate present: a lookup of the key is a logic error", lookup_throws);
 
-   // T63-T64: the repair. lUniqStr() drops one of the pair with lRemoveElem(),
-   // which is where the hash entry is lost today: the survivor stays in the
-   // list and becomes unfindable through the key.
-   lUniqStr(a, TEST_string_ukey);
-   CHECK(63, "lUniqStr: one of the two is gone", lGetNumberOfElem(a) == 1);
-   CHECK(64, "lUniqStr: the survivor is still findable by its key",
-         all_keys_resolve(a, TEST_string_ukey));
-   CHECK(65, "lUniqStr: the key resolves to the element that is actually in the list",
-         lGetElemStr(a, TEST_string_ukey, "h10") == lFirst(a));
-   lFreeList(&a);
+   // T63-T64: the repair. unique_by_key() drops one of the pair, which is
+   // where the hash entry was lost: the survivor stays in the list and becomes
+   // unfindable through the key.
+   ocs::tom::unique_by_key(a.get(), TEST_string_ukey);
+   CHECK(63, "unique_by_key(): one of the two is gone", a->size() == 1);
+   CHECK(64, "unique_by_key(): the survivor is still findable by its key", all_keys_resolve(a.get(), TEST_string_ukey));
+   CHECK(65, "unique_by_key(): the key resolves to the element that is actually in the list",
+         a->find_first(TEST_string_ukey, static_cast<const char *>("h10")).raw() == a->front().raw());
+   a.reset();
 
    // T66: remove the SECOND of the pair. It is the one the hash points at, so
    // this is the case where the entry legitimately goes and has to be handed on
    // to the element left behind.
-   lList *c = make_keyed_list("c", &one_dup[0], 1);
-   lList *d = make_keyed_list("d", &one_dup[1], 1);
-   lAddList(c, &d);
-   lListElem *second = lLastRW(c);
-   lRemoveElem(c, &second);
-   CHECK(66, "lRemoveElem of the second duplicate: the first stays findable",
-         all_keys_resolve(c, TEST_string_ukey) && lGetNumberOfElem(c) == 1);
-   lFreeList(&c);
+   ocs::tom::RawListPtr c = make_duplicate_list("c", "d", one_dup);
+   c->erase(c->back());
+   CHECK(66, "erase() of the second duplicate: the first stays findable",
+         all_keys_resolve(c.get(), TEST_string_ukey) && c->size() == 1);
+   c.reset();
 
    // T67: remove the FIRST of the pair — the one the hash does NOT point at.
    // Deleting by key rather than by entry takes the other one's entry with it.
-   lList *e = make_keyed_list("e", &one_dup[0], 1);
-   lList *f = make_keyed_list("f", &one_dup[1], 1);
-   lAddList(e, &f);
-   lListElem *first = lFirstRW(e);
-   lRemoveElem(e, &first);
-   CHECK(67, "lRemoveElem of the first duplicate: the second stays findable",
-         all_keys_resolve(e, TEST_string_ukey) && lGetNumberOfElem(e) == 1);
-   lFreeList(&e);
+   ocs::tom::RawListPtr e = make_duplicate_list("e", "f", one_dup);
+   e->erase(e->front());
+   CHECK(67, "erase() of the first duplicate: the second stays findable",
+         all_keys_resolve(e.get(), TEST_string_ukey) && e->size() == 1);
+   e.reset();
 
-   // T68: the same through lDechainElem(), which removes the hash entries on its
-   // own rather than by way of lFreeElem()
-   lList *g = make_keyed_list("g", &one_dup[0], 1);
-   lList *h = make_keyed_list("h", &one_dup[1], 1);
-   lAddList(g, &h);
-   lListElem *dechained = lDechainElem(g, lFirstRW(g));
-   CHECK(68, "lDechainElem of the first duplicate: the second stays findable",
-         all_keys_resolve(g, TEST_string_ukey) && lGetNumberOfElem(g) == 1);
-   lFreeElem(&dechained);
-   lFreeList(&g);
+   // T68: the same through take(), which removes the hash entries on its own
+   // rather than by way of freeing the element
+   ocs::tom::RawListPtr g = make_duplicate_list("g", "h", one_dup);
+   ocs::tom::RawElementPtr taken = g->take(g->front());
+   CHECK(68, "take() of the first duplicate: the second stays findable",
+         all_keys_resolve(g.get(), TEST_string_ukey) && g->size() == 1);
+   taken.reset();
+   g.reset();
 
    // T69: the setter route. No concatenation anywhere — writing a key that is
    // already taken puts the list in the same state.
-   lList *i = make_keyed_list("i", three, 2);          // h10, h20
-   lSetString(lLastRW(i), TEST_string_ukey, "h10");    // now h10, h10
-   lListElem *victim = lLastRW(i);
-   lRemoveElem(i, &victim);
-   CHECK(69, "lSetString onto an existing key: the remaining element stays findable",
-         all_keys_resolve(i, TEST_string_ukey) && lGetNumberOfElem(i) == 1);
-   lFreeList(&i);
+   ocs::tom::RawListPtr i = make_keyed_list("i", three, 2);              // h10, h20
+   i->back().set(TEST_string_ukey, static_cast<const char *>("h10"));   // now h10, h10
+   i->erase(i->back());
+   CHECK(69, "set() onto an existing key: the remaining element stays findable",
+         all_keys_resolve(i.get(), TEST_string_ukey) && i->size() == 1);
+   i.reset();
 
    // T70: the ordinary case must not regress. Distinct keys, one removed: the
    // others resolve, the removed one does not.
-   lList *j = make_keyed_list("j", three, 3);
-   lListElem *middle = lNextRW(lFirstRW(j));
-   lRemoveElem(j, &middle);
+   ocs::tom::RawListPtr j = make_keyed_list("j", three, 3);
+   j->erase(j->front().next());
    CHECK(70, "distinct keys: removal takes exactly its own entry out of the hash",
-         all_keys_resolve(j, TEST_string_ukey) &&
-         lGetNumberOfElem(j) == 2 &&
-         lGetElemStr(j, TEST_string_ukey, "h20") == nullptr);
-   lFreeList(&j);
+         all_keys_resolve(j.get(), TEST_string_ukey) &&
+         j->size() == 2 &&
+         !j->find_first(TEST_string_ukey, static_cast<const char *>("h20")));
 }
 
 // ---------------------------------------------------------------------------
-// lIsFreeElem  [T71–T75]
+// is_free()  [T71–T75]
 //
-// Code outside CULL asks lIsFreeElem() instead of reading the element status.
-// An element is free from its creation until it is bound to a list or stored
-// as a sub-object, and free again once it is dechained.
+// Code outside the list library asks is_free() instead of reading the element
+// status. An element is free from its creation until it is bound to a list or
+// stored as a sub-object, and free again once it is taken out.
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Check lIsFreeElem() through the life of an element
+ * @brief Check is_free() through the life of an element
  */
 static void test_is_free_elem() {
-   printf("\n--- lIsFreeElem ---\n");
+   printf("\n--- is_free() ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
+   auto owner = ocs::tom::RawElementPtr::create(TEST_Type);
+   const ocs::tom::RawElement ep = owner.get();
    // T71: a new element is free
-   CHECK(71, "a created element is free", lIsFreeElem(ep));
+   CHECK(71, "a created element is free", ocs::tom::is_free(ep));
 
-   lList *list = lCreateList("free", TEST_Type);
-   lAppendElem(list, ep);
+   auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "free");
+   list->push_back(std::move(owner));
    // T72: an element in a list is not free
-   CHECK(72, "an appended element is not free", !lIsFreeElem(ep));
+   CHECK(72, "an appended element is not free", !ocs::tom::is_free(ep));
 
-   ep = lDechainElem(list, ep);
-   // T73: dechaining makes it free again
-   CHECK(73, "a dechained element is free again", lIsFreeElem(ep));
+   owner = list->take(ep);
+   // T73: taking it out makes it free again
+   CHECK(73, "a taken element is free again", ocs::tom::is_free(ep));
 
-   lListElem *parent = lCreateElem(TEST_Type);
-   lSetObject(parent, TEST_object, ep);
+   auto parent = ocs::tom::RawElementPtr::create(TEST_Type);
+   parent->set(TEST_object, std::move(owner));
    // T74: a sub-object is not free
-   CHECK(74, "a sub-object is not free", !lIsFreeElem(lGetObject(parent, TEST_object)));
+   CHECK(74, "a sub-object is not free", !ocs::tom::is_free(parent->get<ocs::tom::ConstRawElement>(TEST_object)));
 
    // T75: nullptr is not a free element
-   CHECK(75, "nullptr is not free", !lIsFreeElem(nullptr));
-
-   lFreeElem(&parent);
-   lFreeList(&list);
+   CHECK(75, "nullptr is not free", !ocs::tom::is_free(nullptr));
 }
 
 // ---------------------------------------------------------------------------

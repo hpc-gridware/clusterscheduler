@@ -26,24 +26,23 @@
  * below that does compile.
  */
 
-#include <csignal>
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <type_traits>
 #include <vector>
 
-#include <sys/wait.h>
-#include <unistd.h>
-
-#include "cull/cull_test_api.h"
-#include "cull/ocs_cull_descr.h"
+#include "cull/cull.h"
 #include "tom/cull_hash.h"
+#include "tom/cull_state.h"
+#include "tom/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_ElementCore.h"
 #include "tom/ocs_Raw.h"
+#include "tom/ocs_Select.h"
 
 #include "ocs_module_test.h"
 
@@ -84,8 +83,8 @@ static int pick(const lListElem *job) {
  * @param job the element
  * @return its job number
  */
-static lUlong old_style(const lListElem *job) {
-   return lGetUlong(job, JB_job_number);
+static std::uint32_t old_style(const lListElem *job) {
+   return ocs::tom::get<JB_job_number>(job);
 }
 
 /**
@@ -110,32 +109,14 @@ static bool throws_field_exception(Call &&call, const FieldException::Reason rea
 }
 
 /**
- * @brief Whether a call aborts, run in a child process
- * @param call the call
- * @return true if the child ended with SIGABRT
- */
-template <typename Call>
-static bool aborts(Call &&call) {
-   const pid_t pid = fork();
-   if (pid == 0) {
-      // keep the expected abort quiet in the test output
-      [[maybe_unused]] FILE *quiet_stderr = std::freopen("/dev/null", "w", stderr);
-      call();
-      _exit(0);
-   }
-   int status = 0;
-   waitpid(pid, &status, 0);
-   return WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
-}
-
-/**
  * @brief HDL-01: handles convert, compare and resolve overloads like pointers
  * @return nothing; CHECK records the results
  */
 static void
 test_pointer_like() {
-   lListElem *raw = lCreateElem(ocs::tom::JB::descriptor.e);
-   lSetUlong(raw, JB_job_number, 42);
+   auto owner = ElementPtr<JB>::create();
+   owner->set<JB_job_number>(42u);
+   lListElem *raw = owner.get().raw();
    const Element<JB> h{raw};
    const Element<JB> h1 = h;
    const Element<JB> h2{nullptr};
@@ -147,18 +128,17 @@ test_pointer_like() {
          pick(h) == 1 && pick(static_cast<const lListElem *>(raw)) == 2);
    const ConstElement<JB> c = h;
    CHECK(4, "the read-only handle holds the same element", c == h && c.raw() == raw);
-   lFreeElem(&raw);
 }
 
 /**
- * @brief HDL-02: the template accessors, the run-time accessors and the old accessors agree, on a full and a reduced element
+ * @brief HDL-02: the template accessors, the run-time accessors and the free accessors agree, on a full and a
+ *        reduced element
  * @return nothing; CHECK records the results
  */
 static void
 test_accessors() {
-   lList *list = lCreateList("test", ocs::tom::TEST::descriptor.e);
-   lListElem *raw = lCreateElem(ocs::tom::TEST::descriptor.e);
-   lAppendElem(list, raw);
+   auto list = ListPtr<TEST>::create("test");
+   lListElem *raw = list->push_back(ElementPtr<TEST>::create()).raw();
    const Element<TEST> t{raw};
 
    t.set<TEST_bool>(true);
@@ -179,35 +159,36 @@ test_accessors() {
                               t.get<TEST_ref>() == &ref_target;
    CHECK(5, "set<F>() and get<F>() on every field type", template_path);
 
-   const bool old_path = lGetBool(raw, TEST_bool) && lGetUlong(raw, TEST_uint32) == 4000000000u &&
-                         lGetUlong64(raw, TEST_uint64) == (UINT64_C(1) << 40) && lGetInt(raw, TEST_int) == -7 &&
-                         lGetLong(raw, TEST_long) == -(INT64_C(1) << 40) && lGetDouble(raw, TEST_double) == 2.5 &&
-                         std::strcmp(lGetHost(raw, TEST_host), "host1") == 0 &&
-                         std::strcmp(lGetString(raw, TEST_string), "value") == 0 && lGetRef(raw, TEST_ref) == &ref_target;
-   CHECK(6, "the old accessors read what set<F>() wrote", old_path);
+   // the free getters on the raw pointer replaced the old getters; the host name reads back as written, as
+   // lGetHost() gave it
+   const lListElem *craw = raw;
+   const bool free_path = ocs::tom::get<TEST_bool>(craw) && ocs::tom::get<TEST_uint32>(craw) == 4000000000u &&
+                          ocs::tom::get<TEST_uint64>(craw) == (UINT64_C(1) << 40) &&
+                          ocs::tom::get<TEST_int>(craw) == -7 &&
+                          ocs::tom::get<TEST_long>(craw) == -(INT64_C(1) << 40) &&
+                          ocs::tom::get<TEST_double>(craw) == 2.5 &&
+                          std::strcmp(ocs::tom::get<TEST_host>(craw).c_str(), "host1") == 0 &&
+                          std::strcmp(ocs::tom::get<TEST_string>(craw), "value") == 0 &&
+                          ocs::tom::get<TEST_ref>(craw) == &ref_target;
+   CHECK(6, "the free getters on the raw pointer read what set<F>() wrote", free_path);
 
-   lSetUlong(raw, TEST_uint32, 17);
-   lSetString(raw, TEST_string, "other");
+   ocs::tom::set<TEST_uint32>(raw, 17u);
+   ocs::tom::set<TEST_string>(raw, "other");
    t.set<std::int32_t>(TEST_int, 9);
    const bool runtime_path = t.get<std::uint32_t>(TEST_uint32) == 17 &&
-                             std::strcmp(t.get<const char *>(TEST_string), "other") == 0 && lGetInt(raw, TEST_int) == 9 &&
-                             t.get<Host>(TEST_host) == "host1";
-   CHECK(7, "get(nm) and set(nm, v) agree with the old accessors", runtime_path);
+                             std::strcmp(t.get<const char *>(TEST_string), "other") == 0 &&
+                             ocs::tom::get<TEST_int>(craw) == 9 && t.get<Host>(TEST_host) == "host1";
+   CHECK(7, "get(nm) and set(nm, v) agree with the free accessors", runtime_path);
 
    // a reduced element, as a what selects it
-   lEnumeration *what = lWhat("%T(%I %I %I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string, TEST_double);
-   lList *reduced = lSelect("reduced", list, nullptr, what);
-   const ConstElement<TEST> r{ConstRawList{reduced}.front().raw()};
+   auto reduced = list->select(what<TEST_uint32, TEST_string, TEST_double>(), "reduced");
+   const ConstElement<TEST> r = reduced->front();
    CHECK(8, "the template accessors read a reduced element",
          r.get<TEST_uint32>() == 17 && std::strcmp(r.get<TEST_string>(), "other") == 0 && r.get<TEST_double>() == 2.5);
    const bool presence = r.has<TEST_uint32>() && r.has<TEST_double>() && !r.has<TEST_int>() && !r.has<TEST_host>() &&
-                         r.has<TEST_uint32>() == (lGetPosViaElem(r, TEST_uint32, SGE_NO_ABORT) >= 0) &&
-                         r.has<TEST_int>() == (lGetPosViaElem(r, TEST_int, SGE_NO_ABORT) >= 0) && t.has<TEST_int>();
-   CHECK(9, "has<F>() agrees with the old presence probe", presence);
-
-   lFreeList(&reduced);
-   lFreeWhat(&what);
-   lFreeList(&list);
+                         r.has<TEST_uint32>() == (present_pos(r.descr(), TEST_uint32) >= 0) &&
+                         r.has<TEST_int>() == (present_pos(r.descr(), TEST_int) >= 0) && t.has<TEST_int>();
+   CHECK(9, "has<F>() agrees with the field's presence in the descriptor", presence);
 }
 
 /**
@@ -216,12 +197,12 @@ test_accessors() {
  */
 static void
 test_errors() {
-   lList *list = lCreateList("test", ocs::tom::TEST::descriptor.e);
-   lAppendElem(list, lCreateElem(ocs::tom::TEST::descriptor.e));
-   lEnumeration *what = lWhat("%T(%I)", ocs::tom::TEST::descriptor.e, TEST_uint32);
-   lList *reduced = lSelect("reduced", list, nullptr, what);
-   lListElem *r = RawList{reduced}.front();
-   lListElem *queue = lCreateElem(ocs::tom::QU::descriptor.e);
+   auto list = ListPtr<TEST>::create("test");
+   list->push_back(ElementPtr<TEST>::create());
+   auto reduced = list->select(what<TEST_uint32>(), "reduced");
+   lListElem *r = reduced->front().raw();
+   auto queue_owner = ElementPtr<QU>::create();
+   lListElem *queue = queue_owner.get().raw();
 
    CHECK(10, "reading an absent field throws, naming field and type",
          throws_field_exception([&] { static_cast<void>(ConstElement<TEST>{r}.get<TEST_string>()); },
@@ -235,47 +216,37 @@ test_errors() {
          throws_field_exception([&] { static_cast<void>(ocs::tom::get<JB_job_name>(queue)); },
                             FieldException::Reason::ForeignField, "JB_job_name"));
 
-   // the free setter against the old setter: a null element
-   cull_state_set_lerrno(0);
-   const int old_null = lSetUlong(nullptr, TEST_uint32, 1);
-   const int old_null_errno = cull_state_get_lerrno();
+   // the free setter on a null element: -1 and LEELEMNULL, what the old setter gave
    cull_state_set_lerrno(0);
    const int new_null = ocs::tom::set<TEST_uint32>(nullptr, 1u);
    CHECK(14, "a null element: -1 and LEELEMNULL, like the old setter",
-         old_null == -1 && new_null == -1 && cull_state_get_lerrno() == old_null_errno && old_null_errno == LEELEMNULL);
+         new_null == -1 && cull_state_get_lerrno() == LEELEMNULL);
    cull_state_set_lerrno(0);
    const int new_null_str = ocs::tom::set<TEST_string>(nullptr, "x");
    CHECK(15, "a null element for a string field: -1 and LEELEMNULL", new_null_str == -1 && cull_state_get_lerrno() == LEELEMNULL);
 
-   // an absent number field: the old setter aborts and the free setter throws, as for every field type since
+   // an absent number field: the free setter throws, where the old setter aborted, as for every field type since
    // CS-3062 (N-L-4); before, both returned -1, with LENEGPOS for an int field and without one for a uint64 field
-   CHECK(16, "an absent int field: the old setter aborts, the free setter throws",
-         aborts([&] { lSetInt(r, TEST_int, 1); }) &&
+   CHECK(16, "an absent int field: the free setter throws",
          throws_field_exception([&] { ocs::tom::set<TEST_int>(r, 1); }, FieldException::Reason::AbsentField, "TEST_int"));
-   CHECK(17, "an absent uint64 field: the old setter aborts, the free setter throws",
-         aborts([&] { lSetUlong64(r, TEST_uint64, 1); }) &&
+   CHECK(17, "an absent uint64 field: the free setter throws",
          throws_field_exception([&] { ocs::tom::set<TEST_uint64>(r, UINT64_C(1)); }, FieldException::Reason::AbsentField,
                                 "TEST_uint64"));
 
-   // an absent string field: the old setter aborts, the free setter throws
-   CHECK(18, "an absent string field: the old setter aborts", aborts([&] { lSetString(r, TEST_string, "x"); }));
+   // an absent string field: the free setter throws, where the old setter aborted
+   // CHECK 18 removed: lSetString() has no TOM counterpart for its abort (CS-3103)
    CHECK(19, "an absent string field: the free setter throws",
          throws_field_exception([&] { ocs::tom::set<TEST_string>(r, "x"); }, FieldException::Reason::AbsentField, "TEST_string"));
    CHECK(20, "the handle's setter throws on an absent number field",
          throws_field_exception([&] { Element<TEST>{r}.set<TEST_int>(1); }, FieldException::Reason::AbsentField, "TEST_int"));
 
    // the object a field holds already is set again without an error since CS-3062 (N-L-4)
-   lListElem *full = lCreateElem(ocs::tom::TEST::descriptor.e);
-   lListElem *held = lCreateElem(ocs::tom::JB::descriptor.e);
+   auto full_owner = ElementPtr<TEST>::create();
+   lListElem *full = full_owner.get().raw();
+   lListElem *held = ElementPtr<JB>::create().release();
    const bool same = ocs::tom::set<TEST_obj_jb>(full, held) == 0 && ocs::tom::set<TEST_obj_jb>(full, held) == 0 &&
-                     lGetObject(full, TEST_obj_jb) == held;
-   lFreeElem(&full);
+                     full_owner->get<TEST_obj_jb>().raw() == held;
    CHECK(24, "the free setter sets the object a field holds again without an error", same);
-
-   lFreeElem(&queue);
-   lFreeList(&reduced);
-   lFreeWhat(&what);
-   lFreeList(&list);
 }
 
 /**
@@ -297,7 +268,7 @@ test_hash_tables() {
    five.set<TEST_int>(-5);
    CHECK(21, "after a change of a hashed field, the lookup finds the new key and not the old one",
          list.get().find_first<TEST_uint32>(1000u) == five && !list.get().find_first<TEST_uint32>(5u) &&
-         lGetElemUlong(list.get(), TEST_uint32, 1000) == five.raw());
+         static_cast<const lListElem *>(ocs::tom::find_first<TEST_uint32>(list.get().raw(), 1000u)) == five.raw());
    CHECK(22, "a change of an unhashed field leaves the lookups alone",
          list.get().find_first<TEST_uint32>(1000u).get<TEST_int>() == -5 && list.get().find_first<TEST_uint32>(6u));
 }
@@ -314,17 +285,16 @@ test_create_with_descriptor() {
    auto full_list = ListPtr<JB>::create("full", ocs::tom::JB::descriptor.e);
    auto full_job = ElementPtr<JB>::create(ocs::tom::JB::descriptor.e);
    CHECK(25, "with the full descriptor: the list has it and the name, the element has it",
-         lGetListDescr(full_list.get()) == ocs::tom::JB::descriptor.e &&
-         std::strcmp(lGetListName(full_list.get()), "full") == 0 &&
-         lGetElemDescr(full_job.get()) == ocs::tom::JB::descriptor.e);
+         full_list->descr() == ocs::tom::JB::descriptor.e && std::strcmp(full_list->name(), "full") == 0 &&
+         full_job->descr() == ocs::tom::JB::descriptor.e);
 
    auto reduced_list = ListPtr<JB>::create("reduced", reduced, Hashing::Off);
    auto reduced_job = ElementPtr<JB>::create(reduced);
    reduced_job.get().set<JB_job_number>(7u);
    const auto pushed = reduced_list.get().push_back(std::move(reduced_job));
    CHECK(26, "with a reduced descriptor: list and element have it and hold the fields it keeps",
-         reduced != nullptr && lGetListDescr(reduced_list.get()) == reduced &&
-         std::strcmp(lGetListName(reduced_list.get()), "reduced") == 0 && lGetElemDescr(pushed) == reduced &&
+         reduced != nullptr && reduced_list->descr() == reduced && std::strcmp(reduced_list->name(), "reduced") == 0 &&
+         pushed.descr() == reduced &&
          pushed.get<JB_job_number>() == 7 && !pushed.has<JB_owner>());
 
    CHECK(27, "with the descriptor of another type: list and element throw, naming the type",
@@ -355,17 +325,18 @@ static void
 test_layout() {
    const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
 
-   // emplace_back and lAddElemUlong on an existing reduced list create the element with the list's descriptor
+   // emplace_back and the free emplace_back (which replaced lAddElemUlong) on an existing reduced list create the
+   // element with the list's descriptor
    auto reduced_list = ListPtr<JB>::create("reduced", reduced);
    const Element<JB> emplaced = reduced_list.get().emplace_back<JB_job_number>(7u);
-   lList *old_list = lCreateList("old reduced", reduced);
-   const lListElem *added = lAddElemUlong(&old_list, JB_job_number, 8, ocs::tom::JB::descriptor.e);
-   CHECK(29, "emplace_back and lAddElemUlong on a reduced list give an element with the list's descriptor",
-         lGetElemDescr(emplaced) == lGetListDescr(reduced_list.get()) && emplaced.get<JB_job_number>() == 7 &&
+   lList *other_list = ListPtr<JB>::create("other reduced", reduced).release();
+   const lListElem *added = ocs::tom::emplace_back<JB_job_number>(&other_list, 8u);
+   const ListPtr<JB> other_owner(other_list);
+   CHECK(29, "emplace_back and the free emplace_back on a reduced list give an element with the list's descriptor",
+         emplaced.descr() == reduced_list->descr() && emplaced.get<JB_job_number>() == 7 &&
          !emplaced.has<JB_owner>() && reduced_list.get().find_first<JB_job_number>(7u) == emplaced &&
-         added != nullptr && lGetElemDescr(added) == lGetListDescr(old_list) &&
-         lGetUlong(added, JB_job_number) == 8 && lGetElemUlong(old_list, JB_job_number, 8) == added);
-   lFreeList(&old_list);
+         added != nullptr && ConstRawElement{added}.descr() == other_owner->descr() &&
+         ocs::tom::get<JB_job_number>(added) == 8 && other_owner->find_first<JB_job_number>(8u).raw() == added);
 
    // a full element into a reduced list, and a reduced element into a full list, are refused and kept
    auto full_list = ListPtr<JB>::create("full");
@@ -381,56 +352,62 @@ test_layout() {
    CHECK(30, "push_back and push_front of an element of another layout throw WrongLayout and keep the element",
          refused && full_job && reduced_job && reduced_list.get().size() == 1 && full_list.get().size() == 0);
 
-   // the old interface aborts, as for the other programming errors of lAppendElem()
-   CHECK(31, "lAppendElem and lInsertElem of an element of another layout abort",
-         aborts([&] { lAppendElem(reduced_list.get(), full_job.release()); }) &&
-         aborts([&] { lInsertElem(full_list.get(), nullptr, reduced_job.release()); }));
+   // the free forms that replaced lAppendElem() and lInsertElem() throw, where the old functions aborted
+   CHECK(31, "the free append and insert_after of an element of another layout throw WrongLayout and keep the element",
+         throws_field_exception([&] { ocs::tom::append(reduced_list.get().raw(), std::move(full_job)); },
+                                FieldException::Reason::WrongLayout, "layout") &&
+         throws_field_exception([&] { ocs::tom::insert_after(full_list.get().raw(), nullptr, std::move(reduced_job)); },
+                                FieldException::Reason::WrongLayout, "layout") &&
+         full_job && reduced_job && reduced_list.get().size() == 1 && full_list.get().size() == 0);
 
    // the same pointer, and an equal descriptor at another address, are accepted
    reduced_job.get().set<JB_job_number>(9u);
    const Element<JB> same = reduced_list.get().push_back(std::move(reduced_job));
    const lDescr *copy = ocs_cull_descr_private(reduced);
    auto copied_job = ElementPtr<JB>::create(copy);
-   const bool other_address = lGetElemDescr(copied_job.get()) != lGetListDescr(reduced_list.get());
+   const bool other_address = copied_job->descr() != reduced_list->descr();
    copied_job.get().set<JB_job_number>(10u);
    const Element<JB> equal = reduced_list.get().push_back(std::move(copied_job));
    ocs_cull_descr_release(&copy);
    full_list.get().push_back(std::move(full_job));
    CHECK(32, "an element with the list's descriptor or an equal one at another address is linked in",
          other_address && reduced_list.get().size() == 3 && full_list.get().size() == 1 &&
-         lGetElemDescr(same) == lGetListDescr(reduced_list.get()) &&
-         lGetElemDescr(equal) == lGetListDescr(reduced_list.get()) && equal.get<JB_job_number>() == 10 &&
+         same.descr() == reduced_list->descr() && equal.descr() == reduced_list->descr() &&
+         equal.get<JB_job_number>() == 10 &&
          reduced_list.get().find_first<JB_job_number>(10u) == equal);
 
-   // whole lists: splice and lAppendList compare the layouts as well
+   // whole lists: splice and the raw splice compare the layouts as well; lAppendList() returned -1 here, its
+   // successor splice() throws
    auto more_full = ListPtr<JB>::create("more full");
    more_full.get().emplace_back<JB_job_number>(11u);
-   lList *old_full = lCreateList("old full", ocs::tom::JB::descriptor.e);
-   lAddElemUlong(&old_full, JB_job_number, 12, ocs::tom::JB::descriptor.e);
-   CHECK(33, "splice and lAppendList between a reduced and a full list refuse, moving nothing",
+   auto other_typed = ListPtr<JB>::create("other full");
+   other_typed->emplace_back<JB_job_number>(12u);
+   RawListPtr other_full(std::move(other_typed));
+   CHECK(33, "splice and the raw splice between a reduced and a full list refuse, moving nothing",
          throws_field_exception([&] { reduced_list.get().splice(more_full.get()); },
                                 FieldException::Reason::WrongLayout, "layout") &&
-         lAppendList(reduced_list.get(), old_full) == -1 && reduced_list.get().size() == 3 &&
-         more_full.get().size() == 1 && lGetNumberOfElem(old_full) == 1);
-   lFreeList(&old_full);
+         throws_field_exception([&] { ocs::tom::splice(reduced_list.get().raw(), std::move(other_full)); },
+                                FieldException::Reason::WrongLayout, "layout") &&
+         reduced_list.get().size() == 3 && more_full.get().size() == 1 && other_full && other_full->size() == 1);
 
    // a list that got a hash table later holds a private copy of the type's descriptor whose flags differ
    // (CULL_HASH); elements of the type itself still have its layout and must be linked in
-   lList *hashed = lCreateListHash("hashed", ocs::tom::JB::descriptor.e, false);
-   const bool hash_created = cull_hash_new(hashed, JB_owner, false) == 1;
-   const bool private_copy = lGetListDescr(hashed) != ocs::tom::JB::descriptor.e;
-   lListElem *plain_job = lCreateElem(ocs::tom::JB::descriptor.e);
-   lSetUlong(plain_job, JB_job_number, 13);
-   lSetString(plain_job, JB_owner, "someone");
-   lAppendElem(hashed, plain_job);
+   auto hashed = ListPtr<JB>::create("hashed", Hashing::Off);
+   const bool hash_created = cull_hash_new(hashed.get().raw(), JB_owner, false) == 1;
+   const bool private_copy = hashed->descr() != ocs::tom::JB::descriptor.e;
+   auto plain_owner = ElementPtr<JB>::create();
+   plain_owner->set<JB_job_number>(13u);
+   plain_owner->set<JB_owner>("someone");
+   const lListElem *plain_job = plain_owner.get().raw();
+   // the free append on the raw list, which replaced lAppendElem(), and the typed push_back
+   ocs::tom::append(hashed.get().raw(), std::move(plain_owner));
    auto typed_job = ElementPtr<JB>::create();
    typed_job.get().set<JB_job_number>(14u);
-   const Element<JB> typed = List<JB>(hashed).push_back(std::move(typed_job));
+   const Element<JB> typed = hashed->push_back(std::move(typed_job));
    CHECK(34, "elements of the full type are linked into a list whose descriptor is a private copy with hash "
              "flags",
-         hash_created && private_copy && lGetNumberOfElem(hashed) == 2 &&
-         lGetElemStr(hashed, JB_owner, "someone") == plain_job && typed.get<JB_job_number>() == 14);
-   lFreeList(&hashed);
+         hash_created && private_copy && hashed->size() == 2 &&
+         hashed->find_first<JB_owner>("someone").raw() == plain_job && typed.get<JB_job_number>() == 14);
 
    ocs_cull_descr_release(&reduced);
 }
@@ -441,8 +418,10 @@ test_layout() {
  */
 static void
 test_correct_counterparts() {
-   lListElem *raw = lCreateElem(ocs::tom::JB::descriptor.e);
-   lListElem *raw_queue = lCreateElem(ocs::tom::QU::descriptor.e);
+   auto job_owner = ElementPtr<JB>::create();
+   auto queue_owner = ElementPtr<QU>::create();
+   lListElem *raw = job_owner.get().raw();
+   lListElem *raw_queue = queue_owner.get().raw();
    const Element<JB> job{raw};
    const ConstElement<JB> const_job = job;
    const Element<QU> queue{raw_queue};
@@ -456,8 +435,6 @@ test_correct_counterparts() {
    CHECK(23, "the correct counterparts compile and work",
          std::strcmp(name, "name") == 0 && qname == nullptr && from_raw == job && const_raw == raw &&
          const_job.get<JB_job_number>() == 1);
-   lFreeElem(&raw_queue);
-   lFreeElem(&raw);
 }
 
 /**
@@ -536,20 +513,20 @@ int main(int argc, char *argv[]) {
        "every comparison holds, the old function reads the element, the pair resolves to the read-only handle",
        {{"HDL-01", "covers"}}, {1, 2, 3, 4}, test_pointer_like},
       {"HANDLE-02", "accessors",
-       "the template, the run-time and the old accessors agree on full and reduced elements",
-       {"set every field type with set<F>() and read it back with get<F>() and the old getters",
-        "write with the old setters and set(nm, v), read with get(nm)",
+       "the template, the run-time and the free accessors agree on full and reduced elements",
+       {"set every field type with set<F>() and read it back with get<F>() and the free getters on the raw pointer",
+        "write with the free setters and set(nm, v), read with get(nm)",
         "read a reduced element and ask has<F>() for present and absent fields"},
-       "all paths agree on every value; has<F>() agrees with the old presence probe",
+       "all paths agree on every value; has<F>() agrees with the field's presence in the descriptor",
        {{"HDL-02", "covers"}}, {5, 6, 7, 8, 9}, test_accessors},
       {"HANDLE-03", "errors",
        "errors the compiler cannot catch throw a logic error; the free setter keeps the old setter's behaviour",
        {"read an absent field, read through an empty handle, make a job handle from a queue",
         "call the free getter with a job field on a queue",
-        "call the free and the old setter with a null element and with absent number and string fields"},
-       "each error throws with field and type named; the free setter returns -1 with the same error number "
-       "where the old one does, and throws where the old one aborts",
-       {{"HDL-03", "covers"}}, {10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24}, test_errors},
+        "call the free setter with a null element and with absent number and string fields"},
+       "each error throws with field and type named; the free setter returns -1 with the error number the old "
+       "one gave, and throws where the old one aborted",
+       {{"HDL-03", "covers"}}, {10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 24}, test_errors},
       {"HANDLE-04", "hash tables",
        "the setters keep the hash table of the owning list",
        {"change a hashed field after the first lookup in a list above the hash threshold",
@@ -571,13 +548,15 @@ int main(int argc, char *argv[]) {
        {{"HDL-03", "covers"}}, {25, 26, 27, 28}, test_create_with_descriptor},
       {"HANDLE-07", "layout",
        "an element or a list linked into a list must have the layout of the list's descriptor (CS-3112)",
-       {"emplace_back and lAddElemUlong on an existing reduced list",
-        "push_back, push_front, lAppendElem and lInsertElem of a full element into a reduced list and the opposite",
+       {"emplace_back and the free emplace_back on an existing reduced list",
+        "push_back, push_front, the free append and insert_after of a full element into a reduced list and the "
+        "opposite",
         "push_back of an element with the list's descriptor and with an equal one at another address",
-        "splice and lAppendList between a reduced and a full list",
-        "lAppendElem and push_back of elements of the full type into a list with a hashed private descriptor copy"},
-       "the added element has the list's descriptor and its key is found; another layout throws WrongLayout or "
-       "aborts in the old interface and leaves both sides unchanged; the same or an equal layout is linked in",
+        "splice and the raw splice between a reduced and a full list",
+        "the free append and push_back of elements of the full type into a list with a hashed private descriptor "
+        "copy"},
+       "the added element has the list's descriptor and its key is found; another layout throws WrongLayout "
+       "and leaves both sides unchanged; the same or an equal layout is linked in",
        {{"HDL-03", "covers"}}, {29, 30, 31, 32, 33, 34}, test_layout},
       {"HANDLE-08", "add", "add<F> adds to a number field of the type the field gives",
        {"add to a 32 bit, a 64 bit and a double field of an array task, and add 0"}, "the sums; 0 changes nothing",

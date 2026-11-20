@@ -23,13 +23,13 @@
  *
  * Not built by CMake: prt01_codegen.sh compiles this file to assembly with the
  * Release optimisation of the line build, on gcc and on clang, so that the code
- * of the typed getters can be inspected against the old accessor. Each function
- * is one access, so its assembly is the accessor's code.
+ * of the typed getters can be inspected. Each function is one access, so its
+ * assembly is the accessor's code. The old accessors lGetUlong() and lGetString()
+ * were compared here until the old interface was removed (CS-3103).
  */
 
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
-#include "cull/cull_test_api.h"
 
 using namespace ocs::tom;
 
@@ -67,22 +67,4 @@ std::uint32_t prt01_untyped_number(const lListElem *ep) {
  */
 const char *prt01_untyped_string(const lListElem *ep) {
    return ocs::tom::get<JB_owner>(ep);
-}
-
-/**
- * @brief The old accessor of a number field, for comparison
- * @param ep the job
- * @return the job number
- */
-lUlong prt01_old_number(const lListElem *ep) {
-   return lGetUlong(ep, JB_job_number);
-}
-
-/**
- * @brief The old accessor of a string field, for comparison
- * @param ep the job
- * @return the owner
- */
-const char *prt01_old_string(const lListElem *ep) {
-   return lGetString(ep, JB_owner);
 }

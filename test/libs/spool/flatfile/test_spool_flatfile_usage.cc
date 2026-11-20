@@ -30,8 +30,6 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
@@ -112,7 +110,9 @@ static std::string get_attribute_line(const std::string &content, const char *na
    return content.substr(pos, end - pos);
 }
 
-/*
+/**
+ * @brief The usage weight list of the scheduler configuration is written as name=value pairs only
+ *
  * Regression test for the flatfile representation of UA sublists.
  *
  * UA_svalue (string usage values, CS-849) must not be part of UA_sub_fields.
@@ -120,6 +120,9 @@ static std::string get_attribute_line(const std::string &content, const char *na
  * the sharetree usage lists - is numeric by construction, so an svalue field
  * would only ever be written as the placeholder "NONE" and would then be read
  * back as a literal string value. This is the qconf -ssconf output path.
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if every check passed, 1 otherwise
  */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_flatfile_usage");
@@ -145,19 +148,20 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(id, "usage_weight_list carries no NONE placeholder for UA_svalue",
             line.find("NONE") == std::string::npos); id++;
 
-      lListElem *reread = spool_flatfile_read_object(&alp, ocs::tom::SC::descriptor.e, nullptr,
-                                                     SC_fields, nullptr, true, &qconf_comma_sfi,
-                                                     SP_FORM_ASCII, nullptr, file1);
+      ocs::tom::ElementPtr<ocs::tom::SC> reread(spool_flatfile_read_object(&alp, ocs::tom::SC::descriptor.e, nullptr,
+                                                                           SC_fields, nullptr, true, &qconf_comma_sfi,
+                                                                           SP_FORM_ASCII, nullptr, file1));
       CHECK(id, "scheduler config read returns non-null", reread != nullptr); id++;
 
       if (reread != nullptr) {
-         ocs::tom::ConstElement<ocs::tom::UA> cpu = ocs::tom::find_first_in<SC_usage_weight_list, UA_name>(reread, USAGE_ATTR_CPU);
+         ocs::tom::ConstElement<ocs::tom::UA> cpu =
+            reread->find_first_in<SC_usage_weight_list, UA_name>(USAGE_ATTR_CPU);
          CHECK(id, "cpu weight survives the round-trip", cpu != nullptr); id++;
          CHECK(id, "cpu weight value is preserved",
-               cpu != nullptr && ocs::tom::get<UA_value>(cpu) == 1.0); id++;
+               cpu != nullptr && cpu.get<UA_value>() == 1.0); id++;
          CHECK(id, "cpu weight has no string value after the round-trip",
-               cpu != nullptr && ocs::tom::get<UA_svalue>(cpu) == nullptr); id++;
-         lFreeElem(&reread);
+               cpu != nullptr && cpu.get<UA_svalue>() == nullptr); id++;
+         reread.reset();
       }
 
       sge_unlink(nullptr, file1);

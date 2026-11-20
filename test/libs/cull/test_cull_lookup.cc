@@ -19,18 +19,24 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Unit tests for lookup by key in `libs/cull`
+ * @brief Unit tests for lookup by key in the core of the typed object model (libs/tom)
  *
- * Covers lGetElem{Ulong,Ulong64,Host,Str} with their First/Next iterators and
- * RW variants, lGetElemStrLike, lGetElemCaseStr, the lDelElem* removals, and
- * the lAddSub*, lGetSub* and lDelSub* functions working on a sublist.
+ * Covers the lookups of the core (ocs::tom::find_first<V>() of the run-time
+ * typed interface, lookup_first()/lookup_next() for all elements of a key,
+ * lookup_first_str_like(), lookup_first_str_nocase()), the keyed removals
+ * (remove_elem_ulong/ulong64/host/str) and the keyed adders (add_elem_*), also
+ * on a sublist made with get_or_create_list(). These are the functions the old
+ * lGetElem*, lDelElem*, lAddElem* and lAddSub/lGetSub/lDelSub functions were
+ * wrappers of. The test type has no generated traits, so the typed find_all(),
+ * erase<F>() and emplace_back<F>() do not apply.
  *
  * Every lookup scenario runs twice: once on a list with hash tables and once
- * on a list created without them (lCreateListHash(..., false)), where the
- * same functions fall back to a linear search. Both must give the same
- * answers; a change to when or where hash tables are built must keep it so.
+ * on a list created without them (Hashing::Off), where the same functions
+ * fall back to a linear search. Both must give the same answers; a change to
+ * when or where hash tables are built must keep it so.
  */
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -46,7 +52,12 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_types.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_Host.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_Raw.h"
 #include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
@@ -64,7 +75,7 @@ enum {
    TEST_ulong64,   ///< a 64 bit unsigned key with a non-unique hash
    TEST_host,   ///< a host name key with a non-unique hash
    TEST_string,   ///< a string key with a non-unique hash
-   TEST_list   ///< a sublist of the same type, for the lAddSub/lGetSub/lDelSub functions
+   TEST_list   ///< a sublist of the same type, for the keyed add, find and remove on a sublist
 };
 
 LISTDEF(TEST_Type)
@@ -96,8 +107,8 @@ static int s_fail = 0;
  * @param lp the list; nullptr counts as empty
  * @return the element count
  */
-static int nelem(const lList *lp) {
-   return static_cast<int>(lGetNumberOfElem(lp));
+static int nelem(const ocs::tom::ConstRawList lp) {
+   return static_cast<int>(lp.size());
 }
 
 /** @def CHECK
@@ -131,7 +142,7 @@ static constexpr int NKEYS = 3;
  * @param g the key group, 0 .. NKEYS-1
  * @return the TEST_ulong64 value of that group
  */
-static lUlong64 key64(int g) {
+static std::uint64_t key64(const int g) {
    return 0x500000000ULL + g;
 }
 
@@ -142,99 +153,98 @@ static lUlong64 key64(int g) {
  * `str<group>`, so every key value occurs NELEM / NKEYS times.
  *
  * @param hashed true for a list with hash tables, false for one without
- * @return the new list, owned by the caller
+ * @return the new list
  */
-static lList *make_list(bool hashed) {
-   lList *lp = lCreateListHash("lookup", TEST_Type, hashed);
+static ocs::tom::RawListPtr make_list(const bool hashed) {
+   auto lp = ocs::tom::RawListPtr::create(TEST_Type, hashed ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off,
+                                          "lookup");
    for (int i = 0; i < NELEM; i++) {
-      int g = i % NKEYS;
+      const int g = i % NKEYS;
       char host[16], str[16];
       snprintf(host, sizeof(host), "host%d", g);
       snprintf(str, sizeof(str), "str%d", g);
-      lListElem *ep = lCreateElem(TEST_Type);
-      lSetUlong(ep, TEST_ulong, g);
-      lSetUlong64(ep, TEST_ulong64, key64(g));
-      lSetHost(ep, TEST_host, host);
-      lSetString(ep, TEST_string, str);
-      lAppendElem(lp, ep);
+      auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+      ep->set(TEST_ulong, static_cast<std::uint32_t>(g));
+      ep->set(TEST_ulong64, key64(g));
+      ep->set(TEST_host, ocs::tom::Host(host));
+      ep->set(TEST_string, static_cast<const char *>(str));
+      lp->push_back(std::move(ep));
    }
    return lp;
 }
 
-/** @brief Count the elements the ulong First/Next iterator yields for a value
+/**
+ * @brief Count the elements the core lookup yields for a key, from lookup_first() on through lookup_next()
+ * @tparam T the key field's type
+ * @tparam Holds the type of the predicate
+ * @param lp the list to search
+ * @param nm the key field
+ * @param val the key
+ * @param holds whether an element found holds the key
+ * @return the number of elements found, or -1 if one carried a different value
+ */
+template <ocs::tom::FieldType T, typename Holds>
+static int count_key(const ocs::tom::ConstRawList lp, const int nm, const ocs::tom::KeyArgOf<T> val,
+                     const Holds &holds) {
+   const int pos = ocs::tom::field_pos(lp.descr(), nm);
+   int n = 0;
+   const void *it = nullptr;
+   for (const lListElem *ep = ocs::tom::lookup_first<T>(lp.raw(), pos, val, &it); ep != nullptr;
+        ep = ocs::tom::lookup_next<T>(lp.raw(), pos, val, &it)) {
+      if (!holds(ocs::tom::ConstRawElement(ep))) {
+         return -1;
+      }
+      n++;
+   }
+   return n;
+}
+
+/** @brief Count the elements the 32 bit lookup yields for a value
  *
  * @param lp the list to search
  * @param val the TEST_ulong value to look for
  * @return the number of elements found, or -1 if one carried a different value
  */
-static int count_ulong(const lList *lp, lUlong val) {
-   int n = 0;
-   const void *it = nullptr;
-   for (const lListElem *ep = lGetElemUlongFirst(lp, TEST_ulong, val, &it); ep != nullptr;
-        ep = lGetElemUlongNext(lp, TEST_ulong, val, &it)) {
-      if (lGetUlong(ep, TEST_ulong) != val) {
-         return -1;
-      }
-      n++;
-   }
-   return n;
+static int count_ulong(const ocs::tom::ConstRawList lp, const std::uint32_t val) {
+   return count_key<ocs::tom::FieldType::Uint32>(lp, TEST_ulong, val, [val](const ocs::tom::ConstRawElement ep) {
+      return ep.get<std::uint32_t>(TEST_ulong) == val;
+   });
 }
 
-/** @brief Count the elements the ulong64 First/Next iterator yields for a value
+/** @brief Count the elements the 64 bit lookup yields for a value
  *
  * @param lp the list to search
  * @param val the TEST_ulong64 value to look for
  * @return the number of elements found, or -1 if one carried a different value
  */
-static int count_ulong64(const lList *lp, lUlong64 val) {
-   int n = 0;
-   const void *it = nullptr;
-   for (const lListElem *ep = lGetElemUlong64First(lp, TEST_ulong64, val, &it); ep != nullptr;
-        ep = lGetElemUlong64Next(lp, TEST_ulong64, val, &it)) {
-      if (lGetUlong64(ep, TEST_ulong64) != val) {
-         return -1;
-      }
-      n++;
-   }
-   return n;
+static int count_ulong64(const ocs::tom::ConstRawList lp, const std::uint64_t val) {
+   return count_key<ocs::tom::FieldType::Uint64>(lp, TEST_ulong64, val, [val](const ocs::tom::ConstRawElement ep) {
+      return ep.get<std::uint64_t>(TEST_ulong64) == val;
+   });
 }
 
-/** @brief Count the elements the host First/Next iterator yields for a name
+/** @brief Count the elements the host lookup yields for a name
  *
  * @param lp the list to search
  * @param host the TEST_host value to look for
  * @return the number of elements found, or -1 if one carried a different value
  */
-static int count_host(const lList *lp, const char *host) {
-   int n = 0;
-   const void *it = nullptr;
-   for (const lListElem *ep = lGetElemHostFirst(lp, TEST_host, host, &it); ep != nullptr;
-        ep = lGetElemHostNext(lp, TEST_host, host, &it)) {
-      if (strcmp(lGetHost(ep, TEST_host), host) != 0) {
-         return -1;
-      }
-      n++;
-   }
-   return n;
+static int count_host(const ocs::tom::ConstRawList lp, const char *host) {
+   return count_key<ocs::tom::FieldType::Host>(lp, TEST_host, host, [host](const ocs::tom::ConstRawElement ep) {
+      return strcmp(ep.get<ocs::tom::Host>(TEST_host).c_str(), host) == 0;
+   });
 }
 
-/** @brief Count the elements the string First/Next iterator yields for a value
+/** @brief Count the elements the string lookup yields for a value
  *
  * @param lp the list to search
  * @param str the TEST_string value to look for
  * @return the number of elements found, or -1 if one carried a different value
  */
-static int count_str(const lList *lp, const char *str) {
-   int n = 0;
-   const void *it = nullptr;
-   for (const lListElem *ep = lGetElemStrFirst(lp, TEST_string, str, &it); ep != nullptr;
-        ep = lGetElemStrNext(lp, TEST_string, str, &it)) {
-      if (strcmp(lGetString(ep, TEST_string), str) != 0) {
-         return -1;
-      }
-      n++;
-   }
-   return n;
+static int count_str(const ocs::tom::ConstRawList lp, const char *str) {
+   return count_key<ocs::tom::FieldType::String>(lp, TEST_string, str, [str](const ocs::tom::ConstRawElement ep) {
+      return strcmp(ep.get<const char *>(TEST_string), str) == 0;
+   });
 }
 
 /** @brief Check that every key value yields every element carrying it, in all four key types
@@ -243,11 +253,10 @@ static int count_str(const lList *lp, const char *str) {
  * @return true when for every group the four iterators each yield exactly the
  *         elements of that group
  */
-static bool all_iterators_agree(const lList *lp) {
+static bool all_iterators_agree(const ocs::tom::ConstRawList lp) {
    int per_group[NKEYS] = {0};
-   const lListElem *ep;
-   for_each_ep(ep, lp) {
-      per_group[lGetUlong(ep, TEST_ulong)]++;
+   for (const ocs::tom::ConstRawElement ep : lp) {
+      per_group[ep.get<std::uint32_t>(TEST_ulong)]++;
    }
    for (int g = 0; g < NKEYS; g++) {
       char host[16], str[16];
@@ -261,12 +270,24 @@ static bool all_iterators_agree(const lList *lp) {
    return true;
 }
 
+/**
+ * @brief The string key of the first element of a list, copied, so that the removal by it does not read freed memory
+ * @param lp the list, not empty
+ * @param buf the buffer for the copy
+ * @param size the size of @p buf
+ * @return @p buf
+ */
+static const char *first_str(const ocs::tom::ConstRawList lp, char *buf, const std::size_t size) {
+   snprintf(buf, size, "%s", lp.front().get<const char *>(TEST_string));
+   return buf;
+}
+
 // ---------------------------------------------------------------------------
 // Single lookup and iteration  [base+0 – base+11]
 //
-// lGetElemXxx returns some element carrying the key, the First/Next iterators
-// every element carrying it, the RW variants the same elements writable.
-// A key that does not occur yields nullptr.
+// find_first<V>() returns some element carrying the key, lookup_first() and
+// lookup_next() every element carrying it, the form on a mutable list the
+// same elements writable. A key that does not occur yields nullptr.
 // ---------------------------------------------------------------------------
 
 /** @brief Run the lookup scenario on one list flavour
@@ -274,68 +295,77 @@ static bool all_iterators_agree(const lList *lp) {
  * @param hashed true to run on a list with hash tables, false without
  * @param base the first test number of this run
  */
-static void test_lookup(bool hashed, int base) {
+static void test_lookup(const bool hashed, const int base) {
    printf("\n--- lookup by key, %s ---\n", hashed ? "hashed list" : "unhashed list");
 
-   lList *lp = make_list(hashed);
+   const auto owner = make_list(hashed);
+   const ocs::tom::RawList lp = owner.get();
+   const ocs::tom::ConstRawList clp = lp;
 
-   const lListElem *ep = lGetElemUlong(lp, TEST_ulong, 1);
-   CHECK(base + 0, "lGetElemUlong finds the key", ep != nullptr && lGetUlong(ep, TEST_ulong) == 1);
-   CHECK(base + 1, "lGetElemUlong of a missing key is nullptr", lGetElemUlong(lp, TEST_ulong, 99) == nullptr);
+   ocs::tom::ConstRawElement ep = clp.find_first(TEST_ulong, std::uint32_t{1});
+   CHECK(base + 0, "find_first<std::uint32_t> finds the key", ep && ep.get<std::uint32_t>(TEST_ulong) == 1);
+   CHECK(base + 1, "find_first<std::uint32_t> of a missing key is nullptr",
+         !clp.find_first(TEST_ulong, std::uint32_t{99}));
 
-   ep = lGetElemUlong64(lp, TEST_ulong64, key64(2));
-   CHECK(base + 2, "lGetElemUlong64 finds a key above 32 bit",
-         ep != nullptr && lGetUlong64(ep, TEST_ulong64) == key64(2));
-   CHECK(base + 3, "lGetElemUlong64 does not match the low 32 bits alone",
-         lGetElemUlong64(lp, TEST_ulong64, key64(2) & 0xffffffffULL) == nullptr);
+   ep = clp.find_first(TEST_ulong64, key64(2));
+   CHECK(base + 2, "find_first<std::uint64_t> finds a key above 32 bit",
+         ep && ep.get<std::uint64_t>(TEST_ulong64) == key64(2));
+   CHECK(base + 3, "find_first<std::uint64_t> does not match the low 32 bits alone",
+         !clp.find_first(TEST_ulong64, std::uint64_t{key64(2) & 0xffffffffULL}));
 
-   ep = lGetElemHost(lp, TEST_host, "host0");
-   CHECK(base + 4, "lGetElemHost finds the key", ep != nullptr && strcmp(lGetHost(ep, TEST_host), "host0") == 0);
+   ep = clp.find_first(TEST_host, ocs::tom::Host("host0"));
+   CHECK(base + 4, "find_first<Host> finds the key",
+         ep && strcmp(ep.get<ocs::tom::Host>(TEST_host).c_str(), "host0") == 0);
 
-   ep = lGetElemStr(lp, TEST_string, "str2");
-   CHECK(base + 5, "lGetElemStr finds the key", ep != nullptr && strcmp(lGetString(ep, TEST_string), "str2") == 0);
+   ep = clp.find_first(TEST_string, "str2");
+   CHECK(base + 5, "find_first<const char *> finds the key",
+         ep && strcmp(ep.get<const char *>(TEST_string), "str2") == 0);
 
-   CHECK(base + 6, "First/Next iterators yield every element of every key", all_iterators_agree(lp));
+   CHECK(base + 6, "lookup_first/lookup_next yield every element of every key", all_iterators_agree(clp));
 
-   // RW variants address the same elements
+   // the forms on a mutable list address the same elements
+   const int pos_ulong = ocs::tom::field_pos(TEST_Type, TEST_ulong);
    const void *it = nullptr;
-   CHECK(base + 7, "RW variants return the same elements as the read-only ones",
-         lGetElemUlongRW(lp, TEST_ulong, 1) == lGetElemUlong(lp, TEST_ulong, 1) &&
-         lGetElemUlong64RW(lp, TEST_ulong64, key64(1)) == lGetElemUlong64(lp, TEST_ulong64, key64(1)) &&
-         lGetElemHostRW(lp, TEST_host, "host1") == lGetElemHost(lp, TEST_host, "host1") &&
-         lGetElemStrRW(lp, TEST_string, "str1") == lGetElemStr(lp, TEST_string, "str1") &&
-         lGetElemUlongFirstRW(lp, TEST_ulong, 1, &it) != nullptr &&
-         lGetElemUlongNextRW(lp, TEST_ulong, 1, &it) != nullptr &&
-         lGetElemUlongNextRW(lp, TEST_ulong, 1, &it) == nullptr);
+   const std::uint32_t one = 1;
+   CHECK(base + 7, "the forms on a mutable list return the same elements as the read-only ones",
+         lp.find_first(TEST_ulong, one).raw() == clp.find_first(TEST_ulong, one).raw() &&
+         lp.find_first(TEST_ulong64, key64(1)).raw() == clp.find_first(TEST_ulong64, key64(1)).raw() &&
+         lp.find_first(TEST_host, ocs::tom::Host("host1")).raw() ==
+         clp.find_first(TEST_host, ocs::tom::Host("host1")).raw() &&
+         lp.find_first(TEST_string, "str1").raw() == clp.find_first(TEST_string, "str1").raw() &&
+         ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.raw(), pos_ulong, one, &it) != nullptr &&
+         ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp.raw(), pos_ulong, one, &it) != nullptr &&
+         ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp.raw(), pos_ulong, one, &it) == nullptr);
 
-   // lGetElemStrLike: exact match or a trailing '*' as prefix wildcard
-   ep = lGetElemStrLike(lp, TEST_string, "str*");
-   CHECK(base + 8, "lGetElemStrLike with a trailing '*' matches the prefix",
-         ep != nullptr && strncmp(lGetString(ep, TEST_string), "str", 3) == 0);
-   CHECK(base + 9, "lGetElemStrLike without a match returns nullptr",
-         lGetElemStrLike(lp, TEST_string, "xyz*") == nullptr && lGetElemStrLike(lp, TEST_string, "str") == nullptr);
+   // lookup_first_str_like: exact match or a trailing '*' as prefix wildcard
+   const lListElem *found = ocs::tom::lookup_first_str_like(clp.raw(), TEST_string, "str*");
+   CHECK(base + 8, "lookup_first_str_like with a trailing '*' matches the prefix",
+         found != nullptr && strncmp(ocs::tom::get<const char *>(found, TEST_string), "str", 3) == 0);
+   CHECK(base + 9, "lookup_first_str_like without a match returns nullptr",
+         ocs::tom::lookup_first_str_like(clp.raw(), TEST_string, "xyz*") == nullptr &&
+         ocs::tom::lookup_first_str_like(clp.raw(), TEST_string, "str") == nullptr);
 
-   // lGetElemCaseStr ignores case
-   ep = lGetElemCaseStr(lp, TEST_string, "STR1");
-   CHECK(base + 10, "lGetElemCaseStr ignores case", ep != nullptr && strcmp(lGetString(ep, TEST_string), "str1") == 0);
+   // lookup_first_str_nocase ignores case
+   found = ocs::tom::lookup_first_str_nocase(clp.raw(), TEST_string, "STR1");
+   CHECK(base + 10, "lookup_first_str_nocase ignores case",
+         found != nullptr && strcmp(ocs::tom::get<const char *>(found, TEST_string), "str1") == 0);
 
    // changing a key in place moves the element to the other key
-   lListElem *mod = lGetElemStrRW(lp, TEST_string, "str0");
-   lSetUlong(mod, TEST_ulong, 1);
-   lSetUlong64(mod, TEST_ulong64, key64(1));
-   lSetHost(mod, TEST_host, "host1");
-   lSetString(mod, TEST_string, "str1");
-   CHECK(base + 11, "after changing all keys of an element the iterators still agree", all_iterators_agree(lp) &&
-         count_ulong(lp, 1) == NELEM / NKEYS + 1 && count_str(lp, "str0") == NELEM / NKEYS - 1);
-
-   lFreeList(&lp);
+   const ocs::tom::RawElement mod = lp.find_first(TEST_string, "str0");
+   mod.set(TEST_ulong, std::uint32_t{1});
+   mod.set(TEST_ulong64, key64(1));
+   mod.set(TEST_host, ocs::tom::Host("host1"));
+   mod.set(TEST_string, "str1");
+   CHECK(base + 11, "after changing all keys of an element the iterators still agree", all_iterators_agree(clp) &&
+         count_ulong(clp, 1) == NELEM / NKEYS + 1 && count_str(clp, "str0") == NELEM / NKEYS - 1);
 }
 
 // ---------------------------------------------------------------------------
 // Removal by key  [base+0 – base+7]
 //
-// lDelElemXxx removes one element carrying the key and frees the list when it
-// becomes empty. The remaining elements must still be found by their keys.
+// remove_elem_ulong/ulong64/host/str remove one element carrying the key. The
+// remaining elements must still be found by their keys. Unlike the old
+// lDelElem* functions, the core leaves an emptied list to its owner.
 // ---------------------------------------------------------------------------
 
 /** @brief Run the removal scenario on one list flavour
@@ -343,96 +373,109 @@ static void test_lookup(bool hashed, int base) {
  * @param hashed true to run on a list with hash tables, false without
  * @param base the first test number of this run
  */
-static void test_delete(bool hashed, int base) {
+static void test_delete(const bool hashed, const int base) {
    printf("\n--- removal by key, %s ---\n", hashed ? "hashed list" : "unhashed list");
 
-   lList *lp = make_list(hashed);
+   const auto owner = make_list(hashed);
+   const ocs::tom::RawList lp = owner.get();
 
-   CHECK(base + 0, "lDelElemUlong removes one element of the key",
-         lDelElemUlong(&lp, TEST_ulong, 1) == 1 && count_ulong(lp, 1) == NELEM / NKEYS - 1 &&
+   CHECK(base + 0, "remove_elem_ulong removes one element of the key",
+         ocs::tom::remove_elem_ulong(lp, TEST_ulong, 1) && count_ulong(lp, 1) == NELEM / NKEYS - 1 &&
          nelem(lp) == NELEM - 1);
-   CHECK(base + 1, "lDelElemUlong64 removes the other element of the key",
-         lDelElemUlong64(&lp, TEST_ulong64, key64(1)) == 1 && count_ulong64(lp, key64(1)) == 0);
-   CHECK(base + 2, "lDelElemHost removes one element of the key",
-         lDelElemHost(&lp, TEST_host, "host2") == 1 && count_host(lp, "host2") == NELEM / NKEYS - 1);
-   CHECK(base + 3, "lDelElemStr of a missing key removes nothing",
-         lDelElemStr(&lp, TEST_string, "nope") == 0 && nelem(lp) == NELEM - 3);
-   CHECK(base + 4, "lDelElemStr removes one element of the key",
-         lDelElemStr(&lp, TEST_string, "str0") == 1 && count_str(lp, "str0") == NELEM / NKEYS - 1);
+   CHECK(base + 1, "remove_elem_ulong64 removes the other element of the key",
+         ocs::tom::remove_elem_ulong64(lp, TEST_ulong64, key64(1)) && count_ulong64(lp, key64(1)) == 0);
+   CHECK(base + 2, "remove_elem_host removes one element of the key",
+         ocs::tom::remove_elem_host(lp, TEST_host, "host2") && count_host(lp, "host2") == NELEM / NKEYS - 1);
+   CHECK(base + 3, "remove_elem_str of a missing key removes nothing",
+         !ocs::tom::remove_elem_str(lp, TEST_string, "nope") && nelem(lp) == NELEM - 3);
+   CHECK(base + 4, "remove_elem_str removes one element of the key",
+         ocs::tom::remove_elem_str(lp, TEST_string, "str0") && count_str(lp, "str0") == NELEM / NKEYS - 1);
    CHECK(base + 5, "the remaining elements are still found by every key", all_iterators_agree(lp));
 
-   // remove what is left; the last removal frees the list
-   while (lp != nullptr && nelem(lp) > 1) {
-      lDelElemStr(&lp, TEST_string, lGetString(lFirst(lp), TEST_string));
+   // remove what is left
+   char key[16];
+   while (nelem(lp) > 1) {
+      static_cast<void>(ocs::tom::remove_elem_str(lp, TEST_string, first_str(lp, key, sizeof(key))));
    }
-   CHECK(base + 6, "one element left", lp != nullptr && nelem(lp) == 1);
-   lDelElemStr(&lp, TEST_string, lGetString(lFirst(lp), TEST_string));
-   CHECK(base + 7, "removing the last element frees the list", lp == nullptr);
+   CHECK(base + 6, "one element left", nelem(lp) == 1);
+   // CHECK base + 7 removed: lDelElemStr() freed the emptied list, which has no TOM counterpart (CS-3103)
 }
 
 // ---------------------------------------------------------------------------
 // Sublist helpers  [T41–T54]
 //
-// lAddSubXxx creates the sublist on first use and appends an element with the
-// key; lGetSubXxx finds it; lDelSubXxx removes it and frees the sublist when
-// it becomes empty. lAddElemUlong64/lAddElemHost are the list-level adders.
+// get_or_create_list() creates the sublist on first use, add_elem_* append an
+// element with the key; find_first<V>() on the sublist finds it; remove_elem_*
+// remove it. add_elem_ulong64/add_elem_host also create a missing list.
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief The sublist of a test element, created on first use, as the old lAddSub* functions made it
+ * @param ep the element
+ * @return the sublist
+ */
+static lList *sub_list(const ocs::tom::RawElement ep) {
+   return ocs::tom::get_or_create_list(ep, ocs::tom::field_pos(TEST_Type, TEST_list), nullptr, TEST_Type);
+}
+
+/** @brief T41-T54: keyed add, find and remove on a sublist and on a list created on first use */
 static void test_sublist_helpers() {
    printf("\n--- sublist helpers ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
+   const auto owner = ocs::tom::RawElementPtr::create(TEST_Type);
+   const ocs::tom::RawElement ep = owner.get();
+   lList *sub = sub_list(ep);
 
-   CHECK(41, "lAddSubUlong creates the sublist", lAddSubUlong(ep, TEST_ulong, 7, TEST_list, TEST_Type) != nullptr &&
-         nelem(lGetList(ep, TEST_list)) == 1);
-   lAddSubUlong64(ep, TEST_ulong64, key64(7), TEST_list, TEST_Type);
-   lAddSubHost(ep, TEST_host, "subhost", TEST_list, TEST_Type);
-   lAddSubStr(ep, TEST_string, "substr", TEST_list, TEST_Type);
-   CHECK(42, "four lAddSub calls give four sub-elements", nelem(lGetList(ep, TEST_list)) == 4);
+   CHECK(41, "get_or_create_list and add_elem_ulong create the sublist",
+         ocs::tom::add_elem_ulong(sub, TEST_ulong, 7, TEST_Type) != nullptr &&
+         nelem(ep.get<ocs::tom::ConstRawList>(TEST_list)) == 1);
+   static_cast<void>(ocs::tom::add_elem_ulong64(sub, TEST_ulong64, key64(7), TEST_Type));
+   static_cast<void>(ocs::tom::add_elem_host(sub, TEST_host, "subhost", TEST_Type));
+   static_cast<void>(ocs::tom::add_elem_str(sub, TEST_string, "substr", TEST_Type));
+   CHECK(42, "four add_elem calls give four sub-elements", nelem(ep.get<ocs::tom::ConstRawList>(TEST_list)) == 4);
 
-   CHECK(43, "lGetSubUlong finds the key", lGetSubUlong(ep, TEST_ulong, 7, TEST_list) != nullptr);
-   CHECK(44, "lGetSubUlong64 finds the key", lGetSubUlong64(ep, TEST_ulong64, key64(7), TEST_list) != nullptr);
-   CHECK(45, "lGetSubHost finds the key", lGetSubHost(ep, TEST_host, "subhost", TEST_list) != nullptr);
-   CHECK(46, "lGetSubStr finds the key", lGetSubStr(ep, TEST_string, "substr", TEST_list) != nullptr);
-   CHECK(47, "lGetSub*RW return the same elements",
-         lGetSubUlongRW(ep, TEST_ulong, 7, TEST_list) == lGetSubUlong(ep, TEST_ulong, 7, TEST_list) &&
-         lGetSubUlong64RW(ep, TEST_ulong64, key64(7), TEST_list) ==
-         lGetSubUlong64(ep, TEST_ulong64, key64(7), TEST_list) &&
-         lGetSubHostRW(ep, TEST_host, "subhost", TEST_list) == lGetSubHost(ep, TEST_host, "subhost", TEST_list) &&
-         lGetSubStrRW(ep, TEST_string, "substr", TEST_list) == lGetSubStr(ep, TEST_string, "substr", TEST_list));
-   CHECK(48, "lGetSubUlong of a missing key is nullptr", lGetSubUlong(ep, TEST_ulong, 8, TEST_list) == nullptr);
+   const ocs::tom::ConstRawList csub = ep.get<ocs::tom::ConstRawList>(TEST_list);
+   const ocs::tom::RawList rsub = ep.get<ocs::tom::RawList>(TEST_list);
+   CHECK(43, "find_first<std::uint32_t> on the sublist finds the key", csub.find_first(TEST_ulong, std::uint32_t{7}));
+   CHECK(44, "find_first<std::uint64_t> on the sublist finds the key", csub.find_first(TEST_ulong64, key64(7)));
+   CHECK(45, "find_first<Host> on the sublist finds the key", csub.find_first(TEST_host, ocs::tom::Host("subhost")));
+   CHECK(46, "find_first<const char *> on the sublist finds the key", csub.find_first(TEST_string, "substr"));
+   CHECK(47, "the forms on the mutable sublist return the same elements",
+         rsub.find_first(TEST_ulong, std::uint32_t{7}).raw() == csub.find_first(TEST_ulong, std::uint32_t{7}).raw() &&
+         rsub.find_first(TEST_ulong64, key64(7)).raw() == csub.find_first(TEST_ulong64, key64(7)).raw() &&
+         rsub.find_first(TEST_host, ocs::tom::Host("subhost")).raw() ==
+         csub.find_first(TEST_host, ocs::tom::Host("subhost")).raw() &&
+         rsub.find_first(TEST_string, "substr").raw() == csub.find_first(TEST_string, "substr").raw());
+   CHECK(48, "find_first<std::uint32_t> of a missing key is nullptr", !csub.find_first(TEST_ulong, std::uint32_t{8}));
 
-   CHECK(49, "lDelSubUlong removes the element", lDelSubUlong(ep, TEST_ulong, 7, TEST_list) == 1 &&
-         lGetSubUlong(ep, TEST_ulong, 7, TEST_list) == nullptr);
-   CHECK(50, "lDelSubUlong64 removes the element", lDelSubUlong64(ep, TEST_ulong64, key64(7), TEST_list) == 1 &&
-         lGetSubUlong64(ep, TEST_ulong64, key64(7), TEST_list) == nullptr);
-   CHECK(51, "lDelSubStr removes the element", lDelSubStr(ep, TEST_string, "substr", TEST_list) == 1 &&
-         nelem(lGetList(ep, TEST_list)) == 1);
+   CHECK(49, "remove_elem_ulong removes the element", ocs::tom::remove_elem_ulong(rsub, TEST_ulong, 7) &&
+         !csub.find_first(TEST_ulong, std::uint32_t{7}));
+   CHECK(50, "remove_elem_ulong64 removes the element", ocs::tom::remove_elem_ulong64(rsub, TEST_ulong64, key64(7)) &&
+         !csub.find_first(TEST_ulong64, key64(7)));
+   CHECK(51, "remove_elem_str removes the element", ocs::tom::remove_elem_str(rsub, TEST_string, "substr") &&
+         nelem(ep.get<ocs::tom::ConstRawList>(TEST_list)) == 1);
 
-   // the last sub-element goes through the list-level remover, which frees the list
-   lList *sub = nullptr;
-   lXchgList(ep, TEST_list, &sub);
-   lDelElemHost(&sub, TEST_host, "subhost");
-   CHECK(52, "removing the last sub-element frees the sublist", sub == nullptr);
+   // CHECK 52 removed: lDelElemHost() freed the emptied sublist, which has no TOM counterpart (CS-3103)
 
-   // list-level adders create the list on first use
+   // the list-level adders create the list on first use
    lList *lp = nullptr;
-   lAddElemUlong64(&lp, TEST_ulong64, key64(9), TEST_Type);
-   lAddElemHost(&lp, TEST_host, "addhost", TEST_Type);
-   CHECK(53, "lAddElemUlong64/lAddElemHost create the list and append",
-         nelem(lp) == 2 && lGetElemUlong64(lp, TEST_ulong64, key64(9)) != nullptr &&
-         lGetElemHost(lp, TEST_host, "addhost") != nullptr);
-   lFreeList(&lp);
+   static_cast<void>(ocs::tom::add_elem_ulong64(lp, TEST_ulong64, key64(9), TEST_Type));
+   static_cast<void>(ocs::tom::add_elem_host(lp, TEST_host, "addhost", TEST_Type));
+   ocs::tom::RawListPtr list(lp);
+   CHECK(53, "add_elem_ulong64/add_elem_host create the list and append",
+         nelem(list.get()) == 2 && list->find_first(TEST_ulong64, key64(9)) &&
+         list->find_first(TEST_host, ocs::tom::Host("addhost")));
+   list.reset();
 
    // the value 0 is a key like any other (CS-2980)
-   lAddElemUlong(&lp, TEST_ulong, 0, TEST_Type);
-   lAddElemUlong64(&lp, TEST_ulong64, 0, TEST_Type);
-   CHECK(54, "lDelElemUlong and lDelElemUlong64 remove the value 0",
-         lDelElemUlong(&lp, TEST_ulong, 0) == 1 && nelem(lp) == 1 &&
-         lDelElemUlong64(&lp, TEST_ulong64, 0) == 1 && lp == nullptr);
-   lFreeList(&lp);
-
-   lFreeElem(&ep);
+   lp = nullptr;
+   static_cast<void>(ocs::tom::add_elem_ulong(lp, TEST_ulong, 0, TEST_Type));
+   static_cast<void>(ocs::tom::add_elem_ulong64(lp, TEST_ulong64, 0, TEST_Type));
+   list = ocs::tom::RawListPtr(lp);
+   // the old lDelElemUlong64() freed the emptied list; the core leaves it to its owner
+   CHECK(54, "remove_elem_ulong and remove_elem_ulong64 remove the value 0",
+         ocs::tom::remove_elem_ulong(list.get(), TEST_ulong, 0) && nelem(list.get()) == 1 &&
+         ocs::tom::remove_elem_ulong64(list.get(), TEST_ulong64, 0) && nelem(list.get()) == 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -505,6 +548,10 @@ static void teardown_bootstrap() {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Run all lookup tests
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});

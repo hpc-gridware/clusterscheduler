@@ -51,12 +51,12 @@
 #include "sgeobj/tom/ocs_tom_CAL.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Select.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "basis_types.h"
-#include "cull/cull_test_api.h"
 
 static const char *CAL_NAME = "test_cs3125_calendar";
 static const char *WEEK = "mon-sun=0-24=on";
@@ -101,8 +101,8 @@ refused(const ocs::gdi::Target target, const ocs::gdi::Command command, ocs::tom
    auto alp = ocs::gdi::Client::sge_gdi(target, command, ocs::gdi::SubCommand::NONE, data);
    bool error = false;
    for (const ocs::tom::ConstElement<ocs::tom::AN> aep : alp.get()) {
-      if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR &&
-          (!syntax_only || lGetUlong(aep, AN_status) == STATUS_ESYNTAX)) {
+      if (aep.get<AN_quality>() == ANSWER_QUALITY_ERROR &&
+          (!syntax_only || aep.get<AN_status>() == STATUS_ESYNTAX)) {
          error = true;
       }
    }
@@ -123,7 +123,7 @@ calendar_request(const ocs::gdi::Command command) {
    auto lp = ocs::tom::ListPtr<ocs::tom::CAL>::create("calendars");
    ocs::tom::Element<ocs::tom::CAL> ep = lp->emplace_back<CAL_name>(CAL_NAME);
    if (command == ocs::gdi::Command::ADD) {
-      ocs::tom::set<CAL_week_calendar>(ep, WEEK);
+      ep.set<CAL_week_calendar>(WEEK);
    }
    return !refused(ocs::gdi::Target::CAL_LIST, command, std::move(lp), false);
 }
@@ -134,8 +134,7 @@ calendar_request(const ocs::gdi::Command command) {
 static bool
 calendar_readable() {
    ocs::tom::ListPtr<ocs::tom::CAL> lp;
-   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", ocs::tom::CAL::descriptor.e,
-                                                                        CAL_name, CAL_NAME));
+   const auto where = ocs::tom::field<CAL_name>() == CAL_NAME;
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
                                         ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::CAL>());
    alp.reset();
@@ -144,22 +143,23 @@ calendar_readable() {
    return found;
 }
 
-/** @brief A modify request of the global host, reduced to its name and access list
+/**
+ * @brief A modify request of the global host, reduced to its name and access list
+ *
+ * The access list is handed over raw, which stores it unchecked: the wrong type is what the request is
+ * about.
+ *
  * @param acl the list to send as EH_acl - of the wrong type on purpose; taken over
  * @return the request list
  */
-static lList *
-global_host_with_acl(lList *acl) {
-   lEnumeration *what = lWhat("%T(%I %I)", ocs::tom::EH::descriptor.e, EH_name, EH_acl);
-   const lDescr *descr = nullptr;
-   lReduceDescr(&descr, ocs::tom::EH::descriptor.e, what);
-   lFreeWhat(&what);
-   lList *lp = lCreateList("host", descr);
-   lListElem *ep = lCreateElem(descr);
-   lSetHost(ep, EH_name, "global");
-   lSetList(ep, EH_acl, acl);
-   lAppendElem(lp, ep);
-   ocs_cull_descr_release(&descr);   // the list and the element hold their own references
+static ocs::tom::ListPtr<ocs::tom::EH>
+global_host_with_acl(ocs::tom::ListPtr<ocs::tom::ST> &&acl) {
+   const auto layout = ocs::tom::layout<EH_name, EH_acl>();
+   auto lp = ocs::tom::ListPtr<ocs::tom::EH>::create("host", layout);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::EH>::create(layout);
+   ep->set<EH_name>(ocs::tom::Host("global"));
+   ocs::tom::set<EH_acl>(ep, acl.release());
+   lp->push_back(std::move(ep));
    return lp;
 }
 
@@ -191,7 +191,7 @@ main(int /*argc*/, char * /*argv*/[]) {
    // refused it too, later, for a missing field - only the syntax status tells the structure check
    {
       lList *lp = nullptr;
-      lAddElemStr(&lp, ST_name, CAL_NAME, ocs::tom::ST::descriptor.e);
+      ocs::tom::emplace_back<ST_name>(&lp, CAL_NAME);
       // sent as calendars on purpose, so the list is taken over unchecked
       CHECK(2, "a calendar modify request with string elements is refused as a syntax error",
             refused(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::MOD,
@@ -200,23 +200,18 @@ main(int /*argc*/, char * /*argv*/[]) {
 
    // T03: an empty access list of the wrong type in the global host - it used to be stored
    {
-      lList *acl = lCreateList("acl", ocs::tom::ST::descriptor.e);
-      lList *lp = global_host_with_acl(acl);
-      // the sublist is of the wrong type on purpose, so the list is taken over unchecked
+      auto lp = global_host_with_acl(ocs::tom::ListPtr<ocs::tom::ST>::create("acl"));
       CHECK(3, "an empty sublist of the wrong type is refused",
-            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD,
-                    ocs::tom::ListPtr<ocs::tom::EH>::from_typed(lp)));
+            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD, std::move(lp)));
    }
 
    // T04: a non-empty access list of the wrong type - it used to abort qmaster
    {
-      lList *acl = nullptr;
-      lAddElemStr(&acl, ST_name, "no_such_userset", ocs::tom::ST::descriptor.e);
-      lList *lp = global_host_with_acl(acl);
-      // the sublist is of the wrong type on purpose, so the list is taken over unchecked
+      auto acl = ocs::tom::ListPtr<ocs::tom::ST>::create("acl");
+      acl->emplace_back<ST_name>("no_such_userset");
+      auto lp = global_host_with_acl(std::move(acl));
       CHECK(4, "a non-empty sublist of the wrong type is refused",
-            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD,
-                    ocs::tom::ListPtr<ocs::tom::EH>::from_typed(lp)));
+            refused(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD, std::move(lp)));
    }
 
    CHECK(5, "qmaster still answers after the refused requests", calendar_readable());

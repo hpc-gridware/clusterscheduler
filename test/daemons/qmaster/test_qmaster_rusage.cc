@@ -25,13 +25,12 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
@@ -64,20 +63,20 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    // the parallel environment - accounting_summary is only honoured for a
    // tightly integrated one, so control_slaves has to be set as well
    lList **master_pe_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
-   lFreeList(master_pe_list);
+   ocs::tom::free_raw_list(*master_pe_list);
    ocs::tom::Element<ocs::tom::PE> pe = ocs::tom::emplace_back<PE_name>(master_pe_list, "testpe");
-   ocs::tom::set<PE_control_slaves>(pe, true);
-   ocs::tom::set<PE_accounting_summary>(pe, accounting_summary);
+   pe.set<PE_control_slaves>(true);
+   pe.set<PE_accounting_summary>(accounting_summary);
 
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   ocs::tom::set<JB_job_number>(job, 4711);
-   ocs::tom::set<JB_owner>(job, "testuser");
-   ocs::tom::set<JB_group>(job, "testgroup");
+   job->set<JB_job_number>(4711);
+   job->set<JB_owner>("testuser");
+   job->set<JB_group>("testgroup");
 
    auto ja_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
-   ocs::tom::set<JAT_task_number>(ja_task, 1);
-   ocs::tom::set<JAT_granted_pe>(ja_task, "testpe");
-   ocs::tom::List<ocs::tom::UA> usage = ocs::tom::get_or_create<JAT_scaled_usage_list>(ja_task, "usage");
+   ja_task->set<JAT_task_number>(1);
+   ja_task->set<JAT_granted_pe>("testpe");
+   ocs::tom::List<ocs::tom::UA> usage = ja_task->get_or_create<JAT_scaled_usage_list>("usage");
    usage_list_set_double_usage(usage, USAGE_ATTR_WALLCLOCK, WALLCLOCK_MASTER);
    usage_list_set_double_usage(usage, USAGE_ATTR_CPU, CPU_MASTER);
    usage_list_set_double_usage(usage, USAGE_ATTR_CPU_ACCT, CPU_MASTER);
@@ -85,8 +84,8 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    for (int i = 0; i < NUM_PE_TASKS; i++) {
       char pe_task_id[64];
       snprintf(pe_task_id, sizeof(pe_task_id), "%d.testhost", i + 1);
-      ocs::tom::Element<ocs::tom::PET> pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(ja_task, pe_task_id);
-      ocs::tom::List<ocs::tom::UA> pe_usage = ocs::tom::get_or_create<PET_scaled_usage>(pe_task, "usage");
+      ocs::tom::Element<ocs::tom::PET> pe_task = ja_task->emplace_back_in<JAT_task_list, PET_id>(pe_task_id);
+      ocs::tom::List<ocs::tom::UA> pe_usage = pe_task.get_or_create<PET_scaled_usage>("usage");
       usage_list_set_double_usage(pe_usage, USAGE_ATTR_WALLCLOCK, WALLCLOCK_SLAVE);
       usage_list_set_double_usage(pe_usage, USAGE_ATTR_CPU, CPU_SLAVE);
       usage_list_set_double_usage(pe_usage, USAGE_ATTR_CPU_ACCT, CPU_SLAVE);
@@ -94,7 +93,7 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
 
    // a job report of the master task - a pe task's report would carry JR_pe_task_id_str
    auto jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
-   ocs::tom::set<JR_job_number>(jr, 4711);
+   jr->set<JR_job_number>(4711);
 
    rapidjson::StringBuffer json_buffer;
    rapidjson::Writer<rapidjson::StringBuffer> writer(json_buffer);
@@ -125,7 +124,7 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    jr.reset();
    ja_task.reset();
    job.reset();
-   lFreeList(master_pe_list);
+   ocs::tom::free_raw_list(*master_pe_list);
 
    return ret;
 }

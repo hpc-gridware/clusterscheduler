@@ -36,7 +36,7 @@
 #include <string>
 #include <unistd.h>
 
-#include "cull/cull_test_api.h"
+#include "basis_types.h"
 #include "uti/sge_spool.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -139,12 +139,13 @@ test_leftover_dot_file() {
                      JOB_ID, 2, nullptr);
    CHECK(2, "the dot file is created", copy_file(task_file, dot_file));
 
-   lList *jobs = nullptr;
-   job_list_read_from_disk(&jobs, "jobs", 0, SPOOL_DEFAULT, nullptr);
-   const auto read = ocs::tom::ConstList<ocs::tom::JB>::from_typed(jobs).find_first<JB_job_number>(JOB_ID);
+   lList *jobs_raw = nullptr;
+   job_list_read_from_disk(&jobs_raw, "jobs", 0, SPOOL_DEFAULT, nullptr);
+   auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(jobs_raw);
+   const auto read = jobs->find_first<JB_job_number>(JOB_ID);
    CHECK(3, "the job is read back", static_cast<bool>(read));
    CHECK(4, "the job keeps both of its tasks", read && read.get<JB_ja_tasks>().size() == 2);
-   lFreeList(&jobs);
+   jobs.reset();
 }
 
 /**

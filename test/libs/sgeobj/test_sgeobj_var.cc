@@ -32,7 +32,6 @@
 #include "tom/ocs_Element.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull_test_api.h"
 
 /**
  * @brief Return the VA_variable string of the n-th element, or "" if absent.
@@ -46,7 +45,7 @@ nth_var(const ocs::tom::ConstList<ocs::tom::VA> lp, const int n) {
    for (int i = 0; i < n && ep != nullptr; ++i) {
       ep = ep.next();
    }
-   const char *s = (ep != nullptr) ? ocs::tom::get<VA_variable>(ep) : nullptr;
+   const char *s = (ep != nullptr) ? ep.get<VA_variable>() : nullptr;
    return (s != nullptr) ? s : "";
 }
 
@@ -118,7 +117,7 @@ test_var_list_parse() {
    {
       ocs::tom::ListPtr<ocs::tom::VA> lp;
       int ret = var_list_parse_from_string(lp, "A=1,B=2", 0);
-      CHECK(7, "two valid tokens accepted", ret == 0 && lGetNumberOfElem(*lp) == 2);
+      CHECK(7, "two valid tokens accepted", ret == 0 && lp->size() == 2);
       CHECK(8, "elements kept in order",
             strcmp(nth_var(lp, 0), "A") == 0 && strcmp(nth_var(lp, 1), "B") == 0);
    }

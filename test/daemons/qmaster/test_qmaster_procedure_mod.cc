@@ -69,6 +69,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/tom/ocs_tom_CAL.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Select.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -76,7 +77,6 @@
 #include "procedure/qconf/write/ocs_QConfWriteModelClient.h"
 
 #include "basis_types.h"
-#include "cull/cull_test_api.h"
 
 /* Both values are taken from calendars the testsuite already uses, so a failure
  * here is never a rejected syntax. */
@@ -184,7 +184,7 @@ static bool
 add_calendar(const char *name, const char *week) {
    auto lp = ocs::tom::ListPtr<ocs::tom::CAL>::create("calendars");
    ocs::tom::Element<ocs::tom::CAL> ep = lp->emplace_back<CAL_name>(name);
-   ocs::tom::set<CAL_week_calendar>(ep, week);
+   ep.set<CAL_week_calendar>(week);
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::ADD,
                                         ocs::gdi::SubCommand::NONE, lp);
@@ -216,8 +216,7 @@ del_calendar(const char *name) {
 static std::string
 get_week_calendar(const char *name) {
    ocs::tom::ListPtr<ocs::tom::CAL> lp;
-   const auto where = ocs::tom::Where<ocs::tom::CAL>::from_typed(lWhere("%T(%I==%s)", ocs::tom::CAL::descriptor.e,
-                                                                        CAL_name, name));
+   const auto where = ocs::tom::field<CAL_name>() == name;
 
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
                                         ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::CAL>());
@@ -225,7 +224,7 @@ get_week_calendar(const char *name) {
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
    ocs::tom::ConstElement<ocs::tom::CAL> found = ocs::tom::find_first<CAL_name>(*lp, name);
-   const char *value = (found != nullptr) ? ocs::tom::get<CAL_week_calendar>(found) : nullptr;
+   const char *value = (found != nullptr) ? found.get<CAL_week_calendar>() : nullptr;
    std::string result = (value != nullptr) ? value : "";
    lp.reset();
    return result;

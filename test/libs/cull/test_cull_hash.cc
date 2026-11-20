@@ -33,7 +33,13 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Unit tests for hash in `libs/cull`
+ * @brief Unit tests and benchmark for the hash tables of the core of the typed object model (libs/tom)
+ *
+ * The lists are driven through the run-time typed interface (tom/ocs_Raw.h)
+ * and the core (cull_hash_new(), add_elem_ulong(), lookup_first()/lookup_next()),
+ * the functions the old lAddElemUlong(), lGetElemUlongRW(),
+ * lGetElemStrFirstRW()/NextRW(), lSetUlong(), lSetString(), lRemoveElem() and
+ * lCopyList() ran on, so the benchmark measures the same core operations.
  */
 
 /* #define HASH_STATISTICS */
@@ -66,7 +72,11 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_types.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_Raw.h"
 
 #include "uti/sge_component.h"
 #include "uti/sge_profiling.h"
@@ -210,86 +220,147 @@ static void print_scaling(const BenchTimes *t) {
    print_scaling_row("del_str",  t[0].del_str,  t[1].del_str,  t[2].del_str);
 }
 
-// Correctness checks T01-T10; separated from benchmark timing so output is not mixed.
-static void check_correctness(int num_objects, int num_names) {
-   lList *lp = lCreateList("check list", DESCR);
-   cull_hash_new(lp, NM_ULONG, true);
-   cull_hash_new(lp, NM_STRING, false);
+/**
+ * @brief Create a list of the benchmark type with the hash tables asked for
+ * @param name the name of the list
+ * @param unique_hash whether NM_ULONG gets a unique hash table
+ * @param non_unique_hash whether NM_STRING gets a non unique hash table
+ * @return the list
+ */
+static ocs::tom::RawListPtr make_hashed_list(const char *name, const bool unique_hash, const bool non_unique_hash) {
+   auto lp = ocs::tom::RawListPtr::create(DESCR, ocs::tom::Hashing::On, name);
+   if (unique_hash) {
+      cull_hash_new(lp.get(), NM_ULONG, true);
+   }
+   if (non_unique_hash) {
+      cull_hash_new(lp.get(), NM_STRING, false);
+   }
+   return lp;
+}
+
+/**
+ * @brief Append num_objects elements with the keys 0 .. num_objects-1 and a random name each
+ *
+ * add_elem_ulong() is the core of the old lAddElemUlong(); the name is set
+ * through the run-time typed setter, as lSetString() set it.
+ *
+ * @param lp the list, not empty
+ * @param num_objects the number of elements
+ * @param num_names the number of names to choose from
+ */
+static void fill_list(const ocs::tom::RawList lp, const int num_objects, const int num_names) {
+   lList *raw = lp.raw();   // never nullptr, so add_elem_ulong() does not replace it
+   for (int i = 0; i < num_objects; i++) {
+      lListElem *ep = ocs::tom::add_elem_ulong(raw, NM_ULONG, static_cast<lUlong>(i), DESCR);
+      ocs::tom::set(ep, NM_STRING, names[rand() % num_names]);
+   }
+}
+
+/**
+ * @brief Look an element up by its unique key, as lGetElemUlongRW() did
+ * @param lp the list
+ * @param key the key
+ * @return the element, or nullptr
+ */
+static lListElem *find_key(const ocs::tom::RawList lp, const int key) {
+   return ocs::tom::find_first<std::uint32_t>(lp.raw(), NM_ULONG, static_cast<std::uint32_t>(key));
+}
+
+/**
+ * @brief Correctness checks T01-T10, separated from the benchmark timing so that the output is not mixed
+ * @param num_objects the number of elements to build
+ * @param num_names the number of names in the non unique hash
+ */
+static void check_correctness(const int num_objects, const int num_names) {
+   auto owner = make_hashed_list("check list", true, true);
+   const ocs::tom::RawList lp = owner.get();
+   const int pos_string = ocs::tom::field_pos(DESCR, NM_STRING);
    lListElem *ep;
    int i, total_iterated, objs_dru;
 
-   for (i = 0; i < num_objects; i++) {
-      ep = lAddElemUlong(&lp, NM_ULONG, i, DESCR);
-      lSetString(ep, NM_STRING, names[rand() % num_names]);
-   }
-   CHECK(1, "list contains num_objects elements after build", (int)lGetNumberOfElem(lp) == num_objects);
+   fill_list(lp, num_objects, num_names);
+   CHECK(1, "list contains num_objects elements after build", static_cast<int>(lp.size()) == num_objects);
 
-   lList *copy = lCopyList("copy", lp);
-   CHECK(2, "copied list has same element count", (int)lGetNumberOfElem(copy) == num_objects);
-   CHECK(3, "unique hash functional in copied list", lGetElemUlongRW(copy, NM_ULONG, 0) != nullptr);
-   lFreeList(&copy);
+   {
+      const auto copy = ocs::tom::clone(lp.raw(), ocs::tom::Hashing::On);
+      CHECK(2, "copied list has same element count", static_cast<int>(copy->size()) == num_objects);
+      CHECK(3, "unique hash functional in copied list", find_key(copy.get(), 0) != nullptr);
+   }
 
    for (i = 0; i < num_objects; i++) {
-      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
+      ep = find_key(lp, rand() % num_objects);
    }
-   CHECK(4, "element 0 reachable after random-access loop", lGetElemUlongRW(lp, NM_ULONG, 0) != nullptr);
+   CHECK(4, "element 0 reachable after random-access loop", find_key(lp, 0) != nullptr);
 
    total_iterated = 0;
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
-      lListElem *next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
+      lListElem *next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
       while ((ep = next_ep) != nullptr) {
-         next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
+         next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
          total_iterated++;
       }
    }
    CHECK(5, "non-unique iterator visits all elements", total_iterated == num_objects);
 
    for (i = 0; i < num_objects; i++) {
-      int unique = rand() % num_objects;
-      int newval = unique + num_objects;
-      ep = lGetElemUlongRW(lp, NM_ULONG, unique);
-      lSetUlong(ep, NM_ULONG, newval);
-      lSetUlong(ep, NM_ULONG, unique);
+      const int unique = rand() % num_objects;
+      const int newval = unique + num_objects;
+      ep = find_key(lp, unique);
+      ocs::tom::set(ep, NM_ULONG, static_cast<std::uint32_t>(newval));
+      ocs::tom::set(ep, NM_ULONG, static_cast<std::uint32_t>(unique));
    }
-   CHECK(6, "element 0 reachable after unique-attr change/restore loop", lGetElemUlongRW(lp, NM_ULONG, 0) != nullptr);
+   CHECK(6, "element 0 reachable after unique-attr change/restore loop", find_key(lp, 0) != nullptr);
 
    for (i = 0; i < num_objects; i++) {
-      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
-      lSetString(ep, NM_STRING, names[rand() % num_names]);
+      ep = find_key(lp, rand() % num_objects);
+      ocs::tom::set(ep, NM_STRING, names[rand() % num_names]);
    }
-   CHECK(7, "unique hash intact after non-unique attr changes", lGetElemUlongRW(lp, NM_ULONG, 0) != nullptr);
+   CHECK(7, "unique hash intact after non-unique attr changes", find_key(lp, 0) != nullptr);
 
    objs_dru = 0;
    for (i = 0; i < num_objects / 2; i++) {
-      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
+      ep = find_key(lp, rand() % num_objects);
       if (ep != nullptr) {
-         lRemoveElem(lp, &ep);
+         lp.erase(ep);
          objs_dru++;
       }
    }
-   CHECK(8, "list size correct after delete-random phase", (int)lGetNumberOfElem(lp) == num_objects - objs_dru);
+   CHECK(8, "list size correct after delete-random phase", static_cast<int>(lp.size()) == num_objects - objs_dru);
 
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
-      lListElem *next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
+      lListElem *next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
       while ((ep = next_ep) != nullptr) {
-         next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
-         lRemoveElem(lp, &ep);
+         next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
+         lp.erase(ep);
       }
    }
-   CHECK(9, "list empty after delete-by-iterate phase", (int)lGetNumberOfElem(lp) == 0);
+   CHECK(9, "list empty after delete-by-iterate phase", lp.size() == 0);
 
-   lFreeList(&lp);
-   CHECK(10, "lFreeList nulls the list pointer", lp == nullptr);
+   owner.reset();
+   CHECK(10, "reset() frees the list and empties the owner", !owner);
 }
 
-// Pure benchmark: no correctness check output, returns timing data for scaling analysis.
-static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
-                          int num_objects, int num_names) {
+/**
+ * @brief The benchmark: no correctness check output, returns the timing data for the scaling analysis
+ *
+ * Every timed operation runs on the core path the old function ran on:
+ * add_elem_ulong() and set() for lAddElemUlong()/lSetString(), clone() for
+ * lCopyList(), find_first<std::uint32_t>() for lGetElemUlongRW(),
+ * lookup_first()/lookup_next() for lGetElemStrFirstRW()/NextRW() (with the
+ * position of the field resolved once per run instead of once per name),
+ * set() for lSetUlong()/lSetString() and erase() for lRemoveElem().
+ *
+ * @param unique_hash whether NM_ULONG gets a unique hash table
+ * @param non_unique_hash whether NM_STRING gets a non unique hash table
+ * @param num_objects the number of elements to build
+ * @param num_names the number of names in the non unique hash
+ * @return the seconds per operation
+ */
+static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
+                          const int num_objects, const int num_names) {
    BenchTimes bt{};
-   lList *lp = nullptr;
-   lList *copy;
    lListElem *ep;
    struct timespec ts0, ts1;
    int i;
@@ -301,23 +372,16 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    dstring stat_dstring = DSTRING_INIT;
 #endif
 
-   lp = lCreateList("test list", DESCR);
-   if (unique_hash) {
-      cull_hash_new(lp, NM_ULONG, true);
-   }
-   if (non_unique_hash) {
-      cull_hash_new(lp, NM_STRING, false);
-   }
+   auto owner = make_hashed_list("test list", unique_hash, non_unique_hash);
+   const ocs::tom::RawList lp = owner.get();
+   const int pos_string = ocs::tom::field_pos(DESCR, NM_STRING);
 #ifdef HASH_STATISTICS
    cht = list_hash_table(lp, 1);
    printf("%s\n", cull_hash_statistics(cht, &stat_dstring));
 #endif
 
    clock_gettime(CLOCK_MONOTONIC, &ts0);
-   for (i = 0; i < num_objects; i++) {
-      ep = lAddElemUlong(&lp, NM_ULONG, i, DESCR);
-      lSetString(ep, NM_STRING, names[rand() % num_names]);
-   }
+   fill_list(lp, num_objects, num_names);
    clock_gettime(CLOCK_MONOTONIC, &ts1);
    bt.create = elapsed(ts0, ts1);
 
@@ -325,15 +389,16 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    meminfo = mallinfo();
 #endif
 
-   clock_gettime(CLOCK_MONOTONIC, &ts0);
-   copy = lCopyList("copy", lp);
-   clock_gettime(CLOCK_MONOTONIC, &ts1);
-   bt.copy = elapsed(ts0, ts1);
-   lFreeList(&copy);
+   {
+      clock_gettime(CLOCK_MONOTONIC, &ts0);
+      const auto copy = ocs::tom::clone(lp.raw(), ocs::tom::Hashing::On);
+      clock_gettime(CLOCK_MONOTONIC, &ts1);
+      bt.copy = elapsed(ts0, ts1);
+   }
 
    clock_gettime(CLOCK_MONOTONIC, &ts0);
    for (i = 0; i < num_objects; i++) {
-      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
+      ep = find_key(lp, rand() % num_objects);
    }
    clock_gettime(CLOCK_MONOTONIC, &ts1);
    bt.lookup = elapsed(ts0, ts1);
@@ -342,9 +407,9 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
       lListElem *next_ep;
-      next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
+      next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
       while ((ep = next_ep) != nullptr) {
-         next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
+         next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
       }
    }
    clock_gettime(CLOCK_MONOTONIC, &ts1);
@@ -352,19 +417,19 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
 
    clock_gettime(CLOCK_MONOTONIC, &ts0);
    for (i = 0; i < num_objects; i++) {
-      int unique = rand() % num_objects;
-      int newval = unique + num_objects;
-      ep = lGetElemUlongRW(lp, NM_ULONG, unique);
-      lSetUlong(ep, NM_ULONG, newval);
-      lSetUlong(ep, NM_ULONG, unique);
+      const int unique = rand() % num_objects;
+      const int newval = unique + num_objects;
+      ep = find_key(lp, unique);
+      ocs::tom::set(ep, NM_ULONG, static_cast<std::uint32_t>(newval));
+      ocs::tom::set(ep, NM_ULONG, static_cast<std::uint32_t>(unique));
    }
    clock_gettime(CLOCK_MONOTONIC, &ts1);
    bt.mod_key = elapsed(ts0, ts1);
 
    clock_gettime(CLOCK_MONOTONIC, &ts0);
    for (i = 0; i < num_objects; i++) {
-      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
-      lSetString(ep, NM_STRING, names[rand() % num_names]);
+      ep = find_key(lp, rand() % num_objects);
+      ocs::tom::set(ep, NM_STRING, names[rand() % num_names]);
    }
    clock_gettime(CLOCK_MONOTONIC, &ts1);
    bt.mod_str = elapsed(ts0, ts1);
@@ -372,9 +437,9 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    clock_gettime(CLOCK_MONOTONIC, &ts0);
    bt.objs_del_key = 0;
    for (i = 0; i < num_objects / 2; i++) {
-      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
+      ep = find_key(lp, rand() % num_objects);
       if (ep != nullptr) {
-         lRemoveElem(lp, &ep);
+         lp.erase(ep);
          bt.objs_del_key++;
       }
    }
@@ -386,10 +451,10 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
       lListElem *next_ep;
-      next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
+      next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
       while ((ep = next_ep) != nullptr) {
-         next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
-         lRemoveElem(lp, &ep);
+         next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
+         lp.erase(ep);
          bt.objs_del_str++;
       }
    }
@@ -414,7 +479,6 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    printf("%s\n", cull_hash_statistics(cht, &stat_dstring));
    sge_dstring_free(&stat_dstring);
 #endif
-   lFreeList(&lp);
 
    return bt;
 }

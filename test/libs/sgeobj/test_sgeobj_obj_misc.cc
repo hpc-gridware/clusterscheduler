@@ -28,8 +28,6 @@
 
 #include <cstdio>
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_host.h"

@@ -19,29 +19,24 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Unit tests for field access by position in `libs/cull`
+ * @brief Unit tests for field access through the run-time typed interface of `libs/tom`
  *
- * Covers the descriptor queries (lGetPosType, lGetType, lGetPosName,
- * lGetPosViaElem), the positional getters and setters for every data type,
- * the arithmetic and bit-mask helpers, and the functions that move a string,
- * a list or an object out of an element (lXchgString, lXchgList, lSwapList,
- * lGetListRef, lDechainObject). Where a setter maintains a hash table, the
- * tests check that the element is still found by its new value.
+ * Covers the descriptor queries (field_type(), field_pos(), has()), the
+ * checked getters and setters of the raw interface for every data type, the
+ * hash maintenance of the setters and of the core's add_number(), and the
+ * functions that move a list or an object out of an element (exchange(),
+ * take()). Where a setter maintains a hash table, the tests check that the
+ * element is still found by its new value.
  *
- * Accessing a field as the wrong type is a programming error that aborts the
- * process. The last group checks that it does, each case in a child process.
+ * Accessing a field as the wrong type is a programming error. The old
+ * interface aborted the process; the raw interface throws a FieldException
+ * with reason WrongType and changes nothing. The last group checks that.
  */
 
-#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-
-#include <fcntl.h>
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 /** @brief Make this translation unit the one that defines the CULL descriptors
  *
@@ -51,7 +46,11 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_Raw.h"
 #include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
@@ -75,7 +74,7 @@ enum {
    TEST_object,   ///< a sub-object attribute
    TEST_ref,   ///< a reference attribute
    TEST_ulong64,   ///< a 64 bit unsigned attribute
-   TEST_list2,   ///< a second sublist attribute, the partner for lSwapList
+   TEST_list2,   ///< a second sublist attribute, the partner for swapping sublists
    TEST_ulong_ukey,   ///< an unsigned long attribute that is a unique hashed key
    TEST_ulong64_ukey,   ///< a 64 bit unsigned attribute that is a unique hashed key
    TEST_string_ukey   ///< a string attribute that is a unique hashed key
@@ -145,39 +144,19 @@ static int s_fail = 0;
       } \
    } while (0)
 
-/** @brief Run a callable in a child process and report whether it aborted
+/** @brief Run a callable and report whether it throws a FieldException with a given reason
  *
- * The child closes stderr and disables core files, so the stack trace and the
- * core that a CULL type error produces do not end up in the test output or the
- * working directory.
- *
- * @param what the code that is expected to abort
- * @return true when the child was terminated by SIGABRT
+ * @param reason the reason the exception must carry
+ * @param what the code that is expected to throw
+ * @return true when a FieldException with @p reason was thrown
  */
-static bool aborts(const std::function<void()> &what) {
-   fflush(stdout);
-   fflush(stderr);
-   pid_t pid = fork();
-   if (pid < 0) {
-      return false;
-   }
-   if (pid == 0) {
-      struct rlimit no_core = {0, 0};
-      setrlimit(RLIMIT_CORE, &no_core);
-      int devnull = open("/dev/null", O_WRONLY);
-      if (devnull >= 0) {
-         dup2(devnull, STDERR_FILENO);
-         dup2(devnull, STDOUT_FILENO);
-         close(devnull);
-      }
+static bool throws(const ocs::tom::FieldException::Reason reason, const std::function<void()> &what) {
+   try {
       what();
-      _exit(0);
+   } catch (const ocs::tom::FieldException &e) {
+      return e.reason() == reason;
    }
-   int status = 0;
-   if (waitpid(pid, &status, 0) != pid) {
-      return false;
-   }
-   return WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
+   return false;
 }
 
 /** @brief Position of a field in the synthetic type's descriptor
@@ -185,292 +164,298 @@ static bool aborts(const std::function<void()> &what) {
  * @param nm the field name id
  * @return the field's index in TEST_Type
  */
-static int pos_of(int nm) {
-   return lGetPosInDescr(TEST_Type, nm);
+static int pos_of(const int nm) {
+   return ocs::tom::field_pos(TEST_Type, nm);
+}
+
+/** @brief Add an offset to a number field through the core, as the typed add<F>() does
+ *
+ * @tparam V the value type of the field: std::uint32_t, std::uint64_t or double
+ * @param ep the element, which holds the field
+ * @param nm the field
+ * @param offset the amount to add
+ * @return the new value
+ */
+template <typename V>
+static V add_to(const ocs::tom::RawElement ep, const int nm, const V offset) {
+   const int pos = ocs::tom::field_pos(ep.descr(), nm);
+   return ocs::tom::add_number<V>(ep, pos, ocs_cull_value(ep, pos), offset);
 }
 
 // ---------------------------------------------------------------------------
 // Descriptor queries  [T01–T08]
 //
-// lGetPosType/lGetType map a position or a name to the CULL data type,
-// lGetPosName maps a position back to the name, lGetPosViaElem looks a name up
-// through an element. Unknown names yield lEndT, NoName or -1.
+// field_type_of() and field_type() map a position or a name to the data
+// type, field_pos() maps a name to its position, has() looks a name up through
+// an element. Unknown names yield lEndT, -1 or false.
 // ---------------------------------------------------------------------------
 
+/** @brief The descriptor queries of the core */
 static void test_descriptor_queries() {
    printf("\n--- descriptor queries ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
 
-   CHECK(1, "lGetPosType of TEST_double is lDoubleT", lGetPosType(TEST_Type, pos_of(TEST_double)) == lDoubleT);
-   CHECK(2, "lGetType of TEST_list is lListT", lGetType(TEST_Type, TEST_list) == lListT);
-   CHECK(3, "lGetType of TEST_ulong64_ukey is lUlong64T", lGetType(TEST_Type, TEST_ulong64_ukey) == lUlong64T);
-   CHECK(4, "lGetType of an unknown name is lEndT", lGetType(TEST_Type, 4711) == lEndT);
-   CHECK(5, "lGetPosName maps a position back to its name", lGetPosName(TEST_Type, pos_of(TEST_ref)) == TEST_ref);
-   CHECK(6, "lGetPosName of a negative position is NoName", lGetPosName(TEST_Type, -1) == NoName);
-   CHECK(7, "lGetPosViaElem matches lGetPosInDescr",
-         lGetPosViaElem(ep, TEST_host, SGE_NO_ABORT) == pos_of(TEST_host));
-   CHECK(8, "lGetPosViaElem of an unknown name is negative", lGetPosViaElem(ep, 4711, SGE_NO_ABORT) < 0);
-
-   lFreeElem(&ep);
+   CHECK(1, "field_type_of() of the entry of TEST_double is Double",
+         ocs::tom::field_type_of(TEST_Type[pos_of(TEST_double)].mt) == ocs::tom::FieldType::Double);
+   CHECK(2, "field_type() of TEST_list is lListT", ocs::tom::field_type(TEST_Type, TEST_list) == lListT);
+   CHECK(3, "field_type() of TEST_ulong64_ukey is lUlong64T",
+         ocs::tom::field_type(TEST_Type, TEST_ulong64_ukey) == lUlong64T);
+   CHECK(4, "field_type() of an unknown name is lEndT", ocs::tom::field_type(TEST_Type, 4711) == lEndT);
+   CHECK(5, "the entry at the position field_pos() gives holds the name",
+         TEST_Type[pos_of(TEST_ref)].nm == TEST_ref);
+   // CHECK 6 removed: lGetPosName() has no TOM counterpart (CS-3103)
+   CHECK(7, "field_pos() through an element gives the position of the descriptor, has() is true",
+         ocs::tom::field_pos(ep->descr(), TEST_host) == 1 && ep->has(TEST_host));
+   CHECK(8, "field_pos() of an unknown name is negative, has() is false",
+         ocs::tom::field_pos(ep->descr(), 4711) < 0 && !ep->has(4711));
 }
 
 // ---------------------------------------------------------------------------
-// Positional getters and setters  [T09–T22]
+// Getters and setters  [T09–T22]
 //
-// Every lSetPosXxx must be readable through lGetPosXxx and through the
-// name-based lGetXxx, since both address the same slot.
+// Every value stored with set(nm, v) must be readable through get<V>(nm),
+// since both address the same slot.
 // ---------------------------------------------------------------------------
 
+/** @brief The raw getters and setters for every data type */
 static void test_positional_access() {
-   printf("\n--- positional getters and setters ---\n");
+   printf("\n--- getters and setters ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
 
-   lSetPosInt(ep, pos_of(TEST_int), -3);
-   CHECK(9, "lSetPosInt/lGetPosInt", lGetPosInt(ep, pos_of(TEST_int)) == -3 && lGetInt(ep, TEST_int) == -3);
+   ep->set(TEST_int, std::int32_t{-3});
+   CHECK(9, "set/get of an int field", ep->get<std::int32_t>(TEST_int) == -3);
 
-   lSetPosUlong(ep, pos_of(TEST_ulong), 17);
-   CHECK(10, "lSetPosUlong/lGetPosUlong", lGetPosUlong(ep, pos_of(TEST_ulong)) == 17 && lGetUlong(ep, TEST_ulong) == 17);
+   ep->set(TEST_ulong, std::uint32_t{17});
+   CHECK(10, "set/get of an ulong field", ep->get<std::uint32_t>(TEST_ulong) == 17);
 
-   lSetPosUlong64(ep, pos_of(TEST_ulong64), 0x123456789ULL);
-   CHECK(11, "lSetPosUlong64/lGetPosUlong64",
-         lGetPosUlong64(ep, pos_of(TEST_ulong64)) == 0x123456789ULL && lGetUlong64(ep, TEST_ulong64) == 0x123456789ULL);
+   ep->set(TEST_ulong64, std::uint64_t{0x123456789ULL});
+   CHECK(11, "set/get of an ulong64 field", ep->get<std::uint64_t>(TEST_ulong64) == 0x123456789ULL);
 
-   lSetPosString(ep, pos_of(TEST_string), "pos");
-   CHECK(12, "lSetPosString/lGetPosString",
-         strcmp(lGetPosString(ep, pos_of(TEST_string)), "pos") == 0 && strcmp(lGetString(ep, TEST_string), "pos") == 0);
+   ep->set(TEST_string, static_cast<const char *>("pos"));
+   CHECK(12, "set/get of a string field", strcmp(ep->get<const char *>(TEST_string), "pos") == 0);
 
-   lSetPosHost(ep, pos_of(TEST_host), "hpos");
-   CHECK(13, "lSetPosHost/lGetPosHost",
-         strcmp(lGetPosHost(ep, pos_of(TEST_host)), "hpos") == 0 && strcmp(lGetHost(ep, TEST_host), "hpos") == 0);
+   ep->set(TEST_host, ocs::tom::Host("hpos"));
+   CHECK(13, "set/get of a host field", strcmp(ep->get<ocs::tom::Host>(TEST_host), "hpos") == 0);
 
-   lSetPosDouble(ep, pos_of(TEST_double), 2.5);
-   CHECK(14, "lSetPosDouble/lGetPosDouble", lGetPosDouble(ep, pos_of(TEST_double)) == 2.5);
+   ep->set(TEST_double, 2.5);
+   CHECK(14, "set/get of a double field", ep->get<double>(TEST_double) == 2.5);
 
-   lSetPosLong(ep, pos_of(TEST_long), -1234567L);
-   CHECK(15, "lSetPosLong/lGetPosLong", lGetPosLong(ep, pos_of(TEST_long)) == -1234567L);
+   ep->set(TEST_long, std::int64_t{-1234567L});
+   CHECK(15, "set/get of a long field", ep->get<std::int64_t>(TEST_long) == -1234567L);
 
-   lSetPosBool(ep, pos_of(TEST_bool), true);
-   CHECK(16, "lSetPosBool/lGetPosBool", lGetPosBool(ep, pos_of(TEST_bool)) == true);
+   ep->set(TEST_bool, true);
+   CHECK(16, "set/get of a bool field", ep->get<bool>(TEST_bool) == true);
 
    int target = 0;
-   lSetPosRef(ep, pos_of(TEST_ref), &target);
-   CHECK(17, "lSetPosRef/lGetPosRef", lGetPosRef(ep, pos_of(TEST_ref)) == &target);
+   ep->set(TEST_ref, static_cast<void *>(&target));
+   CHECK(17, "set/get of a reference field", ep->get<void *>(TEST_ref) == &target);
 
-   lList *sub = lCreateList("sub", TEST_Type);
-   lAppendElem(sub, lCreateElem(TEST_Type));
-   lSetPosList(ep, pos_of(TEST_list), sub);
-   CHECK(18, "lSetPosList/lGetPosList stores the list itself",
-         lGetPosList(ep, pos_of(TEST_list)) == sub && lGetList(ep, TEST_list) == sub);
+   auto sub = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "sub");
+   sub->push_back(ocs::tom::RawElementPtr::create(TEST_Type));
+   const lList *sub_raw = sub.get();
+   ep->set(TEST_list, std::move(sub));
+   CHECK(18, "set/get of a list field stores the list itself", ep->get<const lList *>(TEST_list) == sub_raw);
 
-   lListElem *obj = lCreateElem(TEST_Type);
-   lSetPosObject(ep, pos_of(TEST_object), obj);
-   CHECK(19, "lSetPosObject/lGetPosObject stores the object itself",
-         lGetPosObject(ep, pos_of(TEST_object)) == obj && lGetObject(ep, TEST_object) == obj);
+   auto obj = ocs::tom::RawElementPtr::create(TEST_Type);
+   const lListElem *obj_raw = obj.get();
+   ep->set(TEST_object, std::move(obj));
+   CHECK(19, "set/get of an object field stores the object itself",
+         ep->get<const lListElem *>(TEST_object) == obj_raw);
 
-   // T20-T21: the string reference functions address the stored pointer
-   char **sref = lGetPosStringRef(ep, pos_of(TEST_string));
-   char **href = lGetPosHostRef(ep, pos_of(TEST_host));
-   CHECK(20, "lGetPosStringRef points at the stored string", sref != nullptr && *sref == lGetString(ep, TEST_string));
-   CHECK(21, "lGetPosHostRef points at the stored host", href != nullptr && *href == lGetHost(ep, TEST_host));
+   // CHECK 20 removed: lGetPosStringRef() has no TOM counterpart (CS-3103)
+   // CHECK 21 removed: lGetPosHostRef() has no TOM counterpart (CS-3103)
 
-   // T22: lSetPosString with nullptr clears the field
-   lSetPosString(ep, pos_of(TEST_string), nullptr);
-   CHECK(22, "lSetPosString(nullptr) clears the field", lGetString(ep, TEST_string) == nullptr);
-
-   lFreeElem(&ep);
+   // T22: setting a string to nullptr clears the field
+   ep->set(TEST_string, static_cast<const char *>(nullptr));
+   CHECK(22, "set of a string field to nullptr clears the field", ep->get<const char *>(TEST_string) == nullptr);
 }
 
 // ---------------------------------------------------------------------------
 // Hash maintenance of the setters  [T23–T28]
 //
 // When an element in a list changes a hashed key, the old key must no longer
-// find it and the new key must. This is checked for the positional setters and
-// for lAddUlong/lAddUlong64, which change the value by an offset.
+// find it and the new key must. This is checked for the raw setters and for
+// the core's add_number(), which changes the value by an offset.
 // ---------------------------------------------------------------------------
 
+/** @brief The setters and add_number() keep the hash tables of the list up to date */
 static void test_setter_hash_upkeep() {
    printf("\n--- hash maintenance of the setters ---\n");
 
-   lList *lp = lCreateList("keys", TEST_Type);
-   lListElem *ep = lCreateElem(TEST_Type);
-   lSetUlong(ep, TEST_ulong_ukey, 10);
-   lSetUlong64(ep, TEST_ulong64_ukey, 100);
-   lSetString(ep, TEST_string_ukey, "old");
-   lAppendElem(lp, ep);
+   auto lp = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "keys");
+   auto elem = ocs::tom::RawElementPtr::create(TEST_Type);
+   elem->set(TEST_ulong_ukey, std::uint32_t{10});
+   elem->set(TEST_ulong64_ukey, std::uint64_t{100});
+   elem->set(TEST_string_ukey, static_cast<const char *>("old"));
+   const ocs::tom::RawElement ep = lp->push_back(std::move(elem));
+   const lListElem *ep_raw = ep.raw();
 
-   lSetPosUlong(ep, pos_of(TEST_ulong_ukey), 11);
-   CHECK(23, "lSetPosUlong on a hashed key: new key found, old key gone",
-         lGetElemUlong(lp, TEST_ulong_ukey, 11) == ep && lGetElemUlong(lp, TEST_ulong_ukey, 10) == nullptr);
+   ep.set(TEST_ulong_ukey, std::uint32_t{11});
+   CHECK(23, "set of a hashed ulong key: new key found, old key gone",
+         lp->find_first(TEST_ulong_ukey, std::uint32_t{11}).raw() == ep_raw &&
+         !lp->find_first(TEST_ulong_ukey, std::uint32_t{10}));
 
-   lSetPosUlong64(ep, pos_of(TEST_ulong64_ukey), 101);
-   CHECK(24, "lSetPosUlong64 on a hashed key: new key found, old key gone",
-         lGetElemUlong64(lp, TEST_ulong64_ukey, 101) == ep && lGetElemUlong64(lp, TEST_ulong64_ukey, 100) == nullptr);
+   ep.set(TEST_ulong64_ukey, std::uint64_t{101});
+   CHECK(24, "set of a hashed ulong64 key: new key found, old key gone",
+         lp->find_first(TEST_ulong64_ukey, std::uint64_t{101}).raw() == ep_raw &&
+         !lp->find_first(TEST_ulong64_ukey, std::uint64_t{100}));
 
-   lSetPosString(ep, pos_of(TEST_string_ukey), "new");
-   CHECK(25, "lSetPosString on a hashed key: new key found, old key gone",
-         lGetElemStr(lp, TEST_string_ukey, "new") == ep && lGetElemStr(lp, TEST_string_ukey, "old") == nullptr);
+   ep.set(TEST_string_ukey, static_cast<const char *>("new"));
+   CHECK(25, "set of a hashed string key: new key found, old key gone",
+         lp->find_first(TEST_string_ukey, static_cast<const char *>("new")).raw() == ep_raw &&
+         !lp->find_first(TEST_string_ukey, static_cast<const char *>("old")));
 
-   lAddUlong(ep, TEST_ulong_ukey, 5);
-   CHECK(26, "lAddUlong on a hashed key: value and hash follow",
-         lGetUlong(ep, TEST_ulong_ukey) == 16 && lGetElemUlong(lp, TEST_ulong_ukey, 16) == ep &&
-         lGetElemUlong(lp, TEST_ulong_ukey, 11) == nullptr);
+   add_to(ep, TEST_ulong_ukey, std::uint32_t{5});
+   CHECK(26, "add_number() on a hashed ulong key: value and hash follow",
+         ep.get<std::uint32_t>(TEST_ulong_ukey) == 16 &&
+         lp->find_first(TEST_ulong_ukey, std::uint32_t{16}).raw() == ep_raw &&
+         !lp->find_first(TEST_ulong_ukey, std::uint32_t{11}));
 
-   lAddUlong64(ep, TEST_ulong64_ukey, 0x100000000ULL);
-   CHECK(27, "lAddUlong64 on a hashed key: value and hash follow",
-         lGetUlong64(ep, TEST_ulong64_ukey) == 0x100000065ULL &&
-         lGetElemUlong64(lp, TEST_ulong64_ukey, 0x100000065ULL) == ep &&
-         lGetElemUlong64(lp, TEST_ulong64_ukey, 101) == nullptr);
+   add_to(ep, TEST_ulong64_ukey, std::uint64_t{0x100000000ULL});
+   CHECK(27, "add_number() on a hashed ulong64 key: value and hash follow",
+         ep.get<std::uint64_t>(TEST_ulong64_ukey) == 0x100000065ULL &&
+         lp->find_first(TEST_ulong64_ukey, std::uint64_t{0x100000065ULL}).raw() == ep_raw &&
+         !lp->find_first(TEST_ulong64_ukey, std::uint64_t{101}));
 
    // T28: an offset of zero changes nothing, the key stays findable
-   lAddUlong(ep, TEST_ulong_ukey, 0);
-   CHECK(28, "lAddUlong with offset 0 keeps value and hash",
-         lGetUlong(ep, TEST_ulong_ukey) == 16 && lGetElemUlong(lp, TEST_ulong_ukey, 16) == ep);
-
-   lFreeList(&lp);
+   add_to(ep, TEST_ulong_ukey, std::uint32_t{0});
+   CHECK(28, "add_number() with offset 0 keeps value and hash",
+         ep.get<std::uint32_t>(TEST_ulong_ukey) == 16 &&
+         lp->find_first(TEST_ulong_ukey, std::uint32_t{16}).raw() == ep_raw);
 }
 
 // ---------------------------------------------------------------------------
-// Arithmetic, bit masks, string helpers  [T29–T37]
+// Arithmetic  [T29–T37]
 // ---------------------------------------------------------------------------
 
+/** @brief add_number() on fields that are not hashed */
 static void test_value_helpers() {
-   printf("\n--- arithmetic, bit masks, string helpers ---\n");
+   printf("\n--- arithmetic ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
 
-   lSetDouble(ep, TEST_double, 1.25);
-   lAddDouble(ep, TEST_double, 0.5);
-   CHECK(29, "lAddDouble adds the offset", lGetDouble(ep, TEST_double) == 1.75);
+   ep->set(TEST_double, 1.25);
+   add_to(*ep, TEST_double, 0.5);
+   CHECK(29, "add_number() on a double adds the offset", ep->get<double>(TEST_double) == 1.75);
 
-   lSetUlong(ep, TEST_ulong, 7);
-   lAddUlong(ep, TEST_ulong, 3);
-   CHECK(30, "lAddUlong on an unhashed field adds the offset", lGetUlong(ep, TEST_ulong) == 10);
+   ep->set(TEST_ulong, std::uint32_t{7});
+   add_to(*ep, TEST_ulong, std::uint32_t{3});
+   CHECK(30, "add_number() on an unhashed ulong adds the offset", ep->get<std::uint32_t>(TEST_ulong) == 10);
 
-   // T31-T35: bit masks on 0b1010
-   lSetUlong(ep, TEST_ulong, 0xA);
-   CHECK(31, "lMatchUlongBitMask: any common bit matches", lMatchUlongBitMask(ep, TEST_ulong, 0x3));
-   CHECK(32, "lMatchUlongBitMask: no common bit does not match", !lMatchUlongBitMask(ep, TEST_ulong, 0x5));
-   lOrUlongBitMask(ep, TEST_ulong, 0x1);
-   CHECK(33, "lOrUlongBitMask sets the bits", lGetUlong(ep, TEST_ulong) == 0xB);
-   lAndUlongBitMask(ep, TEST_ulong, 0x9);
-   CHECK(34, "lAndUlongBitMask keeps only the common bits", lGetUlong(ep, TEST_ulong) == 0x9);
-   lClearUlongBitMask(ep, TEST_ulong, 0x8);
-   CHECK(35, "lClearUlongBitMask clears the bits", lGetUlong(ep, TEST_ulong) == 0x1);
-
-   // T36: lGetStringNotNull never returns nullptr
-   CHECK(36, "lGetStringNotNull of an unset string is empty",
-         lGetString(ep, TEST_string) == nullptr && strcmp(lGetStringNotNull(ep, TEST_string), "") == 0);
-
-   // T37: lXchgString swaps the stored pointer with the caller's
-   lSetString(ep, TEST_string, "inside");
-   char *outside = strdup("outside");
-   char *before = outside;
-   lXchgString(ep, TEST_string, &outside);
-   CHECK(37, "lXchgString swaps the pointers",
-         lGetString(ep, TEST_string) == before && strcmp(outside, "inside") == 0);
-   free(outside);
-
-   lFreeElem(&ep);
+   // The bit mask helpers, lGetStringNotNull() and lXchgString() exist in TOM only in the typed form
+   // (has_any_bits<F>, or_bits<F>, and_bits<F>, clear_bits<F>, get_or_empty<F>, exchange<F>(ep, &str)), which
+   // needs the traits of a generated type; test/libs/tom/test_tom_free.cc checks them.
+   // CHECK 31 removed: lMatchUlongBitMask() has no TOM counterpart for a test type (CS-3103)
+   // CHECK 32 removed: lMatchUlongBitMask() has no TOM counterpart for a test type (CS-3103)
+   // CHECK 33 removed: lOrUlongBitMask() has no TOM counterpart for a test type (CS-3103)
+   // CHECK 34 removed: lAndUlongBitMask() has no TOM counterpart for a test type (CS-3103)
+   // CHECK 35 removed: lClearUlongBitMask() has no TOM counterpart for a test type (CS-3103)
+   // CHECK 36 removed: lGetStringNotNull() has no TOM counterpart for a test type (CS-3103)
+   // CHECK 37 removed: lXchgString() has no TOM counterpart for a test type (CS-3103)
 }
 
 // ---------------------------------------------------------------------------
 // Moving lists and objects out of an element  [T38–T45]
 //
-// lXchgList swaps a sublist with a caller's list, lSwapList swaps sublists of
-// two elements, lGetListRef hands out the address of the slot and
-// lDechainObject detaches a sub-object so the caller owns it.
+// exchange() swaps a sublist with a caller's list, two exchanges swap the
+// sublists of two elements, and take() detaches a sub-object so the caller
+// owns it.
 // ---------------------------------------------------------------------------
 
+/** @brief exchange() and take() move lists and objects out of an element */
 static void test_move_out() {
    printf("\n--- moving lists and objects out of an element ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
-   lList *inner = lCreateList("inner", TEST_Type);
-   lSetList(ep, TEST_list, inner);
+   auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
+   auto inner_owner = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "inner");
+   const lList *inner = inner_owner.get();
+   ep->set(TEST_list, std::move(inner_owner));
 
-   // T38: lXchgList hands back the stored list and stores the caller's
-   lList *outer = lCreateList("outer", TEST_Type);
-   lList *swap = outer;
-   lXchgList(ep, TEST_list, &swap);
-   CHECK(38, "lXchgList swaps the lists", swap == inner && lGetList(ep, TEST_list) == outer);
+   // T38: exchange() hands back the stored list and stores the caller's
+   auto outer_owner = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "outer");
+   const lList *outer = outer_owner.get();
+   ocs::tom::RawListPtr swap = ep->exchange(TEST_list, std::move(outer_owner));
+   CHECK(38, "exchange() swaps the lists",
+         static_cast<const lList *>(swap.get()) == inner && ep->get<const lList *>(TEST_list) == outer);
 
-   // T39: lXchgList without a list pointer fails; a field of another type
-   // aborts instead, see T46
-   CHECK(39, "lXchgList without a list pointer fails", lXchgList(ep, TEST_list, nullptr) == -1);
-   lFreeList(&swap);
+   // CHECK 39 removed: lXchgList() without a list pointer has no TOM counterpart (CS-3103)
+   swap.reset();
 
-   // T40: lSwapList exchanges the sublists of two elements
-   lListElem *other = lCreateElem(TEST_Type);
-   lList *other_list = lCreateList("other", TEST_Type);
-   lSetList(other, TEST_list2, other_list);
-   lSwapList(ep, TEST_list, other, TEST_list2);
-   CHECK(40, "lSwapList exchanges the sublists",
-         lGetList(ep, TEST_list) == other_list && lGetList(other, TEST_list2) == outer);
-   lFreeElem(&other);
+   // T40: two exchanges swap the sublists of two elements
+   auto other = ocs::tom::RawElementPtr::create(TEST_Type);
+   auto other_owner = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "other");
+   const lList *other_list = other_owner.get();
+   other->set(TEST_list2, std::move(other_owner));
+   ocs::tom::RawListPtr remaining =
+           ep->exchange(TEST_list, other->exchange(TEST_list2, ep->exchange(TEST_list, {})));
+   CHECK(40, "two exchanges swap the sublists",
+         ep->get<const lList *>(TEST_list) == other_list && other->get<const lList *>(TEST_list2) == outer &&
+         !remaining);
+   other.reset();
 
-   // T41: lGetListRef addresses the slot, writing through it is visible
-   lList **ref = lGetListRef(ep, TEST_list);
-   CHECK(41, "lGetListRef points at the stored list", ref != nullptr && *ref == other_list);
+   // CHECK 41 removed: lGetListRef() has no TOM counterpart for a test type (CS-3103)
 
-   // T42-T45: lDechainObject detaches the sub-object
-   lListElem *obj = lCreateElem(TEST_Type);
-   lSetUlong(obj, TEST_ulong, 42);
-   lSetObject(ep, TEST_object, obj);
-   lListElem *out = lDechainObject(ep, TEST_object);
-   CHECK(42, "lDechainObject returns the sub-object", out == obj && lGetUlong(out, TEST_ulong) == 42);
-   CHECK(43, "lDechainObject leaves the field empty", lGetObject(ep, TEST_object) == nullptr);
-   CHECK(44, "lDechainObject on an empty field returns nullptr", lDechainObject(ep, TEST_object) == nullptr);
+   // T42-T45: take() detaches the sub-object
+   auto obj = ocs::tom::RawElementPtr::create(TEST_Type);
+   obj->set(TEST_ulong, std::uint32_t{42});
+   const lListElem *obj_raw = obj.get();
+   ep->set(TEST_object, std::move(obj));
+   ocs::tom::RawElementPtr out = ep->take(TEST_object);
+   CHECK(42, "take() returns the sub-object",
+         static_cast<const lListElem *>(out.get()) == obj_raw && out->get<std::uint32_t>(TEST_ulong) == 42);
+   CHECK(43, "take() leaves the field empty", ep->get<const lListElem *>(TEST_object) == nullptr);
+   CHECK(44, "take() on an empty field returns an empty owner", !ep->take(TEST_object));
 
    // the detached object is free again: it can be stored in another element
-   lListElem *holder = lCreateElem(TEST_Type);
-   CHECK(45, "a dechained object can be stored again", lSetObject(holder, TEST_object, out) == 0 &&
-         lGetObject(holder, TEST_object) == out);
-   lFreeElem(&holder);
-
-   lFreeElem(&ep);
+   auto holder = ocs::tom::RawElementPtr::create(TEST_Type);
+   bool stored = true;
+   try {
+      holder->set(TEST_object, std::move(out));
+   } catch (const ocs::tom::FieldException &) {
+      stored = false;
+   }
+   CHECK(45, "a taken object can be stored again",
+         stored && holder->get<const lListElem *>(TEST_object) == obj_raw);
 }
 
 // ---------------------------------------------------------------------------
-// Type errors abort  [T46–T50]
+// Type errors throw  [T46–T51]
 //
-// A field accessed as another type is a programming error. The accessors do
-// not return an error code for it: they abort the process (incompatibleType2),
-// so a wrong type can neither be read as a wrong value nor leave a half-done
-// change behind (lSwapList exchanges in three steps). Each case runs in a
-// child process.
+// A field accessed as another type is a programming error. The old accessors
+// aborted the process for it (incompatibleType2); the raw interface throws a
+// FieldException with reason WrongType before it changes anything, so a wrong
+// type can neither be read as a wrong value nor leave a half-done change
+// behind.
 // ---------------------------------------------------------------------------
 
+/** @brief Accessing a field as another type throws WrongType and changes nothing */
 static void test_type_errors_abort() {
-   printf("\n--- type errors abort ---\n");
+   printf("\n--- type errors throw ---\n");
 
-   lListElem *ep = lCreateElem(TEST_Type);
-   lSetString(ep, TEST_string, "s");
+   auto owner = ocs::tom::RawElementPtr::create(TEST_Type);
+   const ocs::tom::RawElement ep = owner.get();
+   ep.set(TEST_string, static_cast<const char *>("s"));
 
-   CHECK(46, "lXchgList on a non-list field aborts", aborts([ep] {
-      lList *lp = nullptr;
-      lXchgList(ep, TEST_ulong, &lp);
-   }));
-   CHECK(47, "lSwapList with a non-list field aborts", aborts([ep] {
-      lListElem *other = lCreateElem(TEST_Type);
-      lSwapList(ep, TEST_list, other, TEST_string);
-   }));
-   CHECK(48, "lGetUlong on a string field aborts", aborts([ep] {
-      lGetUlong(ep, TEST_string);
-   }));
-   CHECK(49, "lSetString on an ulong field aborts", aborts([ep] {
-      lSetString(ep, TEST_ulong, "x");
-   }));
-   CHECK(50, "lXchgString on a list field aborts", aborts([ep] {
-      char *str = nullptr;
-      lXchgString(ep, TEST_list, &str);
-   }));
+   CHECK(46, "exchange() on a non-list field throws WrongType",
+         throws(ocs::tom::FieldException::Reason::WrongType, [ep] {
+            static_cast<void>(ep.exchange(TEST_ulong, ocs::tom::RawListPtr()));
+         }));
+   // CHECK 47 removed: lSwapList() has no TOM counterpart; the type check of exchange() is CHECK 46 (CS-3103)
+   CHECK(48, "get<std::uint32_t>() of a string field throws WrongType",
+         throws(ocs::tom::FieldException::Reason::WrongType, [ep] {
+            static_cast<void>(ep.get<std::uint32_t>(TEST_string));
+         }));
+   CHECK(49, "set() of a string into an ulong field throws WrongType",
+         throws(ocs::tom::FieldException::Reason::WrongType, [ep] {
+            ep.set(TEST_ulong, static_cast<const char *>("x"));
+         }));
+   // CHECK 50 removed: lXchgString() has no TOM counterpart for a test type (CS-3103)
 
-   // the parent's element is untouched by what the children did
-   CHECK(51, "the element in the parent is unchanged", strcmp(lGetString(ep, TEST_string), "s") == 0);
-
-   lFreeElem(&ep);
+   // the element is untouched by the calls that threw
+   CHECK(51, "the element is unchanged", strcmp(ep.get<const char *>(TEST_string), "s") == 0 &&
+         ep.get<std::uint32_t>(TEST_ulong) == 0 && ep.get<const lList *>(TEST_list) == nullptr);
 }
 
 // ---------------------------------------------------------------------------

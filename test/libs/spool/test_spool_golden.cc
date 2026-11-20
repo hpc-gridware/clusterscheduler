@@ -70,8 +70,6 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_test_api.h"
-
 #include "symbols.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -500,17 +498,17 @@ std::string render_object(const lListElem *ep, const Layout &layout, const spool
  * @param fields the field list of the layout
  * @param form the form the text was written in
  * @param what the file name, for the messages
- * @return the object, to be freed by the caller, or nullptr
+ * @return the object, empty if it cannot be read
  */
-lListElem *parse_object(const std::string &text, const lDescr *descr, const Layout &layout,
-                        const spooling_field *fields, const Form form, const std::string &what) {
+tom::RawElementPtr parse_object(const std::string &text, const lDescr *descr, const Layout &layout,
+                                const spooling_field *fields, const Form form, const std::string &what) {
    const bool json = select_format(form);
    tom::ListPtr<tom::AN> alp;
-   lListElem *ep = spool_flatfile_read_object(&alp, descr, nullptr, fields, nullptr, layout.parse_values,
-                                              layout.instr, json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr, nullptr,
-                                              text.c_str());
+   tom::RawElementPtr ep(spool_flatfile_read_object(&alp, descr, nullptr, fields, nullptr, layout.parse_values,
+                                                    layout.instr, json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr,
+                                                    nullptr, text.c_str()));
    if (!answers_ok(alp, what)) {
-      lFreeElem(&ep);
+      ep.reset();
    }
    return ep;
 }
@@ -577,17 +575,17 @@ std::string render_list(const lList *lp, const ListCase &c, const spooling_field
  * @param fields the field list
  * @param form the form the text was written in
  * @param what the file name, for the messages
- * @return the list, to be freed by the caller, or nullptr
+ * @return the list, empty if it cannot be read
  */
-lList *parse_list(const std::string &text, const ListCase &c, const spooling_field *fields, const Form form,
-                  const std::string &what) {
+tom::RawListPtr parse_list(const std::string &text, const ListCase &c, const spooling_field *fields,
+                           const Form form, const std::string &what) {
    const bool json = select_format(form);
    tom::ListPtr<tom::AN> alp;
-   lList *lp = spool_flatfile_read_list(&alp, c.descr, fields, nullptr, c.parse_values,
-                                        c.instr != nullptr ? c.instr : &qconf_sfi,
-                                        json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr, nullptr, text.c_str());
+   tom::RawListPtr lp(spool_flatfile_read_list(&alp, c.descr, fields, nullptr, c.parse_values,
+                                               c.instr != nullptr ? c.instr : &qconf_sfi,
+                                               json ? SP_FORM_JSON : SP_FORM_ASCII, nullptr, nullptr, text.c_str()));
    if (!answers_ok(alp, what)) {
-      lFreeList(&lp);
+      lp.reset();
    }
    return lp;
 }
@@ -1761,12 +1759,12 @@ void run_object_case(const ObjectCase &c) {
                                                                            Variant::EMPTY}
                                                     : std::vector<Variant>{Variant::FULL};
    for (const Variant variant : variants) {
-      lListElem *ep = c.build(variant);
+      tom::RawElementPtr ep(c.build(variant));
       for (const Layout &layout : c.layouts) {
          bool owned = false;
          spooling_field *fields = build_fields(layout.source, &owned);
-         lListElem *prepared = layout.prepare != nullptr ? layout.prepare(ep) : nullptr;
-         const lListElem *subject = prepared != nullptr ? prepared : ep;
+         tom::RawElementPtr prepared(layout.prepare != nullptr ? layout.prepare(ep.get()) : nullptr);
+         const lListElem *subject = prepared ? prepared.get() : ep.get();
 
          for (const Form form : forms_of(layout.forms)) {
             const std::string name = std::string(c.name) + "." + variant_name(variant) + "." + layout.label + "." +
@@ -1779,22 +1777,22 @@ void run_object_case(const ObjectCase &c) {
             emit(name, text);
 
             if (g_roundtrip && layout.roundtrip) {
-               lListElem *back = parse_object(text, c.descr, layout, fields, form, name);
-               if (back == nullptr) {
+               auto back = parse_object(text, c.descr, layout, fields, form, name);
+               if (!back) {
                   fail(name, "cannot be read back");
                   continue;
                }
                if (c.fixup != nullptr) {
-                  c.fixup(back);
+                  c.fixup(back.get());
                }
-               compare(name, text, render_object(back, layout, fields, form, name));
-               lFreeElem(&back);
+               compare(name, text, render_object(back.get(), layout, fields, form, name));
+               back.reset();
             }
          }
-         lFreeElem(&prepared);
+         prepared.reset();
          release_fields(fields, owned);
       }
-      lFreeElem(&ep);
+      ep.reset();
    }
 }
 
@@ -1803,7 +1801,7 @@ void run_object_case(const ObjectCase &c) {
  * @param c the case
  */
 void run_list_case(const ListCase &c) {
-   lList *lp = c.build();
+   tom::RawListPtr lp(c.build());
    bool owned = false;
    spooling_field *fields = build_fields(c.source, &owned);
 
@@ -1818,7 +1816,7 @@ void run_list_case(const ListCase &c) {
 
    for (const Form form : forms) {
       const std::string name = std::string(c.name) + "." + form_ext(form);
-      const std::string text = render_list(lp, c, fields, form, name);
+      const std::string text = render_list(lp.get(), c, fields, form, name);
       if (text.empty()) {
          fail(name, "nothing written");
          continue;
@@ -1827,17 +1825,17 @@ void run_list_case(const ListCase &c) {
 
       const bool readable = !select_format(form) || c.json == ListJson::PLAIN;
       if (g_roundtrip && c.roundtrip && readable) {
-         lList *back = parse_list(text, c, fields, form, name);
-         if (back == nullptr) {
+         auto back = parse_list(text, c, fields, form, name);
+         if (!back) {
             fail(name, "cannot be read back");
             continue;
          }
-         compare(name, text, render_list(back, c, fields, form, name));
-         lFreeList(&back);
+         compare(name, text, render_list(back.get(), c, fields, form, name));
+         back.reset();
       }
    }
    release_fields(fields, owned);
-   lFreeList(&lp);
+   lp.reset();
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -2015,12 +2013,13 @@ void run_classic() {
    g_files += static_cast<int>(before.size()) + 1;
 
    if (g_roundtrip) {
-      lList *jobs = nullptr;
-      job_list_read_from_disk(&jobs, "jobs", 0, SPOOL_DEFAULT, nullptr);
+      lList *jobs_raw = nullptr;
+      job_list_read_from_disk(&jobs_raw, "jobs", 0, SPOOL_DEFAULT, nullptr);
+      auto jobs = tom::ListPtr<tom::JB>::from_typed(jobs_raw);
       auto ar_back = ocs::spool::classic::ar_read_spool_file(815);
       tom::Element<tom::JB> job_back;
-      if (jobs != nullptr) {
-         job_back = tom::List<tom::JB>::from_typed(jobs).front();
+      if (jobs) {
+         job_back = jobs->front();
       }
 
       if (!job_back || !ar_back) {
@@ -2050,7 +2049,7 @@ void run_classic() {
             }
          }
       }
-      lFreeList(&jobs);
+      jobs.reset();
    }
 
    // the PE list of the data store is freed again

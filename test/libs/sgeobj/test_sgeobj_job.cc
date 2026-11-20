@@ -32,8 +32,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
@@ -42,6 +40,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -79,7 +78,7 @@ set_ranges(const ocs::tom::Element<ocs::tom::JB> job, const int field, const cha
    range_list_parse_from_string(list, &alp, ranges, false, false, INF_NOT_ALLOWED);
    alp.reset();
    // the field is a run-time number, so the list is handed over raw
-   lSetList(job, field, list.release());
+   ocs::tom::set(job, field, ocs::tom::RawListPtr(std::move(list)));
 }
 
 // ---------------------------------------------------------------------------

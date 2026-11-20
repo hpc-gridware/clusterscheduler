@@ -39,7 +39,13 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_Pack.h"
+#include "tom/ocs_PackCore.h"
+#include "tom/ocs_Raw.h"
+#include "tom/ocs_SelectCore.h"
 
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
@@ -124,44 +130,45 @@ static int s_fail = 0;
       } \
    } while (0)
 
+
 /** @brief Give every #CULL_NO_TRANSFER field of an element a value
  *
  * @param ep the element to fill
  */
-static void set_cache(lListElem *ep) {
-   lListElem *cached_elem = lCreateElem(TNT_Type);
-   lList *cached_list = lCreateList("cache", TNT_Type);
+static void set_cache(const ocs::tom::RawElement ep) {
+   auto cached_list = ocs::tom::RawListPtr::create(TNT_Type, ocs::tom::Hashing::On, "cache");
+   auto cached_elem = ocs::tom::RawElementPtr::create(TNT_Type);
 
-   lSetHost(cached_elem, TNT_name, "cached_host");
-   lAppendElem(cached_list, cached_elem);
+   cached_elem->set(TNT_name, ocs::tom::Host("cached_host"));
+   cached_list->push_back(std::move(cached_elem));
 
-   lSetString(ep, TNT_cache_text, "cached_text");
-   lSetHost(ep, TNT_cache_host, "cached_hostname");
-   lSetList(ep, TNT_cache_list, cached_list);
-   lSetObject(ep, TNT_cache_object, lCreateElem(TNT_Type));
-   lSetUlong(ep, TNT_cache_number, 42);
-   lSetUlong64(ep, TNT_cache_number64, 4242);
-   lSetBool(ep, TNT_cache_flag, true);
-   lSetDouble(ep, TNT_cache_value, 4.2);
-   lSetRef(ep, TNT_cache_ref, ep);
+   ep.set(TNT_cache_text, static_cast<const char *>("cached_text"));
+   ep.set(TNT_cache_host, ocs::tom::Host("cached_hostname"));
+   ep.set(TNT_cache_list, std::move(cached_list));
+   ep.set(TNT_cache_object, ocs::tom::RawElementPtr::create(TNT_Type));
+   ep.set(TNT_cache_number, std::uint32_t{42});
+   ep.set(TNT_cache_number64, std::uint64_t{4242});
+   ep.set(TNT_cache_flag, true);
+   ep.set(TNT_cache_value, 4.2);
+   ep.set(TNT_cache_ref, static_cast<void *>(ep.raw()));
 }
 
 /** @brief Does the element still carry every #CULL_NO_TRANSFER value?
  *
- * @param ep the element to inspect
+ * @param ep the element to inspect, may be empty
  * @return true when all of them are set
  */
-static bool cache_is_set(const lListElem *ep) {
-   return ep != nullptr &&
-          sge_strnullcmp(lGetString(ep, TNT_cache_text), "cached_text") == 0 &&
-          sge_strnullcmp(lGetHost(ep, TNT_cache_host), "cached_hostname") == 0 &&
-          lGetNumberOfElem(lGetList(ep, TNT_cache_list)) == 1 &&
-          lGetObject(ep, TNT_cache_object) != nullptr &&
-          lGetUlong(ep, TNT_cache_number) == 42 &&
-          lGetUlong64(ep, TNT_cache_number64) == 4242 &&
-          lGetBool(ep, TNT_cache_flag) &&
-          lGetDouble(ep, TNT_cache_value) == 4.2 &&
-          lGetRef(ep, TNT_cache_ref) != nullptr;
+static bool cache_is_set(const ocs::tom::ConstRawElement ep) {
+   return ep &&
+          sge_strnullcmp(ep.get<const char *>(TNT_cache_text), "cached_text") == 0 &&
+          sge_strnullcmp(ep.get<ocs::tom::Host>(TNT_cache_host), "cached_hostname") == 0 &&
+          ep.get<ocs::tom::ConstRawList>(TNT_cache_list).size() == 1 &&
+          ep.get<ocs::tom::ConstRawElement>(TNT_cache_object) &&
+          ep.get<std::uint32_t>(TNT_cache_number) == 42 &&
+          ep.get<std::uint64_t>(TNT_cache_number64) == 4242 &&
+          ep.get<bool>(TNT_cache_flag) &&
+          ep.get<double>(TNT_cache_value) == 4.2 &&
+          ep.get<void *>(TNT_cache_ref) != nullptr;
 }
 
 /** @brief Is every #CULL_NO_TRANSFER field of the element empty?
@@ -169,20 +176,20 @@ static bool cache_is_set(const lListElem *ep) {
  * Empty means what a freshly created element carries: nullptr for the pointer
  * valued types, 0 for the scalar ones.
  *
- * @param ep the element to inspect
+ * @param ep the element to inspect, may be empty
  * @return true when all of them are empty
  */
-static bool cache_is_empty(const lListElem *ep) {
-   return ep != nullptr &&
-          lGetString(ep, TNT_cache_text) == nullptr &&
-          lGetHost(ep, TNT_cache_host) == nullptr &&
-          lGetList(ep, TNT_cache_list) == nullptr &&
-          lGetObject(ep, TNT_cache_object) == nullptr &&
-          lGetUlong(ep, TNT_cache_number) == 0 &&
-          lGetUlong64(ep, TNT_cache_number64) == 0 &&
-          !lGetBool(ep, TNT_cache_flag) &&
-          lGetDouble(ep, TNT_cache_value) == 0.0 &&
-          lGetRef(ep, TNT_cache_ref) == nullptr;
+static bool cache_is_empty(const ocs::tom::ConstRawElement ep) {
+   return ep &&
+          ep.get<const char *>(TNT_cache_text) == nullptr &&
+          ep.get<ocs::tom::Host>(TNT_cache_host) == nullptr &&
+          ep.get<const lList *>(TNT_cache_list) == nullptr &&
+          ep.get<const lListElem *>(TNT_cache_object) == nullptr &&
+          ep.get<std::uint32_t>(TNT_cache_number) == 0 &&
+          ep.get<std::uint64_t>(TNT_cache_number64) == 0 &&
+          !ep.get<bool>(TNT_cache_flag) &&
+          ep.get<double>(TNT_cache_value) == 0.0 &&
+          ep.get<void *>(TNT_cache_ref) == nullptr;
 }
 
 /** @brief Does the element still know all of its fields?
@@ -191,10 +198,10 @@ static bool cache_is_empty(const lListElem *ep) {
  * of a marked field has to receive one, otherwise it lands in an error path
  * instead of reading an empty value.
  *
- * @param ep the element to inspect
+ * @param ep the element to inspect, may be empty
  * @return true when every attribute of the type is addressable
  */
-static bool shape_is_complete(const lListElem *ep) {
+static bool shape_is_complete(const ocs::tom::ConstRawElement ep) {
    static const int all_fields[] = {
            TNT_name, TNT_text, TNT_number, TNT_sub, TNT_child,
            TNT_cache_text, TNT_cache_host, TNT_cache_list, TNT_cache_object,
@@ -202,14 +209,14 @@ static bool shape_is_complete(const lListElem *ep) {
            TNT_cache_value, TNT_cache_ref
    };
 
-   if (ep == nullptr) {
+   if (!ep) {
       return false;
    }
-   if (lCountDescr(lGetElemDescr(ep)) != static_cast<int>(TNT_Size)) {
+   if (ocs::tom::descr_length(ep.descr()) != static_cast<int>(TNT_Size)) {
       return false;
    }
-   for (int field : all_fields) {
-      if (lGetPosViaElem(ep, field, SGE_NO_ABORT) < 0) {
+   for (const int field : all_fields) {
+      if (!ep.has(field)) {
          return false;
       }
    }
@@ -221,40 +228,54 @@ static bool shape_is_complete(const lListElem *ep) {
  * @param ep the element to pack
  * @param what which fields to pack, or nullptr for all of them
  * @param[out] packed_size receives the number of bytes written, may be nullptr
- * @return the unpacked element, owned by the caller, or nullptr on failure
+ * @return the owner of the unpacked element, empty on failure
  */
-static lListElem *round_trip(const lListElem *ep, const lEnumeration *what, size_t *packed_size) {
-   sge_pack_buffer pb;
-   lListElem *copy = nullptr;
+static ocs::tom::RawElementPtr round_trip(const ocs::tom::ConstRawElement ep, const lEnumeration *what,
+                                          size_t *packed_size) {
+   ocs::tom::RawElementPtr copy;
 
-   if (init_packbuffer(&pb, 100, false, false) != PACK_SUCCESS) {
-      return nullptr;
-   }
-   if (cull_pack_elem_partial(&pb, ep, what, 0) == PACK_SUCCESS) {
+   try {
+      ocs::tom::PackBuffer pb(false, 100);
+      ocs::tom::pack_elem(&pb.raw(), ep, what, 0);
       if (packed_size != nullptr) {
-         *packed_size = pb.bytes_used;
+         *packed_size = pb.size();
       }
 
-      char *buf = sge_malloc(pb.bytes_used);
-      sge_pack_buffer copy_pb;
-
-      if (buf != nullptr) {
-         memcpy(buf, pb.head_ptr, pb.bytes_used);
-         if (init_packbuffer_from_buffer(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            if (cull_unpack_elem_partial(&copy_pb, &copy, nullptr, 0) != PACK_SUCCESS) {
-               lFreeElem(&copy);
-            }
-            clear_packbuffer(&copy_pb);
-         } else {
-            sge_free(&buf);
-         }
-      }
+      ocs::tom::PackBuffer copy_pb = ocs::tom::PackBuffer::reading(pb.data(), pb.size(), false);
+      copy = ocs::tom::unpack_raw_elem(&copy_pb.raw(), nullptr, 0);
+   } catch (const ocs::tom::PackException &) {
+      copy.reset();
    }
-   clear_packbuffer(&pb);
 
    return copy;
 }
 
+/** @brief The first element of a sub-list field
+ *
+ * @param ep the element holding the sub-list, may be empty
+ * @param nm the sub-list field
+ * @return the first element, empty if there is no element or no list
+ */
+static ocs::tom::ConstRawElement first_of(const ocs::tom::ConstRawElement ep, const int nm) {
+   return ep ? ep.get<ocs::tom::ConstRawList>(nm).front() : ocs::tom::ConstRawElement();
+}
+
+/** @brief The element of an object field
+ *
+ * @param ep the element holding the object, may be empty
+ * @param nm the object field
+ * @return the sub-object, empty if there is none
+ */
+static ocs::tom::ConstRawElement object_of(const ocs::tom::ConstRawElement ep, const int nm) {
+   return ep ? ep.get<ocs::tom::ConstRawElement>(nm) : ocs::tom::ConstRawElement();
+}
+
+/**
+ * @brief Run the scenarios of this test
+ * @param argc the number of arguments
+ * @param argv the arguments, handed to the module test driver
+ * @return the exit status of the module test driver
+ */
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_cull_no_transfer");
 
@@ -263,190 +284,176 @@ int main(int argc, char *argv[]) {
 
    // the object as the process that built it holds it: ordinary fields, a
    // process local cache, and a nested element carrying a cache of its own
-   lListElem *origin = lCreateElem(TNT_Type);
-   lSetHost(origin, TNT_name, "origin_host");
-   lSetString(origin, TNT_text, "origin_text");
-   lSetUlong(origin, TNT_number, 7);
-   set_cache(origin);
+   auto origin = ocs::tom::RawElementPtr::create(TNT_Type);
+   origin->set(TNT_name, ocs::tom::Host("origin_host"));
+   origin->set(TNT_text, static_cast<const char *>("origin_text"));
+   origin->set(TNT_number, std::uint32_t{7});
+   set_cache(*origin);
    {
-      lList *sub = lCreateList("sub", TNT_Type);
-      lListElem *sub_elem = lCreateElem(TNT_Type);
-      lListElem *child = lCreateElem(TNT_Type);
+      auto sub = ocs::tom::RawListPtr::create(TNT_Type, ocs::tom::Hashing::On, "sub");
+      auto sub_elem = ocs::tom::RawElementPtr::create(TNT_Type);
+      auto child = ocs::tom::RawElementPtr::create(TNT_Type);
 
-      lSetString(sub_elem, TNT_text, "sub_text");
-      set_cache(sub_elem);
-      lAppendElem(sub, sub_elem);
-      lSetList(origin, TNT_sub, sub);
+      sub_elem->set(TNT_text, static_cast<const char *>("sub_text"));
+      set_cache(*sub_elem);
+      sub->push_back(std::move(sub_elem));
+      origin->set(TNT_sub, std::move(sub));
 
-      lSetString(child, TNT_text, "child_text");
-      set_cache(child);
-      lSetObject(origin, TNT_child, child);
+      child->set(TNT_text, static_cast<const char *>("child_text"));
+      set_cache(*child);
+      origin->set(TNT_child, std::move(child));
    }
 
-   CHECK(1, "the element under test starts out with its cache set", cache_is_set(origin));
+   CHECK(1, "the element under test starts out with its cache set", cache_is_set(*origin));
 
    // --- a reader asking for all fields ---
    printf("\n--- reader requesting all fields ---\n");
    {
       size_t size_with_cache = 0;
-      lListElem *copy = round_trip(origin, nullptr, &size_with_cache);
+      ocs::tom::RawElementPtr copy = round_trip(*origin, nullptr, &size_with_cache);
 
-      CHECK(2, "the object arrives", copy != nullptr);
-      CHECK(3, "the object keeps its shape, every field is addressable", shape_is_complete(copy));
-      CHECK(4, "the marked fields arrive empty", cache_is_empty(copy));
+      CHECK(2, "the object arrives", static_cast<bool>(copy));
+      CHECK(3, "the object keeps its shape, every field is addressable", shape_is_complete(*copy));
+      CHECK(4, "the marked fields arrive empty", cache_is_empty(*copy));
       CHECK(5, "the ordinary fields are untouched",
-            copy != nullptr &&
-            sge_strnullcmp(lGetHost(copy, TNT_name), "origin_host") == 0 &&
-            sge_strnullcmp(lGetString(copy, TNT_text), "origin_text") == 0 &&
-            lGetUlong(copy, TNT_number) == 7);
+            copy &&
+            sge_strnullcmp(copy->get<ocs::tom::Host>(TNT_name), "origin_host") == 0 &&
+            sge_strnullcmp(copy->get<const char *>(TNT_text), "origin_text") == 0 &&
+            copy->get<std::uint32_t>(TNT_number) == 7);
       CHECK(6, "a marked field of a nested element arrives empty too",
-            cache_is_empty(lFirst(lGetList(copy, TNT_sub))) &&
-            cache_is_empty(lGetObject(copy, TNT_child)) &&
-            sge_strnullcmp(lGetString(lFirst(lGetList(copy, TNT_sub)), TNT_text), "sub_text") == 0 &&
-            sge_strnullcmp(lGetString(lGetObject(copy, TNT_child), TNT_text), "child_text") == 0);
+            cache_is_empty(first_of(*copy, TNT_sub)) &&
+            cache_is_empty(object_of(*copy, TNT_child)) &&
+            sge_strnullcmp(first_of(*copy, TNT_sub).get<const char *>(TNT_text), "sub_text") == 0 &&
+            sge_strnullcmp(object_of(*copy, TNT_child).get<const char *>(TNT_text), "child_text") == 0);
 
       // the answer must not grow with the content of a marked field
       size_t size_without_cache = 0;
-      lListElem *without = lCopyElem(origin);
+      ocs::tom::RawElementPtr without = origin.clone();
 
-      lSetString(without, TNT_cache_text, nullptr);
-      lSetHost(without, TNT_cache_host, nullptr);
-      lSetList(without, TNT_cache_list, nullptr);
-      lSetObject(without, TNT_cache_object, nullptr);
-      lSetUlong(without, TNT_cache_number, 0);
-      lSetUlong64(without, TNT_cache_number64, 0);
-      lSetBool(without, TNT_cache_flag, false);
-      lSetDouble(without, TNT_cache_value, 0.0);
-      lSetRef(without, TNT_cache_ref, nullptr);
+      without->set(TNT_cache_text, static_cast<const char *>(nullptr));
+      without->set(TNT_cache_host, ocs::tom::Host());
+      without->set(TNT_cache_list, ocs::tom::RawListPtr());
+      without->set(TNT_cache_object, ocs::tom::RawElementPtr());
+      without->set(TNT_cache_number, std::uint32_t{0});
+      without->set(TNT_cache_number64, std::uint64_t{0});
+      without->set(TNT_cache_flag, false);
+      without->set(TNT_cache_value, 0.0);
+      without->set(TNT_cache_ref, static_cast<void *>(nullptr));
 
-      lListElem *without_copy = round_trip(without, nullptr, &size_without_cache);
-      lFreeElem(&without_copy);
+      static_cast<void>(round_trip(*without, nullptr, &size_without_cache));
       CHECK(7, "the size of the answer does not depend on the content of the marked fields",
             size_with_cache > 0 && size_with_cache == size_without_cache);
-
-      lFreeElem(&without);
-      lFreeElem(&copy);
    }
 
    // --- a reader asking for the marked fields by name ---
    printf("\n--- reader requesting the marked fields explicitly ---\n");
    {
-      lEnumeration *what = lWhat("%T(%I %I %I %I %I %I %I %I %I %I)", TNT_Type,
-                                 TNT_name, TNT_cache_text, TNT_cache_host, TNT_cache_list,
-                                 TNT_cache_object, TNT_cache_number, TNT_cache_number64,
-                                 TNT_cache_flag, TNT_cache_value, TNT_cache_ref);
+      const int fields[] = {TNT_name, TNT_cache_text, TNT_cache_host, TNT_cache_list,
+                            TNT_cache_object, TNT_cache_number, TNT_cache_number64,
+                            TNT_cache_flag, TNT_cache_value, TNT_cache_ref};
+      ocs::tom::RawWhatPtr what = ocs::tom::what_of(TNT_Type, fields);
       size_t size_with_cache = 0;
-      lListElem *copy = round_trip(origin, what, &size_with_cache);
+      ocs::tom::RawElementPtr copy = round_trip(*origin, what.get(), &size_with_cache);
 
-      CHECK(8, "the reduced object arrives", copy != nullptr);
+      CHECK(8, "the reduced object arrives", static_cast<bool>(copy));
       CHECK(9, "the requested ordinary field is untouched",
-            copy != nullptr && sge_strnullcmp(lGetHost(copy, TNT_name), "origin_host") == 0);
-      CHECK(10, "the explicitly requested marked fields arrive empty", cache_is_empty(copy));
+            copy && sge_strnullcmp(copy->get<ocs::tom::Host>(TNT_name), "origin_host") == 0);
+      CHECK(10, "the explicitly requested marked fields arrive empty", cache_is_empty(*copy));
       CHECK(11, "the explicitly requested marked fields are still addressable",
-            copy != nullptr &&
-            lGetPosViaElem(copy, TNT_cache_text, SGE_NO_ABORT) >= 0 &&
-            lGetPosViaElem(copy, TNT_cache_list, SGE_NO_ABORT) >= 0);
+            copy && copy->has(TNT_cache_text) && copy->has(TNT_cache_list));
 
-      lListElem *without = lCreateElem(TNT_Type);
+      auto without = ocs::tom::RawElementPtr::create(TNT_Type);
       size_t size_without_cache = 0;
 
-      lSetHost(without, TNT_name, "origin_host");
-      lListElem *without_copy = round_trip(without, what, &size_without_cache);
-      lFreeElem(&without_copy);
+      without->set(TNT_name, ocs::tom::Host("origin_host"));
+      static_cast<void>(round_trip(*without, what.get(), &size_without_cache));
       CHECK(12, "the size of the reduced answer does not depend on the content either",
             size_with_cache > 0 && size_with_cache == size_without_cache);
-
-      lFreeElem(&without);
-      lFreeElem(&copy);
-      lFreeWhat(&what);
    }
 
    // --- copies inside the process ---
    printf("\n--- copies inside the process ---\n");
    {
-      lListElem *copy = lCopyElem(origin);
+      ocs::tom::RawElementPtr copy = origin.clone();
 
-      CHECK(13, "lCopyElem() keeps the marked fields", cache_is_set(copy));
-      CHECK(14, "lCopyElem() keeps them in nested elements too",
-            cache_is_set(lFirst(lGetList(copy, TNT_sub))) &&
-            cache_is_set(lGetObject(copy, TNT_child)));
-      lFreeElem(&copy);
+      CHECK(13, "clone() keeps the marked fields", cache_is_set(*copy));
+      CHECK(14, "clone() keeps them in nested elements too",
+            cache_is_set(first_of(*copy, TNT_sub)) &&
+            cache_is_set(object_of(*copy, TNT_child)));
+      copy.reset();
 
-      lEnumeration *what = lWhat("%T(ALL)", TNT_Type);
-      lListElem *selected = lSelectElemPack(origin, nullptr, what, false, nullptr);
+      ocs::tom::RawWhatPtr what = ocs::tom::what_all();
+      ocs::tom::RawElementPtr selected =
+              ocs::tom::select_elem_as(origin.get(), nullptr, what.get(), ocs::tom::Hashing::Off);
 
-      CHECK(15, "lSelectElemPack() keeps them unless asked to skip", cache_is_set(selected));
-      lFreeElem(&selected);
-      lFreeWhat(&what);
+      CHECK(15, "select_elem_as() keeps them unless asked to skip", cache_is_set(*selected));
    }
 
    // --- a copy that will be handed out, the way an event payload is built ---
    printf("\n--- copy for hand-out ---\n");
    {
-      lListElem *payload = lCopyElemHash(origin, false, true);
+      ocs::tom::RawElementPtr payload(ocs::tom::copy_elem(origin.get(), false, true));
 
-      CHECK(16, "the marked fields are empty in the copy", cache_is_empty(payload));
-      CHECK(17, "the copy keeps its shape", shape_is_complete(payload));
+      CHECK(16, "the marked fields are empty in the copy", cache_is_empty(*payload));
+      CHECK(17, "the copy keeps its shape", shape_is_complete(*payload));
       CHECK(18, "the ordinary fields are copied as usual",
-            sge_strnullcmp(lGetHost(payload, TNT_name), "origin_host") == 0 &&
-            sge_strnullcmp(lGetString(payload, TNT_text), "origin_text") == 0 &&
-            lGetUlong(payload, TNT_number) == 7 &&
-            lGetNumberOfElem(lGetList(payload, TNT_sub)) == 1 &&
-            lGetObject(payload, TNT_child) != nullptr);
+            sge_strnullcmp(payload->get<ocs::tom::Host>(TNT_name), "origin_host") == 0 &&
+            sge_strnullcmp(payload->get<const char *>(TNT_text), "origin_text") == 0 &&
+            payload->get<std::uint32_t>(TNT_number) == 7 &&
+            payload->get<ocs::tom::ConstRawList>(TNT_sub).size() == 1 &&
+            payload->get<ocs::tom::ConstRawElement>(TNT_child));
       CHECK(19, "nested elements are skipped as well",
-            cache_is_empty(lFirst(lGetList(payload, TNT_sub))) &&
-            cache_is_empty(lGetObject(payload, TNT_child)));
-      CHECK(20, "the source is not affected", cache_is_set(origin));
-      lFreeElem(&payload);
+            cache_is_empty(first_of(*payload, TNT_sub)) &&
+            cache_is_empty(object_of(*payload, TNT_child)));
+      CHECK(20, "the source is not affected", cache_is_set(*origin));
+      payload.reset();
 
-      lList *lp = lCreateList("payload", TNT_Type);
-      lAppendElem(lp, lCopyElem(origin));
-      lList *payload_list = lCopyListHash("payload", lp, false, true);
-      CHECK(21, "lCopyListHash() skips them for every element of a list",
-            cache_is_empty(lFirst(payload_list)));
-      lFreeList(&payload_list);
-      lFreeList(&lp);
+      auto lp = ocs::tom::RawListPtr::create(TNT_Type, ocs::tom::Hashing::On, "payload");
+      lp->push_back(origin.clone());
+      ocs::tom::RawListPtr payload_list(ocs::tom::copy_list("payload", lp.get(), false, true));
+      CHECK(21, "copy_list() with skip_no_transfer skips them for every element of a list",
+            cache_is_empty(payload_list->front()));
+      payload_list.reset();
+      lp.reset();
 
       // the reduced copy an event client with a what filter receives
-      lEnumeration *what = lWhat("%T(%I %I %I %I)", TNT_Type,
-                                 TNT_name, TNT_cache_text, TNT_cache_list, TNT_cache_number);
-      lListElem *reduced = lSelectElemPack(origin, nullptr, what, false, nullptr, true);
+      const int fields[] = {TNT_name, TNT_cache_text, TNT_cache_list, TNT_cache_number};
+      ocs::tom::RawWhatPtr what = ocs::tom::what_of(TNT_Type, fields);
+      ocs::tom::RawElementPtr reduced(ocs::tom::select_elem(origin.get(), what.get(), false, true));
 
       // only the selected fields exist in a reduced element, so this cannot go
       // through cache_is_empty()
       CHECK(22, "a reduced copy for hand-out skips them too",
-            reduced != nullptr &&
-            lGetString(reduced, TNT_cache_text) == nullptr &&
-            lGetList(reduced, TNT_cache_list) == nullptr &&
-            lGetUlong(reduced, TNT_cache_number) == 0 &&
-            sge_strnullcmp(lGetHost(reduced, TNT_name), "origin_host") == 0);
-      lFreeElem(&reduced);
-      lFreeWhat(&what);
+            reduced &&
+            reduced->get<const char *>(TNT_cache_text) == nullptr &&
+            reduced->get<const lList *>(TNT_cache_list) == nullptr &&
+            reduced->get<std::uint32_t>(TNT_cache_number) == 0 &&
+            sge_strnullcmp(reduced->get<ocs::tom::Host>(TNT_name), "origin_host") == 0);
    }
 
    // --- a client reading the object and writing it back ---
    printf("\n--- read, modify, write back ---\n");
    {
-      lListElem *at_client = round_trip(origin, nullptr, nullptr);
+      ocs::tom::RawElementPtr at_client = round_trip(*origin, nullptr, nullptr);
 
-      CHECK(23, "the client never sees the value", cache_is_empty(at_client));
+      CHECK(23, "the client never sees the value", cache_is_empty(*at_client));
 
       // the client changes an ordinary attribute and sends the object back
-      lSetString(at_client, TNT_text, "changed_by_client");
-      lListElem *instructions = round_trip(at_client, nullptr, nullptr);
+      ocs::tom::RawElementPtr instructions;
+      if (at_client) {
+         at_client->set(TNT_text, static_cast<const char *>("changed_by_client"));
+         instructions = round_trip(*at_client, nullptr, nullptr);
+      }
 
       CHECK(24, "the change arrives at the server",
-            instructions != nullptr &&
-            sge_strnullcmp(lGetString(instructions, TNT_text), "changed_by_client") == 0);
+            instructions &&
+            sge_strnullcmp(instructions->get<const char *>(TNT_text), "changed_by_client") == 0);
       CHECK(25, "the write back carries no value for the marked fields",
-            cache_is_empty(instructions));
-      CHECK(26, "what the server holds is unchanged", cache_is_set(origin));
-
-      lFreeElem(&instructions);
-      lFreeElem(&at_client);
+            cache_is_empty(*instructions));
+      CHECK(26, "what the server holds is unchanged", cache_is_set(*origin));
    }
 
-   lFreeElem(&origin);
+   origin.reset();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

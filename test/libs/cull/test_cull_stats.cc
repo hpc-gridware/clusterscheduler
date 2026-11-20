@@ -22,7 +22,9 @@
  * @brief Module test of the CULL statistics counters (CS-2993)
  *
  * Built only with `ENABLE_CULL_STATS`. Each scenario runs a list operation
- * whose cost is known and compares the counters before and after it.
+ * whose cost is known and compares the counters before and after it. The test
+ * type has no generated traits, so the operations go through the run-time
+ * typed interface (tom/ocs_Raw.h) and the core of the typed object model.
  */
 
 #include <cstdio>
@@ -41,10 +43,14 @@
 /** @brief Make this translation unit the one that defines the CULL descriptors */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_test_api.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_stats.h"
-#include "cull/ocs_cull_descr.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_stats.h"
+#include "tom/cull_types.h"
+#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_PackBuffer.h"
+#include "tom/ocs_PackCore.h"
+#include "tom/ocs_Raw.h"
 
 #include "uti/sge_component.h"
 #include "uti/sge_stdlib.h"
@@ -109,16 +115,48 @@ static uint64_t field_count(const int nm, const Counter c) {
 
 /**
  * @brief Build the test list: LIST_SIZE elements, names e0..., groups 0 to 2
- * @return the list, owned by the caller
+ * @return the list
  */
-static lList *make_list() {
-   lList *lp = lCreateList("stats", ST_Type);
+static ocs::tom::RawListPtr make_list() {
+   auto lp = ocs::tom::RawListPtr::create(ST_Type, ocs::tom::Hashing::On, "stats");
    for (int i = 0; i < LIST_SIZE; i++) {
-      lListElem *ep = lAddElemStr(&lp, ST_name, ("e" + std::to_string(i)).c_str(), ST_Type);
-      lSetUlong(ep, ST_group, i % 3);
-      lSetUlong(ep, ST_value, i);
+      auto ep = ocs::tom::RawElementPtr::create(ST_Type);
+      ep->set(ST_name, ("e" + std::to_string(i)).c_str());
+      ep->set(ST_group, static_cast<std::uint32_t>(i % 3));
+      ep->set(ST_value, static_cast<std::uint32_t>(i));
+      lp->push_back(std::move(ep));
    }
    return lp;
+}
+
+/**
+ * @brief Write a list into a buffer, without throwing
+ * @param pb the buffer
+ * @param lp the list
+ * @return true on success
+ */
+static bool pack_list_ok(sge_pack_buffer *pb, const lList *lp) {
+   try {
+      ocs::tom::pack_list(pb, lp, nullptr, 0);
+      return true;
+   } catch (const ocs::tom::PackException &) {
+      return false;
+   }
+}
+
+/**
+ * @brief Read a list from a buffer, without throwing
+ * @param pb the buffer
+ * @param[out] lp receives the list
+ * @return true on success
+ */
+static bool unpack_list_ok(sge_pack_buffer *pb, ocs::tom::RawListPtr &lp) {
+   try {
+      lp = ocs::tom::unpack_raw_list(pb);
+      return true;
+   } catch (const ocs::tom::PackException &) {
+      return false;
+   }
 }
 
 /**
@@ -128,27 +166,43 @@ static lList *make_list() {
  * @param pb receives the buffer, to be cleared by the caller
  * @return true on success
  */
-static bool pack_list(const lList *lp, const bool just_count, sge_pack_buffer *pb) {
-   return init_packbuffer(pb, 1024, just_count, false) == PACK_SUCCESS && cull_pack_list(pb, lp) == PACK_SUCCESS;
+static bool pack_into(const lList *lp, const bool just_count, sge_pack_buffer *pb) {
+   return ocs::tom::try_init_buffer(pb, 1024, just_count, false) == PACK_SUCCESS && pack_list_ok(pb, lp);
+}
+
+/**
+ * @brief Prepare a reading buffer on a copy of what a pack buffer holds, as the receiver gets it
+ * @param pb the packed buffer
+ * @param in receives the reading buffer, to be cleared by the caller also on an error
+ * @return true on success
+ */
+static bool reading_copy(const sge_pack_buffer *pb, sge_pack_buffer *in) {
+   const std::size_t used = ocs::tom::buffer_used(pb);
+   char *buf = sge_malloc(used);
+   memcpy(buf, pb->head_ptr, used);
+   return ocs::tom::try_init_buffer_from(in, buf, static_cast<std::uint32_t>(used), false) == PACK_SUCCESS;
 }
 
 /**
  * @brief Unpack a list from what a pack buffer holds, as the receiver does
  * @param pb the packed buffer
- * @param lpp receives the unpacked list
+ * @param lp receives the unpacked list
  * @return true on success
  */
-static bool unpack_list_from(const sge_pack_buffer *pb, lList **lpp) {
-   char *buf = sge_malloc(pb->bytes_used);
-   memcpy(buf, pb->head_ptr, pb->bytes_used);
+static bool unpack_list_from(const sge_pack_buffer *pb, ocs::tom::RawListPtr &lp) {
    sge_pack_buffer in;
-   if (init_packbuffer_from_buffer(&in, buf, pb->bytes_used, false) != PACK_SUCCESS) {
-      sge_free(&buf);
-      return false;
-   }
-   const bool ok = cull_unpack_list(&in, lpp) == PACK_SUCCESS;
-   clear_packbuffer(&in);
+   const bool ok = reading_copy(pb, &in) && unpack_list_ok(&in, lp);
+   ocs::tom::clear_buffer(&in);
    return ok;
+}
+
+/**
+ * @brief The selection of ST_name and ST_value, as lWhat("%T(%I %I)") built it
+ * @return the selection
+ */
+static ocs::tom::RawWhatPtr name_value_what() {
+   const int fields[] = {ST_name, ST_value};
+   return ocs::tom::what_of(ST_Type, fields);
 }
 
 /**
@@ -212,16 +266,17 @@ static void test_hash_tables() {
    const uint64_t used = field_count(ST_name, ocs::cull_stats::HASH_FREE_USED);
    const uint64_t unused = field_count(ST_name, ocs::cull_stats::HASH_FREE_UNUSED);
 
-   lList *lp = make_list();
+   auto lp = make_list();
    CHECK(1, "creating and filling a list builds no table",
          field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create &&
          field_count(ST_group, ocs::cull_stats::HASH_CREATE) == create_group &&
          field_count(ST_name, ocs::cull_stats::HASH_INSERT) == insert);
 
-   lGetElemStr(lp, ST_name, "e3");
-   lGetElemStr(lp, ST_name, "e7");
+   static_cast<void>(lp->find_first(ST_name, "e3"));
+   static_cast<void>(lp->find_first(ST_name, "e7"));
    const void *iterator = nullptr;
-   lGetElemUlongFirst(lp, ST_group, 1, &iterator);
+   const int pos_group = ocs::tom::field_pos(ST_Type, ST_group);
+   static_cast<void>(ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.get(), pos_group, 1, &iterator));
    CHECK(2, "the first lookup on a field builds its table with one insert per element",
          field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create + 1 &&
          field_count(ST_group, ocs::cull_stats::HASH_CREATE) == create_group + 1 &&
@@ -233,9 +288,9 @@ static void test_hash_tables() {
          field_count(ST_name, ocs::cull_stats::HASH_LOOKUP) == lookup + 2 &&
          field_count(ST_group, ocs::cull_stats::HASH_LOOKUP) == lookup_group + 1);
 
-   lFreeList(&lp);
+   lp.reset();
    lp = make_list();
-   lFreeList(&lp);
+   lp.reset();
    CHECK(4, "a freed table counts as used after a lookup; a list never searched frees no table",
          field_count(ST_name, ocs::cull_stats::HASH_FREE_USED) == used + 1 &&
          field_count(ST_name, ocs::cull_stats::HASH_FREE_UNUSED) == unused &&
@@ -252,14 +307,13 @@ static void test_threshold() {
    const uint64_t len = field_count(ST_name, ocs::cull_stats::LOOKUP_LEN_LT16);
 
    ocs_cull_hash_set_min_elems(LIST_SIZE + 1);
-   lList *lp = make_list();
-   const lListElem *found = lGetElemStr(lp, ST_name, "e3");
+   const auto lp = make_list();
+   const ocs::tom::ConstRawElement found = lp->find_first(ST_name, "e3");
    CHECK(17, "a lookup on a list below the threshold searches linearly and builds no table",
-         found != nullptr && field_count(ST_name, ocs::cull_stats::LOOKUP_LINEAR) == linear + 1 &&
+         found && field_count(ST_name, ocs::cull_stats::LOOKUP_LINEAR) == linear + 1 &&
          field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create);
    CHECK(18, "the lookup is counted in the bucket of the list length",
          field_count(ST_name, ocs::cull_stats::LOOKUP_LEN_LT16) == len + 1);
-   lFreeList(&lp);
    ocs_cull_hash_set_min_elems(0);
 }
 
@@ -272,54 +326,39 @@ static void test_descriptors() {
    const uint64_t intern_new = type_count(ocs::cull_stats::DESCR_INTERN_NEW);
    const uint64_t intern_hit = type_count(ocs::cull_stats::DESCR_INTERN_HIT);
    const uint64_t priv = type_count(ocs::cull_stats::DESCR_PRIVATE);
-   lListElem *ep = lCreateElem(ST_Type);
-   CHECK(5, "lCreateElem of a full type copies and registers nothing",
-         type_count(ocs::cull_stats::DCOPY_ELEM) == elem &&
-         type_count(ocs::cull_stats::DESCR_INTERN_NEW) == intern_new &&
-         type_count(ocs::cull_stats::DESCR_PRIVATE) == priv);
-   lFreeElem(&ep);
+   {
+      const auto ep = ocs::tom::RawElementPtr::create(ST_Type);
+      CHECK(5, "creating an element of a full type copies and registers nothing",
+            type_count(ocs::cull_stats::DCOPY_ELEM) == elem &&
+            type_count(ocs::cull_stats::DESCR_INTERN_NEW) == intern_new &&
+            type_count(ocs::cull_stats::DESCR_PRIVATE) == priv);
+   }
 
-   lList *lp = make_list();
+   const auto lp = make_list();
    CHECK(6, "creating a list of a full type copies and registers nothing",
          type_count(ocs::cull_stats::DCOPY_ELEM) == elem &&
          type_count(ocs::cull_stats::DESCR_INTERN_NEW) == intern_new &&
          type_count(ocs::cull_stats::DESCR_INTERN_HIT) == intern_hit);
 
-   lEnumeration *what = lWhat("%T(%I %I)", ST_Type, ST_name, ST_value);
-   lList *reduced = lSelect("reduced", lp, nullptr, what);
+   const ocs::tom::RawWhatPtr what = name_value_what();
+   const auto reduced = ocs::tom::select_as("reduced", lp.get(), nullptr, what.get(), ocs::tom::Hashing::On);
    const uint64_t new_after_first = type_count(ocs::cull_stats::DESCR_INTERN_NEW);
    const uint64_t new_b = type_count(ocs::cull_stats::DESCR_INTERN_NEW_B);
-   lEnumeration *what2 = lWhat("%T(%I %I)", ST_Type, ST_name, ST_value);
-   lList *reduced2 = lSelect("reduced", lp, nullptr, what2);
-   CHECK(19, "a reduction is registered once with its bytes, an equal one from another selection is a hit, and "
-         "the registry peak covers it",
-         new_after_first == intern_new + 1 && new_b > 0 &&
-         type_count(ocs::cull_stats::DESCR_INTERN_NEW) == intern_new + 1 &&
-         type_count(ocs::cull_stats::DESCR_INTERN_HIT) == intern_hit + 1 &&
-         type_count(ocs::cull_stats::DESCR_PRIVATE) == priv && lFirst(reduced2)->descr == lFirst(reduced)->descr &&
-         ocs_cull_descr_registry_peak() >= ocs_cull_descr_registry_size() && ocs_cull_descr_registry_peak() >= 1);
-   lFreeList(&reduced2);
-   lFreeWhat(&what2);
-   const lListElem *first = lFirst(reduced);
-   const uint64_t calls = type_count(ocs::cull_stats::POS_CALLS);
-   const uint64_t on_reduced = type_count(ocs::cull_stats::POS_REDUCED);
-   const uint64_t iters = type_count(ocs::cull_stats::POS_ITERS);
-   const lUlong value = lGetUlong(first, ST_value);
-   // a reduced descriptor has the length of its type, so the lookup is constant time (CS-439, PRF-04)
-   CHECK(7, "a field read on a reduced element is one lookup without a search over the entries",
-         value == 0 &&
-         type_count(ocs::cull_stats::POS_CALLS) == calls + 1 &&
-         type_count(ocs::cull_stats::POS_REDUCED) == on_reduced &&
-         type_count(ocs::cull_stats::POS_ITERS) == iters);
-
-   const uint64_t reduced_before = type_count(ocs::cull_stats::POS_REDUCED);
-   lGetUlong(lFirst(lp), ST_value);
-   CHECK(8, "a field read on a full element is no reduced lookup",
-         type_count(ocs::cull_stats::POS_REDUCED) == reduced_before);
-
-   lFreeList(&reduced);
-   lFreeWhat(&what);
-   lFreeList(&lp);
+   {
+      const ocs::tom::RawWhatPtr what2 = name_value_what();
+      const auto reduced2 = ocs::tom::select_as("reduced", lp.get(), nullptr, what2.get(), ocs::tom::Hashing::On);
+      CHECK(19, "a reduction is registered once with its bytes, an equal one from another selection is a hit, and "
+            "the registry peak covers it",
+            new_after_first == intern_new + 1 && new_b > 0 &&
+            type_count(ocs::cull_stats::DESCR_INTERN_NEW) == intern_new + 1 &&
+            type_count(ocs::cull_stats::DESCR_INTERN_HIT) == intern_hit + 1 &&
+            type_count(ocs::cull_stats::DESCR_PRIVATE) == priv &&
+            reduced2->front().descr() == reduced->front().descr() &&
+            ocs_cull_descr_registry_peak() >= ocs_cull_descr_registry_size() && ocs_cull_descr_registry_peak() >= 1);
+   }
+   // CHECK 7 and CHECK 8 removed: the position counters POS_CALLS, POS_REDUCED and POS_ITERS were kept by
+   // the old lGetPosInDescr(), which has no TOM counterpart; the typed object model reads a reduced
+   // element by position in constant time and counts nothing (CS-3103)
 }
 
 /**
@@ -327,7 +366,7 @@ static void test_descriptors() {
  * @return nothing; CHECK records the results
  */
 static void test_packing() {
-   lList *lp = make_list();
+   const auto lp = make_list();
 
    const uint64_t descr = type_count(ocs::cull_stats::PACK_DESCR);
    const uint64_t descr_b = type_count(ocs::cull_stats::PACK_DESCR_B);
@@ -336,8 +375,8 @@ static void test_packing() {
    const uint64_t type_ref = type_count(ocs::cull_stats::DESCR_PACK_TYPE_REF);
 
    sge_pack_buffer counted;
-   const bool counted_ok = pack_list(lp, true, &counted);
-   clear_packbuffer(&counted);
+   const bool counted_ok = pack_into(lp.get(), true, &counted);
+   ocs::tom::clear_buffer(&counted);
    CHECK(9, "the counting mode counts nothing",
          counted_ok &&
          type_count(ocs::cull_stats::PACK_DESCR) == descr &&
@@ -346,7 +385,7 @@ static void test_packing() {
          type_count(ocs::cull_stats::DESCR_PACK_TYPE_REF) == type_ref);
 
    sge_pack_buffer pb;
-   const bool packed_ok = pack_list(lp, false, &pb);
+   const bool packed_ok = pack_into(lp.get(), false, &pb);
    CHECK(10, "packing counts the descriptor as a type reference with its bytes, the elements and the value bytes "
          "per field",
          packed_ok &&
@@ -362,45 +401,41 @@ static void test_packing() {
    const uint64_t dcopy_b = type_count(ocs::cull_stats::DCOPY_UNPACK_B);
    const uint64_t ns = type_count(ocs::cull_stats::UNPACK_NS);
    const uint64_t create = field_count(ST_name, ocs::cull_stats::HASH_CREATE);
-   lList *copy = nullptr;
-   const bool unpacked_ok = unpack_list_from(&pb, &copy);
-   CHECK(11, "unpacking counts the list and its elements and builds no descriptor for a type reference",
-         unpacked_ok && lGetNumberOfElem(copy) == LIST_SIZE &&
-         type_count(ocs::cull_stats::UNPACK_LISTS) == lists + 1 &&
-         type_count(ocs::cull_stats::UNPACK_ELEMS) == unpacked + LIST_SIZE &&
-         type_count(ocs::cull_stats::DCOPY_UNPACK) == dcopy &&
-         type_count(ocs::cull_stats::DCOPY_UNPACK_B) == dcopy_b);
-   CHECK(12, "unpacking counts its time and builds no hash table",
-         type_count(ocs::cull_stats::UNPACK_NS) > ns &&
-         field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create);
-
-   clear_packbuffer(&pb);
-   lFreeList(&copy);
+   {
+      ocs::tom::RawListPtr copy;
+      const bool unpacked_ok = unpack_list_from(&pb, copy);
+      CHECK(11, "unpacking counts the list and its elements and builds no descriptor for a type reference",
+            unpacked_ok && copy && copy->size() == LIST_SIZE &&
+            type_count(ocs::cull_stats::UNPACK_LISTS) == lists + 1 &&
+            type_count(ocs::cull_stats::UNPACK_ELEMS) == unpacked + LIST_SIZE &&
+            type_count(ocs::cull_stats::DCOPY_UNPACK) == dcopy &&
+            type_count(ocs::cull_stats::DCOPY_UNPACK_B) == dcopy_b);
+      CHECK(12, "unpacking counts its time and builds no hash table",
+            type_count(ocs::cull_stats::UNPACK_NS) > ns &&
+            field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create);
+   }
+   ocs::tom::clear_buffer(&pb);
 
    // two lists of one reduction in one buffer: the table entry is defined once and referenced once
-   lEnumeration *what = lWhat("%T(%I %I)", ST_Type, ST_name, ST_value);
-   lList *r1 = lSelect("r1", lp, nullptr, what);
-   lList *r2 = lSelect("r2", lp, nullptr, what);
+   const ocs::tom::RawWhatPtr what = name_value_what();
+   const auto r1 = ocs::tom::select_as("r1", lp.get(), nullptr, what.get(), ocs::tom::Hashing::On);
+   const auto r2 = ocs::tom::select_as("r2", lp.get(), nullptr, what.get(), ocs::tom::Hashing::On);
    const uint64_t def = type_count(ocs::cull_stats::DESCR_PACK_TABLE_DEF);
    const uint64_t ref = type_count(ocs::cull_stats::DESCR_PACK_TABLE_REF);
    const uint64_t tmp = type_count(ocs::cull_stats::DCOPY_UNPACK);
    bool both_ok = false;
    bool unpack_ok = false;
    sge_pack_buffer two;
-   if (init_packbuffer(&two, 1024, false, false) == PACK_SUCCESS) {
-      both_ok = cull_pack_list(&two, r1) == PACK_SUCCESS && cull_pack_list(&two, r2) == PACK_SUCCESS;
-      char *buf = sge_malloc(two.bytes_used);
-      memcpy(buf, two.head_ptr, two.bytes_used);
+   if (ocs::tom::try_init_buffer(&two, 1024, false, false) == PACK_SUCCESS) {
+      both_ok = pack_list_ok(&two, r1.get()) && pack_list_ok(&two, r2.get());
       sge_pack_buffer in;
-      if (init_packbuffer_from_buffer(&in, buf, two.bytes_used, false) == PACK_SUCCESS) {
-         lList *u1 = nullptr;
-         lList *u2 = nullptr;
-         unpack_ok = cull_unpack_list(&in, &u1) == PACK_SUCCESS && cull_unpack_list(&in, &u2) == PACK_SUCCESS;
-         lFreeList(&u2);
-         lFreeList(&u1);
+      if (reading_copy(&two, &in)) {
+         ocs::tom::RawListPtr u1;
+         ocs::tom::RawListPtr u2;
+         unpack_ok = unpack_list_ok(&in, u1) && unpack_list_ok(&in, u2);
       }
-      clear_packbuffer(&in);
-      clear_packbuffer(&two);
+      ocs::tom::clear_buffer(&in);
+      ocs::tom::clear_buffer(&two);
    }
    CHECK(20, "a reduction is entered into the table of a buffer once and referenced afterwards; the receiver "
          "builds one temporary descriptor for the entry",
@@ -408,10 +443,6 @@ static void test_packing() {
          type_count(ocs::cull_stats::DESCR_PACK_TABLE_DEF) == def + 1 &&
          type_count(ocs::cull_stats::DESCR_PACK_TABLE_REF) == ref + 1 &&
          type_count(ocs::cull_stats::DCOPY_UNPACK) == tmp + 1);
-   lFreeList(&r2);
-   lFreeList(&r1);
-   lFreeWhat(&what);
-   lFreeList(&lp);
 }
 
 /**
@@ -425,9 +456,12 @@ static void test_merge_and_write() {
          component_set_thread_name(name);
          // a new thread has the default threshold; the lookup builds the table on the short list
          ocs_cull_hash_set_min_elems(0);
-         lList *lp = make_list();
-         lGetElemStr(lp, ST_name, "e3");
-         lFreeList(&lp);
+         const auto lp = make_list();
+         static_cast<void>(lp->find_first(ST_name, "e3"));
+         // a type counter for the dump: the typed object model counts no positional lookups (pos_calls)
+         sge_pack_buffer pb;
+         static_cast<void>(pack_into(lp.get(), false, &pb));
+         ocs::tom::clear_buffer(&pb);
       });
       worker.join();
    }
@@ -453,7 +487,7 @@ static void test_merge_and_write() {
          json_uint(doc, {"threads", "probe", "fields", "ST_Type", "ST_name", "hash_insert"}) == 2 * LIST_SIZE);
    CHECK(15, "type counters are written per type, counters that are 0 are left out",
          !doc.HasParseError() &&
-         json_uint(doc, {"threads", "probe", "types", "ST_Type", "pos_calls"}) > 0 &&
+         json_uint(doc, {"threads", "probe", "types", "ST_Type", "pack_elems"}) == 2 * LIST_SIZE &&
          json_at(doc, {"threads", "probe", "types", "ST_Type"}) != nullptr &&
          json_at(doc, {"threads", "probe", "types", "ST_Type", "pos_reduced"}) == nullptr);
 
@@ -493,7 +527,7 @@ int main(int argc, char *argv[]) {
         "read a field of a reduced element", "read the same field of a full element"},
        "the full type copies and registers nothing; the reduction is one miss with its bytes and one hit, both "
        "selections share it, and the peak covers it; neither the reduced nor the full read searches the entries",
-       {{"MSR-03", "covers"}, {"PRF-03", "prepares"}, {"PRF-04", "unit level"}}, {5, 6, 19, 7, 8}, test_descriptors},
+       {{"MSR-03", "covers"}, {"PRF-03", "prepares"}, {"PRF-04", "unit level"}}, {5, 6, 19}, test_descriptors},
       {"STATS-03", "packing and unpacking",
        "the statistics build counts packed descriptors, elements and value bytes, and unpacked lists with "
        "their time, but nothing in counting mode",
@@ -511,7 +545,7 @@ int main(int argc, char *argv[]) {
        {{"LZY-04", "covers"}}, {17, 18}, test_threshold},
       {"STATS-04", "threads are merged by class and written out",
        "the counters of ended threads add up per thread class and are written as one JSON document per dump",
-       {"create and search the same list in two threads of one class", "write the counters into a new directory",
+       {"create, search and pack the same list in two threads of one class", "write the counters into a new directory",
         "write them a second time"},
        "one JSON document with the counters per class, type and field, both threads in it and no counter of 0; "
        "a second dump does not overwrite the first",

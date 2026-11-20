@@ -39,8 +39,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_pack.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_hgroup.h"
@@ -50,6 +48,7 @@
 #include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/sge_utility.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_PackCore.h"
 #include "sgeobj/tom/ocs_tom_HM.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
@@ -327,13 +326,13 @@ cache_equals_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
       return false;
    }
 
-   ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
-   bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(*walked);
+   ocs::tom::ConstList<ocs::tom::HR> cached = hgroup.get<HGRP_cached_hosts>();
+   bool ok = cached.size() == walked->size();
    ocs::tom::ConstElement<ocs::tom::HR> c = cached.front();
    ocs::tom::ConstElement<ocs::tom::HR> w = walked->front();
 
    while (ok && c != nullptr && w != nullptr) {
-      ok = (sge_hostcmp(ocs::tom::get<HR_name>(c), ocs::tom::get<HR_name>(w)) == 0);
+      ok = (sge_hostcmp(c.get<HR_name>(), w.get<HR_name>()) == 0);
       c = c.next();
       w = w.next();
    }
@@ -350,8 +349,8 @@ cache_equals_walk(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup,
  */
 static bool
 cached_has(const ocs::tom::ConstList<ocs::tom::HGRP> master_list, const char *group, const char *host) {
-   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(master_list, group);
-   return hgroup != nullptr && href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
+   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = master_list.find_first<HGRP_name>(ocs::tom::Host(group));
+   return hgroup != nullptr && href_list_locate(hgroup.get<HGRP_cached_hosts>(), host) != nullptr;
 }
 
 /**
@@ -399,7 +398,7 @@ test_update_cache() {
 
       href_list_add(new_hosts, nullptr, "hosta");
       href_list_add(new_hosts, nullptr, "hostd");
-      ocs::tom::set<HGRP_host_list>(leaf, std::move(new_hosts));
+      leaf.set<HGRP_host_list>(std::move(new_hosts));
 
       /* what the qmaster does in hgroup_success(): the group plus its referencees */
       ocs::tom::ListPtr<ocs::tom::HR> referencees;
@@ -447,11 +446,11 @@ test_update_cache() {
       CHECK(38, "a dangling group reference is skipped, not an error",
             hgroup_update_cache(dangling, nullptr, master_list));
       CHECK(39, "both resolve to no hosts at all",
-            static_cast<const lList *>(ocs::tom::get<HGRP_cached_hosts>(empty)) == nullptr &&
-            static_cast<const lList *>(ocs::tom::get<HGRP_cached_hosts>(dangling)) == nullptr);
+            static_cast<const lList *>(empty.get<HGRP_cached_hosts>()) == nullptr &&
+            static_cast<const lList *>(dangling.get<HGRP_cached_hosts>()) == nullptr);
       CHECK(40, "and both are still marked computed -- empty is not uncomputed",
-            ocs::tom::get<HGRP_cache_version>(empty) != 0 &&
-            ocs::tom::get<HGRP_cache_version>(dangling) != 0);
+            empty.get<HGRP_cache_version>() != 0 &&
+            dangling.get<HGRP_cache_version>() != 0);
    }
 }
 
@@ -460,22 +459,21 @@ test_update_cache() {
 // host_is_referenced() and the reserved groups -- CS-2438
 // ---------------------------------------------------------------------------
 
-/*
- * host_is_referenced() decides whether "qconf -de" may delete an exec host. It
- * walks the host groups, and before CS-2438 the admin and submit host lists were
- * NOT host groups, so being an admin host never blocked a deletion.
+/**
+ * @brief host_is_referenced() decides whether "qconf -de" may delete an exec host
  *
- * Seeding @admin_hosts with the qmaster host turned that into a deadlock: the
- * deletion is refused because the host is in @admin_hosts, and hgroup_mod()
- * refuses to take the qmaster host out of @admin_hosts, so no command sequence
- * gets the user out of it. Caught by system_tests/clients/qconf, qconf_de_check.
+ * It walks the host groups, and before CS-2438 the admin and submit host lists were NOT host groups, so being an
+ * admin host never blocked a deletion. Seeding @admin_hosts with the qmaster host turned that into a deadlock: the
+ * deletion is refused because the host is in @admin_hosts, and hgroup_mod() refuses to take the qmaster host out of
+ * @admin_hosts, so no command sequence gets the user out of it. Caught by system_tests/clients/qconf,
+ * qconf_de_check.
  */
 static void
 test_host_is_referenced_reserved() {
    printf("\n--- host_is_referenced and reserved groups ---\n");
 
    auto host = ocs::tom::ElementPtr<ocs::tom::EH>::create();
-   ocs::tom::set<EH_name>(host, "hosta");
+   host->set<EH_name>(ocs::tom::Host("hosta"));
 
    /* one group at a time, so a passing case cannot be masked by another group */
    for (int i = 0; i < 3; i++) {
@@ -644,10 +642,11 @@ test_hostmatch_pattern() {
 // The three member classes on the write path
 // ---------------------------------------------------------------------------
 
-/*
- * CS-2682. Everything here is core code and answers the same in both editions -
- * the branch structure is identical, only what lies behind ocs::Matcher differs.
- * Whether a matcher can be *stored* is therefore not tested here but in the
+/**
+ * @brief The member classes of a host group on the write path (CS-2682)
+ *
+ * Everything here is core code and answers the same in both editions - the branch structure is identical, only what
+ * lies behind ocs::Matcher differs. Whether a matcher can be *stored* is therefore not tested here but in the
  * extension's own test, where the implementation exists.
  */
 static void
@@ -703,7 +702,7 @@ test_member_classes() {
       href_list_make_uniq(members, &answer_list);
 
       CHECK(83, "the duplicate matcher is gone, case notwithstanding",
-            lGetNumberOfElem(*members) == 2);
+            members->size() == 2);
       CHECK(84, "the collapse is reported",
             answer_list->size() == 1);
       CHECK(85, "and the report cannot fail the client",
@@ -724,7 +723,7 @@ test_member_classes() {
       href_list_make_uniq(members, &answer_list);
 
       CHECK(86, "two different matchers stay two members",
-            lGetNumberOfElem(*members) == 2);
+            members->size() == 2);
       CHECK(87, "and each is found under its own name",
             href_list_locate(members, "host:gpu*.a.example.com") != nullptr &&
             href_list_locate(members, "host:gpu*.b.example.com") != nullptr);
@@ -782,7 +781,7 @@ add_group(ocs::tom::ListPtr<ocs::tom::HGRP> &list, const char *name, const char 
       }
       member_list->emplace_back<HR_name>(ocs::tom::Host(members[i]));
    }
-   ocs::tom::set<HGRP_host_list>(hgroup, std::move(member_list));
+   hgroup.set<HGRP_host_list>(std::move(member_list));
    return hgroup;
 }
 
@@ -813,7 +812,7 @@ test_walk_three_classes() {
    // T91-T92: the classes stay apart -- this is what keeps an execution host
    // from ever being created out of a pattern
    CHECK(91, "the matcher comes back separately",
-         lGetNumberOfElem(*matchers) == 1 && href_list_locate(matchers, "host:gpu*") != nullptr);
+         matchers->size() == 1 && href_list_locate(matchers, "host:gpu*") != nullptr);
    CHECK(92, "and never as a host or a group",
          href_list_locate(hosts, "host:gpu*") == nullptr &&
          href_list_locate(groups, "host:gpu*") == nullptr);
@@ -895,12 +894,12 @@ oracle_flatten(const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char
    if (depth > 32) {
       return;
    }
-   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
+   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name));
 
    if (hgroup == nullptr) {
       return;
    }
-   for (ocs::tom::ConstElement<ocs::tom::HR> member : ocs::tom::get<HGRP_host_list>(hgroup)) {
+   for (ocs::tom::ConstElement<ocs::tom::HR> member : hgroup.get<HGRP_host_list>()) {
       const char *member_name = ocs::tom::get<HR_name>(member);
 
       switch (ocs::classify_member(member_name)) {
@@ -933,7 +932,7 @@ oracle_flatten(const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char
  */
 static bool
 same_host_set(const ocs::tom::ConstList<ocs::tom::HR> a, const ocs::tom::ConstList<ocs::tom::HR> b) {
-   if (lGetNumberOfElem(a) != lGetNumberOfElem(b)) {
+   if (a.size() != b.size()) {
       return false;
    }
    for (const ocs::tom::ConstElement<ocs::tom::HR> href : a) {
@@ -1003,7 +1002,7 @@ test_generated_trees() {
       }
       ocs::tom::Element<ocs::tom::HGRP> exec_group =
          hgroup_list->emplace_back<HGRP_name>(ocs::tom::Host(EXEC_HOSTGROUP));
-      ocs::tom::set<HGRP_host_list>(exec_group, std::move(exec_members));
+      exec_group.set<HGRP_host_list>(std::move(exec_members));
 
       /* a group may only reference one already built, so no cycle can arise */
       for (int g = 0; g < GROUPS; g++) {
@@ -1037,7 +1036,7 @@ test_generated_trees() {
          }
          snprintf(buffer, sizeof(buffer), "@g%d", g);
          ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list->emplace_back<HGRP_name>(ocs::tom::Host(buffer));
-         ocs::tom::set<HGRP_host_list>(hgroup, std::move(members));
+         hgroup.set<HGRP_host_list>(std::move(members));
       }
 
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -1052,12 +1051,12 @@ test_generated_trees() {
          ocs::tom::ListPtr<ocs::tom::HR> expected;
          ocs::tom::ListPtr<ocs::tom::HR> walked;
 
-         oracle_flatten(hgroup_list, buffer, ocs::tom::get<HGRP_host_list>(exec_group), expected, 0);
+         oracle_flatten(hgroup_list, buffer, exec_group.get<HGRP_host_list>(), expected, 0);
          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &walked, nullptr, nullptr);
 
-         if (!same_host_set(ocs::tom::get<HGRP_cached_hosts>(hgroup), expected)) {
+         if (!same_host_set(hgroup.get<HGRP_cached_hosts>(), expected)) {
             if (cache_mismatches == 0) {
-               dump_mismatch(hgroup_list, buffer, expected, ocs::tom::get<HGRP_cached_hosts>(hgroup), "cache");
+               dump_mismatch(hgroup_list, buffer, expected, hgroup.get<HGRP_cached_hosts>(), "cache");
             }
             cache_mismatches++;
          }
@@ -1091,8 +1090,8 @@ test_generated_trees() {
           * the membership test missing a host that is plainly in it. A linear
           * scan would not notice; this is the check that does.
           */
-         for (ocs::tom::ConstElement<ocs::tom::HR> cached : ocs::tom::get<HGRP_cached_hosts>(hgroup)) {
-            if (href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup),
+         for (ocs::tom::ConstElement<ocs::tom::HR> cached : hgroup.get<HGRP_cached_hosts>()) {
+            if (href_list_locate(hgroup.get<HGRP_cached_hosts>(),
                                  ocs::tom::get<HR_name>(cached)) == nullptr) {
                unfindable++;
             }
@@ -1101,10 +1100,10 @@ test_generated_trees() {
          ocs::tom::ListPtr<ocs::tom::HR> named;
          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &named, nullptr, nullptr, false);
 
-         for (ocs::tom::ConstElement<ocs::tom::HR> candidate : ocs::tom::get<HGRP_host_list>(exec_group)) {
+         for (ocs::tom::ConstElement<ocs::tom::HR> candidate : exec_group.get<HGRP_host_list>()) {
             const char *host = ocs::tom::get<HR_name>(candidate);
             const bool admitted = ocs::Matcher::admits(hgroup, host, groups);
-            const bool resolved = href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
+            const bool resolved = href_list_locate(hgroup.get<HGRP_cached_hosts>(), host) != nullptr;
             const bool is_named = href_list_locate(named, host) != nullptr;
 
             if (admitted && !resolved) {
@@ -1137,7 +1136,7 @@ test_generated_trees() {
  */
 static int
 cache_size(const lListElem *hgroup) {
-   return lGetNumberOfElem(ocs::tom::get<HGRP_match_cache>(hgroup));
+   return ocs::tom::size(ocs::tom::get<HGRP_match_cache>(hgroup));
 }
 
 /** @brief Is this host in the matching cache of this group, and findable?
@@ -1162,48 +1161,57 @@ cache_holds(const lListElem *hgroup, const char *hostname) {
  *
  * @param ep the element to pack
  *
- * @return the unpacked element, owned by the caller, or nullptr on failure
+ * @return the unpacked element, empty on failure
  */
-static lListElem *
-round_trip(const lListElem *ep) {
+static ocs::tom::ElementPtr<ocs::tom::HGRP>
+round_trip(const ocs::tom::ConstElement<ocs::tom::HGRP> ep) {
    sge_pack_buffer pb;
-   lListElem *copy = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::HGRP> copy;
 
-   if (init_packbuffer(&pb, 100, false, false) != PACK_SUCCESS) {
-      return nullptr;
+   if (ocs::tom::try_init_buffer(&pb, 100, false, false) != PACK_SUCCESS) {
+      return copy;
    }
-   if (cull_pack_elem_partial(&pb, ep, nullptr, 0) == PACK_SUCCESS) {
+   bool packed = true;
+   try {
+      ocs::tom::pack_elem(&pb, ep, nullptr, 0);
+   } catch (const ocs::tom::PackException &) {
+      packed = false;
+   }
+   if (packed) {
       char *buf = sge_malloc(pb.bytes_used);
       sge_pack_buffer copy_pb;
 
       if (buf != nullptr) {
          memcpy(buf, pb.head_ptr, pb.bytes_used);
-         if (init_packbuffer_from_buffer(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
-            if (cull_unpack_elem_partial(&copy_pb, &copy, nullptr, 0) != PACK_SUCCESS) {
-               lFreeElem(&copy);
+         if (ocs::tom::try_init_buffer_from(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            try {
+               copy = ocs::tom::ElementPtr<ocs::tom::HGRP>::unpack(copy_pb, 0);
+            } catch (const ocs::tom::PackException &) {
+               copy.reset();
             }
-            clear_packbuffer(&copy_pb);
+            ocs::tom::clear_buffer(&copy_pb);
          } else {
             sge_free(&buf);
          }
       }
    }
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
 
    return copy;
 }
 
-/*
- * CS-2685: layer 3a. The cache the matcher walk writes to and reads from, in
- * isolation from the walk - the core owns the structure, the commercial edition
- * owns only the question of whether a host is admitted at all.
+/**
+ * @brief The matching cache, layer 3a (CS-2685)
+ *
+ * The cache the matcher walk writes to and reads from, in isolation from the walk - the core owns the
+ * structure, the commercial edition owns only the question of whether a host is admitted at all.
  */
 static void
 test_match_cache() {
    printf("\n--- matching cache ---\n");
 
-   lList *hgroup_list = nullptr;
-   ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, "@gpu_nodes");
+   auto hgroup_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
+   ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list->emplace_back<HGRP_name>(ocs::tom::Host("@gpu_nodes"));
 
    // T101-T103: an empty cache misses, an insertion is findable, and a second
    // lookup hits
@@ -1224,10 +1232,11 @@ test_match_cache() {
 
    // T106: a hit advances the time of last use; this is not a read path
    {
-      ocs::tom::Element<ocs::tom::HM> entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), "gpu001");
-      ocs::tom::set<HM_last_used>(entry, 1);
+      ocs::tom::Element<ocs::tom::HM> entry =
+         hgroup.get<HGRP_match_cache>().find_first<HM_name>(ocs::tom::Host("gpu001"));
+      entry.set<HM_last_used>(1);
       ocs::MatchCache::lookup(hgroup, "gpu001");
-      CHECK(106, "a hit advances the time of last use", ocs::tom::get<HM_last_used>(entry) > 1);
+      CHECK(106, "a hit advances the time of last use", entry.get<HM_last_used>() > 1);
    }
 
    // T107: expiry. The entry is back-dated by two days, which is past any
@@ -1235,33 +1244,34 @@ test_match_cache() {
    // insertion drops it. There is no sweeper to wait for.
    {
       const uint64_t two_days = sge_gmt32_to_gmt64(2 * 24 * 3600);
-      ocs::tom::Element<ocs::tom::HM> entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), "gpu001");
+      ocs::tom::Element<ocs::tom::HM> entry =
+         hgroup.get<HGRP_match_cache>().find_first<HM_name>(ocs::tom::Host("gpu001"));
 
-      ocs::tom::set<HM_last_used>(entry, sge_get_gmt64() - two_days);
+      entry.set<HM_last_used>(sge_get_gmt64() - two_days);
       ocs::MatchCache::insert(hgroup, "gpu002");
 
       CHECK(107, "an entry unused for longer than the period is reclaimed",
             !cache_holds(hgroup, "gpu001") && cache_holds(hgroup, "gpu002"));
    }
-   lFreeList(&hgroup_list);
+   hgroup_list.reset();
 
    // T108-T110: the move across an event merge, and the pruning that goes with
    // it. An entry whose host has meanwhile entered the resolved membership is
    // not merely stale but unreachable: layer 3 is entered only after layer 2 has
    // said no.
    {
-      lList *before_list = nullptr;
-      lList *after_list = nullptr;
-      ocs::tom::Element<ocs::tom::HGRP> before = ocs::tom::emplace_back<HGRP_name>(&before_list, "@gpu_nodes");
-      ocs::tom::Element<ocs::tom::HGRP> after = ocs::tom::emplace_back<HGRP_name>(&after_list, "@gpu_nodes");
+      auto before_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
+      auto after_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
+      ocs::tom::Element<ocs::tom::HGRP> before = before_list->emplace_back<HGRP_name>(ocs::tom::Host("@gpu_nodes"));
+      ocs::tom::Element<ocs::tom::HGRP> after = after_list->emplace_back<HGRP_name>(ocs::tom::Host("@gpu_nodes"));
 
       ocs::MatchCache::insert(before, "gpu001");
       ocs::MatchCache::insert(before, "gpu002");
 
       // gpu002 has become an execution host in the meantime
-      lList *resolved = nullptr;
-      ocs::tom::emplace_back<HR_name>(&resolved, "gpu002");
-      ocs::tom::set<HGRP_cached_hosts>(after, resolved);
+      auto resolved = ocs::tom::ListPtr<ocs::tom::HR>::create("resolved");
+      resolved->emplace_back<HR_name>(ocs::tom::Host("gpu002"));
+      after.set<HGRP_cached_hosts>(std::move(resolved));
 
       auto cache = ocs::MatchCache::detach(before);
       CHECK(108, "detaching takes the cache off the old element",
@@ -1273,8 +1283,8 @@ test_match_cache() {
       CHECK(110, "an entry that has entered the resolved membership is dropped",
             !cache_holds(after, "gpu002") && cache_size(after) == 1);
 
-      lFreeList(&before_list);
-      lFreeList(&after_list);
+      before_list.reset();
+      after_list.reset();
    }
 
    // T111: nothing to carry, and nothing that has to be guarded against
@@ -1293,27 +1303,26 @@ test_match_cache() {
       // a free element, so that the descriptor travels with it, which is what
       // a client that knows nothing of the type needs
       auto hgroup = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
-      lList *members = nullptr;
+      auto members = ocs::tom::ListPtr<ocs::tom::HR>::create("members");
 
-      ocs::tom::set<HGRP_name>(hgroup, "@gpu_nodes");
-      ocs::tom::emplace_back<HR_name>(&members, "host:gpu*");
-      ocs::tom::set<HGRP_host_list>(hgroup, members);
+      hgroup->set<HGRP_name>(ocs::tom::Host("@gpu_nodes"));
+      members->emplace_back<HR_name>(ocs::tom::Host("host:gpu*"));
+      hgroup->set<HGRP_host_list>(std::move(members));
       ocs::MatchCache::insert(*hgroup, "gpu001");
 
-      lListElem *at_client = round_trip(*hgroup);
+      auto at_client = round_trip(*hgroup);
 
       CHECK(112, "a host group reaches a client that asks for all fields",
             at_client != nullptr &&
-            sge_hostcmp(ocs::tom::get<HGRP_name>(at_client), "@gpu_nodes") == 0);
-      CHECK(113, "its matching cache arrives empty",
-            static_cast<const lList *>(ocs::tom::get<HGRP_match_cache>(at_client)) == nullptr);
+            sge_hostcmp(at_client->get<HGRP_name>(), "@gpu_nodes") == 0);
+      CHECK(113, "its matching cache arrives empty", at_client->get<HGRP_match_cache>() == nullptr);
       CHECK(114, "the field is still addressable, so nobody lands in an error path",
-            ocs::tom::has<HGRP_match_cache>(at_client));
+            at_client->has<HGRP_match_cache>());
       CHECK(115, "the member list, which is what defines the group, arrives in full",
-            lGetNumberOfElem(ocs::tom::get<HGRP_host_list>(at_client)) == 1);
+            at_client->get<HGRP_host_list>().size() == 1);
       CHECK(116, "and what the qmaster holds is unchanged", cache_holds(*hgroup, "gpu001"));
 
-      lFreeElem(&at_client);
+      at_client.reset();
    }
 }
 
@@ -1534,7 +1543,7 @@ test_find_all_referencees() {
    // T130: @top is reachable by two paths and must still appear once. Two
    // entries under one key is a state the list is not supposed to reach.
    CHECK(130, "a group reachable by two paths is listed once",
-         lGetNumberOfElem(*referencees) == 2);
+         referencees->size() == 2);
 
    // T131: and every entry is findable through the key, which is a different
    // code path from walking the list -- href_list_locate() goes through the
@@ -1548,9 +1557,9 @@ test_find_all_referencees() {
    // not catch it. It is the deduplication that follows which used to drop the
    // key from the hash and leave the survivor in the list but unfindable, on the
    // list this function hands back for the cache refresh and the events.
-   lUniqHost(*referencees, HR_name);
+   referencees->unique<HR_name>();
    CHECK(132, "after deduplication every referencee is still findable",
-         lGetNumberOfElem(*referencees) == 2 &&
+         referencees->size() == 2 &&
          href_list_locate(referencees, "@a") != nullptr &&
          href_list_locate(referencees, "@top") != nullptr);
 

@@ -26,8 +26,8 @@
  * bind to its own copy and it ends up with a registry of its own.
  */
 
-#include "cull/cull_test_api.h"
-#include "cull/ocs_cull_descr.h"
+#include "tom/cull_types.h"
+#include "tom/ocs_cull_descr.h"
 
 /**
  * @brief Intern a descriptor through the CULL this module is bound to

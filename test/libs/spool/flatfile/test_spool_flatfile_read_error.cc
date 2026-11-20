@@ -38,8 +38,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 
-#include "cull/cull_test_api.h"
-
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
@@ -91,16 +89,17 @@ write_tmp_file(const char *content, char *path) {
  *             of a directory, nullptr uses a fresh list for this read only
  * @param path the file to read
  * @param what label for the printed messages
- * @return the host group element, nullptr if the file could not be read
+ * @return the host group element, empty if the file could not be read
  */
-static lListElem *
+static ocs::tom::ElementPtr<ocs::tom::HGRP>
 read_hgroup(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char *path, const char *what) {
    ocs::tom::ListPtr<ocs::tom::AN> own_alp;
    ocs::tom::ListPtr<ocs::tom::AN> *use_alp = alp != nullptr ? alp : &own_alp;
    int before = static_cast<int>((*use_alp)->size());
 
-   lListElem *ep = spool_flatfile_read_object(use_alp, ocs::tom::HGRP::descriptor.e, nullptr, HGRP_fields, nullptr,
-                                              true, &qconf_sfi, SP_FORM_ASCII, nullptr, path);
+   ocs::tom::ElementPtr<ocs::tom::HGRP> ep(spool_flatfile_read_object(use_alp, ocs::tom::HGRP::descriptor.e, nullptr,
+                                                                      HGRP_fields, nullptr, true, &qconf_sfi,
+                                                                      SP_FORM_ASCII, nullptr, path));
    int i = 0;
    for (const ocs::tom::ConstElement<ocs::tom::AN> aep : use_alp->get()) {
       if (i++ >= before) {
@@ -119,15 +118,21 @@ read_hgroup(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char *path, const char *
  * @return true if ep carries exactly that one entry
  */
 static bool
-has_single_member(const lListElem *ep, const char *expected) {
+has_single_member(const ocs::tom::ConstElement<ocs::tom::HGRP> ep, const char *expected) {
    if (ep == nullptr) {
       return false;
    }
-   ocs::tom::ConstList<ocs::tom::HR> hosts = ocs::tom::get<HGRP_host_list>(ep);
-   return lGetNumberOfElem(hosts) == 1 &&
+   ocs::tom::ConstList<ocs::tom::HR> hosts = ep.get<HGRP_host_list>();
+   return hosts.size() == 1 &&
           strcmp(ocs::tom::get<HR_name>(hosts.front()), expected) == 0;
 }
 
+/**
+ * @brief Run the checks of this module test
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if every check passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_flatfile_read_error");
 
@@ -153,53 +158,55 @@ int main(int /*argc*/, char * /*argv*/[]) {
       DRETURN(1);
    }
 
-   lListElem *ep = read_hgroup(nullptr, intact, "intact, first read");
-   CHECK(id, "intact host group file reads", has_single_member(ep, "@exec_hosts")); id++;
-   lFreeElem(&ep);
+   auto ep = read_hgroup(nullptr, intact, "intact, first read");
+   CHECK(id, "intact host group file reads", has_single_member(*ep, "@exec_hosts")); id++;
+   ep.reset();
 
    ep = read_hgroup(nullptr, intact_none, "intact NONE, first read");
    CHECK(id, "intact host group file with hostlist NONE reads", ep != nullptr); id++;
-   lFreeElem(&ep);
+   ep.reset();
 
    ep = read_hgroup(nullptr, broken, "broken");
    CHECK(id, "broken host group file is rejected", ep == nullptr); id++;
-   lFreeElem(&ep);
+   ep.reset();
 
    ep = read_hgroup(nullptr, intact, "intact, right after the broken one");
-   CHECK(id, "intact host group file reads right after a broken one", has_single_member(ep, "@exec_hosts")); id++;
-   lFreeElem(&ep);
+   CHECK(id, "intact host group file reads right after a broken one", has_single_member(*ep, "@exec_hosts")); id++;
+   ep.reset();
 
    ep = read_hgroup(nullptr, broken, "broken, again");
    CHECK(id, "broken host group file is rejected again", ep == nullptr); id++;
-   lFreeElem(&ep);
+   ep.reset();
 
    ep = read_hgroup(nullptr, intact_none, "intact NONE, right after the broken one");
    CHECK(id, "intact host group file with hostlist NONE reads right after a broken one", ep != nullptr); id++;
-   lFreeElem(&ep);
+   ep.reset();
 
    ep = read_hgroup(nullptr, intact, "intact, second read after the broken one");
-   CHECK(id, "intact host group file reads again after that", has_single_member(ep, "@exec_hosts")); id++;
-   lFreeElem(&ep);
+   CHECK(id, "intact host group file reads again after that", has_single_member(*ep, "@exec_hosts")); id++;
+   ep.reset();
 
    // one answer list for the whole directory, as spool_read_list() does it
    {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
 
       ep = read_hgroup(&alp, intact, "shared list, intact before the broken one");
-      CHECK(id, "shared answer list: intact file before a broken one reads", has_single_member(ep, "@exec_hosts")); id++;
-      lFreeElem(&ep);
+      CHECK(id, "shared answer list: intact file before a broken one reads",
+            has_single_member(*ep, "@exec_hosts")); id++;
+      ep.reset();
 
       ep = read_hgroup(&alp, broken, "shared list, broken");
       CHECK(id, "shared answer list: broken file is rejected", ep == nullptr); id++;
-      lFreeElem(&ep);
+      ep.reset();
 
       ep = read_hgroup(&alp, intact, "shared list, intact after the broken one");
-      CHECK(id, "shared answer list: intact file after a broken one reads", has_single_member(ep, "@exec_hosts")); id++;
-      lFreeElem(&ep);
+      CHECK(id, "shared answer list: intact file after a broken one reads",
+            has_single_member(*ep, "@exec_hosts")); id++;
+      ep.reset();
 
       ep = read_hgroup(&alp, intact_none, "shared list, second intact after the broken one");
       CHECK(id, "shared answer list: second intact file after a broken one reads", ep != nullptr); id++;
-      lFreeElem(&ep);
+      ep.reset();
 
       alp.reset();
    }

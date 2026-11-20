@@ -27,14 +27,15 @@
  * that leaves the source owning when it fails. The list ops and adopt<T>()
  * also take a typed owner directly, with the same strong guarantee. The list ops append, insert, take,
  * erase and splice with the strong guarantee: a refused element or list stays
- * with its owner. find_first() must find what the old lookups find, with and
- * without a hash table, and select() what lSelect() selects. Each op is also
+ * with its owner. find_first() must find what the old lookups found, with and
+ * without a hash table, and select() what lSelect() selected. Each op is also
  * run through the method of the raw handle, which only forwards. The
  * selections with the old contract (select_as(), select_elem_as(),
  * select_into_descr(), select_elem_into_descr(), select_pack()) must give
  * what lSelect(), lSelectHashPack(), lSelectDPack(), lSelectElemPack() and
- * lSelectElemDPack() give: the same list name, no list where those gave
- * none, the same error number, the same packed bytes.
+ * lSelectElemDPack() gave: the same list name, no list where those gave
+ * none, the same error number, the same packed bytes. Those expectations were
+ * recorded from the old functions before they were removed (CS-3103).
  *
  * That the owners free in their destructors is shown by the leak checker
  * (valgrind, ASan) on this binary, not by a CHECK.
@@ -55,7 +56,7 @@
 #include <utility>
 #include <vector>
 
-#include "cull/cull_test_api.h"
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
@@ -66,6 +67,12 @@
 #include "tom/ocs_Raw.h"
 #include "tom/cull_hash.h"
 #include "tom/cull_listP.h"
+#include "tom/cull_state.h"
+#include "tom/cull_whatP.h"
+#include "tom/ocs_PackCore.h"
+#include "tom/ocs_PrintCore.h"
+#include "tom/ocs_Select.h"
+#include "tom/ocs_SelectCore.h"
 #include "tom/ocs_cull_descr.h"
 
 #include "ocs_module_test.h"
@@ -112,26 +119,27 @@ namespace {
    }
 
    /**
-    * @brief A list of TEST elements built with the old interface, with keys of every lookup type
+    * @brief A list of TEST elements, with keys of every lookup type
     *
     * TEST_uint32 is i, TEST_uint64 i % 3, TEST_string "s<i % 4>", TEST_host "h<i % 2>", so that all but the
     * first key repeat.
     *
     * @param n the number of elements
     * @param hash whether the list keeps hash tables
-    * @return the list; the caller owns it
+    * @return the owner of the list
     */
-   lList *make_test_list(const int n, const bool hash) {
-      lList *lp = lCreateListHash("test", ocs::tom::TEST::descriptor.e, hash);
+   ocs::tom::RawListPtr make_test_list(const int n, const bool hash) {
+      auto lp = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e,
+                                          hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off, "test");
       for (int i = 0; i < n; i++) {
-         lListElem *ep = lCreateElem(ocs::tom::TEST::descriptor.e);
-         lSetUlong(ep, TEST_uint32, i);
-         lSetUlong64(ep, TEST_uint64, i % 3);
+         auto ep = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
+         ep->set(TEST_uint32, static_cast<std::uint32_t>(i));
+         ep->set(TEST_uint64, static_cast<std::uint64_t>(i % 3));
          const std::string s = "s" + std::to_string(i % 4);
-         lSetString(ep, TEST_string, s.c_str());
+         ep->set(TEST_string, s.c_str());
          const std::string h = "h" + std::to_string(i % 2);
-         lSetHost(ep, TEST_host, h.c_str());
-         lAppendElem(lp, ep);
+         ep->set(TEST_host, ocs::tom::Host(h.c_str()));
+         ocs::tom::append(lp.get().raw(), std::move(ep));
       }
       return lp;
    }
@@ -162,26 +170,25 @@ namespace {
    }
 
    /**
-    * @brief Whether a selection of TEST_uint32 and TEST_string made by lSelect() equals one made by select()
-    * @param old the result of lSelect(), or nullptr for no match
+    * @brief Whether a selection of TEST_uint32 and TEST_string from a list of make_test_list() holds the expected
+    *        elements, as lSelect() selected them
     * @param selected the result of select()
-    * @return true if both have the same layout and the same elements in the same order
+    * @param expected the TEST_uint32 keys of the selected elements, in order
+    * @return true if it has the layout of the two fields and the expected elements with their strings
     */
-   bool same_selection(const lList *old, const ocs::tom::ConstRawList selected) {
-      if (old == nullptr) {
-         return selected.empty();
-      }
-      if (static_cast<std::size_t>(lGetNumberOfElem(old)) != selected.size() ||
-          !ocs::tom::same_layout(lGetListDescr(old), selected.descr())) {
-         std::printf("the selections differ in size or layout\n");
+   bool selection_is(const ocs::tom::ConstRawList selected, const Numbers &expected) {
+      const lDescr *layout = ocs_cull_descr_reduce(ocs::tom::TEST::descriptor.e, {TEST_uint32, TEST_string});
+      const bool same_layout = ocs::tom::same_layout(layout, selected.descr());
+      ocs_cull_descr_release(&layout);
+      if (selected.size() != expected.size() || (!expected.empty() && !same_layout)) {
+         std::printf("the selection differs in size or layout\n");
          return false;
       }
-      auto it = selected.begin();
-      for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList{old}) {
-         const auto other = *it;
-         if (lGetUlong(ep, TEST_uint32) != other.get<std::uint32_t>(TEST_uint32) ||
-             std::strcmp(lGetString(ep, TEST_string), other.get<const char *>(TEST_string)) != 0) {
-            std::printf("the selections differ in element %u\n", lGetUlong(ep, TEST_uint32));
+      auto it = expected.begin();
+      for (const ocs::tom::ConstRawElement ep : selected) {
+         const std::string s = "s" + std::to_string(*it % 4);
+         if (ep.get<std::uint32_t>(TEST_uint32) != *it || s != ep.get<const char *>(TEST_string)) {
+            std::printf("the selection differs in element %u\n", *it);
             return false;
          }
          ++it;
@@ -215,71 +222,110 @@ namespace {
       return out;
    }
 
+   /** @brief What a select op with the old contract must give for a list, as the old select function gave it */
+   struct ListResult {
+      bool exists;                 ///< whether there is a list at all
+      const char *name;            ///< the list's name
+      const lDescr *layout;        ///< the layout of the list's descriptor
+      std::uint32_t nslots;        ///< the number of hash slots (the tables themselves are built by the first lookup)
+      Numbers keys;                ///< the TEST_uint32 of the elements, in order
+      int lerrno;                  ///< the error number the call leaves
+   };
+
    /**
-    * @brief Whether a list made by an old select function equals one made by a select op with the old contract
+    * @brief Whether a list made by a select op with the old contract is the one the old select function gave
     *
-    * Both no list, or both a list with the same name, size and layout, both hashable or both not (the same
-    * number of hash slots; the tables themselves are built by the first lookup), and the same TEST_uint32 in
-    * each element where the layout holds it.
+    * Both no list, or a list with the expected name, layout, hash slots and keys, and the expected error number.
     *
     * @param label the case, for the message
-    * @param old the result of the old function, or nullptr
     * @param selected the result of the op, or nullptr
+    * @param lerrno the error number the op left
+    * @param expected what the old function gave
     * @return true if they are equal
     */
-   bool same_list(const char *label, const lList *old, const lList *selected) {
-      if (old == nullptr || selected == nullptr) {
-         if (old != selected) {
-            std::printf("%s: one result is no list, the other is a list\n", label);
+   bool list_is(const char *label, const lList *selected, const int lerrno, const ListResult &expected) {
+      if (lerrno != expected.lerrno) {
+         std::printf("%s: error number %d, expected %d\n", label, lerrno, expected.lerrno);
+         return false;
+      }
+      if (selected == nullptr || !expected.exists) {
+         if ((selected != nullptr) != expected.exists) {
+            std::printf("%s: %s, expected %s\n", label, selected ? "a list" : "no list",
+                        expected.exists ? "a list" : "no list");
             return false;
          }
          return true;
       }
-      if (std::strcmp(lGetListName(old), ocs::tom::list_name(selected)) != 0 ||
-          lGetNumberOfElem(old) != lGetNumberOfElem(selected) ||
-          !ocs::tom::same_layout(lGetListDescr(old), selected->descr)) {
-         std::printf("%s: the lists differ in name, size or layout\n", label);
+      if (std::strcmp(expected.name, ocs::tom::list_name(selected)) != 0 ||
+          !ocs::tom::same_layout(expected.layout, selected->descr)) {
+         std::printf("%s: the list differs in name or layout\n", label);
          return false;
       }
-      if (old->nslots != selected->nslots) {
-         std::printf("%s: the lists differ in their hash slots (%u, %u)\n", label, old->nslots, selected->nslots);
+      if (selected->nslots != expected.nslots) {
+         std::printf("%s: the list has %u hash slots, expected %u\n", label, selected->nslots, expected.nslots);
          return false;
       }
-      ocs::tom::ConstRawElement other = ocs::tom::ConstRawList{selected}.front();
-      for (ocs::tom::ConstRawElement ep = ocs::tom::ConstRawList{old}.front(); ep;
-           ep = ep.next(), other = other.next()) {
-         if (ocs::tom::has(ep, TEST_uint32) &&
-             lGetUlong(ep, TEST_uint32) != ocs::tom::get<std::uint32_t>(other, TEST_uint32)) {
-            std::printf("%s: the lists differ in an element\n", label);
-            return false;
-         }
+      if (numbers(ocs::tom::ConstRawList{selected}) != expected.keys) {
+         std::printf("%s: the list differs in its elements\n", label);
+         return false;
       }
       return true;
    }
 
    /**
-    * @brief Whether an element made by an old select function equals one made by a select op with the old
-    *        contract: both none, or both of one layout with the same TEST_uint32 where the layout holds it
+    * @brief Whether an element made by a select op with the old contract is the one the old select function gave
     * @param label the case, for the message
-    * @param old the result of the old function, or nullptr
     * @param selected the result of the op, or nullptr
-    * @return true if they are equal
+    * @param lerrno the error number the op left
+    * @param source the element selected from, for its TEST_uint32; ignored if @p layout is nullptr
+    * @param layout the layout of the expected copy, nullptr for no copy
+    * @param expected_errno the error number the old function left
+    * @return true if both are none, or the copy has the layout and the TEST_uint32 of the source
     */
-   bool same_elem(const char *label, const lListElem *old, const lListElem *selected) {
-      if (old == nullptr || selected == nullptr) {
-         if (old != selected) {
-            std::printf("%s: one result is no element, the other is an element\n", label);
-            return false;
-         }
-         return true;
+   bool elem_is(const char *label, const lListElem *selected, const int lerrno, const lListElem *source,
+                const lDescr *layout, const int expected_errno) {
+      if (lerrno != expected_errno || (selected != nullptr) != (layout != nullptr)) {
+         std::printf("%s: %s with error number %d, expected %s with %d\n", label, selected ? "a copy" : "no copy",
+                     lerrno, layout ? "a copy" : "no copy", expected_errno);
+         return false;
       }
-      if (!ocs::tom::same_layout(lGetElemDescr(old), selected->descr) ||
-          (ocs::tom::has(old, TEST_uint32) &&
-           lGetUlong(old, TEST_uint32) != ocs::tom::get<std::uint32_t>(selected, TEST_uint32))) {
-         std::printf("%s: the elements differ\n", label);
+      if (selected != nullptr &&
+          (!ocs::tom::same_layout(layout, selected->descr) ||
+           ocs::tom::get<std::uint32_t>(selected, TEST_uint32) != ocs::tom::get<std::uint32_t>(source, TEST_uint32))) {
+         std::printf("%s: the copy differs\n", label);
          return false;
       }
       return true;
+   }
+
+   /**
+    * @brief The FNV-1a hash of a byte string, to pin packed bytes recorded from the old functions
+    * @param bytes the bytes
+    * @return the hash
+    */
+   std::uint64_t fnv1a(const std::string &bytes) {
+      std::uint64_t hash = 14695981039346656037ULL;
+      for (const unsigned char c : bytes) {
+         hash ^= c;
+         hash *= 1099511628211ULL;
+      }
+      return hash;
+   }
+
+   /**
+    * @brief The text a print core of the list library appends to a fresh string
+    * @tparam Print the type of the print call
+    * @param print appends the text, e.g. a call of ocs::tom::print_list()
+    * @return the text
+    */
+   template <typename Print>
+   std::string printed(Print &&print) {
+      dstring buffer = DSTRING_INIT;
+      print(&buffer);
+      const char *text = sge_dstring_get_string(&buffer);
+      std::string out = text != nullptr ? text : "";
+      sge_dstring_free(&buffer);
+      return out;
    }
 
    /**
@@ -313,7 +359,7 @@ test_owners() {
                        std::strcmp(copy->get<const char *>(TEST_string), "copy me") == 0;
    lListElem *released = copy.release();
    const bool released_ok = !copy && released != nullptr;
-   lFreeElem(&released);
+   ocs::tom::free_raw_elem(released);
    ep.reset();
    const bool reset_ok = !ep;
    auto a = test_elem(1);
@@ -326,13 +372,13 @@ test_owners() {
    auto list = ocs::tom::RawListPtr::create(ocs::tom::TEST::descriptor.e, ocs::tom::Hashing::Off, "numbers");
    list->push_back(test_elem(1));
    list->push_back(test_elem(2));
-   const bool named = std::strcmp(lGetListName(list.get()), "numbers") == 0 && (*list).size() == 2;
+   const bool named = std::strcmp(ocs::tom::list_name(list.get()), "numbers") == 0 && (*list).size() == 2;
    auto list_copy = list.clone();
    const bool list_cloned = list_copy && list_copy.get().raw() != list.get().raw() &&
                             numbers(*list_copy) == numbers(*list);
    lList *list_released = list_copy.release();
    const bool list_released_ok = !list_copy && list_released != nullptr;
-   lFreeList(&list_released);
+   ocs::tom::free_raw_list(list_released);
    list.reset();
    CHECK(1, "the owners create, read through, copy, release, reset and move an element and a list",
          created && cloned && released_ok && reset_ok && moved && named && list_cloned && list_released_ok &&
@@ -388,9 +434,10 @@ test_typed_raw() {
             "empty typed owner",
          refused && kept && empty);
 
-   ocs::tom::RawWherePtr where(lWhere("%T(%I == %u)", ocs::tom::JB::descriptor.e, JB_job_number, 7U));
+   ocs::tom::RawWherePtr where = ocs::tom::where_compare(ocs::tom::JB::descriptor.e, JB_job_number,
+                                                         ocs::tom::CompareOp::Equal, std::uint32_t{7});
    const lCondition *where_raw = where.get();
-   ocs::tom::RawWhatPtr what(lWhat("%T(%I)", ocs::tom::JB::descriptor.e, JB_job_number));
+   ocs::tom::RawWhatPtr what = ocs::tom::what_of(ocs::tom::JB::descriptor.e, std::vector<int>{JB_job_number});
    const lEnumeration *what_raw = what.get();
    const bool selections_refused =
       expect_reason("adopt", "condition",
@@ -537,7 +584,7 @@ test_iteration() {
    bool written = true;
    const lList *clp = owner.get();
    for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList{clp}) {
-      written = written && lGetUlong64(ep, TEST_uint64) == lGetUlong(ep, TEST_uint32) % 3 + 10;
+      written = written && ep.get<std::uint64_t>(TEST_uint64) == ep.get<std::uint32_t>(TEST_uint32) % 3 + 10;
    }
    const ocs::tom::ConstRawList empty;
    const bool none = empty.begin() == empty.end() && empty.empty() && ocs::tom::size(nullptr) == 0 &&
@@ -547,7 +594,7 @@ test_iteration() {
 }
 
 /**
- * @brief find_first() finds what the old lookups find, with and without a hash table, in both forms
+ * @brief find_first() finds what the old lookups found, with and without a hash table, in both forms
  * @return nothing; CHECK records the results
  */
 static void
@@ -557,10 +604,16 @@ test_find_first() {
       const ocs::tom::RawListPtr owner(make_test_list(40, hash));
       lList *lp = owner.get();
       const lList *clp = lp;
-      const lListElem *by_number = lGetElemUlong(clp, TEST_uint32, 17);
-      const lListElem *by_number64 = lGetElemUlong64(clp, TEST_uint64, 2);
-      const lListElem *by_string = lGetElemStr(clp, TEST_string, "s3");
-      const lListElem *by_host = lGetElemHost(clp, TEST_host, "h1");
+      // the first element with the key in list order, as lGetElemUlong/Ulong64/Str/Host found it: element 17,
+      // element 2 (2 % 3), element 3 ("s3") and element 1 ("h1")
+      std::vector<const lListElem *> at;
+      for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList(clp)) {
+         at.push_back(ep.raw());
+      }
+      const lListElem *by_number = at[17];
+      const lListElem *by_number64 = at[2];
+      const lListElem *by_string = at[3];
+      const lListElem *by_host = at[1];
       const bool ok = by_number != nullptr && by_number64 != nullptr && by_string != nullptr && by_host != nullptr &&
                       ocs::tom::find_first<std::uint32_t>(clp, TEST_uint32, 17U) == by_number &&
                       ocs::tom::find_first<std::uint64_t>(clp, TEST_uint64, std::uint64_t{2}) == by_number64 &&
@@ -572,12 +625,13 @@ test_find_first() {
                       ocs::tom::RawList(lp).find_first(TEST_string, "s3").raw() == by_string &&
                       ocs::tom::RawList(lp).find_first(TEST_host, ocs::tom::Host("h1")).raw() == by_host;
       if (!ok) {
-         std::printf("find_first() differs from the old lookups in a list %s hash tables\n",
+         std::printf("find_first() finds other elements in a list %s hash tables\n",
                      hash ? "with" : "without");
       }
       found = found && ok;
    }
-   CHECK(11, "find_first() and the method find the elements lGetElemUlong/Ulong64/Str/Host find, hashed or not",
+   CHECK(11, "find_first() and the method find the elements lGetElemUlong/Ulong64/Str/Host found, the first with "
+             "the key in list order, hashed or not",
          found);
 
    const ocs::tom::RawListPtr owner(make_test_list(5, true));
@@ -615,25 +669,26 @@ test_find_first() {
 }
 
 /**
- * @brief select() selects what lSelect() selects; select of an element, matches() and clone of the selections
+ * @brief select() selects what lSelect() selected; select of an element, matches() and clone of the selections
  * @return nothing; CHECK records the results
  */
 static void
 test_select() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
-   const ocs::tom::RawListPtr old(lSelect("selected", lp, where.get(), what.get()));
+   const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32,
+                                              ocs::tom::CompareOp::Greater, std::uint32_t{4});
+   const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
    const auto selected = ocs::tom::select(lp, where.get(), what.get());
    const auto by_method = ocs::tom::ConstRawList(lp).select(where.get(), what.get());
    const auto everything = ocs::tom::select(lp, nullptr, what.get());
-   const ocs::tom::RawListPtr old_everything(lSelect("all", lp, nullptr, what.get()));
-   const bool lists = same_selection(old.get(), *selected) && same_selection(old.get(), *by_method) &&
-                      same_selection(old_everything.get(), *everything) && selected->size() == 5 &&
+   // lSelect() selected the elements 5 to 9, and all 10 without a condition
+   const bool lists = selection_is(*selected, Numbers{5, 6, 7, 8, 9}) &&
+                      selection_is(*by_method, Numbers{5, 6, 7, 8, 9}) &&
+                      selection_is(*everything, Numbers{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}) && selected->size() == 5 &&
                       ocs::tom::has(selected->front(), TEST_string) && !ocs::tom::has(selected->front(), TEST_uint64) &&
                       !ocs::tom::select(static_cast<const lList *>(nullptr), where.get(), what.get());
-   CHECK(13, "select() and the method select what lSelect() selects, with the same layout; a null list gives an "
+   CHECK(13, "select() and the method select what lSelect() selected, with the same layout; a null list gives an "
             "empty owner",
          lists);
 
@@ -646,7 +701,8 @@ test_select() {
                         !ocs::tom::select(static_cast<const lListElem *>(nullptr), what.get());
    bool matches = true;
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
-      const bool expected = lCompare(ep, where.get()) != 0;
+      // lCompare() held for the elements above 4
+      const bool expected = ep.get<std::uint32_t>(TEST_uint32) > 4;
       matches = matches && ocs::tom::matches(ep, where.get()) == expected && ep.matches(where.get()) == expected;
    }
    const auto where_copy = ocs::tom::clone(where.get());
@@ -664,7 +720,7 @@ test_select() {
                         expect_reason("select", "no selection",
                                       [&] { static_cast<void>(ocs::tom::select(lp, where.get(), nullptr)); },
                                       Reason::NullElement);
-   CHECK(14, "select() of an element reduces it, matches() decides as lCompare(), clone() copies conditions and "
+   CHECK(14, "select() of an element reduces it, matches() decides as lCompare() did, clone() copies conditions and "
              "selections",
          element && matches && copies && refused);
 }
@@ -777,7 +833,8 @@ test_typed_owners() {
 }
 
 /**
- * @brief write_to() writes the bytes of lWriteListTo(), lWriteElemTo(), lWriteWhereTo() and lWriteWhatTo()
+ * @brief write_to() writes the bytes of lWriteListTo(), lWriteElemTo(), lWriteWhereTo() and lWriteWhatTo(), which
+ *        wrote what the print cores print_list(), print_elem(), print_where() and print_what() render
  *
  * Every argument form that the overloads take is used once: a list and an element pointer, the raw handles,
  * a raw owner dereferenced, typed list and element handles, a condition and a selection pointer.
@@ -789,9 +846,8 @@ test_write_to() {
    const ocs::tom::RawListPtr owner(make_test_list(3, false));
    lList *lp = owner.get();
    lListElem *first = ocs::tom::RawList{lp}.front();
-   const ocs::tom::RawWherePtr where(
-      lWhere("%T(%I > %u && %I == %s)", ocs::tom::TEST::descriptor.e, TEST_uint32, 0U, TEST_string, "s2"));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
+   const auto where = ocs::tom::field<TEST_uint32>() > 0u && ocs::tom::field<TEST_string>() == "s2";
+   const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    job->set<JB_job_number>(42);
@@ -803,12 +859,15 @@ test_write_to() {
    const ocs::tom::ConstElement<ocs::tom::JB> single_const = *single;
    const lListElem *const_first = first;
 
-   const auto old_list = written([&](FILE *fp) { lWriteListTo(lp, fp); });
-   const auto old_elem = written([&](FILE *fp) { lWriteElemTo(first, fp); });
-   const auto old_where = written([&](FILE *fp) { lWriteWhereTo(where.get(), fp); });
-   const auto old_what = written([&](FILE *fp) { lWriteWhatTo(what.get(), fp); });
-   const auto old_jobs = written([&](FILE *fp) { lWriteListTo(jobs.get().raw(), fp); });
-   const auto old_single = written([&](FILE *fp) { lWriteElemTo(single.get().raw(), fp); });
+   // the old writers wrote the text of the print cores at level 0
+   const std::optional<std::string> old_list = printed([&](dstring *b) { ocs::tom::print_list(b, lp, 0); });
+   const std::optional<std::string> old_elem = printed([&](dstring *b) { ocs::tom::print_elem(b, first, 0); });
+   const std::optional<std::string> old_where = printed([&](dstring *b) { ocs::tom::print_where(b, where.get(), 0); });
+   const std::optional<std::string> old_what = printed([&](dstring *b) { ocs::tom::print_what(b, what.get(), 0); });
+   const std::optional<std::string> old_jobs =
+      printed([&](dstring *b) { ocs::tom::print_list(b, jobs.get().raw(), 0); });
+   const std::optional<std::string> old_single =
+      printed([&](dstring *b) { ocs::tom::print_elem(b, single.get().raw(), 0); });
    const bool list =
       old_list && !old_list->empty() && written([&](FILE *fp) { ocs::tom::write_to(fp, lp); }) == old_list &&
       written([&](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList(lp)); }) == old_list &&
@@ -825,36 +884,30 @@ test_write_to() {
                           written([&](FILE *fp) { ocs::tom::write_to(fp, where.get()); }) == old_where;
    const bool selection = old_what && !old_what->empty() &&
                           written([&](FILE *fp) { ocs::tom::write_to(fp, what.get()); }) == old_what;
-   CHECK(18, "write_to() writes the bytes of lWriteListTo(), lWriteElemTo(), lWriteWhereTo() and lWriteWhatTo() "
-             "for every argument form",
+   CHECK(18, "write_to() writes the bytes of lWriteListTo(), lWriteElemTo(), lWriteWhereTo() and lWriteWhatTo(), "
+             "the text of the print cores, for every argument form",
          list && elem && condition && selection);
 
-   // empty handles and null pointers: nothing written, the error number of the old functions
+   // empty handles and null pointers: nothing written, the error number the old functions set (that of the
+   // print core: LELISTNULL, LEELEMNULL, LECONDNULL, LEENUMNULL)
    bool empty = true;
-   const auto same_as_old = [&empty](const char *step, auto &&old_write, auto &&new_write) {
-      cull_state_set_lerrno(0);
-      const auto old_text = written(old_write);
-      const int old_errno = cull_state_get_lerrno();
+   const auto as_old = [&empty](const char *step, const int old_errno, auto &&new_write) {
       cull_state_set_lerrno(0);
       const auto new_text = written(new_write);
       const int new_errno = cull_state_get_lerrno();
-      // no temporary file fails the case: two missing texts must not pass as two empty ones
-      if (!old_text || !new_text || !old_text->empty() || !new_text->empty() || old_errno == 0 ||
-          old_errno != new_errno) {
-         std::printf("write_to, %s: old \"%s\" %d, new \"%s\" %d\n", step,
-                     old_text ? old_text->c_str() : "(no file)", old_errno,
-                     new_text ? new_text->c_str() : "(no file)", new_errno);
+      // no temporary file fails the case: a missing text must not pass as an empty one
+      if (!new_text || !new_text->empty() || new_errno != old_errno) {
+         std::printf("write_to, %s: \"%s\" %d, expected nothing and %d\n", step,
+                     new_text ? new_text->c_str() : "(no file)", new_errno, old_errno);
          empty = false;
       }
    };
-   same_as_old("empty list", [](FILE *fp) { lWriteListTo(nullptr, fp); },
-               [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList()); });
-   same_as_old("empty element", [](FILE *fp) { lWriteElemTo(nullptr, fp); },
-               [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawElement()); });
-   same_as_old("null condition", [](FILE *fp) { lWriteWhereTo(nullptr, fp); },
-               [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lCondition *>(nullptr)); });
-   same_as_old("null selection", [](FILE *fp) { lWriteWhatTo(nullptr, fp); },
-               [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lEnumeration *>(nullptr)); });
+   as_old("empty list", LELISTNULL, [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList()); });
+   as_old("empty element", LEELEMNULL, [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawElement()); });
+   as_old("null condition", LECONDNULL,
+          [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lCondition *>(nullptr)); });
+   as_old("null selection", LEENUMNULL,
+          [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lEnumeration *>(nullptr)); });
    CHECK(19, "write_to() of an empty handle or a null pointer writes nothing and sets the error number of the "
              "old function",
          empty);
@@ -862,7 +915,7 @@ test_write_to() {
 
 /**
  * @brief unpack_raw_elem() reads a packed element of the type the buffer names, and reports a cut-off buffer
- *        with the code cull_unpack_elem() returns
+ *        with the code cull_unpack_elem() returned, that of the core unpack_elem()
  * @return nothing; CHECK records the results
  */
 static void
@@ -881,10 +934,15 @@ test_unpack_elem() {
                          std::strcmp(raw->get<const char *>(JB_owner), "owner") == 0;
    const auto typed = ocs::tom::adopt<ocs::tom::JB>(std::move(raw));
 
+   // cull_unpack_elem() returned the code of the PackException of the core unpack_elem(): PACK_FORMAT here
    ocs::tom::PackBuffer old_cut = ocs::tom::PackBuffer::reading(out.data(), out.size() / 2);
-   lListElem *old_ep = nullptr;
-   const int old_code = cull_unpack_elem(&old_cut.raw(), &old_ep, nullptr);
-   lFreeElem(&old_ep);
+   int old_code = PACK_SUCCESS;
+   try {
+      lListElem *old_ep = ocs::tom::unpack_elem(&old_cut.raw(), nullptr, 0);
+      ocs::tom::free_raw_elem(old_ep);
+   } catch (const ocs::tom::PackException &e) {
+      old_code = e.code();
+   }
    ocs::tom::PackBuffer cut = ocs::tom::PackBuffer::reading(out.data(), out.size() / 2);
    int code = PACK_SUCCESS;
    try {
@@ -894,7 +952,7 @@ test_unpack_elem() {
    }
    CHECK(20, "unpack_raw_elem() reads the packed job as a job, which adopt<JB>() takes; a cut-off buffer throws "
              "PackException with the code of cull_unpack_elem()",
-         unpacked && typed && typed->get<JB_job_number>() == 7 && code != PACK_SUCCESS && code == old_code);
+         unpacked && typed && typed->get<JB_job_number>() == 7 && code == PACK_FORMAT && code == old_code);
 }
 
 /**
@@ -912,18 +970,28 @@ lerrno_after(Call &&call) {
 }
 
 /**
- * @brief select_as() and select_elem_as() give what lSelect(), lSelectHashPack() and lSelectElemPack() give
+ * @brief select_as() and select_elem_as() give what lSelect(), lSelectHashPack() and lSelectElemPack() gave
+ *
+ * The expected results were recorded from the old functions on the same list (CS-3103).
+ *
  * @return nothing; CHECK records the results
  */
 static void
 test_select_as() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
-   const ocs::tom::RawWherePtr none(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 100U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
-   const ocs::tom::RawWhatPtr all(lWhat("%T(ALL)", ocs::tom::TEST::descriptor.e));
-   const ocs::tom::RawWhatPtr foreign(lWhat("%T(%I)", ocs::tom::JB::descriptor.e, JB_job_number));
+   using ocs::tom::CompareOp;
+   const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, CompareOp::Greater,
+                                              std::uint32_t{4});
+   const auto none = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, CompareOp::Greater,
+                                             std::uint32_t{100});
+   const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
+   const auto all = ocs::tom::what_all();
+   const auto foreign = ocs::tom::what_of(ocs::tom::JB::descriptor.e, std::vector<int>{JB_job_number});
+   const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::TEST::descriptor.e, {TEST_uint32, TEST_string});
+   const lDescr *full = ocs::tom::TEST::descriptor.e;
+   const Numbers above{5, 6, 7, 8, 9};
+   const Numbers every{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
    bool lists = true;
    for (const bool hash : {true, false}) {
@@ -937,24 +1005,26 @@ test_select_as() {
                                           what.get()};
       const char *names[] = {"selected", nullptr, "nothing", "all", "ignored", "foreign", "null list"};
       const char *labels[] = {"selected", "default name", "nothing", "all", "ignored", "foreign", "null list"};
+      // what lSelectHashPack() without a pack buffer gave: no list for no match only when hashed, hash slots
+      // for a full layout only when hashed, LEPARTIALDESCR for a foreign selection, no error for a null list
+      const std::uint32_t full_slots = hash ? 1 : 0;
+      const ListResult expected[] = {
+         {true, "selected", reduced, 0, above, 0},
+         {true, "No list name specified", reduced, 0, above, 0},
+         hash ? ListResult{false, nullptr, nullptr, 0, {}, LEGETNROFELEM}
+              : ListResult{true, "nothing", reduced, 0, {}, 0},
+         {true, "all", full, full_slots, above, 0},
+         {true, "test", full, full_slots, every, 0},
+         {false, nullptr, nullptr, 0, {}, LEPARTIALDESCR},
+         {false, nullptr, nullptr, 0, {}, 0}};
       for (std::size_t i = 0; i < std::size(names); i++) {
-         ocs::tom::RawListPtr old;
          ocs::tom::RawListPtr selected;
-         const int old_errno = lerrno_after([&] {
-            old = ocs::tom::RawListPtr(
-               lSelectHashPack(names[i], sources[i], conditions[i], selections[i], hash, nullptr));
-         });
          const int new_errno = lerrno_after(
             [&] { selected = ocs::tom::select_as(names[i], sources[i], conditions[i], selections[i], hashing); });
-         if (old_errno != new_errno) {
-            std::printf("%s: the error numbers differ (%d, %d)\n", labels[i], old_errno, new_errno);
-         }
-         lists = same_list(labels[i], old.get(), selected.get()) && old_errno == new_errno && lists;
+         lists = list_is(labels[i], selected.get(), new_errno, expected[i]) && lists;
       }
    }
-   const ocs::tom::RawListPtr old_select(lSelect("selected", lp, where.get(), what.get()));
    const auto hashed = ocs::tom::select_as("selected", lp, where.get(), what.get(), ocs::tom::Hashing::On);
-   const ocs::tom::RawListPtr old_nothing(lSelect("nothing", lp, none.get(), what.get()));
    const auto nothing = ocs::tom::select_as("nothing", lp, none.get(), what.get(), ocs::tom::Hashing::On);
    const auto empty = ocs::tom::select_as("nothing", lp, none.get(), what.get(), ocs::tom::Hashing::Off);
    const auto whole = ocs::tom::select_as("ignored", lp, where.get(), nullptr, ocs::tom::Hashing::Off);
@@ -968,21 +1038,20 @@ test_select_as() {
       });
       foreign_errno[hash ? 0 : 1] = errno_now;
    }
-   // the hash slots are compared with the old result by same_list()
-   lists = lists && same_list("lSelect", old_select.get(), hashed.get()) && !old_nothing && !nothing && empty &&
-           empty->size() == 0 && std::strcmp(ocs::tom::list_name(hashed.get()), "selected") == 0 && whole &&
+   // lSelect() is lSelectHashPack() hashed: the elements above 4 under the given name, no hash slots
+   lists = lists &&
+           list_is("lSelect", hashed.get(), 0, ListResult{true, "selected", reduced, 0, above, 0}) && !nothing &&
+           empty && empty->size() == 0 && std::strcmp(ocs::tom::list_name(hashed.get()), "selected") == 0 && whole &&
            whole->size() == 10 && std::strcmp(ocs::tom::list_name(whole.get()), "test") == 0 && foreign_refused &&
            foreign_errno[0] != 0 && foreign_errno[1] != 0 &&
            !ocs::tom::select_as("", nullptr, where.get(), what.get(), ocs::tom::Hashing::On) &&
            !ocs::tom::select_as("", nullptr, where.get(), what.get(), ocs::tom::Hashing::Off);
-   CHECK(21, "select_as() gives what lSelect() and lSelectHashPack() give, hashed and not: the given name, the "
+   CHECK(21, "select_as() gives what lSelect() and lSelectHashPack() gave, hashed and not: the given name, the "
              "same hash slots, no list for no match when hashed, every field without a selection, no list and the same "
              "error number for a foreign selection and a null list",
          lists);
 
    bool elements = true;
-   const std::initializer_list<const lEnumeration *> element_selections{what.get(), all.get(), nullptr,
-                                                                        foreign.get()};
    std::vector<const lListElem *> sources{nullptr};
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
       sources.push_back(ep.raw());
@@ -990,19 +1059,25 @@ test_select_as() {
    for (const bool hash : {true, false}) {
       const auto hashing = hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off;
       for (const lListElem *ep : sources) {
-         for (const lEnumeration *selection : element_selections) {
-            ocs::tom::RawElementPtr old;
+         // what lSelectElemPack() without a pack buffer gave, hashed or not: nothing for a null element; a copy of
+         // a matching element in the layout of the selection; a whole copy of every element without a selection
+         // (the condition not applied); no copy for no match, and LEPARTIALDESCR for a match with a foreign
+         // selection
+         const bool match = ep != nullptr && ocs::tom::get<std::uint32_t>(ep, TEST_uint32) > 4;
+         struct Case {
+            const lEnumeration *selection;
+            const lDescr *layout;
+            int lerrno;
+         };
+         const Case cases[] = {{what.get(), match ? reduced : nullptr, 0},
+                               {all.get(), match ? full : nullptr, 0},
+                               {nullptr, ep != nullptr ? full : nullptr, 0},
+                               {foreign.get(), nullptr, match ? LEPARTIALDESCR : 0}};
+         for (const Case &c : cases) {
             ocs::tom::RawElementPtr selected;
-            const int old_errno = lerrno_after([&] {
-               old = ocs::tom::RawElementPtr(lSelectElemPack(ep, where.get(), selection, hash, nullptr));
-            });
             const int new_errno =
-               lerrno_after([&] { selected = ocs::tom::select_elem_as(ep, where.get(), selection, hashing); });
-            if (old_errno != new_errno) {
-               std::printf("lSelectElemPack: the error numbers differ (%d, %d)\n", old_errno, new_errno);
-            }
-            elements = same_elem("lSelectElemPack", old.get(), selected.get()) && old_errno == new_errno &&
-                       elements;
+               lerrno_after([&] { selected = ocs::tom::select_elem_as(ep, where.get(), c.selection, hashing); });
+            elements = elem_is("lSelectElemPack", selected.get(), new_errno, ep, c.layout, c.lerrno) && elements;
          }
       }
    }
@@ -1011,26 +1086,34 @@ test_select_as() {
               ocs::tom::select_elem_as(first.raw(), where.get(), nullptr, ocs::tom::Hashing::Off) &&
               !ocs::tom::select_elem_as(nullptr, where.get(), what.get(), ocs::tom::Hashing::Off) &&
               !ocs::tom::select_elem_as(first.raw(), nullptr, foreign.get(), ocs::tom::Hashing::Off);
-   CHECK(22, "select_elem_as() gives what lSelectElemPack() gives, hashed and not, with the same error numbers: no "
+   ocs_cull_descr_release(&reduced);
+   CHECK(22, "select_elem_as() gives what lSelectElemPack() gave, hashed and not, with the same error numbers: no "
              "copy for no match, a whole copy without a selection, no copy for a foreign selection or a null "
              "element",
          elements);
 }
 
 /**
- * @brief select_into_descr() and select_elem_into_descr() give what lSelectDPack() and lSelectElemDPack() give
+ * @brief select_into_descr() and select_elem_into_descr() give what lSelectDPack() and lSelectElemDPack() gave
+ *
+ * The expected results were recorded from the old functions on the same list (CS-3103).
+ *
  * @return nothing; CHECK records the results
  */
 static void
 test_select_into_descr() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
-   const ocs::tom::RawWherePtr none(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 100U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
+   using ocs::tom::CompareOp;
+   const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, CompareOp::Greater,
+                                              std::uint32_t{4});
+   const auto none = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, CompareOp::Greater,
+                                             std::uint32_t{100});
+   const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
    // a selection with a field the reduced descriptor does not hold
-   const ocs::tom::RawWhatPtr wider(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_uint64));
-   const lDescr *reduced = lGetReducedDescr(ocs::tom::TEST::descriptor.e, what.get());
+   const auto wider = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_uint64});
+   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, what.get());
+   const Numbers above{5, 6, 7, 8, 9};
 
    bool lists = reduced != nullptr;
    for (const bool hash : {true, false}) {
@@ -1047,21 +1130,27 @@ test_select_into_descr() {
                              "null list"};
       const char *labels[] = {"updating list", "nothing", "no selection", "no descriptor", "lacking field",
                               "default name", "null list"};
+      // what lSelectDPack() without a pack buffer gave: an empty list stays a list only when not hashed, then
+      // with LEENUMNULL for no selection and LEENUMDESCR for a field the descriptor lacks; hashed, no list and
+      // LEGETNROFELEM; no list without an error for no descriptor and a null list
+      const auto emptied = [&](const char *name, const int lerrno) {
+         return hash ? ListResult{false, nullptr, nullptr, 0, {}, LEGETNROFELEM}
+                     : ListResult{true, name, reduced, 0, {}, lerrno};
+      };
+      const ListResult expected[] = {{true, "updating list", reduced, 0, above, 0},
+                                     emptied("nothing", 0),
+                                     emptied("no selection", LEENUMNULL),
+                                     {false, nullptr, nullptr, 0, {}, 0},
+                                     emptied("lacking field", LEENUMDESCR),
+                                     {true, "No list name specified", reduced, 0, above, 0},
+                                     {false, nullptr, nullptr, 0, {}, 0}};
       for (std::size_t i = 0; i < std::size(names); i++) {
-         ocs::tom::RawListPtr old;
          ocs::tom::RawListPtr selected;
-         const int old_errno = lerrno_after([&] {
-            old = ocs::tom::RawListPtr(
-               lSelectDPack(names[i], sources[i], conditions[i], descriptors[i], selections[i], hash, nullptr));
-         });
          const int new_errno = lerrno_after([&] {
             selected = ocs::tom::select_into_descr(names[i], sources[i], conditions[i], descriptors[i],
                                                    selections[i], hashing);
          });
-         if (old_errno != new_errno) {
-            std::printf("%s: the error numbers differ (%d, %d)\n", labels[i], old_errno, new_errno);
-         }
-         lists = same_list(labels[i], old.get(), selected.get()) && old_errno == new_errno && lists;
+         lists = list_is(labels[i], selected.get(), new_errno, expected[i]) && lists;
       }
    }
    const auto updating = ocs::tom::select_into_descr("updating list", lp, where.get(), reduced, what.get(),
@@ -1074,7 +1163,7 @@ test_select_into_descr() {
            !ocs::tom::select_into_descr("", lp, none.get(), reduced, what.get(), ocs::tom::Hashing::On) &&
            !ocs::tom::select_into_descr("", nullptr, where.get(), reduced, what.get(), ocs::tom::Hashing::Off) &&
            lacking && lacking->size() == 0;
-   CHECK(23, "select_into_descr() gives what lSelectDPack() gives, hashed and not: the given or default name and "
+   CHECK(23, "select_into_descr() gives what lSelectDPack() gave, hashed and not: the given or default name and "
              "descriptor, no list for no match when hashed, no element without a selection or for a field the "
              "descriptor lacks, no list for a null list or descriptor, the same error numbers",
          lists);
@@ -1084,25 +1173,29 @@ test_select_into_descr() {
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
       sources.push_back(ep.raw());
    }
-   const std::initializer_list<const lEnumeration *> element_selections{what.get(), nullptr, wider.get()};
    for (const lListElem *ep : sources) {
-      for (const lEnumeration *selection : element_selections) {
-         for (const lDescr *descr : std::initializer_list<const lDescr *>{reduced, nullptr}) {
-            ocs::tom::RawElementPtr old;
-            ocs::tom::RawElementPtr selected;
-            const int old_errno = lerrno_after([&] {
-               old = ocs::tom::RawElementPtr(lSelectElemDPack(ep, where.get(), descr, selection, false, nullptr));
-            });
-            const int new_errno = lerrno_after([&] {
-               selected =
-                  ocs::tom::select_elem_into_descr(ep, where.get(), descr, selection, ocs::tom::Hashing::Off);
-            });
-            if (old_errno != new_errno) {
-               std::printf("lSelectElemDPack: the error numbers differ (%d, %d)\n", old_errno, new_errno);
-            }
-            elements =
-               same_elem("lSelectElemDPack", old.get(), selected.get()) && old_errno == new_errno && elements;
-         }
+      // what lSelectElemDPack() without a pack buffer gave: nothing for a null element, no descriptor or no match;
+      // for a match the copy in the descriptor, LEENUMNULL without a selection, LEENUMDESCR for a field the
+      // descriptor lacks
+      const bool match = ep != nullptr && ocs::tom::get<std::uint32_t>(ep, TEST_uint32) > 4;
+      struct Case {
+         const lEnumeration *selection;
+         const lDescr *descr;
+         const lDescr *layout;
+         int lerrno;
+      };
+      const Case cases[] = {{what.get(), reduced, match ? reduced : nullptr, 0},
+                            {what.get(), nullptr, nullptr, 0},
+                            {nullptr, reduced, nullptr, match ? LEENUMNULL : 0},
+                            {nullptr, nullptr, nullptr, 0},
+                            {wider.get(), reduced, nullptr, match ? LEENUMDESCR : 0},
+                            {wider.get(), nullptr, nullptr, 0}};
+      for (const Case &c : cases) {
+         ocs::tom::RawElementPtr selected;
+         const int new_errno = lerrno_after([&] {
+            selected = ocs::tom::select_elem_into_descr(ep, where.get(), c.descr, c.selection, ocs::tom::Hashing::Off);
+         });
+         elements = elem_is("lSelectElemDPack", selected.get(), new_errno, ep, c.layout, c.lerrno) && elements;
       }
    }
    const lListElem *last = nullptr;
@@ -1114,7 +1207,7 @@ test_select_into_descr() {
               !ocs::tom::has(copy.get(), TEST_uint64) &&
               !ocs::tom::select_elem_into_descr(last, where.get(), nullptr, what.get(), ocs::tom::Hashing::Off) &&
               !ocs::tom::select_elem_into_descr(last, where.get(), reduced, wider.get(), ocs::tom::Hashing::Off);
-   CHECK(24, "select_elem_into_descr() gives what lSelectElemDPack() gives: the copy in the given descriptor, none "
+   CHECK(24, "select_elem_into_descr() gives what lSelectElemDPack() gave: the copy in the given descriptor, none "
              "for a null element, no match, no selection, no descriptor or a field the descriptor lacks, the same "
              "error numbers",
          elements);
@@ -1122,35 +1215,82 @@ test_select_into_descr() {
 }
 
 /**
- * @brief select_pack() writes the bytes lSelectHashPack() with a pack buffer writes
+ * @brief select_pack() writes the bytes lSelectHashPack() with a pack buffer wrote
+ *
+ * The size and the FNV-1a hash of the bytes of every case were recorded from lSelectHashPack() on the same list
+ * (CS-3103).
+ *
  * @return nothing; CHECK records the results
  */
 static void
 test_select_pack() {
    const ocs::tom::RawListPtr owner(make_test_list(10, false));
    const lList *lp = owner.get();
-   const ocs::tom::RawWherePtr where(lWhere("%T(%I > %u)", ocs::tom::TEST::descriptor.e, TEST_uint32, 4U));
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
-   const ocs::tom::RawWhatPtr all(lWhat("%T(ALL)", ocs::tom::TEST::descriptor.e));
-   const ocs::tom::RawWhatPtr nothing(lWhat("%T(NONE)", ocs::tom::TEST::descriptor.e));
+   const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32,
+                                              ocs::tom::CompareOp::Greater, std::uint32_t{4});
+   const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
+   const auto all = ocs::tom::what_all();
+   const ocs::tom::RawWhatPtr nothing(ocs::tom::make_what_special(WHAT_NONE));
+
+   // what lSelectHashPack() with a pack buffer wrote, in the order of the loops below
+   struct Bytes {
+      std::size_t size;
+      std::uint64_t hash;
+   };
+   static constexpr Bytes old_bytes[] = {
+      {117, 0xc97b513a4e218f89ULL},   // reduction, condition, list, name ""
+      {121, 0x7b99c8d685f872c9ULL},   // reduction, condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // reduction, condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // reduction, condition, no list, name nullptr
+      {192, 0x2c70a3c2625f1e8dULL},   // reduction, no condition, list, name ""
+      {196, 0x330f47ad1339a0cdULL},   // reduction, no condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // reduction, no condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // reduction, no condition, no list, name nullptr
+      {150, 0x33d223f962201f6eULL},   // every field, condition, list, name ""
+      {154, 0xa763e99c31bddaaeULL},   // every field, condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // every field, condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // every field, condition, no list, name nullptr
+      {270, 0x3d3fc8b772fee88dULL},   // every field, no condition, list, name ""
+      {274, 0x79602f23de383bcdULL},   // every field, no condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // every field, no condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // every field, no condition, no list, name nullptr
+      {42, 0x1a8a24b84ec7ae11ULL},   // no field, condition, list, name ""
+      {46, 0xded9f820d31d62d1ULL},   // no field, condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // no field, condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // no field, condition, no list, name nullptr
+      {62, 0x2d65dee7d9bb361eULL},   // no field, no condition, list, name ""
+      {66, 0x9d7e196be5adc6deULL},   // no field, no condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // no field, no condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // no field, no condition, no list, name nullptr
+      // no selection packs the whole list as cull_pack_list() did; TEST_int is an lIntT field, which is never
+      // packed, so the write ends there with PACK_FORMAT, which select_pack() does not report (as before)
+      {54, 0xf247e4ab439a013aULL},   // no selection, condition, list, name ""
+      {54, 0xf247e4ab439a013aULL},   // no selection, condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // no selection, condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // no selection, condition, no list, name nullptr
+      {54, 0xf247e4ab439a013aULL},   // no selection, no condition, list, name ""
+      {54, 0xf247e4ab439a013aULL},   // no selection, no condition, list, name nullptr
+      {13, 0x07725da35b047ccdULL},   // no selection, no condition, no list, name ""
+      {13, 0x07725da35b047ccdULL},   // no selection, no condition, no list, name nullptr
+   };
 
    // a reduction, every field, no field, no selection (the condition not applied); each also without condition,
    // with no list, and with the name of the list
    const lEnumeration *selections[] = {what.get(), all.get(), nothing.get(), nullptr};
    bool bytes = true;
+   std::size_t n = 0;
    for (const lEnumeration *selection : selections) {
       for (const lCondition *condition : std::initializer_list<const lCondition *>{where.get(), nullptr}) {
          for (const lList *list : std::initializer_list<const lList *>{lp, nullptr}) {
             for (const char *name : std::initializer_list<const char *>{"", nullptr}) {
-               const std::string old = packed([&](sge_pack_buffer *pb) {
-                  static_cast<void>(lSelectHashPack(name, list, condition, selection, false, pb));
-               });
                const std::string selected =
                   packed([&](sge_pack_buffer *pb) { ocs::tom::select_pack(pb, name, list, condition, selection); });
-               if (old != selected || old.empty()) {
-                  std::printf("select_pack: the bytes differ (%zu, %zu)\n", old.size(), selected.size());
+               if (selected.size() != old_bytes[n].size || fnv1a(selected) != old_bytes[n].hash) {
+                  std::printf("select_pack, case %zu: the bytes differ (%zu, expected %zu)\n", n, selected.size(),
+                              old_bytes[n].size);
                   bytes = false;
                }
+               n++;
             }
          }
       }
@@ -1163,7 +1303,7 @@ test_select_pack() {
    const auto read = ocs::tom::unpack_raw_list(&in.raw());
    const bool unpacked = read && read->size() == 5 && std::strcmp(ocs::tom::list_name(read.get()), "sent") == 0 &&
                          (numbers(*read) == Numbers{5, 6, 7, 8, 9}) && !ocs::tom::has(read->front(), TEST_uint64);
-   CHECK(25, "select_pack() writes the bytes of lSelectHashPack() with a pack buffer for a reduction, every field, "
+   CHECK(25, "select_pack() writes the bytes lSelectHashPack() with a pack buffer wrote for a reduction, every field, "
              "no field and no selection, with and without condition, list and name; they read back as the selection",
          bytes && unpacked);
 }
@@ -1179,11 +1319,11 @@ test_remaining() {
    std::size_t expected = 4;
    for (const ocs::tom::ConstRawElement ep : *list) {
       const std::size_t n = ocs::tom::remaining(ep);
-      same = same && n == expected && n == lGetNumberOfRemainingElem(ep.raw());
+      same = same && n == expected;
       expected--;
    }
    const auto free_elem = test_elem(1);
-   CHECK(26, "remaining() counts the successors of every element as lGetNumberOfRemainingElem(); none for the "
+   CHECK(26, "remaining() counts the successors of every element as lGetNumberOfRemainingElem() did; none for the "
              "last, a free element and an empty handle",
          same && ocs::tom::remaining(free_elem.get()) == 0 &&
                ocs::tom::remaining(ocs::tom::ConstRawElement(static_cast<const lListElem *>(nullptr))) == 0);
@@ -1205,12 +1345,9 @@ test_is_free() {
    const auto free_elem = test_elem(3);
    const lListElem *free_raw = free_elem.get().raw();
 
-   const bool same = ocs::tom::is_free(free_raw) == lIsFreeElem(free_raw) &&
-                     ocs::tom::is_free(in_list) == lIsFreeElem(in_list) &&
-                     ocs::tom::is_free(sub_object) == lIsFreeElem(sub_object);
    CHECK(27, "is_free() is true for a free element and false for one in a list, a sub-object and an empty handle, "
-             "as lIsFreeElem()",
-         same && ocs::tom::is_free(free_raw) && !ocs::tom::is_free(in_list) && !ocs::tom::is_free(sub_object) &&
+             "as lIsFreeElem() was",
+         ocs::tom::is_free(free_raw) && !ocs::tom::is_free(in_list) && !ocs::tom::is_free(sub_object) &&
                !ocs::tom::is_free(ocs::tom::ConstRawElement(static_cast<const lListElem *>(nullptr))));
 }
 
@@ -1220,7 +1357,7 @@ test_is_free() {
  */
 static void
 test_release_descr() {
-   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", ocs::tom::TEST::descriptor.e, TEST_uint32, TEST_string));
+   const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
    const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, what.get());
    const bool counted = reduced != nullptr && ocs_cull_descr_is_counted(reduced);
    const lDescr *second = ocs_cull_descr_ref(reduced);
@@ -1274,7 +1411,7 @@ test_make_hashable() {
  */
 static void
 test_free_raw() {
-   lList *lp = make_test_list(3, true);
+   lList *lp = make_test_list(3, true).release();
    lListElem *ep = test_elem(1).release();
    ocs::tom::free_raw_list(lp);
    ocs::tom::free_raw_elem(ep);
@@ -2214,6 +2351,24 @@ namespace typed_ops {
 
 
 /**
+ * @brief The code a throwing pack core leaves, as the old wrappers init_packbuffer(), init_packbuffer_from_buffer(),
+ *        packint(), packdouble() and packstr() returned it: PACK_SUCCESS, or the code of the PackException
+ * @tparam Call the type of the call
+ * @param call the call of the core
+ * @return the code
+ */
+template <typename Call>
+static int
+core_code(Call &&call) {
+   try {
+      call();
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
+   }
+   return PACK_SUCCESS;
+}
+
+/**
  * @brief A copy of the bytes of a buffer in memory of its own, as a buffer to read takes it over
  * @param pb the buffer whose bytes are copied
  * @return the copy, allocated with sge_malloc()
@@ -2227,7 +2382,12 @@ copy_bytes(const sge_pack_buffer &pb) {
 
 /**
  * @brief try_init_buffer(), try_init_buffer_from(), buffer_used(), buffer_filled() and buffer_has_unread() give
- *        what init_packbuffer(), init_packbuffer_from_buffer(), pb_used(), pb_filled() and pb_unused() give
+ *        what init_packbuffer(), init_packbuffer_from_buffer(), pb_used(), pb_filled() and pb_unused() gave
+ *
+ * The old functions were thin wrappers over the throwing cores init_buffer() and init_buffer_from(), which turned
+ * the PackException into its code; the reference buffers are made by the cores that way (core_code()).
+ * pb_used() was bytes_used, pb_filled() bytes_used > 2 * INTSIZE, pb_unused() mem_size - bytes_used.
+ *
  * @return nothing; CHECK records the results
  */
 static void
@@ -2242,43 +2402,44 @@ test_try_init() {
                               Setup{16, false, false}}) {
       sge_pack_buffer old_pb;
       sge_pack_buffer new_pb;
-      const int old_code = init_packbuffer(&old_pb, setup.initial_size, setup.just_count, setup.with_auth_info);
+      const int old_code = core_code(
+         [&] { ocs::tom::init_buffer(&old_pb, setup.initial_size, setup.just_count, setup.with_auth_info); });
       const int new_code =
          ocs::tom::try_init_buffer(&new_pb, setup.initial_size, setup.just_count, setup.with_auth_info);
-      const bool same = old_code == new_code && ocs::tom::buffers_equal(&old_pb, &new_pb) &&
-                        old_pb.mem_size == new_pb.mem_size &&
-                        static_cast<int>(ocs::tom::buffer_used(&new_pb)) == pb_used(&old_pb) &&
-                        ocs::tom::buffer_filled(&new_pb) == (pb_filled(&old_pb) != 0);
+      const bool same = old_code == PACK_SUCCESS && new_code == old_code &&
+                        ocs::tom::buffers_equal(&old_pb, &new_pb) && old_pb.mem_size == new_pb.mem_size &&
+                        ocs::tom::buffer_used(&new_pb) == old_pb.bytes_used &&
+                        ocs::tom::buffer_filled(&new_pb) == (old_pb.bytes_used > 2 * INTSIZE);
       if (!same) {
          std::printf("try_init_buffer(%zu, %d, %d): codes %d, %d\n", setup.initial_size, setup.just_count,
                      setup.with_auth_info, old_code, new_code);
       }
       init = same && init;
-      clear_packbuffer(&old_pb);
+      ocs::tom::clear_buffer(&old_pb);
       ocs::tom::clear_buffer(&new_pb);
    }
    // a counting buffer that nothing was counted into is not filled; no buffer is a format error
    sge_pack_buffer counting;
    ocs::tom::try_init_buffer(&counting, 0, true, false);
-   init = init && !ocs::tom::buffer_filled(&counting) && pb_filled(&counting) == 0 &&
-          ocs::tom::try_init_buffer(nullptr, 0) == init_packbuffer(nullptr, 0) &&
+   init = init && !ocs::tom::buffer_filled(&counting) && counting.bytes_used <= 2 * INTSIZE &&
           ocs::tom::try_init_buffer(nullptr, 0) == PACK_FORMAT;
    ocs::tom::clear_buffer(&counting);
-   CHECK(51, "try_init_buffer() prepares the bytes, the size and the code init_packbuffer() prepares, with the "
+   CHECK(51, "try_init_buffer() prepares the bytes, the size and the code init_packbuffer() prepared, with the "
              "default and a given size and counting; buffer_used() and buffer_filled() answer as pb_used() and "
-             "pb_filled()",
+             "pb_filled() did",
          init);
 
    sge_pack_buffer out;
-   init_packbuffer(&out, 0, false, false);
-   packint(&out, 7);
-   packstr(&out, "x");
+   ocs::tom::init_buffer(&out, 0, false, false);
+   ocs::tom::put_uint32(&out, 7);
+   ocs::tom::put_str(&out, "x");
    sge_pack_buffer old_in;
    sge_pack_buffer new_in;
-   const int old_code = init_packbuffer_from_buffer(&old_in, copy_bytes(out), out.bytes_used, false);
+   const int old_code =
+      core_code([&] { ocs::tom::init_buffer_from(&old_in, copy_bytes(out), out.bytes_used, false); });
    const int new_code = ocs::tom::try_init_buffer_from(&new_in, copy_bytes(out), out.bytes_used, false);
    bool from = old_code == PACK_SUCCESS && new_code == PACK_SUCCESS && old_in.bytes_used == new_in.bytes_used &&
-               ocs::tom::buffer_has_unread(&new_in) && pb_unused(&old_in) > 0;
+               ocs::tom::buffer_has_unread(&new_in) && old_in.mem_size > old_in.bytes_used;
    std::uint32_t number = 0;
    char *str = nullptr;
    ocs::tom::try_get_uint32(&new_in, &number);
@@ -2286,7 +2447,7 @@ test_try_init() {
    from = from && number == 7 && str != nullptr && std::strcmp(str, "x") == 0 &&
           !ocs::tom::buffer_has_unread(&new_in);
    sge_free(&str);
-   clear_packbuffer(&old_in);
+   ocs::tom::clear_buffer(&old_in);
    ocs::tom::clear_buffer(&new_in);
 
    // another version: both refuse it with the same code, and the buffer frees the bytes it took over
@@ -2294,14 +2455,16 @@ test_try_init() {
    char *new_bytes = copy_bytes(out);
    old_bytes[INTSIZE] ^= 0x01;
    new_bytes[INTSIZE] ^= 0x01;
-   const int old_version = init_packbuffer_from_buffer(&old_in, old_bytes, out.bytes_used, false);
+   const int old_version =
+      core_code([&] { ocs::tom::init_buffer_from(&old_in, old_bytes, out.bytes_used, false); });
    const int new_version = ocs::tom::try_init_buffer_from(&new_in, new_bytes, out.bytes_used, false);
-   clear_packbuffer(&old_in);
+   ocs::tom::clear_buffer(&old_in);
    ocs::tom::clear_buffer(&new_in);
+   // no buffer: init_packbuffer_from_buffer() gave PACK_FORMAT
    from = from && old_version == PACK_VERSION && new_version == old_version &&
-          ocs::tom::try_init_buffer_from(nullptr, nullptr, 0) == init_packbuffer_from_buffer(nullptr, nullptr, 0);
-   clear_packbuffer(&out);
-   CHECK(52, "try_init_buffer_from() reads the header as init_packbuffer_from_buffer() does and returns its code "
+          ocs::tom::try_init_buffer_from(nullptr, nullptr, 0) == PACK_FORMAT;
+   ocs::tom::clear_buffer(&out);
+   CHECK(52, "try_init_buffer_from() reads the header as init_packbuffer_from_buffer() did and returns its code "
              "for another version and no buffer; buffer_has_unread() is true until everything is read",
          from);
 }
@@ -2309,6 +2472,10 @@ test_try_init() {
 /**
  * @brief try_put_uint32(), try_put_double() and try_put_str() write the bytes and return the codes of packint(),
  *        packdouble() and packstr()
+ *
+ * The old functions were thin wrappers over the throwing cores put_uint32(), put_double() and put_str(); the
+ * reference buffer is written by the cores that way (core_code()).
+ *
  * @return nothing; CHECK records the results
  */
 static void
@@ -2317,34 +2484,33 @@ test_try_put() {
    for (const bool just_count : {false, true}) {
       sge_pack_buffer old_pb;
       sge_pack_buffer new_pb;
-      init_packbuffer(&old_pb, 0, just_count, false);
+      ocs::tom::init_buffer(&old_pb, 0, just_count, false);
       ocs::tom::try_init_buffer(&new_pb, 0, just_count, false);
       int old_codes = 0;
       int new_codes = 0;
       for (const std::uint32_t value : {0U, 1U, 0xffffffffU}) {
-         old_codes |= packint(&old_pb, value);
+         old_codes |= core_code([&] { ocs::tom::put_uint32(&old_pb, value); });
          new_codes |= ocs::tom::try_put_uint32(&new_pb, value);
       }
       for (const double value : {0.0, -1.5, 1e300}) {
-         old_codes |= packdouble(&old_pb, value);
+         old_codes |= core_code([&] { ocs::tom::put_double(&old_pb, value); });
          new_codes |= ocs::tom::try_put_double(&new_pb, value);
       }
       for (const char *value : {static_cast<const char *>(nullptr), "", "abc"}) {
-         old_codes |= packstr(&old_pb, value);
+         old_codes |= core_code([&] { ocs::tom::put_str(&old_pb, value); });
          new_codes |= ocs::tom::try_put_str(&new_pb, value);
       }
       puts = puts && old_codes == PACK_SUCCESS && new_codes == PACK_SUCCESS &&
              old_pb.bytes_used == new_pb.bytes_used &&
              (just_count || ocs::tom::buffers_equal(&old_pb, &new_pb));   // a counting buffer holds no bytes
-      clear_packbuffer(&old_pb);
+      ocs::tom::clear_buffer(&old_pb);
       ocs::tom::clear_buffer(&new_pb);
    }
-   puts = puts && ocs::tom::try_put_uint32(nullptr, 1) == packint(nullptr, 1) &&
-          ocs::tom::try_put_double(nullptr, 1.0) == packdouble(nullptr, 1.0) &&
-          ocs::tom::try_put_str(nullptr, "a") == packstr(nullptr, "a") &&
-          ocs::tom::try_put_uint32(nullptr, 1) == PACK_BADARG;
+   // no buffer: packint(), packdouble() and packstr() gave PACK_BADARG
+   puts = puts && ocs::tom::try_put_uint32(nullptr, 1) == PACK_BADARG &&
+          ocs::tom::try_put_double(nullptr, 1.0) == PACK_BADARG && ocs::tom::try_put_str(nullptr, "a") == PACK_BADARG;
    CHECK(53, "try_put_uint32(), try_put_double() and try_put_str() write the bytes packint(), packdouble() and "
-             "packstr() write, also counting, and return PACK_BADARG as they do for no buffer",
+             "packstr() wrote, also counting, and return PACK_BADARG as they did for no buffer",
          puts);
 }
 
@@ -2356,52 +2522,40 @@ test_try_put() {
 static void
 test_try_get() {
    sge_pack_buffer out;
-   init_packbuffer(&out, 0, false, false);
-   packint(&out, 42);
-   packdouble(&out, 2.5);
-   packstr(&out, "abc");
-   packstr(&out, nullptr);
+   ocs::tom::init_buffer(&out, 0, false, false);
+   ocs::tom::put_uint32(&out, 42);
+   ocs::tom::put_double(&out, 2.5);
+   ocs::tom::put_str(&out, "abc");
+   ocs::tom::put_str(&out, nullptr);
 
-   sge_pack_buffer old_in;
    sge_pack_buffer new_in;
-   init_packbuffer_from_buffer(&old_in, copy_bytes(out), out.bytes_used, false);
    ocs::tom::try_init_buffer_from(&new_in, copy_bytes(out), out.bytes_used, false);
-   clear_packbuffer(&out);
+   ocs::tom::clear_buffer(&out);
 
-   std::uint32_t old_number = 1;
+   // unpackint(), unpackdouble() and unpackstr() read the values written with PACK_SUCCESS
    std::uint32_t new_number = 1;
-   double old_double = 1.0;
    double new_double = 1.0;
-   char *old_str = nullptr;
    char *new_str = nullptr;
-   char *old_null = old_str;
    char *new_null = new_str;
-   const bool read = unpackint(&old_in, &old_number) == ocs::tom::try_get_uint32(&new_in, &new_number) &&
-                     unpackdouble(&old_in, &old_double) == ocs::tom::try_get_double(&new_in, &new_double) &&
-                     unpackstr(&old_in, &old_str) == ocs::tom::try_get_str(&new_in, &new_str) &&
-                     unpackstr(&old_in, &old_null) == ocs::tom::try_get_str(&new_in, &new_null) &&
-                     old_number == 42 && new_number == 42 && old_double == 2.5 && new_double == 2.5 &&
-                     old_str != nullptr && new_str != nullptr && std::strcmp(old_str, new_str) == 0 &&
-                     old_null == nullptr && new_null == nullptr;
-   sge_free(&old_str);
+   const bool read = ocs::tom::try_get_uint32(&new_in, &new_number) == PACK_SUCCESS &&
+                     ocs::tom::try_get_double(&new_in, &new_double) == PACK_SUCCESS &&
+                     ocs::tom::try_get_str(&new_in, &new_str) == PACK_SUCCESS &&
+                     ocs::tom::try_get_str(&new_in, &new_null) == PACK_SUCCESS && new_number == 42 &&
+                     new_double == 2.5 && new_str != nullptr && std::strcmp(new_str, "abc") == 0 &&
+                     new_null == nullptr;
    sge_free(&new_str);
 
-   // at the end of the buffer: the numbers are set to 0, the string stays as it was
-   old_number = new_number = 9;
-   old_double = new_double = 9.0;
+   // at the end of the buffer: PACK_FORMAT, the numbers are set to 0, the string stays as it was - as the old
+   // functions did
+   new_number = 9;
+   new_double = 9.0;
    char sentinel[] = "kept";
-   old_str = new_str = sentinel;
-   const int old_end_int = unpackint(&old_in, &old_number);
+   new_str = sentinel;
    const int new_end_int = ocs::tom::try_get_uint32(&new_in, &new_number);
-   const int old_end_double = unpackdouble(&old_in, &old_double);
    const int new_end_double = ocs::tom::try_get_double(&new_in, &new_double);
-   const int old_end_str = unpackstr(&old_in, &old_str);
    const int new_end_str = ocs::tom::try_get_str(&new_in, &new_str);
-   const bool end = old_end_int == PACK_FORMAT && new_end_int == old_end_int && old_end_double == PACK_FORMAT &&
-                    new_end_double == old_end_double && old_end_str == PACK_FORMAT && new_end_str == old_end_str &&
-                    old_number == 0 && new_number == 0 && old_double == 0.0 && new_double == 0.0 &&
-                    old_str == sentinel && new_str == sentinel;
-   clear_packbuffer(&old_in);
+   const bool end = new_end_int == PACK_FORMAT && new_end_double == PACK_FORMAT && new_end_str == PACK_FORMAT &&
+                    new_number == 0 && new_double == 0.0 && new_str == sentinel;
    ocs::tom::clear_buffer(&new_in);
 
    std::uint32_t number = 5;
@@ -2454,12 +2608,13 @@ test_walk() {
    third.set(TEST_uint64, std::uint64_t{30});
    const bool mutable_walk = second.raw() == lp->first->next && third.raw() == lp->last->prev &&
                              third.prev().raw() == second.raw() && second.next().raw() == third.raw() &&
-                             lGetUlong64(lp->first->next, TEST_uint64) == 20 &&
-                             lGetUlong64(lp->last->prev, TEST_uint64) == 30;
+                             ocs::tom::get<std::uint64_t>(lp->first->next, TEST_uint64) == 20 &&
+                             ocs::tom::get<std::uint64_t>(lp->last->prev, TEST_uint64) == 30;
 
    // empty handles and an empty list give empty handles
    const ocs::tom::ConstRawList none;
-   const ocs::tom::RawListPtr empty_owner(lCreateList("empty", ocs::tom::TEST::descriptor.e));
+   const ocs::tom::RawListPtr empty_owner =
+      ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e, ocs::tom::Hashing::On, "empty");
    const ocs::tom::RawList empty{empty_owner.get()};
    const bool empty_ok = !none.front() && !none.back() && !empty.front() && !empty.back() &&
                          !ocs::tom::ConstRawElement{}.next() && !ocs::tom::ConstRawElement{}.prev() &&
@@ -2500,18 +2655,20 @@ int main(int argc, char *argv[]) {
        {}, {8, 9}, test_remove_and_splice},
       {"RAW-OPS-05", "iteration", "a list walks as a range of raw handles",
        {"walk a list read-only and mutably, change a field through the mutable handles", "walk an empty handle"},
-       "the elements in order, the change visible to the old interface, an empty range", {}, {10}, test_iteration},
+       "the elements in order, the change visible through the read-only handles, an empty range", {}, {10},
+       test_iteration},
       {"RAW-OPS-06", "find_first",
-       "find_first() finds what the old lookups find, with and without hash tables, and reports misuse",
+       "find_first() finds what the old lookups found, with and without hash tables, and reports misuse",
        {"look up every key type in lists of 40 with and without hash tables, in both forms",
         "look up with a wrong key type, a foreign and an absent field, a null key, in a null list"},
-       "the same elements as lGetElemUlong/Ulong64/Str/Host; WrongType, ForeignField, AbsentField, NullKey; none",
+       "the elements lGetElemUlong/Ulong64/Str/Host found; WrongType, ForeignField, AbsentField, NullKey; none",
        {}, {11, 12}, test_find_first},
       {"RAW-OPS-07", "select",
-       "select() selects what lSelect() selects; element selection, matches() and clone() of the selections",
-       {"select with and without a condition in both forms and compare with lSelect()",
-        "select an element, compare matches() with lCompare(), clone the condition and selection"},
-       "the same elements and layout; the reduced element; the same decisions; independent copies", {}, {13, 14},
+       "select() selects what lSelect() selected; element selection, matches() and clone() of the selections",
+       {"select with and without a condition in both forms",
+        "select an element, decide matches(), clone the condition and selection"},
+       "the elements and layout lSelect() gave; the reduced element; the decisions of lCompare(); independent "
+       "copies", {}, {13, 14},
        test_select},
       {"RAW-OPS-08", "unpack", "unpack_raw_list() reads a list of the type the buffer names",
        {"pack a typed job list, unpack it raw, adopt it as jobs"}, "a job list with the same numbers", {}, {15},
@@ -2524,43 +2681,43 @@ int main(int argc, char *argv[]) {
        "WrongType, the element or list still in the typed owner; linked in order, the typed owners empty", {},
        {16, 17}, test_typed_owners},
       {"RAW-OPS-10", "write_to",
-       "write_to() writes lists, elements, conditions and selections as the old lWrite*To() functions do",
-       {"write a list, an element, a condition and a selection in every argument form and through the old "
-        "functions",
-        "write empty handles and null pointers in both forms"},
-       "the same bytes; nothing written and the same error number", {}, {18, 19}, test_write_to},
+       "write_to() writes lists, elements, conditions and selections as the old lWrite*To() functions did",
+       {"write a list, an element, a condition and a selection in every argument form and render them with the "
+        "print cores the old functions wrote",
+        "write empty handles and null pointers"},
+       "the same bytes; nothing written and the error number of the old functions", {}, {18, 19}, test_write_to},
       {"RAW-OPS-11", "unpack element", "unpack_raw_elem() reads an element of the type the buffer names",
-       {"pack a typed job, unpack it raw, adopt it as a job", "unpack a cut-off buffer in both forms"},
-       "a job with the same fields; PackException with the code of cull_unpack_elem()", {}, {20},
+       {"pack a typed job, unpack it raw, adopt it as a job", "unpack a cut-off buffer raw and through the core"},
+       "a job with the same fields; PackException with the code of cull_unpack_elem(), PACK_FORMAT", {}, {20},
        test_unpack_elem},
       {"RAW-OPS-12", "select_as",
-       "select_as() and select_elem_as() give what lSelect(), lSelectHashPack() and lSelectElemPack() give",
+       "select_as() and select_elem_as() give what lSelect(), lSelectHashPack() and lSelectElemPack() gave",
        {"select a list with a name, no name, no match, every field, no selection, a foreign selection, a null "
-        "list, hashed and not, and compare with the old functions",
-        "select each element with a selection, every field and none, and compare with lSelectElemPack()"},
-       "the same lists and elements with the same names and error numbers; no list where the old function gave "
+        "list, hashed and not",
+        "select each element with a selection, every field, none and a foreign selection"},
+       "the lists and elements, names and error numbers recorded from the old functions; no list where they gave "
        "none",
        {}, {21, 22}, test_select_as},
       {"RAW-OPS-13", "select_into_descr",
-       "select_into_descr() and select_elem_into_descr() give what lSelectDPack() and lSelectElemDPack() give",
+       "select_into_descr() and select_elem_into_descr() give what lSelectDPack() and lSelectElemDPack() gave",
        {"select a list into a reduced descriptor with a match, no match, no selection, no descriptor, hashed and "
-        "not, and compare with lSelectDPack()",
-        "select each element into the reduced descriptor with and without a selection, and compare with "
-        "lSelectElemDPack()"},
-       "the same lists and elements with the same names and error numbers; no list where the old function gave "
+        "not",
+        "select each element into the reduced descriptor and none, with and without a selection"},
+       "the lists and elements, names and error numbers recorded from the old functions; no list where they gave "
        "none",
        {}, {23, 24}, test_select_into_descr},
       {"RAW-OPS-14", "select_pack",
-       "select_pack() writes the bytes lSelectHashPack() with a pack buffer writes",
-       {"pack a reduction, every field, no field and no selection, with and without condition, list and name, "
-        "through both", "unpack the result of select_pack()"},
-       "the same bytes; the selection read back with the given name", {}, {25}, test_select_pack},
-      {"RAW-OPS-15", "remaining", "remaining() counts the elements after one as lGetNumberOfRemainingElem()",
+       "select_pack() writes the bytes lSelectHashPack() with a pack buffer wrote",
+       {"pack a reduction, every field, no field and no selection, with and without condition, list and name",
+        "unpack the result of select_pack()"},
+       "the sizes and hashes of the bytes recorded from lSelectHashPack(); the selection read back with the given "
+       "name", {}, {25}, test_select_pack},
+      {"RAW-OPS-15", "remaining", "remaining() counts the elements after one as lGetNumberOfRemainingElem() did",
        {"count the successors of every element of a list, of a free element and of an empty handle"},
        "the same counts; 0 for the last, a free element and an empty handle", {}, {26}, test_remaining},
-      {"RAW-OPS-16", "is_free", "is_free() tells a free element from a bound one as lIsFreeElem()",
+      {"RAW-OPS-16", "is_free", "is_free() tells a free element from a bound one as lIsFreeElem() did",
        {"ask for a free element, one in a list, a sub-object and an empty handle"},
-       "the answers of lIsFreeElem(); false for an empty handle", {}, {27}, test_is_free},
+       "the answers lIsFreeElem() gave; false for an empty handle", {}, {27}, test_is_free},
       {"RAW-OPS-17", "release_descr", "release_descr() gives up a reference on a shared descriptor",
        {"release a second reference of a reduced descriptor, a static descriptor and nullptr"},
        "one reference less, every holder cleared", {}, {28}, test_release_descr},
@@ -2641,17 +2798,18 @@ int main(int argc, char *argv[]) {
        {"count a share tree of four nodes from the root and from the list"}, "4 nodes, 2 leaves",
        {{"OPS-01", "covers"}}, {50}, typed_ops::test_tree},
       {"RAW-OPS-39", "try_init_buffer",
-       "try_init_buffer(), try_init_buffer_from() and the buffer state queries give what the old primitives give",
-       {"prepare buffers to pack into with every setup, a counting buffer and no buffer, through both",
+       "try_init_buffer(), try_init_buffer_from() and the buffer state queries give what the old primitives gave",
+       {"prepare buffers to pack into with every setup, a counting buffer and no buffer, also through the cores",
         "prepare buffers to read from bytes, from bytes of another version and from no buffer; read them out"},
        "the same bytes, sizes, codes and answers; PACK_FORMAT, PACK_VERSION", {}, {51, 52}, test_try_init},
-      {"RAW-OPS-40", "try_put", "try_put_uint32(), try_put_double() and try_put_str() write what the old ones write",
+      {"RAW-OPS-40", "try_put", "try_put_uint32(), try_put_double() and try_put_str() write what the old ones wrote",
        {"pack numbers, doubles and strings, null and empty among them, into a buffer and a counting buffer; pack "
         "into no buffer"},
        "the same bytes and codes; PACK_BADARG", {}, {53}, test_try_put},
       {"RAW-OPS-41", "try_get", "try_get_uint32(), try_get_double() and try_get_str() read what the old ones read",
        {"read a number, a double, a string and a null string, then read past the end, then read from no buffer"},
-       "the same values and codes; 0 for the numbers and the string kept on an error", {}, {54}, test_try_get},
+       "the values written and PACK_SUCCESS; PACK_FORMAT and PACK_BADARG, 0 for the numbers and the string kept on "
+       "an error", {}, {54}, test_try_get},
       {"RAW-OPS-42", "walk", "front(), back(), next() and prev() of the raw handles walk a list both ways",
        {"walk a list of four front to back and back to front with the read-only handles, compare with the links",
         "step from both ends with the mutable handles and write through them",
