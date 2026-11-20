@@ -121,7 +121,7 @@ FCLOSE_ERROR:
  * @tparam T the object type of the target
  * @param target the target, of type @p T
  * @param sub_command the sub command of the modify request
- * @param qlp the request list, replaced by the answer data of the request (may be empty afterwards)
+ * @param qlp the request list, consumed: it is freed with the answer data of the request
  * @param fields the fields to modify, fields of @p T, at least one
  * @return the answer list of the request
  * @throw ocs::tom::FieldException for a field that is not one of @p T, or WrongType for a request list of another
@@ -130,13 +130,12 @@ FCLOSE_ERROR:
 template <ocs::tom::ObjectType T>
 static ocs::tom::ListPtr<ocs::tom::AN>
 ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command,
-                          ocs::tom::RawListPtr &qlp, const std::span<const int> fields) {
+                          ocs::tom::RawListPtr &&qlp, const std::span<const int> fields) {
    DENTER(TOP_LAYER);
    const auto what = ocs::tom::what<T>(fields);
    auto data = ocs::tom::adopt<T>(std::move(qlp));
    auto alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::MOD, sub_command, data, ocs::tom::Where<T>(),
                                         what);
-   qlp = ocs::tom::RawListPtr(std::move(data));
    DRETURN(alp);
 }
 
@@ -145,12 +144,12 @@ ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubComm
  *
  * @param target the target of the attribute table entry
  * @param sub_command the sub command of the modify request
- * @param qlp the request list, replaced by the answer data of the request (may be empty afterwards)
+ * @param qlp the request list, consumed: it is freed with the answer data of the request
  * @param fields the fields to modify, terminated by NoName, at least one
  * @return the answer list of the request; an error for a target the attribute table does not name
  */
 static ocs::tom::ListPtr<ocs::tom::AN>
-ocs_qconf_attr_send(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, ocs::tom::RawListPtr &qlp,
+ocs_qconf_attr_send(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, ocs::tom::RawListPtr &&qlp,
                     const int fields[]) {
    DENTER(TOP_LAYER);
    std::size_t field_count = 0;
@@ -161,22 +160,22 @@ ocs_qconf_attr_send(const ocs::gdi::Target target, const ocs::gdi::SubCommand su
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    switch (target) {
       case ocs::gdi::Target::CQ_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::CQ>(target, sub_command, qlp, field_span);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::CQ>(target, sub_command, std::move(qlp), field_span);
          break;
       case ocs::gdi::Target::EH_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::EH>(target, sub_command, qlp, field_span);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::EH>(target, sub_command, std::move(qlp), field_span);
          break;
       case ocs::gdi::Target::PE_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::PE>(target, sub_command, qlp, field_span);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::PE>(target, sub_command, std::move(qlp), field_span);
          break;
       case ocs::gdi::Target::CK_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::CK>(target, sub_command, qlp, field_span);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::CK>(target, sub_command, std::move(qlp), field_span);
          break;
       case ocs::gdi::Target::HGRP_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::HGRP>(target, sub_command, qlp, field_span);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::HGRP>(target, sub_command, std::move(qlp), field_span);
          break;
       case ocs::gdi::Target::RQS_LIST:
-         alp = ocs_qconf_attr_send_typed<ocs::tom::RQS>(target, sub_command, qlp, field_span);
+         alp = ocs_qconf_attr_send_typed<ocs::tom::RQS>(target, sub_command, std::move(qlp), field_span);
          break;
       default:
          answer_list_add_sprintf(&alp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_OBJECT_INVALID_OBJECT_TYPE_SI,
@@ -355,7 +354,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
 
    // the validation functions of sgeobj still take the raw list
    if (info_entry->pre_gdi_function == nullptr || info_entry->pre_gdi_function(qlp.get().raw(), alpp)) {
-      *alpp = ocs_qconf_attr_send(info_entry->target, sub_command, qlp, fields);
+      *alpp = ocs_qconf_attr_send(info_entry->target, sub_command, std::move(qlp), fields);
    }
 
    DRETURN(0);
