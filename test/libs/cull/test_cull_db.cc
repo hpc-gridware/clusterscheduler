@@ -54,6 +54,7 @@
 #include "cull/cull_multitype.h"
 #include "cull/cull_what.h"
 #include "cull/cull_where.h"
+#include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
 // Local CULL types used by all tests
@@ -105,13 +106,6 @@ NAMEDEF(ALIEN_Name)
 NAMEEND
 
 #define ALIEN_Size sizeof(ALIEN_Name) / sizeof(char *)    ///< number of attributes of the second type
-
-/** @brief The name space registering the synthetic types with CULL */
-lNameSpace nmv[] = {
-   {1, TEST_Size, TEST_Name, TEST_Type},
-   {201, ALIEN_Size, ALIEN_Name, ALIEN_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -514,7 +508,8 @@ static void teardown_bootstrap() {
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size},
+                                         {"ALIEN", ALIEN_Type, ALIEN_Name, ALIEN_Size}});
    if (!setup_bootstrap("test_cull_db")) {
       printf("FAIL  cannot create the temporary bootstrap file\n");
       return 1;

@@ -274,7 +274,6 @@ test_default_domain() {
 
 int
 main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    const char *mode = argc > 1 ? argv[1] : "";

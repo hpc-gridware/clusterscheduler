@@ -56,6 +56,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "ocs_module_test.h"
+#include "ocs_test_model.h"
 
 #ifndef OCS_PACK_FORMAT_DUMP_ONLY
 #include "test_cull_pack_format_golden.h"
@@ -116,13 +117,6 @@ NAMEEND
 
 #define PF_Size sizeof(PF_Name) / sizeof(char *)   ///< number of fields of PF_Type
 #define PFS_Size sizeof(PFS_Name) / sizeof(char *) ///< number of fields of PFS_Type
-
-/** @brief The name space registering both types with CULL */
-lNameSpace nmv[] = {
-   {1, PF_Size, PF_Name, PF_Type},
-   {51, PFS_Size, PFS_Name, PFS_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 /** @brief A packed buffer */
 using bytes = std::vector<uint8_t>;
@@ -418,7 +412,7 @@ static void test_read_old() {
 #endif
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"PF", PF_Type, PF_Name, PF_Size}, {"PFS", PFS_Type, PFS_Name, PFS_Size}});
 
    if (argc > 1 && strcmp(argv[1], "--dump") == 0) {
       return dump();

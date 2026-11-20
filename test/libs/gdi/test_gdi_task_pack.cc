@@ -285,7 +285,6 @@ main(int /*argc*/, char * /*argv*/[]) {
    // suppress sge_log stderr output emitted by functions under test
    component_set_daemonized(true);
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_pack_task_bytes();

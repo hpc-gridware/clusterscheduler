@@ -45,6 +45,7 @@
 #include "tom/cull_stats.h"
 #include "tom/msg_cull.h"
 #include "tom/ocs_cull_descr.h"
+#include "tom/ocs_Model.h"
 
 static_assert(offsetof(cull_descr_block<2>, e) == sizeof(cull_descr_header),
               "the entries of a block must follow its header without a gap");
@@ -233,65 +234,14 @@ namespace {
       return false;
    }
 
-   /// the static block of each type of a name space, by the field number of its first field
-   using StaticIndex = std::unordered_map<int, const lDescr *>;
-
-   /** @brief Immutable {name space, index} pair, published as one unit */
-   struct StaticCacheEntry {
-      const lNameSpace *ns;   ///< the name space this entry resolves
-      const StaticIndex *idx; ///< its build-once index
-   };
-
-   std::mutex static_index_mtx;                                                       ///< guards static_index_map during a build
-   std::unordered_map<const lNameSpace *, std::unique_ptr<const StaticIndex>> static_index_map; ///< per name space indices
-   std::atomic<const StaticCacheEntry *> static_last{nullptr};                        ///< last used pair, lock-free fast path
-
-   /**
-    * @brief The build-once index of the static blocks of a name space
-    *
-    * Built like the name index of cull_name.cc: the mutex is taken only on the
-    * first lookup for a name space, later lookups read one atomic pointer to an
-    * immutable pair. A replaced pair is leaked on purpose, at most one per name
-    * space, because a concurrent reader may still use it.
-    *
-    * @param ns the name space
-    * @return its index
-    */
-   const StaticIndex *static_index(const lNameSpace *ns) {
-      if (const StaticCacheEntry *cached = static_last.load(std::memory_order_acquire);
-          cached != nullptr && cached->ns == ns) {
-         return cached->idx;
-      }
-      std::lock_guard<std::mutex> guard(static_index_mtx);
-      auto &slot = static_index_map[ns];
-      if (!slot) {
-         auto idx = std::make_unique<StaticIndex>();
-         for (const lNameSpace *e = ns; e->lower != 0; ++e) {
-            if (e->descr != nullptr && mt_get_type(e->descr[0].mt) != lEndT) {
-               idx->emplace(e->descr[0].nm, e->descr);
-            }
-         }
-         slot = std::move(idx);
-      }
-      const StaticIndex *idx = slot.get();
-      static_last.store(new StaticCacheEntry{ns, idx}, std::memory_order_release);
-      return idx;
-   }
-
    /**
     * @brief The static block of the type a descriptor starts with
     * @param dp the entries of a descriptor
-    * @return the static block registered in the name space of the calling thread
-    *         for the type of entry 0, or nullptr if there is none
+    * @return the static block the installed object model holds for the type of entry 0, or nullptr if there is
+    *         none
     */
    const lDescr *static_block_for(const lDescr *dp) {
-      const lNameSpace *ns = cull_state_get_name_space();
-      if (ns == nullptr) {
-         return nullptr;
-      }
-      const StaticIndex *idx = static_index(ns);
-      auto it = idx->find(dp[0].nm);
-      return it == idx->end() ? nullptr : it->second;
+      return ocs_cull_descr_static_for(dp[0].nm);
    }
 
 } // namespace
@@ -308,53 +258,47 @@ bool ocs_cull_descr_is_counted(const lDescr *dp) {
 /**
  * @brief The static block of the type whose first field is a given one
  * @param nm the field number of the first field of the type
- * @return the block registered in the name space of the calling thread, or
- *         nullptr if there is no name space or no such type
+ * @return the block the installed object model holds for the type, or
+ *         nullptr if no model is installed or no type of it starts with the field
  */
 const lDescr *ocs_cull_descr_static_for(const int nm) {
-   const lNameSpace *ns = cull_state_get_name_space();
-   if (ns == nullptr) {
+   const ocs::tom::TypeTable *table = ocs::tom::type_table(nm);
+   if (table == nullptr || table->descr == nullptr || mt_get_type(table->descr[0].mt) == lEndT ||
+       table->descr[0].nm != nm) {
       return nullptr;
    }
-   const StaticIndex *idx = static_index(ns);
-   auto it = idx->find(nm);
-   return it == idx->end() ? nullptr : it->second;
+   return table->descr;
 }
 
 /**
  * @brief The static block of the type a field belongs to
  *
- * Field numbers are allocated in one block per type, so the name space entry
- * whose range contains the field names its type, and the field sits at the
- * offset from the lower bound of the range.
+ * Field numbers are allocated in one block per type, so the type of the
+ * installed object model whose range contains the field is its type, and the
+ * field sits at the offset from the first field number of the type.
  *
  * @param nm the field number
  * @param pos set to the position of the field in the block
- * @return the block registered in the name space of the calling thread, or
- *         nullptr if no type of it contains the field
+ * @return the block the installed object model holds for the type, or
+ *         nullptr if no model is installed or no type of it contains the field
  */
 const lDescr *ocs_cull_descr_static_containing(const int nm, int *pos) {
-   const lNameSpace *ns = cull_state_get_name_space();
-   if (ns == nullptr) {
+   const ocs::tom::TypeTable *table = ocs::tom::type_table(nm);
+   if (table == nullptr || table->descr == nullptr) {
       return nullptr;
    }
-   for (const lNameSpace *e = ns; e->lower != 0; ++e) {
-      if (e->descr != nullptr && nm >= e->lower && nm < e->lower + e->size) {
-         const int k = nm - e->lower;
-         if (e->descr[k].nm == nm) {
-            *pos = k;
-            return e->descr;
-         }
-         return nullptr;
-      }
+   const int k = nm - table->fields[0].nm;
+   if (table->descr[k].nm != nm) {
+      return nullptr;
    }
-   return nullptr;
+   *pos = k;
+   return table->descr;
 }
 
 /**
  * @brief Whether a descriptor is the static block of its type
  * @param dp the entries of a descriptor, or nullptr
- * @return true if dp is the block registered for its type in the name space of the calling thread
+ * @return true if dp is the block the installed object model holds for its type
  */
 bool ocs_cull_descr_is_static(const lDescr *dp) {
    return dp != nullptr && !ocs_cull_descr_is_counted(dp) && static_block_for(dp) == dp;
@@ -438,14 +382,14 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
  * @brief Abort if a reduced descriptor does not have the length of its type (CS-439, N-B-9)
  *
  * A compact reduction, as hand-written arrays were, would make every position
- * past its end a wrong slot. The type is found through the name space of the
- * calling thread; without one nothing is checked.
+ * past its end a wrong slot. The type is found through the installed object
+ * model; without one nothing is checked.
  *
  * @param dp the entries of a descriptor
  * @param n their number, without the terminating one
  */
 static void check_full_length(const lDescr *dp, const uint32_t n) {
-   if ((dp[0].mt & CULL_IS_REDUCED) == 0 || cull_state_get_name_space() == nullptr) {
+   if ((dp[0].mt & CULL_IS_REDUCED) == 0 || !ocs::tom::has_model()) {
       return;
    }
    int pos = 0;
@@ -462,7 +406,7 @@ static void check_full_length(const lDescr *dp, const uint32_t n) {
  *
  * A counted descriptor gets one more reference. A full descriptor yields the
  * static block of its type, also when it is an equal copy of it; the static
- * block is found through the name space of the calling thread. Any other
+ * block is found through the installed object model. Any other
  * descriptor is interned. Debug builds abort on a reduced descriptor that does
  * not have the length of its type. The argument is left to the caller.
  *

@@ -38,7 +38,7 @@
  * The lists and elements of the library hold their descriptor through
  * ocs_cull_descr_acquire(), which hands out the static block of the type for a
  * full descriptor and the interned one for a reduced descriptor. The static
- * block of a type is found through the name space of the calling thread.
+ * block of a type is found through the installed object model (tom/ocs_Model.h).
  *
  * All functions are thread safe. The registry is consulted only when a
  * descriptor is built, so one mutex is enough.

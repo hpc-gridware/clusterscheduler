@@ -55,6 +55,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_pack.h"
+#include "tom/ocs_ElementCore.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
@@ -1719,7 +1720,8 @@ test_rest() {
    lAddSubStr(with_list, UE_name, "alice", US_entries, UE_Type);
    lList **ref = lGetListRef(with_list, US_entries);
    queries = queries && ref != nullptr && *ref == lGetList(with_list, US_entries) &&
-             strcmp(lMt2Str(-1), "unknown multitype") == 0 && strcmp(lMt2Str(lUlong64T), "lUlong64T") == 0;
+             strcmp(ocs::tom::type_name(-1), "unknown multitype") == 0 &&
+             strcmp(ocs::tom::type_name(lUlong64T), "lUlong64T") == 0;
    const bool list_ref_aborts = aborts([] {
       lListElem *ep = lCreateElem(US_Type);
       static_cast<void>(lGetListRef(ep, US_name));
@@ -1839,7 +1841,7 @@ test_rest() {
                               US_name, "t*");
    text += dump_text([&](FILE *fp) { lWriteWhereTo(where, fp); });
    for (int mt = -1; mt <= lUlong64T + 1; mt++) {
-      text += lMt2Str(mt);
+      text += ocs::tom::type_name(mt);
    }
    const std::uint64_t hash = fnv1a(text.data(), text.size());
    if (RestTextHash == 0) {
@@ -1856,7 +1858,6 @@ test_rest() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"LEGACY-01", "getters by name",

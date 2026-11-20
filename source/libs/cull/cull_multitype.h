@@ -42,7 +42,6 @@
 #include <cstdio>
 
 #include "cull/cull_list.h"
-#include "cull/cull_name.h"
 #include "tom/cull_lerrno.h"
 #include "tom/ocs_cull_descr.h"
 
@@ -64,8 +63,6 @@ int lGetPosType(const lDescr *dp, int pos);
 int lCountDescr(const lDescr *dp);
 
 int lGetPosViaElem(const lListElem *element, int nm, int abort);
-
-const char *lMt2Str(int mt);
 
 char **lGetPosStringRef(const lListElem *ep, int id);
 

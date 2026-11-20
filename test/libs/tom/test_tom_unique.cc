@@ -317,7 +317,7 @@ test_lookup() {
       std::vector<std::thread> threads;
       for (std::size_t t = 0; t < threw.size(); t++) {
          threads.emplace_back([&, t] {
-            lInit(nmv); // the field names of the message are per thread
+            // the field names of the message come from the object model, which is process-wide
             ocs::tom::install_model(ocs::tom::gcs_model());
             for (int i = 0; i < 2; i++) {
                threw[t] += throws_duplicate([&] { static_cast<void>(typed.find_first<JAT_task_number>(2u)); },
@@ -429,7 +429,6 @@ test_valid_after_throw() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"UNIQUE-01", "debug checks",

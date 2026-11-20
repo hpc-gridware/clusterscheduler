@@ -150,7 +150,6 @@ test_parse_date_time() {
  * @return 0 if all checks pass, 1 otherwise, 2 on a usage error
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    return ocs::module_test::run(argc, argv, {

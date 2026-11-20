@@ -31,7 +31,6 @@
 #include "tom/cull_lerrnoP.h"
 #include "tom/cull_listP.h"
 #include "tom/cull_multitypeP.h"
-#include "tom/cull_name.h"
 #include "tom/cull_whatP.h"
 #include "tom/cull_whereP.h"
 #include "tom/ocs_ElementCore.h"

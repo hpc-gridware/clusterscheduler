@@ -55,6 +55,7 @@
 #include "cull/cull.h"
 #include "cull/cull_whatP.h"
 #include "cull/ocs_cull_descr.h"
+#include "ocs_test_model.h"
 
 /** @brief A synthetic CULL object type, defined only for these tests
  *
@@ -149,13 +150,6 @@ NAMEEND
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
 #define TEST1_Size sizeof(TEST1_Name) / sizeof(char *)   ///< number of attributes of the second synthetic type
 
-/** @brief The name space registering the synthetic types with CULL */
-lNameSpace nmv[] = {
-        {1,  TEST_Size,  TEST_Name, TEST_Type},
-        {51, TEST1_Size, TEST1_Name, TEST1_Type},
-        {0, 0, nullptr, nullptr}
-};
-
 static int s_fail = 0;
 
 /** @def CHECK
@@ -231,7 +225,8 @@ static int enumeration_compare(const lEnumeration *what1, const lEnumeration *wh
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_cull_enumeration");
    component_set_daemonized(true);
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size},
+                                         {"TEST1", TEST1_Type, TEST1_Name, TEST1_Size}});
 
    // --- lWhat ---
    printf("\n--- lWhat ---\n");

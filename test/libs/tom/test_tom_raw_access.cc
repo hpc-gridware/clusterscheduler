@@ -671,7 +671,6 @@ test_handle_arguments() {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"RAW-ACC-01", "plain fields",

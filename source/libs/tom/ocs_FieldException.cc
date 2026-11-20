@@ -24,7 +24,6 @@
 
 #include "tom/ocs_FieldException.h"
 
-#include "tom/cull_name.h"
 #include "tom/ocs_Model.h"
 
 namespace ocs::tom {

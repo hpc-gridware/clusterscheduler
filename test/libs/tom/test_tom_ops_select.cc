@@ -831,7 +831,6 @@ void test_timing() {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-SEL-01", "what", "what<F...>() and what<T>(fields) select what lWhat and lIntVector2What select",

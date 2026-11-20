@@ -170,7 +170,6 @@ test_owning_handles() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"LIST-01", "ranges and lookups",

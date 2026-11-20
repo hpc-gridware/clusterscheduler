@@ -296,8 +296,7 @@ sge_qmaster_thread_init(ProgName prog_id, ThreadName thread_id, bool switch_to_a
       ocs::TerminationManager::install_terminate_handler();
    }
 
-   // initialize CULL per thread
-   lInit(nmv);
+   // install the object model the list library takes field names and static descriptors from
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    if (ocs::gdi::ClientBase::setup(prog_id, thread_id, &alp, true) != ocs::gdi::ErrorValue::AE_OK) {

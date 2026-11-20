@@ -1559,7 +1559,6 @@ test_modify_sublist() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-FREE-01", "find", "find_first<F> finds what the old lookups find",

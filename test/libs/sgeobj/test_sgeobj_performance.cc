@@ -245,7 +245,6 @@ int main(int argc, const char *argv[]) {
       num_jobs = atoi(argv[1]);
    }
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    printf("Testing with %d jobs\n", num_jobs);

@@ -24,11 +24,10 @@
 # interfaces, so the sources here are built into the cull library rather than
 # into a library of their own.
 # The storage layer moved here from the list library (CS-3088): the structures,
-# the descriptor layout, the hash tables, the error number and the name space. They keep their names until the list library is removed.
+# the descriptor layout, the hash tables and the error number. They keep their names until the list library is removed.
 target_sources(cull PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/cull_hash.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/cull_lerrno.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/cull_name.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/cull_state.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_cull_descr.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_DumpCore.cc

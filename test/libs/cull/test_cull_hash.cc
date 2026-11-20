@@ -75,17 +75,13 @@
 
 #include <sge_log.h>
 
+#include "ocs_test_model.h"
+
 #ifdef TEST_USE_JOBL
 #include "sge_jobL.h"
 int NM_ULONG  = JB_job_number;   ///< the numeric attribute the benchmark hashes on
 int NM_STRING = JB_owner;        ///< the string attribute it hashes on
 const lDescr *DESCR = JB_Type;         ///< the object type the benchmark builds lists of
-
-/** @brief The name space registering the synthetic type with CULL */
-lNameSpace my_nmv[] = {
-   {1, JBS, JBN },
-   {0, 0, nullptr}
-};
 
 #else
 enum {
@@ -108,12 +104,6 @@ NAMEEND
 int NM_ULONG = TEST_ulong;     ///< the numeric attribute the benchmark hashes on
 int NM_STRING = TEST_string;   ///< the string attribute it hashes on
 const lDescr *DESCR = TEST_Type;     ///< the object type the benchmark builds lists of
-
-/** @brief The name space registering the synthetic type with CULL */
-lNameSpace my_nmv[] = {
-        {1, TEST_Size, TEST_Name, TEST_Type},
-        {0, 0, nullptr, nullptr}
-};
 #endif
 
 static int s_fail = 0;
@@ -438,7 +428,9 @@ int main(int argc, char *argv[]) {
    }
 
    component_set_daemonized(true);
-   lInit(my_nmv);
+#ifndef TEST_USE_JOBL
+   ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});
+#endif
    srand(time(0));
 
    if (argc == 1) {

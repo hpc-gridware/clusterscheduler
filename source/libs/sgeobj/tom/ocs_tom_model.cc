@@ -40,7 +40,7 @@ namespace ocs::tom {
     * @brief The object model of the Cluster Scheduler: every object type of `all_types.json` and the sub-types
     *        of their list and object fields
     *
-    * Install it with `ocs::tom::install_model(ocs::tom::gcs_model())` next to `lInit(nmv)`.
+    * Install it with `ocs::tom::install_model(ocs::tom::gcs_model())` at the start of a program.
     *
     * @return the model; its tables live for the whole run of the program
     */

@@ -1193,7 +1193,7 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer) {
    nm = descr[0].nm;
 
    if (nm != NoName) {
-      // an unknown field gives a text without an underscore ("nm <number>"), so no prefix, as with lNm2Str()
+      // an unknown field gives a text without an underscore ("nm <number>"), so no prefix
       const char *name = ocs::tom::field_name(nm);
 
       if (name != nullptr) {

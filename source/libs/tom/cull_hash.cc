@@ -59,7 +59,6 @@
 #include "tom/cull_lerrno.h"
 #include "tom/cull_listP.h"
 #include "tom/cull_multitypeP.h"
-#include "tom/cull_name.h"
 #include "tom/cull_stats.h"
 #include "tom/msg_cull.h"
 #include "tom/ocs_cull_descr.h"
@@ -87,7 +86,7 @@
 /// A new hash table is created with 2^#MIN_CULL_HASH_SIZE buckets
 #define MIN_CULL_HASH_SIZE 4
 
-/// Lists shorter than this are searched linearly by this thread; set by lInit(), see #OCS_CULL_HASH_MIN_ELEMS
+/// Lists shorter than this are searched linearly by this thread; see ocs_cull_hash_set_min_elems()
 static thread_local uint32_t cull_hash_min_elems = OCS_CULL_HASH_MIN_ELEMS;
 
 static void cull_hash_destroy(cull_htable *htp);
@@ -340,7 +339,7 @@ cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
  * @brief The hash table of a field for a lookup, built by the first lookup
  *
  * A list that is hashable and has at least the calling thread's threshold of
- * elements (lInit()) gets the table of the field on its first lookup, and with
+ * elements (ocs_cull_hash_set_min_elems()) gets the table of the field on its first lookup, and with
  * the first table of the list its slot array. Concurrent first lookups, which
  * run under a read lock, may each allocate an array and build a table: the
  * first to publish each by compare-and-swap wins, the others free theirs and
@@ -409,8 +408,9 @@ cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
 /**
  * @brief Set the list length below which the calling thread builds no hash table
  *
- * Called by lInit(). The value is per thread: a thread that never calls lInit()
- * uses #OCS_CULL_HASH_MIN_ELEMS. Threads with different values may share lists,
+ * This is what remains of the per-thread initialisation of the list library
+ * since the CULL name space is gone. The value is per thread: a thread that
+ * never calls this function uses #OCS_CULL_HASH_MIN_ELEMS. Threads with different values may share lists,
  * since a table, once built, is maintained and used by every thread.
  *
  * @param n the new threshold; 0 builds a table on the first lookup of any hashable list

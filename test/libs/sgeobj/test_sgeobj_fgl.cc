@@ -189,7 +189,6 @@ void *thread1(void *data) {
    sge_dstring_sprintf(&thread_name, "thread%d", thread->id);
    //sge_dstring_free(&thread_name);
 
-   lInit(nmv); 
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    while (true) {
@@ -299,7 +298,6 @@ int main(int argc, char *argv[]) {
    bool ret = true;
  
    // init required modules 
-   lInit(nmv); 
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    // create some pseudo requests

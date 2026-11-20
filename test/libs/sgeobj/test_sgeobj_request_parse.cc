@@ -1268,7 +1268,6 @@ int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_splitting();

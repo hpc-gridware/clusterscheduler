@@ -54,6 +54,7 @@
 #include "cull/cull.h"
 #include "cull/cull_list.h"
 #include "cull/cull_multitype.h"
+#include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
 // Local CULL type used by all tests
@@ -119,12 +120,6 @@ NAMEDEF(TEST_Name)
 NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
-
-/** @brief The name space registering the synthetic types with CULL */
-lNameSpace nmv[] = {
-   {1, TEST_Size, TEST_Name, TEST_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -483,7 +478,7 @@ static void test_type_errors_abort() {
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});
 
    test_descriptor_queries();
    test_positional_access();

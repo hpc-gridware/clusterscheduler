@@ -459,7 +459,6 @@ test_correct_counterparts() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"HANDLE-01", "pointer-like",

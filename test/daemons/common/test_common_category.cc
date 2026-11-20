@@ -488,7 +488,6 @@ static int s_fail = 0;
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_common_category");
    component_set_daemonized(true);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    char label[64];

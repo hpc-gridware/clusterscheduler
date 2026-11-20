@@ -56,8 +56,6 @@
  */
 typedef struct {
    int lerrno;                          ///< last cull error, one of the `LE*` codes
-   char noinit[50];                     ///< buffer for the placeholder #lNm2Str returns for an unknown id
-   const lNameSpace *name_space;        ///< the name space field numbers are resolved against
 } cull_state_t;
 
 static pthread_once_t cull_once = PTHREAD_ONCE_INIT;
@@ -88,34 +86,6 @@ int cull_state_get_lerrno() {
 }
 
 /**
- * @brief The placeholder text stored by #cull_state_set_noinit
- * @return the text; owned by thread-local storage, do not free
- */
-const char *cull_state_get_noinit() {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   return cull_state->noinit;
-}
-
-/**
- * @brief The name space field numbers are resolved against on this thread
- * @return the name space, or nullptr when none is bound
- */
-const lNameSpace *cull_state_get_name_space() {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   return cull_state->name_space;
-}
-
-/**
  * @brief Record a cull error on this thread
  *
  * @param i one of the `LE*` codes
@@ -128,38 +98,6 @@ void cull_state_set_lerrno(int i) {
    cull_state = cull_state_getspecific(cull_state_key);
 
    cull_state->lerrno = i;
-
-   return;
-}
-
-/**
- * @brief Store the placeholder text for an unresolvable field number
- * @param s the text to store
- */
-void cull_state_set_noinit(char *s) {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   strcpy(cull_state->noinit, s);
-
-   return;
-}
-
-/**
- * @brief Set the name space field numbers are resolved against
- * @param ns the name space to use
- */
-void cull_state_set_name_space(const lNameSpace *ns) {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   cull_state->name_space = ns;
 
    return;
 }
@@ -244,6 +182,4 @@ static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
  */
 static void cull_state_init(cull_state_t *theState) {
    theState->lerrno = 0;
-   theState->noinit[0] = '\0';
-   theState->name_space = nullptr;
 }

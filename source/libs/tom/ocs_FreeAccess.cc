@@ -27,7 +27,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "tom/cull_name.h"
 #include "tom/msg_cull.h"
 #include "tom/ocs_Model.h"
 

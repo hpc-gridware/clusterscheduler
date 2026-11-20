@@ -404,7 +404,6 @@ void test_timing() {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-DUMP-01", "list", "dump() and undump() of a list write and read what lDumpList and lUndumpList do",

@@ -779,7 +779,6 @@ namespace {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-LAY-01", "descriptor", "descr() gives the layout lGetListDescr and lGetElemDescr give",

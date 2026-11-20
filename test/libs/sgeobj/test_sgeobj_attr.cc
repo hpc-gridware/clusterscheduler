@@ -457,7 +457,6 @@ static void test_ocs_attr_list_find_href() {
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_ocs_attr_list_find();

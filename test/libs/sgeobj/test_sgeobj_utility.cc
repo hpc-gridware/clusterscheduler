@@ -340,7 +340,6 @@ static void test_verify_obj_name() {
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_verify_str_key();

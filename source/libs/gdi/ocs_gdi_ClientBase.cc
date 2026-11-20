@@ -734,7 +734,6 @@ ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, ocs::to
                             bool is_qmaster_intern_client) {
    DENTER(TOP_LAYER);
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    component_set_component_id(component_id);
    component_set_qmaster_internal(is_qmaster_intern_client);

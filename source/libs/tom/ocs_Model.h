@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The installed object model: field names, field lookup and sub-types without the CULL name space
+ * @brief The installed object model: field names, field lookup, sub-types and the static descriptors of the types
  *
  * The list library knows field numbers and descriptors, but not the object
  * types they belong to. The model of the object types is generated into
@@ -37,14 +37,15 @@
  * only when referenced, so a registration by a static constructor would be
  * silently dropped.
  *
- * The model is process-wide, unlike the name space of lInit(), which is bound
- * per thread. Installing it is idempotent and cheap when the same model is
- * installed already, so it is called next to every lInit(). Readers never take
- * a lock; an index once published is never freed, so a reader holding it stays
- * valid when another model is installed.
+ * The model is process-wide. Installing it is idempotent and cheap when the
+ * same model is installed already, so every program and every thread start
+ * may call it. Readers never take a lock; an index once published is never
+ * freed, so a reader holding it stays valid when another model is installed.
  *
- * These functions replace lNm2Str(), lStr2Nm() and object_get_subtype() once
- * the CULL name space is removed.
+ * These functions replace the CULL name space (lInit(), lNm2Str(), lStr2Nm()),
+ * which is removed. The list library finds the static descriptor of a type
+ * through type_table(), so a descriptor of a type the installed model does not
+ * know is never recognised as static.
  */
 #pragma once
 
@@ -80,6 +81,8 @@ namespace ocs::tom {
    int find_field(std::string_view full_name) noexcept;
 
    const FieldInfo *field_info(int nm) noexcept;
+
+   const TypeTable *type_table(int nm) noexcept;
 
    const lDescr *sub_type(int nm) noexcept;
 

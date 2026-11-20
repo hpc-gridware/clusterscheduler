@@ -84,7 +84,6 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sge_qmaster_timed_event");
    component_set_daemonized(true);
    sge_prof_set_enabled(false);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    te_init();
 

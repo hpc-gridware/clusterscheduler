@@ -114,7 +114,6 @@ test_copies() {
  * @return 0 if every check passed, 1 otherwise
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"ANSEXC-01", "message",

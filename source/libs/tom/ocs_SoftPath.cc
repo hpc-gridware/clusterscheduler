@@ -38,7 +38,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "tom/cull_name.h"
 #include "tom/ocs_Model.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_arch.h"

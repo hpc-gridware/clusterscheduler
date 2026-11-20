@@ -123,7 +123,6 @@ int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sge_resource_quota");
 
    component_set_daemonized(true);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    // test fixtures: @hgrp1→{host1}, @hgrp2→{host2}; userset1→{user1}, userset2→{@staff}

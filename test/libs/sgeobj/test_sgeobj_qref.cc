@@ -352,7 +352,6 @@ static void test_qref_cache_agrees_with_walk() {
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    if (!setup_bootstrap()) {

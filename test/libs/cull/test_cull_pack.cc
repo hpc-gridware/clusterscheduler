@@ -68,6 +68,7 @@
 #include "msg_common.h"
 
 #include <sge_log.h>
+#include "ocs_test_model.h"
 
 enum {
    TEST_host = 1,   ///< a host name attribute
@@ -106,12 +107,6 @@ NAMEDEF(TEST_Name)
 NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)   ///< number of attributes of the synthetic type
-
-/** @brief The name space registering the synthetic type with CULL */
-lNameSpace nmv[] = {
-        {1, TEST_Size, TEST_Name, TEST_Type},
-        {0, 0, nullptr, nullptr}
-};
 
 static int s_fail = 0;
 
@@ -264,7 +259,7 @@ int main(int argc, char *argv[]) {
    uint32_t predicted_size = 0;
 
    component_set_daemonized(true);
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});
 
 
    // create fully-populated element

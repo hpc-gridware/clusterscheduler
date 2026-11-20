@@ -618,7 +618,6 @@ test_inventory() {
  * @return 0 if every check passed, 1 otherwise
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    // the parsers run with the debug check of N-H-18 armed: they must not hold a repeated key even for a moment; the
    // cases that build such lists on purpose suspend the check themselves

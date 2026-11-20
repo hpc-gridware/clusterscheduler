@@ -186,7 +186,6 @@ int main(int argc, char **argv) {
    lList **master_job_list = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
 #if defined(LINUX)

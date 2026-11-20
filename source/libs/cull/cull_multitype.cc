@@ -250,18 +250,6 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
 }
 
 /**
- * @brief Returns the string representation of a type id
- *
- * @param mt the field type, e.g. lUlongT
- * @return the name, e.g. "lUlongT", or "unknown multitype"
- *
- * @note A thin wrapper over ocs::tom::type_name() of the core (CS-3077).
- */
-const char *lMt2Str(int mt) {
-   return ocs::tom::type_name(mt);
-}
-
-/**
  * @brief Returns the length of the type of a descriptor (N-B-7)
  *
  * The number of entries without the terminating #lEndT entry. The number of

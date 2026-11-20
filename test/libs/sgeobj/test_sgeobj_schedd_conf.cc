@@ -238,7 +238,6 @@ static conf_settings_t params_settings[] = {
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_schedd_conf");
    component_set_daemonized(true);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;

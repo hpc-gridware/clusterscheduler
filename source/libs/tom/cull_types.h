@@ -54,7 +54,6 @@
 #define NoName -1 ///< field name meaning "no field"; terminates a descriptor
 
 typedef struct _lDescr lDescr;             ///< one field of an object type; see @ref _lDescr
-typedef struct _lNameSpace lNameSpace;     ///< a block of field names; see @ref _lNameSpace
 typedef struct _lList lList;               ///< a cull list; see @ref _lList
 typedef struct _lListElem lListElem;       ///< one element of a cull list; see @ref _lListElem
 typedef struct _lCondition lCondition;     ///< a selection condition, built with `lWhere()`
@@ -167,6 +166,11 @@ extern const char *multitypes[];
  */
 #define CULL_ANY_SUBTYPE 0
 
+/*
+ * The field name tables of the object types written by hand in the module
+ * tests; the field names of the generated types come from the object model
+ * (tom/ocs_Model.h).
+ */
 #ifdef __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 #define NAMEDEF( name ) const char *name[] = {                                           ///< opens the field name table matching a #LISTDEF
 #define NAME( name ) name ,                                                              ///< one entry of a #NAMEDEF table
@@ -176,19 +180,6 @@ extern const char *multitypes[];
 #define NAME(name)                                                                       ///< one entry of a forward declared #NAMEDEF table
 #define NAMEEND                                                                          ///< closes a forward declared name table
 #endif
-
-/**
- * @brief One block of field names, mapping field numbers to their names
- *
- * Field numbers are allocated in blocks, one per object type, so a number can
- * be resolved to a name by finding the block whose range contains it.
- */
-struct _lNameSpace {
-   int lower;          ///< lowest field number in this block
-   int size;           ///< how many names the block holds
-   const char *const *namev; ///< the names, indexed by `number - lower`
-   const lDescr *descr; ///< descriptor of the object type the block belongs to
-};
 
 /**
  * @brief One field of an object type

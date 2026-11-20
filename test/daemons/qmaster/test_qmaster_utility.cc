@@ -313,7 +313,6 @@ test_replace_sublist() {
  */
 int
 main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    const int failed = test_replace_sublist();

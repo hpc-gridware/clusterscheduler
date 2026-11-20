@@ -70,7 +70,6 @@ namespace {
     */
    int no_sink_child(const char *missing) {
       setenv("OCS_SOFT_PATH_DIR", missing, 1);
-      lInit(nmv);
       ocs::tom::install_model(ocs::tom::gcs_model());
       cull_state_set_lerrno(0);
       const int result = lSetPosBool(nullptr, 0, true);
@@ -282,7 +281,6 @@ int main(int argc, char *argv[]) {
       return no_sink_child(argv[2]);
    }
    self = argv[0];
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    char dir[] = "/tmp/test_tom_soft_path.XXXXXX";
    if (mkdtemp(dir) == nullptr) {

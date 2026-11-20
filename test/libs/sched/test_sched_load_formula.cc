@@ -219,7 +219,6 @@ static void test_scaled_mixed_load(const ocs::tom::ConstElement<ocs::tom::EH> ho
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sched_load_formula");
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    // build a single-entry complex with num_proc = 4

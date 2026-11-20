@@ -147,7 +147,6 @@ int
 main(int argc, char *argv[]) {
    int failed = 0;
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    // The usage of the pe tasks of a job with accounting_summary has to be

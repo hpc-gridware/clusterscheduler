@@ -461,7 +461,6 @@ void test_timing() {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-REST-01", "from_string", "from_string<F>() parses names as lString2List and lString2ListNone do",

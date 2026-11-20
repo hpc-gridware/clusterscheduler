@@ -711,7 +711,6 @@ static void test_range_list_parse_extended() {
 
 int main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);   // suppress sge_log stderr output during tests
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_range_get_all_ids();

@@ -452,7 +452,6 @@ void test_timing() {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-OWN-01", "create and free", "the owning handles create, free and hand over as the old functions do",

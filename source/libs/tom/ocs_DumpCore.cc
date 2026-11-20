@@ -49,7 +49,6 @@
 #include "tom/cull_lerrnoP.h"
 #include "tom/cull_listP.h"
 #include "tom/cull_multitypeP.h"
-#include "tom/cull_name.h"
 #include "tom/msg_cull.h"
 #include "tom/ocs_cull_descr.h"
 #include "tom/ocs_ElementCore.h"

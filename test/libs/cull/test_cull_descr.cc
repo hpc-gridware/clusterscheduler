@@ -60,6 +60,7 @@
 #include "uti/sge_string.h"
 
 #include "ocs_module_test.h"
+#include "ocs_test_model.h"
 
 /** @brief The object type the reductions are taken from */
 enum {
@@ -109,7 +110,7 @@ NAMEEND
 
 #define GR_Size sizeof(GR_Name) / sizeof(char *) ///< number of fields of GR_Type
 
-/** @brief A type the name space does not register */
+/** @brief A type the installed object model does not hold */
 enum {
    UR_id = 301, ///< ulong
    UR_text      ///< string
@@ -119,13 +120,6 @@ LISTDEF(UR_Type)
    SGE_ULONG(UR_id, CULL_DEFAULT)
    SGE_STRING(UR_text, CULL_DEFAULT)
 LISTEND(UR_Type)
-
-/** @brief The name space registering the types with CULL */
-lNameSpace nmv[] = {
-   {1, TD_Size, TD_Name, TD_Type},
-   {101, GR_Size, GR_Name, GR_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 /// a reduction of TD_Type to id and name
 static const lDescr RED_A[] = {{TD_id, lUlongT | CULL_HASH | CULL_UNIQUE | CULL_IS_REDUCED},
@@ -1080,7 +1074,7 @@ static void test_absent_fields() {
    CHECK(67, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
-/** @brief DESCR-17: an element of a type the name space does not register (CS-439) */
+/** @brief DESCR-17: an element of a type the installed object model does not hold (CS-439) */
 static void test_unregistered_type() {
    const size_t base = ocs_cull_descr_registry_size();
    lListElem *ep = lCreateElem(UR_Type);
@@ -1111,7 +1105,7 @@ static void test_unregistered_type() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"TD", TD_Type, TD_Name, TD_Size}, {"GR", GR_Type, GR_Name, GR_Size}});
 
    return ocs::module_test::run(argc, argv, {
       {"DESCR-01", "static descriptor blocks",
@@ -1219,8 +1213,8 @@ int main(int argc, char *argv[]) {
        "positions equal those of the type, absent and foreign fields are not found and have no type, held values "
        "are those of the source, and reading an absent field aborts",
        {{"FLD-01", "partly"}, {"FLD-02", "unit level"}}, {62, 63, 64, 65, 66, 67}, test_absent_fields},
-      {"DESCR-17", "types the name space does not register",
-       "data of a type outside the name space is rejected on the wire",
+      {"DESCR-17", "types the object model does not hold",
+       "data of a type outside the object model is rejected on the wire",
        {"pack an element of an unregistered type and unpack it"},
        "unpacking is a format error and leaves no element and no descriptor behind",
        {{"FLD-03", "partly"}}, {68, 69}, test_unregistered_type},

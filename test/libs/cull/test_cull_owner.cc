@@ -46,6 +46,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "ocs_module_test.h"
+#include "ocs_test_model.h"
 
 /** @brief The element type: hashed keys, a sublist and a sub-object */
 enum {
@@ -87,13 +88,6 @@ NAMEEND
 
 #define OW_Size sizeof(OW_Name) / sizeof(char *)   ///< number of fields of OW_Type
 #define OWS_Size sizeof(OWS_Name) / sizeof(char *) ///< number of fields of OWS_Type
-
-/** @brief The name space registering both types with CULL */
-lNameSpace nmv[] = {
-   {1, OW_Size, OW_Name, OW_Type},
-   {51, OWS_Size, OWS_Name, OWS_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 /**
  * @brief Whether an element carries a state and, for a bound element, the list
@@ -468,7 +462,8 @@ static void test_hash_follows_owner() {
 
 int main(int argc, char *argv[]) {
    // the lists here are short; the maintenance of their tables is what is tested
-   lInit(nmv, 0);
+   ocs::module_test::install_test_model({{"OW", OW_Type, OW_Name, OW_Size}, {"OWS", OWS_Type, OWS_Name, OWS_Size}});
+   ocs_cull_hash_set_min_elems(0);
 
    return ocs::module_test::run(argc, argv, {
       {"OWNER-01", "element layout",

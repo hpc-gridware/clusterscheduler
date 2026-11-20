@@ -1503,7 +1503,6 @@ ptf_get_usage(ocs::tom::ListPtr<ocs::tom::JB> &job_usage_list) {
  */
 int ptf_init() {
    DENTER(TOP_LAYER);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    ptf_jobs = ocs::tom::ListPtr<ocs::tom::JL>::create("ptf_job_list").release();

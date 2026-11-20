@@ -123,7 +123,6 @@ static std::string get_attribute_line(const std::string &content, const char *na
  */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_flatfile_usage");
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;

@@ -193,7 +193,6 @@ namespace {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-ATOM-01", "round trip", "get_atomic<F>() and set_atomic<F>() as lGetUlong64Atomic and lSetUlong64Atomic",

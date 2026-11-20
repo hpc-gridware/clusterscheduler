@@ -224,7 +224,6 @@ int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sched_request_amount");
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_numeric_amount_comes_from_doubleval();

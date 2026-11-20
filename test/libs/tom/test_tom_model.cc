@@ -23,13 +23,14 @@
  *
  * The field names, the lookup of a field by name, the sub-types and the type
  * names come from the generated tables, installed with
- * ocs::tom::install_model(). They are to replace the CULL name space, so this
- * test compares them with lNm2Str()/lStr2Nm() for every field of every type,
- * and with object_get_subtype() of sgeobj, their predecessor, for the
- * sub-types. It also checks the answers for unknown fields and descriptors,
- * the fallback text and its buffers, the behaviour without an installed model,
- * the visibility of the model in a thread that never called lInit(), and the
- * rejection of an inconsistent model, one case per rule of the check.
+ * ocs::tom::install_model(). They replace the CULL name space, which is
+ * removed, so this test compares them with the field tables for every field
+ * of every type, and with object_get_subtype() of sgeobj, their predecessor,
+ * for the sub-types. It also checks the answers for unknown fields and
+ * descriptors, the fallback text and its buffers, the behaviour without an
+ * installed model, the visibility of the model in a thread that did not
+ * install it, the rejection of an inconsistent model, one case per rule of the
+ * check, and the static descriptors the list library finds through the model.
  */
 
 #include <algorithm>
@@ -44,8 +45,6 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
-#include "tom/cull_name.h"
-#include "tom/cull_state.h"
 #include "tom/ocs_cull_descr.h"
 #include "tom/ocs_Model.h"
 
@@ -91,7 +90,7 @@ test_install() {
 }
 
 /**
- * @brief Every field has the name of the name space, and its name leads back to it
+ * @brief Every field has the name of its field table, and its name leads back to it
  * @return nothing; CHECK records the results
  */
 static void
@@ -104,14 +103,13 @@ test_names() {
       for (std::size_t i = 0; i < table.size; i++, n_fields++) {
          const ocs::tom::FieldInfo &f = table.fields[i];
          const char *name = ocs::tom::field_name(f.nm);
-         if (std::strcmp(name, lNm2Str(f.nm)) != 0 || std::strcmp(name, f.name) != 0) {
-            std::printf("%s: field %d is named %s, the name space says %s\n", table.name, f.nm, name, lNm2Str(f.nm));
+         if (std::strcmp(name, f.name) != 0) {
+            std::printf("%s: field %d is named %s, the table says %s\n", table.name, f.nm, name, f.name);
             name_mismatches++;
          }
          const int found = ocs::tom::find_field(f.name);
-         if (found != f.nm || found != lStr2Nm(f.name)) {
-            std::printf("%s: %s is found as %d, expected %d, lStr2Nm() says %d\n", table.name, f.name, found, f.nm,
-                        lStr2Nm(f.name));
+         if (found != f.nm) {
+            std::printf("%s: %s is found as %d, expected %d\n", table.name, f.name, found, f.nm);
             find_mismatches++;
          }
          if (ocs::tom::field_info(f.nm) != &f) {
@@ -121,8 +119,8 @@ test_names() {
       }
    }
    std::printf("%zu types, %zu fields\n", std::size(ocs::tom::all_type_tables), n_fields);
-   CHECK(3, "field_name() of every field equals lNm2Str() and the table's name", name_mismatches == 0);
-   CHECK(4, "find_field() of every name gives its field number, as lStr2Nm() does", find_mismatches == 0);
+   CHECK(3, "field_name() of every field equals the table's name", name_mismatches == 0);
+   CHECK(4, "find_field() of every name gives its field number", find_mismatches == 0);
    CHECK(5, "field_info() of every field is its entry in the type's table", info_mismatches == 0);
 }
 
@@ -275,19 +273,19 @@ test_inconsistent() {
 }
 
 /**
- * @brief The model installed by the main thread answers in a thread that never called lInit()
+ * @brief The model installed by the main thread answers in a thread that did not install it
  *
- * The model is process-wide, unlike the name space of lInit(), which is bound
- * per thread.
+ * The model is process-wide, unlike the CULL name space it replaces, which
+ * was bound per thread, so another thread finds the static descriptors too.
  *
  * @return nothing; CHECK records the results
  */
 static void
 test_other_thread() {
-   bool no_name_space = false;
+   bool static_found = false;
    bool answers = false;
-   std::thread other([&no_name_space, &answers] {
-      no_name_space = cull_state_get_name_space() == nullptr;
+   std::thread other([&static_found, &answers] {
+      static_found = ocs_cull_descr_static_for(JB_job_number) == JB_Type && ocs_cull_descr_is_static(JB_Type);
       const char *type = ocs::tom::type_name(JB_Type);
       answers = ocs::tom::has_model() && std::strcmp(ocs::tom::field_name(JB_job_number), "JB_job_number") == 0 &&
                 ocs::tom::find_field("JB_job_number") == JB_job_number &&
@@ -295,7 +293,7 @@ test_other_thread() {
                 std::strcmp(type, "JB") == 0;
    });
    other.join();
-   CHECK(23, "a thread that never called lInit() has no name space", no_name_space);
+   CHECK(23, "a thread that did not install the model finds the static descriptor of a type", static_found);
    CHECK(24, "in that thread the model gives names, numbers, sub-types and type names", answers);
 }
 
@@ -454,13 +452,52 @@ test_rules() {
 }
 
 /**
+ * @brief The list library finds the type of a field and the static descriptor of a type through the model
+ *
+ * This is the part of the removed CULL name space that the list library
+ * itself needs: a full descriptor is held as the static block of its type,
+ * and the unpacking of a type reference finds the block by the type's first
+ * field.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_static_descriptors() {
+   const int beyond = beyond_all_fields();
+   const ocs::tom::TypeTable *first = ocs::tom::type_table(JB_job_number);
+   const ocs::tom::TypeTable *later = ocs::tom::type_table(JB_owner);
+   CHECK(39, "type_table() of a first and a later field is the type's table, of an unknown field nullptr",
+         first != nullptr && first == later && first->descr == JB_Type && std::strcmp(first->name, "JB") == 0 &&
+         ocs::tom::type_table(beyond) == nullptr && ocs::tom::type_table(NoName) == nullptr);
+
+   int pos = -1;
+   const lDescr *containing = ocs_cull_descr_static_containing(JB_owner, &pos);
+   int unknown_pos = -1;
+   CHECK(40, "the static block lookups give JB_Type and the field's position, nothing for a later or unknown field",
+         ocs_cull_descr_static_for(JB_job_number) == JB_Type && ocs_cull_descr_static_for(JB_owner) == nullptr &&
+         ocs_cull_descr_static_for(beyond) == nullptr && containing == JB_Type &&
+         pos == JB_owner - JB_job_number && ocs_cull_descr_static_containing(beyond, &unknown_pos) == nullptr &&
+         unknown_pos == -1 && ocs_cull_descr_is_static(JB_Type));
+
+   ocs::tom::uninstall_model();
+   int none_pos = -1;
+   const bool none = ocs::tom::type_table(JB_job_number) == nullptr &&
+                     ocs_cull_descr_static_for(JB_job_number) == nullptr &&
+                     ocs_cull_descr_static_containing(JB_owner, &none_pos) == nullptr && none_pos == -1 &&
+                     !ocs_cull_descr_is_static(JB_Type);
+   const bool again = ocs::tom::install_model(ocs::tom::gcs_model());
+   CHECK(41, "without a model no type and no static block is found", none);
+   CHECK(42, "installed again: JB_Type is the static block of the job type again",
+         again && ocs_cull_descr_static_for(JB_job_number) == JB_Type && ocs_cull_descr_is_static(JB_Type));
+}
+
+/**
  * @brief Run the scenarios
  * @param argc argument count
  * @param argv arguments
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"TOM-MODEL-01", "install",
@@ -469,8 +506,8 @@ int main(int argc, char *argv[]) {
        "both installs succeed; the views are the generated tables",
        {}, {1, 2}, test_install},
       {"TOM-MODEL-02", "names",
-       "field names and the lookup by name agree with the CULL name space for every field of every type",
-       {"for every field: compare field_name() with lNm2Str(), find_field() with the number and with lStr2Nm(), "
+       "field names and the lookup by name agree with the field tables for every field of every type",
+       {"for every field: compare field_name() with the table's name, find_field() with the number, "
         "field_info() with the table entry"},
        "no field differs",
        {}, {3, 4, 5}, test_names},
@@ -509,9 +546,9 @@ int main(int argc, char *argv[]) {
        "every install fails; the installed model still answers",
        {}, {21, 22}, test_inconsistent},
       {"TOM-MODEL-09", "other thread",
-       "the model installed by the main thread answers in a thread that never called lInit()",
-       {"in a new thread: check that no name space is bound, then ask every lookup"},
-       "no name space; the lookups answer as in the main thread",
+       "the model installed by the main thread answers in a thread that did not install it",
+       {"in a new thread: look up the static descriptor of a type, then ask every lookup"},
+       "the static descriptor is found; the lookups answer as in the main thread",
        {}, {23, 24}, test_other_thread},
       {"TOM-MODEL-10", "rules",
        "every rule of the consistency check rejects a model that breaks only that rule, and names that rule",
@@ -520,5 +557,12 @@ int main(int argc, char *argv[]) {
        "the valid model installs; every other install fails for the rule it breaks and leaves the valid one in "
        "place; the model installs again",
        {}, {25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38}, test_rules},
+      {"TOM-MODEL-11", "static descriptors",
+       "the list library finds the type of a field and the static descriptor of a type through the model",
+       {"ask type_table() for a first, a later and an unknown field", "ask the static block lookups of the list "
+        "library for the same fields", "uninstall the model and ask again", "install the model again"},
+       "the job type's table and JB_Type with the field's position; nothing for an unknown field or without "
+       "the model; the old answers after installing it again",
+       {}, {39, 40, 41, 42}, test_static_descriptors},
    });
 }

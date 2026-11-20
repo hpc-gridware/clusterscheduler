@@ -256,7 +256,7 @@ namespace ocs::tom {
    /**
     * @brief Install the object model the name lookups of the typed object model read
     *
-    * Called once at start, next to lInit(); calling it again with the same
+    * Called once at start of a program or a thread; calling it again with the same
     * model costs one atomic load. Installing another model replaces the
     * installed one; the replaced indexes stay valid for readers that still
     * hold them. An index built once is reused when the same model is
@@ -339,13 +339,33 @@ namespace ocs::tom {
    }
 
    /**
+    * @brief The field table of the object type whose field number range holds a field
+    *
+    * O(log types): a binary search over the field number ranges of the types.
+    * The list library reads the static descriptor of a type from it
+    * (`TypeTable::descr`), the position of the field in the type is
+    * `nm - fields[0].nm`.
+    *
+    * @param nm the field number
+    * @return the table, or nullptr if no model is installed or no type of the model holds the field
+    */
+   const TypeTable *type_table(const int nm) noexcept {
+      const Index *index = installed.load(std::memory_order_acquire);
+      if (index == nullptr) {
+         return nullptr;
+      }
+      const TypeEntry *type = find_type(*index, nm);
+      return type != nullptr ? type->table : nullptr;
+   }
+
+   /**
     * @brief The full name of a field, e.g. "JB_job_number"
     *
     * O(log types). For a field the installed model does not know, or without
     * a model, the text "nm <n>" is returned instead. It is written into one of
     * four buffers of the calling thread, used in turn: no other thread can
     * overwrite it, and it stays valid until the same thread has asked for four
-    * further unknown names (lNm2Str() keeps one buffer per thread). A known
+    * further unknown names. A known
     * name is a constant of the model and valid for the whole run.
     *
     * @param nm the field number
@@ -370,7 +390,7 @@ namespace ocs::tom {
    /**
     * @brief The field number of a field name
     *
-    * Only the full name is accepted ("JB_job_number"), as by lStr2Nm().
+    * Only the full name is accepted ("JB_job_number").
     * O(log n) over all fields of the model.
     *
     * @param full_name the full field name

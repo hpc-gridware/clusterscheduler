@@ -175,7 +175,6 @@ test_failed_rename_is_reported() {
  * @return 0 when every check passed, 1 otherwise
  */
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    // one task per file, so the tasks are spooled in task files of their own

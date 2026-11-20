@@ -2139,7 +2139,6 @@ int main(int argc, char *argv[]) {
    // read the bootstrap while errors still reach stderr
    ocs::Bootstrap::get_ignore_fqdn();
    component_set_daemonized(true);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    for (const ObjectCase &c : object_cases()) {

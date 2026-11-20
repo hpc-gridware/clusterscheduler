@@ -303,7 +303,6 @@ static int test_below_window_before_closed_period();
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_resource_utilization");
    component_set_daemonized(true);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;

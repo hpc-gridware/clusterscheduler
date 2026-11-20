@@ -292,8 +292,9 @@ namespace ocs::tom {
    /**
     * @brief The names of the fields of a field table, at compile time
     *
-    * The name block of the list library (@ref _lNameSpace) points into it, so
-    * lNm2Str() and the other name lookups read the names from the table.
+    * Each generated type keeps them as `names` (see #ObjectType); the name
+    * lookups of the list library read the field table through the installed
+    * object model instead (tom/ocs_Model.h).
     *
     * @tparam N number of fields
     * @param fields the field table

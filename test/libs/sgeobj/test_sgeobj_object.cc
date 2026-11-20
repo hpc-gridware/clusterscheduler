@@ -769,8 +769,8 @@ static int pack_roundtrip(const lListElem *ep, lListElem **back) {
 static void test_pack_type_roundtrip() {
    printf("\n--- PACK_Type over the wire ---\n");
 
-   // T63: PACK_Type is registered in the name space
-   CHECK(63, "PACK_id is known to the name space", strcmp(lNm2Str(PACK_id), "PACK_id") == 0);
+   // T63: PACK_Type is known to the installed object model
+   CHECK(63, "PACK_id is known to the object model", strcmp(ocs::tom::field_name(PACK_id), "PACK_id") == 0);
 
    lEnumeration *what = lWhat("%T(%I %I)", QU_Type, QU_qname, QU_qhostname);
    auto what_elem = ocs_what_to_elem(what);
@@ -887,7 +887,7 @@ static bool ocs_attr_value_round_trip(const char *input, const char *expected) {
       const char *result = ok ? ocs_object_append_field<F>(attr.get(), &written) : nullptr;
       ok = result != nullptr && strcmp(result, expected) == 0;
       if (!ok) {
-         printf("   %s: \"%s\" written as \"%s\", expected \"%s\"\n", lNm2Str(static_cast<int>(F)), text,
+         printf("   %s: \"%s\" written as \"%s\", expected \"%s\"\n", ocs::tom::field_name(static_cast<int>(F)), text,
                 result != nullptr ? result : "<parse error>", expected);
       }
 
@@ -1080,7 +1080,6 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // suppress sge_log stderr output emitted by functions under test
    component_set_daemonized(true);
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    auto queue = ocs::tom::ElementPtr<ocs::tom::QU>::create();

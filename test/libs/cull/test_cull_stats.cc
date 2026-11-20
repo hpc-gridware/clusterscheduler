@@ -69,21 +69,6 @@ LISTDEF(ST_Type)
    SGE_STRING(ST_note, CULL_DEFAULT)
 LISTEND(ST_Type)
 
-NAMEDEF(ST_Name)
-   NAME("ST_name")
-   NAME("ST_group")
-   NAME("ST_value")
-   NAME("ST_note")
-NAMEEND
-
-#define ST_Size sizeof(ST_Name) / sizeof(char *) ///< number of fields of ST_Type
-
-/** @brief The name space registering the type with CULL */
-lNameSpace nmv[] = {
-   {1, ST_Size, ST_Name, ST_Type},
-   {0, 0, nullptr, nullptr}
-};
-
 /** @brief The field table of ST_Type, for the object model that names the fields in the dump */
 static const ocs::tom::FieldInfo st_fields[] = {
    {ST_name, "ST_name", ocs::tom::FieldType::String, ocs::tom::Flag::Hash | ocs::tom::Flag::Unique},
@@ -92,7 +77,7 @@ static const ocs::tom::FieldInfo st_fields[] = {
    {ST_note, "ST_note", ocs::tom::FieldType::String, ocs::tom::Flag::None},
 };
 
-/** @brief The object types of this test, installed next to lInit(): the dump takes its names from the model */
+/** @brief The object types of this test, installed at start: the dump takes its names from the model */
 static const ocs::tom::TypeTable st_types[] = {{"ST", ST_Type, st_fields, std::size(st_fields)}};
 
 /// number of elements of the test list
@@ -440,7 +425,7 @@ static void test_merge_and_write() {
       std::thread worker([name] {
          component_set_thread_name(name);
          // a new thread has the default threshold; the lookup builds the table on the short list
-         lInit(nmv, 0);
+         ocs_cull_hash_set_min_elems(0);
          lList *lp = make_list();
          lGetElemStr(lp, ST_name, "e3");
          lFreeList(&lp);
@@ -490,7 +475,7 @@ static void test_merge_and_write() {
  */
 int main(int argc, char *argv[]) {
    // the lists here are short; with the threshold at 0 their first lookup builds the table
-   lInit(nmv, 0);
+   ocs_cull_hash_set_min_elems(0);
    ocs::tom::install_model({st_types, {}});
 
    return ocs::module_test::run(argc, argv, {

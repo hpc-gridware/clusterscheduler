@@ -23,7 +23,7 @@
  *
  * A list that may be hashed starts with empty hash slots. The first lookup on a
  * field of a list with at least #OCS_CULL_HASH_MIN_ELEMS elements (the default
- * threshold of lInit(), which also holds in threads that never call it) builds the
+ * threshold of ocs_cull_hash_set_min_elems(), which also holds in threads that never call it) builds the
  * table of that field; shorter lists are searched linearly. The test checks
  * that no table is built before a lookup, that the built table answers like a
  * linear search and is maintained afterwards, that concurrent first lookups
@@ -54,6 +54,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "ocs_module_test.h"
+#include "ocs_test_model.h"
 
 /** @brief The element type: a unique and a non unique hashed field */
 enum {
@@ -75,12 +76,6 @@ NAMEDEF(LZ_Name)
 NAMEEND
 
 #define LZ_Size sizeof(LZ_Name) / sizeof(char *) ///< number of fields of LZ_Type
-
-/** @brief The name space registering the type with CULL */
-lNameSpace nmv[] = {
-   {1, LZ_Size, LZ_Name, LZ_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 /// position of LZ_name in LZ_Type
 static const int POS_NAME = 0;
@@ -407,7 +402,7 @@ static void test_sort() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"LZ", LZ_Type, LZ_Name, LZ_Size}});
 
    return ocs::module_test::run(argc, argv, {
       {"LAZY-01", "no table without a lookup",

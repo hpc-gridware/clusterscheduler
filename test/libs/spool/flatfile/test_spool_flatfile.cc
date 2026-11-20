@@ -201,7 +201,6 @@ int main(int argc, char **argv) {
    ocs::Bootstrap::get_ignore_fqdn();
 
    component_set_daemonized(true);
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    int id = 1;

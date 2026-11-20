@@ -22,8 +22,8 @@
  * @brief Module test of the object types of the typed object model (CS-3043, TRT-01)
  *
  * The field table of a type is the source of its descriptor, so the two cannot
- * disagree. This test checks what does not follow from that: that every object
- * type of the name space comes from a field table, that the translation into
+ * disagree. This test checks what does not follow from that: that the object
+ * types of the model hold disjoint ranges of field numbers in ascending order, that the translation into
  * the list library's tags keeps every field, that the sub-types the model names
  * are the ones `object_get_subtype()` hands out, and that the value type of host
  * fields compares like a host name.
@@ -37,10 +37,10 @@
 #include <iterator>
 #include <type_traits>
 
-#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/tom/ocs_tom_all.h"
+#include "tom/ocs_Model.h"
 
 #include "ocs_module_test.h"
 
@@ -82,22 +82,30 @@ static_assert(!std::is_convertible_v<const char *, Host> && std::is_constructibl
 static_assert(std::is_convertible_v<Host, const char *>);
 
 /**
- * @brief Every object type of the name space comes from a field table, in the same order
+ * @brief The object types of the model hold disjoint ranges of field numbers, in ascending order
+ *
+ * The generator allocates the ranges in the order of `all_type_tables`, one
+ * after the other, as the CULL name space listed them; the model that the
+ * list library reads is these tables.
+ *
  * @return nothing; CHECK records the results
  */
 static void
 test_every_type() {
-   std::size_t n_types = 0;
    bool in_order = true;
-   for (const lNameSpace *ns = nmv; ns->descr != nullptr; ns++, n_types++) {
-      if (n_types >= std::size(ocs::tom::all_type_tables) || ocs::tom::all_type_tables[n_types].descr != ns->descr) {
-         std::printf("type at index %zu with lower bound %d does not come from the table at the same index\n",
-                     n_types, ns->lower);
+   int next_free = 0;
+   for (std::size_t i = 0; i < std::size(ocs::tom::all_type_tables); i++) {
+      const ocs::tom::TypeTable &table = ocs::tom::all_type_tables[i];
+      if (table.fields[0].nm < next_free || table.descr == nullptr || table.descr[0].nm != table.fields[0].nm) {
+         std::printf("type %s at index %zu with lower bound %d does not follow the previous type\n", table.name, i,
+                     table.fields[0].nm);
          in_order = false;
       }
+      next_free = table.fields[0].nm + static_cast<int>(table.size);
    }
-   CHECK(1, "every type of the name space comes from a field table, in name space order",
-         in_order && n_types == std::size(ocs::tom::all_type_tables));
+   CHECK(1, "the types of the model hold disjoint ranges of field numbers in ascending order, and are the model",
+         in_order && ocs::tom::gcs_model().types.data() == ocs::tom::all_type_tables &&
+         ocs::tom::type_table(JB_job_number) == &ocs::tom::all_type_tables[0]);
 }
 
 /**
@@ -115,7 +123,7 @@ test_entries() {
          const int mt = ocs::tom::cull_type_of(f.type) | ocs::tom::cull_flags_of(f.flags);
          if (dp[i].nm != f.nm || dp[i].mt != mt || dp[i].off != 0 ||
              (i > 0 && f.nm != table.fields[i - 1].nm + 1)) {
-            std::printf("%s: entry %zu (%s) is not held as declared\n", table.name, i, lNm2Str(f.nm));
+            std::printf("%s: entry %zu (%s) is not held as declared\n", table.name, i, ocs::tom::field_name(f.nm));
             mismatches++;
          }
       }
@@ -151,7 +159,8 @@ test_sub_types() {
             }
          }
          if (traits != object_get_subtype(f.nm)) {
-            std::printf("%s: %s names a different sub-type than object_get_subtype()\n", table.name, lNm2Str(f.nm));
+            std::printf("%s: %s names a different sub-type than object_get_subtype()\n", table.name,
+                        ocs::tom::field_name(f.nm));
             mismatches++;
          }
       }
@@ -181,13 +190,12 @@ test_host() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"TRAITS-01", "every type",
-       "every object type of the name space comes from a generated field table",
-       {"walk the name space and the list of tables side by side"},
-       "both list the same descriptors in the same order",
+       "the object types of the model hold disjoint ranges of field numbers in ascending order",
+       {"walk the list of tables and compare each type's first field number with the end of the previous type"},
+       "every range starts after the previous one; the model views the tables",
        {{"TRT-01", "covers"}}, {1}, test_every_type},
       {"TRAITS-02", "entries",
        "the descriptor derived from a field table holds every field as declared",

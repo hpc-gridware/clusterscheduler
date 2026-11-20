@@ -412,7 +412,6 @@ void test_timing() {
  * @return the exit code of the module test framework
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
       {"OPS-SORT-01", "sort", "sort<desc<F>, asc<G>>() sorts as lPSortList does",

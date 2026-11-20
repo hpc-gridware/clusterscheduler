@@ -142,7 +142,6 @@ test_free_master_lists() {
  * @return 0 if every check passed, 1 otherwise
  */
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_host_list_locate();

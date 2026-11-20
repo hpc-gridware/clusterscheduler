@@ -991,7 +991,6 @@ int main(int argc, char *argv[]) {
 
    component_set_component_id(QPING);
 
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    for (i=1;i<argc;i++) {

@@ -44,6 +44,7 @@
 #include "cull/cull_list.h"
 #include "cull/cull_multitype.h"
 #include "tom/ocs_ElementCore.h"
+#include "ocs_test_model.h"
 
 /**
  * @brief Run a callable in a child process and report whether it aborted
@@ -137,12 +138,6 @@ NAMEDEF(TEST_Name)
 NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
-
-/** @brief The name space registering the synthetic types with CULL */
-lNameSpace nmv[] = {
-   {1, TEST_Size, TEST_Name, TEST_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -950,7 +945,8 @@ static void test_is_free_elem() {
 
 int main(int /*argc*/, char * /*argv*/[]) {
    // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
-   lInit(nmv, 0);
+   ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});
+   ocs_cull_hash_set_min_elems(0);
 
    test_what_where();
    test_field_access();

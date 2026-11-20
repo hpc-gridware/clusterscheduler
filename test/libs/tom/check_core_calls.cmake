@@ -27,7 +27,7 @@
 # - for includes of a header outside tom/ and uti/;
 # - for calls of a function named like the old interface, l followed by a
 #   capital letter, that is not defined in source/libs/tom itself. The
-#   functions defined there (lInit(), lNm2Str(), ...) are the
+#   functions defined there (lCountPresent(), ...) are the
 #   infrastructure that moved into the core with the storage layer; the
 #   types it defines (lDescr, lList, ...) are no calls either. The list
 #   walking macros (for_each_ep() and its siblings) count as calls, since

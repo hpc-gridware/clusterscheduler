@@ -120,7 +120,7 @@ namespace ocs::tom {
    int descr_length(const lDescr *descr) noexcept;
 
    /**
-    * @brief The name of a field type, as lMt2Str() gives it
+    * @brief The name of a field type of the list library
     * @param mt the field type, e.g. lUlongT
     * @return the name, e.g. "lUlongT", or "unknown multitype"
     */

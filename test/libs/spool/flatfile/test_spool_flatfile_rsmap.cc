@@ -593,7 +593,6 @@ test_characteristics_rejected_in_ocs() {
 
 int main(int, char **) {
    DENTER_MAIN(TOP_LAYER, "test_ff_rsmap");
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    /* base grammar - available in both OCS and GCS */

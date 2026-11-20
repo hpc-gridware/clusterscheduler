@@ -183,7 +183,6 @@ test_slots_limit() {
  * @return 0 when every check passed, 1 otherwise
  */
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_purge_default_entry();

@@ -784,7 +784,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
    // read the bootstrap while errors still reach stderr
    ocs::Bootstrap::get_ignore_fqdn();
    component_set_daemonized(true);
-   lInit(nmv);
    tom::install_model(tom::gcs_model());
 
    const std::string db_dir = std::string(scratch) + "/bdb";

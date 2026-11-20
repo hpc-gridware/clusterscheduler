@@ -47,6 +47,7 @@
 #include "uti/sge_string.h"
 
 #include "msg_common.h"
+#include "ocs_test_model.h"
 
 enum {
    TNT_name = 1,        ///< an ordinary host name attribute
@@ -100,12 +101,6 @@ NAMEDEF(TNT_Name)
 NAMEEND
 
 #define TNT_Size sizeof(TNT_Name) / sizeof(char *)   ///< number of attributes of the synthetic type
-
-/** @brief The name space registering the synthetic type with CULL */
-lNameSpace nmv[] = {
-        {1, TNT_Size, TNT_Name, TNT_Type},
-        {0, 0, nullptr, nullptr}
-};
 
 static int s_fail = 0;
 
@@ -264,7 +259,7 @@ int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_cull_no_transfer");
 
    component_set_daemonized(true);
-   lInit(nmv);
+   ocs::module_test::install_test_model({{"TNT", TNT_Type, TNT_Name, TNT_Size}});
 
    // the object as the process that built it holds it: ordinary fields, a
    // process local cache, and a nested element carrying a cache of its own

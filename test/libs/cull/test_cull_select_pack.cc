@@ -53,6 +53,7 @@
 #include "uti/sge_string.h"
 
 #include "ocs_module_test.h"
+#include "ocs_test_model.h"
 
 /** @brief The selected-from type: one field per CULL type the path handles */
 enum {
@@ -112,13 +113,6 @@ NAMEEND
 
 #define SP_Size sizeof(SP_Name) / sizeof(char *)   ///< number of fields of SP_Type
 #define SPS_Size sizeof(SPS_Name) / sizeof(char *) ///< number of fields of SPS_Type
-
-/** @brief The name space registering both types with CULL */
-lNameSpace nmv[] = {
-   {1, SP_Size, SP_Name, SP_Type},
-   {51, SPS_Size, SPS_Name, SPS_Type},
-   {0, 0, nullptr, nullptr}
-};
 
 /// number of elements of the source list
 static constexpr int SOURCE_SIZE = 6;
@@ -196,7 +190,7 @@ static bool elem_equal(const lListElem *a, const lListElem *b) {
             break;
       }
       if (!same) {
-         fprintf(stderr, "field %s (type %d) differs\n", lNm2Str(da[i].nm), mt_get_type(da[i].mt));
+         fprintf(stderr, "field %s (type %d) differs\n", ocs::tom::field_name(da[i].nm), mt_get_type(da[i].mt));
          return false;
       }
    }
@@ -850,7 +844,8 @@ static void test_full_what_on_reduction() {
  */
 int main(int argc, char *argv[]) {
    // the lists here are short; the tables built on them by a lookup are what is tested
-   lInit(nmv, 0);
+   ocs::module_test::install_test_model({{"SP", SP_Type, SP_Name, SP_Size}, {"SPS", SPS_Type, SPS_Name, SPS_Size}});
+   ocs_cull_hash_set_min_elems(0);
 
    return ocs::module_test::run(argc, argv, {
       {"SELPACK-01", "single-pass select-and-pack equals the two-step path",
