@@ -919,7 +919,8 @@ qconf_desc(const QConfObj o) {
  * only for -fmt json and mutates only the throwaway object about to be shown.
  *
  * The one untyped step is the swap: the list swapped in is a `CE_Type` list in a
- * field declared to hold `HL_Type`, which no typed setter accepts.
+ * field declared to hold `HL_Type`, which neither a typed setter nor the checked
+ * run-time setter accepts; the core stores it.
  *
  * @param host               the (throwaway) exec host element to be shown
  * @param master_centry_list the complex entries the types are resolved from
@@ -969,8 +970,11 @@ qconf_json_type_load_values(const ocs::tom::Element<ocs::tom::EH> host,
       }
    }
 
-   // a CE list into the HL field of the throwaway host, see above; the untyped setter takes ownership
-   lSetList(host, EH_load_list, std::move(ce_list));
+   // a CE list into the HL field of the throwaway host, see above. The run-time setter ocs::tom::set() checks
+   // the sub-type the model names and would refuse it, so the field is stored through the core, which checks
+   // only the field type; the host holds EH_load_list (read above), the element takes the list over
+   const int load_list_pos = ocs::tom::checked_pos(host.raw(), EH_load_list, ocs::tom::FieldType::List);
+   ocs::tom::store_list(host.raw(), load_list_pos, ce_list.release());
 
    DRETURN_VOID;
 }

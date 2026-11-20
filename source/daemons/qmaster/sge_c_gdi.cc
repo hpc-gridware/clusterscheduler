@@ -821,8 +821,8 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                case -1 :
                case -3 :
                   /* stop the order processing */
-                  // stays raw: the count of the elements after one has no typed form
-                  WARNING("Skipping remaining " sge_u32 " orders", lGetNumberOfRemainingElem(ep));
+                  // the count of the elements after one has no typed form; the raw one counts them
+                  WARNING("Skipping remaining " sge_u32 " orders", static_cast<uint32_t>(ocs::tom::remaining(ep)));
                   next = nullptr;
                   break;
 

@@ -42,6 +42,7 @@
 
 #include "sgeobj/sge_proc.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 /// The process table; a process-lifetime list of PRO_Type elements, read through typed handles
 static lList *procList;
@@ -100,7 +101,7 @@ void gen_procList() {
  */
 void free_procList() {
    DENTER(TOP_LAYER);
-   lFreeList(&procList);
+   ocs::tom::free_raw_list(procList);
    DRETURN_VOID;
 }
 

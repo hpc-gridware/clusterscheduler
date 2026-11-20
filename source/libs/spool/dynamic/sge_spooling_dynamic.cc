@@ -54,7 +54,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 
-#include "cull/ocs_cull_descr.h"
+#include "tom/ocs_Raw.h"
 
 #include "sgeobj/sge_answer.h"
 
@@ -184,7 +184,7 @@ spool_dynamic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
    if (ok) {
       std::string own;
       std::string seen;
-      if (!ocs_cull_descr_registry_shared(shlib_handle, &own, &seen)) {
+      if (!ocs::tom::descr_registry_shared(shlib_handle, own, seen)) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_SPOOL_SHLIBOWNDESCRREGISTRY_SSS, shlib_path.c_str(), seen.c_str(), own.c_str());
          ok = false;

@@ -28,10 +28,14 @@
 
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
+/**
+ * @brief Free the answer list the holder still holds, if no one has taken it
+ */
 ocs::AnswerException::Holder::~Holder() {
    lList *list = answer_list.exchange(nullptr);
-   lFreeList(&list);
+   ocs::tom::free_raw_list(list);
 }
 
 /**

@@ -110,6 +110,7 @@
 #include "sgeobj/config.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
@@ -358,7 +359,7 @@ static int init_qtask_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, print_func_t
    clp_user.reset();
 
 
-   lFreeList(&task_config);
+   ocs::tom::free_raw_list(task_config);
    {
       // task_config is a process-lifetime global, so it holds the list raw
       const auto tasks = *clp_cluster;
@@ -687,8 +688,8 @@ int drmaa_delete_job_template(drmaa_job_template_t *jt, char *error_diagnosis, s
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
    }
 
-   lFreeList(&(jt->strings));
-   lFreeList(&(jt->string_vectors));
+   ocs::tom::free_raw_list(jt->strings);
+   ocs::tom::free_raw_list(jt->string_vectors);
    sge_free(&jt);
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }

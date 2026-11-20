@@ -56,7 +56,7 @@
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_lerrnoP.h"
+#include "tom/cull_lerrno.h"
 #include "cull/cull_list.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -210,7 +210,7 @@ static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_le
 
 
    if (!lp) {
-      LERROR(LELISTNULL);
+      ocs::tom::set_lerrno(LELISTNULL);
       DRETURN_VOID;
    }
 
@@ -407,7 +407,7 @@ static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting
    int max = nesting_level *2;
 
    if (!ep) {
-      LERROR(LEELEMNULL);
+      ocs::tom::set_lerrno(LEELEMNULL);
       DRETURN_VOID;
    }
 

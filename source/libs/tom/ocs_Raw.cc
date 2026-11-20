@@ -33,11 +33,13 @@
 #include <utility>
 #include <vector>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_profiling.h"
 
 #include "tom/cull_hash.h"
 #include "tom/cull_lerrnoP.h"
 #include "tom/cull_listP.h"
+#include "tom/ocs_cull_descr.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_ListCore.h"
@@ -565,6 +567,52 @@ namespace ocs::tom {
 
    void write_to(FILE *fp, const lEnumeration *what) {
       write_text(fp, [what](dstring *buffer) { print_what(buffer, what, 0); });
+   }
+
+   void free_raw_list(lList *&lp) noexcept {
+      try {
+         free_list(lp);
+      } catch (const FieldException &) {
+         // an element without descriptor: the list is corrupted, lFreeList() aborted here
+         set_lerrno(LEDESCRNULL);
+         TerminationManager::trigger_abort();
+      }
+   }
+
+   void free_raw_elem(lListElem *&ep) noexcept {
+      try {
+         free_elem(ep);
+      } catch (const FieldException &) {
+         // an element without descriptor: lFreeElem() aborted here
+         set_lerrno(LEDESCRNULL);
+         TerminationManager::trigger_abort();
+      }
+   }
+
+   std::size_t remaining(const ConstRawElement element) noexcept {
+      std::size_t n = 0;
+      if (element) {
+         for (const lListElem *next = element.raw()->next; next != nullptr; next = next->next) {
+            n++;
+         }
+      }
+      return n;
+   }
+
+   bool is_free(const ConstRawElement element) noexcept {
+      return element && elem_kind(element.raw()) == FREE_ELEM;
+   }
+
+   void make_hashable(const RawList list) noexcept {
+      cull_hash_create_hashtables(list.raw());
+   }
+
+   void release_descr(const lDescr *&descr) noexcept {
+      ocs_cull_descr_release(&descr);
+   }
+
+   bool descr_registry_shared(void *handle, std::string &own, std::string &seen) {
+      return ocs_cull_descr_registry_shared(handle, &own, &seen);
    }
 
 } // namespace ocs::tom

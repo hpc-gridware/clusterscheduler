@@ -40,6 +40,8 @@
  * (valgrind, ASan) on this binary, not by a CHECK.
  */
 
+#include <dlfcn.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -57,6 +59,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Model.h"
 #include "tom/ocs_Raw.h"
+#include "tom/cull_hash.h"
 #include "tom/ocs_cull_descr.h"
 
 #include "ocs_module_test.h"
@@ -1158,6 +1161,144 @@ test_select_pack() {
 }
 
 /**
+ * @brief remaining() counts the elements after one as lGetNumberOfRemainingElem() did
+ * @return nothing; CHECK records the results
+ */
+static void
+test_remaining() {
+   const ocs::tom::RawListPtr list(make_test_list(5, false));
+   bool same = true;
+   std::size_t expected = 4;
+   for (const ocs::tom::ConstRawElement ep : *list) {
+      const std::size_t n = ocs::tom::remaining(ep);
+      same = same && n == expected && n == lGetNumberOfRemainingElem(ep.raw());
+      expected--;
+   }
+   const auto free_elem = test_elem(1);
+   CHECK(26, "remaining() counts the successors of every element as lGetNumberOfRemainingElem(); none for the "
+             "last, a free element and an empty handle",
+         same && ocs::tom::remaining(free_elem.get()) == 0 &&
+               ocs::tom::remaining(ocs::tom::ConstRawElement(static_cast<const lListElem *>(nullptr))) == 0);
+}
+
+/**
+ * @brief is_free() tells a free element from a bound one as lIsFreeElem() did
+ * @return nothing; CHECK records the results
+ */
+static void
+test_is_free() {
+   const ocs::tom::RawListPtr list(make_test_list(2, false));
+   const lListElem *in_list = list->front().raw();
+
+   auto holder = test_elem(1);
+   holder->set(TEST_obj_any, test_elem(2));
+   const lListElem *sub_object = holder->get<const lListElem *>(TEST_obj_any);
+
+   const auto free_elem = test_elem(3);
+   const lListElem *free_raw = free_elem.get().raw();
+
+   const bool same = ocs::tom::is_free(free_raw) == lIsFreeElem(free_raw) &&
+                     ocs::tom::is_free(in_list) == lIsFreeElem(in_list) &&
+                     ocs::tom::is_free(sub_object) == lIsFreeElem(sub_object);
+   CHECK(27, "is_free() is true for a free element and false for one in a list, a sub-object and an empty handle, "
+             "as lIsFreeElem()",
+         same && ocs::tom::is_free(free_raw) && !ocs::tom::is_free(in_list) && !ocs::tom::is_free(sub_object) &&
+               !ocs::tom::is_free(ocs::tom::ConstRawElement(static_cast<const lListElem *>(nullptr))));
+}
+
+/**
+ * @brief release_descr() gives up one reference on a shared descriptor and clears the holder
+ * @return nothing; CHECK records the results
+ */
+static void
+test_release_descr() {
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
+   const lDescr *reduced = ocs::tom::reduced_descr(TEST_Type, what.get());
+   const bool counted = reduced != nullptr && ocs_cull_descr_is_counted(reduced);
+   const lDescr *second = ocs_cull_descr_ref(reduced);
+   const std::uint32_t refs = ocs_cull_descr_refs(reduced);
+
+   ocs::tom::release_descr(second);
+   const bool one_less = second == nullptr && ocs_cull_descr_refs(reduced) == refs - 1;
+
+   const lDescr *static_descr = TEST_Type;
+   ocs::tom::release_descr(static_descr);
+   const lDescr *none = nullptr;
+   ocs::tom::release_descr(none);
+   ocs::tom::release_descr(reduced);
+
+   CHECK(28, "release_descr() gives up one reference of a counted descriptor and clears the holder; a static "
+             "descriptor and nullptr only clear it",
+         counted && refs >= 2 && one_less && reduced == nullptr && static_descr == nullptr && none == nullptr);
+}
+
+/**
+ * @brief make_hashable() lets a list created without hashing keep hash tables, as cull_hash_create_hashtables() did
+ * @return nothing; CHECK records the results
+ */
+static void
+test_make_hashable() {
+   const ocs::tom::RawListPtr list(make_test_list(40, false));
+   const ocs::tom::RawListPtr old_list(make_test_list(40, false));
+   const bool unhashed = list.get().raw()->nslots == 0;
+   ocs::tom::make_hashable(list.get());
+   cull_hash_create_hashtables(old_list.get().raw());
+   const std::uint32_t slots = list.get().raw()->nslots;
+
+   // a hashable list stays as it is, an empty handle is ignored
+   ocs::tom::make_hashable(list.get());
+   ocs::tom::make_hashable(ocs::tom::RawList(static_cast<lList *>(nullptr)));
+
+   const auto found = list->find_first(TEST_uint32, std::uint32_t{17});
+   CHECK(29, "make_hashable() gives a list without hashing the slots cull_hash_create_hashtables() gives it; a "
+             "hashable list and an empty handle are left as they are; lookups find as before",
+         unhashed && slots > 0 && slots == old_list.get().raw()->nslots && list.get().raw()->nslots == slots &&
+               found && found.get<std::uint32_t>(TEST_uint32) == 17);
+}
+
+/**
+ * @brief free_raw_list() and free_raw_elem() free what a raw holder keeps and clear the holder
+ *
+ * The abort on a corrupted list cannot be checked here; that the list and the element are freed is shown by the
+ * leak checker.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_free_raw() {
+   lList *lp = make_test_list(3, true);
+   lListElem *ep = test_elem(1).release();
+   ocs::tom::free_raw_list(lp);
+   ocs::tom::free_raw_elem(ep);
+
+   lList *no_list = nullptr;
+   lListElem *no_elem = nullptr;
+   ocs::tom::free_raw_list(no_list);
+   ocs::tom::free_raw_elem(no_elem);
+
+   CHECK(30, "free_raw_list() and free_raw_elem() free a list and an element and clear the holder; nullptr frees "
+             "nothing",
+         lp == nullptr && ep == nullptr && no_list == nullptr && no_elem == nullptr);
+}
+
+/**
+ * @brief descr_registry_shared() gives what ocs_cull_descr_registry_shared() gives
+ * @return nothing; CHECK records the results
+ */
+static void
+test_descr_registry_shared() {
+   std::string own;
+   std::string seen;
+   const bool shared = ocs::tom::descr_registry_shared(RTLD_DEFAULT, own, seen);
+   std::string old_own;
+   std::string old_seen;
+   const bool old_shared = ocs_cull_descr_registry_shared(RTLD_DEFAULT, &old_own, &old_seen);
+   CHECK(31, "descr_registry_shared() gives the result and the object names of ocs_cull_descr_registry_shared() "
+             "for the objects of this process",
+         shared == old_shared && own == old_own && seen == old_seen && !own.empty() && !seen.empty());
+}
+
+/**
  * @brief Run the scenarios
  * @param argc argument count
  * @param argv arguments
@@ -1249,5 +1390,25 @@ int main(int argc, char *argv[]) {
        {"pack a reduction, every field, no field and no selection, with and without condition, list and name, "
         "through both", "unpack the result of select_pack()"},
        "the same bytes; the selection read back with the given name", {}, {25}, test_select_pack},
+      {"RAW-OPS-15", "remaining", "remaining() counts the elements after one as lGetNumberOfRemainingElem()",
+       {"count the successors of every element of a list, of a free element and of an empty handle"},
+       "the same counts; 0 for the last, a free element and an empty handle", {}, {26}, test_remaining},
+      {"RAW-OPS-16", "is_free", "is_free() tells a free element from a bound one as lIsFreeElem()",
+       {"ask for a free element, one in a list, a sub-object and an empty handle"},
+       "the answers of lIsFreeElem(); false for an empty handle", {}, {27}, test_is_free},
+      {"RAW-OPS-17", "release_descr", "release_descr() gives up a reference on a shared descriptor",
+       {"release a second reference of a reduced descriptor, a static descriptor and nullptr"},
+       "one reference less, every holder cleared", {}, {28}, test_release_descr},
+      {"RAW-OPS-18", "make_hashable",
+       "make_hashable() lets a list without hashing keep hash tables, as cull_hash_create_hashtables()",
+       {"make a list of 40 hashable, again, and an empty handle; look up a key"},
+       "the slots of the old function; unchanged the second time; the key found", {}, {29}, test_make_hashable},
+      {"RAW-OPS-19", "free_raw", "free_raw_list() and free_raw_elem() free what a raw holder keeps",
+       {"free a list and an element through their holders, and holders of nullptr"},
+       "every holder cleared; no leak", {}, {30}, test_free_raw},
+      {"RAW-OPS-20", "descr_registry_shared",
+       "descr_registry_shared() gives what ocs_cull_descr_registry_shared() gives",
+       {"ask for the objects of this process through both"}, "the same result and object names", {}, {31},
+       test_descr_registry_shared},
    });
 }

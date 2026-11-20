@@ -77,7 +77,6 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
-#include "cull/ocs_cull_descr.h"
 
 #include "comm/lists/cl_thread.h"
 #include "comm/lists/cl_errors.h"
@@ -2500,7 +2499,7 @@ static void free_subscription_array(subscription_t *sub_array) {
    }
    for (int i = 0; i < sgeE_EVENTSIZE; i++) {
       if (sub_array[i].descr != nullptr) {
-         ocs_cull_descr_release(&(sub_array[i].descr));
+         ocs::tom::release_descr(sub_array[i].descr);
       }
    }
    delete[] sub_array;
@@ -2782,7 +2781,7 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
           * the original list. */
          clp = std::move(lp);
          if (internal_client) {
-            cull_hash_create_hashtables(clp.get());
+            ocs::tom::make_hashable(clp.get());
          }
       }
    } /* if */

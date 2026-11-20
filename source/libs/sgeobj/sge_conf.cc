@@ -90,6 +90,7 @@
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 
 #include <cinttypes>
@@ -928,7 +929,7 @@ chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, 
       try {
          auto names = ocs::tom::ListPtr<T>::template from_string<F>(value, " \t,", ocs::tom::NoneName::Empty);
          // the master configuration is a process-lifetime static, so it holds the raw list
-         lFreeList(&target);
+         ocs::tom::free_raw_list(target);
          target = names.release();
       } catch (const ocs::tom::ListCoreError &) {
          // keep the old list, as on an error of lString2ListNone(); from_string() skips duplicate names
@@ -1890,10 +1891,10 @@ static void clean_conf() {
    sge_free(&Master_Config.enforce_user);
    sge_free(&Master_Config.administrator_mail);
    sge_free(&Master_Config.mail_tag);
-   lFreeList(&Master_Config.user_lists);
-   lFreeList(&Master_Config.xuser_lists);
-   lFreeList(&Master_Config.projects);
-   lFreeList(&Master_Config.xprojects);
+   ocs::tom::free_raw_list(Master_Config.user_lists);
+   ocs::tom::free_raw_list(Master_Config.xuser_lists);
+   ocs::tom::free_raw_list(Master_Config.projects);
+   ocs::tom::free_raw_list(Master_Config.xprojects);
    sge_free(&Master_Config.set_token_cmd);
    sge_free(&Master_Config.pag_cmd);
    sge_free(&Master_Config.shepherd_cmd);

@@ -53,6 +53,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Select.h"
+#include "tom/ocs_SortCore.h"
 #include "sgeobj/tom/ocs_tom_TE.h"
 
 #include "sge_qmaster_timed_event.h"
@@ -392,14 +393,22 @@ te_add_event(te_event_t anEvent) {
 
    ocs::tom::set<TE_seqno>(le, Event_Control.seq_no++);
 
-   // Event_Control.sort_order is a process-lifetime global; a SortOrder handle would own it, hence the raw call
-   if (lInsertSorted(Event_Control.sort_order, le.get(), Event_Control.list) != 0) {
+   // Event_Control.list and .sort_order are process-lifetime globals that hold the list and the order raw (no
+   // static owner), so the core inserts; without a list or an order the event is refused, as lInsertSorted()
+   // refused it
+   if (Event_Control.sort_order == nullptr || Event_Control.list == nullptr) {
       // the event is lost here - without this message nothing would ever tell that the timer
       // for e.g. a calendar state change was never armed
       ERROR(MSG_TE_CANNOTADDEVENT_US, static_cast<uint32_t>(anEvent->type),
             anEvent->str_key != nullptr ? anEvent->str_key : MSG_SMALLNULL);
       le.reset();
    } else {
+      try {
+         ocs::tom::insert_sorted(Event_Control.list, le.get().raw(), Event_Control.sort_order);
+      } catch (const ocs::tom::FieldException &e) {
+         // a bound element or a duplicate key: a programming error that lInsertSorted() aborted on
+         ocs::tom::legacy_abort("lInsertSorted", e);
+      }
       // the event list owns the element now
       static_cast<void>(le.release());
    }
@@ -608,7 +617,9 @@ void te_init() {
 
    // a process-lifetime global: no owning handle, see event_control_t
    Event_Control.list = ocs::tom::ListPtr<ocs::tom::TE>::create("timed event list").release();
-   Event_Control.sort_order = lParseSortOrderVarArg(TE_Type, "%I+", TE_when);
+   // ascending due time, as the format "%I+" on TE_when gave it
+   static constexpr ocs::tom::SortKey by_due_time[] = {{TE_when, true}};
+   Event_Control.sort_order = ocs::tom::make_sort_order(TE_Type, by_due_time);
 
    Handler_Tbl.list = (struct tbl_elem *) sge_malloc(TBL_INIT_SIZE * sizeof(struct tbl_elem));
    Handler_Tbl.max = TBL_INIT_SIZE;

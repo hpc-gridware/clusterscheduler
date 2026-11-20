@@ -2720,7 +2720,11 @@ bool object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge
    }
 
    if (ret) {
-      if (cull_unpack_elem(pb, epp, nullptr) != 0) {
+      try {
+         // a free element at the sender: its type comes from the buffer
+         *epp = ocs::tom::unpack_raw_elem(pb, nullptr).release();
+      } catch (const ocs::tom::PackException &) {
+         *epp = nullptr;
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_COM_UNPACKOBJ_S,
                                  object_get_name(descr));
          ret = false;

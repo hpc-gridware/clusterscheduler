@@ -894,9 +894,8 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    /* do not spool free elems: a free element is packed with its descriptor, a bound one without. If a free
     * elem is passed, it is put into a temporary list for the write and taken out again afterwards, so that
     * the record has the format of a bound element, which the readers unpack with the descriptor.
-    * The element's kind is private to CULL: lIsFreeElem() stays, the core has no public query for it.
     */
-   if (lIsFreeElem(object)) {
+   if (ocs::tom::is_free(object)) {
       borrow.list = ocs::tom::create_raw_list(object->descr, ocs::tom::Hashing::On, "tmp");
       // borrowed: the caller keeps the element, the guard takes it out of the list again and never frees it
       ocs::tom::RawElementPtr borrowed(borrow.object);

@@ -56,6 +56,9 @@
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_DumpCore.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_Raw.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -227,6 +230,14 @@ list_objects(const char *key) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Print an object of the spool as text, as the list library dumps an element
+ *
+ * A job script is printed as it is, with a trailing linefeed.
+ *
+ * @param key the object's key, with its type prefix, e.g. `USERSET:arusers`
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 static int
 dump_object(const char *key) {
    DENTER(TOP_LAYER);
@@ -257,16 +268,18 @@ dump_object(const char *key) {
             printf("%s\n", job_script);
          }
       } else {
-         /* read object */
-         lListElem *object;
-         object = spool_read_object(&answer_list, spool_get_default_context(),
-                                    object_name_get_type(key), key);
-         if (object == nullptr) {
+         /* read object, of the type the key names */
+         const ocs::tom::RawElementPtr object(spool_read_object(&answer_list, spool_get_default_context(),
+                                                                object_name_get_type(key), key));
+         if (!object) {
             answer_list_output(&answer_list);
             ret = EXIT_FAILURE;
          } else {
-            lDumpElemFp(stdout, object, 0);
-            lFreeElem(&object);
+            try {
+               ocs::tom::dump_elem(stdout, object.get().raw(), 0);
+            } catch (const ocs::tom::ListCoreError &) {
+               // a failed write is ignored, as the result of lDumpElemFp() was
+            }
          }
       }
    }
@@ -315,7 +328,8 @@ load_object(const char *key, const char *fname) {
    bool dbret;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lDescr *descr;
-   lListElem *object = nullptr;
+   // the object read from the dump, of the type the key names
+   ocs::tom::RawElementPtr object;
 
    descr    = get_descr_from_key(key);
 
@@ -330,16 +344,20 @@ load_object(const char *key, const char *fname) {
          ERROR(MSG_ERROROPENINGFILEFORREADING_SS, fname, strerror(errno));
          ret = EXIT_FAILURE;
       } else {
-         object = lUndumpElemFp(fd, descr);
+         try {
+            object = ocs::tom::RawElementPtr(ocs::tom::undump_elem(fd, descr));
+         } catch (const ocs::tom::ListCoreError &) {
+            // the core has set the error number, as lUndumpElemFp() did; no object
+         }
          FCLOSE(fd);
-         if (object == nullptr) {
+         if (!object) {
             ERROR(MSG_DBSTAT_ERRORUNDUMPING_S, fname);
             ret = EXIT_FAILURE;
          }
       }
    }
 
-   if (object != nullptr) {
+   if (object) {
       /* start a transaction */
       dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
       if (!dbret) {
@@ -347,7 +365,7 @@ load_object(const char *key, const char *fname) {
          ret = EXIT_FAILURE;
       } else {
          /* write the object; the type comes from the prefix, the spooling adds it to the key again */
-         dbret = spool_write_object(&answer_list, spool_get_default_context(), object,
+         dbret = spool_write_object(&answer_list, spool_get_default_context(), object.get().raw(),
                                     ocs_spooledit_object_key(key), object_name_get_type(key));
          if (!dbret) {
             answer_list_output(&answer_list);
@@ -363,8 +381,6 @@ load_object(const char *key, const char *fname) {
          }
       }
    }
-
-   lFreeElem(&object);
 
    DRETURN(ret);
 

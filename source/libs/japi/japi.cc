@@ -113,6 +113,7 @@
 #include "cull/cull_list.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "tom/ocs_Select.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_CONF.h"
@@ -936,7 +937,7 @@ int japi_exit(int flag, dstring *diag) {
    /* We have to wait to free the job list until any waiting or syncing threads
     * have exited.  Otherwise, they may think their jobs exited badly. */
    JAPI_LOCK_JOB_LIST();
-   lFreeList(&Master_japi_job_list);
+   ocs::tom::free_raw_list(Master_japi_job_list);
    JAPI_UNLOCK_JOB_LIST();
 
    /* Session is not inactive until the session has been closed (or not).  If
@@ -1101,7 +1102,7 @@ void japi_delete_string_vector(drmaa_attr_values_t *iter) {
    case JAPI_ITERATOR_BULK_JOBS:
       break;
    case JAPI_ITERATOR_STRINGS:
-      lFreeList(&(iter->it.si.strings));
+      ocs::tom::free_raw_list(iter->it.si.strings);
       break;
    default:
       break;

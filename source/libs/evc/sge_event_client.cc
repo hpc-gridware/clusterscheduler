@@ -60,6 +60,7 @@
 #include "sgeobj/sge_event.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
 #include "sgeobj/tom/ocs_tom_EV.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
@@ -591,6 +592,10 @@ void sge_evc_class_destroy(sge_evc_class_t **pst) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Free the state of an event client: wake up the threads waiting on it, the new events and the client
+ * @param sge_evc the state; nullptr afterwards. A null holder or state frees nothing
+ */
 static void sge_evc_destroy(sge_evc_t **sge_evc) {
    DENTER(EVC_LAYER);
 
@@ -607,9 +612,9 @@ static void sge_evc_destroy(sge_evc_t **sge_evc) {
 
    pthread_cond_destroy(&((*sge_evc)->event_control.cond_var));
    pthread_mutex_destroy(&((*sge_evc)->event_control.mutex));
-   lFreeList(&((*sge_evc)->event_control.new_events));
+   ocs::tom::free_raw_list((*sge_evc)->event_control.new_events);
 
-   lFreeElem(&((*sge_evc)->ec));
+   ocs::tom::free_raw_elem((*sge_evc)->ec);
    sge_free(sge_evc);
 
    DRETURN_VOID;
@@ -974,7 +979,7 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
       }
 
       /* clear state of this event client instance */
-      lFreeElem(&(sge_evc->ec));
+      ocs::tom::free_raw_elem(sge_evc->ec);
       sge_evc->need_register = true;
       sge_evc->ec_reg_id = 0;
       sge_evc->next_event = 1;
@@ -1283,7 +1288,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz) {
          if (send_ret == CL_RETVAL_OK) {
             /* error message is output from sge_send_any_request */
             /* clear state of this event client instance */
-            lFreeElem(&(sge_evc->ec));
+            ocs::tom::free_raw_elem(sge_evc->ec);
             sge_evc->need_register = true;
             sge_evc->ec_reg_id = 0;
             sge_evc->next_event = 1;

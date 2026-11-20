@@ -79,6 +79,7 @@
 #include "sgeobj/cull_parse_util.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_PARA.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -372,9 +373,9 @@ const char *delis[] = {"=", ",", ""};
  */
 static void ocs_sconf_reset_cache() {
    pos.c_is_schedd_job_info = SCHEDD_JOB_INFO_UNDEF;
-   lFreeList(&(pos.c_schedd_job_info_range));
-   lFreeList(&(pos.c_halflife_decay_list));
-   lFreeList(&(pos.c_params));
+   ocs::tom::free_raw_list(pos.c_schedd_job_info_range);
+   ocs::tom::free_raw_list(pos.c_halflife_decay_list);
+   ocs::tom::free_raw_list(pos.c_params);
    pos.c_default_duration = DEFAULT_DURATION_I;
 }
 

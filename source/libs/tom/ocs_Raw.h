@@ -56,6 +56,11 @@
  *   of lSelect() and its kin (result name, no list for no match, a reduced
  *   descriptor of the caller, straight into a pack buffer), for the GDI and
  *   event paths whose result goes onto the wire; they throw nothing.
+ * - **Infrastructure.** `free_raw_list`, `free_raw_elem` (process-lifetime raw
+ *   holders, freed with the abort of the old functions), `remaining`,
+ *   `is_free`, `make_hashable`, `release_descr`, `descr_registry_shared`:
+ *   what code outside the list library needs of the storage layer and the
+ *   descriptor registry, without their private headers.
  * - **Member form.** `ConstRawElement`/`RawElement` and `ConstRawList`/`RawList`
  *   carry the same operations as methods, after the model of the typed
  *   handles, with the field as a method argument instead of a template
@@ -130,6 +135,7 @@
 #include <iterator>
 #include <memory>
 #include <span>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -1711,6 +1717,86 @@ namespace ocs::tom {
     * @param null the literal nullptr
     */
    void write_to(FILE *fp, std::nullptr_t null) = delete;
+
+   // ---------------------------------------------------------------------------------------------------------------
+   // raw holders, list position, hashing and descriptor references: what the infrastructure outside the list
+   // library needs of the storage layer, without its private headers
+
+   /**
+    * @brief Free a list that a raw holder keeps, and clear the holder
+    *
+    * For the process-lifetime globals and C struct members that hold a list as a raw pointer, since such state
+    * gets no static owner. Frees as the old function did: nullptr frees nothing; a list holding an element
+    * without descriptor - a corrupted list - sets the CULL error number LEDESCRNULL and aborts the process.
+    *
+    * @param lp the holder; nullptr afterwards
+    * @see Old form: lFreeList(&lp); core: ocs::tom::free_list(), which throws instead of aborting
+    */
+   void free_raw_list(lList *&lp) noexcept;
+
+   /**
+    * @brief Free an element that a raw holder keeps, and clear the holder
+    *
+    * The element counterpart of free_raw_list(): nullptr frees nothing; an element without descriptor sets
+    * the CULL error number LEDESCRNULL and aborts the process, as the old function did.
+    *
+    * @param ep the holder of a free element; nullptr afterwards
+    * @see Old form: lFreeElem(&ep); core: ocs::tom::free_elem(), which throws instead of aborting
+    */
+   void free_raw_elem(lListElem *&ep) noexcept;
+
+   /**
+    * @brief The number of elements after an element in its list
+    * @param element the element; an empty handle or a free element has none after it
+    * @return the number of successors, 0 for the last element
+    * @see Old form: lGetNumberOfRemainingElem()
+    */
+   [[nodiscard]] std::size_t remaining(ConstRawElement element) noexcept;
+
+   /**
+    * @brief Whether an element is free: in no list and no object field
+    *
+    * Unlike the old function, an empty handle does not set the CULL error number.
+    *
+    * @param element the element
+    * @return true if the element is free, false if it is bound to a list or an object field, or the handle is
+    *         empty
+    * @see Old form: lIsFreeElem()
+    */
+   [[nodiscard]] bool is_free(ConstRawElement element) noexcept;
+
+   /**
+    * @brief Let a list created without hashing keep hash tables for the hashed fields of its type
+    *
+    * No table is built here: the first lookup on a long enough list builds the one of its field. A list that
+    * keeps hash tables already is left as it is.
+    *
+    * @param list the list; an empty handle is ignored
+    * @see Old form: cull_hash_create_hashtables()
+    */
+   void make_hashable(RawList list) noexcept;
+
+   /**
+    * @brief Give up a reference on a shared descriptor, as reduced_descr() hands one out, and clear the holder
+    *
+    * The release of the last reference frees the descriptor. The static descriptor of a type is not counted;
+    * releasing it only clears the holder.
+    *
+    * @param descr the holder of the reference, or of nullptr; nullptr afterwards
+    * @see Old form: ocs_cull_descr_release(&descr)
+    */
+   void release_descr(const lDescr *&descr) noexcept;
+
+   /**
+    * @brief Whether a loaded shared object uses the descriptor registry of this process (N-A-22)
+    * @param handle the handle dlopen() returned for the object
+    * @param[out] own the file name of the object holding the registry of the caller
+    * @param[out] seen the file name of the object holding the registry the loaded object uses, or "none" if it
+    *             has no CULL
+    * @return true if the loaded object uses the registry of the caller
+    * @see Old form: ocs_cull_descr_registry_shared(handle, &own, &seen)
+    */
+   [[nodiscard]] bool descr_registry_shared(void *handle, std::string &own, std::string &seen);
 
    // ---------------------------------------------------------------------------------------------------------------
    // owners

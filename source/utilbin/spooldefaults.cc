@@ -60,6 +60,7 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -323,7 +324,6 @@ static int spool_object_list(const char *directory,
 
    int ret = EXIT_SUCCESS;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   lListElem *ep;
    const char *name;
    dstring file = DSTRING_INIT;
 
@@ -333,18 +333,19 @@ static int spool_object_list(const char *directory,
       name = ocs::tom::get<ST_name>(direntry);
       if (name[0] != '.') {
          sge_dstring_sprintf(&file, "%s/%s", directory, name);
-         ep = spool_flatfile_read_object(&answer_list, descr, nullptr,
-                                         fields, nullptr, true, instr,
-                                         SP_FORM_ASCII, nullptr, sge_dstring_get_string(&file));
-         
-         if (ep != nullptr && !spool_write_object(&answer_list, spool_get_default_context(), ep,
+         // the object, of the type given at run time; freed at the end of the step, also on the break
+         const ocs::tom::RawElementPtr ep(spool_flatfile_read_object(&answer_list, descr, nullptr,
+                                                                     fields, nullptr, true, instr,
+                                                                     SP_FORM_ASCII, nullptr,
+                                                                     sge_dstring_get_string(&file)));
+
+         if (ep && !spool_write_object(&answer_list, spool_get_default_context(), ep.get().raw(),
                                  name, obj_type)) {
             /* error output has been done in spooling function */
             ret = EXIT_FAILURE;
             answer_list_output(&answer_list);
             break;
          }
-         lFreeElem(&ep);
       }
    }
    sge_dstring_free(&file);
