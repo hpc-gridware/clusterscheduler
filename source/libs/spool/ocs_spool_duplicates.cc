@@ -22,6 +22,7 @@
  * @brief Objects found twice while a list is read from the spool (N-H-18)
  */
 
+#include <cstdint>
 #include <utility>
 
 #include "uti/sge_hostname.h"
@@ -38,18 +39,31 @@ namespace {
     * @param ep the object
     * @param nm the attribute
     * @param[out] text the key as the object holds it, for messages
-    * @return the comparable key; empty if the object holds no key in that attribute
+    * @return the comparable key; empty if the object holds no key in that attribute, or does not hold the
+    *         attribute, or the attribute is not of a key type
+    * @throw ocs::tom::FieldException with reason NullElement for an empty handle (where the old code crashed)
     */
    std::string
-   comparable_key(const lListElem *ep, const int nm, std::string &text) {
-      switch (lGetType(ep->descr, nm)) {
-         case lStringT: {
-            const char *value = lGetString(ep, nm);
+   comparable_key(const ocs::tom::ConstRawElement ep, const int nm, std::string &text) {
+      if (!ep) {
+         // where lGetType() dereferenced the null element
+         ocs::tom::throw_field_exception(ocs::tom::FieldException::Reason::NullElement, nm, nullptr);
+      }
+      // a foreign attribute or one a reduced object leaves out has no key: lGetType() gave lEndT for both
+      if (!ep.has(nm)) {
+         text.clear();
+         return text;
+      }
+      const lDescr *descr = ep.descr();
+      const int pos = ocs::tom::field_pos(descr, nm);
+      switch (ocs::tom::field_type_of(descr[pos].mt)) {
+         case ocs::tom::FieldType::String: {
+            const char *value = ep.get<const char *>(nm);
             text = value != nullptr ? value : "";
             return text;
          }
-         case lHostT: {
-            const char *value = lGetHost(ep, nm);
+         case ocs::tom::FieldType::Host: {
+            const char *value = ep.get<ocs::tom::Host>(nm).c_str();
             if (value == nullptr) {
                text.clear();
                return text;
@@ -60,11 +74,11 @@ namespace {
             sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
             return host_key;
          }
-         case lUlongT:
-            text = std::to_string(lGetUlong(ep, nm));
+         case ocs::tom::FieldType::Uint32:
+            text = std::to_string(ep.get<std::uint32_t>(nm));
             return text;
-         case lUlong64T:
-            text = std::to_string(lGetUlong64(ep, nm));
+         case ocs::tom::FieldType::Uint64:
+            text = std::to_string(ep.get<std::uint64_t>(nm));
             return text;
          default:
             text.clear();
@@ -98,9 +112,11 @@ namespace ocs::spool {
     * @param ep the object read, not nullptr
     * @param spool_key where the object was read from, e.g. its file or its database key
     * @return true if the object is admitted, false if it is a duplicate
+    * @throw ocs::tom::FieldException with reason NullElement for an empty handle if the type has a unique
+    *        attribute (where the old code crashed)
     */
    bool
-   DuplicateFilter::admit(const lListElem *ep, const char *spool_key) {
+   DuplicateFilter::admit(const ocs::tom::ConstRawElement ep, const char *spool_key) {
       std::vector<std::string> keys(fields_.size());
       for (size_t i = 0; i < fields_.size(); i++) {
          std::string text;
@@ -109,7 +125,8 @@ namespace ocs::spool {
             continue;
          }
          if (const auto it = taken_[i].find(keys[i]); it != taken_[i].end()) {
-            recorded.push_back({type_, lNm2Str(fields_[i]), text, it->second, spool_key != nullptr ? spool_key : ""});
+            recorded.push_back({type_, ocs::tom::field_name(fields_[i]), text, it->second,
+                                spool_key != nullptr ? spool_key : ""});
             return false;
          }
       }

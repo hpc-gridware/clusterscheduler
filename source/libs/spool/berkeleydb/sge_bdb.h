@@ -42,6 +42,7 @@
 #include "cull/cull.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
@@ -82,7 +83,7 @@ spool_berkeleydb_trigger(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info 
 bool 
 spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                            const bdb_database database,
-                           lList **list, const lDescr *descr,
+                           ocs::tom::RawListPtr &list, const lDescr *descr,
                            const char *key);
 
 /**
@@ -106,10 +107,10 @@ std::pair<bool, ocs::tom::ListPtr<T>>
 ocs_spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                const bdb_database database, const char *key) {
    // out-parameter of the type independent reader
-   lList *list = nullptr;
-   const bool ok = spool_berkeleydb_read_list(answer_list, info, database, &list, T::descriptor.e, key);
+   ocs::tom::RawListPtr list;
+   const bool ok = spool_berkeleydb_read_list(answer_list, info, database, list, T::descriptor.e, key);
    // every record is unpacked with the descriptor of T, so the list holds objects of T: taken without a check
-   return {ok, ocs::tom::ListPtr<T>::from_typed(list)};
+   return {ok, ocs::tom::ListPtr<T>::from_typed(list.release())};
 }
 
 bool 
@@ -158,7 +159,7 @@ spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_inf
                            const bdb_database database,
                            lList **list, const char *key);
 
-lListElem *
+ocs::tom::RawElementPtr
 spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                              const bdb_database database,
                              const char *key);

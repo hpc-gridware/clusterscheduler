@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "cull/cull.h"
+#include "tom/ocs_Raw.h"
 
 namespace ocs::spool {
    /** @brief An object that a spool holds twice, by the key of a unique attribute */
@@ -55,7 +56,7 @@ namespace ocs::spool {
    public:
       DuplicateFilter(const lDescr *descr, std::string type);
 
-      bool admit(const lListElem *ep, const char *spool_key);
+      bool admit(ocs::tom::ConstRawElement ep, const char *spool_key);
 
    private:
       std::string type_;                                                       ///< the object type

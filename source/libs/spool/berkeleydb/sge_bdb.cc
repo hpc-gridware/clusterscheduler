@@ -57,6 +57,7 @@
 #include <cerrno>
 #include <cstring>
 #include <string>
+#include <utility>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
@@ -73,6 +74,7 @@
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
@@ -719,14 +721,15 @@ bool spool_berkeleydb_trigger(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_
  * @param answer_list to return error messages
  * @param info the handle
  * @param database which database to read from
- * @param list receives the objects
+ * @param list receives the objects: appended to the list it owns, or to a list created with the first record
+ *        read (named @p key); stays empty if no record matches
  * @param descr the type to read them as
  * @param key the key prefix, e.g. the object type name
- * @return true on success, else false
+ * @return true on success, else false; @p list keeps what was read before a failure
  */
 bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                 const bdb_database database,
-                                lList **list, const lDescr *descr,
+                                ocs::tom::RawListPtr &list, const lDescr *descr,
                                 const char *key) {
    DENTER(BDB_LAYER);
 
@@ -798,7 +801,6 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
                break;
             } else {
                sge_pack_buffer pb;
-               lListElem *object = nullptr;
                int cull_ret;
 
                DPRINTF(("read object with key " SFQ ", size %d\n",
@@ -815,13 +817,15 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
                   break;
                }
 
-               cull_ret = cull_unpack_elem_partial(&pb, &object, descr, pack_part);
-               if (cull_ret != PACK_SUCCESS) {
+               ocs::tom::RawElementPtr object;
+               try {
+                  object = ocs::tom::unpack_raw_elem(&pb, descr, pack_part);
+               } catch (const ocs::tom::PackException &e) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                           ANSWER_QUALITY_ERROR, 
                                           MSG_BERKELEY_UNPACKERROR_SS,
                                           key_dbt.data,
-                                          cull_pack_strerror(cull_ret));
+                                          ocs::tom::pack_error_text(e.code()));
                   ret = false;
                   done = true;
                   break;
@@ -830,14 +834,13 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
                 * delivered from the database
                 * clear_packbuffer(&pb);
                 */
-               if (object != nullptr) {
-                  if (*list == nullptr) {
-                     *list = lCreateList(key, descr);
+               if (object) {
+                  if (!list) {
+                     list = ocs::tom::create_raw_list(descr, ocs::tom::Hashing::On, key);
                   }
-                  if (filter.admit(object, static_cast<const char *>(key_dbt.data))) {
-                     lAppendElem(*list, object);
-                  } else {
-                     lFreeElem(&object);
+                  // a refused object is freed with its owner
+                  if (filter.admit(*object, static_cast<const char *>(key_dbt.data))) {
+                     ocs::tom::append(list.get(), std::move(object));
                   }
                }
 
@@ -860,7 +863,8 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
  * @param answer_list to return error messages
  * @param info the handle
  * @param database which database to write to
- * @param object the object to write
+ * @param object the object to write; a free one is written in the format of a bound one and is free again on
+ *        return
  * @param key the full key to write it under
  * @return true on success, else false
  */
@@ -870,14 +874,40 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    DENTER(BDB_LAYER);
 
    bool ret = true;
-   lList *tmp_list = nullptr;
 
-   /* do not spool free elems. If a free elem is passed, put a copy 
-    * into a temporary list and spool this copy.
+   /**
+    * @brief Gives a borrowed element back to the caller when the temporary list goes, on every path and also on
+    *        a throw, so that the list's owner never frees the caller's element
+    */
+   struct BorrowGuard {
+      ocs::tom::RawListPtr list;   ///< the temporary list, empty if nothing was borrowed
+      lListElem *object;           ///< the borrowed element
+
+      /** @brief Take the element out of the temporary list, free again; the emptied list goes with its owner */
+      ~BorrowGuard() {
+         if (list) {
+            static_cast<void>(ocs::tom::take(list.get(), object).release());
+         }
+      }
+   } borrow{{}, const_cast<lListElem *>(object)};
+
+   /* do not spool free elems: a free element is packed with its descriptor, a bound one without. If a free
+    * elem is passed, it is put into a temporary list for the write and taken out again afterwards, so that
+    * the record has the format of a bound element, which the readers unpack with the descriptor.
+    * The element's kind is private to CULL: lIsFreeElem() stays, the core has no public query for it.
     */
    if (lIsFreeElem(object)) {
-      tmp_list = lCreateList("tmp", lGetElemDescr(object));
-      lAppendElem(tmp_list, (lListElem *)object);
+      borrow.list = ocs::tom::create_raw_list(object->descr, ocs::tom::Hashing::On, "tmp");
+      // borrowed: the caller keeps the element, the guard takes it out of the list again and never frees it
+      ocs::tom::RawElementPtr borrowed(borrow.object);
+      try {
+         ocs::tom::append(borrow.list.get(), std::move(borrowed));
+      } catch (const ocs::tom::FieldException &) {
+         // cannot happen for a free element in a new list of its own descriptor (the old lAppendElem() aborted
+         // there); the element stays with the owner on the throw, goes back to the caller and is written free
+         static_cast<void>(borrowed.release());
+         borrow.list.reset();
+      }
    }
 
    {
@@ -893,15 +923,17 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  cull_pack_strerror(cull_ret));
          ret = false;
       } else {
-         cull_ret = cull_pack_elem_partial(&pb, object, nullptr, pack_part);
-         if (cull_ret != PACK_SUCCESS) {
+         try {
+            ocs::tom::pack_elem(&pb, object, nullptr, pack_part);
+         } catch (const ocs::tom::PackException &e) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_BERKELEY_PACKERROR_SS,
                                     key,
-                                    cull_pack_strerror(cull_ret));
+                                    ocs::tom::pack_error_text(e.code()));
             ret = false;
-         } else { 
+         }
+         if (ret) {
             int dbret;
             DBT key_dbt, data_dbt;
 
@@ -952,11 +984,7 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       }
    }
 
-   if (tmp_list != nullptr) {
-      lDechainElem(tmp_list, (lListElem *)object);
-      lFreeList(&tmp_list);
-   }
-
+   // the guard gives the element back to the caller as a free one
    DRETURN(ret);
 }
 
@@ -1683,15 +1711,15 @@ bool spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
  * @param info the handle
  * @param database which database to read from
  * @param key the full key of the record
- * @return the object, or nullptr if it is not there or cannot be parsed
+ * @return the owner of the object, empty if it is not there or cannot be parsed
  */
-lListElem *
+ocs::tom::RawElementPtr
 spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                              const bdb_database database,
                              const char *key) {
    DENTER(BDB_LAYER);
 
-   lListElem *ret = nullptr;
+   ocs::tom::RawElementPtr ret;
    int dbret;
 
    DB *db;
@@ -1739,19 +1767,20 @@ spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_i
                                     MSG_BERKELEY_UNPACKINITERROR_SS,
                                     key_dbt.data,
                                     cull_pack_strerror(cull_ret));
-            ret = nullptr;
+            ret.reset();
          }
          DPRINTF("init_packbuffer succeeded\n");
 
          descr = object_type_get_descr(object_name_get_type((const char *)key_dbt.data));
-         cull_ret = cull_unpack_elem_partial(&pb, &ret, descr, pack_part);
-         if (cull_ret != PACK_SUCCESS) {
+         try {
+            ret = ocs::tom::unpack_raw_elem(&pb, descr, pack_part);
+         } catch (const ocs::tom::PackException &e) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_BERKELEY_UNPACKERROR_SS,
                                     key_dbt.data,
-                                    cull_pack_strerror(cull_ret));
-            ret = nullptr;
+                                    ocs::tom::pack_error_text(e.code()));
+            ret.reset();
          }
 
          /* We specified DB_DBT_MALLOC - BDB will malloc memory for each

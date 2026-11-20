@@ -74,6 +74,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
@@ -487,15 +488,20 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
       key = sge_dstring_sprintf(&key_dstring, "%s:", table_name);
 
       if (ret) {
+         // the callback signature hands the list over as lList **: the reader owns it while it reads and gives it
+         // back, so that the slot holds the list again during the tree walk below
+         const auto read_into_list = [&](const bdb_database source) {
+            ocs::tom::RawListPtr objects(std::exchange(*list, nullptr));
+            const bool ok = spool_berkeleydb_read_list(answer_list, info, source, objects, descr, key);
+            *list = objects.release();
+            return ok;
+         };
          switch (object_type) {
             case SGE_TYPE_QINSTANCE:
                break;
             case SGE_TYPE_CQUEUE:
                /* read all cluster queues */
-               ret = spool_berkeleydb_read_list(answer_list, info,
-                                                BDB_CONFIG_DB,
-                                                list, descr,
-                                                key);
+               ret = read_into_list(BDB_CONFIG_DB);
                if (ret) {
                   const char *qinstance_table;
                   /* for all cluster queues: read queue instances */
@@ -527,7 +533,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                break;
             case SGE_TYPE_JOB:
                /* read all jobs */
-               ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, list, descr, key);
+               ret = read_into_list(BDB_JOB_DB);
                if (ret) {
                   const char *ja_task_table;
                   /* for all jobs: read ja_tasks */
@@ -579,7 +585,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                }
                break;
             default:
-               ret = spool_berkeleydb_read_list(answer_list, info, BDB_CONFIG_DB, list, descr, key);
+               ret = read_into_list(BDB_CONFIG_DB);
                break;
          }
 #if 0
@@ -602,7 +608,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
       /* validate each individual object */
       /* JG: TODO: is it valid to validate after reading all objects? */
-      for_each_rw_lv(ep, *list) {
+      for (const ocs::tom::RawElement ep : ocs::tom::RawList(*list)) {
          ret = validate(answer_list, type, rule, ep, object_type);
          if (!ret) {
             /* error message has been created in the validate func */
@@ -693,7 +699,7 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             database = BDB_JOB_DB;
             /* no break, further handling in default branch */
          default:
-            ep = spool_berkeleydb_read_object(answer_list, info, database, key);
+            ep = spool_berkeleydb_read_object(answer_list, info, database, key).release();
 /* do not do any validation
  * this function is only called from spooledit dump for reading individual objects
  * validation will therefore not work as it needs further objects, e.g.
