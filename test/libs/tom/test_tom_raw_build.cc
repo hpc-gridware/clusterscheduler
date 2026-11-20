@@ -415,6 +415,312 @@ test_what_errors() {
 }
 
 /**
+ * @brief The typed builders of selections and conditions: what<F...>(), what<T>(fields), field<F>() with its
+ *        operators and named comparisons, &&, ||, !, any(), |=, &=, merge() and nest() (CS-3077, OPS-01, WHT-01)
+ *
+ * Each scenario applies what it built to a typed list and checks the fixed keys or contents it selects.
+ */
+namespace typed_select {
+
+   using ocs::tom::ConstElement;
+   using ocs::tom::ConstList;
+   using ocs::tom::Element;
+   using ocs::tom::ElementPtr;
+   using ocs::tom::FieldException;
+   using ocs::tom::Host;
+   using ocs::tom::ListPtr;
+   using ocs::tom::TEST;
+   using ocs::tom::UE;
+   using ocs::tom::US;
+   using ocs::tom::What;
+   using ocs::tom::Where;
+   using ocs::tom::field;
+   using ocs::tom::what;
+   using ocs::tom::what_all;
+
+   /**
+    * @brief Whether a function throws a FieldException with a given reason
+    * @param call the call
+    * @param reason the expected reason
+    * @return true if it threw with that reason
+    */
+   template <typename Call>
+   bool throws(Call call, const FieldException::Reason reason) {
+      try {
+         call();
+      } catch (const FieldException &e) {
+         return e.reason() == reason;
+      }
+      return false;
+   }
+
+   /** @brief One row of the TEST elements the comparisons run on */
+   struct Row {
+      std::uint32_t key;     ///< TEST_uint32, the unique key
+      std::uint64_t u64;     ///< TEST_uint64
+      std::int32_t i;        ///< TEST_int
+      std::int64_t l;        ///< TEST_long
+      double d;              ///< TEST_double
+      bool b;                ///< TEST_bool
+      const char *s;         ///< TEST_string, may be nullptr
+      const char *h;         ///< TEST_host, may be nullptr
+   };
+
+   /** @brief The rows: the fourth holds no string and no host */
+   constexpr Row Rows[] = {{1, 10, -1, -10, 0.5, true, "alpha", "node1"},
+                           {2, 20, 0, 0, 1.5, false, "beta", "node2"},
+                           {3, 30, 1, 10, 2.5, true, "Gamma", "NODE3"},
+                           {4, 40, 2, 20, 3.5, false, nullptr, nullptr}};
+
+   /**
+    * @brief The rows as a typed list
+    * @return the owning handle
+    */
+   ListPtr<TEST> typed_rows() {
+      ListPtr<TEST> rows = ListPtr<TEST>::create("rows");
+      for (const Row &r : Rows) {
+         const Element<TEST> row = rows->push_back(ElementPtr<TEST>::create());
+         row.set<TEST_uint32>(r.key);
+         row.set<TEST_uint64>(r.u64);
+         row.set<TEST_int>(r.i);
+         row.set<TEST_long>(r.l);
+         row.set<TEST_double>(r.d);
+         row.set<TEST_bool>(r.b);
+         row.set<TEST_string>(r.s);
+         row.set<TEST_host>(Host{r.h});
+      }
+      return rows;
+   }
+
+   /**
+    * @brief The keys a condition selects from a list
+    * @param rows the list
+    * @param where the condition
+    * @return the keys joined by commas, empty if nothing was selected
+    */
+   std::string keys_of(const ConstList<TEST> rows, const Where<TEST> &where) {
+      std::string keys;
+      for (ConstElement<TEST> row = rows.find_if(where); row; row = row.next_if(where)) {
+         keys += (keys.empty() ? "" : ",") + std::to_string(row.get<TEST_uint32>());
+      }
+      return keys;
+   }
+
+   /**
+    * @brief The user sets the selections run on: three sets, the last without entries
+    * @return the owning handle
+    */
+   ListPtr<US> typed_sets() {
+      ListPtr<US> sets = ListPtr<US>::create("sets");
+      const char *const entries[][3] = {
+         {"acl", "alice", "bob"}, {"dept", "carol", nullptr}, {"empty", nullptr, nullptr}};
+      std::uint32_t type = 1;
+      for (const auto &set : entries) {
+         const Element<US> us = sets->emplace_back<US_name>(set[0]);
+         us.set<US_type>(type++);
+         us.set<US_fshare>(10 * type);
+         for (int i = 1; i < 3 && set[i] != nullptr; i++) {
+            us.get_or_create<US_entries>().emplace_back<UE_name>(set[i]);
+         }
+      }
+      return sets;
+   }
+
+   /** @brief What a reduced user set holds, as plain text: "name:entry,entry," and " type" if US_type is present */
+   using Contents = std::vector<std::string>;
+
+   /**
+    * @brief The contents of a reduced list of user sets
+    * @param sets the list
+    * @return one line per set
+    */
+   Contents contents_of(const ConstList<US> sets) {
+      Contents lines;
+      for (const ConstElement<US> us : sets) {
+         std::string line = std::string(us.get<US_name>()) + ":";
+         if (us.has<US_entries>()) {
+            for (const ConstElement<UE> entry : us.get<US_entries>()) {
+               line += std::string(entry.get<UE_name>()) + ",";
+            }
+         }
+         if (us.has<US_type>()) {
+            line += " type";
+         }
+         lines.push_back(line);
+      }
+      return lines;
+   }
+
+   /**
+    * @brief Print a result and the expected one, entry by entry, when they differ
+    * @param label what the results are
+    * @param seen the result
+    * @param expected the expected result
+    */
+   void report_difference(const char *label, const std::vector<std::string> &seen,
+                          const std::vector<std::string> &expected) {
+      if (seen == expected) {
+         return;
+      }
+      std::printf("%s differ:\n", label);
+      for (std::size_t i = 0; i < expected.size(); i++) {
+         std::printf("   %2zu: expected %-10s seen %s\n", i, expected[i].c_str(),
+                     i < seen.size() ? seen[i].c_str() : "(missing)");
+      }
+   }
+
+   /**
+    * @brief SELECT-01: select fields, with a nested selection on a list field
+    * @return nothing; CHECK records the results
+    */
+   void test_what() {
+      const ListPtr<US> sets = typed_sets();
+      const Contents nested = contents_of(*sets->select(what<US_name>().with<US_entries>(what<UE_name>())));
+      const int fields[] = {US_entries, US_name};
+      const Contents flat = contents_of(*sets->select(what<US>(fields)));
+      const Contents expected{"acl:alice,bob,", "dept:carol,", "empty:"};
+      CHECK(9, "what<F...>() with a nested selection and what<T>(fields) select the names and the entries' names",
+            nested == expected && flat == expected);
+   }
+
+   /**
+    * @brief SELECT-02: compare a field of every value type with a value
+    * @return nothing; CHECK records the results
+    */
+   void test_compare() {
+      std::vector<std::string> seen;
+      const ListPtr<TEST> rows = typed_rows();
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() == 2));
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() != 2));
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() < 2));
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() <= 2));
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() > 2));
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() >= 2));
+      seen.push_back(keys_of(*rows, field<TEST_uint64>() > 15));
+      seen.push_back(keys_of(*rows, field<TEST_int>() < 0));
+      seen.push_back(keys_of(*rows, field<TEST_long>() >= 10));
+      seen.push_back(keys_of(*rows, field<TEST_double>() > 1.0));
+      seen.push_back(keys_of(*rows, field<TEST_bool>() == true));
+      seen.push_back(keys_of(*rows, field<TEST_string>() == "beta"));
+      seen.push_back(keys_of(*rows, field<TEST_string>() != "beta"));
+      seen.push_back(keys_of(*rows, field<TEST_string>() < "beta"));
+      seen.push_back(keys_of(*rows, field<TEST_host>() == "node2"));
+      // a null string is neither equal nor unequal; strcmp() orders upper case first, so "Gamma" < "beta"
+      const std::vector<std::string> expected{"2", "1,3,4", "1", "1,2", "3,4", "2,3,4", "2,3,4", "1",
+                                              "3,4", "2,3,4", "1,3", "2", "1,3", "1,3", "2"};
+      report_difference("comparisons", seen, expected);
+      CHECK(10, "field<F>() compared with ==, !=, <, <=, > and >= selects the expected keys for every value type",
+            seen == expected);
+   }
+
+   /**
+    * @brief SELECT-03: the named comparisons: case-insensitive, pattern, host name, bit mask
+    * @return nothing; CHECK records the results
+    */
+   void test_named() {
+      std::vector<std::string> seen;
+      const ListPtr<TEST> rows = typed_rows();
+      seen.push_back(keys_of(*rows, field<TEST_string>().equals_nocase("GAMMA")));
+      seen.push_back(keys_of(*rows, field<TEST_string>().like("*a")));
+      seen.push_back(keys_of(*rows, field<TEST_string>().like("*")));
+      seen.push_back(keys_of(*rows, field<TEST_host>().same_host("node3")));
+      seen.push_back(keys_of(*rows, field<TEST_uint32>().has_all_bits(3)));
+      // a pattern matches a null string as the empty one
+      const std::vector<std::string> expected{"3", "1,2,3", "1,2,3,4", "3", "3"};
+      report_difference("named comparisons", seen, expected);
+      CHECK(11, "equals_nocase, like, same_host and has_all_bits select the expected keys", seen == expected);
+   }
+
+   /**
+    * @brief SELECT-04: combine conditions, and a condition on a sub-list
+    * @return nothing; CHECK records the results
+    */
+   void test_combine() {
+      std::vector<std::string> seen;
+      const ListPtr<TEST> rows = typed_rows();
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() < 3 && field<TEST_bool>() == true));
+      seen.push_back(keys_of(*rows, field<TEST_uint32>() == 1 || field<TEST_uint32>() == 4));
+      seen.push_back(keys_of(*rows, !(field<TEST_uint32>() == 1 || field<TEST_uint32>() == 4)));
+      Where<TEST> low = field<TEST_uint32>() < 2;
+      seen.push_back(keys_of(*rows, std::move(low) || field<TEST_uint32>() > 3));
+      const ListPtr<US> sets = typed_sets();
+      const ConstElement<US> found = sets->find_if(field<US_entries>().any(field<UE_name>() == "carol"));
+      seen.emplace_back(found ? found.get<US_name>() : "-");
+      const std::vector<std::string> expected{"1", "1,4", "2,3", "1,4", "dept"};
+      report_difference("combinations", seen, expected);
+      CHECK(12, "&&, || and ! combine conditions, any() looks into a sub-list", seen == expected);
+   }
+
+   /**
+    * @brief SELECT-05: the errors of the builders
+    * @return nothing; CHECK records the results
+    */
+   void test_errors() {
+      const bool empty_operand = throws([] { static_cast<void>(Where<TEST>() || field<TEST_uint32>() == 1); },
+                                        FieldException::Reason::NullElement);
+      const bool with_on_all = throws([] { static_cast<void>(what_all<US>().with<US_entries>(what<UE_name>())); },
+                                      FieldException::Reason::ForeignField);
+      // an empty selection that a member is called on: EmptyHandle, as on an empty element or list handle
+      const bool on_empty = throws([] { static_cast<void>(What<US>().with<US_entries>(what<UE_name>())); },
+                                   FieldException::Reason::EmptyHandle) &&
+                            throws([] { static_cast<void>(What<US>().nest<US_entries>(what<UE_name>())); },
+                                   FieldException::Reason::EmptyHandle);
+      CHECK(13, "an empty operand of || throws NullElement; with() on the selection of every field throws "
+                "ForeignField",
+            empty_operand && with_on_all);
+      CHECK(14, "with() and nest() on an empty selection throw EmptyHandle", on_empty);
+   }
+
+   /**
+    * @brief SELECT-06: collect conditions in a loop with |= and &=, and narrow a merged selection with nest()
+    * @return nothing; CHECK records the results
+    */
+   void test_collect_and_nest() {
+      std::vector<std::string> seen;
+      const ListPtr<TEST> rows = typed_rows();
+      Where<TEST> where;
+      for (const std::uint32_t key : {1U, 3U, 4U}) {
+         where |= field<TEST_uint32>() == key;
+      }
+      where &= field<TEST_uint32>() < 4U;
+      seen.push_back(keys_of(*rows, where));
+      Where<TEST> none;
+      none &= field<TEST_uint32>().has_all_bits(1U);
+      seen.push_back(keys_of(*rows, none));
+      Where<TEST> empty;
+      empty |= Where<TEST>();
+      empty &= Where<TEST>();
+      const bool empty_collect = !empty;
+      // a non-empty side keeps its condition when the other side is empty
+      Where<TEST> kept_or = field<TEST_uint32>() == 1U;
+      kept_or |= Where<TEST>();
+      Where<TEST> kept_and = field<TEST_uint32>() == 1U;
+      kept_and &= Where<TEST>();
+      const bool kept_collect = keys_of(*rows, kept_or) == "1" && keys_of(*rows, kept_and) == "1";
+
+      const ListPtr<US> sets = typed_sets();
+      const What<US> what_sets = what<US_name>().merge(what<US_entries>()).nest<US_entries>(what<UE_name>());
+      const Contents nested = contents_of(*sets->select(what_sets, "selected"));
+      // nest() on a field that has a sub-selection already replaces it (the old one is freed)
+      const What<US> renested = what<US_name>().merge(what<US_entries>()).nest<US_entries>(what_all<UE>())
+                                   .nest<US_entries>(what<UE_name>());
+      const bool renested_same = contents_of(*sets->select(renested, "selected")) == nested;
+      const bool nest_refused = throws([] { static_cast<void>(what<US_name>().nest<US_entries>(what<UE_name>())); },
+                                       FieldException::Reason::ForeignField) &&
+                                throws([] { static_cast<void>(what_all<US>().nest<US_entries>(what<UE_name>())); },
+                                       FieldException::Reason::ForeignField);
+      // the keys 1, 3, 4 below 4 are 1 and 3; the odd keys are 1 and 3
+      const std::vector<std::string> expected{"1,3", "1,3"};
+      report_difference("collected conditions", seen, expected);
+      CHECK(15, "|= and &= collect conditions in a loop, starting from none; nest() narrows a field of a merged "
+                "selection",
+            seen == expected && empty_collect && kept_collect &&
+               nested == Contents({"acl:alice,bob,", "dept:carol,", "empty:"}) && renested_same && nest_refused);
+   }
+
+} // namespace typed_select
+
+/**
  * @brief Run the scenarios
  * @param argc argument count
  * @param argv arguments
@@ -444,5 +750,29 @@ int main(int argc, char *argv[]) {
       {"RAW-BUILD-04", "what_of errors", "what_of() fails where lIntVector2What() fails",
        {"build with no field, a foreign field, a null descriptor and an absent field through both"},
        "no selection and LENAMENOT in both", {}, {8}, test_what_errors},
+      {"RAW-BUILD-05", "typed what", "what<F...>() and what<T>(fields) select fields, also nested",
+       {"select the names of user sets and the names of their entries, nested and flat"}, "the names and entries",
+       {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {9}, typed_select::test_what},
+      {"RAW-BUILD-06", "typed comparisons", "field<F>() compares a field of every value type",
+       {"select from four elements with ==, !=, <, <=, > and >= on 32 and 64 bit, int, long, double, bool, "
+        "string and host fields"}, "the expected keys", {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {10},
+       typed_select::test_compare},
+      {"RAW-BUILD-07", "named comparisons", "equals_nocase, like, same_host and has_all_bits",
+       {"select with each named comparison"}, "the expected keys", {{"OPS-01", "covers"}, {"WHT-01", "covers"}},
+       {11}, typed_select::test_named},
+      {"RAW-BUILD-08", "combinations", "&&, || and ! combine and any() looks into a sub-list",
+       {"select with &&, || and !, with a combination of a stored condition, and find by an entry of a sub-list"},
+       "the expected keys and user set", {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {12},
+       typed_select::test_combine},
+      {"RAW-BUILD-09", "builder errors", "the builders throw on an empty operand, on with() on ALL and on an empty "
+       "selection",
+       {"combine an empty condition; extend the selection of every field; extend and narrow an empty selection"},
+       "NullElement, ForeignField and EmptyHandle thrown", {{"OPS-01", "covers"}}, {13, 14},
+       typed_select::test_errors},
+      {"RAW-BUILD-10", "collect and nest", "|= and &= collect conditions, nest() narrows a field selected before",
+       {"or three key conditions together in a loop and and a bound onto them, starting from no condition",
+        "merge two selections of user sets and narrow their entries"},
+       "the expected keys and contents; ForeignField for nest() on a field not selected and on ALL",
+       {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {15}, typed_select::test_collect_and_nest},
    });
 }

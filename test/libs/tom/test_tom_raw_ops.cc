@@ -41,9 +41,11 @@
  */
 
 #include <dlfcn.h>
+#include <unistd.h>
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include <iterator>
@@ -57,9 +59,12 @@
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_Pack.h"
 #include "tom/ocs_Model.h"
 #include "tom/ocs_Raw.h"
 #include "tom/cull_hash.h"
+#include "tom/cull_listP.h"
 #include "tom/ocs_cull_descr.h"
 
 #include "ocs_module_test.h"
@@ -1304,6 +1309,902 @@ test_descr_registry_shared() {
  * @param argv arguments
  * @return the exit code of the module test framework
  */
+/**
+ * @brief The typed whole-object operations: dump and undump, element files, layouts and reductions, splitting,
+ *        extra hash tables, packing and peeking, and the helpers on whole lists (CS-3077, OPS-01)
+ *
+ * Each scenario works on typed handles only and checks fixed expected values. Where a value is derived from the
+ * format the core writes, a comment says so.
+ */
+namespace typed_ops {
+
+   using ocs::tom::ConstElement;
+   using ocs::tom::ConstList;
+   using ocs::tom::EH;
+   using ocs::tom::Element;
+   using ocs::tom::ElementPtr;
+   using ocs::tom::FieldException;
+   using ocs::tom::Hashing;
+   using ocs::tom::Host;
+   using ocs::tom::JB;
+   using ocs::tom::List;
+   using ocs::tom::ListCoreError;
+   using ocs::tom::ListPtr;
+   using ocs::tom::NoneName;
+   using ocs::tom::PackBuffer;
+   using ocs::tom::PackException;
+   using ocs::tom::ST;
+   using ocs::tom::STN;
+   using ocs::tom::TEST;
+   using ocs::tom::UE;
+   using ocs::tom::US;
+   using ocs::tom::What;
+   using ocs::tom::Where;
+   using ocs::tom::field;
+   using ocs::tom::layout;
+   using ocs::tom::what;
+
+   /** @brief The number of jobs the dump and pack scenarios write */
+   constexpr std::uint32_t Jobs = 100;
+
+   /** @brief A job reduced to plain values */
+   struct Plain {
+      std::uint32_t number;   ///< JB_job_number
+      std::string owner;      ///< JB_owner, empty if not set
+
+      /**
+       * @brief Equal if number and owner are equal
+       * @param other the other job
+       * @return true if equal
+       */
+      bool operator==(const Plain &other) const = default;
+   };
+
+   /**
+    * @brief The owner of a job
+    * @param number the job number
+    * @return the owner
+    */
+   std::string owner_of(const std::uint32_t number) {
+      return "user" + std::to_string(number % 7);
+   }
+
+   /**
+    * @brief The jobs of a list as plain values
+    * @param jobs the list
+    * @return the values
+    */
+   std::vector<Plain> plain(const ListPtr<JB> &jobs) {
+      std::vector<Plain> values;
+      for (const ConstElement<JB> job : *jobs) {
+         const char *owner = job.get<JB_owner>();
+         values.push_back({job.get<JB_job_number>(), owner != nullptr ? owner : ""});
+      }
+      return values;
+   }
+
+   /**
+    * @brief The jobs 1 .. Jobs, each owned by owner_of() its number
+    * @return the list
+    */
+   ListPtr<JB> owned_jobs() {
+      ListPtr<JB> jobs = ListPtr<JB>::create("jobs");
+      for (std::uint32_t number = 1; number <= Jobs; number++) {
+         jobs->emplace_back<JB_job_number>(number).set<JB_owner>(owner_of(number).c_str());
+      }
+      return jobs;
+   }
+
+   /**
+    * @brief The plain values owned_jobs() holds
+    * @return the values
+    */
+   std::vector<Plain> expected_jobs() {
+      std::vector<Plain> values;
+      for (std::uint32_t number = 1; number <= Jobs; number++) {
+         values.push_back({number, owner_of(number)});
+      }
+      return values;
+   }
+
+   /**
+    * @brief The text a writer writes into a stream
+    * @param write the writer
+    * @return the text
+    */
+   template <typename Write>
+   std::string text_of(Write write) {
+      char *buf = nullptr;
+      size_t size = 0;
+      FILE *fp = open_memstream(&buf, &size);
+      write(fp);
+      fclose(fp);
+      std::string text(buf, size);
+      free(buf);
+      return text;
+   }
+
+   /**
+    * @brief Read from a text as from a file
+    * @param text the text
+    * @param read the reader
+    */
+   template <typename Read>
+   void from_text(const std::string &text, Read read) {
+      FILE *fp = fmemopen(const_cast<char *>(text.data()), text.size(), "r");
+      read(fp);
+      fclose(fp);
+   }
+
+   /**
+    * @brief Whether a function throws an exception of a given type
+    * @param call the call
+    * @return true if it threw one
+    */
+   template <typename E, typename Call>
+   bool throws(Call call) {
+      try {
+         call();
+      } catch (const E &) {
+         return true;
+      }
+      return false;
+   }
+
+   /**
+    * @brief Whether a function throws a FieldException with a given reason
+    * @param call the call
+    * @param reason the expected reason
+    * @return true if it threw with that reason
+    */
+   template <typename Call>
+   bool throws_reason(Call call, const FieldException::Reason reason) {
+      try {
+         call();
+      } catch (const FieldException &e) {
+         return e.reason() == reason;
+      }
+      return false;
+   }
+
+   /**
+    * @brief Whether a function throws a PackException with a given code
+    * @param call the call
+    * @param code the expected code
+    * @return true if it threw with that code
+    */
+   template <typename Call>
+   bool throws_pack(Call call, const int code) {
+      try {
+         call();
+      } catch (const PackException &e) {
+         return e.code() == code;
+      }
+      return false;
+   }
+
+   /**
+    * @brief Whether a text starts with a prefix and ends with a suffix
+    * @param text the text
+    * @param prefix the prefix
+    * @param suffix the suffix
+    * @return true if both hold
+    */
+   bool framed(const std::string &text, const std::string &prefix, const std::string &suffix) {
+      return text.size() >= prefix.size() + suffix.size() && text.compare(0, prefix.size(), prefix) == 0 &&
+             text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
+   }
+
+   /**
+    * @brief DUMP-01: dump a job list as text and read it back
+    * @return nothing; CHECK records the results
+    */
+   void test_dump_list() {
+      const ListPtr<JB> jobs = owned_jobs();
+      const std::string text = text_of([&](FILE *fp) { jobs->dump(fp); });
+      std::vector<Plain> values;
+      std::string again;
+      from_text(text, [&](FILE *fp) {
+         const ListPtr<JB> back = ListPtr<JB>::undump(fp);
+         values = plain(back);
+         again = text_of([&](FILE *out) { back->dump(out); });
+      });
+      // the frame write_list() writes: the list header with name and count, the descriptor, the elements
+      const bool frame = framed(text,
+                                "{ /* LIST BEGIN */\n/* LISTNAME               */ \"jobs\"\n"
+                                "/* NUMBER OF ELEMENTS     */ 100\n{ /* DESCR BEGIN */\n",
+                                "} /* LIST END */\n");
+      CHECK(32, "dump() writes a list framed by its name and count, undump() reads the jobs back, and the jobs read "
+                "back dump to the same text",
+            frame && values == expected_jobs() && again == text);
+   }
+
+   /**
+    * @brief DUMP-02: dump one element as text and read it back
+    *
+    * A quote inside a string is escaped. A quote at the start or the end of a
+    * string, and one of two quotes in a row, is lost: the dump splits the
+    * string at its quotes with sge_strtok(), which drops empty pieces.
+    *
+    * @return nothing; CHECK records the results
+    */
+   void test_dump_element() {
+      ElementPtr<JB> job = ElementPtr<JB>::create();
+      job->set<JB_job_number>(42);
+      job->set<JB_owner>("say \"hi\" now");
+      const std::string text = text_of([&](FILE *fp) { job->dump(fp); });
+      std::string owner;
+      std::uint32_t number = 0;
+      from_text(text, [&](FILE *fp) {
+         ElementPtr<JB> back = ElementPtr<JB>::undump(fp);
+         number = back->get<JB_job_number>();
+         owner = back->get<JB_owner>();
+      });
+      // the lines write_elem() writes: the field name padded to 20 columns, a string quoted with its quotes escaped
+      const bool lines = framed(text, "{ \n", "}\n") &&
+                         text.find("/* JB_job_number        */ 42\n") != std::string::npos &&
+                         text.find("/* JB_owner             */ \"say \\\"hi\\\" now\"\n") != std::string::npos;
+      CHECK(33, "an element dumps with its values, quotes escaped, and reads back with them",
+            lines && number == 42 && owner == "say \"hi\" now");
+   }
+
+   /**
+    * @brief DUMP-03: write a job into a file and read it back
+    * @return nothing; CHECK records the results
+    */
+   void test_dump_file() {
+      char dir[] = "/tmp/test_tom_raw_ops_XXXXXX";
+      const bool made = mkdtemp(dir) != nullptr;
+      ElementPtr<JB> job = ElementPtr<JB>::create();
+      job->set<JB_job_number>(7);
+      job->set<JB_owner>("alice");
+      job->write_to_disk(dir, "typed", "job");
+      const ElementPtr<JB> back = ElementPtr<JB>::read_from_disk(dir, "typed", "job");
+      const bool read = back->get<JB_job_number>() == 7 && std::string(back->get<JB_owner>()) == "alice";
+      ElementPtr<US> set = ElementPtr<US>::create();
+      set->set<US_name>("staff");
+      set->write_to_disk(dir, "set", "userset");
+      const bool wrong_type = throws<FieldException>([&] {
+         static_cast<void>(ElementPtr<JB>::read_from_disk(dir, "set", "job"));
+      });
+      const bool missing = throws<ocs::RuntimeException>([&] {
+         static_cast<void>(ElementPtr<JB>::read_from_disk(dir, "missing", "job"));
+      });
+      for (const char *name : {"typed", "set"}) {
+         unlink((std::string(dir) + "/" + name).c_str());
+      }
+      rmdir(dir);
+      CHECK(34, "write_to_disk() and read_from_disk() carry a job through a file; a file of another type and a "
+                "missing file throw",
+            made && read && wrong_type && missing);
+   }
+
+   /**
+    * @brief DUMP-04: errors: a cut text, a list of another type
+    * @return nothing; CHECK records the results
+    */
+   void test_dump_errors() {
+      const std::string text = text_of([](FILE *fp) { owned_jobs()->dump(fp); });
+      const std::string cut = text.substr(0, text.size() / 2);
+      bool cut_throws = false;
+      from_text(cut, [&](FILE *fp) {
+         cut_throws = throws<ListCoreError>([&] { static_cast<void>(ListPtr<JB>::undump(fp)); });
+      });
+      bool wrong_type = false;
+      from_text(text, [&](FILE *fp) {
+         wrong_type = throws<FieldException>([&] { static_cast<void>(ListPtr<US>::undump(fp)); });
+      });
+      CHECK(35, "a cut text throws ListCoreError; a list of another type throws WrongType", cut_throws && wrong_type);
+   }
+
+   /** @brief The user sets: name, type and entries; the last has no entries */
+   constexpr const char *Sets[][3] = {{"acl", "alice", "bob"}, {"dept", "carol", nullptr}, {"empty", nullptr, nullptr}};
+
+   /**
+    * @brief The user sets of #Sets with the types 1, 2, 3
+    * @return the owning handle
+    */
+   ListPtr<US> user_sets() {
+      ListPtr<US> sets = ListPtr<US>::create("sets");
+      std::uint32_t type = 1;
+      for (const auto &set : Sets) {
+         const Element<US> us = sets->emplace_back<US_name>(set[0]);
+         us.set<US_type>(type++);
+         for (int i = 1; i < 3 && set[i] != nullptr; i++) {
+            us.get_or_create<US_entries>().emplace_back<UE_name>(set[i]);
+         }
+      }
+      return sets;
+   }
+
+   /**
+    * @brief What a user set holds, as plain text: "name:entry,entry," plus " type" if US_type is present and
+    *        " fshare" if US_fshare is present
+    * @param us the user set, or an empty handle
+    * @return the text, "none" for an empty handle
+    */
+   std::string set_text(const ConstElement<US> us) {
+      if (!us) {
+         return "none";
+      }
+      std::string text = std::string(us.get<US_name>()) + ":";
+      if (ocs::tom::has<US_entries>(us)) {
+         for (const ConstElement<UE> entry : us.get<US_entries>()) {
+            text += std::string(entry.get<UE_name>()) + ",";
+         }
+      }
+      if (ocs::tom::has<US_type>(us)) {
+         text += " type";
+      }
+      if (ocs::tom::has<US_fshare>(us)) {
+         text += " fshare";
+      }
+      return text;
+   }
+
+   /**
+    * @brief The name and the keys of a list of TEST elements, in their order
+    * @param rows the list, or an empty handle
+    * @return "name:key,key,", "none" for an empty handle
+    */
+   std::string row_keys(const ConstList<TEST> rows) {
+      if (!rows) {
+         return "none";
+      }
+      std::string keys = std::string(rows.name()) + ":";
+      for (const ConstElement<TEST> row : rows) {
+         keys += std::to_string(row.get<TEST_uint32>()) + ",";
+      }
+      return keys;
+   }
+
+   /**
+    * @brief A list of TEST elements with the keys 1 to n and the string "s<key>"
+    * @param n the number of elements
+    * @return the owning handle
+    */
+   ListPtr<TEST> keyed_rows(const int n) {
+      ListPtr<TEST> rows = ListPtr<TEST>::create("rows");
+      for (int i = 1; i <= n; i++) {
+         const Element<TEST> row = rows->emplace_back<TEST_uint32>(static_cast<std::uint32_t>(i));
+         row.set<TEST_string>(("s" + std::to_string(i)).c_str());
+      }
+      return rows;
+   }
+
+   /**
+    * @brief Whether a list holds a built hash table on a field
+    * @param lp the list, or nullptr
+    * @param nm the field
+    * @return true if the table on the field is built; false for nullptr, a field the list does not hash or a
+    *         table not built yet
+    */
+   bool has_table(const lList *lp, const int nm) {
+      if (lp == nullptr) {
+         return false;
+      }
+      const int pos = ocs::tom::field_pos(lp->descr, nm);
+      const cull_hash_slot *slot = pos >= 0 ? list_hash_slot(lp, pos) : nullptr;
+      return slot != nullptr && slot->get() != nullptr;
+   }
+
+   /**
+    * @brief The name of a numbered user set
+    * @param i the number
+    * @return "u<i>"
+    */
+   std::string set_name(const int i) {
+      return "u" + std::to_string(i);
+   }
+
+   /**
+    * @brief A list of user sets with the names u1 to un; US_name is a hashed unique field
+    * @param n the number of elements
+    * @return the owning handle
+    */
+   ListPtr<US> named_sets(const int n) {
+      ListPtr<US> sets = ListPtr<US>::create("named");
+      for (int i = 1; i <= n; i++) {
+         sets->emplace_back<US_name>(set_name(i).c_str());
+      }
+      return sets;
+   }
+
+   /**
+    * @brief Look up a numbered user set by its hashed name
+    * @param sets the list
+    * @param i the number of the set
+    * @return "found" or "lost"
+    */
+   std::string lookup(const ConstList<US> sets, const int i) {
+      return sets.find_first<US_name>(set_name(i).c_str()) ? "found" : "lost";
+   }
+
+   /**
+    * @brief LAYOUT-01: lists and elements in the layout of a reduced list or element
+    * @return nothing; CHECK records the results
+    */
+   void test_create_like() {
+      std::vector<std::string> seen;
+      const ListPtr<US> sets = user_sets();
+      const ListPtr<US> reduced = sets->select(what<US_name>(), "reduced");
+      auto like_list = ListPtr<US>::create_like("like list", *reduced);
+      auto like_elem = ListPtr<US>::create_like("like elem", reduced->front());
+      like_list->push_back(ElementPtr<US>::create_like(*reduced)).set<US_name>("new");
+      like_elem->push_back(ElementPtr<US>::create_like(reduced->front())).set<US_name>("other");
+      // a reduced element moves into a list of its layout
+      like_list->push_back(reduced->extract(reduced->front()));
+      for (const ConstElement<US> us : *like_list) {
+         seen.push_back(set_text(us));
+      }
+      seen.push_back(set_text(like_elem->front()));
+      seen.push_back(throws_reason([] { static_cast<void>(ListPtr<US>::create_like("null", List<US>())); },
+                                   FieldException::Reason::NullDescriptor) &&
+                           throws_reason([] { static_cast<void>(ElementPtr<US>::create_like(ConstElement<US>())); },
+                                         FieldException::Reason::NullDescriptor)
+                        ? "refused"
+                        : "made");
+      seen.emplace_back(ocs::tom::same_layout(like_list->descr(), reduced->descr()) &&
+                              ocs::tom::same_layout(like_elem->descr(), reduced->descr())
+                           ? "same"
+                           : "other");
+      CHECK(36, "create_like() makes lists and elements in the layout of a reduced list or element; an empty handle "
+                "throws NullDescriptor",
+            seen == std::vector<std::string>({"new:", "acl:", "other:", "refused", "same"}));
+   }
+
+   /**
+    * @brief LAYOUT-02: a layout from fields known at compile time, and one from a selection known at run time
+    * @return nothing; CHECK records the results
+    */
+   void test_layout() {
+      std::vector<std::string> seen;
+      auto lp = ListPtr<US>::create("by fields", layout<US_type, US_name>());
+      lp->push_back(ElementPtr<US>::create(layout<US_name, US_type>())).set<US_name>("fields");
+      seen.push_back(set_text(lp->front()));
+      // the order of the fields does not matter, and every call gives the descriptor built once
+      const bool once = layout<US_type, US_name>().get() == layout<US_type, US_name>().get() &&
+                        ocs::tom::same_layout(layout<US_type, US_name>().get(), layout<US_name, US_type>().get());
+      const auto selection = what<US_name, US_fshare>();
+      auto by_what = ListPtr<US>::create("by selection", selection);
+      by_what->push_back(ElementPtr<US>::create(selection)).set<US_name>("selection");
+      seen.push_back(set_text(by_what->front()));
+      seen.emplace_back(throws_reason([] { static_cast<void>(ElementPtr<US>::create(What<US>())); },
+                                      FieldException::Reason::NullElement) &&
+                              throws_reason([] { static_cast<void>(ListPtr<US>::create("none", What<US>())); },
+                                            FieldException::Reason::NullElement)
+                           ? "refused"
+                           : "made");
+      CHECK(37, "layout<F...>() and create(what) make reduced layouts holding just the fields named; an empty "
+                "selection throws NullElement",
+            seen == std::vector<std::string>({"fields: type", "selection: fshare", "refused"}) && once);
+   }
+
+   /**
+    * @brief LAYOUT-03: reduce single elements to a selection of fields
+    * @return nothing; CHECK records the results
+    */
+   void test_select_elem() {
+      std::vector<std::string> seen;
+      const ListPtr<US> sets = user_sets();
+      const auto selection = what<US_name, US_entries>();
+      const auto where = field<US_name>() == "dept";
+      for (const ConstElement<US> us : *sets) {
+         const auto selected = us.select(selection, Hashing::Off);
+         // the same selection again: the cached reduction
+         const auto again = us.select(selection, Hashing::Off);
+         const auto matched = us.select(where, selection, Hashing::Off);
+         seen.push_back(set_text(*selected) + "|" + set_text(*again) + "|" + set_text(*matched));
+      }
+      seen.push_back(set_text(*ConstElement<US>().select(selection)));
+      const bool refused = throws_reason([&sets] { static_cast<void>(sets->front().select(What<US>())); },
+                                         FieldException::Reason::NullElement);
+      const std::vector<std::string> expected{"acl:alice,bob,|acl:alice,bob,|none",
+                                              "dept:carol,|dept:carol,|dept:carol,", "empty:|empty:|none", "none"};
+      CHECK(38, "select(what) and select(where, what) reduce an element, nothing for a mismatch or an empty handle",
+            seen == expected && refused);
+   }
+
+   /**
+    * @brief LAYOUT-04: split a list at an element
+    * @return nothing; CHECK records the results
+    */
+   void test_split_at() {
+      for (const int n : {5, 40}) {
+         std::vector<std::string> seen;
+         bool foreign = false;
+         {
+            const ListPtr<TEST> source = keyed_rows(n);
+            const auto second_last = source->find_first<TEST_uint32>(static_cast<std::uint32_t>(n - 1));
+            const ListPtr<TEST> target = source->split_at(second_last);
+            seen.push_back(row_keys(*source));
+            seen.push_back(row_keys(*target));
+            auto existing = ListPtr<TEST>::create("existing");
+            existing->emplace_back<TEST_uint32>(100);
+            existing->splice(source->split_at(source->front()));
+            seen.push_back(row_keys(*source));
+            seen.push_back(row_keys(*existing));
+            seen.emplace_back(existing->find_first<TEST_uint32>(2) ? "found" : "lost");
+            foreign = throws_reason([&source, &target] { static_cast<void>(source->split_at(target->front())); },
+                                    FieldException::Reason::ForeignList);
+         }
+         // the keys 1 to n - 2 that stay in the source at the first split
+         std::string head;
+         for (int i = 1; i <= n - 2; i++) {
+            head += std::to_string(i) + ",";
+         }
+         const std::vector<std::string> expected{"rows:" + head,
+                                                 "rows:" + std::to_string(n - 1) + "," + std::to_string(n) + ",",
+                                                 "rows:", "existing:100," + head, "found"};
+         CHECK(39, "split_at() takes an element and the ones after it out, into a new list or spliced into an "
+                   "existing one; an element of another list throws ForeignList",
+               seen == expected && foreign);
+      }
+
+      // the same on a hashed unique field, US_name: every lookup below goes through a hash table, also on the
+      // short lists, so a table not kept up to date by split_at() or splice() would still find a moved element
+      // in the source or miss it in the target
+      ocs_cull_hash_set_min_elems(0);
+      for (const int n : {5, 40}) {
+         std::vector<std::string> seen;
+         bool tables = false;
+         {
+            const ListPtr<US> source = named_sets(n);
+            // the first lookup builds the table of the source, before the split
+            seen.push_back(lookup(*source, n));
+            const ListPtr<US> target = source->split_at(source->find_first<US_name>(set_name(n - 1).c_str()));
+            seen.push_back(lookup(*source, n));
+            seen.push_back(lookup(*source, 1));
+            seen.push_back(lookup(*target, n));
+            auto existing = ListPtr<US>::create("existing");
+            existing->emplace_back<US_name>(set_name(100).c_str());
+            seen.push_back(lookup(*existing, 100));
+            existing->splice(source->split_at(source->front()));
+            seen.push_back(lookup(*source, 1));
+            seen.push_back(lookup(*existing, 1));
+            seen.push_back(lookup(*existing, n - 2));
+            tables = has_table(source->raw(), US_name) && has_table(target->raw(), US_name) &&
+                     has_table(existing->raw(), US_name);
+         }
+         const std::vector<std::string> expected{"found", "lost", "found", "found",
+                                                 "found", "lost", "found", "found"};
+         CHECK(40, "split_at() and splice() keep the hash tables of source and target up to date: a hashed lookup "
+                   "finds what moved where it moved",
+               seen == expected && tables);
+      }
+      ocs_cull_hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
+   }
+
+   /**
+    * @brief LAYOUT-05: an extra hash table on a field the type does not hash
+    * @return nothing; CHECK records the results
+    */
+   void test_add_hash() {
+      for (const int n : {5, 40}) {
+         std::vector<std::string> seen;
+         const ListPtr<TEST> rows = keyed_rows(n);
+         seen.push_back(std::to_string(static_cast<int>(rows->add_hash<TEST_string>())));
+         seen.push_back(std::to_string(static_cast<int>(rows->add_hash<TEST_string>())));
+         const auto row = rows->find_first<TEST_string>(("s" + std::to_string(n)).c_str());
+         seen.push_back(row ? std::to_string(row.get<TEST_uint32>()) : "none");
+         seen.push_back(std::to_string(static_cast<int>(List<TEST>().add_hash<TEST_string>())));
+         // true for a new table, for one there already and for an empty handle; the lookup finds key n
+         CHECK(41, "add_hash<F>() adds a table, again without harm, and a lookup by the field finds the element",
+               seen == std::vector<std::string>({"1", "1", std::to_string(n), "1"}));
+      }
+   }
+
+   /**
+    * @brief LAYOUT-06: compare the layouts of two lists
+    * @return nothing; CHECK records the results
+    */
+   void test_same_layout() {
+      std::vector<std::string> seen;
+      const auto same = [](const ConstList<US> a, const ConstList<US> b) {
+         return std::string(a.same_layout(b) ? "same" : "differs");
+      };
+      const ListPtr<US> sets = user_sets();
+      const ListPtr<US> others = user_sets();
+      const ListPtr<US> empty = ListPtr<US>::create("empty");
+      const ListPtr<US> by_name = sets->select(what<US_name>(), "by name");
+      const ListPtr<US> by_name_too = others->select(what<US_name>(), "by name too");
+      const ListPtr<US> by_type = sets->select(what<US_type>(), "by type");
+      seen.push_back(same(*sets, *others));
+      seen.push_back(same(*sets, *empty));
+      seen.push_back(same(*sets, *by_name));
+      seen.push_back(same(*by_name, *by_name_too));
+      seen.push_back(same(*by_name, *by_type));
+      seen.push_back(same(*sets, nullptr));
+      seen.push_back(same(nullptr, nullptr));
+      CHECK(42, "same_layout() tells full from reduced and reduced alike from reduced differently, and refuses "
+                "missing lists",
+            seen == std::vector<std::string>({"same", "same", "differs", "same", "differs", "differs", "differs"}));
+   }
+
+   /**
+    * @brief PACK-01: pack a selection and a condition, unpack them and select with them
+    * @return nothing; CHECK records the results
+    */
+   void test_pack_what_and_where() {
+      ListPtr<US> sets = ListPtr<US>::create("sets");
+      for (const char *name : {"alpha", "beta", "gamma"}) {
+         sets->emplace_back<US_name>(name);
+      }
+      const What<US> selection = what<US_name>();
+      const Where<US> where = field<US_name>().like("*a");
+      PackBuffer out;
+      selection.pack(out.raw());
+      where.pack(out.raw());
+      PackBuffer in = PackBuffer::reading(out.data(), out.size());
+      const What<US> what_back = What<US>::unpack(in.raw());
+      const Where<US> where_back = Where<US>::unpack(in.raw());
+      const ListPtr<US> selected = sets->select(where_back, what_back);
+      // every name ends in 'a'; the reduction keeps the name only
+      std::string names;
+      for (const ConstElement<US> us : *selected) {
+         names += std::string(us.get<US_name>()) + (us.has<US_type>() ? "+type" : "") + ",";
+      }
+      CHECK(43, "a selection and a condition pack and unpack, and select what they selected before",
+            selected->size() == 3 && names == "alpha,beta,gamma,");
+   }
+
+   /**
+    * @brief PACK-02: errors: a truncated buffer, a list of another type, a buffer of another version
+    * @return nothing; CHECK records the results
+    */
+   void test_pack_errors() {
+      PackBuffer out;
+      owned_jobs()->pack(out.raw());
+      const std::size_t cut = out.size() - 5;
+      const bool format = throws_pack([&] {
+         PackBuffer cut_in = PackBuffer::reading(out.data(), cut);
+         static_cast<void>(ListPtr<JB>::unpack(cut_in.raw()));
+      }, PACK_FORMAT);
+      const bool wrong_type = throws_reason([&] {
+         PackBuffer jobs_in = PackBuffer::reading(out.data(), out.size());
+         static_cast<void>(ListPtr<US>::unpack(jobs_in.raw()));
+      }, FieldException::Reason::WrongType);
+      std::vector<char> wrong_version(out.data(), out.data() + out.size());
+      wrong_version[7] ^= 0x01;
+      const bool version = throws_pack([&] {
+         static_cast<void>(PackBuffer::reading(wrong_version.data(), wrong_version.size()));
+      }, PACK_VERSION);
+      CHECK(44, "a truncated buffer throws PACK_FORMAT, a list of another type WrongType, another version "
+                "PACK_VERSION",
+            format && wrong_type && version);
+   }
+
+   /**
+    * @brief PACK-03: the counting buffer measures what packing writes
+    * @return nothing; CHECK records the results
+    */
+   void test_pack_counting() {
+      const ListPtr<JB> jobs = owned_jobs();
+      PackBuffer counting = PackBuffer::counting();
+      jobs->pack(counting.raw());
+      PackBuffer out;
+      const std::size_t header = out.size();
+      jobs->pack(out.raw());
+      CHECK(45, "PackBuffer::counting() measures the bytes a pack writes, without writing",
+            counting.size() == out.size() - header && counting.data() == nullptr);
+   }
+
+   /**
+    * @brief PACK-04: a receiver that does not know what comes: look at the type, then unpack
+    * @return nothing; CHECK records the results
+    */
+   void test_pack_peek() {
+      // a buffer holding a job list, a reduced user set list (its descriptor goes through the table), a null list,
+      // and a free job element
+      PackBuffer out;
+      owned_jobs()->pack(out.raw());
+      ListPtr<US> sets = ListPtr<US>::create("sets");
+      sets->emplace_back<US_name>("alpha");
+      sets->pack(out.raw(), what<US_name>());
+      ListPtr<JB>().get().pack(out.raw());
+      ElementPtr<JB> job = ElementPtr<JB>::create();
+      job->set<JB_job_number>(7);
+      job->pack(out.raw());
+
+      PackBuffer in = PackBuffer::reading(out.data(), out.size());
+      std::vector<int> types;
+      std::size_t jobs_found = 0;
+      std::size_t sets_found = 0;
+      bool stays = true;
+      for (int i = 0; i < 3; i++) {
+         const std::size_t before = in.size();
+         if (ocs::tom::next_list_is<JB>(in.raw())) {
+            stays = stays && in.size() == before;
+            jobs_found += ListPtr<JB>::unpack(in.raw())->size();
+            types.push_back(JB::fields[0].nm);
+         } else if (ocs::tom::next_list_is<US>(in.raw())) {
+            stays = stays && in.size() == before;
+            sets_found += ListPtr<US>::unpack(in.raw())->size();
+            types.push_back(US::fields[0].nm);
+         } else {
+            stays = stays && ocs::tom::peek_list_type(&in.raw()) == NoName && in.size() == before;
+            static_cast<void>(ListPtr<JB>::unpack(in.raw()));
+            types.push_back(NoName);
+         }
+      }
+      const bool elem_is_job = ocs::tom::next_elem_is<JB>(in.raw());
+      types.push_back(elem_is_job ? JB::fields[0].nm : NoName);
+      const ElementPtr<JB> job_back = ElementPtr<JB>::unpack(in.raw());
+
+      // cut off inside the descriptor: looking throws as unpacking does
+      const bool cut = throws_pack([&] {
+         PackBuffer cut_in = PackBuffer::reading(out.data(), 2 * INTSIZE + 1 + 2 * INTSIZE + 6);
+         static_cast<void>(ocs::tom::peek_list_type(&cut_in.raw()));
+      }, PACK_FORMAT);
+
+      // the first field of the type each packed object has: a job list, a user set list reduced to US_name (the
+      // first field of US), a null list, a job
+      const std::vector<int> expected{JB::fields[0].nm, US::fields[0].nm, NoName, JB::fields[0].nm};
+      CHECK(46, "next_list_is and next_elem_is name the type of what follows without moving the buffer",
+            types == expected && jobs_found == Jobs && sets_found == 1 && stays && elem_is_job &&
+            job_back->get<JB_job_number>() == 7 && cut);
+   }
+
+   /**
+    * @brief The names of a string list, separated by blanks
+    * @param list the list
+    * @return the names
+    */
+   std::string names(const ConstList<ST> list) {
+      std::string text;
+      for (const ConstElement<ST> st : list) {
+         const char *name = st.get<ST_name>();
+         text += (text.empty() ? "" : " ") + std::string(name != nullptr ? name : "(null)");
+      }
+      return text;
+   }
+
+   /**
+    * @brief The names of a host list, separated by blanks
+    * @param list the list
+    * @return the names
+    */
+   std::string names(const ConstList<EH> list) {
+      std::string text;
+      for (const ConstElement<EH> eh : list) {
+         text += (text.empty() ? "" : " ") + std::string(eh.get<EH_name>().c_str());
+      }
+      return text;
+   }
+
+   /**
+    * @brief The host names of a list of test rows, separated by blanks
+    * @param list the list
+    * @return the names
+    */
+   std::string names(const ConstList<TEST> list) {
+      std::string text;
+      for (const ConstElement<TEST> row : list) {
+         text += (text.empty() ? "" : " ") + std::string(row.get<TEST_host>().c_str());
+      }
+      return text;
+   }
+
+   /** @brief The number of jobs the split works on */
+   constexpr std::uint32_t SplitJobs = 1000;
+
+   /**
+    * @brief The jobs 1 .. SplitJobs, job i owned by "user<i % 7>"
+    * @return the list
+    */
+   ListPtr<JB> split_jobs() {
+      ListPtr<JB> jobs = ListPtr<JB>::create("jobs");
+      for (std::uint32_t number = 1; number <= SplitJobs; number++) {
+         jobs->emplace_back<JB_job_number>(number).set<JB_owner>(("user" + std::to_string(number % 7)).c_str());
+      }
+      return jobs;
+   }
+
+   /**
+    * @brief The job numbers of a list, summed
+    * @param jobs the list
+    * @return the sum
+    */
+   std::uint64_t sum(const ConstList<JB> jobs) {
+      std::uint64_t n = 0;
+      for (const ConstElement<JB> job : jobs) {
+         n += job.get<JB_job_number>();
+      }
+      return n;
+   }
+
+   /**
+    * @brief REST-01: parse names into a list, with and without "none"
+    * @return nothing; CHECK records the results
+    */
+   void test_from_string() {
+      std::vector<std::string> seen;
+      // a repeated name is kept once; host names compare without regard to case
+      seen.push_back(names(*ListPtr<ST>::from_string<ST_name>("a b,a c", ", ")));
+      seen.push_back(names(*ListPtr<EH>::from_string<EH_name>("h2 h1 H2", " ")));
+      const ListPtr<ST> none = ListPtr<ST>::from_string<ST_name>("NONE", " ", NoneName::Empty);
+      seen.push_back(none ? names(*none) : "empty");
+      const bool mixed = throws<ListCoreError>([] {
+         static_cast<void>(ListPtr<ST>::from_string<ST_name>("a none", " ", NoneName::Empty));
+      });
+      CHECK(47, "from_string<F>() parses names, keeps a repeated one once, gives no list for \"none\" and throws for "
+                "\"none\" beside a name",
+            seen == std::vector<std::string>({"a b c", "h2 h1", "empty"}) && mixed);
+   }
+
+   /**
+    * @brief REST-02: split a list by a condition, make a host list unique, take out the names two lists share
+    * @return nothing; CHECK records the results
+    */
+   void test_split_unique_common() {
+      const ListPtr<JB> jobs = split_jobs();
+      const ListPtr<JB> rest = jobs->split_off(field<JB_job_number>() <= 300U, "rest");
+      // the jobs 1 .. 300 stay, sum 300 * 301 / 2 = 45150; 301 .. 1000 go, sum 500500 - 45150 = 455350
+      const std::vector<std::uint64_t> split = {jobs->size(), sum(*jobs), rest->size(), sum(*rest)};
+      const ListPtr<TEST> hosts = ListPtr<TEST>::create("hosts");
+      for (const char *h : {"h3", "h1", "h3", "h2", "h1"}) {
+         hosts->push_back(ElementPtr<TEST>::create()).set<TEST_host>(Host{h});
+      }
+      hosts->unique<TEST_host>();
+      const ListPtr<ST> a = ListPtr<ST>::from_string<ST_name>("a b c", " ");
+      const ListPtr<ST> b = ListPtr<ST>::from_string<ST_name>("b c d", " ");
+      a->remove_common<ST_name>(*b);
+      CHECK(48, "split_off() keeps the jobs the condition matches and returns the rest, unique<F>() sorts and drops "
+                "repeated hosts, remove_common<F>() takes out the shared names",
+            split == std::vector<std::uint64_t>({300, 45150, 700, 455350}) && names(*hosts) == "h1 h2 h3" &&
+               names(*a) + " | " + names(*b) == "a | d");
+   }
+
+   /**
+    * @brief REST-03: merge two selections and write them, a list and a condition as debug text
+    * @return nothing; CHECK records the results
+    */
+   void test_merge_and_print() {
+      What<JB> merged = what<JB_job_number>().with<JB_ja_tasks>(what<JAT_task_number>());
+      // a field both select keeps the nested selections of both
+      merged = std::move(merged).merge(what<JB_owner>().with<JB_ja_tasks>(what<JAT_status>()));
+      const std::string what_text = text_of([&](FILE *fp) { merged.print(fp); });
+      const ListPtr<JB> jobs = split_jobs();
+      const auto where = field<JB_job_number>() == 7U || field<JB_owner>() == "user1";
+      const ListPtr<JB> few = jobs->select(where, what<JB_job_number, JB_owner>(), "few");
+      const std::string list_text = text_of([&](FILE *fp) { few->print(fp); });
+      const std::string where_text = text_of([&](FILE *fp) { where.print(fp); });
+      const auto has = [](const std::string &text, const char *part) { return text.find(part) != std::string::npos; };
+      // the merged selection names the fields of both and both nested fields; job 7 and the jobs 1, 8, ..., 995
+      // owned by user1 are 1 + 143 = 144 jobs; print_where() writes "<name>(<number>) <op> <value>" per comparison
+      const bool what_ok = has(what_text, "JB_job_number") && has(what_text, "JB_owner") &&
+                           has(what_text, "JB_ja_tasks") && has(what_text, "JAT_task_number") &&
+                           has(what_text, "JAT_status");
+      const bool list_ok = has(list_text, "List: <few> #Elements: 144");
+      const bool where_ok = has(where_text, "JB_job_number(") && has(where_text, ") == 7\n") &&
+                            has(where_text, "JB_owner(") && has(where_text, ") == \"user1\"\n") &&
+                            has(where_text, "||");
+      CHECK(49, "merge() keeps the fields and nested selections of both, print() writes the selection, the selected "
+                "list and the condition",
+            what_ok && list_ok && where_ok);
+   }
+
+   /**
+    * @brief REST-04: count the nodes and leaves of a tree
+    * @return nothing; CHECK records the results
+    */
+   void test_tree() {
+      const ListPtr<STN> tree = ListPtr<STN>::create("tree");
+      const Element<STN> root = tree->emplace_back<STN_name>("root");
+      const Element<STN> left = root.get_or_create<STN_children>().emplace_back<STN_name>("left");
+      root.get_or_create<STN_children>().emplace_back<STN_name>("right");
+      left.get_or_create<STN_children>().emplace_back<STN_name>("leaf");
+      const std::vector<int> counts = {root.count_nodes<STN_children>(), root.count_leaves<STN_children>(),
+                                       tree->count_nodes<STN_children>(), tree->count_leaves<STN_children>()};
+      // root, left, right and leaf are four nodes; right and leaf are the two leaves
+      CHECK(50, "count_nodes<F>() and count_leaves<F>() count four nodes and two leaves from the root and from the "
+                "list",
+            counts == std::vector<int>({4, 2, 4, 2}));
+   }
+
+} // namespace typed_ops
+
+
 int main(int argc, char *argv[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
@@ -1409,5 +2310,70 @@ int main(int argc, char *argv[]) {
        "descr_registry_shared() gives what ocs_cull_descr_registry_shared() gives",
        {"ask for the objects of this process through both"}, "the same result and object names", {}, {31},
        test_descr_registry_shared},
+      {"RAW-OPS-21", "dump list", "dump() and undump() of a list write a framed text and read the list back",
+       {"dump 100 jobs, read them back, dump what was read"}, "the frame of write_list(), the same jobs, the same text",
+       {{"OPS-01", "covers"}}, {32}, typed_ops::test_dump_list},
+      {"RAW-OPS-22", "dump element", "an element dumps with its values and reads back",
+       {"dump a job whose owner holds quotes, read it back"}, "the field lines with the quotes escaped; the values",
+       {{"OPS-01", "covers"}}, {33}, typed_ops::test_dump_element},
+      {"RAW-OPS-23", "element file", "write_to_disk() and read_from_disk() carry a job through a file",
+       {"write a job to a file and read it back; read a user set file as a job; read a missing file"},
+       "the same job; WrongType and a runtime error thrown", {{"OPS-01", "covers"}}, {34}, typed_ops::test_dump_file},
+      {"RAW-OPS-24", "dump errors", "undump() throws on a cut text and on a list of another type",
+       {"read a cut text, read a job list as user sets"}, "ListCoreError and WrongType thrown",
+       {{"OPS-01", "covers"}}, {35}, typed_ops::test_dump_errors},
+      {"RAW-OPS-25", "create like", "create_like() makes lists and elements in the layout of a list or an element",
+       {"create a list and an element like a reduced list and like a reduced element, fill and combine them",
+        "create like an empty handle"},
+       "the fields of the reduced layout; NullDescriptor for an empty handle", {{"OPS-01", "covers"}}, {36},
+       typed_ops::test_create_like},
+      {"RAW-OPS-26", "layout", "layout<F...>() and create(what) make reduced layouts",
+       {"create a list and an element of a layout from fields and from a selection", "reduce to nothing"},
+       "the fields named present; one descriptor per set of fields; NullElement for an empty selection",
+       {{"OPS-01", "covers"}}, {37}, typed_ops::test_layout},
+      {"RAW-OPS-27", "select element", "select(what) and select(where, what) reduce one element",
+       {"reduce every user set to its name and entries, with and without a condition", "reduce no element"},
+       "the selected fields; nothing for a mismatch; NullElement for an empty selection", {{"OPS-01", "covers"}},
+       {38}, typed_ops::test_select_elem},
+      {"RAW-OPS-28", "split at", "split_at() takes an element and the ones after it out of a list",
+       {"split a short and a long list before its last two elements", "split the rest into an existing list",
+        "the same on a hashed unique field: hashed lookups before and after the split and the splice"},
+       "the keys in both lists; lookups by key still work; ForeignList for an element of another list",
+       {{"OPS-01", "covers"}}, {39, 40}, typed_ops::test_split_at},
+      {"RAW-OPS-29", "add hash", "add_hash<F>() adds a hash table on a field the type does not hash",
+       {"add a table on the string field of a short and a long list, twice, and look up by it",
+        "add one on an empty handle"},
+       "true each time and the element found", {{"OPS-01", "covers"}}, {41}, typed_ops::test_add_hash},
+      {"RAW-OPS-30", "same layout", "same_layout() compares the layouts of two lists",
+       {"compare full lists, full and reduced lists, lists reduced alike and differently, and missing lists"},
+       "same for equal layouts, differs otherwise and for a missing list", {{"OPS-01", "covers"}}, {42},
+       typed_ops::test_same_layout},
+      {"RAW-OPS-31", "pack selection and condition", "What and Where pack and unpack",
+       {"pack a selection and a condition, unpack them, select with them"}, "the three names, reduced",
+       {{"OPS-01", "covers"}}, {43}, typed_ops::test_pack_what_and_where},
+      {"RAW-OPS-32", "pack errors", "unpack() throws on a truncated buffer, a foreign type and another version",
+       {"unpack a truncated buffer, a list of another type, a buffer of another version"},
+       "PACK_FORMAT, WrongType, PACK_VERSION", {{"OPS-01", "covers"}}, {44}, typed_ops::test_pack_errors},
+      {"RAW-OPS-33", "pack counting", "the counting buffer measures what packing writes",
+       {"count a pack of 100 jobs, pack them"}, "the same number of bytes", {{"OPS-01", "covers"}}, {45},
+       typed_ops::test_pack_counting},
+      {"RAW-OPS-34", "pack peek", "a receiver looks at the type of what follows, then unpacks it",
+       {"pack a job list, a reduced user set list, a null list and a job; look at each type, then unpack it"},
+       "the type of each object; the buffer unmoved by looking", {{"OPS-01", "covers"}}, {46},
+       typed_ops::test_pack_peek},
+      {"RAW-OPS-35", "from_string", "from_string<F>() parses names into a list",
+       {"parse names with a repeated one, host names, \"none\" alone and beside a name"},
+       "the lists; ListCoreError for \"none\" beside a name", {{"OPS-01", "covers"}}, {47},
+       typed_ops::test_from_string},
+      {"RAW-OPS-36", "split, unique, common", "split_off(), unique<F>() and remove_common<F>()",
+       {"split 1 000 jobs by number, make five host names unique, take out the names two lists share"},
+       "the expected counts, sums and names", {{"OPS-01", "covers"}}, {48}, typed_ops::test_split_unique_common},
+      {"RAW-OPS-37", "merge and print", "merge() of selections and print() of a selection, a list and a condition",
+       {"merge two job selections with nested task selections, print it, a selected list and the condition"},
+       "the fields of both; the element count; the comparisons", {{"OPS-01", "covers"}}, {49},
+       typed_ops::test_merge_and_print},
+      {"RAW-OPS-38", "tree", "count_nodes<F>() and count_leaves<F>() count a tree",
+       {"count a share tree of four nodes from the root and from the list"}, "4 nodes, 2 leaves",
+       {{"OPS-01", "covers"}}, {50}, typed_ops::test_tree},
    });
 }

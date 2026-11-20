@@ -31,6 +31,7 @@
 #include <cstring>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #include <sys/wait.h>
 #include <unistd.h>
@@ -458,6 +459,72 @@ test_correct_counterparts() {
    lFreeElem(&raw);
 }
 
+/**
+ * @brief Add to a 32 bit, a 64 bit and a double field through the handle
+ * @return nothing; CHECK records the results
+ */
+static void
+test_add() {
+   ElementPtr<JAT> task = ElementPtr<JAT>::create();
+   task->set<JAT_status>(1);
+   task->set<JAT_start_time>(100);
+   task->set<JAT_tix>(1.25);
+   task->add<JAT_status>(2);
+   task->add<JAT_start_time>(1000);
+   task->add<JAT_tix>(0.5);
+   // an offset of 0 changes nothing
+   task->add<JAT_status>(0);
+   CHECK(35, "add<F> adds to a 32 bit, a 64 bit and a double field, an offset of 0 changes nothing",
+         task->get<JAT_status>() == 3 && task->get<JAT_start_time>() == 1100 && task->get<JAT_tix>() == 1.75);
+}
+
+/**
+ * @brief The free form ocs::tom::add<F>(ep, offset) on raw elements, with the error behaviour of the old adders
+ * @return nothing; CHECK records the results
+ */
+static void
+test_free_add() {
+   ListPtr<JAT> tasks = ListPtr<JAT>::create("tasks");
+   lListElem *full = tasks->push_back(ElementPtr<JAT>::create()).raw();
+   std::vector<int> seen;
+   for (lListElem *ep : {static_cast<lListElem *>(nullptr), full}) {
+      cull_state_set_lerrno(0);
+      seen.push_back(ocs::tom::add<JAT_status>(ep, 1));
+      seen.push_back(cull_state_get_lerrno());
+      cull_state_set_lerrno(0);
+      seen.push_back(ocs::tom::add<JAT_tix>(ep, 1.0));
+      seen.push_back(cull_state_get_lerrno());
+   }
+   seen.push_back(static_cast<int>(tasks->front().get<JAT_status>()));
+
+   // a field a reduced element does not hold throws AbsentField
+   ElementPtr<JAT> reduced = ElementPtr<JAT>::create(ocs::tom::layout<JAT_task_number>());
+   int absent_throws = 0;
+   for (int i = 0; i < 2; i++) {
+      try {
+         static_cast<void>(i == 0 ? ocs::tom::add<JAT_status>(reduced.get().raw(), 1)
+                                  : ocs::tom::add<JAT_tix>(reduced.get().raw(), 1.0));
+      } catch (const FieldException &e) {
+         absent_throws += e.reason() == FieldException::Reason::AbsentField ? 1 : 0;
+      }
+   }
+   // a null element: -1 with LEELEMNULL; a full element: 0 without an error number, the status 0 + 1
+   CHECK(36, "ocs::tom::add<F>(ep, offset) gives -1 with LEELEMNULL on a null element, 0 on a full one, and throws "
+             "AbsentField on a field the element does not hold",
+         seen == std::vector<int>({-1, LEELEMNULL, -1, LEELEMNULL, 0, 0, 0, 0, 1}) && absent_throws == 2);
+}
+
+/**
+ * @brief Cloning an empty element handle gives an empty owning handle
+ * @return nothing; CHECK records the results
+ */
+static void
+test_clone_empty() {
+   const Element<JB> no_job;
+   const ConstElement<JB> no_const_job;
+   CHECK(37, "clone of an empty element handle gives an empty owning handle", !no_job.clone() && !no_const_job.clone());
+}
+
 int main(int argc, char *argv[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
@@ -511,5 +578,16 @@ int main(int argc, char *argv[]) {
        "the added element has the list's descriptor and its key is found; another layout throws WrongLayout or "
        "aborts in the old interface and leaves both sides unchanged; the same or an equal layout is linked in",
        {{"HDL-03", "covers"}}, {29, 30, 31, 32, 33, 34}, test_layout},
+      {"HANDLE-08", "add", "add<F> adds to a number field of the type the field gives",
+       {"add to a 32 bit, a 64 bit and a double field of an array task, and add 0"}, "the sums; 0 changes nothing",
+       {{"OPS-01", "covers"}}, {35}, test_add},
+      {"HANDLE-09", "free add", "the free form add<F>(ep, offset) for the rewrite keeps the error behaviour of the "
+       "old adders",
+       {"add to a null element, a full element and a reduced element without the field"},
+       "-1 with LEELEMNULL, 0 and the sum; AbsentField thrown for the absent field", {{"OPS-01", "covers"}}, {36},
+       test_free_add},
+      {"HANDLE-10", "clone of nothing", "clone of an empty element handle is not an error",
+       {"clone an empty Element and an empty ConstElement"}, "an empty owning handle", {{"OPS-01", "covers"}}, {37},
+       test_clone_empty},
    });
 }
