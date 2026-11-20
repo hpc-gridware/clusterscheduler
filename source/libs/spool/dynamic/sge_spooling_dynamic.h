@@ -37,7 +37,7 @@
  * @brief Choosing the spooling method at runtime, by loading a shared library
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"

@@ -30,7 +30,7 @@
  * expect: cannot be packed|static assertion|static_assert
  */
 
-#include "cull/cull_pack.h"
+#include "cull/cull_test_api.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
 

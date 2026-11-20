@@ -46,9 +46,7 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull.h"
-#include "cull/cull_list.h"
-#include "cull/cull_multitype.h"
+#include "cull/cull_test_api.h"
 #include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------

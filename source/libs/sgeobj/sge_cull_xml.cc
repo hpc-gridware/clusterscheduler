@@ -57,7 +57,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "tom/cull_lerrno.h"
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_EscapedString.h"

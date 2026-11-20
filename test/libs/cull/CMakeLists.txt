@@ -118,6 +118,36 @@ target_include_directories(test_ocs_cull_perf PRIVATE "./")
 target_link_libraries(test_ocs_cull_perf PRIVATE cull sgeobj uti commlists ${SGE_LIBS})
 add_test(NAME test_ocs_cull_perf COMMAND test_ocs_cull_perf)
 
+# CS-3103 M6: the old function interface of the list library is not public. No file outside libs/cull,
+# libs/tom, libs/sgeobj/tom and the tests includes its headers, and only tests include cull/cull_test_api.h
+# (errors); the remaining users of the transitional cull/cull_transitional.h are listed as a warning. See
+# check_cull_api.cmake. Checked on every build (target check_cull_api) and by ctest (test check_cull_api).
+set(cull_api_extensions_dir "")
+if (NOT PROJECT_EXTENSIONS STREQUAL "None")
+   get_filename_component(cull_api_extensions_dir "${PROJECT_EXTENSIONS}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+endif ()
+set(cull_api_roots "${CMAKE_SOURCE_DIR}/source" "${CMAKE_SOURCE_DIR}/test")
+if (cull_api_extensions_dir)
+   list(APPEND cull_api_roots "${cull_api_extensions_dir}/source" "${cull_api_extensions_dir}/test")
+endif ()
+set(cull_api_scanned "")
+foreach (root IN LISTS cull_api_roots)
+   file(GLOB_RECURSE scanned CONFIGURE_DEPENDS
+        "${root}/*.h" "${root}/*.hh" "${root}/*.c" "${root}/*.cc" "${root}/*.cpp")
+   list(APPEND cull_api_scanned ${scanned})
+endforeach ()
+set(cull_api_stamp ${CMAKE_CURRENT_BINARY_DIR}/check_cull_api.stamp)
+add_custom_command(OUTPUT ${cull_api_stamp}
+        COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -DEXTENSIONS_DIR=${cull_api_extensions_dir}
+                -DSTAMP=${cull_api_stamp} -P ${CMAKE_CURRENT_SOURCE_DIR}/check_cull_api.cmake
+        DEPENDS ${cull_api_scanned} check_cull_api.cmake
+        COMMENT "Checking that the old interface of the list library is included only where allowed"
+        VERBATIM)
+add_custom_target(check_cull_api ALL DEPENDS ${cull_api_stamp})
+add_test(NAME check_cull_api
+         COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -DEXTENSIONS_DIR=${cull_api_extensions_dir}
+                 -P ${CMAKE_CURRENT_SOURCE_DIR}/check_cull_api.cmake)
+
 # test_ocs_cull_perf and test_cull_hash are correct but long-running, so they are
 # kept out of the default ctest run. Opt in by reconfiguring with
 # -DENABLE_LONG_TESTS=ON (same switch as the uti lock/deadlock tests).

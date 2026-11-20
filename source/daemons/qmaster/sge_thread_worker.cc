@@ -74,6 +74,7 @@
 #include "sge_qmaster_process_message.h"
 #include "msg_qmaster.h"
 #include "sgeobj/sge_answer.h"
+#include "cull/cull_transitional.h"
 
 /** @brief Release the monitoring state when the worker thread ends
  *

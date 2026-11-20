@@ -32,6 +32,7 @@
 #include "tom/ocs_Element.h"
 
 #include "ocs_module_test.h"
+#include "cull/cull_test_api.h"
 
 /**
  * @brief Return the VA_variable string of the n-th element, or "" if absent.

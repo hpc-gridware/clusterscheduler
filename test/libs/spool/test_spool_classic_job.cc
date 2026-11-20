@@ -36,7 +36,7 @@
 #include <string>
 #include <unistd.h>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 #include "uti/sge_spool.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"

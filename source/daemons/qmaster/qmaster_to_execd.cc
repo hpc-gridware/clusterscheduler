@@ -50,6 +50,7 @@
 
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
+#include "cull/cull_transitional.h"
 
 /**
  * @brief Send X to comproc

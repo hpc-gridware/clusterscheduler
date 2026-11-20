@@ -44,6 +44,7 @@
 #include "tom/ocs_Element.h"
 
 #include "ocs_module_test.h"
+#include "cull/cull_test_api.h"
 
 using namespace ocs::tom;
 

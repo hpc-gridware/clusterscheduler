@@ -72,6 +72,7 @@
 
 #include "msg_common.h"
 #include "uti/ocs_Bootstrap.h"
+#include "cull/cull_transitional.h"
 
 /** @brief Debug layer used by every `DENTER`/`DPRINTF` in this file */
 #define EVC_LAYER TOP_LAYER

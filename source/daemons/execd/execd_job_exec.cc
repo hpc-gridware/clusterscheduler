@@ -96,6 +96,7 @@
 #include "get_path.h"
 #include "msg_common.h"
 #include "msg_execd.h"
+#include "cull/cull_transitional.h"
 
 extern volatile int jobs_to_start;
 

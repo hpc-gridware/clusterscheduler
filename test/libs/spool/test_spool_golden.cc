@@ -70,7 +70,7 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 
 #include "symbols.h"
 

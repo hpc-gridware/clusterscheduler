@@ -41,7 +41,7 @@
 
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 

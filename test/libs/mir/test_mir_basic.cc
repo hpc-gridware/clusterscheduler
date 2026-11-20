@@ -53,6 +53,7 @@
 
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
+#include "cull/cull_test_api.h"
 
 int events;             ///< how many events the mirror has seen
 uint32_t events_size;   ///< how many bytes they took on the wire, to show what a subscription costs

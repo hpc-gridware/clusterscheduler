@@ -27,7 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 #include "sgeobj/sge_answer.h"
 
 int qmaster_handle_reconnect_request(uint32_t job_id,

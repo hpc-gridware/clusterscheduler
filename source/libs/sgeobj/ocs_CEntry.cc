@@ -24,7 +24,7 @@
 
 #include <string>
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "uti/sge_rmon_macros.h"
 

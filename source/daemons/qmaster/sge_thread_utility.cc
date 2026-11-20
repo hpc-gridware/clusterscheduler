@@ -25,8 +25,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 
-#include "cull/cull_list.h"
-#include "cull/cull_multitype.h"
+#include "cull/cull.h"
 
 #include "sgeobj/sge_str.h"
 #include "sgeobj/tom/ocs_tom_ST.h"

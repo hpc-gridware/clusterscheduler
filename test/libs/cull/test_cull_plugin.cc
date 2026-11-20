@@ -34,7 +34,7 @@
 #include <string>
 #include <unistd.h>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 #include "cull/ocs_cull_descr.h"
 
 #include "ocs_module_test.h"

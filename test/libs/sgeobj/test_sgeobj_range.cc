@@ -25,7 +25,7 @@
 #include <cstdio>
 #include <initializer_list>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 
 #include "uti/sge_component.h"
 #include "sgeobj/cull/sge_all_listsL.h"

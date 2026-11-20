@@ -64,6 +64,7 @@
 
 #include <ocs_gdi_ClientServerBase.h>
 #include "sgeobj/sge_answer.h"
+#include "cull/cull_transitional.h"
 
 /** @brief Release the monitoring state when the reader thread ends
  *

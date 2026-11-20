@@ -56,6 +56,7 @@
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "basis_types.h"
+#include "cull/cull_test_api.h"
 
 static const char *CAL_NAME = "test_cs3125_calendar";
 static const char *WEEK = "mon-sun=0-24=on";

@@ -70,6 +70,7 @@
 #include <cinttypes>
 #include "msg_utilbin.h"
 #include "msg_clients_common.h"
+#include "cull/cull_transitional.h"
 
 /** @brief How many arguments the dump filter accepts */
 #define ARGUMENT_COUNT 15

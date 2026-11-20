@@ -61,7 +61,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sched/msg_schedd.h"
 

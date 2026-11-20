@@ -64,6 +64,7 @@
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "cull/cull_transitional.h"
 
 /**
  * @brief Add/modify ckpt object in master ckpt list

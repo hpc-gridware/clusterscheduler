@@ -49,8 +49,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
-#include "cull/cull_file.h"
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_suser.h"

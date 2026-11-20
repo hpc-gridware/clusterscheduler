@@ -39,6 +39,7 @@
 #include "tom/ocs_Element.h"
 
 #include <sge_log.h>
+#include "cull/cull_test_api.h"
 
 /*
  * @todo: make it a C++ program

@@ -55,6 +55,7 @@
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "uti/ocs_Systemd.h"
+#include "cull/cull_transitional.h"
 
 /**
  * @brief Reject an RSMAP resource that is not consumable

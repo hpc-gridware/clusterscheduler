@@ -100,6 +100,7 @@
 #include "sge_reporting_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "cull/cull_transitional.h"
 
 
 /*-------------------------------------------------------------------------*/

@@ -48,6 +48,7 @@
 #include "uti/ocs_TerminationManager.h"
 
 #include "cull/cull.h"
+#include "cull/cull_transitional.h"
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"

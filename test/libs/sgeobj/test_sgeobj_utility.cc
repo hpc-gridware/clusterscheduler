@@ -31,6 +31,7 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
+#include "cull/cull_test_api.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure

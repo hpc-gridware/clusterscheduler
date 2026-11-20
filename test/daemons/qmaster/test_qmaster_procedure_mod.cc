@@ -76,6 +76,7 @@
 #include "procedure/qconf/write/ocs_QConfWriteModelClient.h"
 
 #include "basis_types.h"
+#include "cull/cull_test_api.h"
 
 /* Both values are taken from calendars the testsuite already uses, so a failure
  * here is never a rejected syntax. */

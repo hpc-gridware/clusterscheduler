@@ -57,7 +57,7 @@
 #include "uti/sge_mtutil.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_event.h"

@@ -25,7 +25,7 @@
 #include <string>
 #include <unordered_set>
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "uti/sge_rmon_macros.h"
 

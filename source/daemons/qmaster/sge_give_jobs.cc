@@ -128,6 +128,7 @@
 #include "msg_qmaster.h"
 
 #include <ocs_gdi_ClientServerBase.h>
+#include "cull/cull_transitional.h"
 
 static void
 sge_clear_granted_resources(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,

@@ -49,7 +49,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"

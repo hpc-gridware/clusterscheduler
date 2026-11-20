@@ -54,6 +54,7 @@
 #include "msg_qmaster.h"
 
 #include <ocs_gdi_ClientServerBase.h>
+#include "cull/cull_transitional.h"
 
 #define CLIENT_WAIT_TIME_S 1 ///< how long a client waits for a packet to be handled before checking again
 #define GDI_PACKET_MUTEX "gdi_packet_mutex" ///< name of Packet::mutex, used in the lock trace

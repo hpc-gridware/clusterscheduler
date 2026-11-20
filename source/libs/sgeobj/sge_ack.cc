@@ -51,6 +51,7 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientServerBase.h"
+#include "cull/cull_transitional.h"
 
 /**
  * @brief Pack an acknowledgement into a send buffer

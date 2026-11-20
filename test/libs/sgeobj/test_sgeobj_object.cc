@@ -34,10 +34,7 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull.h"
-#include "cull/cull_pack.h"
-#include "cull/cull_what.h"
-#include "cull/cull_where.h"
+#include "cull/cull_test_api.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_object_type.h"

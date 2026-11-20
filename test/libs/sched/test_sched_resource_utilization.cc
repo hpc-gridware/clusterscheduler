@@ -54,6 +54,7 @@
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
 #include "sge_select_queue.h"
+#include "cull/cull_test_api.h"
 
 // the empty handles a typed caller passes where the old interface took nullptr: a nullptr literal next to a handle
 // would fit both the typed form and its transitional overload (N-X-2)

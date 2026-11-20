@@ -47,6 +47,7 @@
 
 #include "ocs_client_parse.h"
 #include "uti/sge_bootstrap_files.h"
+#include "cull/cull_transitional.h"
 
 /****
  **** qstat_usage (static)

@@ -51,7 +51,7 @@
 #include "japi/japi.h"
 #include "japi/japiP.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull_test_api.h"
 
 #include "uti/sge_component.h"
 #include "uti/sge_profiling.h"

@@ -50,8 +50,7 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_multitype.h"
-#include "cull/cull_list.h"
+#include "cull/cull_test_api.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"

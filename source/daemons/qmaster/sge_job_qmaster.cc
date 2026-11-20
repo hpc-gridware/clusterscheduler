@@ -105,7 +105,8 @@
 #include "sched/sge_schedd_text.h"
 #include "sched/sge_complex_schedd.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
+#include "cull/cull_transitional.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"

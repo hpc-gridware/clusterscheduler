@@ -26,7 +26,7 @@
 #include <cstring>
 #include <string>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_CEntry.h"

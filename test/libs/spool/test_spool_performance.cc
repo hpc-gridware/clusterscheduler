@@ -58,6 +58,7 @@
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
+#include "cull/cull_test_api.h"
 
 #ifndef TEST_READ_ONLY
 

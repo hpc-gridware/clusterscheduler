@@ -58,7 +58,7 @@
 
 #include "comm/commlib.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_object.h"

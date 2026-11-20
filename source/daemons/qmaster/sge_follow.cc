@@ -108,6 +108,7 @@
 #include "msg_qmaster.h"
 
 #include <ocs_gdi_ClientServerBase.h>
+#include "cull/cull_transitional.h"
 
 /** @brief Whether the share tree should be spooled on this pass
  *

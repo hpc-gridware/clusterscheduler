@@ -58,6 +58,7 @@
 #include "uti/sge_time.h"
 
 #include "ocs_module_test.h"
+#include "cull/cull_test_api.h"
 
 /**
  * @brief Are two strings set and equal?

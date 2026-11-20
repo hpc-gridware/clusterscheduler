@@ -37,7 +37,7 @@
  * @brief Authenticating a GDI request and setting its user
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_security.h"
 #include "tom/ocs_Element.h"

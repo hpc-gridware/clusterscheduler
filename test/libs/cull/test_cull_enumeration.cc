@@ -52,7 +52,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 #include "cull/cull_whatP.h"
 #include "cull/ocs_cull_descr.h"
 #include "ocs_test_model.h"

@@ -48,6 +48,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_qref.h"
+#include "cull/cull_test_api.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure

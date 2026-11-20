@@ -48,7 +48,7 @@
  * for the scheduler to match a request against.
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/tom/ocs_tom_CE.h"

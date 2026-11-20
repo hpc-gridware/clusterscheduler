@@ -27,7 +27,7 @@
 #include <initializer_list>
 #include <string>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 
 #include "gdi/ocs_gdi_Command.h"
 #include "sgeobj/cull/sge_all_listsL.h"

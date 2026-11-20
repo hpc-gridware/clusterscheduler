@@ -40,7 +40,7 @@
  * @see @ref evc
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 #include "uti/sge_dstring.h"
 
 #include "gdi/ocs_gdi_Packet.h"

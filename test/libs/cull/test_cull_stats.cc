@@ -41,9 +41,8 @@
 /** @brief Make this translation unit the one that defines the CULL descriptors */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 #include "cull/cull_listP.h"
-#include "cull/cull_pack.h"
 #include "cull/cull_stats.h"
 #include "cull/ocs_cull_descr.h"
 

@@ -43,6 +43,7 @@
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "tom/ocs_Element.h"
+#include "cull/cull_test_api.h"
 
 /*
  * A request which carries a parameter list is refused outright on a build without the

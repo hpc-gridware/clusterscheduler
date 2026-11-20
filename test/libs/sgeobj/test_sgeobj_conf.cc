@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"

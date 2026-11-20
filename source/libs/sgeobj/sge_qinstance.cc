@@ -57,7 +57,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_hostname.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_calendar.h"

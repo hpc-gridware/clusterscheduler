@@ -37,6 +37,7 @@
 #include "tom/ocs_ElementCore.h"
 
 #include "ocs_module_test.h"
+#include "cull/cull_test_api.h"
 
 /**
  * @brief Return the text of the first answer-list element.

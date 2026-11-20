@@ -39,7 +39,7 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"

@@ -25,7 +25,6 @@
 #include <string>
 #include <vector>
 
-#include "cull/cull_db.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
@@ -44,6 +43,7 @@
 #include "msg_common.h"
 #include "ocs_QConfMemberQmaster.h"
 #include "sge_c_gdi.h"
+#include "cull/cull_transitional.h"
 
 namespace {
    /** @brief Write one access list through the object's own modifier

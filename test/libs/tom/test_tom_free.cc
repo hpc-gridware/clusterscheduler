@@ -49,8 +49,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "cull/cull_lerrno.h"
-#include "cull/cull_state.h"
+#include "cull/cull_test_api.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"

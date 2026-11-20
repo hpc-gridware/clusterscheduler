@@ -29,7 +29,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_what.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"

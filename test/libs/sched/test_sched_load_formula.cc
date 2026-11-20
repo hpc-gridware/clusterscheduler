@@ -36,6 +36,7 @@
 #include "tom/ocs_Element.h"
 
 #include "sort_hosts.h"
+#include "cull/cull_test_api.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure

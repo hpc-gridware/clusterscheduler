@@ -72,6 +72,7 @@
 #include "job_report_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "reschedule.h"
+#include "cull/cull_transitional.h"
 
 static int
 update_license_data(ocs::tom::Element<ocs::tom::EH> hep, ocs::tom::ConstList<ocs::tom::LIC> lp_lic,

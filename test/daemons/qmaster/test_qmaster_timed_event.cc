@@ -35,6 +35,7 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 
 #include "sge_qmaster_timed_event.h"
+#include "cull/cull_test_api.h"
 
 static int s_fail = 0;
 

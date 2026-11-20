@@ -50,7 +50,7 @@
 #include <sys/types.h>
 
 #include <cinttypes>
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_TE.h"
 #include "uti/sge_monitor.h"

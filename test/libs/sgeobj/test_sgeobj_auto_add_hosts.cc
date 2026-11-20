@@ -40,7 +40,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 
 #include "uti/ocs_Bootstrap.h"
 

@@ -25,7 +25,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_usage.h"

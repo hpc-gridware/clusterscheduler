@@ -110,7 +110,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_usage.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
+#include "cull/cull_transitional.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Raw.h"

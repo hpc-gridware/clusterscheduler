@@ -67,6 +67,7 @@
 #include "spool/loader/sge_spooling_loader.h"
 
 #include "sig_handlers.h"
+#include "cull/cull_test_api.h"
 
 static lListElem *sge_get_configuration_for_host(const char *aName) {
    DENTER(TOP_LAYER);

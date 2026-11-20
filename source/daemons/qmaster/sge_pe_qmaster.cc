@@ -74,6 +74,7 @@
 #include "sge_persistence_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "cull/cull_transitional.h"
 
 
 static char object_name[] = "parallel environment";

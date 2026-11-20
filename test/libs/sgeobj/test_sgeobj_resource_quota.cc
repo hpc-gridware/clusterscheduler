@@ -42,6 +42,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/sge_answer.h"
+#include "cull/cull_test_api.h"
 
 /** @brief The six filter parts of a resource quota rule, as written in the configuration
  *

@@ -39,6 +39,7 @@
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Packet.h"
+#include "cull/cull_test_api.h"
 
 /*
  * CS-2394: managers and operators are the members of the reserved "manager" and

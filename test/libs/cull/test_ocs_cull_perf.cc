@@ -29,6 +29,7 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_List.h"
+#include "cull/cull_test_api.h"
 
 /// how often the accessor is called; keeps the test in the range of seconds
 static constexpr uint64_t num_lookups = 1000000000;

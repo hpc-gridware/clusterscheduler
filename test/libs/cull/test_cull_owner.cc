@@ -39,9 +39,8 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull.h"
+#include "cull/cull_test_api.h"
 #include "cull/cull_listP.h"
-#include "cull/cull_hash.h"
 
 #include "uti/sge_stdlib.h"
 

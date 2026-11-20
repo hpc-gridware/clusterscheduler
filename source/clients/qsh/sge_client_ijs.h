@@ -39,7 +39,7 @@
  * @brief Interface of the client half of interactive job support
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "uti/ocs_Ternary.h"

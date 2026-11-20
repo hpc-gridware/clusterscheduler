@@ -49,6 +49,7 @@
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 
 #include "cull/cull.h"
+#include "cull/cull_transitional.h"
 #include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_ID.h"

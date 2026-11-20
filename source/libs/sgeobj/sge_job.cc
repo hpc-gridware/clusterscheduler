@@ -72,7 +72,8 @@
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
+#include "cull/cull_transitional.h"
 
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_range.h"

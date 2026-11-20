@@ -68,6 +68,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
+#include "cull/cull_transitional.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"

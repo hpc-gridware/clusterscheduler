@@ -55,6 +55,7 @@
 #include "msg_common.h"
 #include "msg_gdilib.h"
 #include "uti/ocs_Topo.h"
+#include "cull/cull_transitional.h"
 
 /* TODO: move this function to execd */
 /**

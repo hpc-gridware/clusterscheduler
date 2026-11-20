@@ -36,7 +36,11 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief The public cull types and the list and element API
+ * @brief The list and element functions of the old interface; not public
+ *
+ * Included through cull/cull_old_api.h. The navigation part (lFirst(), lNext(), the
+ * for_each_* macros, lGetElemDescr(), lGetListDescr(), lGetListName()) moved to the
+ * transitional cull/cull_transitional.h, which this header includes.
  */
 
 #include <atomic>
@@ -49,20 +53,15 @@
 #include <cinttypes>
 #include "tom/cull_types.h"
 #include "cull/pack.h"
+#include "cull/cull_transitional.h"
 #include "uti/sge_dstring.h"
 
 /* LIST SPECIFIC FUNCTIONS */
-const char *lGetListName(const lList *lp);
-
-const lDescr *lGetListDescr(const lList *lp);
-
 uint32_t lGetNumberOfElem(const lList *lp);
 
 uint32_t lGetNumberOfRemainingElem(const lListElem *ep);
 
 int lGetElemIndex(const lListElem *ep, const lList *lp);
-
-const lDescr *lGetElemDescr(const lListElem *ep);
 
 bool lIsFreeElem(const lListElem *ep);
 
@@ -204,22 +203,6 @@ int lUniqStr(lList *lp, int keyfield);
 
 int lUniqHost(lList *lp, int keyfield);
 
-lListElem *lFirstRW(const lList *lp);
-
-const lListElem *lFirst(const lList *lp);
-
-lListElem *lLastRW(const lList *lp);
-
-const lListElem *lLast(const lList *lp);
-
-lListElem *lNextRW(const lListElem *ep);
-
-const lListElem *lNext(const lListElem *ep);
-
-lListElem *lPrevRW(const lListElem *ep);
-
-const lListElem *lPrev(const lListElem *ep);
-
 lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp);
 
 lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp);
@@ -228,16 +211,3 @@ lListElem *lFindFirstRW(const lList *lp, const lCondition *cp);
 
 lListElem *lFindLastRW(const lList *lp, const lCondition *cp);
 
-
-#define for_each_ep(ep, lp) for (ep=lFirst(lp);ep;ep=lNext(ep))                          ///< walk a list front to back, read only
-#define for_each_rev(ep, lp) for (ep=lLast(lp);ep;ep=lPrev(ep))                          ///< walk a list back to front, read only
-#define for_each_rw(ep, lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))                      ///< walk a list front to back, elements modifiable
-#define for_each_rev_rw(ep, lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))                   ///< walk a list back to front, elements modifiable
-// same macros as the ones without _lv (local variable) suffix with the difference that the
-// object variable does not have to be declared before the loop, but is declared in
-// the for loop itself. This allows to use the same variable name in code after the loop.
-// The variable takes the type lFirst() and lFirstRW() return: over a list pointer it is the
-// element pointer it always was, over a list handle of ocs::tom it is an element handle of the
-// list's type, so a field of another object type does not compile in the loop body.
-#define for_each_ep_lv(ep, lp) for (auto ep=lFirst(lp);ep;ep=lNext(ep))                   ///< like #for_each_ep, declaring @p ep in the loop itself
-#define for_each_rw_lv(ep, lp) for (auto ep=lFirstRW(lp);ep;ep=lNextRW(ep))               ///< like #for_each_rw, declaring @p ep in the loop itself

@@ -23,7 +23,7 @@
  * @brief Base model of `qstat`: the lists the report is built from
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"

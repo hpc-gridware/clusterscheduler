@@ -44,6 +44,7 @@
 #include "basis_types.h"
 
 #include "ocs_module_test.h"
+#include "cull/cull_test_api.h"
 
 /*
  * CS-2451 stage 2, against a RUNNING qmaster.

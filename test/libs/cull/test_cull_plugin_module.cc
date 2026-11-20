@@ -26,7 +26,7 @@
  * bind to its own copy and it ends up with a registry of its own.
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull_test_api.h"
 #include "cull/ocs_cull_descr.h"
 
 /**

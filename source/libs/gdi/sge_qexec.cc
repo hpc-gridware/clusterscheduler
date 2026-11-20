@@ -45,6 +45,7 @@
 #include "comm/commlib.h"
 
 #include "cull/cull.h"
+#include "cull/cull_transitional.h"
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"

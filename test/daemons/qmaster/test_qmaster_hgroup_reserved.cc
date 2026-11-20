@@ -41,6 +41,7 @@
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "basis_types.h"
+#include "cull/cull_test_api.h"
 
 /*
  * CS-2438 chunk 1, against a RUNNING qmaster.

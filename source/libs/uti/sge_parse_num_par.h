@@ -39,7 +39,7 @@
 
 #include <sys/resource.h>
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/ocs_CEntry.h"
 

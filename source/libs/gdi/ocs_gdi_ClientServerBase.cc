@@ -52,6 +52,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "ocs_gdi_ClientServerBase.h"
+#include "cull/cull_transitional.h"
 
 /************************************************************
    TODO: rewrite this function

@@ -77,6 +77,7 @@
 #include "load_avg.h"
 #include "ocs_Bootstrap.h"
 #include "sig_handlers.h"
+#include "cull/cull_transitional.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"

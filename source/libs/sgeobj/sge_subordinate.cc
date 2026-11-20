@@ -47,7 +47,7 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_cqueue.h"

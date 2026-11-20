@@ -41,6 +41,7 @@
 #include "sge_calendar_qmaster.h"
 #include "msg_common.h"
 #include "sgeobj/sge_answer.h"
+#include "cull/cull_test_api.h"
 
 /** @brief One calendar definition to parse and check */
 typedef struct {

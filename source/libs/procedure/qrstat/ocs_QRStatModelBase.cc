@@ -22,7 +22,7 @@
  * @brief Base model of `qrstat`: the lists the report is built from
  */
 
-#include "cull/cull_list.h"
+#include "cull/cull.h"
 
 #include "uti/sge_rmon_macros.h"
 
