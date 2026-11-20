@@ -74,6 +74,15 @@ target_include_directories(test_qmaster_rusage PRIVATE "./" "../../../source/dae
 target_link_libraries(test_qmaster_rusage PRIVATE sched sgeobj gdi cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_rusage COMMAND test_qmaster_rusage)
 
+# CS-3103: replace_sublist<F>() of the attribute modification helpers, which took over the run-time
+# attr_mod_sub_list() of the advance reservation and resource quota set modifiers
+add_executable(test_qmaster_utility
+      test_qmaster_utility.cc
+      ../../../source/daemons/qmaster/sge_utility_qmaster.cc)
+target_include_directories(test_qmaster_utility PRIVATE "./" "../../../source/daemons/qmaster")
+target_link_libraries(test_qmaster_utility PRIVATE sgeobj gdi cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_qmaster_utility COMMAND test_qmaster_utility)
+
 add_executable(test_qmaster_calendar
       test_qmaster_calendar.cc
         ../../../source/daemons/qmaster/ocs_CategoryQmaster.cc
@@ -156,6 +165,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_request_structure DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_timed_event DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_rusage DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_qmaster_utility DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})
 endif ()
 

@@ -98,9 +98,8 @@ rqs_update_categories(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::C
  * add/modify/delete generic gdi objects.
  * The purpose of this function is it to add new rqs
  * objects or modify existing resource quota sets.
- * The rules of a set-all sub-command go through the run-time form of attr_mod_sub_list(), with RQS_name as
- * their key as ever: RQS_name is no field of the rules, so the typed form cannot take it, and the key only
- * matters if the request combines set-all with a keyed sub-command.
+ * The rules of a set-all sub-command replace the object's by a copy (replace_sublist()); a request that
+ * combines set-all with a keyed sub-command is answered with a missing key, as ever.
  *
  * @param packet the client request
  * @param task the GDI task being answered
@@ -159,8 +158,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
       rules_changed = true;
       if ((sub_command & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
          normalize_sublist<RQS_rule>(delta);
-         // the run-time form: RQS_name is no field of the rules, see attr_mod_sub_list()
-         attr_mod_sub_list(alpp, target, RQS_rule, RQS_name, delta, sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS);
+         replace_sublist<RQS_rule>(alpp, target, delta, sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS);
       } else {
          /* *attr cases */
          for (const auto rule : ocs::tom::get<RQS_rule>(delta)) {

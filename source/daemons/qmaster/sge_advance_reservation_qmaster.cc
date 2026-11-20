@@ -299,9 +299,8 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
  * objects.
  * Modifing is currently not supported.
  *
- * The sub-lists are modified through the run-time form of attr_mod_sub_list(), with AR_name as their
- * key as ever: AR_name is no field of their element types, so the typed form cannot take it, and the key only
- * matters for a keyed sub-command, which qrsub does not send.
+ * The sub-lists are replaced by copies of the request's (replace_sublist()); a keyed sub-command, which
+ * qrsub does not send, is answered with a missing key, as ever.
  *
  * @param alpp the answer_list
  * @param new_ar if a new ar object will be created by this function, then new_ar is a newly initialized
@@ -394,25 +393,25 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    ocs::tom::copy_if_present<AR_checkpoint_name>(new_ar, ar);
    /*   AR_resource_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR);
+   replace_sublist<AR_resource_list>(alpp, new_ar, ar, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR);
    /*   AR_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR);
+   replace_sublist<AR_queue_list>(alpp, new_ar, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR);
    /*   AR_mail_options, SGE_ULONG   */
    ocs::tom::copy_if_present<AR_mail_options>(new_ar, ar);
    /*   AR_mail_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_mail_list, AR_name, ar, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR);
+   replace_sublist<AR_mail_list>(alpp, new_ar, ar, sub_command, SGE_ATTR_MAIL_LIST, SGE_OBJ_AR);
    /*   AR_pe, SGE_STRING */
    ocs::tom::copy_if_present<AR_pe>(new_ar, ar);
    /*   AR_master_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR);
+   replace_sublist<AR_master_queue_list>(alpp, new_ar, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR);
    /*   AR_pe_range, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR);
+   replace_sublist<AR_pe_range>(alpp, new_ar, ar, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR);
    /*   AR_allocation_rule, SGE_STRING */
    ocs::tom::copy_if_present<AR_allocation_rule>(new_ar, ar);
    /*   AR_acl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR);
+   replace_sublist<AR_acl_list>(alpp, new_ar, ar, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR);
    /*   AR_xacl_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR);
+   replace_sublist<AR_xacl_list>(alpp, new_ar, ar, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR);
    /*   AR_type, SGE_ULONG     */
    ocs::tom::copy_if_present<AR_type>(new_ar, ar);
    // AR_binding

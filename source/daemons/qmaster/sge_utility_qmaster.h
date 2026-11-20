@@ -142,10 +142,63 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element
    DRETURN(outcome);
 }
 
+/**
+ * @brief Replace a sub-list of an object by a copy of the request's, as the SET sub-command does
+ *
+ * For the sub-lists whose elements have no key field the object's own key could name: the advance reservation
+ * and resource quota set modifiers. Without a flag in @p sub_cmd the object's sub-list is replaced by a copy of
+ * the request's; an empty copy, or none, is stored as an unset list.
+ *
+ * A keyed sub-command (change, append or remove) changes nothing and answers as the former run-time
+ * attr_mod_sub_list() did, to which these callers passed their object's name field (AR_name, RQS_name) as the
+ * key of the sub-list's elements: such a key is missing in every element. Its key walk reported
+ * ocs_sublist_answer()'s missing key once for every element of the object's sub-list compared with the
+ * request's first element, or, if the object's sub-list held no element, once for every element of the
+ * request's sub-list. A keyed sub-command whose request sub-list holds no element answers nothing and keeps
+ * the object's sub-list; only an empty one is removed.
+ *
+ * @tparam ListF the sub-list field, of the object's type, with a model sub-type
+ * @tparam T the object type, deduced from @p this_elem
+ * @param alpp receives the answers of a keyed sub-command
+ * @param this_elem the object to modify
+ * @param delta_elem the (probably reduced) request element; it is not changed
+ * @param sub_cmd the GDI sub-command
+ * @param sub_list_name the sub-list's name, for the messages
+ * @param object_name the object's name, for the messages
+ * @return false if the request lacks the sub-list or a keyed sub-command met a missing key, true otherwise
+ */
+template <auto ListF, ocs::tom::ObjectType T>
+   requires (ocs::tom::FieldTraits<ListF>::type == ocs::tom::FieldType::List && ocs::tom::FieldTraits<ListF>::has_sub)
 bool
-attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, lListElem *this_elem, int this_elem_name,
-                  int this_elem_primary_key, lListElem *delta_elem, ocs::gdi::SubCommand sub_cmd,
-                  const char *sub_list_name, const char *object_name);
+replace_sublist(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<T> this_elem,
+                const std::type_identity_t<ocs::tom::ConstElement<T>> delta_elem, const ocs::gdi::SubCommand sub_cmd,
+                const char *sub_list_name, const char *object_name) {
+   DENTER(TOP_LAYER);
+
+   if (!ocs::tom::has<ListF>(delta_elem)) {
+      DRETURN(false);
+   }
+
+   if (const ocs::tom::SublistMode mode = ocs_sublist_mode(sub_cmd); mode.change || mode.append || mode.remove) {
+      const auto request_list = ocs::tom::get<ListF>(delta_elem);
+      if (!request_list.empty()) {
+         const auto held_list = ocs::tom::get<ListF>(ocs::tom::ConstElement<T>(this_elem));
+         const std::size_t missing = held_list.empty() ? request_list.size() : held_list.size();
+         for (std::size_t i = 0; i < missing; i++) {
+            ocs_sublist_answer(alpp, ocs::tom::SublistEvent::MissingKey, nullptr, sub_cmd, sub_list_name,
+                               object_name);
+         }
+         DRETURN(false);
+      }
+   } else {
+      ocs::tom::set<ListF>(this_elem, ocs::tom::get<ListF>(delta_elem).clone(""));
+   }
+
+   // a sub-list left without elements is removed
+   normalize_sublist<ListF>(this_elem);
+
+   DRETURN(true);
+}
 
 bool
 attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::AR> new_ar,
