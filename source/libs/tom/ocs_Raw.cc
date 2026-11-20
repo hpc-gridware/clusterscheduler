@@ -38,6 +38,7 @@
 #include "tom/ocs_ListCore.h"
 #include "tom/ocs_Model.h"
 #include "tom/ocs_PackCore.h"
+#include "tom/ocs_PrintCore.h"
 #include "tom/ocs_SelectCore.h"
 
 namespace ocs::tom {
@@ -84,6 +85,26 @@ namespace ocs::tom {
          }
          if (ep->descr[0].nm != lp->descr[0].nm) [[unlikely]] {
             throw_field_exception(FieldException::Reason::WrongType, NoName, ep->descr, lp->descr);
+         }
+      }
+
+      /**
+       * @brief Write the text a print function of the core appends to a string into a stream, as the old
+       *        lWrite*To() functions do
+       *
+       * The core throws ListCoreError only for a null object, before it has appended anything, and has set the
+       * CULL error number then; the old functions caught it and wrote nothing, and so does this one.
+       *
+       * @tparam Print the type of the print function
+       * @param fp the stream, or nullptr to write nothing
+       * @param print appends the text, e.g. a call of print_list()
+       */
+      template <typename Print>
+      void write_text(FILE *fp, const Print &print) {
+         try {
+            print_to(fp, print);
+         } catch (const ListCoreError &) {
+            // a null object: nothing written, the core has set the error number
          }
       }
 
@@ -240,6 +261,26 @@ namespace ocs::tom {
 
    RawListPtr unpack_raw_list(sge_pack_buffer *pb, const int flags) {
       return RawListPtr(unpack_list(pb, flags));
+   }
+
+   RawElementPtr unpack_raw_elem(sge_pack_buffer *pb, const lDescr *descr, const int flags) {
+      return RawElementPtr(unpack_elem(pb, descr, flags));
+   }
+
+   void write_to(FILE *fp, const ConstRawList list) {
+      write_text(fp, [list](dstring *buffer) { print_list(buffer, list.raw(), 0); });
+   }
+
+   void write_to(FILE *fp, const ConstRawElement element) {
+      write_text(fp, [element](dstring *buffer) { print_elem(buffer, element.raw(), 0); });
+   }
+
+   void write_to(FILE *fp, const lCondition *where) {
+      write_text(fp, [where](dstring *buffer) { print_where(buffer, where, 0); });
+   }
+
+   void write_to(FILE *fp, const lEnumeration *what) {
+      write_text(fp, [what](dstring *buffer) { print_what(buffer, what, 0); });
    }
 
 } // namespace ocs::tom

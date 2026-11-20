@@ -58,6 +58,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/ocs_Version.h"
 
 #include "gdi/ocs_gdi_security.h"
@@ -313,6 +314,18 @@ static void qping_printf_fill_up(FILE* fd, const char* name, int length, char c,
 
 }
 
+/**
+ * @brief Print one line of the communication traffic an endpoint sends to a qping -dump client
+ *
+ * Splits the tab separated debug line into its columns, prints them as configured, and for a message whose
+ * content qping knows (GDI requests, reports, acks, job execution, signals, ...) unpacks and prints the content.
+ *
+ * @param buffer the debug line
+ * @param nonewline 0 to print a message on one line (option -nonewline), otherwise with line breaks
+ * @param dump_tag which messages to dump: 1 all (ALL), 2 application messages (APP), 3 commlib messages (MSG)
+ * @param sender_comp_name the component name of the endpoint that sent the line, e.g. "qmaster"
+ * @return nothing
+ */
 static void qping_print_line(const char* buffer, int nonewline, int dump_tag, const char *sender_comp_name) {
    size_t i=0;
    size_t max_name_length = 0;
@@ -556,24 +569,24 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            }
    
                            if (task->data_list) {
-                              lWriteListTo(task->data_list,stdout); 
+                              ocs::tom::write_to(stdout, task->data_list);
                            } else {
                               printf("lp   : %s\n", "nullptr");
    
                            }
                            if (task->answer_list) {
-                              lWriteListTo(*task->answer_list,stdout); 
+                              ocs::tom::write_to(stdout, *task->answer_list);
                            } else {
                               printf("alp   : %s\n", "nullptr");
                            }
    
                            if (task->condition) {
-                              lWriteWhereTo(task->condition,stdout); 
+                              ocs::tom::write_to(stdout, task->condition);
                            } else {
                               printf("cp   : %s\n", "nullptr");
                            }
                            if (task->enumeration) {
-                              lWriteWhatTo(task->enumeration,stdout); 
+                              ocs::tom::write_to(stdout, task->enumeration);
                            } else {
                               printf("enp   : %s\n", "nullptr");
                            }
@@ -591,18 +604,21 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
-                     lList *rep = nullptr;
-   
-                     if (cull_unpack_list(&buf, &rep) == 0) {
+                     ocs::tom::RawListPtr rep;
+                     bool unpacked = true;
+                     try {
+                        rep = ocs::tom::unpack_raw_list(&buf);
+                     } catch (const ocs::tom::PackException &) {
+                        unpacked = false;
+                     }
+                     if (unpacked) {
                         printf("      unpacked report request (binary buffer length %lu):\n", buffer_length );
                         if (rep) {
-                           lWriteListTo(rep, stdout); 
+                           ocs::tom::write_to(stdout, *rep);
                         } else {
                            printf("rep: nullptr\n");
                         }
                      }
-                     lFreeList(&rep);
-                     rep = nullptr;
                      clear_packbuffer(&buf);
                   }
                }
@@ -630,14 +646,15 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
-                     lListElem *ack = nullptr;
-
                      while (pb_unused(&buf) > 0) {
-                        if (cull_unpack_elem(&buf, &ack, nullptr)) {
+                        ocs::tom::RawElementPtr ack;
+                        try {
+                           ack = ocs::tom::unpack_raw_elem(&buf, nullptr);
+                        } catch (const ocs::tom::PackException &) {
                            printf("TAG_ACK_REQUEST: unpack error\n");
-                        } else {
-                           lWriteElemTo(ack, stdout); /* ack */
-                           lFreeElem(&ack);
+                        }
+                        if (ack) {
+                           ocs::tom::write_to(stdout, *ack); /* ack */
                         }
                      }
 
@@ -654,21 +671,29 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      if (strcmp(sender_comp_name, "qmaster") == 0) {
-                        lListElem *job = nullptr;
-                        if (cull_unpack_elem(&buf, &job, nullptr) == PACK_SUCCESS) {
-                           lWriteElemTo(job, stdout); /* job */
+                        ocs::tom::RawElementPtr job;
+                        try {
+                           job = ocs::tom::unpack_raw_elem(&buf, nullptr);
+                        } catch (const ocs::tom::PackException &) {
+                           // reported below: the owner stays empty
+                        }
+                        if (job) {
+                           ocs::tom::write_to(stdout, *job); /* job */
                         } else {
                            printf("could not unpack job\n");
                         }
-                        lFreeElem(&job);
                      } else {
-                        lListElem *petr = nullptr;
-                        if (cull_unpack_elem(&buf, &petr, nullptr) == PACK_SUCCESS) {
-                           lWriteElemTo(petr, stdout);
+                        ocs::tom::RawElementPtr petr;
+                        try {
+                           petr = ocs::tom::unpack_raw_elem(&buf, nullptr);
+                        } catch (const ocs::tom::PackException &) {
+                           // reported below: the owner stays empty
+                        }
+                        if (petr) {
+                           ocs::tom::write_to(stdout, *petr);
                         } else {
                            printf("could not unpack pe task request\n");
                         }
-                        lFreeElem(&petr);
                      }
                      clear_packbuffer(&buf);
                   }

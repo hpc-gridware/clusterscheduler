@@ -172,6 +172,32 @@ namespace {
       return true;
    }
 
+   /**
+    * @brief The bytes a write function puts into a stream
+    * @tparam Write the type of the write function
+    * @param write writes into the stream it is given
+    * @return the bytes written, std::nullopt if no temporary file could be opened
+    */
+   template <typename Write>
+   std::optional<std::string> written(Write &&write) {
+      std::string out;
+      FILE *fp = std::tmpfile();
+      if (fp == nullptr) {
+         std::printf("no temporary file\n");
+         return std::nullopt;
+      }
+      write(fp);
+      std::fflush(fp);
+      std::rewind(fp);
+      char chunk[4096];
+      std::size_t n;
+      while ((n = std::fread(chunk, 1, sizeof(chunk), fp)) > 0) {
+         out.append(chunk, n);
+      }
+      std::fclose(fp);
+      return out;
+   }
+
 } // namespace
 
 /**
@@ -654,6 +680,127 @@ test_typed_owners() {
 }
 
 /**
+ * @brief write_to() writes the bytes of lWriteListTo(), lWriteElemTo(), lWriteWhereTo() and lWriteWhatTo()
+ *
+ * Every argument form that the overloads take is used once: a list and an element pointer, the raw handles,
+ * a raw owner dereferenced, typed list and element handles, a condition and a selection pointer.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_write_to() {
+   const ocs::tom::RawListPtr owner(make_test_list(3, false));
+   lList *lp = owner.get();
+   lListElem *first = lFirstRW(lp);
+   const ocs::tom::RawWherePtr where(
+      lWhere("%T(%I > %u && %I == %s)", TEST_Type, TEST_uint32, 0U, TEST_string, "s2"));
+   const ocs::tom::RawWhatPtr what(lWhat("%T(%I%I)", TEST_Type, TEST_uint32, TEST_string));
+   auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   job->set<JB_job_number>(42);
+   job->set<JB_owner>("owner");
+   jobs->push_back(std::move(job));
+   auto single = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   single->set<JB_job_number>(43);
+   single->set<JB_owner>("single");
+   const ocs::tom::ConstElement<ocs::tom::JB> single_const = *single;
+   const lListElem *const_first = first;
+
+   const auto old_list = written([&](FILE *fp) { lWriteListTo(lp, fp); });
+   const auto old_elem = written([&](FILE *fp) { lWriteElemTo(first, fp); });
+   const auto old_where = written([&](FILE *fp) { lWriteWhereTo(where.get(), fp); });
+   const auto old_what = written([&](FILE *fp) { lWriteWhatTo(what.get(), fp); });
+   const auto old_jobs = written([&](FILE *fp) { lWriteListTo(jobs.get().raw(), fp); });
+   const auto old_single = written([&](FILE *fp) { lWriteElemTo(single.get().raw(), fp); });
+   const bool list =
+      old_list && !old_list->empty() && written([&](FILE *fp) { ocs::tom::write_to(fp, lp); }) == old_list &&
+      written([&](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList(lp)); }) == old_list &&
+      written([&](FILE *fp) { ocs::tom::write_to(fp, *owner); }) == old_list && old_jobs && !old_jobs->empty() &&
+      written([&](FILE *fp) { ocs::tom::write_to(fp, *jobs); }) == old_jobs;
+   const bool elem =
+      old_elem && !old_elem->empty() && written([&](FILE *fp) { ocs::tom::write_to(fp, first); }) == old_elem &&
+      written([&](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::RawElement(first)); }) == old_elem &&
+      written([&](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawElement(const_first)); }) == old_elem &&
+      old_single && !old_single->empty() &&
+      written([&](FILE *fp) { ocs::tom::write_to(fp, *single); }) == old_single &&
+      written([&](FILE *fp) { ocs::tom::write_to(fp, single_const); }) == old_single;
+   const bool condition = old_where && !old_where->empty() &&
+                          written([&](FILE *fp) { ocs::tom::write_to(fp, where.get()); }) == old_where;
+   const bool selection = old_what && !old_what->empty() &&
+                          written([&](FILE *fp) { ocs::tom::write_to(fp, what.get()); }) == old_what;
+   CHECK(18, "write_to() writes the bytes of lWriteListTo(), lWriteElemTo(), lWriteWhereTo() and lWriteWhatTo() "
+             "for every argument form",
+         list && elem && condition && selection);
+
+   // empty handles and null pointers: nothing written, the error number of the old functions
+   bool empty = true;
+   const auto same_as_old = [&empty](const char *step, auto &&old_write, auto &&new_write) {
+      cull_state_set_lerrno(0);
+      const auto old_text = written(old_write);
+      const int old_errno = cull_state_get_lerrno();
+      cull_state_set_lerrno(0);
+      const auto new_text = written(new_write);
+      const int new_errno = cull_state_get_lerrno();
+      // no temporary file fails the case: two missing texts must not pass as two empty ones
+      if (!old_text || !new_text || !old_text->empty() || !new_text->empty() || old_errno == 0 ||
+          old_errno != new_errno) {
+         std::printf("write_to, %s: old \"%s\" %d, new \"%s\" %d\n", step,
+                     old_text ? old_text->c_str() : "(no file)", old_errno,
+                     new_text ? new_text->c_str() : "(no file)", new_errno);
+         empty = false;
+      }
+   };
+   same_as_old("empty list", [](FILE *fp) { lWriteListTo(nullptr, fp); },
+               [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList()); });
+   same_as_old("empty element", [](FILE *fp) { lWriteElemTo(nullptr, fp); },
+               [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawElement()); });
+   same_as_old("null condition", [](FILE *fp) { lWriteWhereTo(nullptr, fp); },
+               [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lCondition *>(nullptr)); });
+   same_as_old("null selection", [](FILE *fp) { lWriteWhatTo(nullptr, fp); },
+               [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lEnumeration *>(nullptr)); });
+   CHECK(19, "write_to() of an empty handle or a null pointer writes nothing and sets the error number of the "
+             "old function",
+         empty);
+}
+
+/**
+ * @brief unpack_raw_elem() reads a packed element of the type the buffer names, and reports a cut-off buffer
+ *        with the code cull_unpack_elem() returns
+ * @return nothing; CHECK records the results
+ */
+static void
+test_unpack_elem() {
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   job->set<JB_job_number>(7);
+   job->set<JB_owner>("owner");
+   ocs::tom::PackBuffer out;
+   job->pack(out.raw());
+
+   ocs::tom::PackBuffer in = ocs::tom::PackBuffer::reading(out.data(), out.size());
+   auto raw = ocs::tom::unpack_raw_elem(&in.raw(), nullptr);
+   const char *type = raw ? ocs::tom::type_name(raw->descr()) : nullptr;
+   const bool unpacked = raw && type != nullptr && std::strcmp(type, "JB") == 0 &&
+                         raw->get<std::uint32_t>(JB_job_number) == 7 &&
+                         std::strcmp(raw->get<const char *>(JB_owner), "owner") == 0;
+   const auto typed = ocs::tom::adopt<ocs::tom::JB>(std::move(raw));
+
+   ocs::tom::PackBuffer old_cut = ocs::tom::PackBuffer::reading(out.data(), out.size() / 2);
+   lListElem *old_ep = nullptr;
+   const int old_code = cull_unpack_elem(&old_cut.raw(), &old_ep, nullptr);
+   lFreeElem(&old_ep);
+   ocs::tom::PackBuffer cut = ocs::tom::PackBuffer::reading(out.data(), out.size() / 2);
+   int code = PACK_SUCCESS;
+   try {
+      static_cast<void>(ocs::tom::unpack_raw_elem(&cut.raw(), nullptr));
+   } catch (const ocs::tom::PackException &e) {
+      code = e.code();
+   }
+   CHECK(20, "unpack_raw_elem() reads the packed job as a job, which adopt<JB>() takes; a cut-off buffer throws "
+             "PackException with the code of cull_unpack_elem()",
+         unpacked && typed && typed->get<JB_job_number>() == 7 && code != PACK_SUCCESS && code == old_code);
+}
+
+/**
  * @brief Run the scenarios
  * @param argc argument count
  * @param argv arguments
@@ -713,5 +860,15 @@ int main(int argc, char *argv[]) {
         "hand typed jobs and job lists to every op on a list of jobs and to adopt<JB>()"},
        "WrongType, the element or list still in the typed owner; linked in order, the typed owners empty", {},
        {16, 17}, test_typed_owners},
+      {"RAW-OPS-10", "write_to",
+       "write_to() writes lists, elements, conditions and selections as the old lWrite*To() functions do",
+       {"write a list, an element, a condition and a selection in every argument form and through the old "
+        "functions",
+        "write empty handles and null pointers in both forms"},
+       "the same bytes; nothing written and the same error number", {}, {18, 19}, test_write_to},
+      {"RAW-OPS-11", "unpack element", "unpack_raw_elem() reads an element of the type the buffer names",
+       {"pack a typed job, unpack it raw, adopt it as a job", "unpack a cut-off buffer in both forms"},
+       "a job with the same fields; PackException with the code of cull_unpack_elem()", {}, {20},
+       test_unpack_elem},
    });
 }

@@ -44,8 +44,9 @@
  *   the strong guarantee.
  * - **Generic list and selection ops.** `create_raw_elem`, `create_raw_list`,
  *   `clone`, `append`, `insert_after`, `take`, `erase`, `splice`, `size`,
- *   `find_first<V>`, `select`, `matches`, `unpack_raw_list`: thin fronts of the
- *   core in ocs_ListCore.h, ocs_SelectCore.h and ocs_PackCore.h.
+ *   `find_first<V>`, `select`, `matches`, `unpack_raw_list`, `unpack_raw_elem`,
+ *   `write_to`: thin fronts of the core in ocs_ListCore.h, ocs_SelectCore.h,
+ *   ocs_PackCore.h and ocs_PrintCore.h.
  * - **Member form.** `ConstRawElement`/`RawElement` and `ConstRawList`/`RawList`
  *   carry the same operations as methods, after the model of the typed
  *   handles, with the field as a method argument instead of a template
@@ -85,8 +86,8 @@
  * ocs_PackCore.h has functions of the same signature that return raw
  * pointers: create_raw_elem() (core: create_elem()), take_raw_object() (core:
  * take_object(ep, pos), which takes a position, not a field number) and
- * unpack_raw_list() (core: unpack_list()); create_raw_list() follows for
- * symmetry. The owners carry `create()` as well.
+ * unpack_raw_list() (core: unpack_list()); create_raw_list() and
+ * unpack_raw_elem() follow for symmetry. The owners carry `create()` as well.
  *
  * Typed to raw: the owners take a typed owner by move, `RawListPtr raw(std::move(typed))`, which cannot fail
  * and needs no check. The constructor is explicit: an implicit one would make a temporary raw owner at every
@@ -116,6 +117,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <iterator>
 #include <memory>
 #include <type_traits>
@@ -782,6 +784,23 @@ namespace ocs::tom {
     */
    [[nodiscard]] RawListPtr unpack_raw_list(sge_pack_buffer *pb, int flags = 0);
 
+   /**
+    * @brief Unpack an element of the type the buffer names
+    *
+    * Named apart from the core's unpack_elem(), which returns the raw element. Unlike a list, an element is
+    * never packed as none: the owner is never empty on return.
+    *
+    * @param pb the buffer to read from
+    * @param descr nullptr for an element that was free at the sender, the descriptor of one that was bound; for
+    *        a free element of flag-filtered data the expected type, or nullptr
+    * @param flags the unpack flags of cull_unpack_elem_partial()
+    * @return the owner of the element
+    * @throw PackException on a format error, for a bound element without @p descr (PACK_BADARG) or for lack of
+    *        memory; everything read before is freed
+    * @see Old form: cull_unpack_elem(), cull_unpack_elem_partial(); core: ocs::tom::unpack_elem()
+    */
+   [[nodiscard]] RawElementPtr unpack_raw_elem(sge_pack_buffer *pb, const lDescr *descr, int flags = 0);
+
    // ---------------------------------------------------------------------------------------------------------------
    // handles
 
@@ -1388,6 +1407,54 @@ namespace ocs::tom {
    [[nodiscard]] lListElem *find_first(const RawList list, const int key_nm, const V key) {
       return detail::raw_find_first<V>(list.raw(), key_nm, key);
    }
+
+   // ---------------------------------------------------------------------------------------------------------------
+   // writing as text for debugging: the text of the old lWrite*To() functions, byte for byte. Overload resolution:
+   // a list pointer (`lList *`, `const lList *`), a RawList and a typed list handle reach the list form, an
+   // element pointer, a RawElement and a typed element handle the element form, through the implicit handle
+   // constructors; a condition and a selection pointer reach their forms directly. An owner converts to no
+   // handle; pass `*owner`. The literal nullptr would tie between the condition and the selection form and is
+   // rejected by a deleted overload; an empty handle or a null pointer of a named type writes nothing.
+
+   /**
+    * @brief Write a list with its name, its number of elements and its elements as text for debugging
+    * @param fp the stream, or nullptr to write nothing
+    * @param list the list; an empty handle writes nothing and sets the CULL error number LELISTNULL, as before
+    * @see Old form: lWriteListTo(); core: ocs::tom::print_list(); typed form: ConstList<T>::print()
+    */
+   void write_to(FILE *fp, ConstRawList list);
+
+   /**
+    * @brief Write an element as text for debugging
+    * @param fp the stream, or nullptr to write nothing
+    * @param element the element; an empty handle writes nothing and sets the CULL error number LEELEMNULL, as
+    *        before
+    * @see Old form: lWriteElemTo(); core: ocs::tom::print_elem(); typed form: ConstElement<T>::print()
+    */
+   void write_to(FILE *fp, ConstRawElement element);
+
+   /**
+    * @brief Write a condition as text for debugging
+    * @param fp the stream, or nullptr to write nothing
+    * @param where the condition; nullptr writes nothing and sets the CULL error number LECONDNULL, as before
+    * @see Old form: lWriteWhereTo(); core: ocs::tom::print_where(); typed form: Where<T>::print()
+    */
+   void write_to(FILE *fp, const lCondition *where);
+
+   /**
+    * @brief Write a field selection with its nested selections as text for debugging
+    * @param fp the stream, or nullptr to write nothing
+    * @param what the selection; nullptr writes nothing and sets the CULL error number LEENUMNULL, as before
+    * @see Old form: lWriteWhatTo(); core: ocs::tom::print_what(); typed form: What<T>::print()
+    */
+   void write_to(FILE *fp, const lEnumeration *what);
+
+   /**
+    * @brief The literal nullptr names no object type to write; rejected at compile time
+    * @param fp the stream
+    * @param null the literal nullptr
+    */
+   void write_to(FILE *fp, std::nullptr_t null) = delete;
 
    // ---------------------------------------------------------------------------------------------------------------
    // owners
