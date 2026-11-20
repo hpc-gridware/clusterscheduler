@@ -58,6 +58,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userset.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_FreeAccess.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
@@ -89,28 +91,32 @@
  * @brief Find an execution host by name
  *
  * The comparison resolves host name aliases, so an alias finds the host too.
+ * The list is taken as a raw handle because the callers hand in raw and typed
+ * host lists alike; a list whose elements are no execution hosts finds nothing
+ * and writes the run-time type error the old lookup wrote.
  *
- * @param host_list the hosts to search; nullptr uses the active data store's
- * @param hostname the host to look for
- * @return the host, or nullptr when it is not defined
+ * @param host_list the hosts to search (EH_Type), maybe empty (then nothing is found)
+ * @param hostname the host to look for, nullptr is reported as CRITICAL and finds nothing
+ * @return the host, or nullptr when it is not defined; mutable although the list is read only, as before
  */
 lListElem *
-host_list_locate(const lList *host_list, const char *hostname) {
+host_list_locate(const ocs::tom::ConstRawList host_list, const char *hostname) {
    DENTER(TOP_LAYER);
 
    lListElem *ret = nullptr;
 
-   if (host_list != nullptr) {
+   if (host_list) {
       if (hostname != nullptr) {
-         const lListElem *element = lFirst(host_list);
+         const ocs::tom::ConstRawElement element = host_list.front();
 
-         if (element != nullptr) {
-            int nm = NoName;
-
+         if (element) {
             if (object_has_type(element, EH_Type)) {
-               nm = object_get_primary_key(EH_Type);
+               // the lookup hands out the element for writing, as lGetElemHostRW() did on the read-only list
+               ret = const_cast<lListElem *>(ocs::tom::find_first(host_list, EH_name, ocs::tom::Host(hostname)));
+            } else {
+               // the old lookup on NoName: the message of lGetElemHost() and no element
+               ocs::tom::missing_key_field(ocs::tom::KeyOp::FindHost, __func__, NoName, host_list.descr());
             }
-            ret = lGetElemHostRW(host_list, nm, hostname);
          }
       } else {
          CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -118,7 +124,7 @@ host_list_locate(const lList *host_list, const char *hostname) {
    } else {
       /*
        * This is a normal case and no error
-       * if e.g. someone tries to find a element at qmaster startup to 
+       * if e.g. someone tries to find a element at qmaster startup to
        * check if a certain element should be added
        */
       ret = nullptr;

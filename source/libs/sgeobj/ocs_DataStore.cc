@@ -30,8 +30,10 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_lock.h"
 #include "uti/ocs_ThreadName.h"
+#include "tom/ocs_Raw.h"
 
 #include <cinttypes>
+#include <utility>
 #include "sge_object.h"
 #include "ocs_DataStore.h"
 
@@ -249,20 +251,25 @@ namespace ocs {
    }
 
    /**
-    * Free the master list which has the given type.
+    * @brief Free the master list which has the given type
     *
-    * @param type master list type.
+    * The slot is indexed by the object type at run time, so the list is freed through a raw owner; the slot
+    * holds nullptr afterwards.
+    *
+    * @param type master list type
     */
    void
-   DataStore::free_master_list(sge_object_type type) {
+   DataStore::free_master_list(const sge_object_type type) {
       DENTER(DATA_STORE_LAYER);
       GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
-      lFreeList(get_master_list_rw(type));
+      ocs::tom::RawListPtr(std::exchange(*get_master_list_rw(type), nullptr)).reset();
       DRETURN_VOID;
    }
 
    /**
-    * Free all master lists in the currently active data store of the thread.
+    * @brief Free all master lists in the currently active data store of the thread
+    *
+    * Each slot holds nullptr afterwards.
     *
     * @todo nowhere used. would expect that at least one method should be called that releases the complete DS.
     * @todo correct place is either the event client (e.g. the scheduler) or the mirror thread that we will introduce.
@@ -272,7 +279,7 @@ namespace ocs {
       DENTER(DATA_STORE_LAYER);
       GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
       for (int type = SGE_TYPE_FIRST; type < SGE_TYPE_ALL; type++) {
-         lFreeList(get_master_list_rw(static_cast<sge_object_type>(type)));
+         ocs::tom::RawListPtr(std::exchange(*get_master_list_rw(static_cast<sge_object_type>(type)), nullptr)).reset();
       }
       DRETURN_VOID;
    }

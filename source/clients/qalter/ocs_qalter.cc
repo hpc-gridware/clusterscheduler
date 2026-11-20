@@ -58,6 +58,7 @@
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
@@ -801,8 +802,10 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       while ((ep = cmdline.find_first<SPA_switch_val>("-pe"))) {
          ocs::tom::set<JB_pe>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
          /* put sublist from parsing into job */
-         // SPA_argval_lListT carries lists of several types and has no typed swap
-         lSwapList(job, JB_pe_range, ep, SPA_argval_lListT);
+         // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
+         // list is taken out raw and adopted as RN_Type here; the range held before is freed by the set
+         ocs::tom::set<JB_pe_range>(job, ocs::tom::adopt<ocs::tom::RN>(
+            ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
          cmdline.erase(ep);
 
          /* cannot address fields separately in command line but in gdi interface */ 

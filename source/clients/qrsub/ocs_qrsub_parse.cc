@@ -58,8 +58,10 @@
 #include "sgeobj/sge_qref.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_ARA.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "symbols.h"
 #include <cinttypes>
@@ -291,8 +293,10 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
   /*    -pe pe_name slot_range reserve slot range for parallel jobs */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-pe"))) {
       ocs::tom::set<AR_pe>(ar, ocs::tom::get<SPA_argval_lStringT>(ep)); /* SGE_STRING, */
-      // SPA_argval_lListT carries lists of several types and has no typed swap
-      lSwapList(ar, AR_pe_range, ep, SPA_argval_lListT);       /* SGE_LIST */
+      // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
+      // list is taken out raw and adopted as RN_Type here; the range held before is freed by the set
+      ocs::tom::set<AR_pe_range>(ar, ocs::tom::adopt<ocs::tom::RN>(
+         ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
       pcmdline.erase(ep);
    }
    /*  -par allocation_rule  reserve the slots with this rule instead of the PE's allocation_rule */

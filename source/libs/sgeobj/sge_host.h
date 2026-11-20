@@ -45,6 +45,7 @@
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
@@ -177,7 +178,7 @@ bool host_is_centry_a_complex_value(ocs::tom::ConstElement<ocs::tom::EH> this_el
                                     ocs::tom::ConstElement<ocs::tom::CE> centry);
 
 lListElem *
-host_list_locate(const lList *this_list, const char *hostname);
+host_list_locate(ocs::tom::ConstRawList host_list, const char *hostname);
 
 /* CS-2438: is this host an admin / submit host?
  *

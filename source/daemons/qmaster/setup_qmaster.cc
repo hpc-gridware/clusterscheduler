@@ -46,6 +46,7 @@
 #include <sys/resource.h>
 
 #include <string>
+#include <utility>
 
 #include "uti/ocs_Bootstrap.h"
 #include "uti/ocs_OpenSSL.h"
@@ -98,6 +99,7 @@
 #include "sgeobj/ocs_object_type.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_ASOLIST.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
@@ -1412,7 +1414,7 @@ ocs_qmaster_append_entry(std::string &text, const char *entry) {
  *
  * A repaired object is logged with one warning and spooled again.
  *
- * @param ep the object; taken raw, the repair and the spooling are descriptor-generic
+ * @param ep the object, not empty; a raw handle, the repair and the spooling are descriptor-generic
  * @param type its object type
  * @param spool_key the key it is spooled with
  * @param[in,out] unrepaired receives one entry per repeated key that is not repaired
@@ -1421,20 +1423,21 @@ ocs_qmaster_append_entry(std::string &text, const char *entry) {
  * @return true if no repeated key is left in the object
  */
 static bool
-ocs_qmaster_repair_spooled_object(lListElem *ep, const sge_object_type type, const std::string &spool_key,
-                                  std::string &unrepaired, const int skip_nm = NoName) {
+ocs_qmaster_repair_spooled_object(const ocs::tom::RawElement ep, const sge_object_type type,
+                                  const std::string &spool_key, std::string &unrepaired, const int skip_nm = NoName) {
    DENTER(TOP_LAYER);
 
    const std::string name = std::string(object_type_get_name(type)) + " " + spool_key;
    std::string repairs;
    ocs::tom::ListPtr<ocs::tom::AN> errors;
-   lList *skipped = nullptr;
+   // the left out list is parked in an owner while the object is checked and put back afterwards
+   ocs::tom::RawListPtr skipped;
    if (skip_nm != NoName) {
-      lXchgList(ep, skip_nm, &skipped);
+      skipped = ep.exchange(skip_nm, std::move(skipped));
    }
    const bool repaired = ocs_object_repair_repeated_keys(ep, repairs, &errors, name.c_str());
    if (skip_nm != NoName) {
-      lXchgList(ep, skip_nm, &skipped);
+      skipped = ep.exchange(skip_nm, std::move(skipped));
    }
    if (!repairs.empty()) {
       WARNING(MSG_QMASTER_REPAIREDREPEATEDKEYS_SS, name.c_str(), repairs.c_str());
