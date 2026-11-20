@@ -1850,4 +1850,238 @@ namespace ocs::tom {
       return {ok, changed};
    }
 
+   // ---------------------------------------------------------------------------------------------------------------
+   // the forwarding members of the handles (ocs_Element.h, ocs_List.h)
+   //
+   // Declared and documented in the handle classes, defined here: a member names its free form, which needs the
+   // complete handles and so comes after them. Each only forwards; the free form decides the behaviour.
+
+   /**
+    * @brief ConstElement::find_first_in(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @param key the key
+    * @return the element, empty if none
+    * @see free form ocs::tom::find_first_in()
+    */
+   template <ObjectType T>
+   template <auto LF, auto F>
+      requires detail::SubKeyOf<LF, F, T>
+   ConstElement<typename FieldTraits<F>::Type>
+   ConstElement<T>::find_first_in(const KeyArgOf<FieldTraits<F>::type> key) const {
+      return ocs::tom::find_first_in<LF, F>(*this, key);
+   }
+
+   /**
+    * @brief ConstElement::find_first_in_rw(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @param key the key
+    * @return the element, empty if none
+    * @see free form ocs::tom::find_first_in_rw()
+    */
+   template <ObjectType T>
+   template <auto LF, auto F>
+      requires detail::SubKeyOf<LF, F, T>
+   Element<typename FieldTraits<F>::Type>
+   ConstElement<T>::find_first_in_rw(const KeyArgOf<FieldTraits<F>::type> key) const {
+      return ocs::tom::find_first_in_rw<LF, F>(*this, key);
+   }
+
+   /**
+    * @brief ConstElement::list_ref(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the list field
+    * @return the reference to the field's list
+    * @see free form ocs::tom::list_ref()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List)
+   lList **ConstElement<T>::list_ref() const {
+      return ocs::tom::list_ref<F>(*this);
+   }
+
+   /**
+    * @brief ConstElement::get_or_empty(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the string field
+    * @return the string, never nullptr
+    * @see free form ocs::tom::get_or_empty()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+   const char *ConstElement<T>::get_or_empty() const {
+      return ocs::tom::get_or_empty<F>(*this);
+   }
+
+   /**
+    * @brief ConstElement::has_any_bits(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the 32 bit field
+    * @param mask the bits
+    * @return true if the field and the mask share a bit
+    * @see free form ocs::tom::has_any_bits()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+   bool ConstElement<T>::has_any_bits(const std::uint32_t mask) const {
+      return ocs::tom::has_any_bits<F>(*this, mask);
+   }
+
+   /**
+    * @brief Element::emplace_back_in(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @param key the key
+    * @return the new element, empty on an error
+    * @see free form ocs::tom::emplace_back_in()
+    */
+   template <ObjectType T>
+   template <auto LF, auto F>
+      requires detail::SubKeyOf<LF, F, T>
+   Element<typename FieldTraits<F>::Type> Element<T>::emplace_back_in(const KeyArgOf<FieldTraits<F>::type> key) const {
+      return ocs::tom::emplace_back_in<LF, F>(*this, key);
+   }
+
+   /**
+    * @brief Element::erase_in(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @param key the key
+    * @return 1 or 0, as the free form
+    * @see free form ocs::tom::erase_in()
+    */
+   template <ObjectType T>
+   template <auto LF, auto F>
+      requires detail::SubKeyOf<LF, F, T>
+   int Element<T>::erase_in(const KeyArgOf<FieldTraits<F>::type> key) const {
+      return ocs::tom::erase_in<LF, F>(*this, key);
+   }
+
+   /**
+    * @brief Element::or_bits(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the 32 bit field
+    * @param mask the bits
+    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @see free form ocs::tom::or_bits()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+   int Element<T>::or_bits(const std::uint32_t mask) const {
+      return ocs::tom::or_bits<F>(*this, mask);
+   }
+
+   /**
+    * @brief Element::and_bits(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the 32 bit field
+    * @param mask the bits to keep
+    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @see free form ocs::tom::and_bits()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+   int Element<T>::and_bits(const std::uint32_t mask) const {
+      return ocs::tom::and_bits<F>(*this, mask);
+   }
+
+   /**
+    * @brief Element::clear_bits(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the 32 bit field
+    * @param mask the bits to clear
+    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @see free form ocs::tom::clear_bits()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+   int Element<T>::clear_bits(const std::uint32_t mask) const {
+      return ocs::tom::clear_bits<F>(*this, mask);
+   }
+
+   /**
+    * @brief Element::copy_if_present(): forwards to the free form, this element as the destination
+    * @tparam T the object type of the handle
+    * @tparam F the field, not a reference field
+    * @param src the element to copy from
+    * @return true if the value was copied
+    * @see free form ocs::tom::copy_if_present()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type != FieldType::Ref)
+   bool Element<T>::copy_if_present(const ConstElement<T> &src) const {
+      return ocs::tom::copy_if_present<F>(*this, src);
+   }
+
+   /**
+    * @brief Element::modify_sublist(): forwards to the free form, this element as the object modified
+    * @tparam T the object type of the handle
+    * @tparam ListF the list field
+    * @tparam SubKeyF the key field of the list field's sub-type
+    * @tparam Differs the predicate type
+    * @tparam Report the callable type
+    * @param request the modify request; its sub-list is consumed
+    * @param mode how to apply the request's sub-list
+    * @param differs whether a request element changes the held element with the same key
+    * @param report called for every event
+    * @return whether the operation succeeded and whether the sub-list was changed
+    * @see free form ocs::tom::modify_sublist()
+    */
+   template <ObjectType T>
+   template <auto ListF, auto SubKeyF, typename Differs, typename Report>
+      requires detail::SubKeyOf<ListF, SubKeyF, T> &&
+               (FieldTraits<SubKeyF>::type == FieldType::String || FieldTraits<SubKeyF>::type == FieldType::Host) &&
+               std::predicate<Differs &, ConstElement<typename FieldTraits<ListF>::Sub>,
+                              ConstElement<typename FieldTraits<ListF>::Sub>> &&
+               std::invocable<Report &, SublistEvent, const char *>
+   SublistOutcome Element<T>::modify_sublist(const Element<T> &request, const SublistMode mode, Differs &&differs,
+                                             Report &&report) const {
+      return ocs::tom::modify_sublist<ListF, SubKeyF>(*this, request, mode, std::forward<Differs>(differs),
+                                                      std::forward<Report>(report));
+   }
+
+   /**
+    * @brief List::keep_last(): forwards to the free form
+    * @tparam T the object type of the list
+    * @tparam Key the key field
+    * @see free form ocs::tom::keep_last()
+    */
+   template <ObjectType T>
+   template <auto Key>
+      requires FieldOf<Key, T> && (FieldTraits<Key>::type != FieldType::List &&
+                                   FieldTraits<Key>::type != FieldType::Object &&
+                                   FieldTraits<Key>::type != FieldType::Ref)
+   void List<T>::keep_last() const {
+      ocs::tom::keep_last<Key>(*this);
+   }
+
+   /**
+    * @brief List::merge_by_key(): forwards to the free form, this list as the destination
+    * @tparam T the object type of the lists
+    * @tparam Key the key field
+    * @tparam Value the value field
+    * @param src the list merged from
+    * @see free form ocs::tom::merge_by_key()
+    */
+   template <ObjectType T>
+   template <auto Key, auto Value>
+      requires FieldOf<Key, T> && detail::LookupField<Key> && FieldOf<Value, T> &&
+               (FieldTraits<Value>::type != FieldType::List && FieldTraits<Value>::type != FieldType::Object &&
+                FieldTraits<Value>::type != FieldType::Ref)
+   void List<T>::merge_by_key(const ConstList<T> &src) const {
+      ocs::tom::merge_by_key<Key, Value>(*this, src);
+   }
+
 } // namespace ocs::tom

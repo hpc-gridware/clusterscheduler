@@ -56,14 +56,6 @@ namespace ocs::tom {
       using KeyOf = typename ValueOf<FieldTraits<F>::type>::type;
 
       /**
-       * @brief Whether a field can be looked up by
-       * @tparam F the field number
-       */
-      template <auto F>
-      concept LookupField = FieldTraits<F>::type == FieldType::Uint32 || FieldTraits<F>::type == FieldType::Uint64 ||
-                            FieldTraits<F>::type == FieldType::String || FieldTraits<F>::type == FieldType::Host;
-
-      /**
        * @brief The position of a field in a descriptor, known at compile time, or -1 if the descriptor does not hold it
        *
        * Inline, as the free accessors check: a descriptor of another type
@@ -1336,6 +1328,48 @@ namespace ocs::tom {
          }
          return erased ? 1 : 0;
       }
+
+      // The members below forward to a free form of ocs_FreeAccess.h and are defined there, after it; each keeps
+      // the run-time behaviour of its free form, also for an empty handle.
+
+      /**
+       * @brief Keep only the last element of each key, as cull_compress_definition_list() did
+       *
+       * Removes every earlier element with the key of a later one, so the order of the elements that stay is
+       * kept; a string or host key that is nullptr is never a repetition, host names compare as host names.
+       *
+       * @tparam Key the key field, of this object type: a number, string or host field; not a list, object or
+       *         reference field
+       * @throw FieldException with reason AbsentField if the list is reduced and lacks the key field
+       * @see free form ocs::tom::keep_last()
+       */
+      template <auto Key>
+         requires FieldOf<Key, T> && (FieldTraits<Key>::type != FieldType::List &&
+                                      FieldTraits<Key>::type != FieldType::Object &&
+                                      FieldTraits<Key>::type != FieldType::Ref)
+      void keep_last() const;
+
+      /**
+       * @brief Merge another list into this one by key: a known key takes the new value, a new key is appended
+       *        as a copy, as cull_merge_definition_list() did
+       *
+       * This list is the destination, the argument the source: `dst.merge_by_key<K, V>(src)` in the order of
+       * the free form `merge_by_key<K, V>(dst, src)`. The source stays as it is. Two string or host keys that
+       * are both nullptr are equal, host names compare as host names.
+       *
+       * @tparam Key the key field, of this object type: Uint32, Uint64, String or Host
+       * @tparam Value the value field, of this object type: a number, string or host field
+       * @param src the list merged from, may be an empty handle; an owning handle converts to it
+       * @throw FieldException with reason EmptyHandle if this handle is empty and @p src holds an element,
+       *        AbsentField if a list is reduced and lacks the key or the value field, WrongLayout if an element of
+       *        @p src to append has another layout than this list; in a debug build DuplicateKey
+       * @see free form ocs::tom::merge_by_key()
+       */
+      template <auto Key, auto Value>
+         requires FieldOf<Key, T> && detail::LookupField<Key> && FieldOf<Value, T> &&
+                  (FieldTraits<Value>::type != FieldType::List && FieldTraits<Value>::type != FieldType::Object &&
+                   FieldTraits<Value>::type != FieldType::Ref)
+      void merge_by_key(const ConstList<T> &src) const;
 
    private:
       /**

@@ -26,8 +26,9 @@
  * forms, adding and erasing by key in a list and in the list of a list field,
  * exchange and swap, the bit operations, get_or_create, list_ref and
  * get_or_empty, the owning-handle overloads, keep_last, merge_by_key and
- * modify_sublist. Every expected value is fixed; where the derivation is not
- * obvious from the test data, a comment states it.
+ * modify_sublist, and the members of the handles that forward to them. Every
+ * expected value is fixed; where the derivation is not obvious from the test
+ * data, a comment states it.
  *
  * Where a free form throws a FieldException that nothing catches, the process
  * ends, as the replaced function's abort did; such cases run in a child
@@ -920,24 +921,27 @@ struct SublistRun {
  * @param dst the job to modify
  * @param request the request; its environment is consumed
  * @param mode how to apply it
+ * @param member true to call the member Element::modify_sublist() instead of the free form
  * @return the outcome and the events
  */
 static SublistRun
 run_modify_sublist(const ocs::tom::Element<ocs::tom::JB> dst, const ocs::tom::Element<ocs::tom::JB> request,
-                   const ocs::tom::SublistMode mode) {
+                   const ocs::tom::SublistMode mode, const bool member = false) {
    std::string events;
-   const auto outcome = ocs::tom::modify_sublist<JB_env_list, VA_variable>(
-      dst, request, mode,
-      [](const ocs::tom::ConstElement<ocs::tom::VA> a, const ocs::tom::ConstElement<ocs::tom::VA> b) {
-         const char *x = ocs::tom::get<VA_value>(a);
-         const char *y = ocs::tom::get<VA_value>(b);
-         return x == nullptr || y == nullptr ? x != y : std::strcmp(x, y) != 0;
-      },
-      [&events](const ocs::tom::SublistEvent event, const char *key) {
-         static const char *const names[] = {"missing", "held", "notheld", "created", "appended"};
-         events += events.empty() ? "" : " ";
-         events += std::string(names[static_cast<int>(event)]) + ":" + (key != nullptr ? key : "-");
-      });
+   const auto differs = [](const ocs::tom::ConstElement<ocs::tom::VA> a,
+                           const ocs::tom::ConstElement<ocs::tom::VA> b) {
+      const char *x = ocs::tom::get<VA_value>(a);
+      const char *y = ocs::tom::get<VA_value>(b);
+      return x == nullptr || y == nullptr ? x != y : std::strcmp(x, y) != 0;
+   };
+   const auto report = [&events](const ocs::tom::SublistEvent event, const char *key) {
+      static const char *const names[] = {"missing", "held", "notheld", "created", "appended"};
+      events += events.empty() ? "" : " ";
+      events += std::string(names[static_cast<int>(event)]) + ":" + (key != nullptr ? key : "-");
+   };
+   const auto outcome =
+      member ? dst.modify_sublist<JB_env_list, VA_variable>(request, mode, differs, report)
+             : ocs::tom::modify_sublist<JB_env_list, VA_variable>(dst, request, mode, differs, report);
    return {outcome, events};
 }
 
@@ -1041,6 +1045,172 @@ test_modify_sublist() {
 }
 
 /**
+ * @brief FREE-15: the members of an element handle that forward to a free form give what the free form gives
+ *
+ * Each member runs on one of two equal objects, the free form on the other; the results and the objects
+ * afterwards are compared. The owning handle reaches the members through operator->.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_member_element_forms() {
+   // lookups and adding and erasing by key in a sub-list
+   {
+      auto a = make_job();
+      auto b = make_job();
+      const ocs::tom::ConstElement<ocs::tom::JB> ca = a.get();
+      const ocs::tom::ConstElement<ocs::tom::JB> cb = b.get();
+      const ocs::tom::ConstElement<ocs::tom::JB> none;
+      bool same = ca.find_first_in<JB_env_list, VA_variable>("A") ==
+                     ocs::tom::find_first_in<JB_env_list, VA_variable>(ca, "A") &&
+                  ca.find_first_in<JB_env_list, VA_variable>("A") != nullptr &&
+                  ca.find_first_in<JB_env_list, VA_variable>("x") == nullptr &&
+                  none.find_first_in<JB_env_list, VA_variable>("A") == nullptr &&
+                  a->find_first_in<JB_env_list, VA_variable>("b") ==
+                     ocs::tom::find_first_in<JB_env_list, VA_variable>(a, "b") &&
+                  ca.find_first_in_rw<JB_ja_tasks, JAT_task_number>(2).raw() ==
+                     ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(ca, 2).raw() &&
+                  ca.find_first_in_rw<JB_ja_tasks, JAT_task_number>(2) != nullptr;
+
+      const ocs::tom::Element<ocs::tom::JB> ea = a.get();
+      const ocs::tom::Element<ocs::tom::JB> eb = b.get();
+      same = same && (ea.emplace_back_in<JB_env_list, VA_variable>("C") != nullptr) ==
+                        (ocs::tom::emplace_back_in<JB_env_list, VA_variable>(eb, "C") != nullptr);
+      same = same && a->emplace_back_in<JB_ja_tasks, JAT_task_number>(3) != nullptr &&
+             ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(eb, 3) != nullptr;
+      same = same && ea.erase_in<JB_env_list, VA_variable>("A") ==
+                        ocs::tom::erase_in<JB_env_list, VA_variable>(eb, "A");
+      same = same && ea.erase_in<JB_env_list, VA_variable>("x") ==
+                        ocs::tom::erase_in<JB_env_list, VA_variable>(eb, "x");
+      same = same && a->erase_in<JB_ja_tasks, JAT_task_number>(1) ==
+                        ocs::tom::erase_in<JB_ja_tasks, JAT_task_number>(eb, 1);
+      same = same && ocs::tom::Element<ocs::tom::JB>().erase_in<JB_env_list, VA_variable>("b") == 0;
+      const std::string env_a = keys(a->get<JB_env_list>().raw(), VA_variable);
+      const std::string tasks_a = numbers(a->get<JB_ja_tasks>().raw(), JAT_task_number);
+      same = same && env_a == "b C " && tasks_a == "2 3 " &&
+             env_a == keys(cb.get<JB_env_list>().raw(), VA_variable) &&
+             tasks_a == numbers(cb.get<JB_ja_tasks>().raw(), JAT_task_number);
+      CHECK(37, "find_first_in, find_first_in_rw, emplace_back_in and erase_in as members give what the free "
+                "forms give, on the handle, the owning handle and an empty handle",
+            same);
+   }
+
+   // the list reference, the string never null, the bit masks and the atomic accessors
+   {
+      auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      job->get_or_create<JB_env_list>("env");
+      const ocs::tom::ConstElement<ocs::tom::JB> cjob = job.get();
+      bool same = cjob.list_ref<JB_env_list>() == ocs::tom::list_ref<JB_env_list>(cjob) &&
+                  *job->list_ref<JB_env_list>() == job->get<JB_env_list>().raw() &&
+                  std::string(cjob.get_or_empty<JB_owner>()) == ocs::tom::get_or_empty<JB_owner>(cjob) &&
+                  std::string(cjob.get_or_empty<JB_owner>()).empty();
+      job->set<JB_owner>("me");
+      same = same && std::string(job->get_or_empty<JB_owner>()) == "me";
+
+      auto ta = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+      auto tb = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+      ta->set<JAT_status>(0x5);
+      tb->set<JAT_status>(0x5);
+      const ocs::tom::Element<ocs::tom::JAT> eb = tb.get();
+      same = same && ta->has_any_bits<JAT_status>(0x4) == ocs::tom::has_any_bits<JAT_status>(eb, 0x4) &&
+             ta->has_any_bits<JAT_status>(0x2) == ocs::tom::has_any_bits<JAT_status>(eb, 0x2);
+      same = same && ta->or_bits<JAT_status>(0x2) == ocs::tom::or_bits<JAT_status>(eb, 0x2) &&
+             ta->get<JAT_status>() == eb.get<JAT_status>();
+      same = same && ta->and_bits<JAT_status>(0x6) == ocs::tom::and_bits<JAT_status>(eb, 0x6) &&
+             ta->get<JAT_status>() == eb.get<JAT_status>();
+      same = same && ta->clear_bits<JAT_status>(0x2) == ocs::tom::clear_bits<JAT_status>(eb, 0x2) &&
+             ta->get<JAT_status>() == eb.get<JAT_status>() && eb.get<JAT_status>() == 0x4;
+      // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4; an empty handle gives -1 with LEELEMNULL in both forms
+      cull_state_set_lerrno(0);
+      const int member_null = ocs::tom::Element<ocs::tom::JAT>().clear_bits<JAT_status>(0x2);
+      const int member_errno = cull_state_get_lerrno();
+      cull_state_set_lerrno(0);
+      const int free_null = ocs::tom::clear_bits<JAT_status>(ocs::tom::Element<ocs::tom::JAT>(), 0x2);
+      same = same && member_null == -1 && member_null == free_null && member_errno == LEELEMNULL &&
+             cull_state_get_lerrno() == LEELEMNULL;
+
+      auto ha = ocs::tom::ElementPtr<ocs::tom::HM>::create();
+      auto hb = ocs::tom::ElementPtr<ocs::tom::HM>::create();
+      const ocs::tom::Element<ocs::tom::HM> hbe = hb.get();
+      same = same && ha->set_atomic<HM_last_used>(4711) == ocs::tom::set_atomic<HM_last_used>(hbe, 4711) &&
+             ha->get_atomic<HM_last_used>() == ocs::tom::get_atomic<HM_last_used>(hbe) &&
+             ocs::tom::ConstElement<ocs::tom::HM>(ha.get()).get_atomic<HM_last_used>() == 4711;
+      CHECK(38, "list_ref, get_or_empty, has_any_bits, or_bits, and_bits, clear_bits, get_atomic and set_atomic as "
+                "members give what the free forms give, also for an empty handle",
+            same);
+   }
+
+   // copying a field and modifying a sub-list: this element is the destination
+   {
+      auto src = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      auto da = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      auto db = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      src->set<JB_job_number>(4711);
+      src->set<JB_env_list>(make_names({"X"}));
+      da->set<JB_job_name>("old");
+      db->set<JB_job_name>("old");
+      const ocs::tom::Element<ocs::tom::JB> dbe = db.get();
+      const ocs::tom::ConstElement<ocs::tom::JB> none;
+      const ocs::tom::ConstElement<ocs::tom::JB> from = src.get();
+      bool same = da->copy_if_present<JB_job_number>(from) == ocs::tom::copy_if_present<JB_job_number>(dbe, from) &&
+                  da->copy_if_present<JB_job_name>(from) == ocs::tom::copy_if_present<JB_job_name>(dbe, from) &&
+                  da->copy_if_present<JB_env_list>(from) == ocs::tom::copy_if_present<JB_env_list>(dbe, from) &&
+                  da->copy_if_present<JB_owner>(none) == ocs::tom::copy_if_present<JB_owner>(dbe, none);
+      // the number copied, the name copied as nullptr, the list deeply; nothing from the empty source
+      same = same && da->get<JB_job_number>() == 4711 && db->get<JB_job_number>() == 4711 &&
+             da->get<JB_job_name>() == nullptr && db->get<JB_job_name>() == nullptr &&
+             keys(da->get<JB_env_list>().raw(), VA_variable) == "X " &&
+             keys(db->get<JB_env_list>().raw(), VA_variable) == "X " &&
+             da->get<JB_env_list>().raw() != src->get<JB_env_list>().raw();
+
+      constexpr ocs::tom::SublistMode change_mode{.change = true};
+      auto oa = make_env_job({{"A", "1"}, {"B", "2"}});
+      auto ob = make_env_job({{"A", "1"}, {"B", "2"}});
+      auto ra = make_env_job({{"B", "20"}, {"C", "30"}, {"A", "1"}});
+      auto rb = make_env_job({{"B", "20"}, {"C", "30"}, {"A", "1"}});
+      const auto member_run = run_modify_sublist(oa.get(), ra.get(), change_mode, true);
+      const auto free_run = run_modify_sublist(ob.get(), rb.get(), change_mode);
+      same = same && member_run.outcome.ok == free_run.outcome.ok &&
+             member_run.outcome.changed == free_run.outcome.changed && member_run.events == free_run.events &&
+             env_of(oa.get()) == env_of(ob.get()) && env_of(ra.get()) == env_of(rb.get()) &&
+             env_of(oa.get()) == "1,20,30";
+      CHECK(39, "copy_if_present and modify_sublist as members, this element the destination, give what the free "
+                "forms give",
+            same);
+   }
+}
+
+/**
+ * @brief FREE-16: the members of a list handle that forward to a free form give what the free form gives
+ * @return nothing; CHECK records the results
+ */
+static void
+test_member_list_forms() {
+   // repeated keys on purpose, as in test_keyed_merge()
+   const ocs::tom::UniqueCheckSuspension suspension;
+
+   auto la = make_vars({{"A", "1"}, {"B", "2"}, {"A", "3"}, {nullptr, "4"}, {nullptr, "5"}, {"B", "6"}});
+   auto lb = make_vars({{"A", "1"}, {"B", "2"}, {"A", "3"}, {nullptr, "4"}, {nullptr, "5"}, {"B", "6"}});
+   la->keep_last<VA_variable>();
+   ocs::tom::keep_last<VA_variable>(*lb);
+   const bool kept = values_of(la) == values_of(lb) && values_of(la) == "3,4,5,6";
+
+   auto da = make_vars({{"A", "1"}, {"B", "2"}});
+   auto db = make_vars({{"A", "1"}, {"B", "2"}});
+   const auto src = make_vars({{"B", "20"}, {"C", "30"}, {"C", "31"}, {nullptr, "40"}, {nullptr, "41"}});
+   const ocs::tom::List<ocs::tom::VA> dav = da;
+   dav.merge_by_key<VA_variable, VA_value>(src);
+   ocs::tom::merge_by_key<VA_variable, VA_value>(*db, src);
+   auto dc = make_vars({{"A", "1"}});
+   dc->merge_by_key<VA_variable, VA_value>(ocs::tom::ConstList<ocs::tom::VA>());
+   const bool merged = values_of(da) == values_of(db) && values_of(da) == "1,20,31,41" &&
+                       values_of(src) == "20,30,31,40,41" && values_of(dc) == "1";
+   CHECK(40, "keep_last and merge_by_key as members, this list the destination, give what the free forms give, "
+             "on the list handle and the owning handle",
+         kept && merged);
+}
+
+/**
  * @brief Run the scenarios
  * @param argc argument count
  * @param argv arguments
@@ -1110,5 +1280,14 @@ int main(int argc, char *argv[]) {
         "a key held twice, a missing key and a request without the list field"},
        "the expected lists, results and events in order; the request's sub-list consumed",
        {{"OPS-02", "covers"}}, {31, 32, 33, 34, 35, 36}, test_modify_sublist},
+      {"FREE-15", "element members", "the members of an element handle forward to the free forms",
+       {"find_first_in, find_first_in_rw, emplace_back_in, erase_in, list_ref, get_or_empty, the bit masks, the "
+        "atomic accessors, copy_if_present and modify_sublist as members and as free forms on equal objects, on "
+        "the handle, the owning handle and an empty handle"},
+       "the same results and the same objects afterwards", {{"OPS-02", "covers"}}, {37, 38, 39},
+       test_member_element_forms},
+      {"FREE-16", "list members", "the members of a list handle forward to the free forms",
+       {"keep_last and merge_by_key as members and as free forms on equal lists, also with an empty source"},
+       "the same lists afterwards", {{"OPS-02", "covers"}}, {40}, test_member_list_forms},
    });
 }

@@ -35,6 +35,7 @@
  * the accessors of list fields return.
  */
 
+#include <concepts>
 #include <cstddef>
 #include <cstdio>
 #include <cstdint>
@@ -65,6 +66,9 @@ namespace ocs::tom {
    template <ObjectType T> class ConstList;
    template <ObjectType T> class List;
    template <ObjectType T> class ListPtr;
+   struct SublistMode;
+   struct SublistOutcome;
+   enum class SublistEvent;
 
    /**
     * @brief A field number that belongs to an object type
@@ -178,6 +182,42 @@ namespace ocs::tom {
             throw_access_error(ep, F, Tr::Type::fields[0].nm);
          }
       }
+
+      /** @brief A 64 bit unsigned field, which the atomic accessors read */
+      template <auto F>
+      concept AtomicReadable = FieldTraits<F>::type == FieldType::Uint64;
+
+      /**
+       * @brief A 64 bit unsigned field that is declared neither hashed nor unique, which the atomic accessors write
+       *
+       * The atomic store bypasses the hash table and the uniqueness check of the setter alike.
+       */
+      template <auto F>
+      concept AtomicWritable = AtomicReadable<F> && !FieldTraits<F>::hashed && !FieldTraits<F>::unique;
+
+      /**
+       * @brief Whether a field can be looked up by
+       * @tparam F the field number
+       */
+      template <auto F>
+      concept LookupField = FieldTraits<F>::type == FieldType::Uint32 || FieldTraits<F>::type == FieldType::Uint64 ||
+                            FieldTraits<F>::type == FieldType::String || FieldTraits<F>::type == FieldType::Host;
+
+      /**
+       * @brief Whether a list field belongs to an object type and a key field to the list field's sub-type, as the
+       *        members on the list of a list field (find_first_in() and its kin) take them
+       *
+       * The member form of detail::SubKeyField of ocs_FreeAccess.h together with the check that the list field
+       * belongs to the handle's type, which the free forms make by assert_field_of().
+       *
+       * @tparam LF the list field
+       * @tparam F the key field
+       * @tparam T the object type of the handle
+       */
+      template <auto LF, auto F, typename T>
+      concept SubKeyOf = FieldOf<LF, T> && FieldTraits<LF>::type == FieldType::List && TypedField<decltype(F)> &&
+                         LookupField<F> &&
+                         std::is_same_v<typename FieldTraits<LF>::Sub, typename FieldTraits<F>::Type>;
 
       /**
        * @brief Stop the compilation if a field does not belong to the type of a handle
@@ -992,6 +1032,96 @@ namespace ocs::tom {
          write_elem_to_disk(ep_, prefix, name, obj_name);
       }
 
+      // The members below forward to a free form of ocs_FreeAccess.h and are defined there, after it (the free forms
+      // need the complete handles). Each keeps the run-time behaviour of its free form, also for an empty handle,
+      // which the free forms treat as the null element of the function they replace, not as EmptyHandle.
+
+      /**
+       * @brief The first element with a key in the list of a list field, read only, as lGetSubStr(), lGetSubHost(),
+       *        lGetSubUlong() and lGetSubUlong64() find it
+       * @tparam LF the list field, of this object type
+       * @tparam F the key field, of the list field's sub-type
+       * @param key the key: a number, or a C string for a string or host field
+       * @return the element as a handle of the key field's type; empty if none holds the key, the field holds no
+       *         list or this handle is empty (which records the soft path)
+       * @throw FieldException with reason AbsentField if the reduced element does not hold the list field, or
+       *        DuplicateKey
+       * @see free form ocs::tom::find_first_in()
+       */
+      template <auto LF, auto F>
+         requires detail::SubKeyOf<LF, F, T>
+      [[nodiscard]] ConstElement<typename FieldTraits<F>::Type> find_first_in(KeyArgOf<FieldTraits<F>::type> key) const;
+
+      /**
+       * @brief The first element with a key in the list of a list field, mutable, as lGetSubStrRW(),
+       *        lGetSubHostRW(), lGetSubUlongRW() and lGetSubUlong64RW() find it
+       *
+       * A member of the read-only handle as the free form takes one, as the old functions took a const element:
+       * the element found belongs to the list, not to this element's own fields.
+       *
+       * @tparam LF the list field, of this object type
+       * @tparam F the key field, of the list field's sub-type
+       * @param key the key: a number, or a C string for a string or host field
+       * @return the element as a mutable handle of the key field's type; empty as find_first_in() gives it
+       * @throw FieldException as find_first_in()
+       * @see free form ocs::tom::find_first_in_rw()
+       */
+      template <auto LF, auto F>
+         requires detail::SubKeyOf<LF, F, T>
+      [[nodiscard]] Element<typename FieldTraits<F>::Type> find_first_in_rw(KeyArgOf<FieldTraits<F>::type> key) const;
+
+      /**
+       * @brief The reference to the list held in a list field, as lGetListRef() gives it
+       *
+       * A member of the read-only handle as the free form takes one, as lGetListRef() took a const element.
+       *
+       * @tparam F the list field, of this object type
+       * @return the reference to the field's list
+       * @throw FieldException with reason NullElement if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field
+       * @see free form ocs::tom::list_ref()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List)
+      [[nodiscard]] lList **list_ref() const;
+
+      /**
+       * @brief The string of a string field, or "" for an unset one, as lGetStringNotNull() gives it
+       * @tparam F the string field, of this object type
+       * @return the string, never nullptr
+       * @throw FieldException with reason NullElement if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field
+       * @see free form ocs::tom::get_or_empty()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+      [[nodiscard]] const char *get_or_empty() const;
+
+      /**
+       * @brief Whether a 32 bit field has any bit of a mask set, as lMatchUlongBitMask() decides it
+       * @tparam F the 32 bit field, of this object type
+       * @param mask the bits
+       * @return true if the field and the mask share a bit
+       * @throw FieldException with reason NullElement if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field
+       * @see free form ocs::tom::has_any_bits()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+      [[nodiscard]] bool has_any_bits(std::uint32_t mask) const;
+
+      /**
+       * @brief Read a 64 bit unsigned field without being able to observe it torn, as lGetUlong64Atomic() reads it
+       * @tparam F the field, of this object type and of type Uint64
+       * @return the value
+       * @throw FieldException with reason NullElement if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field
+       * @see free form ocs::tom::get_atomic()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && detail::AtomicReadable<F>
+      [[nodiscard]] std::uint64_t get_atomic() const;
+
    protected:
       lListElem *ep_ = nullptr;   ///< the element, or nullptr; const unless reached through Element
 
@@ -1288,6 +1418,142 @@ namespace ocs::tom {
          exchange_list(this->ep_, FieldTraits<F>::pos, lp);
          exchange_list(other.raw(), FieldTraits<G>::pos, lp);
       }
+
+      // The members below forward to a free form of ocs_FreeAccess.h and are defined there, as the forwarding
+      // members of ConstElement are; each keeps the run-time behaviour of its free form, also for an empty handle.
+
+      /**
+       * @brief Create an element with a key and append it to the list of a list field, created if needed, as
+       *        lAddSubStr(), lAddSubHost(), lAddSubUlong() and lAddSubUlong64() do
+       * @tparam LF the list field, of this object type
+       * @tparam F the key field, of the list field's sub-type
+       * @param key the key: a number, or a C string for a string or host field
+       * @return the new element as a handle of the key field's type; empty on an error or for an empty handle
+       *         (which records the soft path)
+       * @throw FieldException with reason AbsentField if the reduced element does not hold the list field, or
+       *        DuplicateKey in a debug build
+       * @see free form ocs::tom::emplace_back_in()
+       */
+      template <auto LF, auto F>
+         requires detail::SubKeyOf<LF, F, T>
+      Element<typename FieldTraits<F>::Type> emplace_back_in(KeyArgOf<FieldTraits<F>::type> key) const;
+
+      /**
+       * @brief Remove and free the first element with a key from the list of a list field, as lDelSubStr(),
+       *        lDelSubUlong() and lDelSubUlong64() do
+       *
+       * A list that becomes empty is freed and the field set to nullptr, as the free form does.
+       *
+       * @tparam LF the list field, of this object type
+       * @tparam F the key field, of the list field's sub-type
+       * @param key the key: a number, or a C string for a string or host field
+       * @return 1 if an element was removed or the field holds no list, 0 if none holds the key or this handle is
+       *         empty
+       * @throw FieldException with reason AbsentField if the reduced element does not hold the list field, or
+       *        DuplicateKey
+       * @see free form ocs::tom::erase_in()
+       */
+      template <auto LF, auto F>
+         requires detail::SubKeyOf<LF, F, T>
+      int erase_in(KeyArgOf<FieldTraits<F>::type> key) const;
+
+      /**
+       * @brief Set the bits of a mask in a 32 bit field, as lOrUlongBitMask() does
+       * @tparam F the 32 bit field, of this object type
+       * @param mask the bits
+       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @throw FieldException with reason AbsentField if the reduced element does not hold the field
+       * @see free form ocs::tom::or_bits()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+      int or_bits(std::uint32_t mask) const;
+
+      /**
+       * @brief Keep only the bits of a mask in a 32 bit field, as lAndUlongBitMask() does
+       * @tparam F the 32 bit field, of this object type
+       * @param mask the bits to keep
+       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @throw FieldException with reason AbsentField if the reduced element does not hold the field
+       * @see free form ocs::tom::and_bits()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+      int and_bits(std::uint32_t mask) const;
+
+      /**
+       * @brief Clear the bits of a mask in a 32 bit field, as lClearUlongBitMask() does
+       * @tparam F the 32 bit field, of this object type
+       * @param mask the bits to clear
+       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @throw FieldException with reason AbsentField if the reduced element does not hold the field
+       * @see free form ocs::tom::clear_bits()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
+      int clear_bits(std::uint32_t mask) const;
+
+      /**
+       * @brief Write a 64 bit unsigned field without a reader being able to see it torn, as lSetUlong64Atomic()
+       *        writes it
+       * @tparam F the field, of this object type and of type Uint64, declared neither hashed nor unique
+       * @param value the value to store
+       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @throw FieldException with reason AbsentField if the reduced element does not hold the field
+       * @see free form ocs::tom::set_atomic()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && detail::AtomicWritable<F>
+      int set_atomic(std::uint64_t value) const;
+
+      /**
+       * @brief Copy a field from another element into this one when the other holds it
+       *
+       * This element is the destination, the argument the source: `dst.copy_if_present<F>(src)` reads as "dst
+       * copies F, if present, from src", the order of the free form `copy_if_present<F>(dst, src)`. A list or
+       * object field is copied deeply; a source without the field leaves this element as it is.
+       *
+       * @tparam F the field, of this object type; not a reference field
+       * @param src the element to copy from, may be reduced or an empty handle
+       * @return true if the source held the field and this element took the value; false for an empty handle on
+       *         either side, a source without the field, or a value the setter refused
+       * @throw FieldException with reason AbsentField if this element is reduced and lacks the field, in a debug
+       *        build DuplicateKey
+       * @see free form ocs::tom::copy_if_present()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type != FieldType::Ref)
+      bool copy_if_present(const ConstElement<T> &src) const;
+
+      /**
+       * @brief Apply the sub-list of a modify request to the sub-list of this object, key by key, as
+       *        attr_mod_sub_list() did
+       *
+       * This element is the object modified, the argument the request: `obj.modify_sublist<L, K>(request, ...)`
+       * in the order of the free form `modify_sublist<L, K>(obj, request, ...)`. The request's sub-list is
+       * consumed. The modes, events and results are those of the free form.
+       *
+       * @tparam ListF the list field, of this object type
+       * @tparam SubKeyF the key field, a string or host field of the list field's sub-type
+       * @tparam Differs a predicate on (request element, held element) of the sub-type
+       * @tparam Report a callable taking (SublistEvent, const char *key)
+       * @param request the modify request, may be reduced; its sub-list is consumed
+       * @param mode how to apply the request's sub-list
+       * @param differs whether a request element changes the held element with the same key
+       * @param report called for every event, in the order they happen
+       * @return whether the operation succeeded and whether this object's sub-list was changed
+       * @throw FieldException as the free form: NullElement if this handle is empty, AbsentField if it is reduced
+       *        and lacks @p ListF, WrongLayout, in a debug build DuplicateKey
+       * @see free form ocs::tom::modify_sublist()
+       */
+      template <auto ListF, auto SubKeyF, typename Differs, typename Report>
+         requires detail::SubKeyOf<ListF, SubKeyF, T> &&
+                  (FieldTraits<SubKeyF>::type == FieldType::String || FieldTraits<SubKeyF>::type == FieldType::Host) &&
+                  std::predicate<Differs &, ConstElement<typename FieldTraits<ListF>::Sub>,
+                                 ConstElement<typename FieldTraits<ListF>::Sub>> &&
+                  std::invocable<Report &, SublistEvent, const char *>
+      SublistOutcome modify_sublist(const Element<T> &request, SublistMode mode, Differs &&differs,
+                                    Report &&report) const;
    };
 
    /**
@@ -1862,22 +2128,6 @@ namespace ocs::tom {
       return detail::free_add<F, true>(ep.raw(), offset);
    }
 
-   namespace detail {
-
-      /** @brief A 64 bit unsigned field, which the atomic accessors read */
-      template <auto F>
-      concept AtomicReadable = FieldTraits<F>::type == FieldType::Uint64;
-
-      /**
-       * @brief A 64 bit unsigned field that is declared neither hashed nor unique, which the atomic accessors write
-       *
-       * The atomic store bypasses the hash table and the uniqueness check of the setter alike.
-       */
-      template <auto F>
-      concept AtomicWritable = AtomicReadable<F> && !FieldTraits<F>::hashed && !FieldTraits<F>::unique;
-
-   } // namespace detail
-
    /**
     * @brief Read a 64 bit unsigned field without being able to observe it torn; replaces lGetUlong64Atomic()
     *
@@ -2012,6 +2262,37 @@ namespace ocs::tom {
       requires TypedField<decltype(F)> && detail::AtomicWritable<F>
    int set_atomic(const ElementPtr<T> &ep, const std::uint64_t value) {
       return set_atomic<F>(ep.get(), value);
+   }
+
+   // the forwarding members of the handles for the atomic accessors, defined after the free forms they call
+
+   /**
+    * @brief ConstElement::get_atomic(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the field, of type Uint64
+    * @return the value
+    * @see free form ocs::tom::get_atomic()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && detail::AtomicReadable<F>
+   std::uint64_t ConstElement<T>::get_atomic() const {
+      return ocs::tom::get_atomic<F>(*this);
+   }
+
+   /**
+    * @brief Element::set_atomic(): forwards to the free form
+    * @tparam T the object type of the handle
+    * @tparam F the field, of type Uint64, neither hashed nor unique
+    * @param value the value to store
+    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @see free form ocs::tom::set_atomic()
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && detail::AtomicWritable<F>
+   int Element<T>::set_atomic(const std::uint64_t value) const {
+      return ocs::tom::set_atomic<F>(*this, value);
    }
 
 } // namespace ocs::tom
