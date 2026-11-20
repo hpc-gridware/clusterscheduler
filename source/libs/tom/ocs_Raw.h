@@ -47,6 +47,10 @@
  *   `find_first<V>`, `select`, `matches`, `unpack_raw_list`, `unpack_raw_elem`,
  *   `write_to`: thin fronts of the core in ocs_ListCore.h, ocs_SelectCore.h,
  *   ocs_PackCore.h and ocs_PrintCore.h.
+ * - **Run-time builders.** `where_compare<V>`, `what_of`, `what_all`: a condition
+ *   or a field selection from fields and values known only at run time,
+ *   without a format string; the results of lWhere(), lIntVector2What() and
+ *   lWhatAll().
  * - **Selections with the old contract.** `select_as`, `select_elem_as`,
  *   `select_into_descr`, `select_elem_into_descr`, `select_pack`: the results
  *   of lSelect() and its kin (result name, no list for no match, a reduced
@@ -125,6 +129,7 @@
 #include <cstdio>
 #include <iterator>
 #include <memory>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -777,6 +782,117 @@ namespace ocs::tom {
     * @see Old form: lCompare(); core: ocs::tom::compare()
     */
    [[nodiscard]] bool matches(const lListElem *ep, const lCondition *where);
+
+   // ---------------------------------------------------------------------------------------------------------------
+   // conditions and selections built at run time
+   //
+   // For code that knows the fields and the values only at run time (the Python bridge): the field is an int
+   // argument and the value type the type of the argument; no format string is parsed. Each builder makes through
+   // the core what the old format builder made, and where the old one returned nullptr it returns an empty owner
+   // and leaves the error number the old one left.
+
+   namespace detail {
+
+      /**
+       * @brief A value type a run-time comparison compares a field with: a number, bool or a string
+       *
+       * A string is compared with a string or a host field, as `%s` of lWhere() was.
+       *
+       * @tparam V the value type
+       */
+      template <typename V>
+      concept RawCompareValue = std::is_same_v<V, std::uint32_t> || std::is_same_v<V, std::uint64_t> ||
+                                std::is_same_v<V, std::int32_t> || std::is_same_v<V, std::int64_t> ||
+                                std::is_same_v<V, double> || std::is_same_v<V, bool> ||
+                                std::is_same_v<V, const char *>;
+
+      /**
+       * @brief Build the comparison of a field with a value of a list library type, the body of where_compare()
+       * @param descr the descriptor of the type
+       * @param nm the field
+       * @param op the comparison
+       * @param value_type the list library type of @p value (lUlongT, lStringT, ...)
+       * @param value the value
+       * @return the owner of the condition; empty for a null descriptor or a field the descriptor does not hold,
+       *         with the error number LEPARSECOND
+       * @throw FieldException with reason WrongType if @p value_type does not fit the field
+       */
+      [[nodiscard]] RawWherePtr raw_where_compare(const lDescr *descr, int nm, CompareOp op, int value_type,
+                                                  const lMultiType &value);
+
+   } // namespace detail
+
+   /**
+    * @brief The comparison of a field given at run time with a value, as lWhere("%T(%I <op> %<v>)") built it
+    *
+    * The operator is a CompareOp (`==` Equal, `!=` NotEqual, `<` Lower, `<=` LowerEqual, `>` Greater, `>=`
+    * GreaterEqual, and the named comparisons of lWhere()); it is not checked against the field type, as lWhere()
+    * did not check it. The value type selects the format placeholder: std::uint32_t `%u`, std::uint64_t `%lu`,
+    * std::int32_t `%d`, std::int64_t `%o`, double `%g`, bool `%b`, const char * `%s` (a string or a host
+    * field; the string is copied, nullptr is taken as no value).
+    *
+    * Differences from lWhere(): a value type that does not fit the field throws WrongType, where lWhere()
+    * aborted the process.
+    *
+    * @tparam V the value type, a #detail::RawCompareValue
+    * @param descr the descriptor of the type
+    * @param nm the field
+    * @param op the comparison
+    * @param value the value
+    * @return the owner of the condition; empty for a null descriptor or a field the descriptor does not hold
+    *         (also one a reduced descriptor leaves out) and when the condition or a string value cannot be
+    *         allocated, with the error number LEPARSECOND, as lWhere() left it
+    * @throw FieldException with reason WrongType if @p V does not fit the field's type
+    * @see Old form: lWhere() with one comparison, e.g. lWhere("%T(%I == %s)", descr, nm, value); core:
+    *      ocs::tom::make_compare(); typed form: ocs::tom::field<F>() with its operators
+    */
+   template <typename V>
+      requires detail::RawCompareValue<V>
+   [[nodiscard]] RawWherePtr where_compare(const lDescr *descr, const int nm, const CompareOp op, const V value) {
+      lMultiType v{};
+      if constexpr (std::is_same_v<V, std::uint32_t>) {
+         v.ul = value;
+      } else if constexpr (std::is_same_v<V, std::uint64_t>) {
+         v.ul64 = value;
+      } else if constexpr (std::is_same_v<V, std::int32_t>) {
+         v.i = value;
+      } else if constexpr (std::is_same_v<V, std::int64_t>) {
+         v.l = value;
+      } else if constexpr (std::is_same_v<V, double>) {
+         v.db = value;
+      } else if constexpr (std::is_same_v<V, bool>) {
+         v.b = value;
+      } else {
+         // the core copies the string; it does not change it
+         v.str = const_cast<char *>(value);
+      }
+      return detail::raw_where_compare(descr, nm, op, cull_type_of(detail::field_type_for<V>()), v);
+   }
+
+   /**
+    * @brief The selection of some fields of a type given at run time, as lIntVector2What() built it
+    *
+    * The fields are brought into the order of the descriptor and a field given twice is kept once, as before.
+    * Unlike the old int array, @p fields holds no #NoName terminator; a #NoName in it is a field the type does not
+    * hold.
+    *
+    * @param descr the descriptor of the type
+    * @param fields the fields
+    * @return the owner of the selection; empty for a null descriptor, no field, or a field the descriptor does not
+    *         hold (also one a reduced descriptor leaves out), with the error number LENAMENOT, as
+    *         lIntVector2What() left it
+    * @see Old form: lIntVector2What(), lWhat("%T(%I...)") without sub-selections; core: ocs::tom::make_what();
+    *      typed form: ocs::tom::what<T>(fields)
+    */
+   [[nodiscard]] RawWhatPtr what_of(const lDescr *descr, std::span<const int> fields);
+
+   /**
+    * @brief The selection of every field, of whatever type it is applied to
+    * @return the owner of the selection; empty only if there is no memory (the error number is set then)
+    * @see Old form: lWhatAll(), lWhat("%T(ALL)", descr) with a descriptor that is not null; core:
+    *      ocs::tom::make_what_special(); typed form: ocs::tom::what_all<T>()
+    */
+   [[nodiscard]] RawWhatPtr what_all();
 
    // ---------------------------------------------------------------------------------------------------------------
    // selections with the contract of the old interface

@@ -127,6 +127,11 @@ target_include_directories(test_tom_raw_ops PRIVATE "./")
 target_link_libraries(test_tom_raw_ops PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_raw_ops COMMAND test_tom_raw_ops)
 
+add_executable(test_tom_raw_build test_tom_raw_build.cc)
+target_include_directories(test_tom_raw_build PRIVATE "./")
+target_link_libraries(test_tom_raw_build PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_raw_build COMMAND test_tom_raw_build)
+
 # TRT-02, WHT-01, OPS-01, RAW-ACC and RAW-OPS: sources that must not compile. Each is compiled with the flags of
 # test_tom_handles as part of the build, which fails if one compiles or fails
 # with another error than the one it names; test_tom_handles holds the correct
@@ -193,4 +198,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_model DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_raw_access DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_raw_ops DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_raw_build DESTINATION testbin/${SGE_ARCH})
 endif ()

@@ -31,6 +31,7 @@
 #include "tom/ocs_Raw.h"
 
 #include <utility>
+#include <vector>
 
 #include "uti/sge_profiling.h"
 
@@ -214,6 +215,49 @@ namespace ocs::tom {
          return {};
       }
       return RawWhatPtr(copy_what(ep));
+   }
+
+   RawWherePtr detail::raw_where_compare(const lDescr *descr, const int nm, const CompareOp op, const int value_type,
+                                         const lMultiType &value) {
+      try {
+         return RawWherePtr(make_compare(descr, nm, op, value_type, value));
+      } catch (const FieldException &e) {
+         if (e.reason() == FieldException::Reason::WrongType) {
+            // lWhere() aborted the process for a value of another type than the field
+            throw;
+         }
+      } catch (const ListCoreError &) {
+         // lWhere() reported every failure of a comparison as a condition that did not parse
+      }
+      // a null descriptor or a field it does not hold: no condition, with the error number lWhere() left last
+      LERROR(LEPARSECOND);
+      return {};
+   }
+
+   RawWhatPtr what_of(const lDescr *descr, const std::span<const int> fields) {
+      std::vector<WhatEntry> entries;
+      entries.reserve(fields.size());
+      for (const int nm : fields) {
+         entries.push_back({nm, nullptr});
+      }
+      try {
+         return RawWhatPtr(make_what(descr, entries));
+      } catch (const FieldException &) {
+         // a null descriptor, no field, or a field the descriptor does not hold, all LENAMENOT in _lWhat()
+         LERROR(LENAMENOT);
+      } catch (const ListCoreError &e) {
+         LERROR(e.lerrno());
+      }
+      return {};
+   }
+
+   RawWhatPtr what_all() {
+      try {
+         return RawWhatPtr(make_what_special(WHAT_ALL));
+      } catch (const ListCoreError &e) {
+         LERROR(e.lerrno());
+      }
+      return {};
    }
 
    void append(lList *lp, RawElementPtr &&ep) {
