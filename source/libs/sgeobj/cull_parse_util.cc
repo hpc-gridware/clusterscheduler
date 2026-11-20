@@ -184,7 +184,8 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
             DRETURN(-5);
          }
       }
-      // the element holds every field of descr, and the case is the field's type: no access below throws
+      // the element holds every field of descr, and the case is the field's type: no access below throws a
+      // FieldException; setting a string or a host copies it and throws OutOfMemory if that fails (not caught)
       const std::optional<ocs::tom::FieldType> type = ocs_parse_field_type(descr, *rule);
       switch (type.value_or(ocs::tom::FieldType::Ref)) {
          /*
@@ -350,13 +351,17 @@ int cull_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, 
    DENTER(BASIS_LAYER);
 
    // the elements of lp share its descriptor, which holds nm_var with this type: the reads of nm_var do not throw
+   // (they only read, nothing is copied)
    const std::optional<ocs::tom::FieldType> type = ocs_parse_field_type(lp.descr(), nm_var);
 
    for (const auto ep_one : lp) {
-      for (ocs::tom::RawElement ep_other = lp.front(); ep_other;) {
+      // the iterator steps on before ep_other may be erased, erase() of the current element would invalidate it
+      for (auto it = lp.begin(); it != lp.end();) {
+         const ocs::tom::RawElement ep_other = *it;
          if (ep_one.raw() == ep_other.raw()) {
             break;
          }
+         ++it;
          bool is_there = false;
          switch (type.value_or(ocs::tom::FieldType::Ref)) {
             case ocs::tom::FieldType::Double:
@@ -405,11 +410,9 @@ int cull_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, 
          } /* end switch */
 
          // the element that comes later in the list is kept, because ep_other is always before ep_one
-         const ocs::tom::RawElement next(ep_other.raw()->next);
          if (is_there) {
             lp.erase(ep_other);
          }
-         ep_other = next;
       }
    }
    DRETURN(0);

@@ -30,6 +30,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include <sstream>
@@ -42,14 +43,19 @@
 #include "sgeobj/sge_cull_xml.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_RDE.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_TEST.h"
 #include "sgeobj/tom/ocs_tom_XMLA.h"
 #include "sgeobj/tom/ocs_tom_XMLE.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Raw.h"
+#include "tom/ocs_Select.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_time.h"
 
 #include "ocs_module_test.h"
 
@@ -233,8 +239,9 @@ static void test_parse_string_list() {
       int pn_rule[] = {PN_path, PN_host, 0};
       const int ret = parse_words({"/p", "h1", "/q", "NONE"}, PN_Type, pn_rule, &lp);
       const ocs::tom::RawListPtr list(lp);
-      const auto first = list->front();
-      const ocs::tom::ConstRawElement second(first.raw() != nullptr ? first.raw()->next : nullptr);
+      auto it = list->begin();
+      const ocs::tom::RawElement first = it != list->end() ? *it++ : nullptr;
+      const ocs::tom::RawElement second = it != list->end() ? *it : nullptr;
       CHECK(8, "a host word is set, a host word NONE leaves the field unset",
             ret == 0 && same(first.get<ocs::tom::Host>(PN_host).c_str(), "h1") &&
                second.get<ocs::tom::Host>(PN_host).c_str() == nullptr);
@@ -266,7 +273,7 @@ static void test_parse_string_list() {
 }
 
 /**
- * @brief cull_compress_definition_list() [T13-T17]
+ * @brief cull_compress_definition_list() [T13-T17, T33]
  * @return nothing; CHECK records the results
  */
 static void test_compress() {
@@ -326,6 +333,36 @@ static void test_compress() {
                cull_compress_definition_list(*list, ST_name, SPA_switch_arg, 0) == -5 &&
                cull_compress_definition_list(*single, ST_name, SPA_switch_arg, 0) == 0 &&
                cull_compress_definition_list(nullptr, ST_name, ST_id, 0) == 0 && list->size() == 2);
+   }
+   {
+      // the marker in SPA_argval_lStringT tells the elements apart, it is no part of the key
+      const auto add = [](const ocs::tom::List<ocs::tom::SPA> list, const char *name, const char *value,
+                          const char *marker) {
+         auto ep = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
+         ocs::tom::set<SPA_switch_val>(ep, name);
+         ocs::tom::set<SPA_switch_arg>(ep, value);
+         ocs::tom::set<SPA_argval_lStringT>(ep, marker);
+         list.push_back(std::move(ep));
+      };
+      // double keys compare name and value with sge_strnullcmp(), which takes two nullptr as equal: an unset
+      // value, and even an unset name and value, is a key like any other (p1 goes for p2, p4 for p5)
+      auto double_list = ocs::tom::ListPtr<ocs::tom::SPA>::create("spa");
+      add(*double_list, "a", nullptr, "p1");
+      add(*double_list, "a", nullptr, "p2");
+      add(*double_list, "a", "1", "p3");
+      add(*double_list, nullptr, nullptr, "p4");
+      add(*double_list, nullptr, nullptr, "p5");
+      const int double_ret = cull_compress_definition_list(*double_list, SPA_switch_val, SPA_switch_arg, 1);
+      // a single key needs a name in the later element: two unset names stay, a repeated set name does not
+      auto single_list = ocs::tom::ListPtr<ocs::tom::SPA>::create("spa");
+      add(*single_list, nullptr, "x", "q1");
+      add(*single_list, nullptr, "y", "q2");
+      add(*single_list, "a", "z", "q3");
+      add(*single_list, "a", "w", "q4");
+      const int single_ret = cull_compress_definition_list(*single_list, SPA_switch_val, SPA_switch_arg, 0);
+      CHECK(33, "string keys with unset values: double keys take two nullptr as equal, a single key needs a name",
+            double_ret == 0 && join_strings(*double_list, SPA_argval_lStringT) == "p2 p3 p5" && single_ret == 0 &&
+               join_strings(*single_list, SPA_argval_lStringT) == "q1 q2 q4");
    }
 }
 
@@ -493,6 +530,107 @@ static void test_xml_field_walk() {
 }
 
 /**
+ * @brief Fill the plain fields of a TEST element that the XML tests set
+ * @param ep the element
+ * @param uint32 the value of TEST_uint32
+ * @param uint64 the value of TEST_uint64
+ */
+static void set_test_numbers(const ocs::tom::Element<ocs::tom::TEST> ep, const std::uint32_t uint32,
+                             const std::uint64_t uint64) {
+   ocs::tom::set<TEST_uint32>(ep, uint32);
+   ocs::tom::set<TEST_uint64>(ep, uint64);
+}
+
+/**
+ * @brief lWriteElemXMLTo() on time stamps, object fields and a reduced element [T34-T37]
+ * @return nothing; CHECK records the results
+ */
+static void test_xml_values() {
+   {
+      // a Uint64 field whose name contains "time" is written as a time stamp: as whole seconds (value / 1000000)
+      // if SGE_QSTAT_SGE_COMPATIBILITY is set, else as sge_ctime64_xml() formats it. The writer reads the variable
+      // once per process, at the first such field; the test does not change the environment, so getenv() here
+      // decides the same way. Either text differs from the plain number, which a field without "time" gets.
+      const std::uint64_t stamp = 1700000000123456;
+      std::string stamp_text;
+      if (getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr) {
+         stamp_text = std::to_string(stamp / 1000000);
+      } else {
+         dstring text = DSTRING_INIT;
+         stamp_text = sge_ctime64_xml(stamp, &text);
+         sge_dstring_free(&text);
+      }
+      auto rde = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
+      ocs::tom::set<RDE_time>(rde, stamp);
+      ocs::tom::set<RDE_amount>(rde, 2.5);
+      std::ostringstream os;
+      lWriteElemXMLTo(*rde, os);
+      CHECK(34, "a Uint64 field named *time* is written as a time stamp, not as the number",
+            os.str() == "<RDE_time>" + stamp_text + "</RDE_time>\n<RDE_amount>2.5</RDE_amount>\n" &&
+               stamp_text != std::to_string(stamp));
+   }
+
+   // an object field is written even when unset, as an empty tag (only lists, strings and references are
+   // left out); a set object follows on a new line at the same indentation, nested objects alike. A time
+   // stamp 0 is "0" in both forms of the time branch.
+   auto rde = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
+   ocs::tom::set<RDE_amount>(rde, 0.5);
+   auto inner = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
+   set_test_numbers(*inner, 2, 0);
+   ocs::tom::set((*inner).raw(), TEST_obj_any, ocs::tom::RawElementPtr(std::move(rde)));
+   auto outer = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
+   set_test_numbers(*outer, 1, 9);
+   ocs::tom::set((*outer).raw(), TEST_obj_any, ocs::tom::RawElementPtr(std::move(inner)));
+
+   const std::string inner_text = "<TEST_bool>false</TEST_bool>\n"
+                                  "<TEST_uint32>2</TEST_uint32>\n"
+                                  "<TEST_uint64>0</TEST_uint64>\n"
+                                  "<TEST_int>0</TEST_int>\n"
+                                  "<TEST_long>0</TEST_long>\n"
+                                  "<TEST_double>0</TEST_double>\n"
+                                  "<TEST_host></TEST_host>\n"
+                                  "<TEST_obj_jb></TEST_obj_jb>\n"
+                                  "<TEST_obj_any>\n"
+                                  "<RDE_time>0</RDE_time>\n"
+                                  "<RDE_amount>0.5</RDE_amount>\n"
+                                  "</TEST_obj_any>\n";
+   {
+      std::ostringstream os;
+      lWriteElemXMLTo((*outer).get<TEST_obj_any>(), os);
+      CHECK(35, "an unset object is an empty tag, a set one its fields; an unset host is an empty tag, a reference "
+                "and an unset string are left out",
+            os.str() == inner_text);
+   }
+   {
+      std::ostringstream os;
+      lWriteElemXMLTo(*outer, os);
+      CHECK(36, "a nested object is written inside the object field holding it",
+            os.str() == "<TEST_bool>false</TEST_bool>\n"
+                        "<TEST_uint32>1</TEST_uint32>\n"
+                        "<TEST_uint64>9</TEST_uint64>\n"
+                        "<TEST_int>0</TEST_int>\n"
+                        "<TEST_long>0</TEST_long>\n"
+                        "<TEST_double>0</TEST_double>\n"
+                        "<TEST_host></TEST_host>\n"
+                        "<TEST_obj_jb></TEST_obj_jb>\n"
+                        "<TEST_obj_any>\n" +
+                           inner_text + "</TEST_obj_any>\n");
+   }
+   {
+      // the walk goes over the fields the reduced descriptor holds; the absent ones are not written at all
+      auto plain = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
+      set_test_numbers(*plain, 3, 4);
+      ocs::tom::set<TEST_string>(plain, "s<");
+      ocs::tom::set<TEST_double>(plain, 1.5);
+      const auto reduced = (*plain).select(ocs::tom::what<TEST_uint32, TEST_string>());
+      std::ostringstream os;
+      lWriteElemXMLTo(*reduced, os);
+      CHECK(37, "a reduced element writes only the fields it holds",
+            os.str() == "<TEST_uint32>3</TEST_uint32>\n<TEST_string>s&lt;</TEST_string>\n");
+   }
+}
+
+/**
  * @brief lWriteElemXMLTo() on an XML document: head, attributes and printed elements [T32]
  * @return nothing; CHECK records the results
  */
@@ -541,7 +679,7 @@ int main(int argc, char *argv[]) {
        {"compress string, unsigned and host keys", "compress with double keys",
         "compress by a list, 64 bit unsigned and foreign key, and an empty handle"},
        "the earlier elements of a repeated key are removed, the errors give -4 and -5 from two elements on",
-       {}, {13, 14, 15, 16, 17}, test_compress},
+       {}, {13, 14, 15, 16, 17, 33}, test_compress},
       {"PARSE-03", "printing a list by a field table",
        "uni_print_list() gives the former text for strings, hosts and numbers with every flag, into a stream, a "
        "buffer and a file",
@@ -559,5 +697,11 @@ int main(int argc, char *argv[]) {
        "lWriteElemXMLTo() writes the head, its attributes and the printed elements of an XML document",
        {"build a document with two elements and write it"}, "the output equals the former output", {}, {32},
        test_xml_document},
+      {"PARSE-06", "writing time stamps, object fields and reduced elements as XML",
+       "lWriteElemXMLTo() writes a Uint64 field named *time* as a time stamp, unset, set and nested objects, and "
+       "only the fields a reduced element holds",
+       {"write a time stamp", "write an element with an unset and a set object field",
+        "write an object nesting another object", "write a reduced element"},
+       "the output equals the output the former code derives", {}, {34, 35, 36, 37}, test_xml_values},
    });
 }
