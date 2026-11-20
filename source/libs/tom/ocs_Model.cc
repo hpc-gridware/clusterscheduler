@@ -36,6 +36,7 @@
 #include "uti/sge_log.h"
 
 #include "tom/msg_cull.h"
+#include "tom/ocs_ElementCore.h"
 #include "tom/ocs_Model.h"
 
 namespace ocs::tom {
@@ -121,23 +122,25 @@ namespace ocs::tom {
             return false;
          }
          const int base = table.fields[0].nm;
+         // the position of a field as text, built on the error path only
+         const auto where = [&type](const std::size_t i) { return "type " + type + ", field " + std::to_string(i); };
          for (std::size_t i = 0; i < table.size; i++) {
             const FieldInfo &field = table.fields[i];
-            const std::string where = "type " + type + ", field " + std::to_string(i);
             if (field.name == nullptr) {
-               reason = where + " (number " + std::to_string(field.nm) + ") has no name";
+               reason = where(i) + " (number " + std::to_string(field.nm) + ") has no name";
                return false;
             }
             if (field.nm != base + static_cast<int>(i)) {
-               reason = where + " (" + field.name + ") has the number " + std::to_string(field.nm) + ", expected " +
-                        std::to_string(base + static_cast<int>(i)) + ": the field numbers are not consecutive";
+               reason = where(i) + " (" + field.name + ") has the number " + std::to_string(field.nm) +
+                        ", expected " + std::to_string(base + static_cast<int>(i)) +
+                        ": the field numbers are not consecutive";
                return false;
             }
             const lDescr &entry = table.descr[i];
             if (entry.nm != field.nm || mt_get_type(entry.mt) != cull_type_of(field.type)) {
-               reason = where + " (" + field.name + "): the descriptor holds field " + std::to_string(entry.nm) +
-                        " of list type " + std::to_string(mt_get_type(entry.mt)) + ", the table field " +
-                        std::to_string(field.nm) + " of list type " + std::to_string(cull_type_of(field.type));
+               reason = where(i) + " (" + field.name + "): the descriptor holds field " + std::to_string(entry.nm) +
+                        " of type " + type_name(mt_get_type(entry.mt)) + ", the table field " +
+                        std::to_string(field.nm) + " of type " + type_name(cull_type_of(field.type));
                return false;
             }
          }
@@ -260,11 +263,14 @@ namespace ocs::tom {
     * installed again.
     *
     * @param model the model, whose tables must live for the rest of the program
+    * @param[out] reason if not nullptr, receives the violated rule when the model is rejected; left as it is
+    *             when the model is installed. For the module test, which checks that each inconsistent model
+    *             is rejected for the rule it breaks.
     * @return true if the model is installed; false if it is not consistent (see build_index()), in which case the
     *         violated rule is logged as critical and the installed model is left as it was
     * @throw std::bad_alloc if memory for the indexes is exhausted
     */
-   bool install_model(const Model &model) {
+   bool install_model(const Model &model, std::string *reason) {
       if (const Index *current = installed.load(std::memory_order_acquire);
           current != nullptr && same_model(*current, model)) {
          return true;
@@ -281,10 +287,13 @@ namespace ocs::tom {
          }
       }
       if (index == nullptr) {
-         std::string reason;
-         index = build_index(model, reason);
+         std::string rule;
+         index = build_index(model, rule);
          if (index == nullptr) {
-            CRITICAL(MSG_CULL_MODELREJECTED_S, reason.c_str());
+            CRITICAL(MSG_CULL_MODELREJECTED_S, rule.c_str());
+            if (reason != nullptr) {
+               *reason = rule;
+            }
             return false;
          }
          built->push_back(index);

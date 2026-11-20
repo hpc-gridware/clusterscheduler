@@ -50,6 +50,7 @@
 
 #include <cstddef>
 #include <span>
+#include <string>
 #include <string_view>
 
 #include "tom/cull_types.h"
@@ -68,7 +69,7 @@ namespace ocs::tom {
       std::span<const SubTypeEntry> sub_types;   ///< the sub-type of every list and object field that has one
    };
 
-   bool install_model(const Model &model);
+   bool install_model(const Model &model, std::string *reason = nullptr);
 
    void uninstall_model() noexcept;
 

@@ -117,7 +117,17 @@ target_include_directories(test_tom_model PRIVATE "./")
 target_link_libraries(test_tom_model PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_model COMMAND test_tom_model)
 
-# TRT-02, WHT-01 and OPS-01: sources that must not compile. Each is compiled with the flags of
+add_executable(test_tom_raw_access test_tom_raw_access.cc)
+target_include_directories(test_tom_raw_access PRIVATE "./")
+target_link_libraries(test_tom_raw_access PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_raw_access COMMAND test_tom_raw_access)
+
+add_executable(test_tom_raw_ops test_tom_raw_ops.cc)
+target_include_directories(test_tom_raw_ops PRIVATE "./")
+target_link_libraries(test_tom_raw_ops PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_raw_ops COMMAND test_tom_raw_ops)
+
+# TRT-02, WHT-01, OPS-01, RAW-ACC and RAW-OPS: sources that must not compile. Each is compiled with the flags of
 # test_tom_handles as part of the build, which fails if one compiles or fails
 # with another error than the one it names; test_tom_handles holds the correct
 # counterpart of each.
@@ -129,7 +139,9 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                undump_into_wrong_handle unique_by_number_field free_key_of_other_type
                free_key_not_of_sub_type free_bits_on_64_bit_field free_handle_foreign_field
                set_atomic_on_hashed_field get_atomic_on_32_bit_field set_atomic_on_const hash_on_bool_field
-               pack_type_with_int_field merge_by_key_double_key)
+               pack_type_with_int_field merge_by_key_double_key
+               raw_set_std_string raw_get_mutable_from_const raw_handle_mutable_from_const raw_owner_copied
+               raw_set_typed_owner)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}
@@ -179,4 +191,6 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_ops_layout DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_ops_atomic DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_model DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_raw_access DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_raw_ops DESTINATION testbin/${SGE_ARCH})
 endif ()

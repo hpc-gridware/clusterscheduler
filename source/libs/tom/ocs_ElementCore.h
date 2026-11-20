@@ -48,11 +48,24 @@ namespace ocs::tom {
     * The descriptor of every element of a type, full or reduced, has the full
     * length, so the position is the field number minus the first field number.
     *
-    * @param descr the descriptor
+    * Inline, because every access with a field known only at run time goes
+    * through it: a subtraction, one range check against the descriptor header
+    * and one compare.
+    *
+    * @param descr the descriptor, or nullptr
     * @param nm the field number
-    * @return the position, or -1 if the field does not belong to the type
+    * @return the position, or -1 if the descriptor is null or the field does not belong to the type
     */
-   int field_pos(const lDescr *descr, int nm) noexcept;
+   [[nodiscard]] inline int field_pos(const lDescr *descr, const int nm) noexcept {
+      if (descr == nullptr) {
+         return -1;
+      }
+      const int pos = nm - descr[0].nm;
+      if (pos < 0 || static_cast<std::uint32_t>(pos) >= ocs_cull_descr_header_of(descr)->n || descr[pos].nm != nm) {
+         return -1;
+      }
+      return pos;
+   }
 
    /**
     * @brief The position of a field a descriptor holds: a field of its type that a reduction did not leave out
@@ -189,13 +202,34 @@ namespace ocs::tom {
     * in the order of the old interface: the element, the field's type, its
     * presence in a reduced element, and the field type.
     *
+    * The one order of these checks for every run-time access: the old
+    * getters and setters by name, the run-time members of the typed handles
+    * (ConstElement<T>::get<V>(int), Element<T>::set(int, V)) and the free
+    * accessors on raw pointers of ocs_Raw.h. Inline, so that a run-time access
+    * costs no call on its good path.
+    *
     * @param ep the element
     * @param nm the field number
     * @param type the field type the caller reads or writes
     * @return the field's position
     * @throw FieldException with reason NullElement, ForeignField, AbsentField or WrongType
     */
-   int checked_pos(const lListElem *ep, int nm, FieldType type);
+   [[nodiscard]] inline int checked_pos(const lListElem *ep, const int nm, const FieldType type) {
+      if (ep == nullptr) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::NullElement, nm, nullptr);
+      }
+      const int pos = field_pos(ep->descr, nm);
+      if (pos < 0) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::ForeignField, nm, ep->descr);
+      }
+      if (ep->descr[pos].off == OCS_CULL_ABSENT) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::AbsentField, nm, ep->descr);
+      }
+      if (field_type_of(ep->descr[pos].mt) != type) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::WrongType, nm, ep->descr, ep->descr);
+      }
+      return pos;
+   }
 
    /**
     * @brief Store a string or host value, copying it and maintaining the hash table

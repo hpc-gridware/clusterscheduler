@@ -370,17 +370,6 @@ namespace ocs::tom {
       std::abort();
    }
 
-   int field_pos(const lDescr *descr, const int nm) noexcept {
-      if (descr == nullptr) {
-         return -1;
-      }
-      const int pos = nm - descr[0].nm;
-      if (pos < 0 || static_cast<uint32_t>(pos) >= ocs_cull_descr_header_of(descr)->n || descr[pos].nm != nm) {
-         return -1;
-      }
-      return pos;
-   }
-
    int present_pos(const lDescr *descr, const int nm) noexcept {
       const int pos = field_pos(descr, nm);
       if (pos < 0 || descr[pos].off == OCS_CULL_ABSENT) {
@@ -466,23 +455,6 @@ namespace ocs::tom {
       }
       // both end at the same position, or one is longer
       return mt_get_type(a[i].mt) == lEndT && mt_get_type(b[i].mt) == lEndT;
-   }
-
-   int checked_pos(const lListElem *ep, const int nm, const FieldType type) {
-      if (ep == nullptr) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::NullElement, nm, nullptr);
-      }
-      const int pos = field_pos(ep->descr, nm);
-      if (pos < 0) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::ForeignField, nm, ep->descr);
-      }
-      if (ep->descr[pos].off == OCS_CULL_ABSENT) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::AbsentField, nm, ep->descr);
-      }
-      if (field_type_of(ep->descr[pos].mt) != type) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::WrongType, nm, ep->descr, ep->descr);
-      }
-      return pos;
    }
 
    bool store_string(lListElem *ep, const int pos, const char *value) {

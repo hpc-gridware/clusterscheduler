@@ -383,11 +383,35 @@ namespace {
 } // namespace
 
 /**
+ * @brief Whether a model is rejected, and for the rule expected
+ *
+ * The rule is recognised by a part of the reason install_model() reports, so
+ * that a model rejected for another rule than the one it breaks fails the check.
+ *
+ * @param model the model to install
+ * @param rule a text the reason must contain
+ * @return true if the install failed and the reason contains @p rule
+ */
+static bool
+rejected_for(const ocs::tom::Model &model, const char *rule) {
+   std::string reason;
+   if (ocs::tom::install_model(model, &reason)) {
+      std::printf("the model was installed, expected a rejection for \"%s\"\n", rule);
+      return false;
+   }
+   if (reason.find(rule) == std::string::npos) {
+      std::printf("the model was rejected for \"%s\", expected \"%s\"\n", reason.c_str(), rule);
+      return false;
+   }
+   return true;
+}
+
+/**
  * @brief Every rule of the consistency check rejects a model that breaks only that rule
  *
  * A small valid model is installed first, to show that each invalid model
- * fails for the one broken rule only; the model of the Cluster Scheduler is
- * installed again at the end.
+ * fails for the one broken rule only, which the reason of the rejection
+ * names; the model of the Cluster Scheduler is installed again at the end.
  *
  * @return nothing; CHECK records the results
  */
@@ -396,28 +420,36 @@ test_rules() {
    const bool valid = ocs::tom::install_model({valid_types, valid_subs}) &&
                       std::strcmp(ocs::tom::field_name(2), "TA_list") == 0 && ocs::tom::sub_type(2) == tb_descr;
    CHECK(25, "the small valid model installs and answers", valid);
-   CHECK(26, "a field without a name is rejected", !ocs::tom::install_model({noname_types, {}}));
-   CHECK(27, "a type without a name is rejected", !ocs::tom::install_model({unnamed_types, {}}));
-   CHECK(28, "a type without fields is rejected", !ocs::tom::install_model({empty_types, {}}));
-   CHECK(29, "field numbers that are not consecutive are rejected", !ocs::tom::install_model({gap_types, {}}));
+   CHECK(26, "a field without a name is rejected",
+         rejected_for({noname_types, {}}, "type TA, field 1 (number 2) has no name"));
+   CHECK(27, "a type without a name is rejected", rejected_for({unnamed_types, {}}, "a type has no name"));
+   CHECK(28, "a type without fields is rejected",
+         rejected_for({empty_types, {}}, "type TA has no descriptor or no fields"));
+   CHECK(29, "field numbers that are not consecutive are rejected",
+         rejected_for({gap_types, {}}, "the field numbers are not consecutive"));
    CHECK(30, "a descriptor whose first entry is not the table's first field is rejected",
-         !ocs::tom::install_model({first_types, {}}));
-   CHECK(31, "a descriptor that differs from the table in a later entry is rejected",
-         !ocs::tom::install_model({later_types, {}}));
+         rejected_for({first_types, {}}, "field 0 (TA_one): the descriptor holds field 5 of type lUlongT"));
+   CHECK(31, "a descriptor that differs from the table in a later entry is rejected, naming both types",
+         rejected_for({later_types, {}},
+                      "field 1 (TA_list): the descriptor holds field 2 of type lStringT, the table field 2 of type "
+                      "lListT"));
    CHECK(32, "a descriptor with more entries than the table has fields is rejected",
-         !ocs::tom::install_model({long_types, {}}));
-   CHECK(33, "a type name that occurs twice is rejected", !ocs::tom::install_model({same_name_types, {}}));
-   CHECK(34, "a field name that occurs twice is rejected", !ocs::tom::install_model({dup_name_types, {}}));
+         rejected_for({long_types, {}}, "the descriptor has more entries than the 2 fields"));
+   CHECK(33, "a type name that occurs twice is rejected",
+         rejected_for({same_name_types, {}}, "the type name TA occurs twice"));
+   CHECK(34, "a field name that occurs twice is rejected",
+         rejected_for({dup_name_types, {}}, "the field name TA_one occurs twice"));
    CHECK(35, "a sub-type on a field that is neither a list nor an object field is rejected",
-         !ocs::tom::install_model({valid_types, scalar_subs}));
+         rejected_for({valid_types, scalar_subs}, "TA_one, which is neither a list nor an object field"));
    CHECK(36, "two sub-type entries for the same field are rejected",
-         !ocs::tom::install_model({valid_types, twice_subs}));
-   CHECK(38, "types with overlapping field numbers are rejected", !ocs::tom::install_model({overlap_types, {}}));
+         rejected_for({valid_types, twice_subs}, "TA_list has more than one sub-type entry"));
+   CHECK(37, "types with overlapping field numbers are rejected",
+         rejected_for({overlap_types, {}}, "overlap those of type TC"));
    const bool kept = ocs::tom::sub_type(2) == tb_descr;
    const bool again = ocs::tom::install_model(ocs::tom::gcs_model()) &&
                       ocs::tom::find_field("JB_job_number") == JB_job_number &&
                       ocs::tom::find_field("TA_one") == NoName;
-   CHECK(37, "the rejected models left the small one in place; the model of the Cluster Scheduler installs again",
+   CHECK(38, "the rejected models left the small one in place; the model of the Cluster Scheduler installs again",
          kept && again);
 }
 
@@ -482,10 +514,11 @@ int main(int argc, char *argv[]) {
        "no name space; the lookups answer as in the main thread",
        {}, {23, 24}, test_other_thread},
       {"TOM-MODEL-10", "rules",
-       "every rule of the consistency check rejects a model that breaks only that rule",
+       "every rule of the consistency check rejects a model that breaks only that rule, and names that rule",
        {"install a small valid model", "install one model per rule that breaks only that rule",
         "install types with overlapping field numbers", "install the model of the Cluster Scheduler again"},
-       "the valid model installs; every other install fails and leaves it in place; the model installs again",
+       "the valid model installs; every other install fails for the rule it breaks and leaves the valid one in "
+       "place; the model installs again",
        {}, {25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38}, test_rules},
    });
 }

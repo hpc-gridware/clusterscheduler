@@ -40,6 +40,7 @@ target_sources(cull PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_ListOpsCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_Model.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_PrintCore.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_Raw.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_SelectCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_SoftPath.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_PackCore.cc

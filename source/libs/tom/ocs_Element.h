@@ -421,26 +421,96 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief The slot index of a field given at run time, checked as the old interface checks it
-       * @tparam V the value type the caller reads or writes
-       * @param ep the element, not nullptr
-       * @param nm the field number
-       * @return the index into the element's values
+       * @brief The value of a slot as a plain value type, for a field whose type was checked against it
+       * @tparam V the value type, one of the nine plain types of #field_type_for
+       * @param value the slot of a field of the field type #field_type_for gives for @p V
+       * @return the value
        */
       template <typename V>
-      inline int runtime_slot(const lListElem *ep, const int nm) {
-         const int pos = field_pos(ep->descr, nm);
-         if (pos < 0) [[unlikely]] {
-            throw_field_exception(FieldException::Reason::ForeignField, nm, ep->descr);
+      [[nodiscard]] inline V plain_value(const lMultiType &value) noexcept {
+         constexpr FieldType type = field_type_for<V>();
+         if constexpr (type == FieldType::Uint32) {
+            return value.ul;
+         } else if constexpr (type == FieldType::Uint64) {
+            return value.ul64;
+         } else if constexpr (type == FieldType::Int32) {
+            return value.i;
+         } else if constexpr (type == FieldType::Int64) {
+            return value.l;
+         } else if constexpr (type == FieldType::Double) {
+            return value.db;
+         } else if constexpr (type == FieldType::Bool) {
+            return value.b;
+         } else if constexpr (type == FieldType::String) {
+            return value.str;
+         } else if constexpr (type == FieldType::Host) {
+            return Host{value.host};
+         } else {
+            return value.ref;
          }
-         if (field_type_of(ep->descr[pos].mt) != field_type_for<V>()) [[unlikely]] {
-            throw_field_exception(FieldException::Reason::WrongType, nm, ep->descr, ep->descr);
+      }
+
+      /**
+       * @brief Read a plain field given at run time, checked as the old getters by name (lGetUlong(), ...) check it
+       *
+       * The one implementation behind the run-time member ConstElement<T>::get<V>(int) and the free accessor
+       * ocs::tom::get<V>(const lListElem *, int) of ocs_Raw.h, so both give the same value and the same reason.
+       * The checks are those of #checked_pos, in its order.
+       *
+       * @tparam V the value type, one of the nine plain types of #field_type_for
+       * @param ep the element, or nullptr
+       * @param nm the field number
+       * @return the value
+       * @throw FieldException with reason NullElement, ForeignField, AbsentField or WrongType
+       */
+      template <typename V>
+      [[nodiscard]] inline V runtime_get(const lListElem *ep, const int nm) {
+         return plain_value<V>(slot(ep, checked_pos(ep, nm, field_type_for<V>())));
+      }
+
+      /**
+       * @brief Write a plain field given at run time, checked as the old setters by name (lSetUlong(), ...) check it
+       *
+       * The one implementation behind the run-time member Element<T>::set(int, V) and the free accessor
+       * ocs::tom::set(lListElem *, int, V) of ocs_Raw.h. Strings and host names are copied and the old value
+       * freed; the hash table of the owning list is maintained.
+       *
+       * @tparam V the value type, one of the nine plain types of #field_type_for
+       * @param ep the element, or nullptr
+       * @param nm the field number
+       * @param value the value
+       * @throw FieldException with reason NullElement, ForeignField, AbsentField, WrongType, OutOfMemory if a
+       *        string cannot be copied, or in a debug build DuplicateKey when another element of the list holds
+       *        the value of a unique field
+       */
+      template <typename V>
+      inline void runtime_set(lListElem *ep, const int nm, const V value) {
+         constexpr FieldType type = field_type_for<V>();
+         const int pos = checked_pos(ep, nm, type);
+         lMultiType &slot_value = slot(ep, pos);
+         if constexpr (type == FieldType::String || type == FieldType::Host) {
+            if (!store_string(ep, pos, static_cast<const char *>(value))) [[unlikely]] {
+               throw_field_exception(FieldException::Reason::OutOfMemory, nm, ep->descr);
+            }
+         } else if constexpr (type == FieldType::Uint32 || type == FieldType::Uint64) {
+            if (needs_hashed_store(ep, pos)) {
+               store_hashed_number(ep, pos, value);
+            } else if constexpr (type == FieldType::Uint32) {
+               slot_value.ul = value;
+            } else {
+               slot_value.ul64 = value;
+            }
+         } else if constexpr (type == FieldType::Int32) {
+            slot_value.i = value;
+         } else if constexpr (type == FieldType::Int64) {
+            slot_value.l = value;
+         } else if constexpr (type == FieldType::Double) {
+            slot_value.db = value;
+         } else if constexpr (type == FieldType::Bool) {
+            slot_value.b = value;
+         } else {
+            slot_value.ref = value;
          }
-         const int off = ep->descr[pos].off;
-         if (off == OCS_CULL_ABSENT) [[unlikely]] {
-            throw_field_exception(FieldException::Reason::AbsentField, nm, ep->descr);
-         }
-         return pos + off;
       }
 
    } // namespace detail
@@ -640,37 +710,22 @@ namespace ocs::tom {
 
       /**
        * @brief Read a field given only at run time, checked as the old getters by name (lGetUlong(), ...) check it
+       *
+       * Runs on the core of the free accessor ocs::tom::get<V>(const lListElem *, int) (detail::runtime_get()),
+       * so both give the same value and the same reason; only an empty handle is reported as EmptyHandle here.
+       *
        * @tparam V the value type, which must match the field's type
        * @param nm the field number
        * @return the value
-       * @throw FieldException if the handle is empty, or the field is foreign, of another type or absent
+       * @throw FieldException with reason EmptyHandle if the handle is empty, otherwise ForeignField,
+       *        AbsentField or WrongType, in this order
        */
       template <typename V>
       [[nodiscard]] V get(const int nm) const {
          if (ep_ == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, nm, T::descriptor.e);
          }
-         const lMultiType &value = ep_->cont[detail::runtime_slot<V>(ep_, nm)];
-         constexpr FieldType type = detail::field_type_for<V>();
-         if constexpr (type == FieldType::Uint32) {
-            return value.ul;
-         } else if constexpr (type == FieldType::Uint64) {
-            return value.ul64;
-         } else if constexpr (type == FieldType::Int32) {
-            return value.i;
-         } else if constexpr (type == FieldType::Int64) {
-            return value.l;
-         } else if constexpr (type == FieldType::Double) {
-            return value.db;
-         } else if constexpr (type == FieldType::Bool) {
-            return value.b;
-         } else if constexpr (type == FieldType::String) {
-            return value.str;
-         } else if constexpr (type == FieldType::Host) {
-            return Host{value.host};
-         } else {
-            return value.ref;
-         }
+         return detail::runtime_get<V>(ep_, nm);
       }
 
       /**
@@ -1045,49 +1100,23 @@ namespace ocs::tom {
       /**
        * @brief Set a field given only at run time, checked as the old setters by name (lSetUlong(), ...) check it
        *
-       * For plain values only: numbers, bool, strings, host names and references.
+       * For plain values only: numbers, bool, strings, host names and references. Runs on the core of the
+       * free accessor ocs::tom::set(lListElem *, int, V) (detail::runtime_set()).
        *
        * @tparam V the value type, which must match the field's type
        * @param nm the field number
        * @param value the value
-       * @throw FieldException if the handle is empty, or the field is foreign, of another type or absent,
-       *        or a string cannot be copied; in a debug build also with reason DuplicateKey when another
-       *        element of the list holds the value of a unique field
+       * @throw FieldException with reason EmptyHandle if the handle is empty, otherwise ForeignField,
+       *        AbsentField or WrongType in this order, OutOfMemory if a string cannot be copied; in a debug
+       *        build also with reason DuplicateKey when another element of the list holds the value of a
+       *        unique field
        */
       template <typename V>
       void set(const int nm, const V value) const {
          if (this->ep_ == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, nm, T::descriptor.e);
          }
-         const int s = detail::runtime_slot<V>(this->ep_, nm);
-         const int pos = field_pos(this->ep_->descr, nm);
-         constexpr FieldType type = detail::field_type_for<V>();
-         lMultiType &slot_value = this->ep_->cont[s];
-         if constexpr (type == FieldType::String || type == FieldType::Host) {
-            if (!store_string(this->ep_, pos, static_cast<const char *>(value))) [[unlikely]] {
-               throw_field_exception(FieldException::Reason::OutOfMemory, nm, this->ep_->descr);
-            }
-         } else if constexpr (type == FieldType::Uint32 || type == FieldType::Uint64) {
-            if (needs_hashed_store(this->ep_, pos)) {
-               store_hashed_number(this->ep_, pos, value);
-            } else if constexpr (type == FieldType::Uint32) {
-               slot_value.ul = value;
-            } else {
-               slot_value.ul64 = value;
-            }
-         } else {
-            if constexpr (type == FieldType::Int32) {
-               slot_value.i = value;
-            } else if constexpr (type == FieldType::Int64) {
-               slot_value.l = value;
-            } else if constexpr (type == FieldType::Double) {
-               slot_value.db = value;
-            } else if constexpr (type == FieldType::Bool) {
-               slot_value.b = value;
-            } else {
-               slot_value.ref = value;
-            }
-         }
+         detail::runtime_set<V>(this->ep_, nm, value);
       }
 
       /**
