@@ -26,6 +26,7 @@
 #include <memory>
 #include <array>
 #include <type_traits>
+#include <utility>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
@@ -764,7 +765,7 @@ namespace {
       // Create parameter object containing the parsed switch information from the client
       // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP_Type
       Parameter parameter(ocs::tom::ConstList<ocs::tom::SPP>(task->data_list), packet);
-      lFreeList(&task->data_list);
+      task->reset_data_list();
 
       if constexpr (std::is_same_v<Parameter, ocs::QConfParameter>) {
          if (!qconf_edit_read_permitted(packet, task, parameter)) {
@@ -930,7 +931,7 @@ namespace {
 #endif
 
       // Pass responsibility for the bundle to gdi
-      task->data_list = bundle.release();
+      task->reset_data_list(ocs::tom::RawListPtr(std::move(bundle)));
 
       DRETURN_VOID;
    }

@@ -23,6 +23,7 @@
  */
 
 #include <cinttypes>
+#include <utility>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -32,85 +33,83 @@
 #include "sgeobj/sge_answer.h"
 
 /**
- * @brief Build a task
+ * @brief Build a task from owned parts
+ *
+ * A caller that keeps its own copy of a part passes a copy; ocs::gdi::Request::request() does so for
+ * `do_copy`.
  *
  * @param target which object list to act on
  * @param command what to do
  * @param sub_cmd modifiers refining @p command
- * @param lp the objects to send, consumed unless @p do_copy is true
- * @param a_list receives qmaster's answer
- * @param condition which objects to act on; consumed
- * @param enumeration which fields to transfer; consumed
- * @param do_copy true to copy the arguments instead of taking them over
+ * @param data the objects to send, or an empty owner
+ * @param answers an answer list to start with, or an empty one
+ * @param condition which objects to act on, or an empty owner
+ * @param enumeration which fields to transfer, or an empty owner
  */
-ocs::gdi::Task::Task(Target target, Command command, SubCommand sub_cmd,
-                     lList **lp, ocs::tom::ListPtr<ocs::tom::AN> *a_list, lCondition **condition,
-                     lEnumeration **enumeration, bool do_copy)
-      : command(command), sub_command(sub_cmd), target(target), data_list(nullptr), condition(nullptr),
-        enumeration(nullptr), do_select_pack_simultaneous(false), exec_hostgroup_out_of_sync(false) {
+ocs::gdi::Task::Task(const Target target, const Command command, const SubCommand sub_cmd,
+                     ocs::tom::RawListPtr data, ocs::tom::ListPtr<ocs::tom::AN> answers,
+                     ocs::tom::RawWherePtr condition, ocs::tom::RawWhatPtr enumeration)
+      : command(command), sub_command(sub_cmd), target(target), data_list(data.release()),
+        answer_list(std::move(answers)), condition(std::move(condition)), enumeration(std::move(enumeration)),
+        do_select_pack_simultaneous(false), exec_hostgroup_out_of_sync(false) {
    DENTER(TOP_LAYER);
-
-   if (do_copy) {
-      if (enumeration != nullptr && *enumeration != nullptr) {
-         this->data_list = (((lp != nullptr) && (*lp != nullptr)) ? lSelect("", *lp, nullptr, *enumeration) : nullptr);
-      } else {
-         this->data_list = (((lp != nullptr) && (*lp != nullptr)) ? lCopyList("", *lp) : nullptr);
-      }
-      if (a_list != nullptr) {
-         this->answer_list = a_list->get().clone();
-      }
-      this->condition = (((condition != nullptr) && (*condition != nullptr)) ? lCopyWhere(*condition) : nullptr);
-      this->enumeration = (((enumeration != nullptr) && (*enumeration != nullptr)) ? lCopyWhat(*enumeration) : nullptr);
-   } else {
-      if ((lp != nullptr) && (*lp != nullptr)) {
-         this->data_list = *lp;
-         *lp = nullptr;
-      } else {
-         this->data_list = nullptr;
-      }
-      if (a_list != nullptr) {
-         this->answer_list = std::move(*a_list);
-      }
-      if ((condition != nullptr) && (*condition != nullptr)) {
-         this->condition = *condition;
-         *condition = nullptr;
-      } else {
-         this->condition = nullptr;
-      }
-      if ((enumeration != nullptr) && (*enumeration != nullptr)) {
-         this->enumeration = *enumeration;
-         *enumeration = nullptr;
-      } else {
-         this->enumeration = nullptr;
-      }
-   }
+   DRETURN_VOID;
 }
 
+/**
+ * @brief Build an empty task: no target, no command, no data
+ */
 ocs::gdi::Task::Task()
        : command(Command::NONE), sub_command(SubCommand::NONE), target(Target::NO_TARGET), data_list(nullptr),
-         condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false),
-         exec_hostgroup_out_of_sync(false) {
+         do_select_pack_simultaneous(false), exec_hostgroup_out_of_sync(false) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
+/**
+ * @brief Release the data list; the answer list, the condition and the selection free themselves
+ */
 ocs::gdi::Task::~Task() {
    DENTER(TOP_LAYER);
-   lFreeList(&data_list);
-   lFreeWhat(&enumeration);
-   lFreeWhere(&condition);
+   reset_data_list();
    DRETURN_VOID;
 }
 
+/**
+ * @brief Replace the data list; the one held before is freed
+ *
+ * Not for a #data_list that points to a master list (#do_select_pack_simultaneous): that one is set to nullptr
+ * by hand, as pack_task() does.
+ *
+ * @param data the new data list, or an empty owner for none
+ */
+void
+ocs::gdi::Task::reset_data_list(ocs::tom::RawListPtr data) {
+   // the old list is freed when the owner taking it over leaves the scope
+   const ocs::tom::RawListPtr old(std::exchange(data_list, data.release()));
+}
+
+/**
+ * @brief Take the data list out of the task
+ * @return the owner of the data list, empty if there was none; #data_list is nullptr afterwards
+ */
+ocs::tom::RawListPtr
+ocs::gdi::Task::take_data_list() {
+   return ocs::tom::RawListPtr(std::exchange(data_list, nullptr));
+}
+
+/**
+ * @brief Log this task's command, target, data, condition and selection at debug level
+ */
 void
 ocs::gdi::Task::debug_print() {
    DENTER(TOP_LAYER);
    DPRINTF("command = " sge_u32 "\n", static_cast<uint32_t>(command));
    DPRINTF("target = " sge_u32 "\n", static_cast<uint32_t>(target));
    DPRINTF("data_list = %p\n", data_list);
-   lWriteListTo(data_list, stderr);
+   ocs::tom::write_to(stderr, ocs::tom::ConstRawList(data_list));
    DPRINTF("answer_list = %p\n", answer_list.get().raw());
-   DPRINTF("condition = %p\n", condition);
-   DPRINTF("enumeration = %p\n", enumeration);
+   DPRINTF("condition = %p\n", condition.get());
+   DPRINTF("enumeration = %p\n", enumeration.get());
    DRETURN_VOID;
 }

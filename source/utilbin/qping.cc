@@ -581,12 +581,12 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            }
    
                            if (task->condition) {
-                              ocs::tom::write_to(stdout, task->condition);
+                              ocs::tom::write_to(stdout, task->condition.get());
                            } else {
                               printf("cp   : %s\n", "nullptr");
                            }
                            if (task->enumeration) {
-                              ocs::tom::write_to(stdout, task->enumeration);
+                              ocs::tom::write_to(stdout, task->enumeration.get());
                            } else {
                               printf("enp   : %s\n", "nullptr");
                            }

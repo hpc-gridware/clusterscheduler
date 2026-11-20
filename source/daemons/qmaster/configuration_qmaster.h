@@ -45,6 +45,7 @@
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/sge_answer.h"
 
@@ -52,7 +53,7 @@ int
 sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-lList *
+ocs::tom::RawListPtr
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration);
 
 ocs::tom::ElementPtr<ocs::tom::CONF>

@@ -22,12 +22,15 @@
  * @brief A GDI request: a list of tasks sent as one unit
  */
 
+#include <utility>
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/tom/ocs_tom_MA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 #include "gdi/ocs_gdi_Target.h"
 #include "gdi/msg_gdilib.h"
@@ -63,6 +66,60 @@ ocs::gdi::Request::wait() {
 }
 
 /**
+ * @brief Copy the objects a task sends, for a caller that keeps its own
+ *
+ * As `lSelect("", lp, nullptr, enp)` and `lCopyList("", lp)` did before: the copy is named "" - the name goes
+ * over the wire -, a selection that keeps no element gives no list, and a failure gives no list instead of an
+ * exception. ocs::tom::select() and ocs::tom::clone() keep the name of the source and return an empty list, so
+ * the core functions are called here.
+ *
+ * @param lp the objects to send, or nullptr
+ * @param enp which fields to send, or nullptr for all
+ * @return the owner of the copy, empty for nullptr, for no selected element or on failure
+ */
+static ocs::tom::RawListPtr
+ocs_gdi_copy_request_data(const lList *lp, const lEnumeration *enp) {
+   if (lp == nullptr) {
+      return {};
+   }
+   try {
+      if (enp != nullptr) {
+         ocs::tom::RawListPtr copy(ocs::tom::select_list("", lp, nullptr, enp, true, false));
+         if (ocs::tom::size(copy.get()) == 0) {
+            // an empty result of a hashed selection is no list, as lSelect() gave
+            copy.reset();
+         }
+         return copy;
+      }
+      return ocs::tom::RawListPtr(ocs::tom::copy_list("", lp, true, false));
+   } catch (const ocs::tom::FieldException &) {
+      // a selection the list's type does not hold: no list, as lSelect() gave
+   } catch (const ocs::tom::ListCoreError &) {
+      // no memory: no list, as lSelect() and lCopyList() gave
+   }
+   return {};
+}
+
+/**
+ * @brief Copy a condition or a field selection without throwing, as lCopyWhere() and lCopyWhat() did
+ * @tparam P lCondition or lEnumeration
+ * @param p the condition or selection, or nullptr
+ * @return the owner of the copy, empty for nullptr or on failure
+ */
+template <typename P>
+static auto
+ocs_gdi_soft_clone(const P *p) -> decltype(ocs::tom::clone(p)) {
+   try {
+      return ocs::tom::clone(p);
+   } catch (const ocs::tom::FieldException &) {
+      // nothing to copy
+   } catch (const ocs::tom::ListCoreError &) {
+      // no memory or a corrupt condition: none, as before
+   }
+   return {};
+}
+
+/**
  * @brief Add a task to this request, and send it when asked to
  *
  * @param[out] alpp receives errors detected before sending
@@ -86,8 +143,15 @@ ocs::gdi::Request::request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Tar
       packet = new Packet();
    }
 
-   // create a new task and append it to the packet
-   auto task = new Task(target, cmd, sub_cmd, lp, nullptr, &cp, &enp, do_copy);
+   // create a new task and append it to the packet; with do_copy it gets copies, otherwise the parts themselves
+   Task *task;
+   if (do_copy) {
+      task = new Task(target, cmd, sub_cmd, ocs_gdi_copy_request_data(lp != nullptr ? *lp : nullptr, enp), {},
+                      ocs_gdi_soft_clone(cp), ocs_gdi_soft_clone(enp));
+   } else {
+      task = new Task(target, cmd, sub_cmd, ocs::tom::RawListPtr(lp != nullptr ? std::exchange(*lp, nullptr) : nullptr),
+                      {}, ocs::tom::RawWherePtr(cp), ocs::tom::RawWhatPtr(enp));
+   }
    int id = packet->append_task(task);
 
    // execute the packet if it is the last task (mode == ocs::gdi::Mode::SEND)

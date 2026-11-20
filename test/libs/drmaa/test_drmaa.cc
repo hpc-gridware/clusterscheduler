@@ -3038,10 +3038,8 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
-                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
-               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
-                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               const auto where = ocs::tom::field<JB_job_number>() == static_cast<uint32_t>(atol(jobid));
+               const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
@@ -3521,10 +3519,8 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
-                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
-               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
-                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               const auto where = ocs::tom::field<JB_job_number>() == static_cast<uint32_t>(atol(jobid));
+               const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
@@ -3627,10 +3623,8 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
-                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
-               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
-                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               const auto where = ocs::tom::field<JB_job_number>() == static_cast<uint32_t>(atol(jobid));
+               const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
@@ -3749,10 +3743,8 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
-                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
-               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
-                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               const auto where = ocs::tom::field<JB_job_number>() == static_cast<uint32_t>(atol(jobid));
+               const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);
@@ -3855,10 +3847,8 @@ static int test(int *argc, char **argv[], int parse_args) {
 
             printf ("Getting job name for job %lu from GDI\n", (unsigned long)atol(jobid));
             {
-               const auto where = ocs::tom::Where<ocs::tom::JB>::from_typed(
-                  lWhere("%T(%I==%u)", JB_Type, JB_job_number, (uint32_t)atol(jobid)));
-               const auto what = ocs::tom::What<ocs::tom::JB>::from_typed(
-                  lWhat("%T (%I %I)", JB_Type, JB_job_number, JB_job_name));
+               const auto where = ocs::tom::field<JB_job_number>() == static_cast<uint32_t>(atol(jobid));
+               const auto what = ocs::tom::what<JB_job_number, JB_job_name>();
                alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
                                                ocs::gdi::SubCommand::NONE, job_lp, where, what);
                job_ep = lFirst(job_lp);

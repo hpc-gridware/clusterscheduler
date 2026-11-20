@@ -46,11 +46,30 @@
 
 #include "cull/cull_list.h"
 #include "cull/cull_pack.h"
+#include "tom/ocs_PackCore.h"
 
 #include "sgeobj/sge_pack.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_common.h"
+
+/**
+ * @brief Run a pack function of the typed object model and report its success instead of throwing
+ * @tparam F a callable taking the buffer
+ * @param pb the buffer to pack into
+ * @param pack the pack function, which throws ocs::tom::PackException on an error
+ * @return true if it packed without error, as `PACK_SUCCESS` of cull_pack_cond() and cull_pack_enum() was
+ */
+template <typename F>
+static bool
+ocs_pack_soft(sge_pack_buffer *pb, F &&pack) {
+   try {
+      pack(pb);
+   } catch (const ocs::tom::PackException &) {
+      return false;
+   }
+   return true;
+}
 
 /**
  * @brief Pack a selection condition into an element, so it can be sent
@@ -64,7 +83,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) 
    ocs::tom::ElementPtr<ocs::tom::PACK> where_elem;
    sge_pack_buffer pb;
    if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
-      if (cull_pack_cond(&pb, where) == PACK_SUCCESS) {
+      if (ocs_pack_soft(&pb, [where](sge_pack_buffer *buffer) { ocs::tom::pack_where(buffer, where); })) {
          where_elem = ocs::tom::ElementPtr<ocs::tom::PACK>::create();
          ocs::tom::set<PACK_id>(where_elem, SGE_WHERE);
          const std::string hex = ocs::tom::bytes_to_hex(pb.head_ptr, static_cast<int>(pb.bytes_used));
@@ -98,7 +117,11 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
          sge_free(&buffer);
          ERROR(SFNMAX, MSG_PACK_INVALIDPACKDATA);
       } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size, false)) == PACK_SUCCESS) {
-         cull_unpack_cond(&pb, &cond);
+         try {
+            cond = ocs::tom::unpack_where(&pb);
+         } catch (const ocs::tom::PackException &) {
+            // bytes cut off, an unknown operator or no memory: no condition, as cull_unpack_cond() gave
+         }
          clear_packbuffer(&pb);
       } else {
          sge_free(&buffer);
@@ -133,7 +156,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) 
    sge_pack_buffer pb;
 
    if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
-      if (cull_pack_enum(&pb, what) == PACK_SUCCESS) {
+      if (ocs_pack_soft(&pb, [what](sge_pack_buffer *buffer) { ocs::tom::pack_what(buffer, what); })) {
          what_elem = ocs::tom::ElementPtr<ocs::tom::PACK>::create();
          ocs::tom::set<PACK_id>(what_elem, SGE_WHAT);
          const std::string hex = ocs::tom::bytes_to_hex(pb.head_ptr, static_cast<int>(pb.bytes_used));
@@ -167,7 +190,11 @@ lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> wh
          sge_free(&buffer);
          ERROR(SFNMAX, MSG_PACK_INVALIDPACKDATA);
       } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size, false)) == PACK_SUCCESS) {
-         cull_unpack_enum(&pb, &cond);
+         try {
+            cond = ocs::tom::unpack_what(&pb);
+         } catch (const ocs::tom::PackException &) {
+            // bytes cut off or no memory: no selection, as cull_unpack_enum() gave
+         }
          clear_packbuffer(&pb);
       } else {
          sge_free(&buffer);

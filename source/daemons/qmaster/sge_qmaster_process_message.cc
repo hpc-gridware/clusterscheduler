@@ -39,6 +39,7 @@
 #include "sge_qmaster_process_message.h"
 
 #include <cstring>
+#include <utility>
 #include <unistd.h>
 
 #include "uti/sge_lock.h"
@@ -60,6 +61,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_ACK.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
@@ -108,11 +110,12 @@ sge_c_job_ack(const char *host, const char *commproc, uint32_t ack_tag, uint32_t
  * @brief Stores a packet in a request queue for further processing by a different thread
  *
  * @param message The message containing the data required to create a packet/task
- * @param data_list The list containing the request data (GDI objects/Report or ACK data)
+ * @param data_list The list containing the request data (GDI objects/Report or ACK data); the task takes it over
  * @param type The type of the packet
  */
 static void
-ocs_store_packet(const ocs::gdi::ClientServerBase::struct_msg_t *message, lList *data_list, gdi_packet_request_type_t type) {
+ocs_store_packet(const ocs::gdi::ClientServerBase::struct_msg_t *message, ocs::tom::RawListPtr data_list,
+                 const gdi_packet_request_type_t type) {
    // create a GDI packet to transport the list to a thread that is able to handle it
    auto *packet = new ocs::gdi::Packet();
    strcpy(packet->host, message->snd_host);
@@ -125,8 +128,8 @@ ocs_store_packet(const ocs::gdi::ClientServerBase::struct_msg_t *message, lList 
    packet->gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
    // Append a pseudo GDI task
-   const auto task = new ocs::gdi::Task(ocs::gdi::Target::NO_TARGET, ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
-                                &data_list, nullptr, nullptr, nullptr, false);
+   const auto task = new ocs::gdi::Task(ocs::gdi::Target::NO_TARGET, ocs::gdi::Command::NONE,
+                                        ocs::gdi::SubCommand::NONE, std::move(data_list), {}, {}, {});
    packet->append_task(task);
 
    // Put the packet into the task queue so that workers can handle it
@@ -196,7 +199,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
          // sge_c_ack() will be called by the worker thread to execute the ACK request stored here
          auto ack_list = ocs::tom::ListPtr<ocs::tom::ACK>::create_like("ACK list", ack.get());
          ack_list->push_back(std::move(ack));
-         ocs_store_packet(message, ack_list.release(), PACKET_ACK_REQUEST);
+         ocs_store_packet(message, ocs::tom::RawListPtr(std::move(ack_list)), PACKET_ACK_REQUEST);
       }
    }
 }
@@ -341,11 +344,11 @@ ocs_request_data_type(const ocs::gdi::Task *task, const lDescr *data_descr) {
  */
 static bool
 ocs_request_data_is_well_typed(const ocs::gdi::Task *task) {
-   const lList *data = task->data_list;
-   if (data == nullptr) {
+   const ocs::tom::ConstRawList data(task->data_list);
+   if (!data) {
       return true;
    }
-   return ocs_object_list_verify_type(data, ocs_request_data_type(task, lGetListDescr(data)));
+   return ocs_object_list_verify_type(data, ocs_request_data_type(task, data.descr()));
 }
 
 /** @brief The data store that satisfies both of two requirements
@@ -462,6 +465,15 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
    DRETURN(type);
 }
 
+/**
+ * @brief Handle a GDI request in the listener: unpack, check and authorise it, then queue it for a worker
+ *
+ * A request that fails here is answered at once with the answer of its first task; the data the client sent is
+ * not sent back.
+ *
+ * @param aMsg the message holding the packed request
+ * @param monitor for monitoring qmaster threads
+ */
 static void
 do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -610,7 +622,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
             ocs::gdi::Task *task = packet->tasks[i];
 
             // data might still be that what client sent initially. no need to re-transfer that
-            lFreeList(&task->data_list);
+            task->reset_data_list();
 
             // for all tasks we pack the answer of the first task which contains general errors
             // like version mismatch, auth_info or security issues.
@@ -725,7 +737,7 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
    }
 
    // store the request for a handling thread; the pseudo GDI task of the packet holds its data raw
-   ocs_store_packet(aMsg, rep.release(), PACKET_REPORT_REQUEST);
+   ocs_store_packet(aMsg, ocs::tom::RawListPtr(std::move(rep)), PACKET_REPORT_REQUEST);
 
    DRETURN_VOID;
 } /* do_report_request */

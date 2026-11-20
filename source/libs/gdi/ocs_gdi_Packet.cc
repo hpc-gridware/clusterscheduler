@@ -25,6 +25,7 @@
 #include <pthread.h>
 
 #include <cinttypes>
+#include <memory>
 
 #include "uti/ocs_cond.h"
 #include "uti/sge_log.h"
@@ -41,6 +42,8 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_PackCore.h"
+#include "tom/ocs_Raw.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/sge_gdi_data.h"
@@ -522,10 +525,8 @@ bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_
             Task *send = tasks[i];
             Task *recv = ret_packet->tasks[i];
 
-            lFreeList(&send->data_list);
-            send->data_list = recv->data_list;
+            send->reset_data_list(recv->take_data_list());
             send->answer_list = std::move(recv->answer_list);
-            recv->data_list = nullptr;
          }
       }
       if (gdi_mismatch) {
@@ -642,15 +643,11 @@ ocs::gdi::Packet::unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_
    unpack_header(answer_list, pb);
 
    do {
-      auto task = new gdi::Task(gdi::Target::NO_TARGET, gdi::Command::NONE, gdi::SubCommand::NONE,
-                              nullptr, nullptr, nullptr, nullptr, false);
+      // owned here until it is complete, so that a task read in part is freed with what it holds
+      auto task = std::make_unique<gdi::Task>();
       uint32_t target_ulong32 = 0;
       uint32_t command = 0;
       uint32_t sub_command = 0;
-      lList *data_list = nullptr;
-      lList *a_list = nullptr;
-      lCondition *condition = nullptr;
-      lEnumeration *enumeration = nullptr;
       uint32_t has_next_int = 0;
 
       if ((pack_ret = unpackint(pb, &command))) {
@@ -668,33 +665,27 @@ ocs::gdi::Packet::unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_
       }
       task->target = static_cast<Target>(target_ulong32);
 
-      if ((pack_ret = cull_unpack_list(pb, &(data_list)))) {
+      // data list, answer list, condition and selection, in this order; a format error or no memory is mapped
+      // to an answer as the return code of cull_unpack_list(), cull_unpack_cond() and cull_unpack_enum() was
+      try {
+         // the data list is of any type: the listener checks it against the target (CS-3125)
+         task->reset_data_list(ocs::tom::unpack_raw_list(pb));
+         // an answer list as it was packed; taken over unchecked like the data list, a daemon thread must not
+         // throw
+         task->answer_list = ocs::tom::ListPtr<ocs::tom::AN>::from_typed(ocs::tom::unpack_raw_list(pb).release());
+         task->condition.reset(ocs::tom::unpack_where(pb));
+         task->enumeration.reset(ocs::tom::unpack_what(pb));
+      } catch (const ocs::tom::PackException &e) {
+         pack_ret = e.code();
          goto error_with_mapping;
       }
-      task->data_list = data_list;
-
-      if ((pack_ret = cull_unpack_list(pb, &(a_list)))) {
-         goto error_with_mapping;
-      }
-      // an answer list as it was packed; taken over unchecked like the data list, a daemon thread must not throw
-      task->answer_list = ocs::tom::ListPtr<ocs::tom::AN>::from_typed(a_list);
-
-      if ((pack_ret = cull_unpack_cond(pb, &(condition)))) {
-         goto error_with_mapping;
-      }
-      task->condition = condition;
-
-      if ((pack_ret = cull_unpack_enum(pb, &(enumeration)))) {
-         goto error_with_mapping;
-      }
-      task->enumeration = enumeration;
 
       if ((pack_ret = unpackint(pb, &has_next_int))) {
          goto error_with_mapping;
       }
       has_next = (has_next_int > 0);
 
-      append_task(task);
+      append_task(task.release());
    } while (has_next);
 
 #if 0
@@ -828,34 +819,30 @@ ocs::gdi::Packet::pack_task(Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_
        * (which will be packed below).
        */
       if (task->do_select_pack_simultaneous) {
-         lSelectHashPack("", task->data_list, task->condition, task->enumeration, false, pb);
-         lFreeWhat(&(task->enumeration));
-         lFreeWhere(&(task->condition));
+         // stays raw: no op of the typed object model selects straight into a pack buffer; data_list points to
+         // the master list here and is not owned
+         lSelectHashPack("", task->data_list, task->condition.get(), task->enumeration.get(), false, pb);
+         task->enumeration.reset();
+         task->condition.reset();
          task->data_list = nullptr;
 
          /* DIRTY HACK: The "ok" message should be removed from the answer list
           * 05/21/2007 quality was ANSWER_QUALITY_INFO but this results in "ok"
           * messages on qconf side */
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
-      } else {
-         /* ===> pack the list */
-         pack_ret = cull_pack_list(pb, task->data_list);
-         if (pack_ret != PACK_SUCCESS) {
-            goto error_with_mapping;
-         }
       }
 
-      /* ===> pack the suffix */
-      pack_ret = cull_pack_list(pb, task->answer_list.get());
-      if (pack_ret != PACK_SUCCESS) {
-         goto error_with_mapping;
-      }
-      pack_ret = cull_pack_cond(pb, task->condition);
-      if (pack_ret != PACK_SUCCESS) {
-         goto error_with_mapping;
-      }
-      pack_ret = cull_pack_enum(pb, task->enumeration);
-      if (pack_ret != PACK_SUCCESS) {
+      // the data list unless it was selected above, then the answer list, the condition and the selection, the
+      // bytes of cull_pack_list(), cull_pack_cond() and cull_pack_enum(); an error is mapped as their return code
+      try {
+         if (!task->do_select_pack_simultaneous) {
+            ocs::tom::pack_list(pb, task->data_list, nullptr, 0);
+         }
+         ocs::tom::pack_list(pb, task->answer_list.get().raw(), nullptr, 0);
+         ocs::tom::pack_where(pb, task->condition.get());
+         ocs::tom::pack_what(pb, task->enumeration.get());
+      } catch (const ocs::tom::PackException &e) {
+         pack_ret = e.code();
          goto error_with_mapping;
       }
 

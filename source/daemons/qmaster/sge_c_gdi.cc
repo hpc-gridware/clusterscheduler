@@ -86,6 +86,8 @@
 #include "sgeobj/tom/ocs_tom_UU.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Model.h"
+#include "tom/ocs_Raw.h"
 
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
@@ -172,8 +174,9 @@ static bool
 sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 static void
-ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList *requests, int add, gdi_object_t *object,
-                     ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, ocs_gdi_post_processing *post,
+ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::RawList requests, int add,
+                     gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+                     ocs_gdi_post_processing *post,
                      monitoring_t *monitor);
 
 /*
@@ -285,7 +288,8 @@ void sge_clean_lists() {
    for (; gdi_object[i].target != ocs::gdi::Target::NO_TARGET; i++) {
       if (gdi_object[i].list_type != SGE_TYPE_NONE) {
          lList **master_list = ocs::DataStore::get_master_list_rw(gdi_object[i].list_type);
-         lFreeList(master_list);
+         // the slot holds a list of the type of the table entry, known only at run time; freed with its owner
+         const ocs::tom::RawListPtr list(std::exchange(*master_list, nullptr));
       }
    }
 
@@ -553,7 +557,7 @@ sge_c_gdi_get_in_listener(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
    DENTER(TOP_LAYER);
 
    // for get requests we do not need what the client might have sent to us
-   lFreeList(&(task->data_list));
+   task->reset_data_list();
 
    // check the permission
    if (!sge_task_check_get_perm_host(packet, task)) {
@@ -563,13 +567,14 @@ sge_c_gdi_get_in_listener(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
    // handle he get request
    switch (task->target) {
       case ocs::gdi::Target::EV_LIST:
-         task->data_list = sge_select_event_clients("", task->condition, task->enumeration);
+         task->reset_data_list(ocs::tom::RawListPtr(
+               sge_select_event_clients("", task->condition.get(), task->enumeration.get())));
          task->do_select_pack_simultaneous = false;
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
          DRETURN_VOID;
       case ocs::gdi::Target::DUMMY_LIST:
          // the data list of a GDI task is untyped (libs/gdi)
-         task->data_list = ocs_get_active_thread_list().release();
+         task->reset_data_list(ocs::tom::RawListPtr(ocs_get_active_thread_list()));
          task->do_select_pack_simultaneous = false;
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
          DRETURN_VOID;
@@ -579,23 +584,38 @@ sge_c_gdi_get_in_listener(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
    DRETURN_VOID;
 }
 
+/**
+ * @brief Answer the GET requests a worker thread handles: the configurations and every master list
+ *
+ * For an external client the selection is postponed: the task's data list points to the master list, and
+ * pack_task() selects from it straight into the send buffer. An internal request gets a selected copy.
+ *
+ * @param ao      the table entry of the target, nullptr for a target without one
+ * @param packet  the client request
+ * @param task    the GDI task being answered; its data list receives the result
+ * @param monitor for monitoring qmaster threads, unused
+ */
 static void
 sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    /* Whatever client sent with this get request - we don't need it */
-   lFreeList(&(task->data_list));
+   task->reset_data_list();
 
    switch (task->target) {
       case ocs::gdi::Target::CONF_LIST:
-         task->data_list = sge_get_configuration(task->condition, task->enumeration);
+         task->reset_data_list(sge_get_configuration(task->condition.get(), task->enumeration.get()));
          task->do_select_pack_simultaneous = false;
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
          break;
       case ocs::gdi::Target::SC_LIST: /* TODO EB: move this into the scheduler configuration,
                                     and pack the list right away */ {
          const auto conf = sconf_get_config_list();
-         task->data_list = lSelectHashPack("", conf.get(), task->condition, task->enumeration, false, nullptr);
+         // stays lSelectHashPack(): the condition and the selection of the client are not checked against the
+         // type; with a selection a misfit gives no list instead of an exception and the result is named "",
+         // without one the list is copied under its own name and the condition is not applied (as before)
+         task->reset_data_list(ocs::tom::RawListPtr(
+               lSelectHashPack("", conf.get(), task->condition.get(), task->enumeration.get(), false, nullptr)));
          task->do_select_pack_simultaneous = false;
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
          break;
@@ -618,12 +638,14 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
          } else {
             lList *data_source = *ocs::DataStore::get_master_list_rw(ao->list_type);
 
-            DPRINTF("Got list with " sge_u32 " elements\n", lGetNumberOfElem(data_source));
+            DPRINTF("Got list with %zu elements\n", ocs::tom::size(data_source));
 
             if (packet->is_intern_request) {
                /* intern requests need no pb so it is not necessary to postpone the operation */
-               task->data_list = lSelectHashPack("", data_source, task->condition,
-                                                 task->enumeration, false, nullptr);
+               // stays lSelectHashPack(), as for SC_LIST above
+               task->reset_data_list(ocs::tom::RawListPtr(lSelectHashPack("", data_source, task->condition.get(),
+                                                                          task->enumeration.get(), false,
+                                                                          nullptr)));
                task->do_select_pack_simultaneous = false;
 
                /*
@@ -687,9 +709,10 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
        * a member of - two elements under a key that EV_id declares unique, and
        * the walk below would run into the appended elements as well.
        */
-      // the request data is structure checked by the listener (CS-3125): an EV_LIST add carries EV_Type
-      auto requests = ocs::tom::ListPtr<ocs::tom::EV>(task->data_list);
-      task->data_list = nullptr;
+      // the request data is structure checked by the listener (CS-3125): an EV_LIST add carries EV_Type; adopt()
+      // checks before it takes the list over, so on a throw raw_requests frees it
+      ocs::tom::RawListPtr raw_requests = task->take_data_list();
+      auto requests = ocs::tom::adopt<ocs::tom::EV>(std::move(raw_requests));
 
       /* is thread save. the global lock is used when needed */
       for (const auto ep : *requests) {
@@ -711,7 +734,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
       if (!return_new_version) {
          /* nothing was returned, so the requests go back as they always did; otherwise requests frees them */
-         task->data_list = requests.release();
+         task->reset_data_list(ocs::tom::RawListPtr(std::move(requests)));
       }
    } else if (task->target == ocs::gdi::Target::JB_LIST) {
       const bool return_new_version =
@@ -721,8 +744,8 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
        * copies are neither walked by the loop as further submissions nor mixed with the requests (CS-3161);
        * after it the requests not taken over go back in front of the copies, the others are freed. */
       // the request data is structure checked by the listener (CS-3125): a JB_LIST add carries JB_Type
-      auto requests = ocs::tom::ListPtr<ocs::tom::JB>(return_new_version ? std::exchange(task->data_list, nullptr)
-                                                                         : nullptr);
+      ocs::tom::RawListPtr raw_requests = return_new_version ? task->take_data_list() : nullptr;
+      auto requests = ocs::tom::adopt<ocs::tom::JB>(std::move(raw_requests));
       const auto jobs = return_new_version ? requests.get() : ocs::tom::List<ocs::tom::JB>(task->data_list);
 
       auto ep = jobs.front();
@@ -753,9 +776,9 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       if (return_new_version && requests && !requests->empty()) {
          if (task->data_list != nullptr) {
             // sge_gdi_add_job() appended copies of the added jobs (JB_Type)
-            requests->splice(ocs::tom::ListPtr<ocs::tom::JB>::from_typed(std::exchange(task->data_list, nullptr)));
+            requests->splice(ocs::tom::ListPtr<ocs::tom::JB>::from_typed(task->take_data_list().release()));
          }
-         task->data_list = requests.release();
+         task->reset_data_list(ocs::tom::RawListPtr(std::move(requests)));
       }
    } else if (task->target == ocs::gdi::Target::SC_LIST) {
       // the request data is structure checked by the listener (CS-3125): an SC_LIST add carries SC_Type
@@ -777,7 +800,10 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
        * mixed with the requests, and freed after it. */
       const bool return_new_version =
               (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
-      lList *requests = return_new_version ? std::exchange(task->data_list, nullptr) : task->data_list;
+      // owns the requests when they are taken out of the task, see above; freed when the add is done
+      ocs::tom::RawListPtr taken_requests = return_new_version ? task->take_data_list() : nullptr;
+      const ocs::tom::RawList requests =
+            return_new_version ? taken_requests.get() : ocs::tom::RawList(task->data_list);
 
       if (task->target == ocs::gdi::Target::ORDER_LIST) {
          // the request data is structure checked by the listener (CS-3125): an ORDER_LIST add carries OR_Type
@@ -819,8 +845,8 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
             ep = next;
          }
       } else if (ao == nullptr) {
-         // stays raw: a target without a table entry has no element type; every request is refused
-         for (auto n = lGetNumberOfElem(requests); n > 0; n--) {
+         // a target without a table entry has no element type; every request is refused
+         for (auto n = ocs::tom::size(requests); n > 0; n--) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          }
@@ -844,10 +870,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          sge_resync_schedd(monitor, packet->gdi_session); /* ask for a total update */
       }
 
-      // task->data_list holds the added ARs appended by ar_success(), see above
-      if (return_new_version) {
-         lFreeList(&requests);
-      }
+      // task->data_list holds the added ARs appended by ar_success(), see above; taken_requests frees the requests
    }
 
    if (reprioritize_tickets && ticket_orders) {
@@ -1081,8 +1104,8 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi::Co
          ocs_gdi_del_each<ocs::tom::RL>(packet, task, monitor);
          break;
       default:
-         // stays raw: the element type of a target without a delete is not fixed; every element is refused
-         for (auto n = lGetNumberOfElem(task->data_list); n > 0; n--) {
+         // the element type of a target without a delete is not fixed; every element is refused
+         for (auto n = ocs::tom::size(task->data_list); n > 0; n--) {
             ocs_gdi_del_unsupported(&(task->answer_list));
          }
          break;
@@ -1117,8 +1140,8 @@ static void sge_c_gdi_copy([[maybe_unused]] gdi_object_t *ao, ocs::gdi::Packet *
          sge_gdi_copy_job(ep, &(task->answer_list), nullptr, packet, task, monitor);
       }
    } else {
-      // stays raw: the element type of another target is not fixed for COPY; every element is refused
-      for (auto n = lGetNumberOfElem(task->data_list); n > 0; n--) {
+      // the element type of another target is not fixed for COPY; every element is refused
+      for (auto n = ocs::tom::size(task->data_list); n > 0; n--) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
       }
@@ -1128,12 +1151,20 @@ static void sge_c_gdi_copy([[maybe_unused]] gdi_object_t *ao, ocs::gdi::Packet *
 
 /* ------------------------------------------------------------ */
 
+/**
+ * @brief Answer a PERMCHECK request: which roles the calling user and host have
+ *
+ * Whatever the client sent is replaced by one PERM_Type element; its condition and selection are ignored.
+ *
+ * @param packet the client request, which names user and host
+ * @param task   the GDI task being answered; its data list receives the result
+ */
 static void
 sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(TOP_LAYER);
 
    // whatever client sent - we do not need that, instead we use data from commlib stored in packet
-   lFreeList(&task->data_list);
+   task->reset_data_list();
    const char *hostname = packet->host;
    const char *username = packet->user;
 
@@ -1498,8 +1529,8 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
             }
             break;
          default:
-            // stays raw: a target without a table entry has no element type; every element is refused
-            for (auto n = lGetNumberOfElem(task->data_list); n > 0; n--) {
+            // a target without a table entry has no element type; every element is refused
+            for (auto n = ocs::tom::size(task->data_list); n > 0; n--) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
             }
@@ -1787,7 +1818,7 @@ static int
 ocs_gdi_add_mod_missing_key(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const gdi_object_t *object,
                             const char *function) {
    DENTER(TOP_LAYER);
-   CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(object->key_nm), function);
+   CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::field_name(object->key_nm), function);
    answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    DRETURN(STATUS_EUNKNOWN);
 }
@@ -2190,7 +2221,7 @@ ocs_gdi_with_generic_type(const sge_object_type list_type, F &&f) {
  * @param monitor for monitoring qmaster threads
  */
 static void
-ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList *requests, const int add,
+ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::RawList requests, const int add,
                      gdi_object_t *object, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
                      ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -2206,8 +2237,8 @@ ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList *requ
       }
    });
    if (!generic) {
-      // stays raw: the element type is given at run time by the target, and every request is refused
-      for (auto n = lGetNumberOfElem(requests); n > 0; n--) {
+      // the element type is given at run time by the target, and every request is refused
+      for (auto n = ocs::tom::size(requests); n > 0; n--) {
          ocs_gdi_add_mod_unsupported(&(task->answer_list), object);
       }
    }

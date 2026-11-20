@@ -28,6 +28,7 @@
 #include <cinttypes>
 
 #include "cull/cull.h"
+#include "tom/ocs_Raw.h"
 
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_Target.h"
@@ -48,10 +49,22 @@ namespace ocs::gdi {
       SubCommand sub_command;  ///< modifiers refining #command
 
       Target target;           ///< which object list to act on
-      lList *data_list;        ///< the objects to write, or the ones read back
+
+      /**
+       * @brief The objects to write, or the ones read back
+       *
+       * Stays a raw pointer: the type is given at run time by #target, and it
+       * is not always owned - for a GET of an external client qmaster lets it
+       * point to the master list until pack_task() selects from it (see
+       * #do_select_pack_simultaneous). Besides, many qmaster files and the
+       * `lList **` out-parameters of the object functions (sge_gdi_add_job(),
+       * sge_add_event_client(), ...) use it directly. Owned data is handed in and
+       * out with reset_data_list() and take_data_list().
+       */
+      lList *data_list;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list; ///< qmaster's answer for this task
-      lCondition *condition;   ///< which objects to act on, from `lWhere()`
-      lEnumeration *enumeration; ///< which fields to transfer, from `lWhat()`
+      ocs::tom::RawWherePtr condition;   ///< which objects to act on, from `lWhere()`; empty for all
+      ocs::tom::RawWhatPtr enumeration;  ///< which fields to transfer, from `lWhat()`; empty for all
 
       /**
        * @brief May the selection pack straight into the send buffer?
@@ -81,10 +94,18 @@ namespace ocs::gdi {
        */
       bool exec_hostgroup_out_of_sync;
    public:
-      Task(Target target, Command command, SubCommand sub_cmd, lList **lp,
-           ocs::tom::ListPtr<ocs::tom::AN> *a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
+      Task(Target target, Command command, SubCommand sub_cmd, ocs::tom::RawListPtr data,
+           ocs::tom::ListPtr<ocs::tom::AN> answers, ocs::tom::RawWherePtr condition,
+           ocs::tom::RawWhatPtr enumeration);
       Task();  ///< Build an empty task
       ~Task(); ///< Release the lists this task owns
+
+      Task(const Task &) = delete;
+      Task &operator=(const Task &) = delete;
+
+      void reset_data_list(ocs::tom::RawListPtr data = {});
+
+      [[nodiscard]] ocs::tom::RawListPtr take_data_list();
 
       /// Log this task's command, target and data at debug level
       void debug_print();
